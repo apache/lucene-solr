@@ -1,3 +1,35 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# =====================================================================
+# This file contains the definition TODO steps and commands to run for the
+# releaseWizard.py script. It also contains Jinja2 templates for use in those
+# definitions. See documentation for "groups" below the templates.
+# Edit this file with an editor with YAML support, such as Sublime Text
+# for syntax highlighting and context sensitive tag suggestion
+# =====================================================================
+#
+# Templates may be included in any text by starting a line with this syntax:
+# (( template=my_template_name ))
+# Templates may contain other templates for easy re-use of snippets
+# And of course all Jinja2 syntax for inclusion of variables etc is supported.
+# See http://jinja.pocoo.org/docs/2.10/templates/ for details
+# To add new global variables or functions/filters, edit releaseWizard.py
+#
 templates:
   help: |
     Welcome to the role as Release Manager for Lucene/Solr, and the releaseWizard!
@@ -27,12 +59,14 @@ templates:
                 faulty commands, commands that won't work on your OS or with all
                 versions of tooling etc. So pleaes keep the old ReleaseTODO handy
                 for cross-checking for now :)
-  vote_macro: |
-    {% macro end_vote_result(plus_binding, plus_other, zero, minus) -%}
+  vote_logic: |
     {% set passed = plus_binding >= 3 and minus < plus_binding %}
     {% set too_few = plus_binding < 3 %}
     {% set veto = plus_binding < minus %}
     {% set reason = 'too few binding votes' if too_few else 'too many negative votes' if veto else 'unknown' %}    
+  vote_macro: |
+    {% macro end_vote_result(plus_binding, plus_other, zero, minus) -%}
+    (( template=vote_logic ))
     .Mail template {% if passed %}successful{% else %}failed{% endif %} vote
     ----
     To: dev@lucene.apache.org
@@ -45,17 +79,78 @@ templates:
     -1  {{ minus }}
 
     {% if not passed %}
-    Reason for fail is {{ reason }}
+    Reason for fail is {{ reason }}.
     
     {% endif %}
     This vote has {% if passed %}PASSED{% else %}FAILED{% endif %} 
     ----
     {%- endmacro %}
+#
+# TODOs belong to groups for easy navigation in menus. Todo objects may contain asciidoc
+# descriptions, a number of commands to execute, some links to display, user input to gather
+# etc. Here is the documentation of each type of object. For further details, please consult
+# the corresponding Python object in releaseWizard.py, as these are parsed 1:1 from yaml.
+#
+# - !TodoGroup
+#   id: unique_id
+#   title: Title which will appear in menu
+#   description: Longer description that will appear in sub-menu
+#   depends: ['group1_id', 'group2_id'] # Explicit dependencies for groups
+#   is_in_rc_loop: Tells that a group is thrown away on RC re-psin (default=False)
+#   todos:    # Array of !Todo objects beloning to the group
+#     !Todo
+#     id: todo_id
+#     title: Short title that will appear in menu and elsewhere
+#     description: |
+#         The main description being printed when selecing the todo item. Here
+#         you should introduce the task in more detail. You can use {{ jinja_var }} to
+#         reference variables. See `releaseWizard.py` for list of global vars supported.
+#         You can reference state saved from earlier TODO items using syntax
+#           {{ todi_id.var_name }}
+#         with `var_name` being either fetched from user_input or persist_vars
+#     depends:  # One or more dependencies which will bar execution
+#     - todo_id1
+#     - todo_id2
+#     vars:  # Dictionary of jinja2 variables local to this TODO, e.g.
+#       logfile_path: "{{ [rc_folder, 'logs'] | path_join }}"
+#       # Vars can contain global jinja vars or local vars earlier defined (ordered dict)
+#     persist_vars: ['var_name', 'var_name'] # List of variables to persist in TODO state
+#     asciidoc: |
+#         Some `asciidoc` text to be included in asciidoc guide 
+#         *instead of* description/post_description
+#     commands: !Commands   # A !Commands object holding commands to execute for this todo
+#       root_folder: '{{ git_checkout_folder }}' # path to where commands will run
+#       commands_text: Introduction text to be displayed just before the commands 
+#       enable_execute: true # Set to false to never offer to run commands automatically
+#       confirm_each_command: true # Set to false to run all commands without prompting
+#       remove_files: ['file1', 'folder2'] # List of files or folders that must be gone
+#       logs_prefix: prefix # Lets you prefix logs file names with this string
+#       commands:   # List of !Commands to execute
+#       - !Command  # One single command
+#         cmd: "ls {{ folder_to_ls }}"  # A single command. May reference jinja vars
+#         cwd: relative_path # Where to run command, relative to root_folder
+#         comment: # Will display a # or REM comment above the command in printouts
+#         vars: {} # Possible to define local vars for this command only
+#         logfile: my.og # Overrides log file name which may grow very long :)
+#         tee: false       # If true, sends log output to console and file
+#         stdout: false    # if true, sends output only to console, not log file
+#     user_input: # An array of !UserInput objects for requesting input from user
+#     - !UserInput
+#       prompt: Please enter your gpg key ID, e.g. 0D8D0B93
+#       name: gpg_key  # This will be stored in todo state and can be referenced as {{ todo_id.name }}
+#       type: int  # if no type is given, a string is stored. Supported types are 'int'
+#     post_description: |
+#       Some `asciidoc` text (with jinja template support) 
+#       to be printed *after* commands and user_input is done.
+#     links:
+#     - http://example.com/list/of/links?to&be&displayed
 groups:
 - !TodoGroup
   id: prerequisites
   title: Prerequisites
-  description: description
+  description: |
+    Releasing software requires thorough understanding of the process and careful execution,
+    as it is easy to make mistakes. This section makes sure you're in good shape for the job!
   todos:
   - !Todo
     id: read_up
@@ -148,7 +243,6 @@ groups:
       commands_text: Run these commands to make a fresh clone in the release folder
       remove_files:
       - '{{ git_checkout_folder }}'
-      confirm_each_command: true
       commands:
       - !Command
         cmd: git clone --progress https://gitbox.apache.org/repos/asf/lucene-solr.git lucene-solr
@@ -163,7 +257,7 @@ groups:
         Fix any problems that are found by pushing fixes to the release branch
         and then running this task again. This task will always do `git pull`
         before `ant precommit` so it will catch changes to your branch :)
-      confirm_each_command: true
+      confirm_each_command: false
       commands:
       - !Command
         cmd: git checkout {{ release_branch }}
@@ -182,7 +276,6 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: Run these commands to create a stable branch
-      confirm_each_command: true
       commands:
       - !Command
         cmd: git checkout master
@@ -205,7 +298,6 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: Run these commands to create a release branch
-      confirm_each_command: true
       commands:
       - !Command
         cmd: git checkout {{ stable_branch }}
@@ -373,7 +465,7 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: Run some tests not ran by `buildAndPublishRelease.py`
-      confirm_each_command: true
+      confirm_each_command: false
       commands:
       - !Command
         cmd: git checkout {{ release_branch }}
@@ -394,7 +486,6 @@ groups:
         This ensures that all Ivy dependencies are freshly downloaded,
         so we emulate a user that never used the Lucene build system before.
         One way is to rename the ivy cache folder before building.
-      confirm_each_command: true
       commands:
       - !Command
         cmd: mv cache cache_bak
@@ -422,7 +513,7 @@ groups:
         log, tail the log in another Terminal:
 
         `tail -f {{ logfile | default("<logfile>") }}`
-      confirm_each_command: true
+      confirm_each_command: false
       commands:
       - !Command
         cmd: git checkout {{ release_branch }}
@@ -456,7 +547,6 @@ groups:
       commands_text: Here we'll smoke test the release by 'downloading' the artifacts, running the tests, validating GPG signatures etc.
       remove_files:
       - '{{ tmp_dir }}'
-      confirm_each_command: true
       commands:
       - !Command
         cmd: python3 -u {{ smoker_path }} {{ local_keys }} --tmp-dir "{{ tmp_dir }}" file://{{ dist_path }}
@@ -472,7 +562,6 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: Here we'll import the artifacts into Subversion
-      confirm_each_command: true
       commands:
       - !Command
         cmd: svn -m "Lucene/Solr {{ release_version }} RC{{ rc_number }}" import {{ dist_path }} {{ dist_url }}
@@ -571,7 +660,19 @@ groups:
       prompt: Number of -1 votes
       name: minus
     post_description: |
+        (( template=vote_logic ))
         (( template=vote_macro ))
+        {% if passed -%}
+        Congratulations! The vote has passed.
+
+        {% if minus > 0 %}
+        However, there were negative votes. A release cannot be vetoed, and as long as
+        there are more positive than negative votes you can techically release
+        the software. However, please review the negative votes and consider
+        a re-spin.
+        
+        {% endif %}
+        {%- endif %}
         {{ end_vote_result(plus_binding,plus_other,zero,minus) }}
     links:
     - https://www.apache.org/foundation/voting.html
@@ -588,14 +689,13 @@ groups:
       root_folder: '{{ git_checkout_folder }}'
       commands_text: This will tag the release in git
       logs_prefix: tag_release
-      confirm_each_command: true
       commands:
       - !Command
-        cmd: git tag -a releases/lucene-solr/5.5.0 -m "Lucene/Solr 5.5.0 release" 2a228b3920a07f930f7afb6a42d0d20e184a943c
+        cmd: git tag -a releases/lucene-solr/{{ release_version }} -m "Lucene/Solr {{ release_version }} release" {{ build_rc.git_rev | default("<git_rev>", True) }}
         logfile: git_tag.log
         tee: true
       - !Command
-        cmd: git push origin releases/lucene-solr/5.5.0
+        cmd: git push origin releases/lucene-solr/{{ release_version }}
         logfile: git_push_tag.log
         tee: true
   - !Todo
@@ -604,14 +704,13 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: This will remove only maven artifacts
-      confirm_each_command: true
       commands:
       - !Command
-        cmd: svn rm -m "delete the lucene maven artifacts" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../lucene/maven
+        cmd: svn rm -m "delete the lucene maven artifacts" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}/lucene/maven
         logfile: svn_rm_mvn_lucene.log
         tee: true
       - !Command
-        cmd: svn rm -m "delete the solr maven artifacts" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../solr/maven
+        cmd: svn rm -m "delete the solr maven artifacts" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}/solr/maven
         logfile: svn_rm_mvn_solr.log
         tee: true
   - !Todo
@@ -620,7 +719,6 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: This will move the new release artifacts from staging repo to the release repo
-      confirm_each_command: true
       commands:
       - !Command
         cmd: svn move -m "Move Lucene RC2 to release repo." https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev.../lucene https://dist.apache.org/repos/dist/release/lucene/java/5.1.0
@@ -637,7 +735,6 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: This will clean up the containing folder left in the staging repo
-      confirm_each_command: true
       commands:
       - !Command
         cmd: svn rm -m "Clean up the RC folder" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-5.1.0-RC2-rev...
@@ -649,7 +746,6 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
-      confirm_each_command: true
       commands:
       - !Command
         cmd: ant clean stage-maven-artifacts -Dmaven.dist.dir=/tmp/releases/6.0.1/lucene-solr-6.0.1-RC2-rev.../lucene/maven/ -Dm2.repository.id=apache.releases.https -Dm2.repository.url=https://repository.apache.org/service/local/staging/deploy/maven2
@@ -681,7 +777,6 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: Run this script to check the number and percentage of mirrors (and Maven Central) that have the release
-      confirm_each_command: true
       commands:
       - !Command
         cmd: dev-tools/scripts/poll-mirrors.py -version 5.5.0
@@ -724,7 +819,7 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: 'Do the following on the release branch only:'
-      confirm_each_command: true
+      confirm_each_command: false
       commands:
       - !Command
         cmd: git checkout branch_7_7
