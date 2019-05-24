@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class ScandinavianFoldingFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "scandinavianFolding";
 
   public ScandinavianFoldingFilterFactory(Map<String,String> args) {

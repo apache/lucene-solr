@@ -82,6 +82,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  */
 public class JapaneseTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "japanese";
 
   private static final String MODE = "mode";

@@ -41,6 +41,7 @@ import org.apache.lucene.analysis.fr.FrenchAnalyzer;
  */
 public class ElisionFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "elision";
 
   private final String articlesFile;

@@ -36,6 +36,7 @@ import java.util.Map;
  */
 public class UAX29URLEmailTokenizerFactory extends TokenizerFactory {
 
+  /** SPI name */
   public static final String NAME = "uaX29UrlEmail";
 
   private final int maxTokenLength;

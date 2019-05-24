@@ -40,6 +40,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class CJKBigramFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "cjkBigram";
 
   final int flags;

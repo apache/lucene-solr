@@ -47,6 +47,7 @@ import org.tartarus.snowball.SnowballProgram;
  */
 public class SnowballPorterFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "snowballPorter";
 
   public static final String PROTECTED_TOKENS = "protected";

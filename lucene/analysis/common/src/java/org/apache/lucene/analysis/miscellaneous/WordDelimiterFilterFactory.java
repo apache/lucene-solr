@@ -59,6 +59,7 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
 @Deprecated
 public class WordDelimiterFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "wordDelimiter";
 
   public static final String PROTECTED_TOKENS = "protected";

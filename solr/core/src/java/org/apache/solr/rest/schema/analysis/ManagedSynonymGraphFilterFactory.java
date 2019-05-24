@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ManagedSynonymGraphFilterFactory extends BaseManagedTokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "managedSynonymGraph";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

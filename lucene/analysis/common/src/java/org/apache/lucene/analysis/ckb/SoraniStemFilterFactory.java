@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class SoraniStemFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "soraniStem";
 
   /** Creates a new SoraniStemFilterFactory */

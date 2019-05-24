@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 public class DoubleMetaphoneFilterFactory extends TokenFilterFactory
 {
 
+  /** SPI name */
   public static final String NAME = "doubleMetaphone";
 
   /** parameter name: true if encoded tokens should be added as synonyms */

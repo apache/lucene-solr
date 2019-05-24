@@ -43,6 +43,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class CommonGramsFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "commonGrams";
 
   // TODO: shared base class for Stop/Keep/CommonGrams?

@@ -40,6 +40,7 @@ import static org.apache.lucene.analysis.no.NorwegianLightStemmer.NYNORSK;
  */
 public class NorwegianMinimalStemFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "norwegianMinimalStem";
   
   private final int flags;

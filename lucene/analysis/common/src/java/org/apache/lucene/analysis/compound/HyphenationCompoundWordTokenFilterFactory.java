@@ -62,6 +62,7 @@ import org.xml.sax.InputSource;
  */
 public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "hyphenationCompoundWord";
 
   private CharArraySet dictionary;

@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class StempelPolishStemFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "stempelPolishStem";
   
   /** Creates a new StempelPolishStemFilterFactory */

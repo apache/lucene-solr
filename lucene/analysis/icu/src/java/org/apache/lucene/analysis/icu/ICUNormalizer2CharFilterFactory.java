@@ -47,6 +47,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  */
 public class ICUNormalizer2CharFilterFactory extends CharFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "icuNormalizer2";
 
   private final Normalizer2 normalizer;

@@ -42,6 +42,7 @@ import org.apache.lucene.util.AttributeFactory;
  */
 public class OpenNLPTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "openNlp";
 
   public static final String SENTENCE_MODEL = "sentenceModel";

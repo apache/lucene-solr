@@ -47,6 +47,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class OpenNLPLemmatizerFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "openNlpLemmatizer";
 
   public static final String DICTIONARY = "dictionary";

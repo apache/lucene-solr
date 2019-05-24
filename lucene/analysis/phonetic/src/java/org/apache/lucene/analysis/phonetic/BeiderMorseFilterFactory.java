@@ -44,6 +44,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class BeiderMorseFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "beiderMorse";
 
   private final PhoneticEngine engine;

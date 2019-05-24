@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  */
 public class PersianCharFilterFactory extends CharFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "persian";
 
   /** Creates a new PersianCharFilterFactory */

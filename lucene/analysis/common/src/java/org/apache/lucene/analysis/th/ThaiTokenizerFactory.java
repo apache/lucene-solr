@@ -37,6 +37,7 @@ import org.apache.lucene.util.AttributeFactory;
  */
 public class ThaiTokenizerFactory extends TokenizerFactory {
 
+  /** SPI name */
   public static final String NAME = "thai";
   
   /** Creates a new ThaiTokenizerFactory */

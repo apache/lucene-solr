@@ -39,6 +39,7 @@ import java.util.regex.Pattern;
  */
 public class HTMLStripCharFilterFactory extends CharFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "htmlStrip";
 
   final Set<String> escapedTags;

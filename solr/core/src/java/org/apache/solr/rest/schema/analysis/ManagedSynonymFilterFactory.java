@@ -60,6 +60,7 @@ import org.slf4j.LoggerFactory;
 @Deprecated
 public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "managedSynonym";
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

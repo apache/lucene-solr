@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class ICUTransformFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "icuTransform";
 
   private final Transliterator transliterator;

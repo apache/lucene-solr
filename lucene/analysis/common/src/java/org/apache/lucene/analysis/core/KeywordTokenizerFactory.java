@@ -44,6 +44,7 @@ import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LE
  */
 public class KeywordTokenizerFactory extends TokenizerFactory {
 
+  /** SPI name */
   public static final String NAME = "keyword";
 
   private final int maxTokenLen;

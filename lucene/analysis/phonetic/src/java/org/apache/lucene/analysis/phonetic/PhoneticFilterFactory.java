@@ -68,6 +68,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class PhoneticFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "phonetic";
 
   /** parameter name: either a short name or a full class name */

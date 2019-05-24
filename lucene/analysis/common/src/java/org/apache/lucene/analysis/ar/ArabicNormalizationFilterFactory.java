@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class ArabicNormalizationFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "arabicNormalization";
 
   /** Creates a new ArabicNormalizationFilterFactory */

@@ -53,6 +53,7 @@ import org.apache.lucene.util.IOUtils;
  */
 public class HunspellStemFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "hunspellStem";
 
   private static final String PARAM_DICTIONARY    = "dictionary";

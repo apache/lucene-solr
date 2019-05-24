@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class JapaneseBaseFormFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "japaneseBaseForm";
 
   /** Creates a new JapaneseBaseFormFilterFactory */

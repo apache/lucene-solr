@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class LimitTokenOffsetFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "limitTokenOffset";
 
   public static final String MAX_START_OFFSET = "maxStartOffset";

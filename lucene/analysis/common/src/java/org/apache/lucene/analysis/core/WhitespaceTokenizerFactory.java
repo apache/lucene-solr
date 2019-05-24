@@ -51,6 +51,7 @@ import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LE
  */
 public class WhitespaceTokenizerFactory extends TokenizerFactory {
 
+  /** SPI name */
   public static final String NAME = "whitespace";
 
   public static final String RULE_JAVA = "java";

@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class HindiNormalizationFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "hindiNormalization";
   
   /** Creates a new HindiNormalizationFilterFactory */

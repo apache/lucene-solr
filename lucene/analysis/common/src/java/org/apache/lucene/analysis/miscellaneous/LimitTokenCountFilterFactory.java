@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class LimitTokenCountFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "limitTokenCount";
 
   public static final String MAX_TOKEN_COUNT_KEY = "maxTokenCount";

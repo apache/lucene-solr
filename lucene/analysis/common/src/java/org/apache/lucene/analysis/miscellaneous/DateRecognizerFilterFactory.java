@@ -46,6 +46,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class DateRecognizerFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "dateRecognizer";
 
   public static final String DATE_PATTERN = "datePattern";

@@ -41,6 +41,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class KeywordMarkerFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "keywordMarker";
 
   public static final String PROTECTED_TOKENS = "protected";

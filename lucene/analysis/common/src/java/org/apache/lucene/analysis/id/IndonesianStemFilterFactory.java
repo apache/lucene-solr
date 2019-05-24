@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class IndonesianStemFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "indonesianStem";
 
   private final boolean stemDerivational;

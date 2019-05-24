@@ -53,6 +53,7 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.*;
  */
 public class WordDelimiterGraphFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "wordDelimiterGraph";
 
   public static final String PROTECTED_TOKENS = "protected";

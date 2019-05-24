@@ -36,6 +36,7 @@ import java.util.Map;
  */
 public class NumericPayloadTokenFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "numericPayload";
 
   private final float payload;

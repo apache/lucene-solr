@@ -48,6 +48,7 @@ import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
  */
 public class ConcatenateGraphFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "concatenateGraph";
 
   private boolean preserveSep;

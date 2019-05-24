@@ -42,6 +42,7 @@ import java.util.regex.Pattern;
  */
 public class PatternReplaceFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "patternReplace";
 
   final Pattern pattern;

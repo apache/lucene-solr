@@ -78,6 +78,7 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  */
 public class SynonymGraphFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "synonymGraph";
 
   private final boolean ignoreCase;

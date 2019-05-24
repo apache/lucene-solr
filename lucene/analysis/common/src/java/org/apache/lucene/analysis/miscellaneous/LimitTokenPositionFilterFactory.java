@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class LimitTokenPositionFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "limitTokenPosition";
 
   public static final String MAX_TOKEN_POSITION_KEY = "maxTokenPosition";

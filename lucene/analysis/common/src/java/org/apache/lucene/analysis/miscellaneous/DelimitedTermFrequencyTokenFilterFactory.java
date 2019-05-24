@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class DelimitedTermFrequencyTokenFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "delimitedTermFrequency";
 
   public static final String DELIMITER_ATTR = "delimiter";

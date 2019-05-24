@@ -41,6 +41,7 @@ import java.util.Map;
  */
 public class TruncateTokenFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "truncate";
 
   public static final String PREFIX_LENGTH_KEY = "prefixLength";

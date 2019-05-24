@@ -75,6 +75,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class SuggestStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "suggestStop";
 
   /** the default format, one word per line, whole line comments start with "#" */

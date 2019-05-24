@@ -38,6 +38,7 @@ import java.util.Map;
  */
 public class JapaneseKatakanaStemFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "japaneseKatakanaStem";
 
   private static final String MINIMUM_LENGTH_PARAM = "minimumLength";

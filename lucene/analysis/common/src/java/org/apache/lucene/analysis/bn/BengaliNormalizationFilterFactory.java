@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class BengaliNormalizationFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "bengaliNormalization";
 
   public BengaliNormalizationFilterFactory(Map<String,String> args) {

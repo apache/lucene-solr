@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class RemoveDuplicatesTokenFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "removeDuplicates";
   
   /** Creates a new RemoveDuplicatesTokenFilterFactory */

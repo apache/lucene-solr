@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class ScandinavianNormalizationFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "scandinavianNormalization";
 
   public ScandinavianNormalizationFilterFactory(Map<String, String> args) {

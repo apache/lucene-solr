@@ -41,6 +41,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class JapaneseNumberFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "japaneseNumber";
 
   public JapaneseNumberFilterFactory(Map<String, String> args) {

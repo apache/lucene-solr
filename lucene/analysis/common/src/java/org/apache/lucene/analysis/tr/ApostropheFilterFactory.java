@@ -37,6 +37,7 @@ import java.util.Map;
  */
 public class ApostropheFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "apostrophe";
 
   public ApostropheFilterFactory(Map<String, String> args) {

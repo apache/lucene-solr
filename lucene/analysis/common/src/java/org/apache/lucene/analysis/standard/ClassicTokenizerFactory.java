@@ -36,6 +36,7 @@ import java.util.Map;
  */
 public class ClassicTokenizerFactory extends TokenizerFactory {
 
+  /** SPI name */
   public static final String NAME = "classic";
 
   private final int maxTokenLength;

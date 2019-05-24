@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class FixBrokenOffsetsFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "fixBrokenOffsets";
 
   /** Sole constructor */

@@ -72,6 +72,7 @@ import org.apache.lucene.util.AttributeFactory;
  */
 public class PathHierarchyTokenizerFactory extends TokenizerFactory {
 
+  /** SPI name */
   public static final String NAME = "pathHierarchy";
 
   private final char delimiter;

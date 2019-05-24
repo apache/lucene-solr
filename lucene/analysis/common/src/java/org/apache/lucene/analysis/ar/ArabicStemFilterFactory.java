@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class ArabicStemFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "arabicStem";
 
   /** Creates a new ArabicStemFilterFactory */

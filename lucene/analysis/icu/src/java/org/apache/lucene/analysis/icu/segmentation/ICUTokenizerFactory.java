@@ -78,6 +78,7 @@ import com.ibm.icu.text.RuleBasedBreakIterator;
  */
 public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "icu";
 
   static final String RULEFILES = "rulefiles";

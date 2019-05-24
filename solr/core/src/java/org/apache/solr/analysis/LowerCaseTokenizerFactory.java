@@ -46,6 +46,7 @@ import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LE
 @Deprecated
 public class LowerCaseTokenizerFactory extends TokenizerFactory {
 
+  /** SPI name */
   public static final String NAME = "lowercase";
 
   private final int maxTokenLen;

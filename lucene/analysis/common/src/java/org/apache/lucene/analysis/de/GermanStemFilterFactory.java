@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class GermanStemFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "germanStem";
   
   /** Creates a new GermanStemFilterFactory */

@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class SerbianNormalizationFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "serbianNormalization";
 
   final String haircut;

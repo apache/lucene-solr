@@ -41,6 +41,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class StemmerOverrideFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "stemmerOverride";
 
   private StemmerOverrideMap dictionary;

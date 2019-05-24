@@ -37,6 +37,7 @@ import org.apache.lucene.util.AttributeFactory;
  */
 public class WikipediaTokenizerFactory extends TokenizerFactory {
 
+  /** SPI name */
   public static final String NAME = "wikipedia";
 
   public static final String TOKEN_OUTPUT = "tokenOutput";

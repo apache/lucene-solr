@@ -83,6 +83,7 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
 @Deprecated
 public class SynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "synonym";
 
   private final boolean ignoreCase;

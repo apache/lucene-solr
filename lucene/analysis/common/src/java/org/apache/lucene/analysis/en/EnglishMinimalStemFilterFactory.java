@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class EnglishMinimalStemFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "englishMinimalStem";
   
   /** Creates a new EnglishMinimalStemFilterFactory */

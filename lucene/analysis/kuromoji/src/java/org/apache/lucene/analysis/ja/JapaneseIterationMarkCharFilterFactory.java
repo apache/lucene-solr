@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  */
 public class JapaneseIterationMarkCharFilterFactory extends CharFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "japaneseIterationMark";
 
   private static final String NORMALIZE_KANJI_PARAM = "normalizeKanji";

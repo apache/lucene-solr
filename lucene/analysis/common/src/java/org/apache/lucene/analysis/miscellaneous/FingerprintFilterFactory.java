@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class FingerprintFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "fingerprint";
 
   public static final String MAX_OUTPUT_TOKEN_SIZE_KEY = "maxOutputTokenSize";

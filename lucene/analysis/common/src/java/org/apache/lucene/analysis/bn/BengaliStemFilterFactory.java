@@ -36,6 +36,7 @@ import java.util.Map;
  */
 public class BengaliStemFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "bengaliStem";
 
   public BengaliStemFilterFactory(Map<String,String> args) {

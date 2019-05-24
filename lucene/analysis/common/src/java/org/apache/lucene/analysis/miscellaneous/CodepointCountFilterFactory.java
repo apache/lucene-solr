@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class CodepointCountFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "codepointCount";
 
   final int min;

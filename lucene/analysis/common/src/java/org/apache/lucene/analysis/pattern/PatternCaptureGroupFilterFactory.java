@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class PatternCaptureGroupFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "patternCaptureGroup";
 
   private Pattern pattern;

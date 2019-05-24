@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class ReverseStringFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "reverseString";
   
   /** Creates a new ReverseStringFilterFactory */

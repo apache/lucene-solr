@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class IrishLowerCaseFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "irishLowerCase";
 
   /** Creates a new IrishLowerCaseFilterFactory */

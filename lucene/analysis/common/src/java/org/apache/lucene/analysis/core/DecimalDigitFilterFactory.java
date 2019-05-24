@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class DecimalDigitFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "decimalDigit";
   
   /** Creates a new DecimalDigitFilterFactory */

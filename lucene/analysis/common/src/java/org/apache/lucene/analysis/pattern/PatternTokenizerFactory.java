@@ -61,6 +61,7 @@ import org.apache.lucene.util.AttributeFactory;
  */
 public class PatternTokenizerFactory extends TokenizerFactory {
 
+  /** SPI name */
   public static final String NAME = "pattern";
 
   public static final String PATTERN = "pattern";

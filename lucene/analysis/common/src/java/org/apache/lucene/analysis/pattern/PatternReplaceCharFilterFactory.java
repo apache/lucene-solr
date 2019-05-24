@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  */
 public class PatternReplaceCharFilterFactory extends CharFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "patternReplace";
 
   private final Pattern pattern;

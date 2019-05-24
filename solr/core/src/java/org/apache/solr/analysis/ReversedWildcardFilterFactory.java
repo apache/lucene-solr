@@ -65,6 +65,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class ReversedWildcardFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "reversedWildcard";
   
   private char markerChar = ReverseStringFilter.START_OF_HEADING_MARKER;

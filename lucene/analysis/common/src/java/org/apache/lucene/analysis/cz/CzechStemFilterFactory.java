@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class CzechStemFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "czechStem";
   
   /** Creates a new CzechStemFilterFactory */

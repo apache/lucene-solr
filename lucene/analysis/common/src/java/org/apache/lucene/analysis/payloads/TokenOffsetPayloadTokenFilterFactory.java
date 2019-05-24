@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class TokenOffsetPayloadTokenFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "tokenOffsetPayload";
   
   /** Creates a new TokenOffsetPayloadTokenFilterFactory */

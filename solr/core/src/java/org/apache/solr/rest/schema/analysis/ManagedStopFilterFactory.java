@@ -33,7 +33,8 @@ import org.apache.solr.rest.ManagedResource;
  */
 public class ManagedStopFilterFactory extends BaseManagedTokenFilterFactory {
 
-  public static final String NAME = "managedStopFilterFactory";
+  /** SPI name */
+  public static final String NAME = "managedStop";
 
   // this only gets changed once during core initialization and not every
   // time an update is made to the underlying managed word set.

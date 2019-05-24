@@ -42,6 +42,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class TypeAsSynonymFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "typeAsSynonym";
 
   private final String prefix;

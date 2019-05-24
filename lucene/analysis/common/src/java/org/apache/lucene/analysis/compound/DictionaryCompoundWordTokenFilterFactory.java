@@ -41,6 +41,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @lucene.spi {@value #NAME}
  */
 public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
   public static final String NAME = "dictionaryCompoundWord";
 
   private CharArraySet dictionary;

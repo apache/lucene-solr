@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
  */
 public class WordLengthTaggingFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "wordLengthTagging";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

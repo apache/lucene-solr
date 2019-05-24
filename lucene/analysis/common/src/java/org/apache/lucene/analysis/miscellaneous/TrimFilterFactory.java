@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class TrimFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "trim";
   
   /** Creates a new TrimFilterFactory */

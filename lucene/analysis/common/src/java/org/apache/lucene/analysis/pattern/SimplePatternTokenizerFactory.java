@@ -59,6 +59,7 @@ import org.apache.lucene.util.automaton.RegExp;
  */
 public class SimplePatternTokenizerFactory extends TokenizerFactory {
 
+  /** SPI name */
   public static final String NAME = "simplePattern";
 
   public static final String PATTERN = "pattern";

@@ -60,6 +60,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class CapitalizationFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "capitalization";
 
   public static final String KEEP = "keep";

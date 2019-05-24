@@ -45,6 +45,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
 public class MappingCharFilterFactory extends CharFilterFactory implements
     ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "mapping";
 
   protected NormalizeCharMap normMap;

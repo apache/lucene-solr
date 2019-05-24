@@ -39,6 +39,7 @@ import java.util.Map;
  */
 public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "delimitedPayload";
 
   public static final String ENCODER_ATTR = "encoder";

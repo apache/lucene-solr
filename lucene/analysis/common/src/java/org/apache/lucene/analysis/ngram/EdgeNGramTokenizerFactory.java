@@ -37,6 +37,7 @@ import java.util.Map;
  */
 public class EdgeNGramTokenizerFactory extends TokenizerFactory {
 
+  /** SPI name */
   public static final String NAME = "edgeNGram";
 
   private final int maxGramSize;

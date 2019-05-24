@@ -38,6 +38,7 @@ import java.util.Map;
  */
 public class ShingleFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "shingle";
 
   private final int minShingleSize;

@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class NGramFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "nGram";
 
   private final int maxGramSize;

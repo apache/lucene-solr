@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public final class KeywordRepeatFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "keywordRepeat";
   
   /** Creates a new KeywordRepeatFilterFactory */

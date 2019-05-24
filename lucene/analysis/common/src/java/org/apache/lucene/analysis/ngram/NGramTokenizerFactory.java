@@ -39,6 +39,7 @@ import java.util.Map;
  */
 public class NGramTokenizerFactory extends TokenizerFactory {
 
+  /** SPI name */
   public static final String NAME = "nGram";
 
   private final int maxGramSize;

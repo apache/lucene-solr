@@ -43,6 +43,7 @@ import java.util.Set;
  */
 public class TypeTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "type";
 
   private final boolean useWhitelist;

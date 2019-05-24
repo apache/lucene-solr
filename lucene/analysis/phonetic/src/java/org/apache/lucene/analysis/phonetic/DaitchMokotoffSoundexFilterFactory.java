@@ -47,6 +47,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class DaitchMokotoffSoundexFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "daitchMokotoffSoundex";
 
   /** parameter name: true if encoded tokens should be added as synonyms */

@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class ICUFoldingFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "icuFolding";
 
   private final Normalizer2 normalizer;

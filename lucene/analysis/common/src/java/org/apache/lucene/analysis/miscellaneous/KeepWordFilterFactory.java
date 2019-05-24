@@ -41,6 +41,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class KeepWordFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "keepWord";
 
   private final boolean ignoreCase;

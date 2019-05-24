@@ -53,6 +53,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class MorfologikFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
+  /** SPI name */
   public static final String NAME = "morfologik";
 
   /** Dictionary resource attribute (should have {@code ".dict"} suffix), loaded from {@link ResourceLoader}. */

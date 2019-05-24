@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class ASCIIFoldingFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "asciiFolding";
 
   private static final String PRESERVE_ORIGINAL = "preserveOriginal";

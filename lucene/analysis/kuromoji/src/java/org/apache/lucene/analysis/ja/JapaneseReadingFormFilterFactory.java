@@ -38,6 +38,7 @@ import java.util.Map;
  */
 public class JapaneseReadingFormFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "japaneseReadingForm";
 
   private static final String ROMAJI_PARAM = "useRomaji";

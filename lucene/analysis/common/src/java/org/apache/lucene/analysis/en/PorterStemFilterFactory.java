@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class PorterStemFilterFactory extends TokenFilterFactory {
 
+  /** SPI name */
   public static final String NAME = "porterStem";
   
   /** Creates a new PorterStemFilterFactory */
