@@ -781,6 +781,10 @@ def open_file(filename):
         run("open %s" % filename)
 
 
+def expand_multiline(cmd_txt, indent=0):
+    return re.sub(r'  +', " %s\n    %s" % (Commands.cmd_continuation_char, " "*indent), cmd_txt)
+
+
 def generate_asciidoc():
     base_filename = os.path.join(state.get_release_folder(),
                                  "lucene_solr_release_%s"
@@ -859,7 +863,7 @@ def generate_asciidoc():
                             fh.write("REM %s\n" % c.get_comment())
                         else:
                             fh.write("# %s\n" % c.get_comment())
-                    fh.write("%s%s%s\n" % (pre, c, post))
+                    fh.write("%s%s%s\n" % (pre, expand_multiline(c.get_cmd()), post))
                 fh.write("----\n\n")
             if todo.post_description and not todo.get_asciidoc():
                 fh.write("\n%s\n\n" % todo.get_post_description())
@@ -1297,6 +1301,7 @@ def is_windows():
 class Commands(SecretYamlObject):
     yaml_tag = u'!Commands'
     hidden_fields = ['todo_id']
+    cmd_continuation_char = "^" if is_windows() else "\\"
     def __init__(self, root_folder, commands_text, commands, logs_prefix=None, run_text=None, enable_execute=None,
                  confirm_each_command=None, env=None, vars=None, todo_id=None, remove_files=None):
         self.root_folder = root_folder
@@ -1342,7 +1347,7 @@ class Commands(SecretYamlObject):
             if cmd.cwd:
                 pre = "pushd %s && " % cmd.cwd
                 post = " && popd"
-            print("  %s%s%s" % (pre, cmd.get_cmd(), post))
+            print("  %s%s%s" % (pre, expand_multiline(cmd.get_cmd(), indent=2), post))
         print()
         if not self.enable_execute is False:
             if self.run_text:

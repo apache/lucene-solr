@@ -128,6 +128,7 @@ templates:
 #       commands:   # List of !Commands to execute
 #       - !Command  # One single command
 #         cmd: "ls {{ folder_to_ls }}"  # A single command. May reference jinja vars
+#              # Double spaces in a cmd will trigger multi-line display with continuation char \
 #         cwd: relative_path # Where to run command, relative to root_folder
 #         comment: # Will display a # or REM comment above the command in printouts
 #         vars: {} # Possible to define local vars for this command only
@@ -549,7 +550,7 @@ groups:
       logfile: '{{ [rc_folder, ''logs'', ''buildAndPushRelease.log''] | path_join }}'
       builder_path: '{{ [''dev-tools'', ''scripts'', ''buildAndPushRelease.py''] | path_join }}'      
       git_rev: '{{ current_git_rev }}' # Note, git_rev will be recorded in todo state AFTER completion of commands
-      local_keys: '{% if keys_downloaded %}--local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
+      local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     persist_vars:
     - git_rev
     commands: !Commands
@@ -579,7 +580,7 @@ groups:
         cmd: git pull
         tee: true
       - !Command
-        cmd: python3 -u {{ builder_path }} {{ local_keys }} --push-local "{{ dist_file_path }}" --rc-num {{ rc_number }} --sign {{ gpg.gpg_key | default("<gpg_key_id>", True) }}
+        cmd: python3 -u {{ builder_path }} {{ local_keys }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg.gpg_key | default("<gpg_key_id>", True) }}
         logfile: build_rc.log
         tee: true
   - !Todo
@@ -591,7 +592,7 @@ groups:
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       tmp_dir: '{{ [rc_folder, ''smoketest''] | path_join }}'
       smoker_path: '{{ [''dev-tools'', ''scripts'', ''smokeTestRelease.py''] | path_join }}'
-      local_keys: '{% if keys_downloaded %}--local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
+      local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: Here we'll smoke test the release by 'downloading' the artifacts, running the tests, validating GPG signatures etc.
@@ -599,7 +600,7 @@ groups:
       - '{{ tmp_dir }}'
       commands:
       - !Command
-        cmd: python3 -u {{ smoker_path }} {{ local_keys }} --tmp-dir "{{ tmp_dir }}" file://{{ dist_path }}
+        cmd: python3 -u {{ smoker_path }} {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  file://{{ dist_path }}
         logfile: smoketest.log
   - !Todo
     id: import_svn
@@ -614,7 +615,7 @@ groups:
       commands_text: Here we'll import the artifacts into Subversion
       commands:
       - !Command
-        cmd: svn -m "Lucene/Solr {{ release_version }} RC{{ rc_number }}" import {{ dist_path }} {{ dist_url }}
+        cmd: svn -m "Lucene/Solr {{ release_version }} RC{{ rc_number }}" import  {{ dist_path }}  {{ dist_url }}
         logfile: import_svn.log
         tee: true
   - !Todo
@@ -626,7 +627,7 @@ groups:
       dist_url: https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}
       tmp_dir: '{{ [rc_folder, ''smoketest_staged''] | path_join }}'
       smoker_path: '{{ [''dev-tools'', ''scripts'', ''smokeTestRelease.py''] | path_join }}'
-      local_keys: '{% if keys_downloaded %}--local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
+      local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: Here we'll smoke test the release again against the actually staged artifacts.
@@ -634,7 +635,7 @@ groups:
       - '{{ tmp_dir }}'
       commands:
       - !Command
-        cmd: python3 -u {{ smoker_path }} {{ local_keys }} --tmp-dir "{{ tmp_dir }}" {{ dist_url }}
+        cmd: python3 -u {{ smoker_path }} {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  {{ dist_url }}
         logfile: smoketest_staged.log
 - !TodoGroup
   id: voting
@@ -780,11 +781,11 @@ groups:
       commands_text: This will remove only maven artifacts
       commands:
       - !Command
-        cmd: svn rm -m "delete the lucene maven artifacts" {{ dist_stage_url }}/lucene/maven
+        cmd: svn rm -m "delete the lucene maven artifacts"  {{ dist_stage_url }}/lucene/maven
         logfile: svn_rm_mvn_lucene.log
         tee: true
       - !Command
-        cmd: svn rm -m "delete the solr maven artifacts" {{ dist_stage_url }}/solr/maven
+        cmd: svn rm -m "delete the solr maven artifacts"  {{ dist_stage_url }}/solr/maven
         logfile: svn_rm_mvn_solr.log
         tee: true
   - !Todo
@@ -799,11 +800,11 @@ groups:
       commands_text: This will move the new release artifacts from staging repo to the release repo
       commands:
       - !Command
-        cmd: svn move -m "Move Lucene {{ release_version }} RC{{ rc_number }} to release repo" {{ dist_stage_url }}/lucene {{ dist_release_url }}/java/{{ release_version }}
+        cmd: svn move -m "Move Lucene {{ release_version }} RC{{ rc_number }} to release repo"  {{ dist_stage_url }}/lucene  {{ dist_release_url }}/java/{{ release_version }}
         logfile: svn_mv_lucene.log
         tee: true
       - !Command
-        cmd: svn move -m "Move Solr {{ release_version }} RC{{ rc_number }} to release repo" {{ dist_stage_url }}/solr {{ dist_release_url }}/solr/{{ release_version }}
+        cmd: svn move -m "Move Solr {{ release_version }} RC{{ rc_number }} to release repo"  {{ dist_stage_url }}/solr  {{ dist_release_url }}/solr/{{ release_version }}
         logfile: svn_mv_solr.log
         tee: true
     post_description: 'Note at this point you will see the Jenkins job "Lucene-Solr-SmokeRelease-master" begin to fail, until you run the "Generate Backcompat Indexes" '
@@ -815,7 +816,7 @@ groups:
       commands_text: This will clean up the containing folder left in the staging repo
       commands:
       - !Command
-        cmd: svn rm -m "Clean up the RC folder for {{ release_version }} RC{{ rc_number }}" https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+        cmd: svn rm -m "Clean up the RC folder for {{ release_version }} RC{{ rc_number }}"  https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
         logfile: svn_rm_containing.log
         tee: true
   - !Todo
@@ -828,11 +829,11 @@ groups:
       commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
       commands:
       - !Command
-        cmd: ant clean stage-maven-artifacts -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'lucene', 'maven'] | path_join }} -Dm2.repository.id=apache.releases.https -Dm2.repository.url={{ m2_repository_url }}
+        cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'lucene', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
         logfile: publish_lucene_maven.log
         tee: true
       - !Command
-        cmd: ant clean stage-maven-artifacts -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join }} -Dm2.repository.id=apache.releases.https -Dm2.repository.url={{ m2_repository_url }}
+        cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
         logfile: publish_solr_maven.log
         tee: true
     post_description: |
