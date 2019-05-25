@@ -21,6 +21,8 @@ subprojects {
   group = 'org.apache.lucene'
 }
 
+def distDir = "dist"
+
 tasks.create("checkLicenses", LicenseCheckTask, new File(projectDir.getAbsolutePath()
     + System.properties['file.separator'] + "licenses"))
 
@@ -30,4 +32,81 @@ task jarChecksum(type: org.apache.lucene.gradle.JarChecksum) {
   description = "Generates checksums for Lucene dependency jars."
   inputDir = new File(project.rootProject.projectDir, "/lucene")
   target = new File(project.rootProject.projectDir, "/lucene/licenses")
+}
+
+task packageZip(type: Zip ) {
+  archiveName = "lucene-${project.version}.zip"
+  into ('/')
+  from (projectDir) {
+    include "LICENSE.txt"
+    include "NOTICE.txt"
+    include "README.txt"
+    include "MIGRATE.txt"
+    include "JRE_VERSION_MIGRATION.txt"
+    include "SYSTEM_REQUIREMENTS.txt"
+    include "CHANGES.txt"
+    include "licenses/**"
+    include "*/docs/"
+    include "**/README*"
+    exclude "**/site/**"
+    exclude "**/tools/**"
+    exclude "**/dist/**"
+    exclude "**/build/**"
+    into('/')
+  }
+  
+  subprojects.each {subproject ->
+    evaluationDependsOn(subproject.path)
+    if (subproject.tasks.findByName('jar')) {
+      println 'sub path:' + subproject.path
+      subproject.jar.outputs.files.each {println it.name}
+      from(subproject.jar.outputs.files) {
+        println 'path ' + project.relativePath(subproject.projectDir) 
+        into (project.relativePath(subproject.projectDir))
+      }
+    }
+  }
+  
+  includeEmptyDirs = false
+  destinationDir = new File(projectDir, distDir)
+  extension = 'zip'
+}
+
+task packageTar(type: Tar ) {
+  archiveName = "lucene-${project.version}.tgz"
+  into ('/')
+  from (projectDir) {
+    include "LICENSE.txt"
+    include "NOTICE.txt"
+    include "README.txt"
+    include "MIGRATE.txt"
+    include "JRE_VERSION_MIGRATION.txt"
+    include "SYSTEM_REQUIREMENTS.txt"
+    include "CHANGES.txt"
+    include "licenses/**"
+    include "*/docs/"
+    include "**/README*"
+    exclude "**/site/**"
+    exclude "**/tools/**"
+    exclude "**/dist/**"
+    exclude "**/build/**"
+    into('/')
+  }
+  
+  subprojects.each {subproject ->
+    evaluationDependsOn(subproject.path)
+    if (subproject.tasks.findByName('jar')) {
+      println 'sub path:' + subproject.path
+      subproject.jar.outputs.files.each {println it.name}
+      from(subproject.jar.outputs.files) {
+        println 'path ' + project.relativePath(subproject.projectDir) 
+        into (project.relativePath(subproject.projectDir))
+      }
+    }
+  }
+  
+  includeEmptyDirs = false
+  destinationDir = new File(projectDir, distDir)
+  extension = 'tar'
+  compression = Compression.GZIP
 }
