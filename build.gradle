@@ -124,7 +124,7 @@ configure(rootProject) {
 }
 
 // -> lucene-solr IDE config - setup eclipse and idea
-allprojects {
+configure(luceneSolrProjects) {
   plugins.withType(JavaPlugin) {
     project.apply from: new File(rootProjectDir, "buildSrc/ide/eclipse.gradle")
     project.apply from: new File(rootProjectDir, "buildSrc/ide/idea.gradle")
