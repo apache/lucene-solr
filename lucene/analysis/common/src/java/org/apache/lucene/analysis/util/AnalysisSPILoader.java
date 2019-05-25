@@ -92,8 +92,8 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
             Objects.equals(field.getDeclaringClass(), service)) {
           originalName = ((String)field.get(null));
           name = originalName.toLowerCase(Locale.ROOT);
-          if (!isValidName(name)) {
-            throw new ServiceConfigurationError("The name " + name + " for " + service.getName() +
+          if (!isValidName(originalName)) {
+            throw new ServiceConfigurationError("The name " + originalName + " for " + service.getName() +
                 " is invalid: Allowed characters are (English) alphabet, digits, and underscore. It should be started with an alphabet.");
           }
         }
