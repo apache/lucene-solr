@@ -57,7 +57,7 @@ templates:
 
     DISCLAIMER: This is an alpha version. The wizard may be buggy and may generate
                 faulty commands, commands that won't work on your OS or with all
-                versions of tooling etc. So pleaes keep the old ReleaseTODO handy
+                versions of tooling etc. So please keep the old ReleaseTODO handy
                 for cross-checking for now :)
   vote_logic: |
     {% set passed = plus_binding >= 3 and minus < plus_binding %}
@@ -199,6 +199,9 @@ groups:
     - !UserInput
       prompt: Please enter your gpg key ID, e.g. 0D8D0B93
       name: gpg_key
+    - !UserInput
+      prompt: Please enter your Apache-ID, e.g. johndoe
+      name: apache_id
     links:
     - http://www.apache.org/dev/release-signing.html
     - https://id.apache.org

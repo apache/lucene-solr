@@ -38,11 +38,13 @@ import platform
 import sys
 import json
 import copy
+import textwrap
 import subprocess
 import shutil
 import shlex
 import time
 import fcntl
+import urllib
 from collections import OrderedDict
 import scriptutil
 from scriptutil import BranchType, Version, check_ant, download, run
@@ -165,9 +167,7 @@ def unix_time_millis(dt):
     return int((dt - epoch).total_seconds() * 1000.0)
 
 
-def bootstrap_todos(state):
-    file = open(os.path.join(script_path, "releaseWizard.yaml"), "r")
-    todo_list = yaml.load(file, Loader=yaml.Loader).get('groups')
+def bootstrap_todos(todo_list):
     # Establish links from commands to to_do for finding todo vars
     for tg in todo_list:
         if dry_run:
@@ -232,28 +232,24 @@ def str_presenter(dumper, data):
 
 
 class ReleaseState:
-    def __init__(self, config_path, script_version):
+    def __init__(self, config_path, release_version, script_version):
         self.script_version = script_version
         self.config_path = config_path
         self.todo_groups = None
         self.todos = None
         self.previous_rcs = OrderedDict()
-        self.release_version = None
-        self.release_type = None
-        self.release_version_major = None
-        self.release_version_minor = None
-        self.release_version_bugfix = None
         self.rc_number = 1
         self.start_date = unix_time_millis(datetime.now())
         self.script_branch = run("git rev-parse --abbrev-ref HEAD").strip()
-        self.release_branch = None
         try:
-            self.branch_type = scriptutil.find_branch_type()
+            self.script_branch_type = scriptutil.find_branch_type()
         except:
             print("WARNING: This script shold (ideally) run from the release branch, not a feature branch (%s)" % self.script_branch)
-            self.branch_type = 'feature'
+            self.script_branch_type = 'feature'
+        self.set_release_version(release_version)
 
     def set_release_version(self, version):
+        self.validate_release_version(self.script_branch_type, self.script_branch, version)
         self.release_version = version
         v = Version.parse(version)
         self.release_version_major = v.major
@@ -266,6 +262,28 @@ class ReleaseState:
             self.release_type = 'minor'
         else:
             self.release_type = 'bugfix'
+
+    def validate_release_version(self, branch_type, branch, release_version):
+        ver = Version.parse(release_version)
+        # print("release_version=%s, ver=%s" % (release_version, ver))
+        if branch_type == BranchType.release:
+            if not branch.startswith('branch_'):
+                sys.exit("Incompatible branch and branch_type")
+            if not ver.is_bugfix_release():
+                sys.exit("You can only release bugfix releases from an existing release branch")
+        elif branch_type == BranchType.stable:
+            if not branch.startswith('branch_') and branch.endswith('x'):
+                sys.exit("Incompatible branch and branch_type")
+            if not ver.is_minor_release():
+                sys.exit("You can only release minor releases from an existing stable branch")
+        elif branch_type == BranchType.unstable:
+            if not branch == 'master':
+                sys.exit("Incompatible branch and branch_type")
+            if not ver.is_major_release():
+                sys.exit("You can only release a new major version from master branch")
+        if not getScriptVersion() == release_version:
+            print("WARNING: Expected release version %s when on branch %s, but got %s" % (
+                getScriptVersion(), branch, release_version))
 
     def get_base_branch_name(self):
         v = Version.parse(self.release_version)
@@ -318,7 +336,7 @@ class ReleaseState:
 
     def restore_from_dict(self, dict):
         self.script_version = dict['script_version']
-        self.set_release_version(dict['release_version'])
+        assert dict['release_version'] == self.release_version
         if 'start_date' in dict:
             self.start_date = dict['start_date']
         self.rc_number = dict['rc_number']
@@ -333,21 +351,8 @@ class ReleaseState:
                 print("Warning: Could not restore state for %s, Todo definition not found" % todo_id)
 
     def load(self):
-        latest = None
-
-        if not self.todo_groups:
-            self.todo_groups = bootstrap_todos(self)
-            self.init_todos()
-        if not os.path.exists(self.config_path):
-            print("Creating folder %s" % self.config_path)
-            os.makedirs(self.config_path)
-        if os.path.exists(os.path.join(self.config_path, 'latest.json')):
-            with open(os.path.join(self.config_path, 'latest.json'), 'r') as fp:
-                latest = json.load(fp)['version']
-                print("Continuing an in-progress release version %s in %s" % (latest, os.path.join(self.config_path, 'latest.json')))
-
-        if latest and os.path.exists(os.path.join(self.config_path, latest, 'state.json')):
-            state_file = os.path.join(self.config_path, latest, 'state.json')
+        if os.path.exists(os.path.join(self.config_path, self.release_version, 'state.json')):
+            state_file = os.path.join(self.config_path, self.release_version, 'state.json')
             with open(state_file, 'r') as fp:
                 try:
                     dict = json.load(fp)
@@ -358,10 +363,6 @@ class ReleaseState:
 
     def save(self):
         print("Saving")
-        # Storing working version in latest.json
-        with open(os.path.join(self.config_path, 'latest.json'), 'w') as fp:
-            json.dump({'version': self.release_version}, fp)
-
         if not os.path.exists(os.path.join(self.config_path, self.release_version)):
             print("Creating folder %s" % os.path.join(self.config_path, self.release_version))
             os.makedirs(os.path.join(self.config_path, self.release_version))
@@ -469,7 +470,8 @@ class ReleaseState:
     def get_release_type(self):
         return self.release_type.value
 
-    def init_todos(self):
+    def init_todos(self, groups):
+        self.todo_groups = groups
         self.todos = {}
         for g in self.todo_groups:
             for t in g.get_todos():
@@ -654,6 +656,14 @@ class Todo(SecretYamlObject):
                 print()
             if self.post_description:
                 print("%s" % self.get_post_description())
+            todostate = self.get_state()
+            if self.is_done() and len(todostate) > 2:
+                print("Variables registered\n")
+                for k in todostate:
+                    if k == 'done' or k == 'done_date':
+                        continue
+                    print("* %s = %s" % (k, todostate[k]))
+                print()
             completed = ask_yes_no("Mark task '%s' as completed?" % self.title)
             self.set_done(completed)
             state.save()
@@ -702,6 +712,7 @@ class Todo(SecretYamlObject):
         d.update(self.get_state())
         return d
 
+
 def get_release_version():
     v = str(input("Which version are you releasing? (x.y.z) "))
     try:
@@ -717,29 +728,6 @@ def get_subtitle():
     applying_groups = list(filter(lambda x: x.num_applies() > 0, state.todo_groups))
     done_groups = sum(1 for x in applying_groups if x.is_done())
     return "Please complete the below checklist (Complete: %s/%s)" % (done_groups, len(applying_groups))
-
-
-def validate_release_version(branch_type, branch, release_version):
-    ver = Version.parse(release_version)
-    # print("release_version=%s, ver=%s" % (release_version, ver))
-    if branch_type == BranchType.release:
-        if not branch.startswith('branch_'):
-            sys.exit("Incompatible branch and branch_type")
-        if not ver.is_bugfix_release():
-            sys.exit("You can only release bugfix releases from an existing release branch")
-    elif branch_type == BranchType.stable:
-        if not branch.startswith('branch_') and branch.endswith('x'):
-            sys.exit("Incompatible branch and branch_type")
-        if not ver.is_minor_release():
-            sys.exit("You can only release minor releases from an existing stable branch")
-    elif branch_type == BranchType.unstable:
-        if not branch == 'master':
-            sys.exit("Incompatible branch and branch_type")
-        if not ver.is_major_release():
-            sys.exit("You can only release a new major version from master branch")
-    if not getScriptVersion() == release_version:
-        print("WARNING: Expected release version %s when on branch %s, but got %s" % (
-        getScriptVersion(), branch, release_version))
 
 
 def get_todo_menuitem_title():
@@ -773,6 +761,7 @@ def template(name, vars=None):
 
 def help():
     print(template('help'))
+    pause()
 
 
 def ensure_list(o):
@@ -805,6 +794,7 @@ def generate_asciidoc():
     fh.write("(_Generated by releaseWizard.py v%s ALPHA at %s_)\n\n"
              % (getScriptVersion(), datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")))
     fh.write(":numbered:\n\n")
+    fh.write("%s\n\n" % template('help'))
     for group in state.todo_groups:
         if group.num_applies() == 0:
             continue
@@ -882,18 +872,40 @@ def generate_asciidoc():
         open_file(filename_html)
     else:
         print("Failed generating HTML version, please install asciidoctor")
+    pause()
+
+
+def load_rc():
+    lucenerc = os.path.expanduser("~/.lucenerc")
+    try:
+        with open(lucenerc, 'r') as fp:
+            return json.load(fp)
+    except:
+        return None
+
+
+def store_rc(release_root, release_version=None):
+    lucenerc = os.path.expanduser("~/.lucenerc")
+    dict = {}
+    dict['root'] = release_root
+    if release_version:
+        dict['release_version'] = release_version
+    with open(lucenerc, "w") as fp:
+        json.dump(dict, fp, indent=2)
 
 
 def release_other_version():
     maybe_remove_rc_from_svn()
-    os.remove(os.path.join(state.config_path, 'latest.json'))
+    store_rc(state.config_path, None)
     print("Please restart the wizard")
     sys.exit(0)
 
+def file_to_string(filename):
+    with open(filename, encoding='utf8') as f:
+        return f.read().strip()
 
 def download_keys():
     download('KEYS', "https://archive.apache.org/dist/lucene/KEYS", state.config_path)
-
 
 def keys_downloaded():
     return os.path.exists(os.path.join(state.config_path, "KEYS"))
@@ -908,22 +920,154 @@ def dump_yaml():
     yaml.dump(dump_obj, width=180, stream=file, sort_keys=False, default_flow_style=False)
 
 
-def load_templates():
-    global templates
-    templates = yaml.load(open(os.path.join(script_path, "releaseWizard.yaml"), "r"), Loader=yaml.Loader).get('templates')
-
-
 def parse_config():
     description = 'Script to guide a RM through the whole release process'
     parser = argparse.ArgumentParser(description=description, epilog="Go push that release!",
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--dry-run', dest='dry', action='store_true', default=False,
                         help='Do not execute any commands, but echo them instead. Display extra debug info')
-    parser.add_argument('--root', metavar='PATH',
-                        help='Specify different root folder than ~/.lucene-releases')
+    parser.add_argument('--init', action='store_true', default=False,
+                        help='Re-initialize root and version')
     config = parser.parse_args()
 
     return config
+
+
+def load(urlString, encoding="utf-8"):
+    try:
+        content = urllib.request.urlopen(urlString).read().decode(encoding)
+    except Exception as e:
+        print('Retrying download of url %s after exception: %s' % (urlString, e))
+        content = urllib.request.urlopen(urlString).read().decode(encoding)
+    return content
+
+
+def configure_pgp():
+    print("Based on your Apache ID we'll lookup your key online\n"
+          "and through this complete the 'gpg' prerequisite task.")
+    gpg_todo = state.get_todo_by_id('gpg')
+    gpg_state = state.get_todo_state_by_id('gpg')
+    id = str(input("Please enter your Apache id : "))
+    all_keys = load('https://home.apache.org/keys/group/lucene.asc')
+    lines = all_keys.splitlines()
+    keyid_linenum = None
+    for idx, line in enumerate(lines):
+        if line == 'ASF ID: %s' % id:
+            keyid_linenum = idx+1
+            break
+    if keyid_linenum:
+        keyid_line = lines[keyid_linenum]
+        assert keyid_line.startswith('LDAP PGP key: ')
+        gpg_id = keyid_line[14:].replace(" ", "")[-8:]
+        print("Found gpg key id %s on file at Apache (https://home.apache.org/keys/group/lucene.asc)" % gpg_id)
+    else:
+        print(textwrap.dedent("""\
+            Could not find your GPG key from Apache servers.
+            Please make sure you have entered your key ID in
+            id.apache.org, see Prerequisites for more info."""))
+        gpg_id = str(input("Enter your key ID manually, 8 last characters (ENTER=skip): "))
+        if gpg_id.strip() == '':
+            pause()
+            return
+        elif len(gpg_id) != 8:
+            print("gpg id must be the last 8 characters of your key id")
+        gpg_id = gpg_id.upper()
+    try:
+        res = run("gpg --list-secret-keys %s" % gpg_id)
+        print("Found key on your private gpg keychain")
+        # Check rsa and key length >= 4096
+        match = re.search(r"^sec +((rsa|dsa)(\d{4})) ", res)
+        type = "(unknown)"
+        length = -1
+        if match:
+            type = match.group(2)
+            length = int(match.group(3))
+        else:
+            match = re.search(r"^sec +((\d{4})(D|R)/.*?) ", res)
+            if match:
+                type = 'rsa' if match.group(3) == 'R' else 'dsa'
+                length = int(match.group(2))
+            else:
+                print("Could not determine type and key size for your key")
+                print("%s" % res)
+                if not ask_yes_no("Is your key of type RSA and size >= 2048 (ideally 4096)? "):
+                    print("Sorry, please generate a new key, add to KEYS and register with id.apache.org")
+                    pause()
+                    return
+        if not type == 'rsa':
+            print("We strongly recommend RSA type key, your is '%s'. Consider generating a new key." % type.upper())
+        if length < 2048:
+            print("Your key has key length of %s. Cannot use < 2048, please generate a new key before doing the release" % length)
+            pause()
+            return
+        if length < 4096:
+            print("Your key length is < 4096, Please generate a stronger key.")
+            print("Alternatively, follow instructions in http://www.apache.org/dev/release-signing.html#note")
+            if not ask_yes_no("Have you configured your gpg to avoid SHA-1?"):
+                print("Please either generate a strong key or reconfigure your client")
+                pause()
+                return
+        print("Validated that your key is of type RSA and has a length >= 2048 (%s)" % length)
+    except:
+        print(textwrap.dedent("""\
+            Key not found on your private gpg keychain. In order to sign the release you'll
+            need to fix this, then try again"""))
+        pause()
+        return
+    try:
+        lines = run("gpg --check-signatures %s" % gpg_id).splitlines()
+        sigs = 0
+        apache_sigs = 0
+        for line in lines:
+            if line.startswith("sig") and not gpg_id in line:
+                sigs += 1
+                if '@apache.org' in line:
+                    apache_sigs += 1
+        print("Your key has %s signatures, of which %s are by committers (@apache.org address)" % (sigs, apache_sigs))
+        if apache_sigs < 1:
+            print(textwrap.dedent("""\
+                Your key is not signed by any other committer. 
+                Please review http://www.apache.org/dev/openpgp.html#apache-wot
+                and make sure to get your key signed until next time.
+                You may want to run 'gpg --refresh-keys' to refresh your keychain."""))
+        uses_apacheid = is_code_signing_key = False
+        for line in lines:
+            if line.startswith("uid") and "%s@apache" % id in line:
+                uses_apacheid = True
+                if 'CODE SIGNING KEY' in line.upper():
+                    is_code_signing_key = True
+        if not uses_apacheid:
+            print("WARNING: Your key should use your apache-id email address, see http://www.apache.org/dev/release-signing.html#user-id")
+        if not is_code_signing_key:
+            print("WARNING: You code signing key should be labeled 'CODE SIGNING KEY', see http://www.apache.org/dev/release-signing.html#key-comment")
+    except Exception as e:
+        print("Could not check signatures of your key: %s" % e)
+
+    download_keys()
+    keys_text = file_to_string(os.path.join(state.config_path, "KEYS"))
+    if gpg_id in keys_text or "%s %s" % (gpg_id[:4], gpg_id[-4:]) in keys_text:
+        print("Found your key ID in official KEYS file")
+    else:
+        print(textwrap.dedent("""\
+            Could not find your key ID in official KEYS file.
+            Please make sure it is added to https://dist.apache.org/repos/dist/release/lucene/KEYS
+            and committed to svn. Then re-try this initialization"""))
+        if not ask_yes_no("Do you want to continue without fixing KEYS file? (not recommended) "):
+            pause()
+            return
+
+    gpg_state['apache_id'] = id
+    gpg_state['gpg_key'] = gpg_id
+    gpg_todo.set_done(True)
+    print("Configuring GPG is done. Key ID and apache ID stored in state file. KEYS file cached locally.")
+    state.save()
+    pause()
+
+
+def pause(fun=None):
+    if fun:
+        fun()
+    input("\nPress ENTER to continue...")
 
 
 def main():
@@ -933,31 +1077,53 @@ def main():
 
     print("Lucene/Solr releaseWizard v%s" % getScriptVersion())
     c = parse_config()
+
     if c.dry:
         print("Entering dry-run mode where all commands will be echoed instead of executed")
         dry_run = True
 
     release_root = os.path.expanduser("~/.lucene-releases")
-    if c.root:
-        release_root = c.root
+    if not load_rc() or c.init:
+        print("Initializing")
+        dir_ok = False
+        root = str(input("Choose root folder: [~/.lucene-releases] "))
+        if os.path.exists(root) and (not os.path.isdir(root) or not os.access(root, os.W_OK)):
+            sys.exit("Root %s exists but is not a directory or is not writable" % root)
+        if not root == '':
+            if root.startswith("~/"):
+                release_root = os.path.expanduser(root)
+            else:
+                release_root = os.path.abspath(root)
         if not os.path.exists(release_root):
-            sys.exit("Custom release root %s does not exist, please create" % release_root)
-        print("Using %s as release root instead of ~/.lucene-releases" % release_root)
+            try:
+                print("Creating release root %s" % release_root)
+                os.makedirs(release_root)
+            except Exception as e:
+                sys.exit("Error while creating %s: %s" % (release_root, e))
+        release_version = get_release_version()
+    else:
+        conf = load_rc()
+        release_root = conf['root']
+        if 'release_version' in conf:
+            release_version = conf['release_version']
+        else:
+            release_version = get_release_version()
+    store_rc(release_root, release_version)
 
-    try:
-        load_templates()
-    except Exception as e:
-        sys.exit("Failed loading templates. %s" % e)
 
     check_prerequisites()
-    state = ReleaseState(release_root, getScriptVersion())
-    state.load()
 
-    if not state.release_version:
-        input_version = get_release_version()
-        validate_release_version(state.branch_type, state.script_branch, input_version)
-        state.set_release_version(input_version)
-        state.save()
+    try:
+        y = yaml.load(open(os.path.join(script_path, "releaseWizard.yaml"), "r"), Loader=yaml.Loader)
+        templates = y.get('templates')
+        todo_list = y.get('groups')
+        state = ReleaseState(release_root, release_version, getScriptVersion())
+        state.init_todos(bootstrap_todos(todo_list))
+        state.load()
+    except Exception as e:
+        sys.exit("Failed initializing. %s" % e)
+
+    state.save()
 
     # Smoketester requires JAVA_HOME to point to JAVA8 and JAVA11_HOME to point ot Java11
     os.environ['JAVA_HOME'] = state.get_java_home()
@@ -987,7 +1153,8 @@ def main():
     main_menu.append_item(FunctionItem("Clear all state, restart the %s release" % state.release_version, reset_state))
     main_menu.append_item(FunctionItem('Start release for a different version', release_other_version))
     main_menu.append_item(FunctionItem('Generate Asciidoc guide for this release', generate_asciidoc))
-    main_menu.append_item(FunctionItem('Download gpg KEYS file for offline use', download_keys))
+    # main_menu.append_item(FunctionItem('Download gpg KEYS file for offline use', download_keys))
+    main_menu.append_item(FunctionItem('Configure PGP (gpg)', configure_pgp))
     # main_menu.append_item(FunctionItem('Dump YAML', dump_yaml))
     main_menu.append_item(FunctionItem('Help', help))
 
