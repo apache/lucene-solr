@@ -21,12 +21,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.ServiceConfigurationError;
-import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.util.SPIClassIterator;
 
@@ -37,7 +39,10 @@ import org.apache.lucene.util.SPIClassIterator;
 public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
 
   private volatile Map<String,Class<? extends S>> services = Collections.emptyMap();
+  private volatile Set<String> originalNames = Collections.emptySet();
   private final Class<S> clazz;
+
+  private static final Pattern SERVICE_NAME_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_]+$");
 
   public AnalysisSPILoader(Class<S> clazz) {
     this(clazz, null);
@@ -69,12 +74,13 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
    */
   public synchronized void reload(ClassLoader classloader) {
     Objects.requireNonNull(classloader, "classloader");
-    final LinkedHashMap<String,Class<? extends S>> services =
-      new LinkedHashMap<>(this.services);
+    final LinkedHashMap<String,Class<? extends S>> services = new LinkedHashMap<>(this.services);
+    final LinkedHashSet<String> originalNames = new LinkedHashSet<>(this.originalNames);
     final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
     while (loader.hasNext()) {
       final Class<? extends S> service = loader.next();
       String name = null;
+      String originalName = null;
       Throwable cause = null;
       try {
         // Lookup "NAME" field with appropriate modifiers.
@@ -84,7 +90,12 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
         if (Modifier.isStatic(modifier) && Modifier.isFinal(modifier) &&
             field.getType().equals(String.class) &&
             Objects.equals(field.getDeclaringClass(), service)) {
-          name = (String)field.get(null);
+          originalName = ((String)field.get(null));
+          name = originalName.toLowerCase(Locale.ROOT);
+          if (!isValidName(name)) {
+            throw new ServiceConfigurationError("The name " + name + " for " + service.getName() +
+                " is invalid: Allowed characters are (English) alphabet, digits, and underscore. It should be started with an alphabet.");
+          }
         }
       } catch (NoSuchFieldException | IllegalAccessException e) {
         cause = e;
@@ -103,20 +114,25 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       // When changing this be careful to allow reload()!
       if (!services.containsKey(name)) {
         services.put(name, service);
+        // preserve (case-sensitive) original name for reference
+        originalNames.add(originalName);
       }
     }
-    this.services = Collections.unmodifiableMap(services);
+    this.services = Map.copyOf(services);
+    this.originalNames = Set.copyOf(originalNames);
   }
-  
+
+  private boolean isValidName(String name) {
+    return SERVICE_NAME_PATTERN.matcher(name).matches();
+  }
+
   public S newInstance(String name, Map<String,String> args) {
     final Class<? extends S> service = lookupClass(name);
     return newFactoryClassInstance(service, args);
   }
   
   public Class<? extends S> lookupClass(String name) {
-    final Map<String,Class<? extends S>> services = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    services.putAll(this.services);
-    final Class<? extends S> service = services.get(name);
+    final Class<? extends S> service = services.get(name.toLowerCase(Locale.ROOT));
     if (service != null) {
       return service;
     } else {
@@ -127,7 +143,7 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   }
 
   public Set<String> availableServices() {
-    return services.keySet();
+    return originalNames;
   }  
   
   /** Creates a new instance of the given {@link AbstractAnalysisFactory} by invoking the constructor, passing the given argument map. */
