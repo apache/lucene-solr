@@ -35,12 +35,11 @@ def rootProjectDir = project.rootProject.projectDir;
 // -> lucene-solr root project config
 // -> lucene-solr IDE config
 
-
 // -> lucene-solr all module config - configure all lucene-solr projects, including root project
 configure(luceneSolrProjects) {
 
   // setup repositories
-  project.apply from: new File(rootProjectDir, "buildSrc/common/configure-repositories.gradle")
+  apply from: new File(rootProjectDir, "buildSrc/common/configure-repositories.gradle")
   
   buildDir = new File("build")
   
@@ -124,10 +123,18 @@ configure(rootProject) {
 }
 
 // -> lucene-solr IDE config - setup eclipse and idea
-configure(luceneSolrProjects) {
+
+configure(allprojects) {
+  apply plugin: 'eclipse'
+  apply plugin: 'idea'
+}
+
+configure(allprojects) {
   plugins.withType(JavaPlugin) {
+
     project.apply from: new File(rootProjectDir, "buildSrc/ide/eclipse.gradle")
     project.apply from: new File(rootProjectDir, "buildSrc/ide/idea.gradle")
+
   }
 }
 
