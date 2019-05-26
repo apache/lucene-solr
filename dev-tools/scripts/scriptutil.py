@@ -103,6 +103,7 @@ def update_file(filename, line_re, edit):
     f.write(''.join(buffer))
   return True
 
+
 def check_ant():
   antVersion = os.popen('ant -version').read().strip()
   if (antVersion.startswith('Apache Ant(TM) version 1.8')):
@@ -112,6 +113,7 @@ def check_ant():
   if (antVersion.startswith('Apache Ant(TM) version 1.10')):
     return antVersion.split(" ")[3]
   raise RuntimeError('Unsupported ant version (must be 1.8 - 1.10): "%s"' % antVersion)
+
 
 def getGitRev():
   status = os.popen('git status').read().strip()
@@ -153,6 +155,7 @@ def find_branch_type():
     return BranchType.release
   raise Exception('Cannot run %s on feature branch' % sys.argv[0].rsplit('/', 1)[-1])
 
+
 def download(name, urlString, tmpDir, quiet=False, force_clean=True):
   if not quiet:
       print("Downloading %s" % urlString)
@@ -174,6 +177,7 @@ def download(name, urlString, tmpDir, quiet=False, force_clean=True):
     t = time.time()-startTime
     sizeMB = os.path.getsize(fileName)/1024./1024.
     print('    %.1f MB in %.2f sec (%.1f MB/sec)' % (sizeMB, t, sizeMB/t))
+
 
 def attemptDownload(urlString, fileName):
   fIn = urllib.request.urlopen(urlString)

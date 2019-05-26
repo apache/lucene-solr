@@ -118,6 +118,7 @@ templates:
 #     asciidoc: |
 #         Some `asciidoc` text to be included in asciidoc guide 
 #         *instead of* description/post_description
+#     function: my_python_function  # Will call the named function for complex tasks
 #     commands: !Commands   # A !Commands object holding commands to execute for this todo
 #       root_folder: '{{ git_checkout_folder }}' # path to where commands will run
 #       commands_text: Introduction text to be displayed just before the commands 
@@ -177,6 +178,7 @@ groups:
       * gpg
       * git
       * asciidoctor (to generate HTML version)
+    function: check_prerequisites
     links:
     - https://gnupg.org/download/index.html
     - https://asciidoctor.org
@@ -186,26 +188,22 @@ groups:
     description: |-
       To sign the release you need to provide your GPG key ID. This must be
       the same key ID that you have registered in your Apache account.
-      The ID is the key fingerprint, either full 40 bytes or last 8 bytes, e.g. 0D8D0B93.
+      The ID is the last 8 bytes of your key fingerprint, e.g. 0D8D0B93.
 
-      * Make sure it is your 4096 bits key or larger
+      * Make sure your gpg key is 4096 bits key or larger
       * Upload your key to the MIT key server, pgp.mit.edu
-      * Put you GPG key's fingerprint in the OpenPGP Public Key Primary Fingerprint
-        field in your profile
+      * Put you GPG key's fingerprint in the 'OpenPGP Public Key Primary Fingerprint'
+        field in your id.apache.org profile
       * The tests will complain if your GPG key has not been signed by another Lucene
         committer. This makes you a part of the GPG "web of trust" (WoT). Ask a committer
         that you know personally to sign your key for you, providing them with the
         fingerprint for the key.
-    user_input:
-    - !UserInput
-      prompt: Please enter your gpg key ID, e.g. 0D8D0B93
-      name: gpg_key
-    - !UserInput
-      prompt: Please enter your Apache-ID, e.g. johndoe
-      name: apache_id
+    function: configure_pgp
     links:
     - http://www.apache.org/dev/release-signing.html
+    - http://www.apache.org/dev/openpgp.html#apache-wot
     - https://id.apache.org
+    - https://dist.apache.org/repos/dist/release/lucene/KEYS
 - !TodoGroup
   id: preparation
   title: Prepare for the release

@@ -139,11 +139,11 @@ def getScriptVersion():
     return reBaseVersion.search(open('%s/lucene/version.properties' % topLevelDir).read()).group(1)
 
 
-def check_prerequisites():
+def check_prerequisites(todo=None):
     if sys.version_info < (3, 4):
         sys.exit("Script requires Python v3.4 or later")
     try:
-        run("gpg --version")
+        gpg_ver = run("gpg --version").splitlines()[0]
     except:
         sys.exit("You will need gpg installed")
     if not check_ant().startswith('1.8'):
@@ -151,13 +151,17 @@ def check_prerequisites():
     if not 'JAVA8_HOME' in os.environ or not 'JAVA11_HOME' in os.environ:
         sys.exit("Please set environment variables JAVA8_HOME and JAVA11_HOME")
     try:
-        run("asciidoctor -V")
+        asciidoc_ver = run("asciidoctor -V").splitlines()[0]
     except:
         print("WARNING: In order to export asciidoc version to HTML, you will need asciidoctor installed")
     try:
-        run("git --version")
+        git_ver = run("git --version").splitlines()[0]
     except:
         sys.exit("You will need git installed")
+
+    if todo:
+        print("%s\n%s\n%s\n" % (gpg_ver, asciidoc_ver, git_ver))
+    return True
 
 
 epoch = datetime.utcfromtimestamp(0)
@@ -555,7 +559,8 @@ class Todo(SecretYamlObject):
     yaml_tag = u'!Todo'
     hidden_fields = ['state']
     def __init__(self, id, title, description=None, post_description=None, done=None, types=None, links=None,
-                 commands=None, user_input=None, depends=None, vars=None, asciidoc=None, persist_vars=None):
+                 commands=None, user_input=None, depends=None, vars=None, asciidoc=None, persist_vars=None,
+                 function=None):
         self.id = id
         self.title = title
         self.description = description
@@ -564,6 +569,7 @@ class Todo(SecretYamlObject):
         self.depends = depends
         self.vars = vars
         self.persist_vars = persist_vars
+        self.function = function
         self.user_input = user_input
         self.commands = commands
         self.post_description = post_description
@@ -640,6 +646,13 @@ class Todo(SecretYamlObject):
                 for link in self.links:
                     print("- %s" % link)
                 print()
+            try:
+                if self.function and not self.is_done():
+                    if not eval(self.function)(self):
+                        return
+            except Exception as e:
+                print("Function call to %s for todo %s failed: %s" % (self.function, self.id, e))
+                raise e
             if self.user_input and not self.is_done():
                 ui_list = ensure_list(self.user_input)
                 for ui in ui_list:
@@ -946,12 +959,13 @@ def load(urlString, encoding="utf-8"):
     return content
 
 
-def configure_pgp():
+def configure_pgp(gpg_todo):
     print("Based on your Apache ID we'll lookup your key online\n"
-          "and through this complete the 'gpg' prerequisite task.")
-    gpg_todo = state.get_todo_by_id('gpg')
-    gpg_state = state.get_todo_state_by_id('gpg')
-    id = str(input("Please enter your Apache id : "))
+          "and through this complete the 'gpg' prerequisite task.\n")
+    gpg_state = gpg_todo.get_state()
+    id = str(input("Please enter your Apache id: (ENTER=skip) "))
+    if id.strip() == '':
+        return False
     all_keys = load('https://home.apache.org/keys/group/lucene.asc')
     lines = all_keys.splitlines()
     keyid_linenum = None
@@ -967,18 +981,17 @@ def configure_pgp():
     else:
         print(textwrap.dedent("""\
             Could not find your GPG key from Apache servers.
-            Please make sure you have entered your key ID in
-            id.apache.org, see Prerequisites for more info."""))
+            Please make sure you have registered your key ID in
+            id.apache.org, see links for more info."""))
         gpg_id = str(input("Enter your key ID manually, 8 last characters (ENTER=skip): "))
         if gpg_id.strip() == '':
-            pause()
-            return
+            return False
         elif len(gpg_id) != 8:
             print("gpg id must be the last 8 characters of your key id")
         gpg_id = gpg_id.upper()
     try:
         res = run("gpg --list-secret-keys %s" % gpg_id)
-        print("Found key on your private gpg keychain")
+        print("Found key %s on your private gpg keychain" % gpg_id)
         # Check rsa and key length >= 4096
         match = re.search(r"^sec +((rsa|dsa)(\d{4})) ", res)
         type = "(unknown)"
@@ -996,28 +1009,24 @@ def configure_pgp():
                 print("%s" % res)
                 if not ask_yes_no("Is your key of type RSA and size >= 2048 (ideally 4096)? "):
                     print("Sorry, please generate a new key, add to KEYS and register with id.apache.org")
-                    pause()
-                    return
+                    return False
         if not type == 'rsa':
             print("We strongly recommend RSA type key, your is '%s'. Consider generating a new key." % type.upper())
         if length < 2048:
             print("Your key has key length of %s. Cannot use < 2048, please generate a new key before doing the release" % length)
-            pause()
-            return
+            return False
         if length < 4096:
             print("Your key length is < 4096, Please generate a stronger key.")
             print("Alternatively, follow instructions in http://www.apache.org/dev/release-signing.html#note")
             if not ask_yes_no("Have you configured your gpg to avoid SHA-1?"):
                 print("Please either generate a strong key or reconfigure your client")
-                pause()
-                return
+                return False
         print("Validated that your key is of type RSA and has a length >= 2048 (%s)" % length)
     except:
         print(textwrap.dedent("""\
             Key not found on your private gpg keychain. In order to sign the release you'll
             need to fix this, then try again"""))
-        pause()
-        return
+        return False
     try:
         lines = run("gpg --check-signatures %s" % gpg_id).splitlines()
         sigs = 0
@@ -1050,22 +1059,18 @@ def configure_pgp():
     download_keys()
     keys_text = file_to_string(os.path.join(state.config_path, "KEYS"))
     if gpg_id in keys_text or "%s %s" % (gpg_id[:4], gpg_id[-4:]) in keys_text:
-        print("Found your key ID in official KEYS file")
+        print("Found your key ID in official KEYS file. KEYS file is not cached locally.")
     else:
         print(textwrap.dedent("""\
             Could not find your key ID in official KEYS file.
             Please make sure it is added to https://dist.apache.org/repos/dist/release/lucene/KEYS
             and committed to svn. Then re-try this initialization"""))
         if not ask_yes_no("Do you want to continue without fixing KEYS file? (not recommended) "):
-            pause()
-            return
+            return False
 
     gpg_state['apache_id'] = id
     gpg_state['gpg_key'] = gpg_id
-    gpg_todo.set_done(True)
-    print("Configuring GPG is done. Key ID and apache ID stored in state file. KEYS file cached locally.")
-    state.save()
-    pause()
+    return True
 
 
 def pause(fun=None):
@@ -1157,8 +1162,6 @@ def main():
     main_menu.append_item(FunctionItem("Clear all state, restart the %s release" % state.release_version, reset_state))
     main_menu.append_item(FunctionItem('Start release for a different version', release_other_version))
     main_menu.append_item(FunctionItem('Generate Asciidoc guide for this release', generate_asciidoc))
-    # main_menu.append_item(FunctionItem('Download gpg KEYS file for offline use', download_keys))
-    main_menu.append_item(FunctionItem('Configure PGP (gpg)', configure_pgp))
     # main_menu.append_item(FunctionItem('Dump YAML', dump_yaml))
     main_menu.append_item(FunctionItem('Help', help))
 
