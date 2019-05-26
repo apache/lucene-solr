@@ -117,12 +117,15 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
         // preserve (case-sensitive) original name for reference
         originalNames.add(originalName);
       }
-      // make sure that the number of lookup keys is same to the number of original names.
-      // in fact this constraint should be met in previous check, so this is more like an assertion rather than a status check.
-      if (services.keySet().size() != originalNames.size()) {
-        throw new ServiceConfigurationError("Service lookup key set is inconsistent with original name set!");
-      }
     }
+
+    // make sure that the number of lookup keys is same to the number of original names.
+    // in fact this constraint should be met in existence checks of the lookup map key,
+    // so this is more like an assertion rather than a status check.
+    if (services.keySet().size() != originalNames.size()) {
+      throw new ServiceConfigurationError("Service lookup key set is inconsistent with original name set!");
+    }
+
     this.services = Map.copyOf(services);
     this.originalNames = Set.copyOf(originalNames);
   }
