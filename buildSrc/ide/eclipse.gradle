@@ -36,13 +36,6 @@ eclipse {
     downloadSources = true
     downloadJavadoc = true
 
-    if (configurations.hasProperty('implementationTran')) {
-      plusConfigurations += [
-        configurations.implementationTran,
-        configurations.testImplementationTran
-      ]
-    }
-    
     file.whenMerged { classpath ->
       
       classpath.entries.each { entry ->
@@ -56,7 +49,7 @@ eclipse {
       // add JRE_CONTAINER
       classpath.entries.removeAll { entry -> entry.kind == 'con' && entry.path.startsWith('org.eclipse.jdt.launching.JRE_CONTAINER') }
       def jreContainer = new org.gradle.plugins.ide.eclipse.model.Container('org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11')
-      jreContainer.getEntryAttributes().put("module", "false")
+      jreContainer.getEntryAttributes().put("module", "true")
       
       classpath.entries.add(jreContainer)
       
@@ -65,7 +58,7 @@ eclipse {
           entry.exported = true
         }
         if ( entry.kind == 'con') {
-          entry.exported = true
+          entry.exported = false
         }
       }
       
