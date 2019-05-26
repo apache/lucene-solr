@@ -33,7 +33,7 @@ import org.gradle.api.tasks.TaskAction
 
 import javax.inject.Inject
 
-class Get extends DefaultTask {
+class Download extends DefaultTask {
   
   @Input
   String sourceUrl
