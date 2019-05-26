@@ -115,7 +115,7 @@ task installMoman(){
   }
 }
 
-task downloadMoman(type: org.apache.lucene.gradle.Get) {
+task downloadMoman(type: org.apache.lucene.gradle.Download) {
   sourceUrl = "${momanUrl}"
   target = new File("${buildDir}", 'moman.zip')
 }
