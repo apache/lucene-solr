@@ -46,7 +46,7 @@ class CheckSourcePatterns extends DefaultTask {
   @TaskAction
   void check() {
     ant.fileScanner{
-      fileset(dir: baseDir){
+      fileset(dir: baseDir) {
         exts.each{
           include(name: 'lucene/**/*.' + it)
           include(name: 'solr/**/*.' + it)
@@ -162,36 +162,36 @@ class CheckSourcePatterns extends DefaultTask {
     (~$/import java\.lang\.\w+;/$) : 'java.lang import is unnecessary'
   ]
   
-  def static found = 0
-  def static violations = new TreeSet()
-  def static reportViolation = { f, name ->
+   def found = 0
+   def violations = new TreeSet()
+   def reportViolation = { f, name ->
     log.error(name + ': ' + f.toString().substring(baseDir.length() + 1).replace(File.separatorChar, (char)'/'))
     violations.add(name)
     found++
   }
+
+  def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$
+  def javaCommentPattern = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$
+  def xmlCommentPattern = ~$/(?sm)\Q<!--\E(.*?)\Q-->\E/$
+  def lineSplitter = ~$/[\r\n]+/$
+  def singleLineSplitter = ~$/\n\r?/$
+  def licenseMatcher = Defaults.createDefaultMatcher()
+  def validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$
+  def validLoggerNamePattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+log+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$
+  def packagePattern = ~$/(?m)^\s*package\s+org\.apache.*;/$
+  def xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$
+  def sourceHeaderPattern = ~$/\[source\b.*/$
+  def blockBoundaryPattern = ~$/----\s*/$
+  def blockTitlePattern = ~$/\..*/$
+  def unescapedSymbolPattern = ~$/(?<=[^\\]|^)([-=]>|<[-=])/$ // SOLR-10883
+  def extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$
   
-  def static javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$
-  def static javaCommentPattern = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$
-  def static xmlCommentPattern = ~$/(?sm)\Q<!--\E(.*?)\Q-->\E/$
-  def static lineSplitter = ~$/[\r\n]+/$
-  def static singleLineSplitter = ~$/\n\r?/$
-  def static licenseMatcher = Defaults.createDefaultMatcher()
-  def static validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$
-  def static validLoggerNamePattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+log+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$
-  def static packagePattern = ~$/(?m)^\s*package\s+org\.apache.*;/$
-  def static xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$
-  def static sourceHeaderPattern = ~$/\[source\b.*/$
-  def static blockBoundaryPattern = ~$/----\s*/$
-  def static blockTitlePattern = ~$/\..*/$
-  def static unescapedSymbolPattern = ~$/(?<=[^\\]|^)([-=]>|<[-=])/$ // SOLR-10883
-  def static extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$
-  
-  def static isLicense = { matcher, ratDocument ->
+  def isLicense = { matcher, ratDocument ->
     licenseMatcher.reset()
     return lineSplitter.split(matcher.group(1)).any{ licenseMatcher.match(ratDocument, it) }
   }
-  
-  def static checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
+
+  def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
     def contentMatcher = contentPattern.matcher(text)
     if (contentMatcher.find()) {
       def contentStartPos = contentMatcher.start()
@@ -208,13 +208,13 @@ class CheckSourcePatterns extends DefaultTask {
     }
   }
   
-  def static checkMockitoAssume = { f, text ->
+   def checkMockitoAssume = { f, text ->
     if (text.contains("mockito") && !text.contains("assumeWorkingMockito()")) {
       reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call')
     }
   }
   
-  def static checkForUnescapedSymbolSubstitutions = { f, text ->
+   def checkForUnescapedSymbolSubstitutions = { f, text ->
     def inCodeBlock = false
     def underSourceHeader = false
     def lineNumber = 0
