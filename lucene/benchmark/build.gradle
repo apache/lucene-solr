@@ -47,7 +47,7 @@ processTestResources.dependsOn copyConfResources
 
 // Enwiki
 
-task getEnwiki(type: org.apache.lucene.gradle.Get) {
+task getEnwiki(type: org.apache.lucene.gradle.Download) {
   group = 'Benchmark Data'
   description = "Downloads Enwiki data files."
   sourceUrl = "http://home.apache.org/~dsmiley/data/enwiki-20070527-pages-articles.xml.bz2"
@@ -66,7 +66,7 @@ expandEnwiki.dependsOn getEnwiki
 
 // GeoNames
 
-task getGeoNames(type: org.apache.lucene.gradle.Get) {
+task getGeoNames(type: org.apache.lucene.gradle.Download) {
   group = 'Benchmark Data'
   description = "Downloads GeoNames data files."
   sourceUrl = "http://home.apache.org/~dsmiley/data/geonames_20130921_randomOrder_allCountries.txt.bz2"
@@ -86,7 +86,7 @@ expandGeoNames.dependsOn getGeoNames
 
 // Reuters
 
-task getReuters(type: org.apache.lucene.gradle.Get) {
+task getReuters(type: org.apache.lucene.gradle.Download) {
   group = 'Benchmark Data'
   description = "Downloads Reuters data files."
   sourceUrl = "http://www.daviddlewis.com/resources/testcollections/reuters21578/reuters21578.tar.gz"
