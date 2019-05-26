@@ -120,6 +120,8 @@ configure(rootProject) {
     description = "Checks source files for project violations."
     baseDir = rootProject.projectDir
   }
+  
+  check.dependsOn checkSourcePatterns
 }
 
 // -> lucene-solr IDE config - setup eclipse and idea
