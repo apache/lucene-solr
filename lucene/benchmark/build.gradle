@@ -47,55 +47,56 @@ processTestResources.dependsOn copyConfResources
 
 // Enwiki
 
-task getEnwiki(type: org.apache.lucene.gradle.Download) {
-  group = 'Benchmark Data'
-  description = "Downloads Enwiki data files."
+task downloadEnwiki(type: org.apache.lucene.gradle.Download) {
   sourceUrl = "http://home.apache.org/~dsmiley/data/enwiki-20070527-pages-articles.xml.bz2"
   target = new File("${projectDir}/temp/enwiki-20070527-pages-articles.xml.bz2")
 }
 
-task expandEnwiki(){
+task installEnwiki(){
   group = 'Benchmark Data'
-  description = "Expands Enwiki data files."
+  description = "Install Enwiki data files."
   doLast {
     ant.bunzip2(src: "${projectDir}/temp/enwiki-20070527-pages-articles.xml.bz2", dest:"${projectDir}/temp/")
   }
 }
 
-expandEnwiki.dependsOn getEnwiki
+installEnwiki.dependsOn downloadEnwiki
 
 // GeoNames
 
-task getGeoNames(type: org.apache.lucene.gradle.Download) {
-  group = 'Benchmark Data'
-  description = "Downloads GeoNames data files."
+task downloadGeoNames(type: org.apache.lucene.gradle.Download) {
   sourceUrl = "http://home.apache.org/~dsmiley/data/geonames_20130921_randomOrder_allCountries.txt.bz2"
   target = new File("${projectDir}/temp/allCountries.txt.bz2")
 }
 
-task expandGeoNames(){
+task installGeoNames(){
   group = 'Benchmark Data'
-  description = "Expands GeoNames data files."
+  description = "Install GeoNames data files."
   doLast {
     new File("${workingDir}/geonames").mkdirs()
     ant.bunzip2(src: "${projectDir}/temp/allCountries.txt.bz2", dest:"${workingDir}/geonames")
   }
 }
 
-expandGeoNames.dependsOn getGeoNames
+installGeoNames.dependsOn downloadGeoNames
 
 // Reuters
 
-task getReuters(type: org.apache.lucene.gradle.Download) {
-  group = 'Benchmark Data'
-  description = "Downloads Reuters data files."
+task downloadReuters(type: org.apache.lucene.gradle.Download) {
   sourceUrl = "http://www.daviddlewis.com/resources/testcollections/reuters21578/reuters21578.tar.gz"
   target = new File("${projectDir}/temp/reuters21578.tar.gz")
 }
 
-task expandReuters(){
+task extractReuters(type: JavaExec) {
+  classpath = sourceSets.main.runtimeClasspath
+  main = 'org.apache.lucene.benchmark.utils.ExtractReuters'
+  args "${workingDir}/reuters"
+  args "${workingDir}/reuters-out"
+}
+
+task installReuters(){
   group = 'Benchmark Data'
-  description = "Expands Reuters data files."
+  description = "Installs Reuters data files."
   doLast {
     new File("${workingDir}/reuters").mkdirs()
     ant.gunzip(src: "${projectDir}/temp/reuters21578.tar.gz", dest:"${projectDir}/temp/")
@@ -106,19 +107,9 @@ task expandReuters(){
   }
 }
 
-expandReuters.dependsOn getReuters
+installReuters.dependsOn extractReuters
+extractReuters.dependsOn downloadReuters
 
-task extractReuters(type: JavaExec) {
-  group = 'Benchmark Data'
-  description = "Extracs Reuters data files."
-  
-  classpath = sourceSets.main.runtimeClasspath
-
-  main = 'org.apache.lucene.benchmark.utils.ExtractReuters'
-
-  args "${workingDir}/reuters"
-  args "${workingDir}/reuters-out"
-}
 
 forbiddenApisMain {
   bundledSignatures -= 'jdk-system-out'
