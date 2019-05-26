@@ -18,7 +18,6 @@
 apply plugin: 'groovy'
 apply plugin: 'java'
 apply plugin: 'java-gradle-plugin'
-apply plugin: 'eclipse'
 apply plugin: 'idea'
 
 buildDir = new File("build")
@@ -29,9 +28,6 @@ repositories {
   jcenter()
   mavenCentral()
 }
-
-apply from: new File(projectDir, "ide/eclipse.gradle")
-apply from: new File(projectDir, "ide/idea.gradle")
 
 dependencies {
   implementation gradleApi()
