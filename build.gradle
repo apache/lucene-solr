@@ -54,6 +54,21 @@ configure(luceneSolrProjects) {
   }
   
   check.dependsOn ratSources
+  
+  task checkMissingJavaDocs {
+    group = 'Verification'
+    description = "Checks for missing JavaDocs."
+    
+    doLast {
+      project.exec {
+        workingDir project.projectDir.getAbsolutePath()
+        executable "${python_exe}"
+        args = ['-B', rootProjectDir.getAbsolutePath() + '/dev-tools/scripts/checkJavaDocs.py', project.projectDir.getAbsolutePath(), 'class']
+      }
+    }
+  }
+  
+  check.dependsOn checkMissingJavaDocs
 }
 
 // -> lucene-solr sub module config - configure all lucene-solr modules (excludes the root project)
