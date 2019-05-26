@@ -60,23 +60,19 @@ class PackageLuceneSolrDist extends DefaultTask {
       archiveName = "${project.name}-${project.version}.zip"
       into ('/')
       from (project.projectDir) {
-        
+   
         standardIncludes.each {
-          println "include:" +it
           include it
         }
         standardExcludes.each {
-          println "exclude:" +it
           exclude it
         }
-        
         into('/')
       }
       
       project.subprojects.each {subproject ->
         project.evaluationDependsOn(subproject.path)
         if (subproject.tasks.findByName('jar')) {
-          subproject.jar.outputs.files.each {println "Pack:" + it.name}
           from(subproject.jar.outputs.files) {
             include "*.jar"
             into (project.relativePath(subproject.projectDir))
@@ -95,21 +91,17 @@ class PackageLuceneSolrDist extends DefaultTask {
       from (project.projectDir) {
         
         standardIncludes.each {
-          println "include:" +it
           include it
         }
         standardExcludes.each {
-          println "exclude:" +it
           exclude it
         }
-        
         into('/')
       }
       
       project.subprojects.each {subproject ->
         project.evaluationDependsOn(subproject.path)
         if (subproject.tasks.findByName('jar')) {
-          subproject.jar.outputs.files.each {println "Pack:" + it.name}
           from(subproject.jar.outputs.files) {
             include "*.jar"
             into (project.relativePath(subproject.projectDir))
@@ -119,12 +111,11 @@ class PackageLuceneSolrDist extends DefaultTask {
       
       includeEmptyDirs = false
       destinationDir = new File(project.projectDir, distDir)
-      extension = 'tar'
+      extension = 'tgz'
       compression = Compression.GZIP
     }
     
     finalizedBy project.tasks.packZip
-    
     project.tasks.packZip.dependsOn project.tasks.packTar
   }
   
