@@ -25,45 +25,48 @@ repositories{
 }
 
 dependencies {
-  implementation 'org.apache.zookeeper:zookeeper'
-  implementation 'org.apache.httpcomponents:httpclient'
-  implementation 'org.apache.httpcomponents:httpmime'
-  implementation 'org.apache.httpcomponents:httpcore'
-  implementation 'commons-io:commons-io'
-  implementation 'org.apache.commons:commons-math3'
-
-  implementation 'org.noggit:noggit'
-  implementation 'org.slf4j:slf4j-api'
-  implementation 'org.slf4j:jcl-over-slf4j'
-  implementation 'org.eclipse.jetty.http2:http2-client'
-  implementation 'org.eclipse.jetty.http2:http2-http-client-transport'
-  implementation 'org.eclipse.jetty.http2:http2-common'
-  implementation 'org.eclipse.jetty.http2:http2-hpack'
-  implementation 'org.eclipse.jetty:jetty-client'
-  implementation 'org.eclipse.jetty:jetty-util'
-  implementation 'org.eclipse.jetty:jetty-http'
-  implementation 'commons-codec:commons-codec'
   
-  testImplementation 'org.eclipse.jetty:jetty-servlet'
-  testImplementation 'io.dropwizard.metrics:metrics-core'
-  testImplementation 'org.restlet.jee:org.restlet'
-  testImplementation 'org.restlet.jee:org.restlet.ext.servlet'
-  testImplementation 'org.eclipse.jetty:jetty-webapp'
-  testImplementation 'org.eclipse.jetty:jetty-server'
-  testImplementation 'org.eclipse.jetty:jetty-xml'
-  runtimeOnly 'org.eclipse.jetty:jetty-security'
-  testImplementation 'commons-collections:commons-collections'
-  testImplementation 'com.google.guava:guava'
-  testImplementation 'org.apache.commons:commons-compress'
-  testImplementation 'org.mockito:mockito-core'
-  testImplementation 'net.bytebuddy:byte-buddy'
-  testImplementation 'org.objenesis:objenesis'
-  testImplementation 'org.apache.commons:commons-lang3'
-  testImplementation 'javax.servlet:javax.servlet-api'
-  testImplementationTran project(':solr:solr-core')
-  testImplementationTran project(':lucene:lucene-core')
-  testImplementationTran project(':solr:solr-test-framework')
-  testImplementationTran project(':lucene:lucene-test-framework')
-  testImplementationTran project(':lucene:analysis:analyzers-common')
-  testImplementationTran project(':solr:example:example-DIH')
+  runtimeOnly ('org.eclipse.jetty:jetty-security') { transitive = false }
+  
+  implementation ('org.apache.zookeeper:zookeeper') { transitive = false }
+  implementation ('org.apache.httpcomponents:httpclient') { transitive = false }
+  implementation ('org.apache.httpcomponents:httpmime') { transitive = false }
+  implementation ('org.apache.httpcomponents:httpcore') { transitive = false }
+  implementation ('commons-io:commons-io') { transitive = false }
+  implementation ('org.apache.commons:commons-math3') { transitive = false }
+
+  implementation ('org.noggit:noggit') { transitive = false }
+  implementation ('org.slf4j:slf4j-api') { transitive = false }
+  implementation ('org.slf4j:jcl-over-slf4j') { transitive = false }
+  implementation ('org.eclipse.jetty.http2:http2-client') { transitive = false }
+  implementation ('org.eclipse.jetty.http2:http2-http-client-transport') { transitive = false }
+  implementation ('org.eclipse.jetty.http2:http2-common') { transitive = false }
+  implementation ('org.eclipse.jetty.http2:http2-hpack') { transitive = false }
+  implementation ('org.eclipse.jetty:jetty-client') { transitive = false }
+  implementation ('org.eclipse.jetty:jetty-util') { transitive = false }
+  implementation ('org.eclipse.jetty:jetty-http') { transitive = false }
+  implementation ('commons-codec:commons-codec') { transitive = false }
+  
+  testImplementation ('org.eclipse.jetty:jetty-servlet') { transitive = false }
+  testImplementation ('io.dropwizard.metrics:metrics-core') { transitive = false }
+  testImplementation ('org.restlet.jee:org.restlet') { transitive = false }
+  testImplementation ('org.restlet.jee:org.restlet.ext.servlet') { transitive = false }
+  testImplementation ('org.eclipse.jetty:jetty-webapp') { transitive = false }
+  testImplementation ('org.eclipse.jetty:jetty-server') { transitive = false }
+  testImplementation ('org.eclipse.jetty:jetty-xml') { transitive = false }
+  testImplementation ('commons-collections:commons-collections') { transitive = false }
+  testImplementation ('com.google.guava:guava') { transitive = false }
+  testImplementation ('org.apache.commons:commons-compress') { transitive = false }
+  testImplementation ('org.mockito:mockito-core') { transitive = false }
+  testImplementation ('net.bytebuddy:byte-buddy') { transitive = false }
+  testImplementation ('org.objenesis:objenesis') { transitive = false }
+  testImplementation ('org.apache.commons:commons-lang3') { transitive = false }
+  testImplementation ('javax.servlet:javax.servlet-api') { transitive = false }
+  
+  testImplementation project(':solr:solr-core')
+  testImplementation project(':lucene:lucene-core')
+  testImplementation project(':solr:solr-test-framework')
+  testImplementation project(':lucene:lucene-test-framework')
+  testImplementation project(':lucene:analysis:analyzers-common')
+  testImplementation project(':solr:example:example-DIH')
 }

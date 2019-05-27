@@ -21,10 +21,10 @@ archivesBaseName = 'analyzers-phonetic'
 
 dependencies {
   
-  implementationTran project(':lucene:lucene-core')
-  implementationTran project(':lucene:analysis:analyzers-common')
+  implementation project(':lucene:lucene-core')
+  implementation project(':lucene:analysis:analyzers-common')
   
-  implementation 'commons-codec:commons-codec'
+  implementation ('commons-codec:commons-codec') { transitive = false }
   
-  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementation project(':lucene:lucene-test-framework')
 }
