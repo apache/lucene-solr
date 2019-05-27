@@ -74,6 +74,7 @@ final class IntArrayDocIdSet extends DocIdSet {
     public int advance(int target) throws IOException {
       int bound = 1;
       int offset = Math.max(0, i);
+      //given that we use this for small array only, this is very unlikely to overflow
       while(offset + bound < length && docs[offset + bound] < target) {
         bound *= 2;
       }
