@@ -678,6 +678,7 @@ groups:
     persist_vars:
     - vote_close
     - vote_close_epoch
+    function: create_ical
     links:
     - https://www.apache.org/foundation/voting.html
   - !Todo

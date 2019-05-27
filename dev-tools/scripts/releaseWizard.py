@@ -32,30 +32,33 @@
 #   extra debug info
 #   --root PATH  Specify different root folder than ~/.lucene-releases
 
-import os
 import argparse
-import platform
-import sys
-import json
 import copy
-import textwrap
-import subprocess
-import shutil
-import shlex
-import time
 import fcntl
+import json
+import os
+import platform
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import textwrap
+import time
 import urllib
 from collections import OrderedDict
-import scriptutil
-from scriptutil import BranchType, Version, check_ant, download, run
-import re
 from datetime import datetime
 from datetime import timedelta
-from consolemenu import ConsoleMenu
-from consolemenu.screen import Screen
-from consolemenu.items import FunctionItem, SubmenuItem
-from jinja2 import Environment
+
 import yaml
+from ics import Calendar, Event
+from jinja2 import Environment
+
+import scriptutil
+from consolemenu import ConsoleMenu
+from consolemenu.items import FunctionItem, SubmenuItem
+from consolemenu.screen import Screen
+from scriptutil import BranchType, Version, check_ant, download, run
 
 # Solr-to-Java version mapping
 java_versions = {6: 8, 7: 8, 8: 8, 9: 11}
@@ -1548,6 +1551,21 @@ class UserInput(SecretYamlObject):
 class MyScreen(Screen):
     def clear(self):
         return
+
+
+def create_ical(todo):
+    if ask_yes_no("Do you want to add a Calendar reminder for the close vote time?"):
+        c = Calendar()
+        e = Event()
+        e.name = "Lucene/Solr %s vote ends" % state.release_version
+        e.begin = vote_close_72h_date()
+        e.description = "Remember to sum up votes and continue release :)"
+        c.events.add(e)
+        ics_file = os.path.join(state.get_rc_folder(), 'vote_end.ics')
+        with open(ics_file, 'w') as my_file:
+            my_file.writelines(c)
+        open_file(ics_file)
+    return True
 
 
 def vote_close_72h_date():
