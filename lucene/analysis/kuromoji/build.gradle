@@ -19,25 +19,80 @@ apply plugin: 'java-library'
 
 archivesBaseName = 'analyzers-kuromoji'
 
-// TODO we need download-dict, patch-dict, etc
-
-// def urlFile = { url, name ->
-//     File file = new File("$buildDir/download/${name}.jar")
-//     file.parentFile.mkdirs()
-//     if (!file.exists()) {
-//         new URL(url).withInputStream { downloadStream ->
-//             file.withOutputStream { fileOut ->
-//                 fileOut << downloadStream
-//             }
-//         }
-//     }
-//     files(file.absolutePath)
-// }
+configurations {
+  tools
+}
 
 dependencies {
   
   implementation project(':lucene:lucene-core')
   implementation project(':lucene:analysis:analyzers-common')
   
+  tools ('com.ibm.icu:icu4j') { transitive = false }
+  
   testImplementation project(':lucene:lucene-test-framework')
+}
+
+sourceSets {
+  tools {
+    compileClasspath += sourceSets.main.runtimeClasspath += configurations.tools
+    runtimeClasspath += sourceSets.main.runtimeClasspath
+  }
+  toolsTest {
+    compileClasspath += sourceSets.test.runtimeClasspath += sourceSets.tools.runtimeClasspath += configurations.tools
+    runtimeClasspath += sourceSets.test.runtimeClasspath
+  }
+
+  tools.java.srcDirs = ['src/tools/java']
+  toolsTest.java.srcDirs = ['src/tools/test']
+}
+
+def ipadicVersion = "2.7.0-20070801"
+def ipadicFilename = "mecab-ipadic-${ipadicVersion}"
+
+task downloadDict(type: org.apache.lucene.gradle.Download) {
+  sourceUrl = "https://jaist.dl.sourceforge.net/project/mecab/mecab-ipadic/${ipadicVersion}/${ipadicFilename}.tar.gz"
+  target = new File("${buildDir}/${ipadicFilename}.tar.gz")
+  
+  doLast {
+    ant.gunzip(src: "${buildDir}/${ipadicFilename}.tar.gz")
+    ant.untar(src: "${buildDir}/${ipadicFilename}.tar", dest: "${buildDir}")
+  }
+}
+
+task patchDict {
+  doLast {
+    ant.patch(patchfile: "${projectDir}/src/tools/patches/Noun.proper.csv.patch", originalfile: "${buildDir}/${ipadicFilename}/Noun.proper.csv")
+  }
+  dependsOn downloadDict
+}
+
+task buildDict(type: JavaExec) {
+  group = 'Build'
+  description = "Download, patch, and build dict for kuromoji."
+  
+  doFirst {
+    def tree = fileTree("${projectDir}/src/resources/org/apache/lucene/analysis/ja/dict")
+    tree.include '**/*'
+    tree.each { it.delete() }
+  }
+  
+  classpath = sourceSets.tools.runtimeClasspath
+  main = 'org.apache.lucene.analysis.ja.util.DictionaryBuilder'
+  enableAssertions = true
+ 
+  jvmArgs '-Xmx1G'
+  
+  args 'ipadic'
+  args "${buildDir}/${ipadicFilename}"
+  args "${projectDir}/src/resources"
+  args 'euc-jp'
+  args 'false'
+  
+  dependsOn patchDict
+}
+
+forbiddenApisTools {
+  bundledSignatures -= 'jdk-system-out'
+  exclude 'org/apache/lucene/**' // exclude until converted to NIO2
 }
