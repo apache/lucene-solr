@@ -52,6 +52,8 @@ New Features
 
 * SOLR-13484: autoscaling/diagnostics API should be able to give diagnostics output from config sent as a payload (noble)
 
+* SOLR-13493: /autoscaling/suggestions to be able to filter by type (noble)
+
 Bug Fixes
 ----------------------
 
