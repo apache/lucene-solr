@@ -19,8 +19,8 @@ apply plugin: 'java-library'
 
 dependencies {
   
-  implementationTran project(':lucene:lucene-core')
+  implementation project(':lucene:lucene-core')
 
-  testImplementationTran project(':lucene:lucene-core')
-  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementation project(':lucene:lucene-core')
+  testImplementation project(':lucene:lucene-test-framework')
 }

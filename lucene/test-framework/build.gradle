@@ -21,11 +21,13 @@ archivesBaseName = 'lucene-test-framework'
 
 dependencies {
   
-	implementationTran project(':lucene:lucene-core')
-	implementationTran project(':lucene:codecs')
+	api project(':lucene:lucene-core')
+	implementation project(':lucene:codecs')
   
-	implementation "junit:junit"
-	implementation "com.carrotsearch.randomizedtesting:randomizedtesting-runner"
-	implementation 'org.hamcrest:hamcrest-all'
+	api ("junit:junit") { transitive = false }
+	api ("com.carrotsearch.randomizedtesting:randomizedtesting-runner") { transitive = false }
+	api ('org.hamcrest:hamcrest-all') { transitive = false }
+  
+  implementation ('commons-codec:commons-codec') { transitive = false }
   
 }
