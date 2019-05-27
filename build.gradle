@@ -126,7 +126,7 @@ configure(rootProject) {
   tasks.create('checkWorkingCopy', CheckWorkingCopy, false)
   
   task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
-    group = 'Build'
+    group = 'Verification'
     description = "Checks source files for project violations."
     baseDir = rootProject.projectDir
   }
