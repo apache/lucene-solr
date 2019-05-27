@@ -266,6 +266,10 @@ groups:
         cmd: git checkout {{ base_branch }}
         stdout: true
       - !Command
+        cmd: git clean -df && git checkout -- .
+        comment: Make sure checkout is clean and up to date
+        tee: true
+      - !Command
         cmd: git pull
         stdout: true
       - !Command
@@ -291,7 +295,7 @@ groups:
         cmd: git ls-remote --exit-code --heads origin {{ stable_branch }}
         stdout: true
         should_fail: true
-        comment: This command should fail with exit code 2 to verify branch {{ stable_branch }} does not already exist
+        comment: We expect error code 2 since {{ stable_branch }} does not already exist
       - !Command
         cmd: git checkout -b {{ stable_branch }}
         tee: true
@@ -390,7 +394,7 @@ groups:
     - https://wiki.apache.org/lucene-java/JenkinsReleaseBuilds
   - !Todo
     id: inform_devs
-    title: Inform Devs of the Release Branch
+    title: Inform Devs of the new Release Branch
     description: |-
       Send a note to dev@ to inform the committers that the branch
       has been created and the feature freeze phase has started.
@@ -431,7 +435,7 @@ groups:
     - minor
   - !Todo
     id: inform_devs_bugfix
-    title: Inform Devs about the release
+    title: Inform Devs about the planned release
     description: |-
       Send a note to dev@ to inform the committers about the rules for committing to the branch.
 
@@ -568,11 +572,8 @@ groups:
         cmd: git checkout {{ release_branch }}
         tee: true
       - !Command
-        cmd: git clean -df
+        cmd: git clean -df && git checkout -- .
         comment: Make sure checkout is clean and up to date
-        tee: true
-      - !Command
-        cmd: git checkout -- .
         tee: true
       - !Command
         cmd: git pull

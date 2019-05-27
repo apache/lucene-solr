@@ -57,15 +57,9 @@ from consolemenu.items import FunctionItem, SubmenuItem
 from jinja2 import Environment
 import yaml
 
-global current_git_root
-
-# Solr:Java version mapping
+# Solr-to-Java version mapping
 java_versions = {6: 8, 7: 8, 8: 8, 9: 11}
-dry_run = False
 
-major_minor = ['major', 'minor']
-script_path = os.path.dirname(os.path.realpath(__file__))
-os.chdir(script_path)
 
 # Edit this to add other global jinja2 variables or filters
 def expand_jinja(text, vars=None):
@@ -153,6 +147,7 @@ def check_prerequisites(todo=None):
     try:
         asciidoc_ver = run("asciidoctor -V").splitlines()[0]
     except:
+        asciidoc_ver = ""
         print("WARNING: In order to export asciidoc version to HTML, you will need asciidoctor installed")
     try:
         git_ver = run("git --version").splitlines()[0]
@@ -470,9 +465,6 @@ class ReleaseState:
                 t = self.todos[todo_id]
                 states[todo_id] = copy.deepcopy(t.state)
         return states
-
-    def get_release_type(self):
-        return self.release_type.value
 
     def init_todos(self, groups):
         self.todo_groups = groups
@@ -993,14 +985,14 @@ def configure_pgp(gpg_todo):
         res = run("gpg --list-secret-keys %s" % gpg_id)
         print("Found key %s on your private gpg keychain" % gpg_id)
         # Check rsa and key length >= 4096
-        match = re.search(r"^sec +((rsa|dsa)(\d{4})) ", res)
+        match = re.search(r'^sec +((rsa|dsa)(\d{4})) ', res)
         type = "(unknown)"
         length = -1
         if match:
             type = match.group(2)
             length = int(match.group(3))
         else:
-            match = re.search(r"^sec +((\d{4})(D|R)/.*?) ", res)
+            match = re.search(r'^sec +((\d{4})([DR])/.*?) ', res)
             if match:
                 type = 'rsa' if match.group(3) == 'R' else 'dsa'
                 length = int(match.group(2))
@@ -1171,6 +1163,12 @@ def main():
 sys.path.append(os.path.dirname(__file__))
 current_git_root = os.path.abspath(
     os.path.join(os.path.abspath(os.path.dirname(__file__)), os.path.pardir, os.path.pardir))
+
+dry_run = False
+
+major_minor = ['major', 'minor']
+script_path = os.path.dirname(os.path.realpath(__file__))
+os.chdir(script_path)
 
 
 def git_checkout_folder():
