@@ -83,3 +83,11 @@ task buildDict(type: JavaExec) {
   
   dependsOn downloadDict
 }
+
+task regenerate {
+  doFirst {
+    println "--> regenerate"
+  }
+  
+  dependsOn buildDict
+}
