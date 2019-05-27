@@ -23,8 +23,8 @@ def momanCommitHash="5c5c2a1e4dea"
 def momanUrl = "https://bitbucket.org/jpbarrette/moman/get/${momanCommitHash}.zip"
 
 dependencies {
-  testImplementationTran project(':lucene:codecs')
-  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementation project(':lucene:codecs')
+  testImplementation project(':lucene:lucene-test-framework')
 }
 
 task createLevAutomaton {
