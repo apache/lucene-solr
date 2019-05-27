@@ -96,7 +96,7 @@ task extractReuters(type: JavaExec) {
 
 task installReuters(){
   group = 'Benchmark Data'
-  description = "Installs Reuters data files."
+  description = "Install Reuters data files."
   doLast {
     new File("${workingDir}/reuters").mkdirs()
     ant.gunzip(src: "${projectDir}/temp/reuters21578.tar.gz", dest:"${projectDir}/temp/")
