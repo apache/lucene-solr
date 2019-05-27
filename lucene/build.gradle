@@ -35,5 +35,6 @@ task jarChecksum(type: org.apache.lucene.gradle.JarChecksum) {
 }
 
 task packageDist(type: org.apache.lucene.gradle.PackageLuceneSolrDist) {
-
+  group = 'Dist'
+  description = "Generates the Lucene and Solr distribution."
 }
