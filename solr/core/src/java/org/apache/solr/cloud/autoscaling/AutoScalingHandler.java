@@ -51,6 +51,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
@@ -104,12 +105,12 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     DEFAULT_ACTIONS.add(map);
   }
 
-  Optional<BiConsumer<SolrQueryResponse, AutoScalingConfig>> getSubpathExecutor(List<String> path) {
+  Optional<BiConsumer<SolrQueryResponse, AutoScalingConfig>> getSubpathExecutor(List<String> path, SolrQueryRequest request) {
     if (path.size() == 3) {
       if (DIAGNOSTICS.equals(path.get(2))) {
-        return Optional.of(this::handleDiagnostics);
+        return Optional.of((rsp, autoScalingConf) -> handleDiagnostics(rsp, autoScalingConf));
       } else if (SUGGESTIONS.equals(path.get(2))) {
-        return Optional.of(this::handleSuggestions);
+        return Optional.of((rsp, autoScalingConf) -> handleSuggestions(rsp, autoScalingConf, request.getParams()));
       } else {
         return Optional.empty();
       }
@@ -145,7 +146,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
             }
           });
         } else {
-          getSubpathExecutor(parts).ifPresent(it -> it.accept(rsp, autoScalingConf));
+          getSubpathExecutor(parts, req).ifPresent(it -> it.accept(rsp, autoScalingConf));
         }
       } else {
         if (req.getContentStreams() == null) {
@@ -155,7 +156,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         if (path != null) {
           List<String> parts = StrUtils.splitSmart(path, '/', true);
           if(parts.size() == 3){
-            getSubpathExecutor(parts).ifPresent(it -> {
+            getSubpathExecutor(parts, req).ifPresent(it -> {
               Map map = null;
               try {
                 map = (Map) Utils.fromJSON(req.getContentStreams().iterator().next().getStream());
@@ -186,9 +187,9 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   }
 
 
-  private void handleSuggestions(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) {
+  private void handleSuggestions(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf, SolrParams params) {
     rsp.getValues().add("suggestions",
-        PolicyHelper.getSuggestions(autoScalingConf, cloudManager));
+        PolicyHelper.getSuggestions(autoScalingConf, cloudManager, params));
   }
 
   public void processOps(SolrQueryRequest req, SolrQueryResponse rsp, List<CommandOperation> ops)

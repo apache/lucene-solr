@@ -426,20 +426,20 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"))
         , cloudManagerFromDiagnostics);
     for (Suggester.SuggestionInfo suggestion : suggestions) {
-      assertEquals("unresolved-violation", suggestion._get("type", null));
+      assertEquals("unresolved_violation", suggestion._get("type", null));
       assertEquals("1.0", suggestion._getStr("violation/violation/delta", null));
     }
   }
 
 
-  @Ignore
+  @Ignore("This takes too long to run. enable it for perf testing")
   public void testInfiniteLoop() {
     Row.cacheStats.clear();
     Map<String, Object> m = (Map<String, Object>) loadFromResource("testInfiniteLoop.json");
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(
         new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"))
-        , cloudManagerFromDiagnostics, 200, 1200);
+        , cloudManagerFromDiagnostics, 200, 1200, null);
 
     System.out.println(suggestions);
   }
