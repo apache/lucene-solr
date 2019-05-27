@@ -16,6 +16,7 @@ package org.apache.lucene.gradle
  * limitations under the License.
  */
 import org.gradle.api.DefaultTask
+import org.gradle.api.Project
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.InputDirectory
@@ -60,7 +61,7 @@ class PackageLuceneSolrDist extends DefaultTask {
       archiveName = "${project.name}-${project.version}.zip"
       into ('/')
       from (project.projectDir) {
-   
+        
         standardIncludes.each {
           include it
         }
@@ -72,10 +73,15 @@ class PackageLuceneSolrDist extends DefaultTask {
       
       project.subprojects.each {subproject ->
         project.evaluationDependsOn(subproject.path)
-        if (subproject.tasks.findByName('jar')) {
+        if (subproject.tasks.findByName('jar') && subproject.configurations.hasProperty('runtimeClasspath')) {
           from(subproject.jar.outputs.files) {
             include "*.jar"
             into (project.relativePath(subproject.projectDir))
+          }
+          def files = getFiles(subproject)
+          from(files) {
+            include "*.jar"
+            into (project.relativePath(subproject.projectDir) + "/lib")
           }
         }
       }
@@ -101,10 +107,15 @@ class PackageLuceneSolrDist extends DefaultTask {
       
       project.subprojects.each {subproject ->
         project.evaluationDependsOn(subproject.path)
-        if (subproject.tasks.findByName('jar')) {
+        if (subproject.tasks.findByName('jar') && subproject.configurations.hasProperty('runtimeClasspath')) {
           from(subproject.jar.outputs.files) {
             include "*.jar"
             into (project.relativePath(subproject.projectDir))
+          }
+          def files = getFiles(subproject)
+          from(files) {
+            include "*.jar"
+            into (project.relativePath(subproject.projectDir) + "/lib")
           }
         }
       }
@@ -119,9 +130,23 @@ class PackageLuceneSolrDist extends DefaultTask {
     project.tasks.packZip.dependsOn project.tasks.packTar
   }
   
+  private static Collection getFiles(Project subproject) {
+    def files = subproject.configurations.runtimeClasspath.files
+    if (!subproject.name.equals('solr-core') && subproject.path.startsWith(":solr:contrib:")) {
+      subproject.evaluationDependsOn(subproject.rootProject.project(":solr:solr-core").path)
+      files = files - subproject.rootProject.project(":solr:solr-core").configurations.runtimeClasspath.files
+      files = files - subproject.rootProject.project(":solr:solr-core").jar.outputs.files
+    }
+    if (!subproject.name.equals('lucene-core') && subproject.path.startsWith(":lucene:")) {
+      subproject.evaluationDependsOn(subproject.rootProject.project(":lucene:lucene-core").path)
+      files = files - subproject.rootProject.project(":lucene:lucene-core").configurations.runtimeClasspath.files
+      files = files - subproject.rootProject.project(":lucene:lucene-core").jar.outputs.files
+    }
+    return files
+  }
+  
   @TaskAction
   void pack() {
-
   }
 }
 
