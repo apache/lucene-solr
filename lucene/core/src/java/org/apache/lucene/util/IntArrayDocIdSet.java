@@ -52,7 +52,7 @@ final class IntArrayDocIdSet extends DocIdSet {
 
     private final int[] docs;
     private final int length;
-    private int i = -1;
+    private int i = 0;
     private int doc = -1;
 
     IntArrayDocIdSetIterator(int[] docs, int length) {
@@ -67,22 +67,21 @@ final class IntArrayDocIdSet extends DocIdSet {
 
     @Override
     public int nextDoc() throws IOException {
-      return doc = docs[++i];
+      return doc = docs[i++];
     }
 
     @Override
     public int advance(int target) throws IOException {
       int bound = 1;
-      int offset = Math.max(0, i);
       //given that we use this for small array only, this is very unlikely to overflow
-      while(offset + bound < length && docs[offset + bound] < target) {
+      while(i + bound < length && docs[i + bound] < target) {
         bound *= 2;
       }
-      i = Arrays.binarySearch(docs, offset + bound / 2, Math.min(offset + bound, length), target);
+      i = Arrays.binarySearch(docs, i + bound / 2, Math.min(i + bound, length), target);
       if (i < 0) {
         i = -1 - i;
       }
-      return doc = docs[i];
+      return doc = docs[i++];
     }
 
     @Override
