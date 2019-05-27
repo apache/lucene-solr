@@ -90,6 +90,8 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrInfoBean;
@@ -1735,6 +1737,28 @@ public class SimClusterStateProvider implements ClusterStateProvider {
             });
           });
         }
+      } finally {
+        lock.unlock();
+      }
+    }
+    SolrParams params = req.getParams();
+    if (params != null && (params.getBool(UpdateParams.OPTIMIZE, false) || params.getBool(UpdateParams.EXPUNGE_DELETES, false))) {
+      lock.lockInterruptibly();
+      try {
+        coll.getSlices().forEach(s -> {
+          Replica leader = s.getLeader();
+          ReplicaInfo ri = getReplicaInfo(leader);
+          Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs");
+          if (numDocs == null || numDocs.intValue() == 0) {
+            numDocs = 0;
+          }
+          try {
+            simSetShardValue(ri.getCollection(), ri.getShard(), "SEARCHER.searcher.maxDoc", numDocs, false, false);
+            simSetShardValue(ri.getCollection(), ri.getShard(), "SEARCHER.searcher.deletedDocs", 0, false, false);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
       } finally {
         lock.unlock();
       }
