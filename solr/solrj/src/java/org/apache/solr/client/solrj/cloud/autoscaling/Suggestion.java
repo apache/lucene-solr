@@ -32,7 +32,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.MO
 
 public class Suggestion {
 
-  enum Type {
+  public enum Type {
     violation, repair, improvement, unresolved_violation;
   }
 
