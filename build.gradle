@@ -19,8 +19,7 @@ import org.apache.lucene.gradle.CheckWorkingCopy
 import org.apache.lucene.gradle.LuceneSolrForbiddenApisPlugin
 
 plugins {
-  id "com.palantir.consistent-versions" version "1.4.0"
-  id 'eclipse'
+  id "com.palantir.consistent-versions" version "1.6.1"
 }
 
 // define lucene-solr project lists that exclude buildSrc
@@ -94,10 +93,6 @@ configure(luceneSolrSubProjects) {
     
     // configure tests
     project.apply from: new File(rootProjectDir, "buildSrc/common/configure-test.gradle")
-     
-    // we create new implementationTran and testImplementationTran configurations that are
-    // transitive and can be used between modules
-    project.apply from: new File(rootProjectDir, "buildSrc/common/configure-impltran.gradle")
     
     // Custom javac options
     tasks.withType(JavaCompile) {

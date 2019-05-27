@@ -18,8 +18,8 @@
 apply plugin: 'java-library'
 
 dependencies {
-  implementationTran project(':lucene:lucene-core')
-  implementationTran project(':lucene:codecs')
-  testImplementationTran project(':lucene:lucene-test-framework')
-  testImplementationTran project(':lucene:queryparser')
+  implementation project(':lucene:lucene-core')
+  implementation project(':lucene:codecs')
+  testImplementation project(':lucene:lucene-test-framework')
+  testImplementation project(':lucene:queryparser')
 }
