@@ -68,7 +68,7 @@ task patchDict {
 }
 
 task buildDict(type: JavaExec) {
-  group = 'Build'
+  group = 'Build Regenerate'
   description = "Download, patch, and build dict for kuromoji."
   
   doFirst {
@@ -90,6 +90,14 @@ task buildDict(type: JavaExec) {
   args 'false'
   
   dependsOn patchDict
+}
+
+task regenerate {
+  doFirst {
+    println "--> regenerate"
+  }
+  
+  dependsOn buildDict
 }
 
 forbiddenApisTools {

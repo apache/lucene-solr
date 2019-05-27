@@ -45,10 +45,9 @@ ratSources {
   excludes = ['**/*.aff', '**/*.dic', '**/*.txt', '**/charfilter/*.htm*', '**/*LuceneResourcesWikiPage.html']
 }
 
-task regenerate {
-  doFirst {
-    println "--> regenerate"
-  }
+task fixCRLFUnicodeData(type: org.apache.lucene.gradle.FixCRLF) {
+  file = new File("${projectDir}" + unicodePropsJavaFile)
+  encoding = "UTF-8"
 }
 
 task unicodeData(type: org.apache.lucene.gradle.GenerateUnicodeData) {
@@ -60,14 +59,16 @@ task unicodeData(type: org.apache.lucene.gradle.GenerateUnicodeData) {
   }
   
   unicodePropsFile = new File("${projectDir}" + unicodePropsJavaFile)
+  
+  finalizedBy fixCRLFUnicodeData
 }
 
-task fixCRLFUnicodeData(type: org.apache.lucene.gradle.FixCRLF) {
-  file = new File("${projectDir}" + unicodePropsJavaFile)
-  encoding = "UTF-8"
+task regenerate {
+  doFirst {
+    println "--> regenerate"
+  }
+  
+  dependsOn unicodeData
 }
 
-unicodeData.finalizedBy fixCRLFUnicodeData
-
-regenerate.dependsOn unicodeData
 
