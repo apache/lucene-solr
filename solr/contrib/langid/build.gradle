@@ -18,9 +18,10 @@
 apply plugin: 'java-library'
 
 dependencies {
-  implementationTran project(':solr:solr-core')
-  implementationTran project(':solr:solrj')
-  implementationTran project(':lucene:lucene-core')
+  implementation project(':solr:solr-core')
+  implementation project(':solr:solrj')
+  implementation project(':lucene:lucene-core')
+  implementation project(':lucene:analysis:analyzers-common')
   
   implementation 'com.cybozu.labs:langdetect'
   implementation 'net.arnx:jsonic'
@@ -31,6 +32,6 @@ dependencies {
   implementation 'commons-codec:commons-codec'
   implementation'com.google.guava:guava'
   
-  testImplementationTran project(':lucene:lucene-test-framework')
-  testImplementationTran project(':solr:solr-test-framework')
+  testImplementation project(':lucene:lucene-test-framework')
+  testImplementation project(':solr:solr-test-framework')
 }
