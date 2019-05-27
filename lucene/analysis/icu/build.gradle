@@ -24,7 +24,7 @@ dependencies {
   api project(':lucene:lucene-core')
   api project(':lucene:analysis:analyzers-common')
   
-  implementation 'com.ibm.icu:icu4j'
+  api ('com.ibm.icu:icu4j') { transitive = false }
   
-  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementation project(':lucene:lucene-test-framework')
 }

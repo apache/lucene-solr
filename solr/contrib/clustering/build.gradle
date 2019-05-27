@@ -19,19 +19,24 @@ apply plugin: 'java-library'
 
 dependencies {
   
-  implementationTran project(':solr:solr-core')
-  implementationTran project(':solr:solrj')
-  implementationTran project(':lucene:lucene-core')
-  implementationTran project(':lucene:memory')
-  implementationTran project(':lucene:analysis:analyzers-common')
+  implementation project(':solr:solr-core')
+  implementation project(':solr:solrj')
+  implementation project(':lucene:lucene-core')
+  implementation project(':lucene:memory')
+  implementation project(':lucene:analysis:analyzers-common')
   
-  implementation 'org.carrot2:carrot2-mini'
-  implementation 'org.carrot2.shaded:carrot2-guava'
-  implementation 'org.carrot2.attributes:attributes-binder'
-  implementation 'org.simpleframework:simple-xml'
-  implementation 'com.fasterxml.jackson.core:jackson-annotations'
-  implementation 'com.fasterxml.jackson.core:jackson-databind'
+  implementation ('org.slf4j:slf4j-api') { transitive = false }
+  implementation ('org.carrot2:carrot2-mini') { transitive = false }
+  implementation ('org.carrot2.shaded:carrot2-guava') { transitive = false }
+  implementation ('org.carrot2.attributes:attributes-binder') { transitive = false }
+  implementation ('org.simpleframework:simple-xml') { transitive = false }
+  implementation ('com.fasterxml.jackson.core:jackson-annotations') { transitive = false }
+  implementation ('com.fasterxml.jackson.core:jackson-databind') { transitive = false }
+  implementation ('commons-io:commons-io') { transitive = false }
+  implementation ('com.google.guava:guava') { transitive = false }
+  implementation ('commons-codec:commons-codec') { transitive = false }
+  implementation ('org.apache.commons:commons-lang3') { transitive = false }
   
-  testImplementationTran project(':lucene:lucene-test-framework')
-  testImplementationTran project(':solr:solr-test-framework')
+  testImplementation project(':lucene:lucene-test-framework')
+  testImplementation project(':solr:solr-test-framework')
 }

@@ -38,7 +38,7 @@ dependencies {
   
   api project(':lucene:lucene-core')
   
-  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementation project(':lucene:lucene-test-framework')
 }
 
 ratSources {
