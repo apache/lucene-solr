@@ -17,7 +17,6 @@
 
 repositories {
   jcenter()
-  mavenCentral()
   maven {
     url "https://oss.sonatype.org/content/repositories/releases"
   }
@@ -27,6 +26,7 @@ repositories {
   maven {
     url "http://repository.cloudera.com/content/repositories/releases"
   }
+  mavenCentral()
   // chinese mirror
   maven {
     url "http://uk.maven.org/maven2"

@@ -18,17 +18,22 @@
 apply plugin: 'java-library'
 
 dependencies {
-  implementationTran project(':solr:solr-core')
-  implementationTran project(':solr:solrj')
-  implementationTran project(':solr:contrib:dataimporthandler')
-  implementationTran project(':lucene:analysis:analyzers-common')
-  implementationTran project(':solr:contrib:extraction')
+  implementation project(':solr:solr-core')
+  implementation project(':solr:solrj')
+  implementation project(':solr:contrib:dataimporthandler')
+  implementation project(':lucene:analysis:analyzers-common')
+  implementation project(':solr:contrib:extraction')
   
-  implementation 'javax.activation:activation'
-  implementation 'com.sun.mail:javax.mail'
-  implementation 'com.sun.mail:gimap'
+  implementation ('org.slf4j:slf4j-api') { transitive = false }
+  implementation ('javax.activation:activation') { transitive = false }
+  implementation ('com.sun.mail:javax.mail') { transitive = false }
+  implementation ('com.sun.mail:gimap') { transitive = false }
+  implementation ('commons-io:commons-io') { transitive = false }
   
-  testImplementationTran project(path: ':solr:contrib:dataimporthandler', configuration: 'testOutput')
-  testImplementationTran project(':lucene:lucene-test-framework')
-  testImplementationTran project(':solr:solr-test-framework')
+  implementation ('org.apache.tika:tika-core') { transitive = false }
+  implementation 'org.apache.tika:tika-parsers'
+  
+  testImplementation project(path: ':solr:contrib:dataimporthandler', configuration: 'testOutput')
+  testImplementation project(':lucene:lucene-test-framework')
+  testImplementation project(':solr:solr-test-framework')
 }

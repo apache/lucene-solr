@@ -22,62 +22,63 @@ archivesBaseName = 'solr-test-framework'
 dependencies {
   runtimeOnly "org.slf4j:jcl-over-slf4j"
   
-  implementationTran project(':lucene:lucene-test-framework')
-  implementationTran project(':solr:solrj')
-  implementationTran project(':solr:solr-core')
-  implementationTran project(':lucene:lucene-core')
-  implementationTran project(':lucene:codecs')
-  implementationTran project(':lucene:queries')
-  implementationTran project(':lucene:analysis:analyzers-common')
+  api project(':lucene:lucene-test-framework')
+  api project(':solr:solrj')
+  api project(':solr:solr-core')
+  api project(':lucene:lucene-core')
+  api project(':lucene:codecs')
+  api project(':lucene:queries')
+  api project(':lucene:analysis:analyzers-common')
   
-  implementation 'junit:junit'
-  implementation 'org.apache.httpcomponents:httpclient'
-  implementation 'org.apache.httpcomponents:httpcore'
-  implementation 'org.apache.httpcomponents:httpmime'
-  implementation 'org.slf4j:slf4j-api'
-  implementation 'org.apache.logging.log4j:log4j-api'
-  implementation 'org.noggit:noggit'
-  implementation 'org.apache.zookeeper:zookeeper'
-  implementation 'commons-io:commons-io'
-  implementation 'org.eclipse.jetty:jetty-util'
-  implementation 'org.apache.logging.log4j:log4j-core'
-  implementation 'javax.servlet:javax.servlet-api'
-  implementation 'io.dropwizard.metrics:metrics-core'
-  implementation 'org.bitbucket.b_c:jose4j'
-  implementation 'com.google.guava:guava'
-  implementation 'org.eclipse.jetty:jetty-server'
-  implementation 'org.eclipse.jetty:jetty-servlet'
-  implementation 'io.dropwizard.metrics:metrics-jetty9'
+  api ('junit:junit') { transitive = false }
+  implementation ('org.apache.httpcomponents:httpclient') { transitive = false }
+  implementation ('org.apache.httpcomponents:httpcore') { transitive = false }
+  implementation ('org.apache.httpcomponents:httpmime') { transitive = false }
+  implementation ('org.slf4j:slf4j-api') { transitive = false }
+  implementation ('org.apache.logging.log4j:log4j-api') { transitive = false }
+  implementation ('org.noggit:noggit') { transitive = false }
+  implementation ('org.apache.zookeeper:zookeeper') { transitive = false }
+  implementation ('commons-io:commons-io') { transitive = false }
+  api ('org.eclipse.jetty:jetty-util') { transitive = false }
+  implementation ('org.apache.logging.log4j:log4j-core') { transitive = false }
+  api ('javax.servlet:javax.servlet-api') { transitive = false }
+  implementation ('io.dropwizard.metrics:metrics-core') { transitive = false }
+  implementation ('org.bitbucket.b_c:jose4j') { transitive = false }
+  implementation ('com.google.guava:guava') { transitive = false }
+  api ('org.eclipse.jetty:jetty-server') { transitive = false }
+  api ('org.eclipse.jetty:jetty-servlet') { transitive = false }
+  implementation ('io.dropwizard.metrics:metrics-jetty9') { transitive = false }
+  implementation ('commons-codec:commons-codec') { transitive = false }
   
-  testImplementation 'org.eclipse.jetty:jetty-http'
-  testImplementation 'org.eclipse.jetty:jetty-io'
-  testImplementation 'org.eclipse.jetty:jetty-security'
-  testImplementation 'org.eclipse.jetty:jetty-client'
-  testImplementation 'org.eclipse.jetty:jetty-xml'
-  testImplementation 'org.apache.httpcomponents:httpclient'
-  testImplementation 'org.apache.httpcomponents:httpcore'
-  testImplementation 'io.dropwizard.metrics:metrics-core'
-  testImplementation 'io.dropwizard.metrics:metrics-jmx'
-  testImplementation 'org.rrd4j:rrd4j'
-  testImplementation 'io.dropwizard.metrics:metrics-jvm'
+  testImplementation ('org.eclipse.jetty:jetty-http') { transitive = false }
+  testImplementation ('org.eclipse.jetty:jetty-io') { transitive = false }
+  testImplementation ('org.eclipse.jetty:jetty-security') { transitive = false }
+  testImplementation ('org.eclipse.jetty:jetty-client') { transitive = false }
+  testImplementation ('org.eclipse.jetty:jetty-xml') { transitive = false }
+  testImplementation ('org.apache.httpcomponents:httpclient') { transitive = false }
+  testImplementation ('org.apache.httpcomponents:httpcore') { transitive = false }
+  testImplementation ('io.dropwizard.metrics:metrics-core') { transitive = false }
+  testImplementation ('io.dropwizard.metrics:metrics-jmx') { transitive = false }
+  testImplementation ('org.rrd4j:rrd4j') { transitive = false }
+  testImplementation ('io.dropwizard.metrics:metrics-jvm') { transitive = false }
   
-  testImplementation 'org.eclipse.jetty.http2:http2-client'
-  testImplementation 'org.eclipse.jetty.http2:http2-http-client-transport'
-  testImplementation 'org.eclipse.jetty.http2:http2-common'
-  testImplementation 'org.eclipse.jetty.http2:http2-hpack'
+  testImplementation ('org.eclipse.jetty.http2:http2-client') { transitive = false }
+  testImplementation ('org.eclipse.jetty.http2:http2-http-client-transport') { transitive = false }
+  testImplementation ('org.eclipse.jetty.http2:http2-common') { transitive = false }
+  testImplementation ('org.eclipse.jetty.http2:http2-hpack') { transitive = false }
   
-  testImplementation 'org.apache.hadoop:hadoop-minicluster'
-  testImplementation 'org.apache.hadoop:hadoop-common'
-  testImplementation 'org.apache.hadoop:hadoop-common::tests'
-  testImplementation 'org.apache.hadoop:hadoop-hdfs'
-  testImplementation 'org.apache.hadoop:hadoop-hdfs::tests'
+  testImplementation ('org.apache.hadoop:hadoop-minicluster') { transitive = false }
+  testImplementation ('org.apache.hadoop:hadoop-common') { transitive = false }
+  testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
+  testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
+  testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
   
-  testImplementation 'commons-fileupload:commons-fileupload'
-  testImplementation 'org.apache.commons:commons-lang3'
+  testImplementation ('commons-fileupload:commons-fileupload') { transitive = false }
+  testImplementation ('org.apache.commons:commons-lang3') { transitive = false }
 
-  runtimeOnly 'org.apache.logging.log4j:log4j-api'
-  runtimeOnly 'org.apache.logging.log4j:log4j-core'
-  runtimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
-  runtimeOnly 'com.lmax:disruptor'
+  runtimeOnly ('org.apache.logging.log4j:log4j-api') { transitive = false }
+  runtimeOnly ('org.apache.logging.log4j:log4j-core') { transitive = false }
+  runtimeOnly ('org.apache.logging.log4j:log4j-slf4j-impl') { transitive = false }
+  runtimeOnly ('com.lmax:disruptor') { transitive = false }
   
 }

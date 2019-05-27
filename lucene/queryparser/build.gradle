@@ -32,11 +32,11 @@ artifacts {
 
 dependencies {
   
-  implementationTran project(':lucene:lucene-core')
-  implementationTran project(':lucene:codecs')
-  implementationTran project(':lucene:queries')
-  implementationTran project(':lucene:sandbox')
+  implementation project(':lucene:lucene-core')
+  implementation project(':lucene:codecs')
+  implementation project(':lucene:queries')
+  implementation project(':lucene:sandbox')
   
-  testImplementationTran project(':lucene:lucene-test-framework')
+  testImplementation project(':lucene:lucene-test-framework')
   
 }
