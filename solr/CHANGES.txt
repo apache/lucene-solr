@@ -61,6 +61,7 @@ Bug Fixes
 
 * SOLR-13469: Fix rejected requests during full disk full + IndexFetch to use 503 not 403 (hossman)
 
+* SOLR-12941: Fix IndexSizeTrigger to correctly work with "aboveBytes" and "splitMethod=link" parameters. (ab)
 
 Other Changes
 ----------------------
