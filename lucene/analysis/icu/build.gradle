@@ -19,6 +19,10 @@ apply plugin: 'java-library'
 
 archivesBaseName = 'analyzers-icu'
 
+configurations {
+  tools
+}
+
 dependencies {
   
   api project(':lucene:lucene-core')
@@ -28,3 +32,33 @@ dependencies {
   
   testImplementation project(':lucene:lucene-test-framework')
 }
+
+sourceSets {
+  tools {
+    compileClasspath += sourceSets.main.runtimeClasspath += configurations.tools
+    runtimeClasspath += sourceSets.main.runtimeClasspath
+  }
+  tools.java.srcDirs = ['src/tools/java']
+}
+
+task genrbbi(type: JavaExec) {
+  group = 'Build Regenerate'
+  description = "Compile RBBI rules."
+  
+  classpath = sourceSets.tools.runtimeClasspath
+  main = 'org.apache.lucene.analysis.icu.RBBIRuleCompiler'
+
+  enableAssertions = true
+  
+  args "src/data/uax29"
+  args "${projectDir}/src/resources/org/apache/lucene/analysis/icu/segmentation"
+}
+
+task regenerate {
+  doFirst {
+    println "--> regenerate"
+  }
+  
+  dependsOn genrbbi
+}
+
