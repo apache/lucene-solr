@@ -849,4 +849,19 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       action.accept(getName(i), getVal(i));
     }
   }
+
+  @Override
+  public Object __getVal(String key) {
+    return get(key);
+  }
+
+  @Override
+  public MapWriterEntry __getVal(int idx) {
+    if (idx == -1 && size() > 0) idx = size() - 1;
+    if (idx >= 0) {
+      return idx < this.size() ? new MapWriter.MapWriterEntry<>(getName(idx), getVal(idx)) : null;
+    }
+    return null;
+
+  }
 }

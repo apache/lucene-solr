@@ -50,6 +50,14 @@ public interface NavigableObject {
     return v == null ? def : String.valueOf(v);
   }
 
+  /**Get the value for a given key
+   */
+  Object __getVal(String key);
+
+  /** Get the [key, value] tuple at the index . -1 = last entry
+   */
+  MapWriter.MapWriterEntry __getVal(int idx);
+
   /**Iterate through the entries of a navigable Object at a certain path
    * @param path the json path
    */

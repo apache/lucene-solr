@@ -19,6 +19,7 @@ package org.apache.solr.common;
 
 
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,6 +38,75 @@ public interface MapWriter extends MapSerializable , NavigableObject {
 
   default String jsonStr(){
     return Utils.toJSONString(this);
+  }
+
+  @Override
+  default Object __getVal(String key) {
+    Object[] result = new Object[1];
+    try {
+      writeMap(new EntryWriter() {
+        @Override
+        public EntryWriter put(CharSequence k, Object v) {
+          if (result[0] != null) return this;
+          if (k.equals(key)) result[0] = v;
+          return this;
+        }
+      });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    return result[0];
+  }
+
+  class MapWriterEntry<V> extends AbstractMap.SimpleEntry<CharSequence, V> implements MapWriter, Map.Entry<CharSequence, V> {
+    public MapWriterEntry(CharSequence key, V value) {
+      super(key, value);
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.put("key", getKey());
+      ew.put("value", getValue());
+    }
+
+  }
+
+  @Override
+  default MapWriterEntry __getVal(int idx) {
+    class EW implements EntryWriter {
+      private CharSequence key;
+      private Object val;
+      private final int idx;
+      int count = -1;
+
+      public EW(int idx) {
+        this.idx = idx;
+        count = -1;
+      }
+
+      @Override
+      public EntryWriter put(CharSequence k, Object v) {
+        if (idx == -1) {
+          key = k;
+          val = v;
+          return this;
+        }
+        if (key != null) return this;
+        if (++count == idx) {
+          key = k;
+          val = v;
+        }
+        return this;
+      }
+    }
+    try {
+      EW ew = new EW(idx);
+      writeMap(ew);
+      return ew.key != null ? new MapWriterEntry<>(ew.key.toString(), ew.val): null;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

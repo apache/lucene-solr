@@ -326,4 +326,11 @@ public class StrUtils {
   public static String formatString(String pattern, Object... args)  {
     return new MessageFormat(pattern, Locale.ROOT).format(args);
   }
+
+  public static void main(String[] args) {
+    List<String> x = splitSmart("a/b['x/y/z' == 'k']/c", '/');
+    for (String s : x) {
+      System.out.println(s);
+    }
+  }
 }

@@ -30,7 +30,6 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -61,6 +60,7 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.MapWriterMap;
+import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -365,6 +365,19 @@ public class Utils {
     List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return setObjectByPath(root, parts, value);
   }
+  static class PathParser {
+
+    PathParser(String s){
+
+
+    }
+    String path, value;
+    Operator op;
+    enum Operator {
+      EQUAL,NONE, NOT_EQUAL
+    }
+
+  }
 
   public static boolean setObjectByPath(Object root, List<String> hierarchy, Object value) {
     if (root == null) return false;
@@ -373,11 +386,18 @@ public class Utils {
     for (int i = 0; i < hierarchy.size(); i++) {
       int idx = -2; //-1 means append to list, -2 means not found
       String s = hierarchy.get(i);
-      if (s.endsWith("]")) {
-        Matcher matcher = ARRAY_ELEMENT_INDEX.matcher(s);
-        if (matcher.find()) {
-          s = matcher.group(1);
-          idx = Integer.parseInt(matcher.group(2));
+      String strim = s.trim();
+      if (strim.charAt(0) == '[' && strim.charAt(strim.length()-1) == ']') {
+        int singleQuote = 0;
+        for (int j=0;j<strim.length();j++){
+          if(strim.charAt(j) == '\'') singleQuote++;
+        }
+        if(singleQuote == 0) {
+          Matcher matcher = ARRAY_ELEMENT_INDEX.matcher(s);
+          if (matcher.find()) {
+            s = matcher.group(1);
+            idx = Integer.parseInt(matcher.group(2));
+          }
         }
       }
       if (i < hierarchy.size() - 1) {
@@ -457,7 +477,7 @@ public class Utils {
         if (val == null) return null;
         if (idx > -1) {
           if (val instanceof IteratorWriter) {
-            val = getValueAt((IteratorWriter) val, idx);
+            val = ((IteratorWriter) val).__get(idx);
           } else {
             List l = (List) val;
             val = idx < l.size() ? l.get(idx) : null;
@@ -474,68 +494,32 @@ public class Utils {
   }
 
 
-  private static Object getValueAt(IteratorWriter iteratorWriter, int idx) {
-    Object[] result = new Object[1];
-    try {
-      iteratorWriter.writeIter(new IteratorWriter.ItemWriter() {
-        int i = -1;
-
-        @Override
-        public IteratorWriter.ItemWriter add(Object o) {
-          ++i;
-          if (i > idx) return this;
-          if (i == idx) result[0] = o;
-          return this;
-        }
-      });
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return result[0];
-
-  }
-
-  static class MapWriterEntry<V> extends AbstractMap.SimpleEntry<CharSequence, V> implements MapWriter, Map.Entry<CharSequence, V> {
-    MapWriterEntry(CharSequence key, V value) {
-      super(key, value);
-    }
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ew.put("key", getKey());
-      ew.put("value", getValue());
-    }
-
-  }
-
   private static boolean isMapLike(Object o) {
-    return o instanceof Map || o instanceof NamedList || o instanceof MapWriter;
+    return o instanceof Map || o instanceof NavigableObject;
   }
 
   private static Object getVal(Object obj, String key, int idx) {
-    if (obj instanceof MapWriter) {
-      Object[] result = new Object[1];
-      try {
-        ((MapWriter) obj).writeMap(new MapWriter.EntryWriter() {
-          int count = -1;
-          @Override
-          public MapWriter.EntryWriter put(CharSequence k, Object v) {
-            if (result[0] != null) return this;
-            if (idx < 0) {
-              if (k.equals(key)) result[0] = v;
-            } else {
-              if (++count == idx) result[0] = new MapWriterEntry(k, v);
-            }
-            return this;
+    if (obj instanceof NavigableObject) {
+      return key == null ? ((NavigableObject) obj).__getVal(idx) : ((NavigableObject) obj).__getVal(idx);
+    } else if (obj instanceof Map) {
+      if (key != null) return ((Map) obj).get(key);
+      if (((Map) obj).isEmpty()) return null;
+      Object result[] = new Object[1];
+      int index = idx == -1 ? ((Map) obj).size() - 1 : idx;
+
+      ((Map) obj).forEach(new BiConsumer() {
+        int count = 0;
+
+        @Override
+        public void accept(Object k, Object v) {
+          if (result[0] != null) return;
+          if (index == count++) {
+            result[0] = new MapWriter.MapWriterEntry<>(String.valueOf(k), v);
           }
-        });
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+        }
+      });
       return result[0];
-    }
-    else if (obj instanceof Map) return ((Map) obj).get(key);
-    else throw new RuntimeException("must be a NamedList or Map");
+    } else throw new RuntimeException("must be a NavigableObject or Map");
   }
 
   /**

@@ -90,4 +90,23 @@ public interface IteratorWriter {
     }
     return l;
   }
+
+  default Object __get(int idx) {
+    Object[] result = new Object[1];
+    try {
+      writeIter(new IteratorWriter.ItemWriter() {
+        int i = -1;
+
+        @Override
+        public IteratorWriter.ItemWriter add(Object o) {
+          if (++i == idx || idx == -1) result[0] = o;
+          return this;
+        }
+      });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return result[0];
+
+  }
 }
