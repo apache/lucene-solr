@@ -236,7 +236,7 @@ class ReleaseState:
         self.config_path = config_path
         self.todo_groups = None
         self.todos = None
-        self.previous_rcs = OrderedDict()
+        self.previous_rcs = {}
         self.rc_number = 1
         self.start_date = unix_time_millis(datetime.now())
         self.script_branch = run("git rev-parse --abbrev-ref HEAD").strip()
@@ -296,7 +296,7 @@ class ReleaseState:
     def clear_rc(self):
         if ask_yes_no("Are you sure? This will clear and restart RC%s" % self.rc_number):
             maybe_remove_rc_from_svn()
-            dict = OrderedDict()
+            dict = {}
             for g in list(filter(lambda x: x.in_rc_loop(), self.todo_groups)):
                 for t in g.get_todos():
                     t.clear()
@@ -308,7 +308,7 @@ class ReleaseState:
     def new_rc(self):
         if ask_yes_no("Are you sure? This will abort current RC"):
             maybe_remove_rc_from_svn()
-            dict = OrderedDict()
+            dict = {}
             for g in list(filter(lambda x: x.in_rc_loop(), self.todo_groups)):
                 for t in g.get_todos():
                     if t.applies(self.release_type):
@@ -323,7 +323,7 @@ class ReleaseState:
         for todo_id in self.todos:
             t = self.todos[todo_id]
             tmp_todos[todo_id] = copy.deepcopy(t.state)
-        return OrderedDict({
+        return {
             'script_version': self.script_version,
             'release_version': self.release_version,
             'start_date': self.start_date,
@@ -331,7 +331,7 @@ class ReleaseState:
             'script_branch': self.script_branch,
             'todos': tmp_todos,
             'previous_rcs': self.previous_rcs
-        })
+        }
 
     def restore_from_dict(self, dict):
         self.script_version = dict['script_version']
@@ -350,11 +350,11 @@ class ReleaseState:
                 print("Warning: Could not restore state for %s, Todo definition not found" % todo_id)
 
     def load(self):
-        if os.path.exists(os.path.join(self.config_path, self.release_version, 'state.json')):
-            state_file = os.path.join(self.config_path, self.release_version, 'state.json')
+        if os.path.exists(os.path.join(self.config_path, self.release_version, 'state.yaml')):
+            state_file = os.path.join(self.config_path, self.release_version, 'state.yaml')
             with open(state_file, 'r') as fp:
                 try:
-                    dict = json.load(fp)
+                    dict = yaml.load(fp)
                     self.restore_from_dict(dict)
                     print("Loaded state from %s" % state_file)
                 except Exception as e:
@@ -366,11 +366,11 @@ class ReleaseState:
             print("Creating folder %s" % os.path.join(self.config_path, self.release_version))
             os.makedirs(os.path.join(self.config_path, self.release_version))
 
-        with open(os.path.join(self.config_path, self.release_version, 'state.json'), 'w') as fp:
-            json.dump(self.to_dict(), fp, sort_keys=False, indent=4)
+        with open(os.path.join(self.config_path, self.release_version, 'state.yaml'), 'w') as fp:
+            yaml.dump(self.to_dict(), fp, sort_keys=False, default_flow_style=False)
 
     def clear(self):
-        self.previous_rcs = OrderedDict()
+        self.previous_rcs = {}
         self.rc_number = 1
         for t_id in self.todos:
             t = self.todos[t_id]
@@ -685,6 +685,7 @@ class Todo(SecretYamlObject):
 
     def clear(self):
         self.state.clear()
+        self.set_done(False)
 
     def get_state(self):
         return self.state
