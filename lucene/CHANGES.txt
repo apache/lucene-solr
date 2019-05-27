@@ -24,6 +24,8 @@ New Features
   and process decimal point. It is similar to the JapaneseNumberFilter.
   (Namgyu Kim)
 
+* LUCENE-8362: Add doc-value support to range fields. (Atri Sharma via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-8831: Fixed LatLonShapeBoundingBoxQuery .hashCode methods. (Ignacio Vera)
