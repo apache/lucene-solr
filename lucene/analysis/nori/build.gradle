@@ -19,9 +19,67 @@ apply plugin: 'java-library'
 
 archivesBaseName = 'analyzers-nori'
 
+configurations {
+  tools
+}
+
 dependencies {
   implementation project(':lucene:lucene-core')
   implementation project(':lucene:analysis:analyzers-common')
   
+  tools ('com.ibm.icu:icu4j') { transitive = false }
+  
   testImplementation project(':lucene:lucene-test-framework')
+}
+
+sourceSets {
+  tools {
+    compileClasspath += sourceSets.main.runtimeClasspath += configurations.tools
+    runtimeClasspath += sourceSets.main.runtimeClasspath
+  }
+  toolsTest {
+    compileClasspath += sourceSets.test.runtimeClasspath += sourceSets.tools.runtimeClasspath += configurations.tools
+    runtimeClasspath += sourceSets.test.runtimeClasspath
+  }
+
+  tools.java.srcDirs = ['src/tools/java']
+  toolsTest.java.srcDirs = ['src/tools/test']
+}
+
+def mecabVersion = "2.0.3-20170922"
+def mecabFilename = "mecab-ko-dic-${mecabVersion}"
+
+task downloadDict(type: org.apache.lucene.gradle.Download) {
+  sourceUrl = "https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/${mecabFilename}.tar.gz"
+  target = new File("${buildDir}/${mecabFilename}.tar.gz")
+  
+  doLast {
+    ant.gunzip(src: "${buildDir}/${mecabFilename}.tar.gz")
+    ant.untar(src: "${buildDir}/${mecabFilename}.tar", dest: "${buildDir}")
+  }
+}
+
+task buildDict(type: JavaExec) {
+  group = 'Build'
+  description = "Download, patch, and build dict for kuromoji."
+  
+  doFirst {
+    def tree = fileTree("${projectDir}/org/apache/lucene/analysis/ko/dict")
+    tree.include '**/*'
+    tree.each { it.delete() }
+  }
+  
+  classpath = sourceSets.tools.runtimeClasspath
+  main = 'org.apache.lucene.analysis.ko.util.DictionaryBuilder'
+  
+  enableAssertions = false // TODO: an assertion fails if set to true!
+ 
+  jvmArgs '-Xmx1G'
+
+  args "${buildDir}/${mecabFilename}"
+  args "${projectDir}/src/resources"
+  args 'utf-8'
+  args 'false'
+  
+  dependsOn downloadDict
 }
