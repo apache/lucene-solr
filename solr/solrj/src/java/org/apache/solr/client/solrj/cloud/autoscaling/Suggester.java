@@ -224,11 +224,11 @@ public abstract class Suggester implements MapWriter {
   }
 
   public static class SuggestionInfo implements MapWriter {
-    String type;
+    Suggestion.Type type;
     Violation violation;
     SolrRequest operation;
 
-    public SuggestionInfo(Violation violation, SolrRequest op, String type) {
+    public SuggestionInfo(Violation violation, SolrRequest op, Suggestion.Type type) {
       this.violation = violation;
       this.operation = op;
       this.type = type;
@@ -244,7 +244,7 @@ public abstract class Suggester implements MapWriter {
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
-      ew.put("type", type);
+      ew.put("type", type.name());
       if(violation!= null) ew.put("violation",
           new ConditionalMapWriter(violation,
               (k, v) -> !"violatingReplicas".equals(k)));

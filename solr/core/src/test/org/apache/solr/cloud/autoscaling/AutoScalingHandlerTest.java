@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -40,6 +41,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.AutoScalingParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -51,6 +53,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.Type.repair;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
@@ -124,6 +127,11 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
       }
     });
     assertTrue(passed[0]);
+
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, "/suggestions", configPayload, new MapSolrParams(Collections.singletonMap("type", repair.name())));
+    response = solrClient.request(req);
+    assertTrue(((Collection) response.get("suggestions")).isEmpty());
+
     CollectionAdminRequest.deleteCollection(COLLNAME)
         .process(cluster.getSolrClient());
   }
