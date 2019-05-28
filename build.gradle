@@ -50,9 +50,15 @@ configure(luceneSolrProjects) {
     group = 'Verification'
     description = "Checks source files for proper license headers."
     excludes = ['**/TODO', '**/*.txt,', '**/*.iml']
+    check.dependsOn ratSources
   }
   
-  check.dependsOn ratSources
+  task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
+    group = 'Verification'
+    description = "Checks source files for project violations."
+    baseDir = projectDir
+    check.dependsOn checkSourcePatterns
+  }
   
   task checkMissingJavaDocs {
     group = 'Verification'
@@ -125,13 +131,6 @@ configure(rootProject) {
   // TODO: enable the modified files checking only for jenkins runs! sysprop?
   tasks.create('checkWorkingCopy', CheckWorkingCopy, false)
   
-  task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
-    group = 'Verification'
-    description = "Checks source files for project violations."
-    baseDir = rootProject.projectDir
-  }
-  
-  check.dependsOn checkSourcePatterns
 }
 
 // -> lucene-solr IDE config - setup eclipse and idea
