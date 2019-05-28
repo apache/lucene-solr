@@ -461,7 +461,7 @@ groups:
       * All patches that are intended for the branch should first be committed
         to the unstable branch, merged into the stable branch, and then into
         the current release branch.
-      * Only Jira issues with Fix version %s and priority "Blocker" will delay
+      * Only Jira issues with Fix version {{ release_version }} and priority "Blocker" will delay
         a release candidate build.
       ----
     types:
@@ -571,6 +571,7 @@ groups:
       - !Command
         cmd: git clean -df && git checkout -- .
         comment: Make sure checkout is clean and up to date
+        logfile: git_clean.log
         tee: true
       - !Command
         cmd: git pull
@@ -616,8 +617,8 @@ groups:
         logfile: import_svn.log
         tee: true
   - !Todo
-    id: smoke_tester_staged
-    title: Run the smoke tester on the staged artifacts
+    id: verify_staged
+    title: Verify staged artifacts
     depends: import_svn
     vars:
       dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
@@ -627,12 +628,12 @@ groups:
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Here we'll smoke test the release again against the actually staged artifacts.
+      commands_text: Here we'll verify that the staged artifacts are downloadable and has same sha512 hash
       remove_files:
       - '{{ tmp_dir }}'
       commands:
       - !Command
-        cmd: python3 -u {{ smoker_path }} {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  {{ dist_url }}
+        cmd: python3 -u {{ smoker_path }} {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  --download-only  {{ dist_url }}
         logfile: smoketest_staged.log
 - !TodoGroup
   id: voting
@@ -643,7 +644,7 @@ groups:
   - !Todo
     id: initiate_vote
     title: Initiate the vote
-    depends: smoke_tester_staged
+    depends: verify_staged
     description: |
       If the smoke test passes against the staged artifacts, send an email to the dev mailing list announcing the release candidate.
 

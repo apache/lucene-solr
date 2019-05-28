@@ -1277,6 +1277,8 @@ def parse_config():
                       help='Version of the release, defaults to that in URL')
   parser.add_argument('--test-java12', metavar='JAVA12_HOME',
                       help='Path to Java12 home directory, to run tests with if specified')
+  parser.add_argument('--download-only', action='store_true', default=False,
+                      help='Only perform download and sha hash check steps')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to ant for testing, e.g. -Dwhat=ever.')
@@ -1445,10 +1447,10 @@ def main():
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
-  smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, c.local_keys, ' '.join(c.test_args))
+  smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, c.local_keys, ' '.join(c.test_args),
+            downloadOnly=c.download_only)
 
-def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs):
-
+def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs, downloadOnly=False):
   startTime = datetime.datetime.now()
 
   # disable flakey tests for smoke-tester runs:
@@ -1495,21 +1497,26 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   print()
   print('Test Lucene...')
   checkSigs('lucene', lucenePath, version, tmpDir, isSigned, keysFile)
-  for artifact in ('lucene-%s.tgz' % version, 'lucene-%s.zip' % version):
-    unpackAndVerify(java, 'lucene', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
-  unpackAndVerify(java, 'lucene', tmpDir, 'lucene-%s-src.tgz' % version, gitRevision, version, testArgs, baseURL)
+  if not downloadOnly:
+    for artifact in ('lucene-%s.tgz' % version, 'lucene-%s.zip' % version):
+      unpackAndVerify(java, 'lucene', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
+    unpackAndVerify(java, 'lucene', tmpDir, 'lucene-%s-src.tgz' % version, gitRevision, version, testArgs, baseURL)
+  else:
+    print("\nLucene test done (--download-only specified)")
 
   print()
   print('Test Solr...')
   checkSigs('solr', solrPath, version, tmpDir, isSigned, keysFile)
-  for artifact in ('solr-%s.tgz' % version, 'solr-%s.zip' % version):
-    unpackAndVerify(java, 'solr', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
-  solrSrcUnpackPath = unpackAndVerify(java, 'solr', tmpDir, 'solr-%s-src.tgz' % version,
-                                       gitRevision, version, testArgs, baseURL)
-
-  print()
-  print('Test Maven artifacts for Lucene and Solr...')
-  checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigned, keysFile)
+  if not downloadOnly:
+    for artifact in ('solr-%s.tgz' % version, 'solr-%s.zip' % version):
+      unpackAndVerify(java, 'solr', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
+    solrSrcUnpackPath = unpackAndVerify(java, 'solr', tmpDir, 'solr-%s-src.tgz' % version,
+                                         gitRevision, version, testArgs, baseURL)
+    print()
+    print('Test Maven artifacts for Lucene and Solr...')
+    checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigned, keysFile)
+  else:
+    print("Solr test done (--download-only specified)")
 
   print('\nSUCCESS! [%s]\n' % (datetime.datetime.now() - startTime))
 
