@@ -9,7 +9,7 @@ Note that all library of solr-jaeger-tracer must be included in the classpath of
 
 ```
 <tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator">
-    <double name="sampleRate">100.0</double>
+    <double name="samplePercentage">100.0</double>
     <str name="agentHost">localhost</str>
     <int name="agentPort">5775</int>
     <bool name="logSpans">true</bool>

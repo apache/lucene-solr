@@ -40,11 +40,11 @@ public class GlobalTracer {
 
   private static final Tracer NOOP_TRACER = NoopTracerFactory.create();
   private static volatile Tracer TRACER = NOOP_TRACER;
-  private static volatile int rate;
+  private static volatile double rate;
   private final static ThreadLocal<Tracer> threadLocal = new ThreadLocal<>();
 
   public static void setup(Tracer tracer, double rate) {
-    GlobalTracer.rate = (int) (rate * 10);
+    GlobalTracer.rate = rate / 100.0;
     GlobalTracer.TRACER = tracer;
   }
 
@@ -77,6 +77,6 @@ public class GlobalTracer {
   }
 
   private static boolean traced() {
-    return RANDOM.nextInt(1000) < rate;
+    return RANDOM.nextDouble() <= rate;
   }
 }

@@ -35,7 +35,7 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
       configurator.init(info.initArgs);
 
       double sampleRate = 1.0;
-      Object sampleRateObj = info.initArgs.get("sampleRate");
+      Object sampleRateObj = info.initArgs.get("samplePercentage");
       if (sampleRateObj != null) {
         sampleRate = Double.parseDouble(sampleRateObj.toString());
       }
