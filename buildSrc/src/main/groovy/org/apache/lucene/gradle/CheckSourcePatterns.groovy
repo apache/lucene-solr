@@ -30,7 +30,6 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.TaskAction
-import org.gradle.api.tasks.TaskExecutionException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -40,17 +39,14 @@ class CheckSourcePatterns extends DefaultTask {
   @InputDirectory
   String baseDir
   
-  CheckSourcePatterns() {
-  }
-  
   @TaskAction
   void check() {
     ant.fileScanner{
       fileset(dir: baseDir) {
         exts.each{
-          include(name: 'lucene/**/*.' + it)
-          include(name: 'solr/**/*.' + it)
-          include(name: 'dev-tools/**/*.' + it)
+          //include(name: 'lucene/**/*.' + it)
+          //include(name: 'solr/**/*.' + it)
+          //include(name: 'dev-tools/**/*.' + it)
           include(name: '*.' + it)
         }
         // TODO: For now we don't scan txt files, so we
@@ -62,17 +58,17 @@ class CheckSourcePatterns extends DefaultTask {
         exclude(name: '**/dist/**')
         exclude(name: '**/.out/**')
         exclude(name: '**/.settings/**')
-        exclude(name: 'lucene/benchmark/work/**')
-        exclude(name: 'lucene/benchmark/temp/**')
+        exclude(name: '**/work/**')
+        exclude(name: '**/temp/**')
         exclude(name: '**/CheckLoggingConfiguration.java')
-        exclude(name: 'lucene/tools/src/groovy/check-source-patterns.groovy') // ourselves :-)
-        exclude(name: 'solr/core/src/test/org/apache/hadoop/**')
+        exclude(name: '**/CheckSourcePatterns.groovy') // ourselves :-)
+        exclude(name: '**/src/test/org/apache/hadoop/**')
       }
     }.each{ f ->
       log.info ('Scanning file: ' + f)
       def text = f.getText('UTF-8')
       invalidPatterns.each{ pattern,name ->
-        if (pattern.matcher(text).find()) {
+        if (!f.name.endsWith(".txt") && pattern.matcher(text).find()) {
           reportViolation(f, name)
         }
       }
@@ -115,7 +111,7 @@ class CheckSourcePatterns extends DefaultTask {
     }
     
     if (found) {
-      throw new TaskExecutionException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
+      throw new GradleException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
       found, violations.join(', ')))
     }
   }
