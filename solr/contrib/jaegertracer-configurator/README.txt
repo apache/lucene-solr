@@ -1,11 +1,11 @@
 Welcome to Apache Solr Prometheus Exporter
 ========
 
-Apache Solr Jaeger Tracer Configurator (solr-jaeger-tracer) provides a way for you to expose Solr's tracing to Jaeger.
+Apache Solr Jaeger Tracer Configurator (solr-jaegertracer) provides a way for you to expose Solr's tracing to Jaeger.
 
 # Setup Jaeger Tracer Configurator
 
-Note that all library of solr-jaeger-tracer must be included in the classpath of all nodes then Jaeger tracer can be setup in `solr.xml` like this:
+Note that all library of solr-jaegertracer must be included in the classpath of all nodes then Jaeger tracer can be setup in `solr.xml` like this:
 
 ```
 <tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator">

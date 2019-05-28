@@ -17,7 +17,7 @@
     limitations under the License.
  -->
 
-<project name="solr-jaeger-tracer-configurator" default="default">
+<project name="solr-jaegertracer-configurator" default="default">
 
   <description>
     Jaeger tracer configurator for tracing Solr using OpenTracing with Jaeger backend.
