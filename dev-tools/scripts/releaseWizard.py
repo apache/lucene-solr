@@ -50,6 +50,7 @@ from collections import OrderedDict
 from datetime import datetime
 from datetime import timedelta
 
+import holidays
 import yaml
 from ics import Calendar, Event
 from jinja2 import Environment
@@ -1568,15 +1569,26 @@ def create_ical(todo):
     return True
 
 
+today = datetime.utcnow().date()
+weekends = {(today + timedelta(days=x)): 'Saturday' for x in range(10) if (today + timedelta(days=x)).weekday() == 5}
+weekends.update({(today + timedelta(days=x)): 'Sunday' for x in range(10) if (today + timedelta(days=x)).weekday() == 6})
+y = datetime.utcnow().year
+years = [y, y+1]
+non_working = holidays.CA(years=years) + holidays.US(years=years) + holidays.England(years=years) \
+              + holidays.DE(years=years) + holidays.NO(years=years) + holidays.SE(years=years) + holidays.RU(years=years)
+
+
 def vote_close_72h_date():
-    dow = datetime.utcnow().weekday()
-    if dow == 6:  # Sun
-        days_to_add = 1
-    elif dow in [2, 3, 4, 5]:  # Wed, Thu, Fri, Sat
-        days_to_add = 2
-    else:
-        days_to_add = 0
-    return (datetime.utcnow() + timedelta(hours=73) + timedelta(days=days_to_add))
+    working_days = 0
+    day_offset = -1
+    # Require voting open for 3 working days, not counting todays date
+    # Working day is defined as saturday, sunday or a public holiday observed by 3 or more [CA, US, EN, DE, NO, SE, RU]
+    while working_days < 4:
+        day_offset += 1
+        d = today + timedelta(days=day_offset)
+        if not (d in weekends or (d in non_working and len(non_working[d]) >= 3)):
+            working_days += 1
+    return datetime.utcnow() + timedelta(days=day_offset) + timedelta(hours=1)
 
 
 if __name__ == '__main__':
