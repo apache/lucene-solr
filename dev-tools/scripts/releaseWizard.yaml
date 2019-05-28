@@ -139,7 +139,7 @@ templates:
 #     user_input: # An array of !UserInput objects for requesting input from user
 #     - !UserInput
 #       prompt: Please enter your gpg key ID, e.g. 0D8D0B93
-#       name: gpg_key  # This will be stored in todo state and can be referenced as {{ todo_id.name }}
+#       name: gpg_id  # This will be stored in todo state and can be referenced as {{ todo_id.name }}
 #       type: int  # if no type is given, a string is stored. Supported types are 'int'
 #     post_description: |
 #       Some `asciidoc` text (with jinja template support) 
@@ -530,18 +530,13 @@ groups:
   - !Todo
     id: clear_ivy_cache
     title: Clear the ivy cache
-    commands: !Commands
-      root_folder: '{{ ivy2_folder }}'
-      commands_text: |-
+    description: |
         It is recommended to clean your Ivy cache before building the artifacts.
         This ensures that all Ivy dependencies are freshly downloaded,
         so we emulate a user that never used the Lucene build system before.
         This script will help you rename the folder so you can get it back later
         if you wish.
-      commands:
-      - !Command
-        cmd: mv cache cache_bak
-        stdout: true
+    function: clear_ivy_cache
   - !Todo
     id: build_rc
     title: Build the release candidate
@@ -552,7 +547,7 @@ groups:
       logfile: '{{ [rc_folder, ''logs'', ''buildAndPushRelease.log''] | path_join }}'
       builder_path: '{{ [''dev-tools'', ''scripts'', ''buildAndPushRelease.py''] | path_join }}'      
       git_rev: '{{ current_git_rev }}' # Note, git_rev will be recorded in todo state AFTER completion of commands
-      local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
+      local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'      
     persist_vars:
     - git_rev
     commands: !Commands
@@ -567,6 +562,8 @@ groups:
 
         `tail -f {{ logfile | default("<logfile>") }}`
       confirm_each_command: false
+      remove_files: 
+      - '{{ dist_file_path }}'
       commands:
       - !Command
         cmd: git checkout {{ release_branch }}
@@ -579,7 +576,7 @@ groups:
         cmd: git pull
         tee: true
       - !Command
-        cmd: python3 -u {{ builder_path }} {{ local_keys }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg.gpg_key | default("<gpg_key_id>", True) }}
+        cmd: python3 -u {{ builder_path }} {{ local_keys }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg.gpg_id | default("<gpg_key_id>", True) }}
         logfile: build_rc.log
         tee: true
   - !Todo

@@ -305,8 +305,11 @@ class ReleaseState:
                 for t in g.get_todos():
                     t.clear()
             print("Cleared RC TODO state")
-            shutil.rmtree(self.get_rc_folder())
-            print("Cleared folder %s" % self.get_rc_folder())
+            try:
+                shutil.rmtree(self.get_rc_folder())
+                print("Cleared folder %s" % self.get_rc_folder())
+            except Exception as e:
+                print("WARN: Failed to clear %s, please do it manually with higher privileges" % self.get_rc_folder())
             self.save()
 
     def new_rc(self):
@@ -427,9 +430,6 @@ class ReleaseState:
 
     def get_dist_folder(self):
         folder = os.path.join(self.get_rc_folder(), "dist")
-        if not os.path.exists(folder):
-            print("Creating folder %s" % folder)
-            os.makedirs(folder)
         return folder
 
     def get_git_checkout_folder(self):
@@ -1589,6 +1589,18 @@ def vote_close_72h_date():
         if not (d in weekends or (d in non_working and len(non_working[d]) >= 3)):
             working_days += 1
     return datetime.utcnow() + timedelta(days=day_offset) + timedelta(hours=1)
+
+
+def clear_ivy_cache(todo):
+    cache_folder = os.path.expanduser("~/.ivy2/cache")
+    bak_folder = os.path.expanduser("~/.ivy2/cache_bak")
+    if ask_yes_no("Do you want me to backup your ivy cache folder %s now?" % cache_folder):
+        if os.path.exists(bak_folder):
+            shutil.rmtree(bak_folder)
+        if os.path.exists(cache_folder):
+            os.rename(cache_folder, bak_folder)
+            print("Moved ivy cache folder to %s" % bak_folder)
+    return True
 
 
 if __name__ == '__main__':
