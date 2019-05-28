@@ -149,3 +149,19 @@ configure(allprojects) {
   }
 }
 
+// Single JavaDocs for all modules
+
+def noJavaDocModules = ["buildSrc", "dev-tools","lucene", "solr", "solr-ref-guide", "analysis", "backward-codecs", "contrib", "example"]
+def javaDocProjects = subprojects.findAll { project -> !noJavaDocModules.contains(project.name)}
+
+project.afterEvaluate{
+  task javaDocAll(type: Javadoc) {
+    group = 'Documentation'
+    description = "Generates single JavaDoc for all modules."
+    javaDocProjects.each { evaluationDependsOn(it.path) }
+    source javaDocProjects.collect { it.sourceSets.main.allJava }
+    classpath = files(javaDocProjects.collect { it.sourceSets.main.compileClasspath })
+    destinationDir = file("${buildDir}/docs")
+  }
+}
+
