@@ -39,6 +39,11 @@
  
  
  sourceSets {
+   tools {
+     compileClasspath += sourceSets.main.runtimeClasspath += configurations.tools
+     runtimeClasspath += sourceSets.main.runtimeClasspath
+   }
+   
    tools.java.srcDirs = ['tools']
    refGuide.java.srcDirs = ['src']
  }
