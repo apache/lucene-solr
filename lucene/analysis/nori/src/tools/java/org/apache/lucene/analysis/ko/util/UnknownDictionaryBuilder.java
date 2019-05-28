@@ -32,7 +32,7 @@ import java.util.List;
 import org.apache.lucene.analysis.ko.dict.CharacterDefinition;
 
 public class UnknownDictionaryBuilder {
-  private static final String NGRAM_DICTIONARY_ENTRY = "NGRAM,1798,3559,3677,UNKNOWN,*,*,*,*,*,*,*";
+  private static final String NGRAM_DICTIONARY_ENTRY = "NGRAM,1798,3559,3677,SY,*,*,*,*,*,*,*";
   
   private String encoding = "utf-8";
   
