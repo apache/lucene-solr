@@ -22,7 +22,8 @@ CMD ["bash"]
 RUN \
   apt-get update && \
   apt-get install -y openjdk-11-jdk && \
-  apt-get install -y python
+  apt-get install -y python && \
+  apt-get install -y patch
 
 # Define commonly used JAVA_HOME variable
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64/
