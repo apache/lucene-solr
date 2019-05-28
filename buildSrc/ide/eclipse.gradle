@@ -38,7 +38,8 @@ eclipse {
     
     file.beforeMerged { classpath ->
       // some projects might have a tools src set, so add the tools configuration if it exists
-      configurations.all.findAll { c -> c.getName() == "tools" }.each { plusConfigurations += [ it ]}
+      def extraConfs = ['tools', 'refGuide']
+      configurations.all.findAll { c -> extraConfs.contains(c.name) }.each { plusConfigurations += [ it ]}
     }
 
     file.whenMerged { classpath ->
