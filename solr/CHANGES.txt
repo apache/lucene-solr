@@ -95,12 +95,16 @@ New Features
 
 * SOLR-13484: autoscaling/diagnostics API should be able to give diagnostics output from config sent as a payload (noble)
 
+* SOLR-13493: /autoscaling/suggestions to be able to filter by type (noble)
+
 Bug Fixes
 ----------------------
 
 * SOLR-13474: Fix "Search is temporarily disabled" logic to be consistent for entire request (hossman)
 
 * SOLR-13469: Fix rejected requests during full disk full + IndexFetch to use 503 not 403 (hossman)
+
+* SOLR-12941: Fix IndexSizeTrigger to correctly work with "aboveBytes" and "splitMethod=link" parameters. (ab)
 
 Other Changes
 ----------------------

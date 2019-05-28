@@ -318,6 +318,14 @@ The API is available at `/admin/autoscaling/suggestions`. Here is an example out
 
 The suggested `operation` is an API call that can be invoked to remedy the current violation.
 
+The types of suggestions available are
+
+* `violation` : Fixes a violation to one or more policy rules
+* `repair` : Add missing replicas
+* `improvement` : move replicas around so that the load is more evenly balanced according to the autoscaling preferences
+
+By default, the suggestions API return all of the above , in that order. However it is possible to fetch only certain types by adding a request parameter `type`. e.g: `type=violation&type=repair`
+
 === Inline Policy Configuration
 
 If there is no autoscaling policy configured or if you wish to use a configuration other than the default, it is possible to send the autoscaling policy JSON as an inline payload as follows:

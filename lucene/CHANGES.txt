@@ -45,6 +45,10 @@ New Features
   feature. This is exposed via the factory method FeatureField#newFeatureSort.
   (Colin Goodheart-Smithe via Adrien Grand)
 
+* LUCENE-8784: The KoreanTokenizer now preserves punctuations if discardPunctuation is set
+  to false (defaults to true).
+  (Namgyu Kim via Jim Ferenczi)
+
 Bug Fixes
 
 * LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
