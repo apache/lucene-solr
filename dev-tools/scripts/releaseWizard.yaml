@@ -34,7 +34,7 @@ templates:
   help: |
     Welcome to the role as Release Manager for Lucene/Solr, and the releaseWizard!
 
-    This tool aims to walk you through the whole release process step by step,
+    The Release Wizard aims to walk you through the whole release process step by step,
     helping you to to run the right commands in the right order, generating
     e-mail templates for you with the correct texts, versions, paths etc, obeying
     the voting rules and much more. It also serves as a documentation of all the
@@ -152,7 +152,8 @@ groups:
   title: Prerequisites
   description: |
     Releasing software requires thorough understanding of the process and careful execution,
-    as it is easy to make mistakes. This section makes sure you're in good shape for the job!
+    as it is easy to make mistakes. It also requires an environtment and tools such as gpg
+    correctly setup. This section makes sure you're in good shape for the job!
   todos:
   - !Todo
     id: read_up
@@ -192,7 +193,7 @@ groups:
 
       * Make sure your gpg key is 4096 bits key or larger
       * Upload your key to the MIT key server, pgp.mit.edu
-      * Put you GPG key's fingerprint in the 'OpenPGP Public Key Primary Fingerprint'
+      * Put you GPG key's fingerprint in the `OpenPGP Public Key Primary Fingerprint`
         field in your id.apache.org profile
       * The tests will complain if your GPG key has not been signed by another Lucene
         committer. This makes you a part of the GPG "web of trust" (WoT). Ask a committer
@@ -544,7 +545,8 @@ groups:
     - gpg
     - run_tests
     vars:
-      logfile: '{{ [rc_folder, ''logs'', ''buildAndPushRelease.log''] | path_join }}'
+      logfile: '/tmp/release.log'
+      #logfile: '{{ [rc_folder, ''logs'', ''buildAndPushRelease.log''] | path_join }}'
       builder_path: '{{ [''dev-tools'', ''scripts'', ''buildAndPushRelease.py''] | path_join }}'      
       git_rev: '{{ current_git_rev }}' # Note, git_rev will be recorded in todo state AFTER completion of commands
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'      
@@ -558,9 +560,7 @@ groups:
         to let this script kick it off or execute them in another Terminal window yourself
 
         Note that the build will take a long time. To follow the detailed build
-        log, tail the log in another Terminal:
-
-        `tail -f {{ logfile | default("<logfile>") }}`
+        log, you can tail the log file {{ logfile | default("<logfile>") }}.
       confirm_each_command: false
       remove_files: 
       - '{{ dist_file_path }}'
@@ -577,6 +577,7 @@ groups:
         tee: true
       - !Command
         cmd: python3 -u {{ builder_path }} {{ local_keys }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg.gpg_id | default("<gpg_key_id>", True) }}
+        comment: "NOTE: Remember to type your GPG pass-phrase at the prompt!"
         logfile: build_rc.log
         tee: true
   - !Todo

@@ -361,7 +361,7 @@ class ReleaseState:
             state_file = os.path.join(self.config_path, self.release_version, 'state.yaml')
             with open(state_file, 'r') as fp:
                 try:
-                    dict = yaml.load(fp)
+                    dict = yaml.load(fp, Loader=yaml.Loader)
                     self.restore_from_dict(dict)
                     print("Loaded state from %s" % state_file)
                 except Exception as e:
@@ -1271,7 +1271,7 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
                     fh.write("%s\n" % line.rstrip())
                     fh.flush()
                     lines_written += 1
-                    print_line_cr(line, lines_written, stdout=fh == sys.stdout, tee=tee)
+                    print_line_cr(line, lines_written, stdout=(fh == sys.stdout), tee=tee)
 
             except Exception as ioe:
                 pass
@@ -1283,7 +1283,7 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
                 else:
                     errlines.append("%s\n" % line.rstrip())
                     lines_written += 1
-                    print_line_cr(line, lines_written, stdout=fh == sys.stdout, tee=tee)
+                    print_line_cr(line, lines_written, stdout=(fh == sys.stdout), tee=tee)
             except Exception as e:
                 pass
 
@@ -1332,10 +1332,10 @@ class Commands(SecretYamlObject):
     def run(self):
         root = self.get_root_folder()
 
-        print(expand_jinja(self.commands_text))
+        print(self.get_commands_text())
         if self.env:
             for key in self.env:
-                val = expand_jinja(self.env[key])
+                val = self.jinjaify(self.env[key])
                 os.environ[key] = val
                 if is_windows():
                     print("\n  SET %s=%s" % (key, val))
@@ -1367,7 +1367,7 @@ class Commands(SecretYamlObject):
             success = True
             if ask_yes_no("Do you want me to run these commands now?"):
                 if self.remove_files:
-                    for f in self.get_remove_files():
+                    for f in ensure_list(self.get_remove_files()):
                         if os.path.exists(f):
                             filefolder = "File" if os.path.isfile(f) else "Folder"
                             if ask_yes_no("%s %s already exists. Shall I remove it now?" % (filefolder, f)) and not dry_run:
@@ -1404,7 +1404,12 @@ class Commands(SecretYamlObject):
                             if not logfilename:
                                 logfilename = "%s.log" % re.sub(r"\W", "_", cmd.get_cmd())
                             logfile = os.path.join(log_folder, "%s%s%s" % (log_prefix, folder_prefix, logfilename))
-                            print("Wait until command completes... Full log in %s\n" % logfile)
+                            if cmd.tee:
+                                print("Output of command will be printed (logfile=%s)" % logfile)
+                            else:
+                                print("Wait until command completes... Full log in %s\n" % logfile)
+                            if cmd.comment:
+                                print("# %s\n" % cmd.comment)
                         cmd_to_run = "%s%s" % ("echo Dry run, command is: " if dry_run else "", cmd.get_cmd())
                         returncode = run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee, tail_lines=25)
                         if not returncode == 0:
@@ -1425,7 +1430,7 @@ class Commands(SecretYamlObject):
             return success
 
     def get_root_folder(self):
-        return expand_jinja(self.root_folder)
+        return self.jinjaify(self.root_folder)
 
     def get_commands_text(self):
         return self.jinjaify(self.commands_text)
