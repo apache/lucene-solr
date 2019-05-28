@@ -619,6 +619,9 @@ groups:
   - !Todo
     id: verify_staged
     title: Verify staged artifacts
+    description: |
+      A lightweight smoke testing which downloads the artifacts from stage 
+      area and checks hash and signatures, but does not re-run all tests.
     depends: import_svn
     vars:
       dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
@@ -628,7 +631,7 @@ groups:
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Here we'll verify that the staged artifacts are downloadable and has same sha512 hash
+      commands_text: Here we'll verify that the staged artifacts are downloadable and hash/signatures match
       remove_files:
       - '{{ tmp_dir }}'
       commands:
