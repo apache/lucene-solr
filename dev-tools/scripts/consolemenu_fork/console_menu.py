@@ -5,8 +5,8 @@ import threading
 
 import os
 
-from consolemenu.menu_formatter import MenuFormatBuilder
-from consolemenu.screen import Screen
+from consolemenu_fork.menu_formatter import MenuFormatBuilder
+from consolemenu_fork.screen import Screen
 
 
 def callable_wrapper(o):

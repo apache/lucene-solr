@@ -1,6 +1,6 @@
-from consolemenu.format.menu_borders import MenuBorderStyle, MenuBorderStyleFactory
-from consolemenu.format.menu_style import MenuStyle
-from consolemenu.menu_component import Dimension, MenuHeader, MenuTextSection, MenuItemsSection, MenuFooter, MenuPrompt
+from consolemenu_fork.format.menu_borders import MenuBorderStyle, MenuBorderStyleFactory
+from consolemenu_fork.format.menu_style import MenuStyle
+from consolemenu_fork.menu_component import Dimension, MenuHeader, MenuTextSection, MenuItemsSection, MenuFooter, MenuPrompt
 
 
 class MenuFormatBuilder(object):

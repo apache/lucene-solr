@@ -1,6 +1,6 @@
-from consolemenu.format.menu_borders import MenuBorderStyle, MenuBorderStyleFactory
-from consolemenu.format.menu_margins import MenuMargins
-from consolemenu.format.menu_padding import MenuPadding
+from consolemenu_fork.format.menu_borders import MenuBorderStyle, MenuBorderStyleFactory
+from consolemenu_fork.format.menu_margins import MenuMargins
+from consolemenu_fork.format.menu_padding import MenuPadding
 
 
 class MenuStyle(object):

@@ -5,7 +5,7 @@ except Exception:
     # python3
     from urllib.parse import urlparse
 
-from consolemenu.validators.base import BaseValidator
+from consolemenu_fork.validators.base import BaseValidator
 
 
 class UrlValidator(BaseValidator):

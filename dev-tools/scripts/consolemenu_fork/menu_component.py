@@ -1,6 +1,6 @@
 import textwrap
 
-from consolemenu.format import MenuStyle
+from consolemenu_fork.format import MenuStyle
 
 
 class Dimension(object):

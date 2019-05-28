@@ -56,9 +56,9 @@ from ics import Calendar, Event
 from jinja2 import Environment
 
 import scriptutil
-from consolemenu import ConsoleMenu
-from consolemenu.items import FunctionItem, SubmenuItem
-from consolemenu.screen import Screen
+from consolemenu_fork import ConsoleMenu
+from consolemenu_fork.items import FunctionItem, SubmenuItem
+from consolemenu_fork.screen import Screen
 from scriptutil import BranchType, Version, check_ant, download, run
 
 # Solr-to-Java version mapping

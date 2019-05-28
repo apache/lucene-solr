@@ -1,4 +1,4 @@
-from consolemenu.items import MenuItem
+from consolemenu_fork.items import MenuItem
 
 
 class SelectionItem(MenuItem):

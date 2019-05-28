@@ -1,5 +1,5 @@
-from consolemenu import ConsoleMenu
-from consolemenu.items import SelectionItem
+from consolemenu_fork import ConsoleMenu
+from consolemenu_fork.items import SelectionItem
 
 
 class SelectionMenu(ConsoleMenu):

@@ -1,6 +1,6 @@
 import subprocess
 
-from consolemenu.items import ExternalItem
+from consolemenu_fork.items import ExternalItem
 
 
 class CommandItem(ExternalItem):

@@ -1,7 +1,7 @@
 import getpass
 
 from collections import namedtuple
-from consolemenu.validators.base import BaseValidator, InvalidValidator
+from consolemenu_fork.validators.base import BaseValidator, InvalidValidator
 
 
 InputResult = namedtuple("InputResult", "input_string validation_result")

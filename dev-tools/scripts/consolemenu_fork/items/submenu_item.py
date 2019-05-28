@@ -1,4 +1,4 @@
-from consolemenu.items import MenuItem
+from consolemenu_fork.items import MenuItem
 
 
 def callable_wrapper(o):
