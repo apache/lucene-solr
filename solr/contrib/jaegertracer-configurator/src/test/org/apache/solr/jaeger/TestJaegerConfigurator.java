@@ -20,12 +20,22 @@ package org.apache.solr.jaeger;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.junit.Test;
 
@@ -39,13 +49,19 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
 
   @Test
   public void testInjected() throws Exception{
-    File homeDir = createTempDir("inst").toFile();
-    FileUtils.copyFile(getFile("solr/solr.xml"), new File(homeDir, "solr.xml"));
-    JettySolrRunner jetty = new JettySolrRunner(
-        homeDir.toString(), buildJettyConfig("/solr"));
-    jetty.start();
-    assertTrue(GlobalTracer.get() instanceof io.jaegertracing.Tracer);
-    jetty.stop();
+    MiniSolrCloudCluster cluster = new SolrCloudTestCase.Builder(1, createTempDir())
+        .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
+        .withSolrXml(getFile("solr/solr.xml").toPath())
+        .build();
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.SAMPLE_PERCENTAGE, "100.0")
+        .process(cluster.getSolrClient());
+    try {
+      TimeOut timeOut = new TimeOut(2, TimeUnit.MINUTES, TimeSource.NANO_TIME);
+      timeOut.waitFor("Waiting for GlobalTracer is registered", () -> GlobalTracer.get() instanceof io.jaegertracing.Tracer);
+    } finally {
+      cluster.shutdown();
+    }
+
   }
 
   //TODO add integration test with Jaeger run on a container

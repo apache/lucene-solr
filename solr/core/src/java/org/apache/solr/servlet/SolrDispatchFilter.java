@@ -451,6 +451,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         ExecutorUtil.setServerThreadFlag(null);
       }
     } finally {
+      GlobalTracer.clearContext();
       consumeInputFully(request);
       if (scope != null)
         scope.close();

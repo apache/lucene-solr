@@ -9,7 +9,6 @@ Note that all library of solr-jaeger-tracer must be included in the classpath of
 
 ```
 <tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator">
-    <double name="samplePercentage">100.0</double>
     <str name="agentHost">localhost</str>
     <int name="agentPort">5775</int>
     <bool name="logSpans">true</bool>
@@ -28,3 +27,6 @@ List of parameters for JaegerTracerConfigurator include:
 |maxQueueSize|int|No|10000|The tracer's maximum queue size|
 
 Other parameters which are not listed above can be configured using System Properties or Environment Variables. The full list are listed at [Jaeger-README](https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md).
+
+By default the sampling rate is 1%, this value can be changed by updating
+key `samplePercentage` of cluster properties. I.e: `/admin/collections?action=CLUSTERPROP&name=propertyName&samplePercentage=100`.

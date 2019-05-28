@@ -43,9 +43,20 @@ public class GlobalTracer {
   private static volatile double rate;
   private final static ThreadLocal<Tracer> threadLocal = new ThreadLocal<>();
 
-  public static void setup(Tracer tracer, double rate) {
-    GlobalTracer.rate = rate / 100.0;
-    GlobalTracer.TRACER = tracer;
+  public static void setup(Tracer tracer) {
+    synchronized (GlobalTracer.class) {
+      GlobalTracer.TRACER = tracer;
+    }
+  }
+
+  public static void setSamplePercentage(double rate) {
+    synchronized (GlobalTracer.class) {
+      GlobalTracer.rate = rate / 100.0;
+    }
+  }
+
+  public static double getSampleRate() {
+    return rate;
   }
 
   public static boolean tracing() {
@@ -74,6 +85,10 @@ public class GlobalTracer {
     }
 
     return threadLocal.get();
+  }
+
+  public static void clearContext() {
+    threadLocal.remove();
   }
 
   private static boolean traced() {

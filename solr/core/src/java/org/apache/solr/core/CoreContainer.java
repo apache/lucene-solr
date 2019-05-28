@@ -579,7 +579,6 @@ public class CoreContainer {
   public void load()  {
     log.debug("Loading cores into CoreContainer [instanceDir={}]", loader.getInstancePath());
 
-    TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo());
     // add the sharedLib to the shared resource loader before initializing cfg based plugins
     String libDir = cfg.getSharedLibDirectory();
     if (libDir != null) {
@@ -618,8 +617,11 @@ public class CoreContainer {
     hostName = cfg.getNodeName();
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
-    if(isZooKeeperAware())  pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
-        (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
+    if(isZooKeeperAware())  {
+      pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
+          (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
+      TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
+    }
 
     MDCLoggingContext.setNode(this);
 
