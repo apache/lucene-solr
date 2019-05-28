@@ -62,3 +62,8 @@ task regenerate {
   dependsOn genrbbi
 }
 
+forbiddenApisTools {
+  bundledSignatures -= 'jdk-system-out'
+  exclude 'org/apache/lucene/**' // exclude until converted to NIO2
+}
+
