@@ -25,16 +25,22 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermFrequencyAttribute;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * {@link Field} that can be used to store static scoring factors into
@@ -537,5 +543,57 @@ public final class FeatureField extends Field {
    */
   public static SortField newFeatureSort(String field, String featureName) {
     return new FeatureSortField(field, featureName);
+  }
+  
+  /**
+   * Creates a {@link DoubleValues} instance which can be used to read the values of a feature from the a 
+   * {@link FeatureField} for documents in a segment.
+   * 
+   * @param context the {@link LeafReaderContext} for the segment.
+   * @param field field name. Must not be null.
+   * @param featureName feature name. Must not be null.
+   * @return a {@link DoubleValues} which can be used to access the values of the feature for documents in the segment
+   * @throws IOException if there the feature values cannot be read.
+   * @throws NullPointerException if {@code field} or {@code featureName} is null.
+   */
+  public static DoubleValues newDoubleValues(LeafReaderContext context, String field, String featureName) throws IOException {
+    return new FeatureDoubleValues(context, field, new BytesRef(featureName));
+  }
+  
+  static class FeatureDoubleValues extends DoubleValues {
+    
+    private PostingsEnum currentReaderPostingsValues;
+
+    public FeatureDoubleValues(LeafReaderContext context, String field, BytesRef featureName) throws IOException {
+      Objects.requireNonNull(field);
+      Objects.requireNonNull(featureName);
+      Terms terms = context.reader().terms(field);
+      if (terms == null) {
+        currentReaderPostingsValues = null;
+      } else {
+        TermsEnum termsEnum = terms.iterator();
+        if (termsEnum.seekExact(featureName) == false) {
+          currentReaderPostingsValues = null;
+        } else {
+          currentReaderPostingsValues = termsEnum.postings(currentReaderPostingsValues, PostingsEnum.FREQS);
+        }
+      }
+    }
+
+    @Override
+    public double doubleValue() throws IOException {
+      return FeatureField.decodeFeatureValue(currentReaderPostingsValues.freq());
+    }
+
+    @Override
+    public boolean advanceExact(int doc) throws IOException {
+      if (currentReaderPostingsValues != null && doc >= currentReaderPostingsValues.docID()
+          && (currentReaderPostingsValues.docID() == doc || currentReaderPostingsValues.advance(doc) == doc)) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    
   }
 }
