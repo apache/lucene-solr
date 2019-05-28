@@ -26,15 +26,17 @@
    tools gradleApi()
    tools localGroovy()
    
-   tools "org.asciidoctor:asciidoctor-ant"
-   tools "com.vaadin.external.google:android-json"
-   tools "org.jsoup:jsoup"
-   tools "org.apache.pdfbox:pdfbox"
-   tools "org.slf4j:jcl-over-slf4j"
-   tools "org.slf4j:slf4j-api"
-   tools "org.slf4j:slf4j-simple"
-   tools "org.apache.logging.log4j:log4j-api"
-   tools "org.apache.logging.log4j:log4j-core"
+   tools ('org.asciidoctor:asciidoctor-ant') { transitive = false }
+   tools ('com.vaadin.external.google:android-json') { transitive = false }
+   tools ('org.jsoup:jsoup') { transitive = false }
+   tools ('org.apache.pdfbox:pdfbox') { transitive = false }
+   tools ('org.slf4j:jcl-over-slf4j') { transitive = false }
+   tools ('org.slf4j:slf4j-api') { transitive = false }
+   tools ('org.slf4j:slf4j-simple') { transitive = false }
+   tools ('org.apache.logging.log4j:log4j-api') { transitive = false }
+   tools ('org.apache.logging.log4j:log4j-core') { transitive = false }
+   tools ('com.google.guava:guava') { transitive = false }
+   tools ('commons-codec:commons-codec') { transitive = false }
  }
  
  
@@ -47,4 +49,10 @@
    tools.java.srcDirs = ['tools']
    refGuide.java.srcDirs = ['src']
  }
+ 
+ forbiddenApisTools {
+   bundledSignatures -= 'jdk-system-out'
+ }
+ 
+ 
  
