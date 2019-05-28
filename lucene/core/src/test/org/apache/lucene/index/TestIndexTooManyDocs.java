@@ -54,27 +54,30 @@ public class TestIndexTooManyDocs extends LuceneTestCase {
           threads[i] = new Thread(() -> {
             latch.countDown();
             try {
-              latch.await();
-            } catch (InterruptedException e) {
-              throw new AssertionError(e);
-            }
-            for (int d = 0; d < 100; d++) {
-              Document doc = new Document();
-              String id = Integer.toString(random().nextInt(numMaxDoc * 2));
-              doc.add(new StringField("id", id, Field.Store.NO));
               try {
-                Term t = new Term("id", id);
-                if (random().nextInt(5) == 0) {
-                  writer.deleteDocuments(new TermQuery(t));
-                }
-                writer.updateDocument(t, doc);
-              } catch (IOException e) {
+                latch.await();
+              } catch (InterruptedException e) {
                 throw new AssertionError(e);
-              } catch (IllegalArgumentException e) {
-                assertEquals("number of documents in the index cannot exceed " + IndexWriter.getActualMaxDocs(), e.getMessage());
               }
+              for (int d = 0; d < 100; d++) {
+                Document doc = new Document();
+                String id = Integer.toString(random().nextInt(numMaxDoc * 2));
+                doc.add(new StringField("id", id, Field.Store.NO));
+                try {
+                  Term t = new Term("id", id);
+                  if (random().nextInt(5) == 0) {
+                    writer.deleteDocuments(new TermQuery(t));
+                  }
+                  writer.updateDocument(t, doc);
+                } catch (IOException e) {
+                  throw new AssertionError(e);
+                } catch (IllegalArgumentException e) {
+                  assertEquals("number of documents in the index cannot exceed " + IndexWriter.getActualMaxDocs(), e.getMessage());
+                }
+              }
+            } finally {
+              indexingDone.countDown();
             }
-            indexingDone.countDown();
           });
         } else {
           threads[i] = new Thread(() -> {
