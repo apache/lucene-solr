@@ -125,7 +125,7 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
 
   public static final class HtmlFileFilter implements FileFilter {
     public boolean accept(File pathname) {
-      return pathname.getName().toLowerCase().endsWith("html");
+      return pathname.getName().toLowerCase(Locale.ROOT).endsWith("html");
     }
   }
 
