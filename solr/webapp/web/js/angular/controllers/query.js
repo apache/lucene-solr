@@ -20,8 +20,8 @@ solrAdminApp.controller('QueryController',
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     // @todo read URL parameters into scope
-    $scope.query = {q:'*:*'};
-    $scope.filters = [{fq:""}];
+    $scope.query = ($scope.$root[$routeParams.core] && $scope.$root[$routeParams.core].oldQuery) || {q:'*:*'};
+    $scope.filters = ($scope.$root[$routeParams.core] && $scope.$root[$routeParams.core].oldFilters) || [{fq:""}];
     $scope.dismax = {defType: "dismax"};
     $scope.edismax = {defType: "edismax", stopwords: true, lowercaseOperators: false};
     $scope.hl = {hl:"on"};
@@ -30,7 +30,24 @@ solrAdminApp.controller('QueryController',
     $scope.spellcheck = {spellcheck:"on"};
     $scope.qt = "/select";
 
+    $scope.$watch('query', function (newVal) {
+      if(!$scope.$root[$routeParams.core]){
+        $scope.$root[$routeParams.core] = {};
+      }
+      $scope.$root[$routeParams.core].oldQuery = newVal;
+      $location.search("q", $scope.query.q);
+    });
+
+    $scope.$watch('filters', function (newVal) {
+      if(!$scope.$root[$routeParams.core]){
+        $scope.$root[$routeParams.core] = {};
+      }
+      $scope.$root[$routeParams.core].oldFilters = newVal;
+      $location.search("fq", $scope.filters.map(f => f.fq).join());
+    });
+
     $scope.doQuery = function() {
+      $location.search("q", $scope.query.q).search("fq", $scope.filters.map(f => f.fq).join());
       var params = {};
 
       var set = function(key, value) {
@@ -100,6 +117,9 @@ solrAdminApp.controller('QueryController',
 
     if ($location.search().q) {
       $scope.query.q = $location.search()["q"];
+      if ($location.search().fq) {
+        $scope.filters = $location.search()["fq"].split(",").map(f => {var x = {}; x.fq = f; return x;});
+      }
       $scope.doQuery();
     }
 
