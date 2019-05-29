@@ -278,6 +278,9 @@ public class SolrXmlConfig {
         case "replayUpdatesThreads":
           builder.setReplayUpdatesThreads(parseInt(name, value));
           break;
+        case "collectorsPoolSize":
+          builder.setCollectorsPoolSize(parseInt(name, value));
+          break;
         case "transientCacheSize":
           builder.setTransientCacheSize(parseInt(name, value));
           break;

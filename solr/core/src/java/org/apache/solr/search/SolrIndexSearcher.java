@@ -32,7 +32,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -93,7 +92,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -177,8 +175,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private SolrMetricManager metricManager;
   private String registryName;
 
-  private final ExecutorService collectorExecutor;
-
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
                                            String path) throws IOException {
     final Directory dir = directoryFactory.get(path, DirContext.DEFAULT, config.lockType);
@@ -257,18 +253,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name,
-      boolean enableCache, DirectoryFactory directoryFactory, ExecutorService collectorExecutor) throws IOException {
+      boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
     // We don't need to reserve the directory because we get it from the factory
     this(core, path, schema, name, getReader(core, config, directoryFactory, path), true, enableCache, false,
-        directoryFactory, collectorExecutor);
+        directoryFactory);
     // Release the directory at close.
     this.releaseDirectory = true;
   }
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, String name, DirectoryReader r,
-      boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory,
-      ExecutorService collectorExecutor) throws IOException {
-    super(wrapReader(core, r), collectorExecutor);
+      boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory) throws IOException {
+    super(wrapReader(core, r), core.getCoreContainer().getCollectorExecutor());
     this.path = path;
     this.directoryFactory = directoryFactory;
     this.reader = (DirectoryReader) super.readerContext.reader();
@@ -276,7 +271,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.leafReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
     this.schema = schema;
-    this.collectorExecutor = collectorExecutor;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + "[" + core.getName() + "]"
         + (name != null ? " " + name : "");
     log.info("Opening [{}]", this.name);
@@ -517,17 +511,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       directoryFactory.release(getIndexReader().directory());
     }
     
-    try {
-      if (this.collectorExecutor != null) {
-        ExecutorUtil.shutdownAndAwaitTermination(this.collectorExecutor);
-      }
-    } catch (Throwable e) {
-      SolrException.log(log, e);
-      if (e instanceof Error) {
-        throw (Error) e;
-      }
-    }
-
     // do this at the end so it only gets done if there are no exceptions
     numCloses.incrementAndGet();
     assert ObjectReleaseTracker.release(this);
@@ -1698,6 +1681,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     CollectorManager<MultiCollector, CollectorManagerResult> manager = new CollectorManager<MultiCollector, CollectorManagerResult>() {
       @Override
       public MultiCollector newCollector() throws IOException {
+        // nocommit: Here, creating a MultiCollector for every segment (correctness > speed).
+        // Need to explore sharing a single MultiCollector with every segment. Are these
+        // sub-collectors thread-safe? DocSetCollector seems like not thread-safe, does someone know?
         Collection<Collector> collectors = new ArrayList<Collector>();
         if (needTopDocs) collectors.add(buildTopDocsCollector(len, cmd));
         if (needMaxScore) collectors.add(new MaxScoreCollector());

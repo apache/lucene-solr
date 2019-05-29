@@ -1999,12 +1999,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
 
-  private ExecutorService getCollectorExecutor(SolrConfig config) {
-    int poolSize = config.collectorPoolSize;
-    return ExecutorUtil.newMDCAwareCachedThreadPool(poolSize,
-        new DefaultSolrThreadFactory("searcherCollectorExecutor"));
-  }
-
   /** Opens a new searcher and returns a RefCounted&lt;SolrIndexSearcher&gt; with its reference incremented.
    *
    * "realtime" means that we need to open quickly for a realtime view of the index, hence don't do any
@@ -2092,7 +2086,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         final boolean useCaches = !realtime;
         final String newName = realtime ? "realtime" : "main";
         tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), newName,
-                                    newReader, true, useCaches, true, directoryFactory, getCollectorExecutor(this.solrConfig));
+                                    newReader, true, useCaches, true, directoryFactory);
 
       } else {
         // newestSearcher == null at this point
@@ -2103,7 +2097,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           // in time on a core reload
           DirectoryReader newReader = newReaderCreator.call();
           tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(),
-              (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory, getCollectorExecutor(this.solrConfig));
+              (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
         } else  {
           RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(this);
           DirectoryReader newReader = null;
@@ -2113,7 +2107,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
             writer.decref();
           }
           tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(),
-              (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory, getCollectorExecutor(this.solrConfig));
+              (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
         }
       }
 
