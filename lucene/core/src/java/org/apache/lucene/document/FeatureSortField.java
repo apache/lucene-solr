@@ -19,8 +19,10 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Objects;
 
-import org.apache.lucene.document.FeatureField.FeatureDoubleValues;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.SortField;
@@ -85,42 +87,53 @@ final class FeatureSortField extends SortField {
   }
 
   /** Parses a feature field's values as float and sorts by descending value */
-  class FeatureComparator extends SimpleFieldComparator<Double> {
+  class FeatureComparator extends SimpleFieldComparator<Float> {
     private final String field;
     private final BytesRef featureName;
-    private final double[] values;
-    private double bottom;
-    private double topValue;
-    private FeatureDoubleValues featureValues;
+    private final float[] values;
+    private float bottom;
+    private float topValue;
+    private PostingsEnum currentReaderPostingsValues;
 
     /** Creates a new comparator based on relevance for {@code numHits}. */
     public FeatureComparator(int numHits, String field, String featureName) {
-      this.values = new double[numHits];
+      this.values = new float[numHits];
       this.field = field;
       this.featureName = new BytesRef(featureName);
     }
 
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
-      featureValues = new FeatureDoubleValues(context, field, featureName);
+      Terms terms = context.reader().terms(field);
+      if (terms == null) {
+        currentReaderPostingsValues = null;
+      } else {
+        TermsEnum termsEnum = terms.iterator();
+        if (termsEnum.seekExact(featureName) == false) {
+          currentReaderPostingsValues = null;
+        } else {
+          currentReaderPostingsValues = termsEnum.postings(currentReaderPostingsValues, PostingsEnum.FREQS);
+        }
+      }
     }
 
-    private double getValueForDoc(int doc) throws IOException {
-      if (featureValues.advanceExact(doc)) {
-        return featureValues.doubleValue();
+    private float getValueForDoc(int doc) throws IOException {
+      if (currentReaderPostingsValues != null && doc >= currentReaderPostingsValues.docID()
+          && (currentReaderPostingsValues.docID() == doc || currentReaderPostingsValues.advance(doc) == doc)) {
+        return FeatureField.decodeFeatureValue(currentReaderPostingsValues.freq());
       } else {
-        return 0.0;
+        return 0.0f;
       }
     }
 
     @Override
     public int compare(int slot1, int slot2) {
-      return Double.compare(values[slot2], values[slot1]);
+      return Float.compare(values[slot2], values[slot1]);
     }
 
     @Override
     public int compareBottom(int doc) throws IOException {
-      return Double.compare(getValueForDoc(doc), bottom);
+      return Float.compare(getValueForDoc(doc), bottom);
     }
 
     @Override
@@ -134,18 +147,18 @@ final class FeatureSortField extends SortField {
     }
 
     @Override
-    public void setTopValue(Double value) {
+    public void setTopValue(Float value) {
       topValue = value;
     }
 
     @Override
-    public Double value(int slot) {
-      return Double.valueOf(values[slot]);
+    public Float value(int slot) {
+      return Float.valueOf(values[slot]);
     }
 
     @Override
     public int compareTop(int doc) throws IOException {
-      return Double.compare(getValueForDoc(doc), topValue);
+      return Float.compare(getValueForDoc(doc), topValue);
     }
   }
 }

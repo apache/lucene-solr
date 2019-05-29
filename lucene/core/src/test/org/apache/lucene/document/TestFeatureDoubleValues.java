@@ -22,7 +22,10 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /*
@@ -59,7 +62,8 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
 
     assertEquals(1, ir.leaves().size());
     LeafReaderContext context = ir.leaves().get(0);
-    DoubleValues values = FeatureField.newDoubleValues(context, "field", "name");
+    DoubleValuesSource valuesSource = FeatureField.newDoubleValues("field", "name");
+    DoubleValues values = valuesSource.getValues(context, null);
 
     assertTrue(values.advanceExact(0));
     assertEquals(30, values.doubleValue(), 0f);
@@ -89,7 +93,8 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
 
     assertEquals(1, ir.leaves().size());
     LeafReaderContext context = ir.leaves().get(0);
-    DoubleValues values = FeatureField.newDoubleValues(context, "field", "name");
+    DoubleValuesSource valuesSource = FeatureField.newDoubleValues("field", "name");
+    DoubleValues values = valuesSource.getValues(context, null);
 
     assertFalse(values.advanceExact(0));
     assertTrue(values.advanceExact(1));
@@ -113,7 +118,8 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
     
     assertEquals(1, ir.leaves().size());
     LeafReaderContext context = ir.leaves().get(0);
-    DoubleValues values = FeatureField.newDoubleValues(context, "field", "name");
+    DoubleValuesSource valuesSource = FeatureField.newDoubleValues("field", "name");
+    DoubleValues values = valuesSource.getValues(context, null);
 
     assertFalse(values.advanceExact(0));
     assertFalse(values.advanceExact(1));
@@ -134,7 +140,8 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
     
     assertEquals(1, ir.leaves().size());
     LeafReaderContext context = ir.leaves().get(0);
-    DoubleValues values = FeatureField.newDoubleValues(context, "field", "name");
+    DoubleValuesSource valuesSource = FeatureField.newDoubleValues("field", "name");
+    DoubleValues values = valuesSource.getValues(context, null);
 
     assertFalse(values.advanceExact(0));
     assertFalse(values.advanceExact(1));
@@ -167,7 +174,8 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
 
     assertEquals(1, ir.leaves().size());
     LeafReaderContext context = ir.leaves().get(0);
-    DoubleValues values = FeatureField.newDoubleValues(context, "field", "name");
+    DoubleValuesSource valuesSource = FeatureField.newDoubleValues("field", "name");
+    DoubleValues values = valuesSource.getValues(context, null);
 
     assertFalse(values.advanceExact(0));
     assertFalse(values.advanceExact(1));
@@ -182,5 +190,60 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
 
     ir.close();
     dir.close();
+  }
+  
+  public void testHashCodeAndEquals() {
+    FeatureDoubleValuesSource valuesSource = new FeatureDoubleValuesSource("test_field", new BytesRef("test_feature"));
+    FeatureDoubleValuesSource equal = new FeatureDoubleValuesSource("test_field", new BytesRef("test_feature"));
+
+    FeatureDoubleValuesSource differentField = new FeatureDoubleValuesSource("other field", new BytesRef("test_feature"));
+    FeatureDoubleValuesSource differentFeature = new FeatureDoubleValuesSource("test_field", new BytesRef("other_feature"));
+    DoubleValuesSource otherImpl = new DoubleValuesSource() {
+      
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return false;
+      }
+      
+      @Override
+      public String toString() {
+        return null;
+      }
+      
+      @Override
+      public DoubleValuesSource rewrite(IndexSearcher reader) throws IOException {
+        return null;
+      }
+      
+      @Override
+      public boolean needsScores() {
+        return false;
+      }
+      
+      @Override
+      public int hashCode() {
+        return 0;
+      }
+      
+      @Override
+      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        return null;
+      }
+      
+      @Override
+      public boolean equals(Object obj) {
+        return false;
+      }
+    };
+    
+    assertTrue(valuesSource.equals(equal));
+    assertEquals(valuesSource.hashCode(), equal.hashCode());
+    assertFalse(valuesSource.equals(null));
+    assertFalse(valuesSource.equals(otherImpl));
+    assertNotEquals(valuesSource.hashCode(), otherImpl.hashCode());
+    assertFalse(valuesSource.equals(differentField));
+    assertNotEquals(valuesSource.hashCode(), differentField.hashCode());
+    assertFalse(valuesSource.equals(differentFeature));
+    assertNotEquals(valuesSource.hashCode(), differentFeature.hashCode());
   }
 }
