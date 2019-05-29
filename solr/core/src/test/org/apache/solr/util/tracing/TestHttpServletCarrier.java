@@ -38,6 +38,7 @@ public class TestHttpServletCarrier extends SolrTestCaseJ4 {
 
   @Test
   public void test() {
+    SolrTestCaseJ4.assumeWorkingMockito();
     HttpServletRequest req = mock(HttpServletRequest.class);
     Multimap<String, String> headers = HashMultimap.create();
     headers.put("a", "a");
