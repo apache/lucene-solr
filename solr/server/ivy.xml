@@ -42,9 +42,7 @@
     <dependency org="io.dropwizard.metrics" name="metrics-jmx" rev="${/io.dropwizard.metrics/metrics-jmx}" conf="metrics" />
     <dependency org="io.dropwizard.metrics" name="metrics-jvm" rev="${/io.dropwizard.metrics/metrics-jvm}" conf="metrics" />
     <dependency org="io.dropwizard.metrics" name="metrics-graphite" rev="${/io.dropwizard.metrics/metrics-graphite}" conf="metrics" />
-
-    <!--io.jaegertracing:jaeger-thrift:jar:0.27.0:compile-->
-    <!--org.apache.thrift:libthrift:jar:0.9.2:compile-->
+    
     <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="${/org.eclipse.jetty/jetty-continuation}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-deploy" rev="${/org.eclipse.jetty/jetty-deploy}" conf="jetty"/>
     <dependency org="org.eclipse.jetty" name="jetty-http" rev="${/org.eclipse.jetty/jetty-http}" conf="jetty"/>
