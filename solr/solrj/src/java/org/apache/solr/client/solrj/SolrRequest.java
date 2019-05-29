@@ -250,6 +250,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   }
 
   public Map<String, String> getHeaders() {
+    if (headers == null) return null;
     return Collections.unmodifiableMap(headers);
   }
 }
