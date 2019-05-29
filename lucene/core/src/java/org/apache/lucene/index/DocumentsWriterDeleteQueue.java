@@ -187,8 +187,8 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
   }
 
   void tryApplyGlobalSlice() {
-    ensureOpen();
     if (globalBufferLock.tryLock()) {
+      ensureOpen();
       /*
        * The global buffer must be locked but we don't need to update them if
        * there is an update going on right now. It is sufficient to apply the
