@@ -57,6 +57,7 @@ public class GlobalTracer {
     return INS.tracer();
   }
 
+  @VisibleForTesting
   final Tracer tracer;
   private double rate;
   private final ThreadLocal<Tracer> threadLocal = new ThreadLocal<>();
@@ -102,6 +103,9 @@ public class GlobalTracer {
     return threadLocal.get();
   }
 
+  /**
+   * Clear tracing context for the current thread
+   */
   public void clearContext() {
     threadLocal.remove();
   }

@@ -87,7 +87,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
       assertEquals(45000, connectionTimeout);
     }
   }
-
+  
   @After
   public void afterTest() throws Exception {
     shutdownCluster();
@@ -113,15 +113,15 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
     ChaosMonkey.stop(cluster.getJettySolrRunners());
 
-
+    
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       cluster.waitForJettyToStop(jettySolrRunner);
     }
     assertTrue("Timeout waiting for all not live", ClusterStateUtil.waitForAllReplicasNotLive(cloudClient.getZkStateReader(), 45000));
     ChaosMonkey.start(cluster.getJettySolrRunners());
-
+    
     cluster.waitForAllNodes(30);
-
+    
     assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cloudClient.getZkStateReader(), COLLECTION, 120000));
 
     resp = cloudClient.query(COLLECTION, params);

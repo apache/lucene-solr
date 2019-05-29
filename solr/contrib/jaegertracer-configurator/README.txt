@@ -1,4 +1,4 @@
-Welcome to Apache Solr Prometheus Exporter
+Welcome to Apache Solr Jaeger Tracer Configurator
 ========
 
 Apache Solr Jaeger Tracer Configurator (solr-jaegertracer) provides a way for you to expose Solr's tracing to Jaeger.

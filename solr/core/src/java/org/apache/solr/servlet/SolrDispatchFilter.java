@@ -73,7 +73,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
@@ -404,7 +403,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
           .withTag(Tags.HTTP_URL.getKey(), request.getRequestURL().toString());
       span = spanBuilder.start();
-      MDCLoggingContext.setTracerId(span.context().toTraceId());
       scope = tracer.scopeManager().activate(span);
 
       AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();

@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -249,6 +250,6 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   }
 
   public Map<String, String> getHeaders() {
-    return headers;
+    return Collections.unmodifiableMap(headers);
   }
 }
