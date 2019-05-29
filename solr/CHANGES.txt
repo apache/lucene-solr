@@ -97,6 +97,8 @@ New Features
 
 * SOLR-13493: /autoscaling/suggestions to be able to filter by type (noble)
 
+* SOLR-13494: Add DeepRandomStream implementation (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
