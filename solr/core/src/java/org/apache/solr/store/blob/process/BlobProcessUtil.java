@@ -14,8 +14,8 @@ public class BlobProcessUtil {
      * Initialize background blob processes
      */
     public static void init(CoreContainer cores) {
-        // Start the async Blob store core push, pull and blob file delete machinery
-        CorePusherFeeder.init(cores);
+        // Start the Blob store sync core push, async core pull, and blob file delete machinery
+        CorePusher.init(cores);
         CorePullerFeeder.init(cores);
         BlobDeleteManager.init();
     }
@@ -24,9 +24,6 @@ public class BlobProcessUtil {
      * Shutdown background blob processes
      */
     public static void shutdown() {
-        // Stop the threads pushing cores to the Blob store
-        CorePusherFeeder.shutdown();
-
         // Stop the threads pulling cores from the Blob store
         CorePullerFeeder.shutdown();
 

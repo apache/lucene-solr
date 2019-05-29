@@ -15,8 +15,6 @@ import java.lang.invoke.MethodHandles;
  * {@link #pullTaskQueue}) with such tasks {@link CorePullTask} to keep the created threads busy :) The tasks will be
  * pulled from {@link CorePullTracker} to which Solr code notifies queried cores which are stale locally and need to be
  * fetched from blob.
- * <p>
- * See {@link CorePusherFeeder} for the push version of this class
  *
  * @author msiddavanahalli
  * @since 214/solr.6

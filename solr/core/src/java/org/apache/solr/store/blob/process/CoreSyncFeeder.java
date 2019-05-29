@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandles;
 
 /**
- * A {@link Runnable} that will start a set of threads {@link CorePusherThread} or {@link CorePullerThread} to process tasks
- * pushing/pulling local core.
+ * A {@link Runnable} that will start a set of threads {@link CorePullerThread} to process tasks
+ * pulling local core.
  *
  * @author iginzburg
  * @since 214/solr.6
@@ -37,10 +37,9 @@ public abstract class CoreSyncFeeder implements Runnable, Closeable {
 
     /**
      * When a transient error occurs, the number of attempts to sync with Blob before giving up. Attempts are spaced by
-     * at least 10 seconds (see {@link CorePushTask#MIN_RETRY_DELAY_MS} nad {@link CorePullTask#MIN_RETRY_DELAY_MS})
-     * which means we'll retry for at least 90 seconds before giving up. This is something to adjust as the
-     * implementation of the delay between retries is cleaned up, see {@link CorePushTask#pushCoreToBlob} and
-     * {@link CorePullTask#pullCoreFromBlob()}.
+     * at least 10 seconds (see {@link CorePullTask#MIN_RETRY_DELAY_MS}) which means we'll retry for at least 90 seconds 
+     * before giving up. This is something to adjust as the implementation of the delay between retries is cleaned up, 
+     * see {@link CorePullTask#pullCoreFromBlob()}.
      */
     protected static final int MAX_ATTEMPTS = 10;
 
