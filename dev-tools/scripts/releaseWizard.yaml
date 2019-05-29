@@ -603,6 +603,8 @@ groups:
   - !Todo
     id: import_svn
     title: Import artifacts into SVN
+    description: |
+      Here we'll import the artifacts into Subversion.
     depends: smoke_tester
     vars:
       dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
@@ -610,7 +612,7 @@ groups:
       dist_url: https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Here we'll import the artifacts into Subversion
+      commands_text: Have your Apache credentials handy, you'll be prompted for your password
       commands:
       - !Command
         cmd: svn -m "Lucene/Solr {{ release_version }} RC{{ rc_number }}" import  {{ dist_path }}  {{ dist_url }}
@@ -631,12 +633,12 @@ groups:
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Here we'll verify that the staged artifacts are downloadable and hash/signatures match
+      commands_text: Here we'll verify that the staged artifacts are downloadable and hash/signatures match -- --download-only  
       remove_files:
       - '{{ tmp_dir }}'
       commands:
       - !Command
-        cmd: python3 -u {{ smoker_path }} {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  --download-only  {{ dist_url }}
+        cmd: python3 -u {{ smoker_path }} {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  {{ dist_url }}
         logfile: smoketest_staged.log
 - !TodoGroup
   id: voting
@@ -664,9 +666,9 @@ groups:
       You can run the smoke tester directly with this command:
 
       python3 -u dev-tools/scripts/smokeTestRelease.py \
-      https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-reve{{ build_rc.git_rev | default("<git_rev>", True) }}
+      https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
 
-      Vote will be open for at least 3 working days, i.e. until {{ vote_close }}.
+      The vote will be open for at least 3 working days, i.e. until {{ vote_close }}.
 
       [ ] +1  approve
       [ ] +0  no opinion
@@ -764,7 +766,7 @@ groups:
       logs_prefix: tag_release
       commands:
       - !Command
-        cmd: git tag -a releases/lucene-solr/{{ release_version }} -m "Lucene/Solr {{ release_version }} release" {{ build_rc.git_rev | default("<git_rev>", True) }}
+        cmd: git tag -a releases/lucene-solr/{{ release_version }}  -m "Lucene/Solr {{ release_version }} release"  {{ build_rc.git_rev | default("<git_rev>", True) }}
         logfile: git_tag.log
         tee: true
       - !Command
@@ -780,14 +782,15 @@ groups:
       dist_stage_url: https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
+      confirm_each_command: false
       commands_text: This will remove only maven artifacts
       commands:
       - !Command
-        cmd: svn rm -m "delete the lucene maven artifacts"  {{ dist_stage_url }}/lucene/maven
+        cmd: svn rm -m "Delete the lucene maven artifacts"  {{ dist_stage_url }}/lucene/maven
         logfile: svn_rm_mvn_lucene.log
         tee: true
       - !Command
-        cmd: svn rm -m "delete the solr maven artifacts"  {{ dist_stage_url }}/solr/maven
+        cmd: svn rm -m "Delete the solr maven artifacts"  {{ dist_stage_url }}/solr/maven
         logfile: svn_rm_mvn_solr.log
         tee: true
   - !Todo
@@ -799,6 +802,7 @@ groups:
       dist_release_url: https://dist.apache.org/repos/dist/release/lucene
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
+      confirm_each_command: false
       commands_text: This will move the new release artifacts from staging repo to the release repo
       commands:
       - !Command
@@ -809,18 +813,12 @@ groups:
         cmd: svn move -m "Move Solr {{ release_version }} RC{{ rc_number }} to release repo"  {{ dist_stage_url }}/solr  {{ dist_release_url }}/solr/{{ release_version }}
         logfile: svn_mv_solr.log
         tee: true
-    post_description: 'Note at this point you will see the Jenkins job "Lucene-Solr-SmokeRelease-master" begin to fail, until you run the "Generate Backcompat Indexes" '
-  - !Todo
-    id: rm_staging
-    title: Clean up folder on the staging repo
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: This will clean up the containing folder left in the staging repo
-      commands:
       - !Command
         cmd: svn rm -m "Clean up the RC folder for {{ release_version }} RC{{ rc_number }}"  https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
         logfile: svn_rm_containing.log
+        comment: Clean up containing folder on the staging repo
         tee: true
+    post_description: 'Note at this point you will see the Jenkins job "Lucene-Solr-SmokeRelease-master" begin to fail, until you run the "Generate Backcompat Indexes" '
   - !Todo
     id: publish_maven
     title: Publish maven artifacts
@@ -828,6 +826,7 @@ groups:
       dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
+      confirm_each_command: false
       commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
       commands:
       - !Command
@@ -842,17 +841,21 @@ groups:
       Once you have transferred all maven artifacts to repository.apache.org,
       you will need to:
 
-      * Log in there with your ASF credentials
-      * locate the staging repository containing the release that you just uploaded
-      * "close" the staging repository
-      * wait and wait and keep clicking refresh until it allows you to
-      * then "release" the staging repository. This will cause them to sync to
-        Maven Central See links for details
+      * Close the staging repository
+      . Log in to https://repository.apache.org/ with your ASF credentials
+      . Select "Staging Repositories" under "Build Promotion" from the navigation bar on the left
+      . Select the staging repository containing the Lucene artifacts
+      . Click on the "Close" button above the repository list, then enter a description when prompted, e.g. "Lucene/Solr {{ release_version }} RC{{ rc_number }}"
+      * The system will not spend some time validating the artifacts. Grab a coke and come back.
+      * Release the Lucene and/or Solr artifacts
+      . Wait and keep clicking refresh until the "Release" button becomes available
+      . Click on the "Release" button above the repository list, then enter a description when prompted, e.g. "Lucene/Solr {{ release_version }}".
 
       Maven central should show the release after a short while, but you need to
       wait 24 hours to give the Apache mirrors a chance to copy the new release.
     links:
     - https://wiki.apache.org/lucene-java/PublishMavenArtifacts
+    - https://repository.apache.org/index.html
   - !Todo
     id: check_mirroring
     title: Check state of mirroring so far
@@ -868,19 +871,99 @@ groups:
 - !TodoGroup
   id: website
   title: Update the website
-  description: description
+  description: |
+    For every release we publish docs on the website, we need to update the
+    download pages etc.
   todos:
   - !Todo
-    id: id
-    title: title
-- !TodoGroup
-  id: doap
-  title: Update the DOAP file
-  description: description
-  todos:
+    id: website_expaths
+    title: Update extpaths.txt
+    description: |
+      The file extpaths.txt lists paths in the svn production tree, relative to the project website's root directory, 
+      that are allowed to be out of sync with the staging tree. We need to update this in order to push generated
+      javadocs directly to production SVN and thus avoid breaking the CMS staging capability.
+    vars:
+      version: "{{ release_version_major }}_{{ release_version_minor }}_{{ release_version_bugfix }}"
+    links:
+    - http://www.apache.org/dev/cmsref
+    - http://www.apache.org/dev/cmsref#extpaths
+    - http://www.apache.org/dev/cmsref#generated-docs
+    commands: !Commands
+      root_folder: '{{ release_folder }}'
+      commands_text: Check out the CMS content folder
+      confirm_each_command: false
+      commands:
+      - !Command
+        cmd: svn co --depth=immediates  https://svn.apache.org/repos/asf/lucene/cms/trunk/content  website-source
+        cwd: website-source
+        logfile: svn-checkout-website.log
+        tee: true
+      - !Command
+        cmd: echo core/{{ version }} >> extpaths.txt
+        cwd: website-source
+        logfile: extpaths-lucene.log
+        comment: Add Lucene javadocs dir to extpaths
+        tee: true
+      - !Command
+        cmd: echo solr/{{ version }} >> extpaths.txt
+        cwd: website-source
+        logfile: extpaths-solr.log
+        comment: Add Solr javadocs dir to extpaths
+        tee: true
+      - !Command
+        cmd: svn commit -m "Update CMS production sync exceptions for {{ version }} javadocs" extpaths.txt
+        cwd: website-source
+        logfile: svn_commit_website.log
+        tee: true
   - !Todo
-    id: id
-    title: title
+    id: website_docs
+    title: Publish docs, changes and javadocs
+    description: |
+      Ensure your refridgerator has at least 2 beers - the svn import operation can take a while, 
+      depending on your upload bandwidth. We'll publish this directly to the production tree.
+      At the end of the task, the two links below shall work.
+    links:
+    - http://lucene.apache.org/core/{{ version }}
+    - http://lucene.apache.org/solr/{{ version }}
+    vars:
+      release_tag: releases/lucene-solr/{{ release_version }}
+      version: "{{ release_version_major }}_{{ release_version_minor }}_{{ release_version_bugfix }}"
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Check out the CMS content folder
+      commands:
+      - !Command
+        cmd: git fetch && git checkout {{ release_tag }}
+        comment: Checkout the release branch
+        tee: true
+      - !Command
+        cmd: ant documentation -Dversion={{ release_version }}
+        comment: Build documentation
+      - !Command
+        cmd: svn -m "Add docs, changes and javadocs for Lucene {{ release_version }}"  import {{ git_checkout_folder }}/lucene/build/docs  https://svn.apache.org/repos/infra/websites/production/lucene/content/core/{{ version }}
+        logfile: add-docs-lucene.log
+        comment: Add docs for Lucene
+        tee: true
+      - !Command
+        cmd: svn -m "Add docs, changes and javadocs for Solr {{ release_version }}"  import {{ git_checkout_folder }}/solr/build/docs  https://svn.apache.org/repos/infra/websites/production/lucene/content/solr/{{ version }}
+        logfile: add-docs-solr.log
+        comment: Add docs for Solr
+        tee: true
+  - !Todo
+    id: website_javadoc_redirect
+    title: Update redirect to latest Javadoc
+    depends: website_expaths
+    vars:
+      release_tag: releases/lucene-solr/{{ release_version }}
+      version: "{{ release_version_major }}_{{ release_version_minor }}_{{ release_version_bugfix }}"
+    description: |
+      We make it possible to link to latest javadoc by providing redirect links for e.g. 
+      http://lucene.apache.org/solr/api/solr-core/ which will auto redirect to whatever 
+      is the latest released version, i.e. http://lucene.apache.org/solr/{{ version }}/solr-core/ 
+      for {{ release_version }}. This is handled in .htaccess
+    links:
+    - http://lucene.apache.org/solr/api/solr-core/
+    function: website_javadoc_redirect
 - !TodoGroup
   id: announce
   title: Announce the release

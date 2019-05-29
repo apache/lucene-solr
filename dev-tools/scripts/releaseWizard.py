@@ -242,7 +242,7 @@ class ReleaseState:
         self.todos = None
         self.previous_rcs = {}
         self.rc_number = 1
-        self.start_date = unix_time_millis(datetime.now())
+        self.start_date = unix_time_millis(datetime.utcnow())
         self.script_branch = run("git rev-parse --abbrev-ref HEAD").strip()
         try:
             self.script_branch_type = scriptutil.find_branch_type()
@@ -601,7 +601,7 @@ class Todo(SecretYamlObject):
 
     def set_done(self, is_done):
         if is_done:
-            self.state['done_date'] = unix_time_millis(datetime.now())
+            self.state['done_date'] = unix_time_millis(datetime.utcnow())
             if self.persist_vars:
                 for k in self.persist_vars:
                     self.state[k] = self.get_vars()[k]
@@ -640,7 +640,7 @@ class Todo(SecretYamlObject):
             if self.links:
                 print("\nLinks:\n")
                 for link in self.links:
-                    print("- %s" % link)
+                    print("- %s" % expand_jinja(link, self.get_vars_and_state()))
                 print()
             try:
                 if self.function and not self.is_done():
@@ -845,11 +845,6 @@ def generate_asciidoc():
                         val = state_copy[key]
                     fh.write("\n|%s\n|%s\n" % (key, val))
                 fh.write("|===\n\n")
-            if todo.links:
-                fh.write("Links:\n\n")
-                for l in todo.links:
-                    fh.write("* %s\n" % l)
-                fh.write("\n")
             cmds = todo.get_commands()
             if cmds:
                 fh.write("%s\n\n" % cmds.get_commands_text())
@@ -877,6 +872,11 @@ def generate_asciidoc():
                 fh.write("----\n\n")
             if todo.post_description and not todo.get_asciidoc():
                 fh.write("\n%s\n\n" % todo.get_post_description())
+            if todo.links:
+                fh.write("Links:\n\n")
+                for l in todo.links:
+                    fh.write("* %s\n" % l)
+                fh.write("\n")
 
     fh.close()
     print("Wrote file %s" % os.path.join(state.get_release_folder(), filename_adoc))
@@ -1607,6 +1607,12 @@ def clear_ivy_cache(todo):
             print("Moved ivy cache folder to %s" % bak_folder)
     return True
 
+
+def website_javadoc_redirect(todo):
+    htfile = os.path.join(state.get_release_folder(), 'website_content')
+    htaccess = file_to_string(htfile)
+    print("Got htaccess file %s with conent:\n%s" % (htfile, htaccess))
+    return True
 
 if __name__ == '__main__':
     try:
