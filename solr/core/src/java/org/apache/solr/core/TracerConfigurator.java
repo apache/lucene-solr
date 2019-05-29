@@ -18,11 +18,9 @@
 package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
 
 import io.opentracing.Tracer;
 import io.opentracing.noop.NoopTracerFactory;
-import org.apache.solr.common.cloud.ClusterPropertiesListener;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.GlobalTracer;

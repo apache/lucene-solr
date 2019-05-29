@@ -28,7 +28,6 @@ import com.google.common.collect.Multimap;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import static org.mockito.ArgumentMatchers.anyString;
