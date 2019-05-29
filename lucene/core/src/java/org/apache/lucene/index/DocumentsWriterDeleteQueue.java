@@ -252,6 +252,7 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
   }
 
   private FrozenBufferedUpdates freezeGlobalBufferInternal(final Node<?> currentTail ) {
+    assert globalBufferLock.isHeldByCurrentThread();
     if (globalSlice.sliceTail != currentTail) {
       globalSlice.sliceTail = currentTail;
       globalSlice.apply(globalBufferedUpdates, BufferedUpdates.MAX_INT);

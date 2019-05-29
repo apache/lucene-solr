@@ -169,7 +169,7 @@ final class DocumentsWriter implements Closeable, Accountable {
 
   private synchronized long applyDeleteOrUpdate(ToLongFunction<DocumentsWriterDeleteQueue> function) throws IOException {
     // This method is synchronized to make sure we don't replace the deleteQueue while applying this update / delete
-    // otherwise we might loose an update / delete if this happens concurrently to a full flush.
+    // otherwise we might lose an update / delete if this happens concurrently to a full flush.
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
     long seqNo = function.applyAsLong(deleteQueue);
     flushControl.doOnDelete();
