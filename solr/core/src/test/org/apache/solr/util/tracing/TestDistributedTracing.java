@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud;
+package org.apache.solr.util.tracing;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -23,27 +23,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import io.opentracing.Span;
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.core.MockTracerConfigurator;
 import org.apache.solr.util.TimeOut;
-import org.apache.solr.util.tracing.GlobalTracer;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 public class TestDistributedTracing extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
@@ -66,18 +62,19 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   private static void waitForSampleRateUpdated(double rate) throws TimeoutException, InterruptedException {
     TimeOut timeOut = new TimeOut(1, TimeUnit.MINUTES, TimeSource.NANO_TIME);
-    timeOut.waitFor("Waiting for sample rate is updated", new Supplier<>() {
-      @Override
-      public Boolean get() {
-        return Math.abs(GlobalTracer.getSampleRate() - rate) < 0.001 && GlobalTracer.get() instanceof MockTracer;
-      }
-    });
+    timeOut.waitFor("Waiting for sample rate is updated", () ->
+        Math.abs(GlobalTracer.get().getSampleRate() - rate) < 0.001
+            && GlobalTracer.get().tracer instanceof MockTracer);
+  }
+
+  private List<MockSpan> getFinishedSpans() {
+    return ((MockTracer)GlobalTracer.get().tracer).finishedSpans();
   }
 
   @Test
   public void test() throws IOException, SolrServerException, TimeoutException, InterruptedException {
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    List<MockSpan> allSpans = MockTracerConfigurator.TRACER.finishedSpans();
+    List<MockSpan> allSpans = getFinishedSpans();
 
     cloudClient.add(COLLECTION, sdoc("id", "1"));
     List<MockSpan> finishedSpans = getRecentSpans(allSpans);
@@ -138,10 +135,10 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   private List<MockSpan> getRecentSpans(List<MockSpan> allSpans) {
-    List<MockSpan> result = new ArrayList<>(MockTracerConfigurator.TRACER.finishedSpans());
+    List<MockSpan> result = new ArrayList<>(getFinishedSpans());
     result.removeAll(allSpans);
     allSpans.clear();
-    allSpans.addAll(MockTracerConfigurator.TRACER.finishedSpans());
+    allSpans.addAll(getFinishedSpans());
     return result;
   }
 }

@@ -57,7 +57,7 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
         .process(cluster.getSolrClient());
     try {
       TimeOut timeOut = new TimeOut(2, TimeUnit.MINUTES, TimeSource.NANO_TIME);
-      timeOut.waitFor("Waiting for GlobalTracer is registered", () -> GlobalTracer.get() instanceof io.jaegertracing.Tracer);
+      timeOut.waitFor("Waiting for GlobalTracer is registered", () -> GlobalTracer.getTracer() instanceof io.jaegertracing.internal.JaegerTracer);
     } finally {
       cluster.shutdown();
     }

@@ -20,12 +20,14 @@ package org.apache.solr.util.tracing;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Random;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.noop.NoopTracerFactory;
 import io.opentracing.propagation.Format;
 
 public class GlobalTracer {
+  private static final Tracer NOOP_TRACER = NoopTracerFactory.create();
   private static final Random RANDOM;
   static {
     // We try to make things reproducible in the context of our tests by initializing the random instance
@@ -38,48 +40,61 @@ public class GlobalTracer {
     }
   }
 
-  private static final Tracer NOOP_TRACER = NoopTracerFactory.create();
-  private static volatile Tracer TRACER = NOOP_TRACER;
-  private static volatile double rate;
-  private final static ThreadLocal<Tracer> threadLocal = new ThreadLocal<>();
+  private static volatile GlobalTracer INS = new GlobalTracer(NOOP_TRACER);
 
-  public static void setup(Tracer tracer) {
-    synchronized (GlobalTracer.class) {
-      GlobalTracer.TRACER = tracer;
+  public synchronized static void setup(Tracer tracer) {
+    if (INS != null) {
+      INS.close();
     }
+    INS = new GlobalTracer(tracer);
   }
 
-  public static void setSamplePercentage(double rate) {
-    synchronized (GlobalTracer.class) {
-      GlobalTracer.rate = rate / 100.0;
-    }
+  public static GlobalTracer get() {
+    return INS;
   }
 
-  public static double getSampleRate() {
+  public static Tracer getTracer() {
+    return INS.tracer();
+  }
+
+  final Tracer tracer;
+  private double rate;
+  private final ThreadLocal<Tracer> threadLocal = new ThreadLocal<>();
+
+  public GlobalTracer(Tracer tracer) {
+    this.tracer = tracer;
+  }
+
+  public synchronized void setSamplePercentage(double rate) {
+    this.rate = rate / 100.0;
+  }
+
+  @VisibleForTesting
+  public double getSampleRate() {
     return rate;
   }
 
-  public static boolean tracing() {
+  public boolean tracing() {
     return threadLocal.get() != null
         && threadLocal.get() != NOOP_TRACER
         && threadLocal.get().activeSpan() != null;
   }
 
-  public static SpanContext extract(HttpServletRequest request) {
-    SpanContext spanContext = TRACER.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request));
+  public SpanContext extract(HttpServletRequest request) {
+    SpanContext spanContext = tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request));
     if (spanContext != null) {
-      threadLocal.set(TRACER);
+      threadLocal.set(tracer);
     }
     return spanContext;
   }
 
-  public static Tracer get() {
+  private Tracer tracer() {
     Tracer tracer = threadLocal.get();
     if (tracer != null)
       return tracer;
 
     if (traced()) {
-      threadLocal.set(TRACER);
+      threadLocal.set(this.tracer);
     } else {
       threadLocal.set(NOOP_TRACER);
     }
@@ -87,11 +102,15 @@ public class GlobalTracer {
     return threadLocal.get();
   }
 
-  public static void clearContext() {
+  public void clearContext() {
     threadLocal.remove();
   }
 
-  private static boolean traced() {
+  private boolean traced() {
     return RANDOM.nextDouble() <= rate;
+  }
+
+  public void close() {
+    tracer.close();
   }
 }

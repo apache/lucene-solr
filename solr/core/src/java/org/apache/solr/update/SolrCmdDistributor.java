@@ -293,7 +293,7 @@ public class SolrCmdDistributor implements Closeable {
       req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
     }
 
-    Tracer tracer = GlobalTracer.get();
+    Tracer tracer = GlobalTracer.getTracer();
     Span parentSpan = tracer.activeSpan();
     if (parentSpan != null) {
       tracer.inject(parentSpan.context(), Format.Builtin.HTTP_HEADERS,

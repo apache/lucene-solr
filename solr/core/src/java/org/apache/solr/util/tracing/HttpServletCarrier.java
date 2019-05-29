@@ -25,6 +25,9 @@ import java.util.NoSuchElementException;
 
 import io.opentracing.propagation.TextMap;
 
+/**
+ * A Carrier for extract Span context out of request headers
+ */
 public class HttpServletCarrier implements TextMap {
   private Iterator<Map.Entry<String, String>> it;
 

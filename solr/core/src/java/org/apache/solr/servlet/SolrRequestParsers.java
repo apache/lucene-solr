@@ -166,8 +166,8 @@ public class SolrRequestParsers
     // Pick the parser from the request...
     ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
-    if (GlobalTracer.tracing()) {
-      GlobalTracer.get().activeSpan().setTag("params", params.toString());
+    if (GlobalTracer.get().tracing()) {
+      GlobalTracer.get().getTracer().activeSpan().setTag("params", params.toString());
     }
     SolrQueryRequest sreq = buildRequestFrom(core, params, streams, getRequestTimer(req), req);
 

@@ -23,6 +23,9 @@ import java.util.Map;
 import io.opentracing.propagation.TextMap;
 import org.apache.solr.client.solrj.SolrRequest;
 
+/**
+ * An OpenTracing Carrier for injecting Span context through SolrRequest
+ */
 public class SolrRequestCarrier implements TextMap {
 
   private final SolrRequest solrRequest;

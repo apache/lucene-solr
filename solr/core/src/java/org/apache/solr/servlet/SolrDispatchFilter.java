@@ -57,6 +57,7 @@ import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import io.opentracing.Scope;
+import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
@@ -77,6 +78,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
@@ -345,14 +347,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         httpClient = null;
         cc.shutdown();
       }
-    }
-
-    if (GlobalTracer.get() instanceof Closeable) {
-      try {
-        ((Closeable) GlobalTracer.get()).close();
-      } catch (IOException e) {
-        log.warn("Exception closing Tracer", e);
-      }
+      GlobalTracer.get().close();
     }
   }
   
@@ -366,6 +361,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     HttpServletRequest request = closeShield((HttpServletRequest)_request, retry);
     HttpServletResponse response = closeShield((HttpServletResponse)_response, retry);
     Scope scope = null;
+    Span span = null;
     try {
 
       if (cores == null || cores.isShutDown()) {
@@ -397,8 +393,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
 
-      SpanContext parentSpan = GlobalTracer.extract(request);
-      Tracer tracer = GlobalTracer.get();
+      SpanContext parentSpan = GlobalTracer.get().extract(request);
+      Tracer tracer = GlobalTracer.getTracer();
 
       Tracer.SpanBuilder spanBuilder = null;
       String hostAndPort = request.getServerName() + "_" + request.getServerPort();
@@ -412,7 +408,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       spanBuilder
           .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
           .withTag(Tags.HTTP_URL.getKey(), request.getRequestURL().toString());
-      scope = spanBuilder.startActive(true);
+      span = spanBuilder.start();
+      MDCLoggingContext.setTracerId(span.context().toTraceId());
+      scope = tracer.scopeManager().activate(span);
 
       AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
       if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
@@ -451,10 +449,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         ExecutorUtil.setServerThreadFlag(null);
       }
     } finally {
-      GlobalTracer.clearContext();
+      if (span != null) span.finish();
+      if (scope != null) scope.close();
+
+      GlobalTracer.get().clearContext();
       consumeInputFully(request);
-      if (scope != null)
-        scope.close();
     }
   }
   

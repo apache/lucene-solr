@@ -18,13 +18,10 @@
 package org.apache.solr.jaeger;
 
 import io.jaegertracing.Configuration;
-import io.jaegertracing.samplers.ConstSampler;
+import io.jaegertracing.internal.samplers.ConstSampler;
 import io.opentracing.Tracer;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.TracerConfigurator;
-
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public class JaegerTracerConfigurator extends TracerConfigurator {
   public static final String AGENT_HOST = "agentHost";
@@ -61,7 +58,7 @@ public class JaegerTracerConfigurator extends TracerConfigurator {
     if (flushIntervalArg != null && !(flushIntervalArg instanceof Integer)) {
       throw new IllegalArgumentException("Expected a required int for param '" + FLUSH_INTERVAL +"'");
     }
-    int flushInterval = flushIntervalArg == null ? 5000 : (Integer) flushIntervalArg;
+    int flushInterval = flushIntervalArg == null ? 1000 : (Integer) flushIntervalArg;
 
     Object maxQueueArgs = args.get(MAX_QUEUE_SIZE);
     if (maxQueueArgs != null && !(maxQueueArgs instanceof Integer)) {

@@ -36,28 +36,37 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
 
   public static void loadTracer(SolrResourceLoader loader, PluginInfo info, ZkStateReader stateReader) {
     if (info == null) {
-      GlobalTracer.setup(NoopTracerFactory.create());
-      GlobalTracer.setSamplePercentage(0.0);
+      // in case of a Tracer is registered to OpenTracing through javaagent
+      if (io.opentracing.util.GlobalTracer.isRegistered()) {
+        GlobalTracer.setup(io.opentracing.util.GlobalTracer.get());
+        registerListener(stateReader);
+      } else {
+        GlobalTracer.setup(NoopTracerFactory.create());
+        GlobalTracer.get().setSamplePercentage(0.0);
+      }
     } else {
       TracerConfigurator configurator = loader
           .newInstance(info.className, TracerConfigurator.class);
       configurator.init(info.initArgs);
 
       GlobalTracer.setup(configurator.getTracer());
-
-      stateReader.registerClusterPropertiesListener(properties -> {
-        if (properties.containsKey(ZkStateReader.SAMPLE_PERCENTAGE)) {
-          try {
-            double sampleRate = Double.parseDouble(properties.get(ZkStateReader.SAMPLE_PERCENTAGE).toString());
-            GlobalTracer.setSamplePercentage(sampleRate);
-          } catch (NumberFormatException e) {
-            log.error("Unable to set sample rate", e);
-          }
-        } else {
-          GlobalTracer.setSamplePercentage(1);
-        }
-        return false;
-      });
+      registerListener(stateReader);
     }
+  }
+
+  private static void registerListener(ZkStateReader stateReader) {
+    stateReader.registerClusterPropertiesListener(properties -> {
+      if (properties.containsKey(ZkStateReader.SAMPLE_PERCENTAGE)) {
+        try {
+          double sampleRate = Double.parseDouble(properties.get(ZkStateReader.SAMPLE_PERCENTAGE).toString());
+          GlobalTracer.get().setSamplePercentage(sampleRate);
+        } catch (NumberFormatException e) {
+          log.error("Unable to set sample rate", e);
+        }
+      } else {
+        GlobalTracer.get().setSamplePercentage(0.1);
+      }
+      return false;
+    });
   }
 }

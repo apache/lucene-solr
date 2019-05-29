@@ -22,10 +22,10 @@ import io.opentracing.mock.MockTracer;
 import org.apache.solr.common.util.NamedList;
 
 public class MockTracerConfigurator extends TracerConfigurator {
-  public static final MockTracer TRACER = new MockTracer();
+  
   @Override
   public Tracer getTracer() {
-    return TRACER;
+    return new MockTracer();
   }
 
   @Override
