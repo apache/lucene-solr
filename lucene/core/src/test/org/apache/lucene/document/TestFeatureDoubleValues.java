@@ -29,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /*
- * Test for sorting using a feature from a FeatureField.
+ * Test for sorting using a feature from a FeatureDoubleValuesSource.
  *
  * THE RULES:
  * 1. keywords like 'abstract' and 'static' should not appear in this file.
