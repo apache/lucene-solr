@@ -28,5 +28,5 @@ List of parameters for JaegerTracerConfigurator include:
 
 Other parameters which are not listed above can be configured using System Properties or Environment Variables. The full list are listed at [Jaeger-README](https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md).
 
-By default the sampling rate is 1%, this value can be changed by updating
+By default the sampling rate is 0.1%, this value can be changed by updating
 key `samplePercentage` of cluster properties. I.e: `/admin/collections?action=CLUSTERPROP&name=propertyName&samplePercentage=100`.
