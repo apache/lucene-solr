@@ -55,10 +55,6 @@ task genrbbi(type: JavaExec) {
 }
 
 task regenerate {
-  doFirst {
-    println "--> regenerate"
-  }
-  
   dependsOn genrbbi
 }
 
