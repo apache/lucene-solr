@@ -158,36 +158,36 @@ class CheckSourcePatterns extends DefaultTask {
     (~$/import java\.lang\.\w+;/$) : 'java.lang import is unnecessary'
   ]
   
-   def found = 0
-   def violations = new TreeSet()
-   def reportViolation = { f, name ->
+   private def found = 0
+   private def violations = new TreeSet()
+   protected def reportViolation = { f, name ->
     log.error(name + ': ' + f.toString().substring(baseDir.length() + 1).replace(File.separatorChar, (char)'/'))
     violations.add(name)
     found++
   }
 
-  def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$
-  def javaCommentPattern = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$
-  def xmlCommentPattern = ~$/(?sm)\Q<!--\E(.*?)\Q-->\E/$
-  def lineSplitter = ~$/[\r\n]+/$
-  def singleLineSplitter = ~$/\n\r?/$
-  def licenseMatcher = Defaults.createDefaultMatcher()
-  def validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$
-  def validLoggerNamePattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+log+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$
-  def packagePattern = ~$/(?m)^\s*package\s+org\.apache.*;/$
-  def xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$
-  def sourceHeaderPattern = ~$/\[source\b.*/$
-  def blockBoundaryPattern = ~$/----\s*/$
-  def blockTitlePattern = ~$/\..*/$
-  def unescapedSymbolPattern = ~$/(?<=[^\\]|^)([-=]>|<[-=])/$ // SOLR-10883
-  def extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$
+  protected def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$
+  protected def javaCommentPattern = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$
+  protected def xmlCommentPattern = ~$/(?sm)\Q<!--\E(.*?)\Q-->\E/$
+  protected def lineSplitter = ~$/[\r\n]+/$
+  protected def singleLineSplitter = ~$/\n\r?/$
+  protected def licenseMatcher = Defaults.createDefaultMatcher()
+  protected def validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$
+  protected def validLoggerNamePattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+log+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$
+  protected def packagePattern = ~$/(?m)^\s*package\s+org\.apache.*;/$
+  protected def xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$
+  protected def sourceHeaderPattern = ~$/\[source\b.*/$
+  protected def blockBoundaryPattern = ~$/----\s*/$
+  protected def blockTitlePattern = ~$/\..*/$
+  protected def unescapedSymbolPattern = ~$/(?<=[^\\]|^)([-=]>|<[-=])/$ // SOLR-10883
+  protected def extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$
   
-  def isLicense = { matcher, ratDocument ->
+  protected def isLicense = { matcher, ratDocument ->
     licenseMatcher.reset()
     return lineSplitter.split(matcher.group(1)).any{ licenseMatcher.match(ratDocument, it) }
   }
 
-  def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
+  protected def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
     def contentMatcher = contentPattern.matcher(text)
     if (contentMatcher.find()) {
       def contentStartPos = contentMatcher.start()
@@ -204,13 +204,13 @@ class CheckSourcePatterns extends DefaultTask {
     }
   }
   
-   def checkMockitoAssume = { f, text ->
+  protected def checkMockitoAssume = { f, text ->
     if (text.contains("mockito") && !text.contains("assumeWorkingMockito()")) {
       reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call')
     }
   }
   
-   def checkForUnescapedSymbolSubstitutions = { f, text ->
+  protected def checkForUnescapedSymbolSubstitutions = { f, text ->
     def inCodeBlock = false
     def underSourceHeader = false
     def lineNumber = 0
