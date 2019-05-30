@@ -204,7 +204,7 @@ The attributes that can be modified are:
 See the <<create,CREATE action>> section above for details on these attributes.
 
 [[readonlymode]]
-==== Read-only mode
+==== Read-Only Mode
 Setting the `readOnly` attribute to `true` puts the collection in read-only mode,
 in which any index update requests are rejected. Other collection-level actions (eg. adding /
 removing / moving replicas) are still available in this mode.
@@ -225,7 +225,7 @@ Removing the `readOnly` property or setting it to false enables the
 processing of updates and reloads the collection.
 
 [[reindexcollection]]
-== REINDEXCOLLECTION: Re-index a Collection
+== REINDEXCOLLECTION: Re-Index a Collection
 
 `/admin/collections?action=REINDEXCOLLECTION&name=_name_`
 
