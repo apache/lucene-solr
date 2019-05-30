@@ -115,9 +115,9 @@ as demonstrated by the examples below.
 
 [NOTE]
 ====
-.\_route_ Param
+.\_route_ Parameter
 To ensure each nested update is routed to its respective shard,
-`\_route_` param must be set to the root document's ID when the
+`\_route_` parameter must be set to the root document's ID when the
 update does not have that root document.
 ====
 

@@ -132,7 +132,7 @@ Both these actions were and still are problematic. In-place-updates are safe tho
 If you want to delete certain child documents and if you know they don't themselves have nested children
 then you must do so with a delete-by-query technique.
 
-* Solr has a new field in the `\_default` configSet, called `_nest_path_`. This field stores the path of the document
+* Solr has a new field in the `\_default` configset, called `_nest_path_`. This field stores the path of the document
 in the hierarchy for non-root documents.
 
 See the sections <<indexing-nested-documents.adoc#indexing-nested-documents,Indexing Nested Documents>> and

@@ -115,7 +115,7 @@ Note how you can mix single string rules with lists of rules that must all match
 * `type:<request-type>` (request-type by name: `ADMIN`, `SEARCH`, `UPDATE`, `STREAMING`, `UNKNOWN`)
 * `collection:<collection-name>` (collection by name)
 * `user:<userid>` (user by userid)
-* `path:</path/to/handler>` (request path relative to `/solr` or for search/update requests relative to collection. Path is prefix matched, i.e. `/admin` will mute any sub path as well.
+* `path:</path/to/handler>` (request path relative to `/solr` or for search/update requests relative to collection. Path is prefix matched, i.e., `/admin` will mute any sub path as well.
 * `ip:<ip-address>` (IPv4-address)
 * `param:<param>=<value>` (request parameter)
 
@@ -139,7 +139,7 @@ Using the `MultiDestinationAuditLogger` you can configure multiple audit logger 
 ----
 
 == Metrics
-AuditLoggerPlugins record metrics about count and timing of log requests, as well as queue size for async loggers. The metrics keys are all recorded on the `SECURITY` category, and each metric name are prefixed with a scope of `/auditlogging` and the class name of the logger, e.g. `SolrLogAuditLoggerPlugin`. The individual metrics are:
+AuditLoggerPlugins record metrics about count and timing of log requests, as well as queue size for async loggers. The metrics keys are all recorded on the `SECURITY` category, and each metric name are prefixed with a scope of `/auditlogging` and the class name of the logger, e.g., `SolrLogAuditLoggerPlugin`. The individual metrics are:
 
 * `count` (type: meter. Records number and rate of audit logs done)
 * `errors` (type: meter. Records number and rate of errors)
