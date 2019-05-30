@@ -152,16 +152,12 @@ task cleanjflex() {
 task regenerate {
   group = 'Build Regenerate'
   description = "Regenerates various generated src files, automoton, packedints, jflex, etc"
-  doFirst {
-    println "--> regenerate"
-  }
 }
 
 createLevAutomaton.dependsOn installMoman
 
 regenerate.dependsOn createLevAutomaton
 regenerate.dependsOn createPackedIntSources
-
 regenerate.dependsOn runjflex
 
 
