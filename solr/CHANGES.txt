@@ -44,7 +44,7 @@ New Features
 
 * SOLR-11558: It would be nice if the Graph section of the Cloud tab in the Admin UI could give some more
   information about the replicas of a collection (Erick Erickson)
-  
+
 * SOLR-13468: autoscaling/suggestions should be able to give suggestions from config sent as a payload (noble)
 
 * SOLR-12304: The MoreLikeThisComponent now supports the mlt.interestingTerms parameter.  Previously this option was
@@ -64,6 +64,8 @@ Bug Fixes
 * SOLR-13469: Fix rejected requests during full disk full + IndexFetch to use 503 not 403 (hossman)
 
 * SOLR-12941: Fix IndexSizeTrigger to correctly work with "aboveBytes" and "splitMethod=link" parameters. (ab)
+
+* SOLR-13491: SolrZkClient's watch wrapper no longer allows zookeeper to hold the same watch object multiple times.
 
 Other Changes
 ----------------------
