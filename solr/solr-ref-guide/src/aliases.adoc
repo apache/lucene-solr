@@ -40,7 +40,7 @@ The current list of collections that are members of an alias can be verified via
 The full definition of all aliases including metadata about that alias (in the case of routed aliases, see below)
   can be verified via the <<collections-api.adoc#listaliases,LISTALIASES>> command.
 
-Alternatively this information is available by checking `/aliases.json` in zookeeper via a zookeeper
+Alternatively this information is available by checking `/aliases.json` in ZooKeeper with either the native ZooKeeper
   client or in the <<cloud-screens.adoc#tree-view,tree page>> of the cloud menu in the admin UI.
 
 Aliases may be deleted via the <<collections-api.adoc#deletealias,DELETEALIAS>> command.

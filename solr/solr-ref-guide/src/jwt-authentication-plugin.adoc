@@ -58,7 +58,7 @@ principalClaim       ; What claim id to pull principal from                    ;
 claimsMatch          ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ; (none)
 adminUiScope         ; Define what scope is requested when logging in from Admin UI ; If not defined, the first scope from `scope` parameter is used
 authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided
-redirectUris         ; Valid location(s) for redirect after external authentication. Takes a string or array of strings. Must be the base URL of Solr, e.g. https://solr1.example.com:8983/solr/ and must match the list of redirect URIs registered with the Identity Provider beforehand. ; Defaults to empty list, i.e. any node is assumed to be a valid redirect target.
+redirectUris         ; Valid location(s) for redirect after external authentication. Takes a string or array of strings. Must be the base URL of Solr, e.g., https://solr1.example.com:8983/solr/ and must match the list of redirect URIs registered with the Identity Provider beforehand. ; Defaults to empty list, i.e., any node is assumed to be a valid redirect target.
 |===
 
 == More Configuration Examples

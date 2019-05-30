@@ -29,7 +29,7 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr`) i
 <solr>
 
   <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
-  
+
   <solrcloud>
     <str name="host">${host:}</str>
     <int name="hostPort">${jetty.port:8983}</int>
@@ -92,7 +92,7 @@ This attribute, when set to `true`, ensures that the multiple cores pointing to 
 Defines how many cores with `transient=true` that can be loaded before swapping the least recently used core for a new core.
 
 `configSetBaseDir`::
-The directory under which configSets for Solr cores can be found. Defaults to `$SOLR_HOME/configsets`.
+The directory under which configsets for Solr cores can be found. Defaults to `$SOLR_HOME/configsets`.
 
 [[global-maxbooleanclauses]]
 `maxBooleanClauses`::
