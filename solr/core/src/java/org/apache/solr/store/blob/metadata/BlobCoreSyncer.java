@@ -49,7 +49,7 @@ public class BlobCoreSyncer {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    /** Core names currently being pulled from blob. Value is collection of objects used for synchronization by all waiting threads.
+    /** The shared store name for the core currently being pulled from blob. Value is collection of objects used for synchronization by all waiting threads.
      * If both the locks on this map and on a specific SyncOnPullWait in the map are needed, the lock on the map must be acquired first.
      */
     @GuardedBy("itself")
@@ -91,7 +91,7 @@ public class BlobCoreSyncer {
     /**
      * Returns a _hint_ that the given core might be locally empty because it is awaiting pull from Blob store.
      * This is just a hint because as soon as the lock is released when the method returns, the status of the core could change.
-     * Because of that, in method {@link #pull(String, String, boolean, boolean)} we need to check again.
+     * Because of that, in method {@link #pull(PushPullData, boolean, boolean)} we need to check again.
      */
     public static boolean isEmptyCoreAwaitingPull(String coreName) {
         return CorePullTask.isEmptyCoreAwaitingPull(coreName);
@@ -116,7 +116,7 @@ public class BlobCoreSyncer {
      *
      * @throws PullInProgressException In case a thread does not wait or times out before the async pull is finished
      */
-    public void pull(String corename, String collectionName, boolean waitForSearcher, boolean emptyCoreAwaitingPull) throws PullInProgressException {
+    public void pull(PushPullData pushPullData, boolean waitForSearcher, boolean emptyCoreAwaitingPull) throws PullInProgressException {
         // Is there another thread already working on the async pull?
         final boolean pullAlreadyInProgress;
         // Indicates if thread waits for the pull to finish or too many waiters already
@@ -132,13 +132,13 @@ public class BlobCoreSyncer {
         // Only can have only one thread working on async pull of this core (and we do no logging while holding the lock)
         // Let's understand what our role and actions are while holding the global lock and then execute on them without the lock.
         synchronized (coreSyncsInFlight) {
-            if (emptyCoreAwaitingPull && !isEmptyCoreAwaitingPull(corename)) {
+            if (emptyCoreAwaitingPull && !isEmptyCoreAwaitingPull(pushPullData.getCoreName())) {
                 // Core was observed empty awaiting pull and is no longer awaiting pull. This means the pull happened.
                 return;
             }
             countTotalWaiters = total_waiting_threads; // for logging
 
-            Collection<SyncOnPullWait> collectionOfWaiters = coreSyncsInFlight.get(corename);
+            Collection<SyncOnPullWait> collectionOfWaiters = coreSyncsInFlight.get(pushPullData.getSharedStoreName());
             if (collectionOfWaiters != null) {
                 // Somebody is already working on async pull of this core. If possible let's add ourselves to the list of those who wait (then wait)
                 pullAlreadyInProgress = true;
@@ -146,7 +146,7 @@ public class BlobCoreSyncer {
                 // We are the first thread trying to pull this core, before releasing the lock we must setup everything
                 // to let the world know and let itself and other threads be able to wait until async pull is done if/when they so decide.
                 collectionOfWaiters = new ArrayList<>(MAX_PULL_WAITING_PER_CORE);
-                coreSyncsInFlight.put(corename, collectionOfWaiters);
+                coreSyncsInFlight.put(pushPullData.getSharedStoreName(), collectionOfWaiters);
                 pullAlreadyInProgress = false;
             }
             int waiters = collectionOfWaiters.size();
@@ -182,21 +182,21 @@ public class BlobCoreSyncer {
             // and clearing out state around waiting threads (it is possible that another thread has already started waiting before this thread
             // get a chance to run this block)
             try {
-                logger.info("About to enqueue pull of core " + corename + " (countTotalWaiters=" + countTotalWaiters + ")");
+                logger.info("About to enqueue pull of core " + pushPullData.getSharedStoreName() + " (countTotalWaiters=" + countTotalWaiters + ")");
 
                 // enqueue an async pull
-                CorePullTracker.get().enqueueForPull(corename, collectionName, true, waitForSearcher);
+                CorePullTracker.get().enqueueForPull(pushPullData, true, waitForSearcher);
 
             } catch (Exception e) {
                 // as mentioned above in case of failed enqueue we are responsible for clearing up all waiting state
-                notifyEndOfPull(corename, e);
+                notifyEndOfPull(pushPullData.getSharedStoreName(), e);
                 if (e instanceof InterruptedException) {
                     // We swallow the InterruptedException and spit instead a SolrException.
                     // Need to let layers higher up know an interruption happened.
                     Thread.currentThread().interrupt();
                 }
 
-                String msg = "Failed to enqueue pull of core " + corename + " from blob";
+                String msg = "Failed to enqueue pull of core " + pushPullData.getSharedStoreName() + " from blob";
                 SolrException se;
                 logger.warn(msg, e);
                 if (e instanceof SolrException) {
@@ -215,7 +215,7 @@ public class BlobCoreSyncer {
         // qualified for waiting for async pull to finish. If so we will just do that.
         if (iWait) {
             try {
-                logger.info("About to wait for pull of core " + corename + " (countCoreWaiters=" + countCoreWaiters + " countTotalWaiters=" + countTotalWaiters + ")");
+                logger.info("About to wait for pull of core " + pushPullData.getSharedStoreName() + " (countCoreWaiters=" + countCoreWaiters + " countTotalWaiters=" + countTotalWaiters + ")");
 
                 // Let's wait a bit maybe the pull completes in which case we don't have to throw an exception back.
                 // The other end of this lock activity happens in notifyEndOfPull() below
@@ -225,7 +225,7 @@ public class BlobCoreSyncer {
                     myWait.latch.await(PULL_WAITING_MS, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
-                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted while waiting for core pull " + corename, ie);
+                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted while waiting for core pull " + pushPullData.getSharedStoreName(), ie);
                 }
 
                 // Our wait finished...
@@ -233,7 +233,7 @@ public class BlobCoreSyncer {
                 // to calling countDown() happen-before actions following a successful return from a corresponding await() in another thread.
                 // We'll therefore see any updates done to the myWait object by the puller thread if it has finished pulling.
                 if (myWait.latch.getCount() != 0) {
-                    throwPullInProgressException(corename, "still in progress and didn't complete while we waited");
+                    throwPullInProgressException(pushPullData.getSharedStoreName(), "still in progress and didn't complete while we waited");
                 } else {
                     // Pull has completed. Success or failure?
                     if (myWait.exception != null) {
@@ -250,7 +250,7 @@ public class BlobCoreSyncer {
                 //
                 // pullFinished notification may come later but that should be ok since it will only see waiters that are still waiting or none.
                 synchronized (coreSyncsInFlight) {
-                    Collection<SyncOnPullWait> collectionOfWaiters = coreSyncsInFlight.get(corename);
+                    Collection<SyncOnPullWait> collectionOfWaiters = coreSyncsInFlight.get(pushPullData.getSharedStoreName());
                     if(collectionOfWaiters != null) {
                         if(collectionOfWaiters.remove(myWait)){
                             total_waiting_threads--;
@@ -260,7 +260,7 @@ public class BlobCoreSyncer {
             }
         } else {
             // Pull is in progress and we're not waiting for it to finish.
-            throwPullInProgressException(corename, "as it is already in progress and enough threads waiting");
+            throwPullInProgressException(pushPullData.getSharedStoreName(), "as it is already in progress and enough threads waiting");
         }
     }
 
@@ -268,7 +268,7 @@ public class BlobCoreSyncer {
      * This is called whenever core from {@link CorePullTracker} finish its async pull(successfully or unsuccessfully)
      * We use this to notify all waiting threads for a core that their wait has ended (if there are some waiting).
      */
-    public static void finishedPull(String coreName, CoreSyncStatus status, BlobCoreMetadata blobMetadata, String message) {
+    public static void finishedPull(String sharedStoreName, CoreSyncStatus status, BlobCoreMetadata blobMetadata, String message) {
         Exception pullException = null;
         final boolean isPullSuccessful = (status.isSuccess() ||
                 // Following statuses are not considered success in strictest definition of pull but for BlobSyncer
@@ -280,7 +280,7 @@ public class BlobCoreSyncer {
         if (!isPullSuccessful) {
             pullException = new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
         }
-        notifyEndOfPull(coreName, pullException);
+        notifyEndOfPull(sharedStoreName, pullException);
     }
 
     private void throwPullInProgressException(String corename, String msgSuffix) throws PullInProgressException {
@@ -298,8 +298,8 @@ public class BlobCoreSyncer {
      * Also serves the purpose of being a memory barrier so that the waiting threads can check their SyncOnPullWait instances
      * for updates.
      */
-    private static void notifyEndOfPull(String corename, Exception e) {
-        final Collection<SyncOnPullWait> collectionOfWaiters = pullEnded(corename);
+    private static void notifyEndOfPull(String sharedStoreName, Exception e) {
+        final Collection<SyncOnPullWait> collectionOfWaiters = pullEnded(sharedStoreName);
         if (collectionOfWaiters != null) {
             for (SyncOnPullWait w : collectionOfWaiters) {
                 // Need to set the exception before counting down on the latch because of the memory barrier effect of countDown()
@@ -313,12 +313,12 @@ public class BlobCoreSyncer {
      * Cleans up the core from bookkeeping related to in-progress pulls and returns the collection of waiters for that core.
      * Collection of returned waiters could be null as well.
      */
-    private static Collection<SyncOnPullWait> pullEnded(String corename) {
+    private static Collection<SyncOnPullWait> pullEnded(String sharedStoreName) {
         final Collection<SyncOnPullWait> collectionOfWaiters;
         synchronized (coreSyncsInFlight) {
             // Note that threads waiting for the pull to finish have references on their individual SyncOnPullWait instances,
             // so removing the entry from coreSyncsInFlight before the waiter threads are done waiting is ok.
-            collectionOfWaiters = coreSyncsInFlight.remove(corename);
+            collectionOfWaiters = coreSyncsInFlight.remove(sharedStoreName);
             if(collectionOfWaiters != null) {
                 total_waiting_threads -= collectionOfWaiters.size();
             }

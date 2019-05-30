@@ -4,9 +4,6 @@ import java.util.*;
 
 /**
  * Builder for {@link BlobCoreMetadata}.
- *
- * @author iginzburg
- * @since 214/solr.6
  */
 public class BlobCoreMetadataBuilder {
     /**
@@ -14,16 +11,14 @@ public class BlobCoreMetadataBuilder {
      */
     public static final long UNDEFINED_VALUE = -1L;
 
-    final private String coreName;
-    final private long sequenceNumber;
+    final private String sharedBlobName;
     final private long generation;
     final private Set<BlobCoreMetadata.BlobFile> blobFiles;
     final private Set<BlobCoreMetadata.BlobConfigFile> blobConfigFiles;
     final private Set<BlobCoreMetadata.BlobFileToDelete> blobFilesToDelete;
 
-    public BlobCoreMetadataBuilder(String coreName, long sequenceNumber, long generation) {
-        this.coreName = coreName;
-        this.sequenceNumber = sequenceNumber;
+    public BlobCoreMetadataBuilder(String sharedBlobName, long generation) {
+        this.sharedBlobName = sharedBlobName;
         this.generation= generation;
         this.blobFiles = new HashSet<>();
         this.blobConfigFiles = new HashSet<>();
@@ -34,24 +29,23 @@ public class BlobCoreMetadataBuilder {
      * Builder used for "cloning" then modifying an existing instance of {@link BlobCoreMetadata}.
      * The new sequence number and generation have to be passed in because they are final and can't be set later.
      */
-    public BlobCoreMetadataBuilder (BlobCoreMetadata bcm, long sequenceNumber, long generation) {
-        this.coreName = bcm.getCoreName();
-        this.sequenceNumber = sequenceNumber;
+    public BlobCoreMetadataBuilder (BlobCoreMetadata bcm, long generation) {
+        this.sharedBlobName = bcm.getSharedBlobName();
         this.generation = generation;
         this.blobFiles = new HashSet<>(Arrays.asList(bcm.getBlobFiles()));
         this.blobConfigFiles = new HashSet<> (Arrays.asList(bcm.getBlobConfigFiles()));
         this.blobFilesToDelete = new HashSet<>(Arrays.asList(bcm.getBlobFilesToDelete()));
     }
 
-    public String getCoreName() {
-        return this.coreName;
+    public String getSharedBlobName() {
+        return this.sharedBlobName;
     }
 
     /**
      * Builds a {@link BlobCoreMetadata} for a non existing core of a given name.
      */
     static public BlobCoreMetadata buildEmptyCoreMetadata(String coreName) {
-        return (new BlobCoreMetadataBuilder(coreName, UNDEFINED_VALUE, UNDEFINED_VALUE)).build();
+        return (new BlobCoreMetadataBuilder(coreName, UNDEFINED_VALUE)).build();
     }
 
     /**
@@ -116,6 +110,6 @@ public class BlobCoreMetadataBuilder {
         BlobCoreMetadata.BlobConfigFile[] blobConfigFilesArray = this.blobConfigFiles.toArray(new BlobCoreMetadata.BlobConfigFile[this.blobConfigFiles.size()]);
         BlobCoreMetadata.BlobFileToDelete[] blobFilesToDeleteArray = this.blobFilesToDelete.toArray(new BlobCoreMetadata.BlobFileToDelete[this.blobFilesToDelete.size()]);
 
-        return new BlobCoreMetadata(this.coreName, blobFilesArray, blobConfigFilesArray, blobFilesToDeleteArray, sequenceNumber, generation);
+        return new BlobCoreMetadata(this.sharedBlobName, blobFilesArray, blobConfigFilesArray, blobFilesToDeleteArray, generation);
     }
 }

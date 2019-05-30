@@ -47,7 +47,7 @@ public class CorePullerThread implements Runnable {
                     break;
                 } catch (Exception e) {
                     // Exceptions other than InterruptedException should not stop the business
-                    String taskInfo = task == null ? "" : String.format("Attempt=%s to pull core %s ", task.getAttempts(), task.getPullCoreInfo().coreName) ;
+                    String taskInfo = task == null ? "" : String.format("Attempt=%s to pull core %s ", task.getAttempts(), task.getPullCoreInfo().getSharedStoreName()) ;
                     logger.warn("CorePullerThread encountered a failure. " + taskInfo, e);
                 }
         }

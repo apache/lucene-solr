@@ -1,10 +1,10 @@
 package org.apache.solr.store.blob.process;
 
-import org.apache.solr.store.blob.process.CorePusher.CorePushInfo;
+import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.store.blob.metadata.PushPullData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.lang.invoke.MethodHandles;
 
 /**
  * Class to track local core updates that need pushing to Blob Store.<p>
@@ -34,16 +34,15 @@ public class CoreUpdateTracker {
     /**
      * This method is called when a core is updated locally so it is pushed to Blob store at some later point
      */
-    public void updatingCore(String coreName) {
+    public void updatingCore(PushPullData pushPullData) {
     		try {
-    			CorePushInfo corePushInfo = new CorePushInfo(coreName);
-    			CorePusher.pushCoreToBlob(corePushInfo);
+    			CorePusher.pushCoreToBlob(pushPullData);
         } catch (InterruptedException ie) {
             // If we got here we likely haven't added the core to the list of cores to push, but if we got interrupted it
             // means the system is shutting down (otherwise no reason). So let the next blocking call handle that...
             // Not showing the strack trace of the interruption because it's not interesting, the cause would be interesting
             // but we don't have it.
-            logger.warn("Core " + coreName + " not added to Blob push list. System shutting down?");
+            logger.warn("Core " + pushPullData.getShardName() + " not added to Blob push list. System shutting down?");
             Thread.currentThread().interrupt();
         }
     }

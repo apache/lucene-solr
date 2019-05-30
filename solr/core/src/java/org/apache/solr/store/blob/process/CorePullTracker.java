@@ -1,18 +1,19 @@
 package org.apache.solr.store.blob.process;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrRequestParsers;
+import org.apache.solr.store.blob.metadata.PushPullData;
 import org.apache.solr.store.blob.process.CorePullerFeeder.PullCoreInfo;
 import org.apache.solr.store.blob.util.DeduplicatingList;
-
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.lang.invoke.MethodHandles;
 
 /**
  * Tracks cores that are being queried and if necessary enqueues them for pull from blob store
@@ -59,29 +60,30 @@ public class CorePullTracker {
      * If the local core is stale, enqueues it to be pulled in from blob Note : If there is no coreName available in the
      * requestPath we simply ignore the request.
      */
-    public void enqueueForPullIfNecessary(HttpServletRequest request, String coreName, String collectionName, 
+    public void enqueueForPullIfNecessary(HttpServletRequest request, PushPullData pushPullData, 
             CoreContainer cores) throws IOException {
-    	String servletPath = request.getServletPath();
+    	  String servletPath = request.getServletPath();
 
-        // TODO: do we need isBackgroundPullEnabled in addition to isBlobEnabled? If not we should remove this.
-        // TODO: always pull for this hack - want to check if local core is up to date
-        if (isBackgroundPullEnabled && coreName != null && shouldPullStale(servletPath)) {
-            enqueueForPull(coreName, collectionName, false, false);
-        }
+      // TODO: do we need isBackgroundPullEnabled in addition to isBlobEnabled? If not we should remove this.
+      // TODO: always pull for this hack - want to check if local core is up to date
+      if (isBackgroundPullEnabled && pushPullData.getSharedStoreName() != null && shouldPullStale(servletPath)) {
+          enqueueForPull(pushPullData, false, false);
+      }
     }
 
     /**
      * Enqueues a core for pull
-     * @param coreName name of the core
+     * 
+     * @param pushPullData pull request data required to interact with blob store
      * @param createCoreIfAbsent whether to create core before pulling if absent
      * @param waitForSearcher whether to wait for newly pulled contents be reflected through searcher 
      */
-    public void enqueueForPull(String coreName, String collectionName, boolean createCoreIfAbsent, boolean waitForSearcher) {
-        PullCoreInfo pci = new PullCoreInfo(coreName, collectionName, waitForSearcher, createCoreIfAbsent);
+    public void enqueueForPull(PushPullData pushPullData, boolean createCoreIfAbsent, boolean waitForSearcher) {
+        PullCoreInfo pci = new PullCoreInfo(pushPullData, waitForSearcher, createCoreIfAbsent);
         try {
             coresToPull.addDeduplicated(pci, false);
         } catch (InterruptedException ie) {
-            logger.warn("Core " + coreName + " not added to Blob pull list. System shutting down?");
+            logger.warn("Core " + pushPullData.getSharedStoreName() + " not added to Blob pull list. System shutting down?");
             Thread.currentThread().interrupt();
         }
     }
@@ -120,7 +122,7 @@ public class CorePullTracker {
     }
 
     /**
-     * Determine if our request should trigger a pull from Blob when local core is stale.<p>
+     * Determine if our request should trigger a pull from Blob when local core is stale.
      */
     private boolean shouldPullStale(String servletPath) {
         // get the request handler from the path (taken from SolrDispatchFilter)

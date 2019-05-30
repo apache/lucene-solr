@@ -30,14 +30,14 @@ class BlobDeleterTask implements Runnable {
     private static int MAX_DELETE_ATTEMPTS = 50;
     private static long SLEEP_MS_FAILED_ATTEMPT = TimeUnit.SECONDS.toMillis(10);
 
-    private final String coreName;
+    private final String sharedBlobName;
     private final Set<String> blobNames;
     private final AtomicInteger attempt;
     private final ThreadPoolExecutor executor;
     private final long queuedTimeMs;
 
-    BlobDeleterTask(String coreName, Set<String> blobNames, ThreadPoolExecutor executor) {
-        this.coreName = coreName;
+    BlobDeleterTask(String sharedBlobName, Set<String> blobNames, ThreadPoolExecutor executor) {
+        this.sharedBlobName = sharedBlobName;
         this.blobNames = blobNames;
         this.attempt = new AtomicInteger(0);
         this.executor = executor;
@@ -64,7 +64,7 @@ class BlobDeleterTask implements Runnable {
             int attempts = attempt.incrementAndGet();
 
             logger.warn("Blob file delete task failed."
-                    +" attempt=" + attempts +  " core=" + this.coreName + " numOfBlobs=" + this.blobNames.size(), e);
+                    +" attempt=" + attempts +  " core=" + this.sharedBlobName + " numOfBlobs=" + this.blobNames.size(), e);
 
             if (attempts < MAX_DELETE_ATTEMPTS) {
                 // We failed, but we'll try again. Enqueue the task for a new delete attempt. attempt already increased.
@@ -89,7 +89,7 @@ class BlobDeleterTask implements Runnable {
             String message = String.format("coreName=%s action=%s storageProvider=%s bucketRegion=%s bucketName=%s "
                             + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s localGenerationNumber=%s "
                             + "blobGenerationNumber=%s filesAffected=%s isSuccess=%s",
-                    coreName, "DELETE", blobClient.getStorageProvider().name(), blobClient.getBucketRegion(),
+                            sharedBlobName, "DELETE", blobClient.getStorageProvider().name(), blobClient.getBucketRegion(),
                     blobClient.getBucketName(), runTime, startLatency, 0L, attempt.get(), -1L,
                     -1L, this.blobNames.size(), isSuccess);
             logger.info(message);

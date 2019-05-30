@@ -105,14 +105,14 @@ public class BlobDeleteManager {
      * @return <code>true</code> if the delete was enqueued, <code>false</code> if can't be enqueued (deleter turned off
      * by config or current queue of blobs file deletes too full).
      */
-    public boolean enqueueForDelete(String coreName, Set<String> blobNames) {
+    public boolean enqueueForDelete(String sharedBlobName, Set<String> blobNames) {
         BlobDeleteManager deleter = runningDeleter;
 
         if (deleter == null) {
             return false;
         }
 
-        BlobDeleterTask command = new BlobDeleterTask(coreName, blobNames, deleter.deleteExecutor);
+        BlobDeleterTask command = new BlobDeleterTask(sharedBlobName, blobNames, deleter.deleteExecutor);
         return deleter.deleteExecutor.executeIfPossible(command);
     }
 

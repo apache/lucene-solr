@@ -1,13 +1,12 @@
 package org.apache.solr.store.blob.client;
+
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
+
  /**
  * Interface responsible for mapping Solr abstractions to an external blob store. It handles writing
  * to and reading Solr Cores from the blob store.
- *
- * @author a.vuong
- * @since 214/solr.6
  */
 public interface CoreStorageClient {
     
@@ -15,22 +14,22 @@ public interface CoreStorageClient {
      * Replaces the special CORE_METADATA_BLOB_FILENAME blob on the blob store for the core by a new version passed as a
      * {@link BlobCoreMetadata} instance.
      * 
-     * @param coreName name of the core to write metadata for
+     * @param blobName name of the core to write metadata for
      * @param bcm blob metadata to be serialized and written to the blob store
      */
-    public void pushCoreMetadata(String coreName, BlobCoreMetadata bcm) throws BlobException;
+    public void pushCoreMetadata(String blobName, BlobCoreMetadata bcm) throws BlobException;
     
     /**
      * Reads the special CORE_METADATA_BLOB_FILENAME blob on the blob store for the core and returns the corresponding
      * {@link BlobCoreMetadata} object.
      * 
-     * @param coreName name of the core to get metadata for
+     * @param blobName name of the core to get metadata for
      * @return <code>null</code> if the core does not exist on the Blob store or method {@link #pushCoreMetadata} was
      * never called for it. Otherwise returns the latest value written using {@link #pushCoreMetadata} ("latest" here
      * based on the consistency model of the underlying store, in practice the last value written by any server given the
      * strong consistency of the Salesforce S3 implementation).
      */ 
-    public BlobCoreMetadata pullCoreMetadata(String coreName) throws BlobException;
+    public BlobCoreMetadata pullCoreMetadata(String blobName) throws BlobException;
     
     /**
      * Returns an input stream for the given blob. The caller must close the stream when done.
@@ -44,27 +43,27 @@ public interface CoreStorageClient {
      * Writes to the external store using an input stream for the given core. The unique
      * path to the written blob is returned.
      * 
-     * @param coreName name of the core to be pulled from the store
+     * @param blobName name of the core to be pulled from the store
      * @param is input stream of the core
      * @param contentLength size of the stream's data
      * @return the unique path to the written blob
      */
-    public String pushStream(String coreName, InputStream is, long contentLength) throws BlobException;
+    public String pushStream(String blobName, InputStream is, long contentLength) throws BlobException;
     
     /**
-     * Checks if the core metadata file exists for the given coreName.
+     * Checks if the core metadata file exists for the given blobName.
      * 
-     * @param coreName name of the core to check
+     * @param blobName name of the core to check
      * @return true if the core has blobs
      */
-    public boolean coreMetadataExists(String coreName) throws BlobException;
+    public boolean coreMetadataExists(String blobName) throws BlobException;
     
     /**
-     * Deletes all blob files associated with this coreName.
+     * Deletes all blob files associated with this blobName.
      * 
-     * @param coreName core to delete
+     * @param blobName core to delete
      */
-    public void deleteCore(String coreName) throws BlobException;
+    public void deleteCore(String blobName) throws BlobException;
     
     /**
      * Batch delete blob files from the blob store. Any blob file path that specifies a non-existent blob file will 
@@ -124,11 +123,11 @@ public interface CoreStorageClient {
      * This method is intended for observing significantly older modified files where clock skew
      * is less of an issue.
      * 
-     * @param coreName the core to be listed
+     * @param blobName the core to be listed
      * @param timestamp timestamp in milliseconds
      * @return the list of blob files
      */
-    public List<String> listCoreBlobFilesOlderThan(String coreName, long timestamp) throws BlobException;
+    public List<String> listCoreBlobFilesOlderThan(String blobName, long timestamp) throws BlobException;
     
     /**
      * Lists the common delimiter-terminated prefixes by blob keys beginning with the

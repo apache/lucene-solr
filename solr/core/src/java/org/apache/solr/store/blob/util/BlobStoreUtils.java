@@ -26,6 +26,9 @@ public class BlobStoreUtils {
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     
     /**
+     * TODO remove this method as it was only used in a SFDC component. We want all blob interactions
+     * to eventually have a PushPullData propagated down to it
+     * 
      * Refresh local core with updates in blob
      * 
      * @return true when local core is updated, false otherwise

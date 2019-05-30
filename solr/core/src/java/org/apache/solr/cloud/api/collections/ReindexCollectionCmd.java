@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <b>Reindex is NOT working with Shared storage based collections (having replicas of type {@link Replica.Type#SHARED}).<br>
- * If/once we make it work, delete this comment.</b><p><p>
+ * If/once we make it work, delete this comment.</b>
  *
  * Reindex a collection, usually in order to change the index schema.
  * <p>WARNING: Reindexing is potentially a lossy operation - some indexed data that is not available as

@@ -13,9 +13,6 @@ import org.apache.solr.store.blob.client.ToFromJson;
 
 /**
  * Class that handles reads and writes of solr blob files to the local file system.
- *
- * @author iginzburg
- * @since 214/solr.6
  */
 public class LocalStorageClient implements CoreStorageClient {
 
@@ -35,16 +32,16 @@ public class LocalStorageClient implements CoreStorageClient {
         }
     }
 
-    private File getCoreRootDir(String coreName) {
-        return new File(blobStoreRootDir + coreName);
+    private File getCoreRootDir(String blobName) {
+        return new File(blobStoreRootDir + blobName);
     }
 
     @Override
-    public String pushStream(String coreName, InputStream is, long contentLength) throws BlobException {
+    public String pushStream(String blobName, InputStream is, long contentLength) throws BlobException {
         try {
-            createCoreStorage(coreName);
-            String randomBlobId = createNewNonExistingBlob(coreName);
-            String blobPath = BlobClientUtils.concatenatePaths(coreName, randomBlobId); 
+            createCoreStorage(blobName);
+            String randomBlobId = createNewNonExistingBlob(blobName);
+            String blobPath = BlobClientUtils.concatenatePaths(blobName, randomBlobId); 
             
             Files.copy(is, Paths.get(getblobAbsolutePath(blobPath)), StandardCopyOption.REPLACE_EXISTING);
     
@@ -61,10 +58,10 @@ public class LocalStorageClient implements CoreStorageClient {
      * The current implementation creates a file, but eventually we just pick up a random blob name then delegate to S3...
      *
      */
-    private String createNewNonExistingBlob(String coreName) throws BlobException {
+    private String createNewNonExistingBlob(String blobName) throws BlobException {
         try {
             String randomBlobPath = UUID.randomUUID().toString();
-            String blobPath = BlobClientUtils.concatenatePaths(coreName, randomBlobPath);
+            String blobPath = BlobClientUtils.concatenatePaths(blobName, randomBlobPath);
             final File blobFile = new File(getblobAbsolutePath(blobPath));
             if (blobFile.exists()) {
                 // Not expecting this ever to happen. In theory we could just do "continue" here to try a new
@@ -90,14 +87,14 @@ public class LocalStorageClient implements CoreStorageClient {
     }
 
     @Override
-    public void pushCoreMetadata(String coreName, BlobCoreMetadata bcm) throws BlobException {
+    public void pushCoreMetadata(String blobName, BlobCoreMetadata bcm) throws BlobException {
         try {
-            createCoreStorage(coreName);
+            createCoreStorage(blobName);
             ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
             String json = converter.toJson(bcm);
     
             // Constant path under which the core metadata is stored in the Blob store (the only blob stored under a constant path!)
-            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(coreName));
+            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(blobName));
             final File blobMetadataFile = new File(blobMetadataPath); 
     
             // Writing to the file assumed atomic, the file cannot be observed midway. Might not hold here but should be the case
@@ -111,13 +108,13 @@ public class LocalStorageClient implements CoreStorageClient {
     }
 
     @Override
-    public BlobCoreMetadata pullCoreMetadata(String coreName) throws BlobException {
+    public BlobCoreMetadata pullCoreMetadata(String blobName) throws BlobException {
         try {
-            if (!coreMetadataExists(coreName)) {
+            if (!coreMetadataExists(blobName)) {
                 return null;
             }
             
-            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(coreName));
+            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(blobName));
             File blobMetadataFile = new File(blobMetadataPath); 
             
             String json = new String(Files.readAllBytes(blobMetadataFile.toPath()));
@@ -129,9 +126,9 @@ public class LocalStorageClient implements CoreStorageClient {
     }
 
     @Override
-    public boolean coreMetadataExists(String coreName) throws BlobException { 
+    public boolean coreMetadataExists(String blobName) throws BlobException { 
         try {
-            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(coreName));
+            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(blobName));
             File coreMetadataFile = new File(blobMetadataPath); 
             return coreMetadataFile.exists();
         } catch (Exception ex) {
@@ -146,8 +143,8 @@ public class LocalStorageClient implements CoreStorageClient {
         return BlobClientUtils.concatenatePaths(blobStoreRootDir, blobPath);
     }
     
-    private void createCoreStorage(String coreName) throws Exception {
-        File coreRootDir = getCoreRootDir(coreName);
+    private void createCoreStorage(String blobName) throws Exception {
+        File coreRootDir = getCoreRootDir(blobName);
         coreRootDir.mkdirs();
         if (!coreRootDir.isDirectory()) {
             throw new IOException("Can't create Blob core root directory " + coreRootDir.getAbsolutePath());
@@ -155,9 +152,9 @@ public class LocalStorageClient implements CoreStorageClient {
     }
     
     @Override
-    public void deleteCore(String coreName) throws BlobException {
+    public void deleteCore(String blobName) throws BlobException {
         try {
-            Path path = Paths.get(getblobAbsolutePath(coreName));
+            Path path = Paths.get(getblobAbsolutePath(blobName));
             Files.walk(path)
                 // Since this traversal includes the root directory
                 // we need to reverse because we can't delete non-empty directories 
@@ -187,8 +184,8 @@ public class LocalStorageClient implements CoreStorageClient {
         }
     }
     
-    private String getBlobMetadataName(String coreName) {
-        return BlobClientUtils.concatenatePaths(coreName, blobCoreMetadataName);
+    private String getBlobMetadataName(String blobName) {
+        return BlobClientUtils.concatenatePaths(blobName, blobCoreMetadataName);
     }
     
     @Override
@@ -225,14 +222,14 @@ public class LocalStorageClient implements CoreStorageClient {
     }
     
     @Override
-    public List<String> listCoreBlobFilesOlderThan(String coreName, long timestamp) throws BlobException {
+    public List<String> listCoreBlobFilesOlderThan(String blobName, long timestamp) throws BlobException {
         try {
-            Path path = Paths.get(getblobAbsolutePath(coreName));
+            Path path = Paths.get(getblobAbsolutePath(blobName));
             List<String> blobFiles =
                     Files.walk(path).map(Path::toFile)
                     // We need to ignore the root directory as a path since this traversal includes it
                     .filter(file -> (file.lastModified() < timestamp) && !file.isDirectory())
-                    .map(file -> BlobClientUtils.concatenatePaths(coreName, file.getName()))
+                    .map(file -> BlobClientUtils.concatenatePaths(blobName, file.getName()))
                     .collect(Collectors.toList());
             return blobFiles;
         } catch (Exception ex) {

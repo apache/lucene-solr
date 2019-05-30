@@ -43,11 +43,6 @@ public class ServerSideCoreMetadata {
     private final String directoryHash;
 
     /**
-     * Salesforce core freshness tracking is not generation based (as in normal master/slave Solr) but sequence number based...
-     */
-    private final long sequenceNumber;
-
-    /**
      * ...but we need generation anyway because encryption updates the generation of a core without changing the sequence number.
      */
     private final long generation;
@@ -80,7 +75,6 @@ public class ServerSideCoreMetadata {
             // Sequence number was once called replay count. data structures (and DB column names) haven't been renamed everywhere.
             // SfdcUserData coreUserData = SfdcUserData.getMetadataFromIndexCommit(core, commit);
             // sequenceNumber = coreUserData.replayCount;
-            sequenceNumber = 0; // TODO
             generation = commit.getGeneration();
 
             // Work around possible bug returning same file multiple times by using a set here
@@ -115,10 +109,6 @@ public class ServerSideCoreMetadata {
 
     public CoreContainer getCoreContainer() {
         return this.container;
-    }
-
-    public long getSequenceNumber() {
-        return this.sequenceNumber;
     }
 
     public long getGeneration() {
@@ -252,7 +242,7 @@ public class ServerSideCoreMetadata {
 
     @Override
     public String toString() {
-        return "coreName=" + coreName + " sequenceNumber=" + sequenceNumber + " generation=" + generation;
+        return "coreName=" + coreName + " generation=" + generation;
     }
     
     /**

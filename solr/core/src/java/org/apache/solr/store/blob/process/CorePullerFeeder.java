@@ -1,14 +1,14 @@
 package org.apache.solr.store.blob.process;
 
-import org.apache.solr.core.CoreContainer;
+import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.metadata.BlobCoreSyncer;
+import org.apache.solr.store.blob.metadata.PushPullData;
 import org.apache.solr.store.blob.util.DeduplicatingList;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.lang.invoke.MethodHandles;
 
 /**
  * A pull version of {@link CoreSyncFeeder} then will continually ({@link #feedTheMonsters()}) to load up a work queue (
@@ -84,7 +84,8 @@ public class CorePullerFeeder extends CoreSyncFeeder {
             final long msSinceLastLog = now - lastLoggedTimestamp;
             if (msSinceLastLog > minMsBetweenLogs) {
                 logger.info("Since last pull log " + msSinceLastLog + " ms ago, added "
-                        + syncsEnqueuedSinceLastLog + " cores to pull from blob. Last one is " + pci.coreName);
+                        + syncsEnqueuedSinceLastLog + " cores to pull from blob. Last one is core with "
+                            + "shared blob name " + pci.getSharedStoreName());
                 lastLoggedTimestamp = now;
                 syncsEnqueuedSinceLastLog = 0;
             }
@@ -104,31 +105,43 @@ public class CorePullerFeeder extends CoreSyncFeeder {
      * deduplicated on core name (the same core requiring two pulls from Blob will only be recorded one if the first
      * pull has not been processed yet).
      */
-    static class PullCoreInfo implements DeduplicatingList.Deduplicatable<String> {
-        final String coreName;
-        final String collectionName;
-        final boolean waitForSearcher;
-        final boolean createCoreIfAbsent;
+    static class PullCoreInfo extends PushPullData implements DeduplicatingList.Deduplicatable<String> {
 
-        PullCoreInfo(String coreName, String collectionName, boolean createCoreIfAbsent, boolean waitForSearcher) {
-            this.coreName = coreName;
-            this.collectionName = collectionName;
-            this.waitForSearcher = waitForSearcher;
-            this.createCoreIfAbsent = createCoreIfAbsent;
+        private final boolean waitForSearcher;
+        private final boolean createCoreIfAbsent;
+        
+        PullCoreInfo(PushPullData data, boolean createCoreIfAbsent, boolean waitForSearcher) {
+          super(data.getCollectionName(), data.getShardName(), data.getCoreName(), 
+              data.getSharedStoreName());
+          this.waitForSearcher = waitForSearcher;
+          this.createCoreIfAbsent = createCoreIfAbsent;
         }
 
-        @Override
-        public String getDedupeKey() {
-            return coreName;
+        PullCoreInfo(String collectionName, String shardName, String coreName, String sharedStoreName,
+            boolean createCoreIfAbsent, boolean waitForSearcher) {
+          // String collectionName, String shardName, String coreName, String sharedStoreName,
+          super(collectionName, shardName, coreName, sharedStoreName);
+          this.waitForSearcher = waitForSearcher;
+          this.createCoreIfAbsent = createCoreIfAbsent;
         }
         
-        public String getCollectionName() {
-          return collectionName;
-      }
+        @Override
+        public String getDedupeKey() {
+          return sharedStoreName;
+        }
+        
+        public boolean shouldWaitForSearcher() {
+          return waitForSearcher;
+        }
+        
+        public boolean shouldCreateCoreIfAbsent() {
+          return createCoreIfAbsent;
+        }
     }
 
     /**
-     * We only want one entry in the list for each core, so when a second entry arrives, we merge them on core name.
+     * We only want one entry in the list for each core, so when a second entry arrives, we merge them on 
+     * their shared store name
      */
     static class PullCoreInfoMerger implements DeduplicatingList.Merger<String, PullCoreInfo> {
         @Override
@@ -137,7 +150,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
         }
 
         static PullCoreInfo mergePullCoreInfos(PullCoreInfo v1, PullCoreInfo v2) {
-            assert v1.coreName.equals(v2.coreName);
+            assert v1.getSharedStoreName().equals(v2.getSharedStoreName());
 
             // if one needs to wait then merged will have to wait as well 
             final boolean waitForSearcher = v1.waitForSearcher || v2.waitForSearcher;
@@ -145,7 +158,9 @@ public class CorePullerFeeder extends CoreSyncFeeder {
             // if one wants to create core if absent then merged will have to create as well 
             final boolean createCoreIfAbsent = v1.createCoreIfAbsent || v2.createCoreIfAbsent;
 
-            return new PullCoreInfo(v1.coreName, v1.collectionName, createCoreIfAbsent, waitForSearcher);
+            
+            return new PullCoreInfo(v1.getCollectionName(), v1.getShardName(), v1.getCoreName(), 
+                v1.getSharedStoreName(), createCoreIfAbsent, createCoreIfAbsent);
         }
     }
 
@@ -168,12 +183,12 @@ public class CorePullerFeeder extends CoreSyncFeeder {
                 PullCoreInfo pullCoreInfo = pullTask.getPullCoreInfo();
                 if (status.isSuccess()) {
                     logger.info(String.format("Pulling core %s succeeded. Last status=%s attempts=%s . %s",
-                            pullCoreInfo.coreName, status, pullTask.getAttempts(), message == null ? "" : message));
+                            pullCoreInfo.getSharedStoreName(), status, pullTask.getAttempts(), message == null ? "" : message));
                 } else {
                     logger.warn(String.format("Pulling core %s failed. Giving up. Last status=%s attempts=%s . %s",
-                                    pullCoreInfo.coreName, status, pullTask.getAttempts(), message == null ? "" : message));
+                                    pullCoreInfo.getSharedStoreName(), status, pullTask.getAttempts(), message == null ? "" : message));
                 }
-                BlobCoreSyncer.finishedPull(pullCoreInfo.coreName, status, blobMetadata, message);
+                BlobCoreSyncer.finishedPull(pullCoreInfo.getSharedStoreName(), status, blobMetadata, message);
             } catch (InterruptedException ie) {
                 close();
                 throw ie;

@@ -3,28 +3,17 @@ package org.apache.solr.store.blob.client;
 import java.util.*;
 
 /**
- * Object defining metadata stored in blob store for each stored core and its builders.
+ * Object defining metadata stored in blob store for a Shared Collection shard and its builders.  
  * This metadata includes all actual segment files as well as the segments_N file of the commit point.
  * That object is serialized to/from Json and stored in the blob store as a blob.
- *
- * @author iginzburg
- * @since 214/solr.6
  */
 public class BlobCoreMetadata {
 
     /**
-     * Name of the core as store in the Blob server (same name as the one used on the Search server unless tests do tricks).
+     * Name of the core that is shared by all replicas belonging to the same shard. This name is to decouple the 
+     * core name that Solr manages from the name of the core on blob store. 
      */
-    private final String coreName;
-
-    /**
-     * Tracking is done using sequence numbers that are strictly incremented on each indexing batch.
-     * 
-     * Config files update (synonyms, promoted results) do not lead to increased sequence Number (or increased generation
-     * for that matter) so detecting the need for a config push/pull is implemented by comparing {@link BlobConfigFile#updatedAt}
-     * and {@link org.apache.solr.store.blob.metadata.ServerSideCoreMetadata.CoreConfigFileData#updatedAt}
-     */
-    private final long sequenceNumber;
+    private final String sharedBlobName;
 
     /**
      * Encryption does increase generation but not sequence number, so we need to compare (sequence number, generation) between
@@ -75,20 +64,19 @@ public class BlobCoreMetadata {
      * It always builds non "isCorrupt" and non "isDeleted" metadata. 
      * The only way to build an instance of "isCorrupt" metadata is to use {@link #getCorruptOf} and for "isDeleted" use {@link #getDeletedOf()}
      */
-    BlobCoreMetadata(String coreName, BlobFile[] blobFiles, BlobConfigFile[] blobConfigFiles,
-                     BlobFileToDelete[] blobFilesToDelete, long sequenceNumber, long generation) {
-        this(coreName, blobFiles, blobConfigFiles, blobFilesToDelete, sequenceNumber, generation, UUID.randomUUID().toString(), false,
+    BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobConfigFile[] blobConfigFiles,
+                     BlobFileToDelete[] blobFilesToDelete, long generation) {
+        this(sharedBlobName, blobFiles, blobConfigFiles, blobFilesToDelete, generation, UUID.randomUUID().toString(), false,
                 false);
     }
 
-    private BlobCoreMetadata(String coreName, BlobFile[] blobFiles, BlobConfigFile[] blobConfigFiles,
-                             BlobFileToDelete[] blobFilesToDelete, long sequenceNumber, long generation,
+    private BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobConfigFile[] blobConfigFiles,
+                             BlobFileToDelete[] blobFilesToDelete, long generation,
                              String uniqueIdentifier, boolean isCorrupt, boolean isDeleted) {
-        this.coreName = coreName;
+        this.sharedBlobName = sharedBlobName;
         this.blobFiles = blobFiles;
         this.blobConfigFiles = blobConfigFiles;
         this.blobFilesToDelete = blobFilesToDelete;
-        this.sequenceNumber = sequenceNumber;
         this.generation = generation;
         this.uniqueIdentifier = uniqueIdentifier;
         this.isCorrupt = isCorrupt;
@@ -101,7 +89,7 @@ public class BlobCoreMetadata {
      */
     public BlobCoreMetadata getCorruptOf() {
         assert !isCorrupt;
-        return new BlobCoreMetadata(coreName, blobFiles, blobConfigFiles, blobFilesToDelete, sequenceNumber, generation, uniqueIdentifier, true, isDeleted);
+        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobConfigFiles, blobFilesToDelete, generation, uniqueIdentifier, true, isDeleted);
     }
 
     /**
@@ -111,7 +99,7 @@ public class BlobCoreMetadata {
      */
     public BlobCoreMetadata getDeletedOf() {
         assert !isDeleted;
-        return new BlobCoreMetadata(coreName, blobFiles, blobConfigFiles, blobFilesToDelete, sequenceNumber, generation,
+        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobConfigFiles, blobFilesToDelete, generation,
                 uniqueIdentifier, isCorrupt, true);
     }
 
@@ -125,8 +113,8 @@ public class BlobCoreMetadata {
     /**
      * Returns the core name corresponding to this metadata
      */
-    public String getCoreName() {
-        return coreName;
+    public String getSharedBlobName() {
+        return sharedBlobName;
     }
 
     /**
@@ -145,10 +133,6 @@ public class BlobCoreMetadata {
      */
     public String getUniqueIdentifier() {
         return uniqueIdentifier;
-    }
-
-    public long getSequenceNumber() {
-        return this.sequenceNumber;
     }
 
     public long getGeneration() {
@@ -174,12 +158,11 @@ public class BlobCoreMetadata {
 
         BlobCoreMetadata that = (BlobCoreMetadata) o;
 
-        if (this.sequenceNumber != that.sequenceNumber) return false;
         if (this.generation != that.generation) return false;
         if (this.isCorrupt != that.isCorrupt) return false;
         if (this.isDeleted != that.isDeleted) return false;
         if (!this.uniqueIdentifier.equals(that.uniqueIdentifier)) return false;
-        if (!this.coreName.equals(that.coreName)) return false;
+        if (!this.sharedBlobName.equals(that.sharedBlobName)) return false;
 
         // blobFiles array is not ordered so not using Arrays.equals here but rather Set comparison (we also know all elements are distinct in the array)
         Set<BlobFile> thisFiles = new HashSet<>(Arrays.asList(this.blobFiles));
@@ -199,9 +182,8 @@ public class BlobCoreMetadata {
 
     @Override
     public int hashCode() {
-        int result = coreName.hashCode();
+        int result = sharedBlobName.hashCode();
         result = 31 * result + uniqueIdentifier.hashCode();
-        result = 31 * result + (int) (sequenceNumber ^ (sequenceNumber >>> 32));
         result = 31 * result + (int) (generation ^ (generation >>> 32));
         // The array of files is not ordered so need to compare as a set
         result = 31 * result + new HashSet<>(Arrays.asList(this.blobFiles)).hashCode();
@@ -214,7 +196,7 @@ public class BlobCoreMetadata {
 
     @Override
     public String toString() {
-        return "coreName=" + coreName + " sequenceNumber=" + sequenceNumber + " generation=" + generation
+        return "sharedBlobName=" + sharedBlobName + " generation=" + generation
                 + " isCorrupt=" + isCorrupt + " uniqueIdentifier=" + uniqueIdentifier;
     }
 

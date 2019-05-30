@@ -88,7 +88,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
      */
     @Override
     public String getDedupeKey() {
-        return this.pullCoreInfo.coreName;
+        return this.pullCoreInfo.getSharedStoreName();
     }
 
     /**
@@ -176,19 +176,19 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
         }
 
         synchronized (pullsInFlight) {
-            Long pullInFlightTimestamp = pullsInFlight.get(pullCoreInfo.coreName);
+            Long pullInFlightTimestamp = pullsInFlight.get(pullCoreInfo.getSharedStoreName());
             if (pullInFlightTimestamp != null) {
                 // Another pull is in progress, we'll retry later.
                 // Note we can't just cancel this pull, because the other pull might be working on a previous commit
                 // point.
                 long prevPullMs = System.currentTimeMillis() - pullInFlightTimestamp;
-                logger.warn("Skipping core pull for " + pullCoreInfo.coreName
+                logger.warn("Skipping core pull for " + pullCoreInfo.getSharedStoreName()
                                 + " because another thread is currently pulling it (started " + prevPullMs
                                 + " ms ago). Will retry.");
                 this.callback.finishedPull(this, blobMetadata, CoreSyncStatus.CONCURRENT_SYNC, null);
                 return;
             } else {
-                pullsInFlight.put(pullCoreInfo.coreName, System.currentTimeMillis());
+                pullsInFlight.put(pullCoreInfo.getSharedStoreName(), System.currentTimeMillis());
             }
         }
 
@@ -211,7 +211,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
         try {
             // Do the sequence of actions required to pull a core from the Blob store.
             CoreStorageClient blobClient = BlobStorageProvider.get().getBlobStorageClient();
-            blobMetadata = blobClient.pullCoreMetadata(pullCoreInfo.coreName);
+            blobMetadata = blobClient.pullCoreMetadata(pullCoreInfo.getSharedStoreName());
             if (blobMetadata == null) {
                 syncStatus = CoreSyncStatus.BLOB_MISSING;
                 this.callback.finishedPull(this, blobMetadata, syncStatus, null);
@@ -228,15 +228,16 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
                 return;
             }
 
-            if (!coreExists(pullCoreInfo.coreName)) {
-                if (pullCoreInfo.createCoreIfAbsent) {
+            // TODO unknown core pulls in context of solr cloud
+            if (!coreExists(pullCoreInfo.getCoreName())) {
+                if (pullCoreInfo.shouldCreateCoreIfAbsent()) {
                     // We set the core as created awaiting pull before creating it, otherwise it's too late.
                     // If we get to this point, we're setting the "created not pulled yet" status of the core here (only place
                     // in the code where this happens) and we're clearing it in the finally below.
                     // We're not leaking entries in coresCreatedNotPulledYet that might stay there forever...
                     synchronized (pullsInFlight) {
                         synchronized (coresCreatedNotPulledYet) {
-                            coresCreatedNotPulledYet.add(pullCoreInfo.coreName);
+                            coresCreatedNotPulledYet.add(pullCoreInfo.getSharedStoreName());
                         }
                     }
                     createCore(pullCoreInfo);
@@ -248,7 +249,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
             }
 
             // Get local metadata
-            ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadata(pullCoreInfo.coreName, coreContainer);
+            ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadata(pullCoreInfo.getCoreName(), coreContainer);
 
             MetadataResolver resolver = new MetadataResolver(serverMetadata, blobMetadata);
 
@@ -257,11 +258,11 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
             switch (resolver.getAction()) {
                 case PULL:
                     // pull the core from Blob
-                    CorePushPull cp = new CorePushPull(pullCoreInfo.coreName, resolver, serverMetadata, blobMetadata);
+                    CorePushPull cp = new CorePushPull(pullCoreInfo, resolver, serverMetadata, blobMetadata);
                     // The following call can fail if blob is corrupt (in non trivial ways, trivial ways are identified by other cases)
-                    cp.pullUpdateFromBlob(queuedTimeMs, pullCoreInfo.waitForSearcher, attemptsCopy);
+                    cp.pullUpdateFromBlob(queuedTimeMs, pullCoreInfo.shouldWaitForSearcher(), attemptsCopy);
                     // pull was successful
-                    if(isEmptyCoreAwaitingPull(pullCoreInfo.coreName)){
+                    if(isEmptyCoreAwaitingPull(pullCoreInfo.getCoreName())){
                         // the javadoc for pulledBlob suggests that it is only meant to be called if we pulled from scratch
                         // therefore only limiting this call when we created the local core for this pull ourselves
                         // BlobTransientLog.get().getCorruptCoreTracker().pulledBlob(pullCoreInfo.coreName, blobMetadata);
@@ -312,7 +313,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
         } catch (Exception e) {
             syncStatus = CoreSyncStatus.FAILURE;
             message = Throwables.getStackTraceAsString(e);
-            logger.warn("Failed (attempt=" + attemptsCopy + ") to pull core " + pullCoreInfo.coreName, e);
+            logger.warn("Failed (attempt=" + attemptsCopy + ") to pull core " + pullCoreInfo.getSharedStoreName(), e);
         } finally {
             // Remove ourselves from the in flight set before calling the callback method (just in case it takes
             // forever)
@@ -324,11 +325,11 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
                     // TODO: Can we move this business of core creation and deletion outside of this task so that
                     //       we may not sub-optimally repeatedly create/delete core in case of reattempt of a transient pull error?
                     //       or get whether a reattempt will be made or not, and if there is a guaranteed reattempt then do not delete it
-                    if (coresCreatedNotPulledYet.remove(pullCoreInfo.coreName)) {
+                    if (coresCreatedNotPulledYet.remove(pullCoreInfo.getSharedStoreName())) {
                         if (!syncStatus.isSuccess()) {
                             // If we created the core and we could not pull successfully then we should cleanup after ourselves by deleting it
                             // otherwise queries can incorrectly return 0 results from that core.
-                            if(coreExists(pullCoreInfo.coreName)) {
+                            if(coreExists(pullCoreInfo.getCoreName())) {
                                 try {
                                     // try to delete core within 3 minutes. In future when we time box our pull task then we 
                                     // need to make sure this value is within that bound. 
@@ -341,13 +342,13 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
                                     //       but at some point we would have to let it go
                                     //       So may be, few more attempts here and then gack
                                     logger.warn("CorePullTask successfully created local core but failed to pull it" +
-                                            " and now is unable to delete that local core " + pullCoreInfo.coreName, ex);
+                                            " and now is unable to delete that local core " + pullCoreInfo.getCoreName(), ex);
                                 }
                             }
                         }
                     }
                 }
-                pullsInFlight.remove(pullCoreInfo.coreName);
+                pullsInFlight.remove(pullCoreInfo.getSharedStoreName());
             }
         }
         this.callback.finishedPull(this, blobMetadata, syncStatus, message);
@@ -378,11 +379,13 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
     }
 
     /**
+     * TODO - code part of unknown core pulls that will likely change in the Solr Cloud world!
+     * 
      * Creates a local (empty) core. This is required before we can fill this core with data pulled from Blob.
      */
     private void createCore(PullCoreInfo pci) throws Exception {
 
-        logger.info("About to create local core " + pci.coreName);
+        logger.info("About to create local core " + pci.getCoreName());
         
         // The location here might be different from the location used in coreExists() above. This is ok, if the core
         // did not exist and we're creating it, it's ok to create on another drive (and hopefully the HDD/SSD core placement
@@ -397,26 +400,26 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
 
         ZkController controller = coreContainer.getZkController();
         DocCollection collection = controller.getZkStateReader().
-                getClusterState().getCollection(pci.collectionName);
+                getClusterState().getCollection(pci.getCollectionName());
         Collection<Replica> replicas = collection.getReplicas();
         Replica replica = null;
         for (Replica r : replicas) {
-            if (r.getCoreName().equals(pci.coreName)) {
+            if (r.getCoreName().equals(pci.getCoreName())) {
                 replica = r;
                 break;
             }
         }
 
         if (replica == null) {
-            throw new Exception("Replica " + pci.coreName + " for collection " +
-                    pci.collectionName + " does not exist in ZK");
+            throw new Exception("Replica " + pci.getCoreName() + " for collection " +
+                    pci.getCollectionName() + " does not exist in ZK");
         }
 
-        params.put(CoreDescriptor.CORE_COLLECTION, pci.collectionName);
+        params.put(CoreDescriptor.CORE_COLLECTION, pci.getCollectionName());
         params.put(CoreDescriptor.CORE_NODE_NAME, replica.getName());
-        params.put(CoreDescriptor.CORE_SHARD, collection.getShardId(replica.getNodeName(), pci.coreName));
+        params.put(CoreDescriptor.CORE_SHARD, collection.getShardId(replica.getNodeName(), pci.getCoreName()));
 
-        coreContainer.create(pci.coreName, coreContainer.getCoreRootDirectory().resolve(pci.coreName),
+        coreContainer.create(pci.getCoreName(), coreContainer.getCoreRootDirectory().resolve(pci.getCoreName()),
                 params, false);
 
         // The location here might be different from the location used in coreExists() above. This is ok, if the core

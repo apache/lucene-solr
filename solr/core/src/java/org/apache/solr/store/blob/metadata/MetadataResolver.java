@@ -167,8 +167,7 @@ public class MetadataResolver {
         }
 
         if (distant == null
-                || (distant.getSequenceNumber() == BlobCoreMetadataBuilder.UNDEFINED_VALUE
-                    && distant.getGeneration() == BlobCoreMetadataBuilder.UNDEFINED_VALUE
+                || (distant.getGeneration() == BlobCoreMetadataBuilder.UNDEFINED_VALUE
                     && distant.getBlobFiles().length == 0
                     && distant.getBlobFilesToDelete().length == 0)) {
             // Core does not exist on blob. All we can do is push it there.
@@ -194,7 +193,7 @@ public class MetadataResolver {
         for (BlobFile bf : distant.getBlobFiles()) {
             if (isSegmentsNFilename(bf)) {
                 if (segmentsN != null) {
-                    errorMessage = "Blob store for core " + distant.getCoreName() + " has conflicting files "
+                    errorMessage = "Blob store for core " + distant.getSharedBlobName() + " has conflicting files "
                             + segmentsN + " and " + bf.getSolrFileName();
                     // As we return here, blobFilesMissingLocally will not be accessible and localFilesMissingOnBlob does
                     // contain all local files of latest commit point so we're ok.
@@ -208,7 +207,7 @@ public class MetadataResolver {
         }
 
         if (segmentsN == null) {
-            errorMessage = "Blob store for core " + distant.getCoreName() + " does not contain a segments_N file";
+            errorMessage = "Blob store for core " + distant.getSharedBlobName() + " does not contain a segments_N file";
             // As above, blobFilesMissingLocally not accessible and localFilesMissingOnBlob ok
             return Action.BLOB_CORRUPT;
         }
@@ -273,14 +272,14 @@ public class MetadataResolver {
             }
         }
 
-        if (local.getSequenceNumber() == distant.getSequenceNumber() && local.getGeneration() == distant.getGeneration()) {
+        if (local.getGeneration() == distant.getGeneration()) {
             // Unlike indexing update, config file updates are second class citizens and do not cause sequence number and generation number to change.
             // Therefore, if we have any config files to push or pull we can still process them without involving indexing updates
             if(!localConfigFilesMissingOnBlob.isEmpty() || !blobConfigFilesMissingLocally.isEmpty()){
                 return  Action.CONFIG_CHANGE;
             }
             return Action.EQUIVALENT;
-        } else if (local.getSequenceNumber() > distant.getSequenceNumber() || (local.getSequenceNumber() == distant.getSequenceNumber() && local.getGeneration() > distant.getGeneration())) {
+        } else if (local.getGeneration() > distant.getGeneration()) {
             // Local core is fresher than blob image
             // We need to push to blob localFilesMissingOnBlob and to mark for delete from blob blobFilesMissingLocally
             // These sets include the segments_N files to push and delete.

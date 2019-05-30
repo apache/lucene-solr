@@ -22,9 +22,6 @@ import org.apache.solr.store.blob.client.ToFromJson;
 
 /**
  * This class implements an AmazonS3 client for reading and writing search index data to AWS S3.
- *
- * @author a.vuong
- * @since 214/solr.6
  */
 public class S3StorageClient implements CoreStorageClient {
     
@@ -63,12 +60,12 @@ public class S3StorageClient implements CoreStorageClient {
     }
 
     @Override
-    public void pushCoreMetadata(String coreName, BlobCoreMetadata bcm) throws BlobException {
+    public void pushCoreMetadata(String blobName, BlobCoreMetadata bcm) throws BlobException {
         try {
             ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
             String json = converter.toJson(bcm);
             
-            String blobCoreMetadataPath = getBlobMetadataPath(coreName);
+            String blobCoreMetadataPath = getBlobMetadataPath(blobName);
             /*
              * Encodes contents of the string into an S3 object. If no exception is thrown 
              * then the object is guaranteed to have been stored
@@ -84,11 +81,11 @@ public class S3StorageClient implements CoreStorageClient {
     }
 
     @Override
-    public BlobCoreMetadata pullCoreMetadata(String coreName) throws BlobException {
+    public BlobCoreMetadata pullCoreMetadata(String blobName) throws BlobException {
         try {
-            String blobCoreMetadataPath = getBlobMetadataPath(coreName);
+            String blobCoreMetadataPath = getBlobMetadataPath(blobName);
             
-            if (!coreMetadataExists(coreName)) {
+            if (!coreMetadataExists(blobName)) {
                 return null;
             }
              
@@ -120,7 +117,7 @@ public class S3StorageClient implements CoreStorageClient {
     }
 
     @Override
-    public String pushStream(String coreName, InputStream is, long contentLength) throws BlobException {
+    public String pushStream(String blobName, InputStream is, long contentLength) throws BlobException {
         try {
             /*
              * This object metadata is associated per blob. This is different than the Solr Core metadata 
@@ -130,7 +127,7 @@ public class S3StorageClient implements CoreStorageClient {
             ObjectMetadata objectMetadata = new ObjectMetadata();
             objectMetadata.setContentLength(contentLength);
             
-            String blobPath = BlobClientUtils.generateNewBlobCorePath(coreName);
+            String blobPath = BlobClientUtils.generateNewBlobCorePath(blobName);
             PutObjectRequest putRequest = new PutObjectRequest(blobBucketName, blobPath, is, objectMetadata);
             
             s3Client.putObject(putRequest);
@@ -146,9 +143,9 @@ public class S3StorageClient implements CoreStorageClient {
     }
 
     @Override
-    public boolean coreMetadataExists(String coreName) throws BlobException {
+    public boolean coreMetadataExists(String blobName) throws BlobException {
         try {
-            return s3Client.doesObjectExist(blobBucketName, getBlobMetadataPath(coreName));
+            return s3Client.doesObjectExist(blobBucketName, getBlobMetadataPath(blobName));
         } catch (AmazonServiceException ase) {
             throw handleAmazonServiceException(ase);
         } catch (AmazonClientException ace) {
@@ -158,25 +155,25 @@ public class S3StorageClient implements CoreStorageClient {
         }
     }
     
-    private String getBlobMetadataPath(String coreName) {
-        return BlobClientUtils.concatenatePaths(coreName, blobCoreMetadataName);
+    private String getBlobMetadataPath(String blobName) {
+        return BlobClientUtils.concatenatePaths(blobName, blobCoreMetadataName);
     }
 
     /**
-     * Deletes all blob files associated with this coreName.
+     * Deletes all blob files associated with this blobName.
      * 
      * This is simply added here to handle cleaning up cores in the blob store for testing. Does not handle failed 
      * delete exceptions and no synchronization.
      * 
      * First sends a request to the BlobStore and gets a list of all blob file summaries 
-     * prefixed by the given coreName. Gets the key for each blob and sends a delete request for all of those keys.
+     * prefixed by the given blobName. Gets the key for each blob and sends a delete request for all of those keys.
      */
     @Override
-    public void deleteCore(String coreName) throws BlobException {
+    public void deleteCore(String blobName) throws BlobException {
         try {
             ListObjectsRequest listRequest = new ListObjectsRequest();
             listRequest.setBucketName(blobBucketName);
-            listRequest.setPrefix(coreName);
+            listRequest.setPrefix(blobName);
             
             List<String> blobFiles = new LinkedList<>();
             ObjectListing objectListing = s3Client.listObjects(listRequest);
@@ -254,10 +251,10 @@ public class S3StorageClient implements CoreStorageClient {
     }
     
     @Override
-    public List<String> listCoreBlobFilesOlderThan(String coreName, long timestamp) throws BlobException {
+    public List<String> listCoreBlobFilesOlderThan(String blobName, long timestamp) throws BlobException {
         ListObjectsRequest listRequest = new ListObjectsRequest();
         listRequest.setBucketName(blobBucketName);
-        listRequest.setPrefix(coreName);
+        listRequest.setPrefix(blobName);
         
         List<String> blobFiles = new LinkedList<>();
         try {
