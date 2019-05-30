@@ -21,6 +21,8 @@ archivesBaseName = 'analyzers-common'
 
 def unicodePropsJavaFile = "/src/java/org/apache/lucene/analysis/util/UnicodeProps.java"
 
+def snowballProgramsDir = "${projectDir}/src/java/org/tartarus/snowball/ext"
+
 task jarTest (type: Jar) {
   from sourceSets.test.output
   classifier = 'test'
@@ -54,10 +56,6 @@ task unicodeData(type: org.apache.lucene.gradle.GenerateUnicodeData) {
   group = 'Build Regenerate'
   description = "Regenerates Unicode data src files."
   
-  doFirst {
-    println "--> Generate Unicode data ..."
-  }
-  
   unicodePropsFile = new File("${projectDir}" + unicodePropsJavaFile)
   
   finalizedBy fixCRLFUnicodeData
@@ -65,6 +63,25 @@ task unicodeData(type: org.apache.lucene.gradle.GenerateUnicodeData) {
 
 task regenerate {
   dependsOn unicodeData
+}
+
+
+task patchSnowball {
+  group = 'Build Regenerate'
+  description = "Patches all snowball programs in '${snowballProgramsDir}' to make them work with MethodHandles"
+  
+  doLast {
+    ant.fileset(id:"snowball.programs", dir:"${snowballProgramsDir}", includes:"*Stemmer.java")
+    
+    ant.replaceregexp(match: "^public class \\w+Stemmer\b", replace: "@SuppressWarnings(&quot;unused&quot;) \\0", flags: "m", encoding: "UTF-8") {
+      ant.fileset(refid:"snowball.programs")
+    }
+
+    ant.replaceregexp(match: "private final static \\w+Stemmer methodObject\\b.*\$", replace: "/* patched */ private static final java.lang.invoke.MethodHandles.Lookup methodObject = java.lang.invoke.MethodHandles.lookup();", flags: "m", encoding: "UTF-8") {
+      ant.fileset(refid:"snowball.programs")
+    }
+    ant.fixcrlf(srcdir:"${snowballProgramsDir}", includes:"*Stemmer.java", tab:"remove", tablength:"2", encoding: "UTF-8", javafiles: "yes", fixlast: "yes")
+  }
 }
 
 
