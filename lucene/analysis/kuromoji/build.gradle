@@ -94,10 +94,6 @@ task buildDict(type: JavaExec) {
 }
 
 task regenerate {
-  doFirst {
-    println "--> regenerate"
-  }
-  
   dependsOn buildDict
 }
 

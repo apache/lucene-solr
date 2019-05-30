@@ -64,10 +64,6 @@ task unicodeData(type: org.apache.lucene.gradle.GenerateUnicodeData) {
 }
 
 task regenerate {
-  doFirst {
-    println "--> regenerate"
-  }
-  
   dependsOn unicodeData
 }
 
