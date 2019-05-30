@@ -185,13 +185,16 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bam")
         .process(solrClient);
 
+    Thread.sleep(1000); // make sure zk client watch has time to be notified.
     assertEquals(1, calls.get()); // same wrapped watch set twice, only invoked once
+
     solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null,true);
     solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrappedB, null,true);
 
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bang")
         .process(solrClient);
 
+    Thread.sleep(1000); // make sure zk client watch has time to be notified.
     assertEquals(1, calls.get()); // offsetting watches, no change
   }
 
