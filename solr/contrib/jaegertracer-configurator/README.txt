@@ -9,12 +9,12 @@ Note that all library of solr-jaegertracer must be included in the classpath of 
 
 ```
 <tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator">
-    <str name="agentHost">localhost</str>
-    <int name="agentPort">5775</int>
-    <bool name="logSpans">true</bool>
-    <int name="flushInterval">1000</int>
-    <int name="maxQueueSize">10000</int>
-  </tracerConfig>
+  <str name="agentHost">localhost</str>
+  <int name="agentPort">5775</int>
+  <bool name="logSpans">true</bool>
+  <int name="flushInterval">1000</int>
+  <int name="maxQueueSize">10000</int>
+</tracerConfig>
 ```
 
 List of parameters for JaegerTracerConfigurator include:
