@@ -187,7 +187,7 @@ public class CloudTestUtils {
       }
     };
   }
-  
+
   /**
    * Wait for a particular named trigger to be scheduled.
    * <p>
@@ -261,7 +261,7 @@ public class CloudTestUtils {
    * Helper class for sending (JSON) autoscaling requests that can randomize between V1 and V2 requests
    */
   public static class AutoScalingRequest extends SolrRequest {
-
+    private SolrParams params = null;
     /**
      * Creates a request using a randomized root path (V1 vs V2)
      *
@@ -280,6 +280,10 @@ public class CloudTestUtils {
      * @param message JSON payload, may be null
      */
     public static SolrRequest create(SolrRequest.METHOD m, String subPath, String message) {
+      return create(m,subPath,message,null);
+
+    }
+    public static SolrRequest create(SolrRequest.METHOD m, String subPath, String message, SolrParams params) {
       final boolean useV1 = LuceneTestCase.random().nextBoolean();
       String path = useV1 ? "/admin/autoscaling" : "/cluster/autoscaling";
       if (null != subPath) {
@@ -287,10 +291,11 @@ public class CloudTestUtils {
         path += subPath;
       }
       return useV1
-        ? new AutoScalingRequest(m, path, message)
-        : new V2Request.Builder(path).withMethod(m).withPayload(message).build();
+          ? new AutoScalingRequest(m, path, message).withParams(params)
+          : new V2Request.Builder(path).withMethod(m).withParams(params).withPayload(message).build();
+
     }
-    
+
     protected final String message;
 
     /**
@@ -304,9 +309,14 @@ public class CloudTestUtils {
       this.message = message;
     }
 
+
+    AutoScalingRequest withParams(SolrParams params){
+      this.params = params;
+      return this;
+    }
     @Override
     public SolrParams getParams() {
-      return null;
+      return params;
     }
 
     @Override

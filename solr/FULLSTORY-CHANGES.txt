@@ -5,3 +5,6 @@
 * Remove pathological error reporting. Don't serialize the entire clusterstate to log (Generally available from SOLR 8.1)(Scott Blum)
 * Expose DocValuesTermsCollector and TermsQuery (Generally available from SOLR 8.1) (Jaime Yap) 
 * LUCENE-8725: Make TermsQuery.SeekingTermSetTermsEnum a top level class and public (Generally available from SOLR 8.1)
+* SOLR-13468: autoscaling/suggestions should be able to give suggestions from config sent as a payload (Generally available from SOLR 8.2)(noble)
+* SOLR-13484: autoscaling/diagnostics API should be able to give diagnostics output from config sent as a payload (Generally available from SOLR 8.2) (noble)
+* SOLR-13493: /autoscaling/suggestions to be able to filter by type (Generally available from SOLR 8.2) (noble)
