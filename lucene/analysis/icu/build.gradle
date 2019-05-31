@@ -41,6 +41,36 @@ sourceSets {
   tools.java.srcDirs = ['src/tools/java']
 }
 
+task genUtr30DataFiles(type: JavaExec) {
+  group = 'Build Regenerate'
+  description = "Compile UTR30 rules."
+  
+  classpath = sourceSets.tools.runtimeClasspath
+  main = 'org.apache.lucene.analysis.icu.GenerateUTR30DataFiles'
+  
+  workingDir "src/data/utr30"
+}
+
+def resourcesDir = "${projectDir}/src/resources"
+def gennorm2SrcFiles = 'nfc.txt nfkc.txt nfkc_cf.txt BasicFoldings.txt DiacriticFolding.txt DingbatFolding.txt HanRadicalFolding.txt NativeDigitFolding.txt'
+
+task gennorm2() {
+  group = 'Build Regenerate'
+  description = "Compile norm2 rules."
+  doLast {
+    exec {
+      executable "gennorm2"
+      args = ['-v', '-s', "${projectDir}/src/data/utr30", "${gennorm2SrcFiles}", '-o', "${buildDir}/gennorm2/utr30.tmp"]
+    }
+    exec {
+      executable "icupkg"
+      args = ['-tb', "${buildDir}/gennorm2/utr30.tmp", "${resourcesDir}/org/apache/lucene/analysis/icu/utr30.nrm"]
+    }
+    delete("${buildDir}/gennorm2/utr30.tmp")
+  }
+  mustRunAfter genUtr30DataFiles
+}
+
 task genrbbi(type: JavaExec) {
   group = 'Build Regenerate'
   description = "Compile RBBI rules."
@@ -55,7 +85,7 @@ task genrbbi(type: JavaExec) {
 }
 
 task regenerate {
-  dependsOn genrbbi
+  dependsOn genUtr30DataFiles, gennorm2, genrbbi
 }
 
 forbiddenApisTools {
