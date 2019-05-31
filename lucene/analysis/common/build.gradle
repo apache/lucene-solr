@@ -61,10 +61,78 @@ task unicodeData(type: org.apache.lucene.gradle.GenerateUnicodeData) {
   finalizedBy fixCRLFUnicodeData
 }
 
-task regenerate {
-  dependsOn unicodeData
+task generateJflexHtmlCharEntities() {
+  doLast {
+    ant.exec(dir: "src/java/org/apache/lucene/analysis/charfilter",
+             output: "src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex",
+             executable: "${python_exe}", failonerror:"true", logerror:"true") {
+             ant.arg(value: "-B")
+             ant.arg(value: "htmlentity.py")
+    }
+    ant.fixcrlf(file: "src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex", encoding: "UTF-8")
+  }
 }
 
+task jflexHTMLStripCharFilter(type: org.apache.lucene.gradle.JFlex) {
+  inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/charfilter")
+  fileName = "HTMLStripCharFilter"
+  disableBufferExpansion = true
+  target = new File("${projectDir}/src/java/org/apache/lucene/analysis/charfilter")
+  dependsOn generateJflexHtmlCharEntities
+}
+
+task jflexWikiTokenizer(type: org.apache.lucene.gradle.JFlex) {
+  inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/charfilter")
+  fileName = "WikipediaTokenizerImpl"
+  disableBufferExpansion = true
+  target = new File("${projectDir}/src/java/org/apache/lucene/analysis/wikipedia")
+}
+
+task jflexClassicAnalyzer(type: org.apache.lucene.gradle.JFlex) {
+  inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+  fileName = "ClassicTokenizerImpl"
+  disableBufferExpansion = true
+  target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+}
+
+task jflexUAX29URLEmailTokenizer(type: org.apache.lucene.gradle.JFlex) {
+  inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+  fileName = "UAX29URLEmailTokenizerImpl"
+  disableBufferExpansion = true
+  target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+}
+
+task jflex {
+  dependsOn jflexWikiTokenizer, jflexClassicAnalyzer, jflexUAX29URLEmailTokenizer
+  finalizedBy jflexHTMLStripCharFilter // Because of a bug in JFlex's ant task (may or may not apply to ant in gradle), HTMLStripCharFilter has to be generated last.
+}
+
+task cleanjflex() {
+  group = 'Build Regenerate'
+  description = "Removes jflex generated artifacts."
+  
+  doLast {
+    ant.delete() {
+      ant.fileset(dir: "src/java/org/apache/lucene/analysis/standard", includes: "**/*.java") {
+        ant.containsregexp(expression: "generated.*by.*JFlex")
+      }
+    }
+    ant.delete() {
+      ant.fileset(dir: "src/java/org/apache/lucene/analysis/wikipedia", includes: "**/*.java") {
+        ant.containsregexp(expression: "generated.*by.*JFlex")
+      }
+    }
+    ant.delete() {
+      ant.fileset(dir: "src/java/org/apache/lucene/analysis/charfilter", includes: "**/*.java") {
+        ant.containsregexp(expression: "generated.*by.*JFlex")
+      }
+    }
+  }
+}
+
+task regenerate {
+  dependsOn jflex, unicodeData
+}
 
 task patchSnowball {
   group = 'Build Regenerate'
