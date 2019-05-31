@@ -82,7 +82,7 @@ task jflexHTMLStripCharFilter(type: org.apache.lucene.gradle.JFlex) {
 }
 
 task jflexWikiTokenizer(type: org.apache.lucene.gradle.JFlex) {
-  inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/charfilter")
+  inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/wikipedia")
   fileName = "WikipediaTokenizerImpl"
   disableBufferExpansion = true
   target = new File("${projectDir}/src/java/org/apache/lucene/analysis/wikipedia")
