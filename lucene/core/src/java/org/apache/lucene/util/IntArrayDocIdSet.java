@@ -73,7 +73,7 @@ final class IntArrayDocIdSet extends DocIdSet {
     @Override
     public int advance(int target) throws IOException {
       int bound = 1;
-      //given that we use this for small array only, this is very unlikely to overflow
+      //given that we use this for small arrays only, this is very unlikely to overflow
       while(i + bound < length && docs[i + bound] < target) {
         bound *= 2;
       }
