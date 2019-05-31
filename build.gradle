@@ -73,7 +73,7 @@ configure(luceneSolrProjects) {
     }
   }
   
-  check.dependsOn checkMissingJavaDocs
+  // TODO: check.dependsOn checkMissingJavaDocs
 }
 
 // -> lucene-solr sub module config - configure all lucene-solr modules (excludes the root project)
@@ -155,7 +155,7 @@ def noJavaDocModules = ["buildSrc", "dev-tools","lucene", "solr", "solr-ref-guid
 def javaDocProjects = subprojects.findAll { project -> !noJavaDocModules.contains(project.name)}
 
 project.afterEvaluate{
-  task javaDocAll(type: Javadoc) {
+  task javadocAll(type: Javadoc) {
     group = 'Documentation'
     description = "Generates single JavaDoc for all modules."
     javaDocProjects.each { evaluationDependsOn(it.path) }
