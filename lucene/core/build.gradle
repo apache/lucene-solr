@@ -27,6 +27,26 @@ dependencies {
   testImplementation project(':lucene:lucene-test-framework')
 }
 
+task downloadMoman(type: org.apache.lucene.gradle.Download) {
+  sourceUrl = "${momanUrl}"
+  target = new File("${buildDir}", 'moman.zip')
+}
+
+task installMoman(){
+  doLast {
+    ant.unzip(src: "${buildDir}/moman.zip", dest:"${buildDir}/moman", overwrite:"true") {
+      ant.cutdirsmapper(dirs: "1")
+    }
+  }
+  dependsOn downloadMoman
+}
+
+task fixCRLFAutomaton(type: org.apache.lucene.gradle.FixCRLF) {
+  sourceDir = "src/java/org/apache/lucene/util/automaton"
+  includes="*ParametricDescription.java"
+  encoding="UTF-8"
+}
+
 task createLevAutomaton {
   group = 'Build Regenerate'
   description = "Regenerates LevAutomaton src files."
@@ -57,15 +77,10 @@ task createLevAutomaton {
       args = ['-B', 'createLevAutomata.py', '2', 'False']
     }
   }
+  
+  dependsOn installMoman
+  finalizedBy fixCRLFAutomaton
 }
-
-task fixCRLFAutomaton(type: org.apache.lucene.gradle.FixCRLF) {
-  sourceDir = "src/java/org/apache/lucene/util/automaton"
-  includes="*ParametricDescription.java"
-  encoding="UTF-8"
-}
-
-createLevAutomaton.finalizedBy fixCRLFAutomaton
 
 task createPackedIntSources {
   group = 'Build Regenerate'
@@ -103,26 +118,10 @@ task fixCRLFPacked(type: org.apache.lucene.gradle.FixCRLF) {
   sourceDir = "src/java/org/apache/lucene/util/packed"
   includes = "BulkOperation*.java,Direct*.java,Packed64SingleBlock.java,Packed*ThreeBlocks.py"
   encoding = "UTF-8"
+  finalizedBy fixCRLFPacked
 }
 
-createPackedIntSources.finalizedBy fixCRLFPacked
-
-task installMoman(){
-  doLast {
-    ant.unzip(src: "${buildDir}/moman.zip", dest:"${buildDir}/moman", overwrite:"true") {
-      ant.cutdirsmapper(dirs: "1")
-    }
-  }
-}
-
-task downloadMoman(type: org.apache.lucene.gradle.Download) {
-  sourceUrl = "${momanUrl}"
-  target = new File("${buildDir}", 'moman.zip')
-}
-
-installMoman.dependsOn downloadMoman
-
-task runjflex(type: org.apache.lucene.gradle.JFlex) {
+task jflex(type: org.apache.lucene.gradle.JFlex) {
   group = 'Build Regenerate'
   description = "Runs jflex for StandardTokenizerImpl."
   
@@ -130,15 +129,11 @@ task runjflex(type: org.apache.lucene.gradle.JFlex) {
   fileName = "StandardTokenizerImpl"
   disableBufferExpansion = true
   target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
-  
-  doFirst {
-    println "--> Running jflex ..."
-  }
 }
 
 task cleanjflex() {
   group = 'Build Regenerate'
-  description = "Removed jflex generated artifacts."
+  description = "Removes jflex generated artifacts."
   
   doLast {
     ant.delete() {
@@ -152,12 +147,6 @@ task cleanjflex() {
 task regenerate {
   group = 'Build Regenerate'
   description = "Regenerates various generated src files, automoton, packedints, jflex, etc"
+  dependsOn jflex, createLevAutomaton, createPackedIntSources
 }
-
-createLevAutomaton.dependsOn installMoman
-
-regenerate.dependsOn createLevAutomaton
-regenerate.dependsOn createPackedIntSources
-regenerate.dependsOn runjflex
-
 
