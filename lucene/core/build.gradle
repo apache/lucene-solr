@@ -51,10 +51,6 @@ task createLevAutomaton {
   group = 'Build Regenerate'
   description = "Regenerates LevAutomaton src files."
   
-  doFirst {
-    println "--> Creating LevAutomaton ..."
-  }
-  
   doLast {
     exec {
       workingDir 'src/java/org/apache/lucene/util/automaton'
@@ -85,10 +81,6 @@ task createLevAutomaton {
 task createPackedIntSources {
   group = 'Build Regenerate'
   description = "Regenerates PackedInt src files."
-  
-  doFirst {
-    println "--> Creating packed int sources ..."
-  }
   
   doLast {
     exec {
@@ -121,7 +113,7 @@ task fixCRLFPacked(type: org.apache.lucene.gradle.FixCRLF) {
   finalizedBy fixCRLFPacked
 }
 
-task jflex(type: org.apache.lucene.gradle.JFlex) {
+task runJflex(type: org.apache.lucene.gradle.JFlex) {
   group = 'Build Regenerate'
   description = "Runs jflex for StandardTokenizerImpl."
   
@@ -131,12 +123,12 @@ task jflex(type: org.apache.lucene.gradle.JFlex) {
   target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
 }
 
-task cleanjflex() {
+task cleanJflex() {
   group = 'Build Regenerate'
   description = "Removes jflex generated artifacts."
   
   doLast {
-    ant.delete() {
+    ant.delete(failonerror: 'false') {
       ant.fileset(dir: "src/java/org/apache/lucene/analysis/standard", includes: "**/*.java") {
         ant.containsregexp(expression: "generated.*by.*JFlex")
       }
@@ -147,6 +139,6 @@ task cleanjflex() {
 task regenerate {
   group = 'Build Regenerate'
   description = "Regenerates various generated src files, automoton, packedints, jflex, etc"
-  dependsOn jflex, createLevAutomaton, createPackedIntSources
+  dependsOn runJflex, createLevAutomaton, createPackedIntSources
 }
 
