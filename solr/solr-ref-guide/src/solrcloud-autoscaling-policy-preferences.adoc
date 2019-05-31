@@ -448,7 +448,7 @@ Since there is no node that can host a replica for `shard2` without causing a vi
 
 After re-issuing the `SecondCollection` CREATE command, the replica for `shard1` will be placed on "nodeA": it's least loaded, so is tested first, and no policy violation will result from placement there.  The `shard2` replica could be placed on any of the 3 nodes, since they're all equally loaded, and the chosen node will remain below its maximum core count after placement.  The CREATE command succeeds.
 
-== Testing the autoscaling configuration and suggestions
+== Testing Autoscaling Configuration and Suggestions
 It's not always easy to predict the impact of autoscaling configuration changes on the
 cluster layout. Starting with release 8.1 Solr provides a tool for assessing the impact of
 such changes without affecting the state of the target cluster.
