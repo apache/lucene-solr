@@ -42,9 +42,9 @@ class JFlex extends DefaultTask {
   void jflex() {
     def skeleton
     if (disableBufferExpansion) {
-      skeleton = "src/data/jflex/skeleton.disable.buffer.expansion.txt"
+      skeleton = project.project(":lucene:lucene-core").projectDir.getAbsolutePath() + "/src/data/jflex/skeleton.disable.buffer.expansion.txt"
     } else {
-      skeleton = "src/data/jflex/skeleton.default"
+      skeleton = project.project(":lucene:lucene-core").projectDir.getAbsolutePath() + "/src/data/jflex/skeleton.default"
     }
     
     ant.taskdef(classname: 'jflex.anttask.JFlexTask',
