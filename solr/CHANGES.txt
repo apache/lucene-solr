@@ -56,6 +56,9 @@ New Features
 
 * SOLR-13494: Add DeepRandomStream implementation (Joel Bernstein)
 
+* SOLR-13504: In autoscaling policies, use an explicit 'nodeset' attribute for filtering
+  nodes instead of using them directly at the toplevel (noble)
+
 Bug Fixes
 ----------------------
 
