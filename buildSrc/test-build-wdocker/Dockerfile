@@ -21,10 +21,12 @@ CMD ["bash"]
 
 RUN \
   apt-get update && \
-  apt-get install -y openjdk-11-jdk && \
+  apt-get install -y openjdk-11-jdk-headless && \
   apt-get install -y python && \
-  apt-get install -y patch
-
+  apt-get install -y patch  && \
+  apt-get install -y curl && \
+  apt-get install -y icu-devtools
+  
 # Define commonly used JAVA_HOME variable
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64/
 
@@ -38,3 +40,6 @@ WORKDIR /home/lucene/project
 RUN chown -R lucene:lucene /home/lucene
 
 USER lucene
+
+ENV PATH $PATH:/usr/local/icu4c-64_2-Ubuntu18.04-x64/icu/usr/local/bin
+

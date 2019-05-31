@@ -49,7 +49,7 @@ class JFlex extends DefaultTask {
     
     ant.taskdef(classname: 'jflex.anttask.JFlexTask',
     name: 'jflex',
-    classpath: project.rootProject.allprojects.find { project -> project.name == 'buildSrc'}.configurations.jflex.asPath)
+    classpath: project.project(":buildSrc").configurations.jflex.asPath)
     
     ant.jflex(file: inputDir.getAbsolutePath() + File.separator + fileName + ".jflex", outdir: target.getAbsolutePath(), nobak: 'on', skeleton: skeleton)
     

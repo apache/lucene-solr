@@ -52,15 +52,15 @@ task genUtr30DataFiles(type: JavaExec) {
 }
 
 def resourcesDir = "${projectDir}/src/resources"
-def gennorm2SrcFiles = 'nfc.txt nfkc.txt nfkc_cf.txt BasicFoldings.txt DiacriticFolding.txt DingbatFolding.txt HanRadicalFolding.txt NativeDigitFolding.txt'
 
 task gennorm2() {
   group = 'Build Regenerate'
-  description = "Compile norm2 rules."
+  description = "Compile norm2 rules. Note that the gennorm2 and icupkg tools must be on your PATH. These tools are part of the ICU4C package. See http://site.icu-project.org/ or sudo apt install icu-devtools"
   doLast {
+    new File(buildDir, "gennorm2").mkdirs()
     exec {
       executable "gennorm2"
-      args = ['-v', '-s', "${projectDir}/src/data/utr30", "${gennorm2SrcFiles}", '-o', "${buildDir}/gennorm2/utr30.tmp"]
+      args = ['-v', '-s', "${projectDir}/src/data/utr30", 'nfc.txt', 'nfkc.txt', 'nfkc_cf.txt', 'BasicFoldings.txt', 'DiacriticFolding.txt', 'DingbatFolding.txt', 'HanRadicalFolding.txt', 'NativeDigitFolding.txt', '-o', "${buildDir}/gennorm2/utr30.tmp"]
     }
     exec {
       executable "icupkg"
