@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -38,9 +39,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -76,8 +75,8 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(realManager, null);
     Map<String, Object> snapshot = snapshotCloudManager.getSnapshot(true);
     SnapshotCloudManager snapshotCloudManager1 = new SnapshotCloudManager(snapshot);
-    assertClusterStateEquals(realManager.getClusterStateProvider().getClusterState(), snapshotCloudManager.getClusterStateProvider().getClusterState());
-    assertClusterStateEquals(realManager.getClusterStateProvider().getClusterState(), snapshotCloudManager1.getClusterStateProvider().getClusterState());
+    SimSolrCloudTestCase.assertClusterStateEquals(realManager.getClusterStateProvider().getClusterState(), snapshotCloudManager.getClusterStateProvider().getClusterState());
+    SimSolrCloudTestCase.assertClusterStateEquals(realManager.getClusterStateProvider().getClusterState(), snapshotCloudManager1.getClusterStateProvider().getClusterState());
     // this will always fail because the metrics will be already different
     // assertNodeStateProvider(realManager, snapshotCloudManager);
     assertNodeStateProvider(snapshotCloudManager, snapshotCloudManager1);
@@ -91,7 +90,7 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(realManager, null);
     snapshotCloudManager.saveSnapshot(tmpDir, true);
     SnapshotCloudManager snapshotCloudManager1 = SnapshotCloudManager.readSnapshot(tmpDir);
-    assertClusterStateEquals(snapshotCloudManager.getClusterStateProvider().getClusterState(), snapshotCloudManager1.getClusterStateProvider().getClusterState());
+    SimSolrCloudTestCase.assertClusterStateEquals(snapshotCloudManager.getClusterStateProvider().getClusterState(), snapshotCloudManager1.getClusterStateProvider().getClusterState());
     assertNodeStateProvider(snapshotCloudManager, snapshotCloudManager1);
     assertDistribStateManager(snapshotCloudManager.getDistribStateManager(), snapshotCloudManager1.getDistribStateManager());
   }
@@ -104,7 +103,7 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     snapshotCloudManager.saveSnapshot(tmpDir, true);
     SnapshotCloudManager snapshotCloudManager1 = SnapshotCloudManager.readSnapshot(tmpDir);
     try (SimCloudManager simCloudManager = SimCloudManager.createCluster(snapshotCloudManager1, null, TimeSource.get("simTime:50"))) {
-      assertClusterStateEquals(snapshotCloudManager.getClusterStateProvider().getClusterState(), simCloudManager.getClusterStateProvider().getClusterState());
+      SimSolrCloudTestCase.assertClusterStateEquals(snapshotCloudManager.getClusterStateProvider().getClusterState(), simCloudManager.getClusterStateProvider().getClusterState());
       assertNodeStateProvider(snapshotCloudManager, simCloudManager);
       assertDistribStateManager(snapshotCloudManager.getDistribStateManager(), simCloudManager.getDistribStateManager());
       ClusterState state = simCloudManager.getClusterStateProvider().getClusterState();
@@ -138,12 +137,29 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
       assertEquals(Utils.toJSONString(oneVals), Utils.toJSONString(twoVals));
       Map<String, Map<String, List<ReplicaInfo>>> oneInfos = one.getReplicaInfo(node, SimUtils.COMMON_REPLICA_TAGS);
       Map<String, Map<String, List<ReplicaInfo>>> twoInfos = two.getReplicaInfo(node, SimUtils.COMMON_REPLICA_TAGS);
-      assertEquals(Utils.fromJSON(Utils.toJSON(oneInfos)), Utils.fromJSON(Utils.toJSON(twoInfos)));
+      assertEquals("collections on node" + node, oneInfos.keySet(), twoInfos.keySet());
+      oneInfos.forEach((coll, oneShards) -> {
+        Map<String, List<ReplicaInfo>> twoShards = twoInfos.get(coll);
+        assertEquals("shards on node " + node, oneShards.keySet(), twoShards.keySet());
+        oneShards.forEach((shard, oneReplicas) -> {
+          List<ReplicaInfo> twoReplicas = twoShards.get(shard);
+          assertEquals("num replicas on node " + node, oneReplicas.size(), twoReplicas.size());
+          Map<String, ReplicaInfo> oneMap = oneReplicas.stream()
+              .collect(Collectors.toMap(ReplicaInfo::getName, Function.identity()));
+          Map<String, ReplicaInfo> twoMap = twoReplicas.stream()
+              .collect(Collectors.toMap(ReplicaInfo::getName, Function.identity()));
+          assertEquals("replica coreNodeNames on node " + node, oneMap.keySet(), twoMap.keySet());
+          oneMap.forEach((coreNode, oneReplica) -> {
+            ReplicaInfo twoReplica = twoMap.get(coreNode);
+            SimSolrCloudTestCase.assertReplicaInfoEquals(oneReplica, twoReplica);
+          });
+        });
+      });
     }
   }
 
   // ignore these because SimCloudManager always modifies them
-  private static final Set<Pattern> IGNORE_PATTERNS = new HashSet<>(Arrays.asList(
+  private static final Set<Pattern> IGNORE_DISTRIB_STATE_PATTERNS = new HashSet<>(Arrays.asList(
       Pattern.compile("/autoscaling/triggerState.*"),
       Pattern.compile("/clusterstate\\.json"), // different format in SimClusterStateProvider
       Pattern.compile("/collections/[^/]+?/leader_elect/.*"),
@@ -151,8 +167,8 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
       Pattern.compile("/live_nodes/.*")
   ));
 
-  private static final Predicate<String> FILTER_FUN = p -> {
-    for (Pattern pattern : IGNORE_PATTERNS) {
+  private static final Predicate<String> STATE_FILTER_FUN = p -> {
+    for (Pattern pattern : IGNORE_DISTRIB_STATE_PATTERNS) {
       if (pattern.matcher(p).matches()) {
         return false;
       }
@@ -162,9 +178,9 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
 
   private static void assertDistribStateManager(DistribStateManager one, DistribStateManager two) throws Exception {
     List<String> treeOne = new ArrayList<>(one.listTree("/").stream()
-        .filter(FILTER_FUN).collect(Collectors.toList()));
+        .filter(STATE_FILTER_FUN).collect(Collectors.toList()));
     List<String> treeTwo = new ArrayList<>(two.listTree("/").stream()
-        .filter(FILTER_FUN).collect(Collectors.toList()));
+        .filter(STATE_FILTER_FUN).collect(Collectors.toList()));
     Collections.sort(treeOne);
     Collections.sort(treeTwo);
     assertEquals(treeOne, treeTwo);
@@ -175,37 +191,5 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     }
   }
 
-  private static void assertClusterStateEquals(ClusterState one, ClusterState two) {
-    assertEquals(one.getLiveNodes(), two.getLiveNodes());
-    assertEquals(one.getCollectionsMap().keySet(), two.getCollectionsMap().keySet());
-    one.forEachCollection(oneColl -> {
-      DocCollection twoColl = two.getCollection(oneColl.getName());
-      Map<String, Slice> oneSlices = oneColl.getSlicesMap();
-      Map<String, Slice> twoSlices = twoColl.getSlicesMap();
-      assertEquals(oneSlices.keySet(), twoSlices.keySet());
-      oneSlices.forEach((s, slice) -> {
-        Slice sTwo = twoSlices.get(s);
-        for (Replica oneReplica : slice.getReplicas()) {
-          Replica twoReplica = sTwo.getReplica(oneReplica.getName());
-          assertNotNull(twoReplica);
-          assertReplicaEquals(oneReplica, twoReplica);
-        }
-      });
-    });
-  }
-
-  private static void assertReplicaEquals(Replica one, Replica two) {
-    assertEquals(one.getName(), two.getName());
-    assertEquals(one.getNodeName(), two.getNodeName());
-    assertEquals(one.getState(), two.getState());
-    assertEquals(one.getType(), two.getType());
-    Map<String, Object> filteredPropsOne = one.getProperties().entrySet().stream()
-        .filter(e -> !(e.getKey().startsWith("INDEX") || e.getKey().startsWith("QUERY") || e.getKey().startsWith("UPDATE")))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    Map<String, Object> filteredPropsTwo = two.getProperties().entrySet().stream()
-        .filter(e -> !(e.getKey().startsWith("INDEX") || e.getKey().startsWith("QUERY") || e.getKey().startsWith("UPDATE")))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    assertEquals(filteredPropsOne, filteredPropsTwo);
-  }
 
 }

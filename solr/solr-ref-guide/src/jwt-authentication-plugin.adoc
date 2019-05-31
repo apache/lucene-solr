@@ -35,8 +35,9 @@ The simplest possible `security.json` for registering the plugin without configu
 
 The plugin will NOT block anonymous traffic in this mode, since the default for `blockUnknown` is false. It is then possible to start configuring the plugin using REST API calls, which is described below.
 
-== Configuration parameters
+== Configuration Parameters
 
+//TODO: standard is not to put parameters in tables but use labeled lists instead
 [%header,format=csv,separator=;]
 |===
 Key                  ; Description                                             ; Default
@@ -51,16 +52,16 @@ iss                  ; Validates that the `iss` (issuer) claim equals this strin
 aud                  ; Validates that the `aud` (audience) claim equals this string      ; If `clientId` is configured, require `aud` to match it
 requireSub           ; Makes `sub` (subject) claim mandatory                         ; `true`
 requireExp           ; Makes `exp` (expiry time) claim mandatory                     ; `true`
-algWhitelist         ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; Default is to allow all algorithms 
+algWhitelist         ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; Default is to allow all algorithms
 jwkCacheDur          ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
 principalClaim       ; What claim id to pull principal from                    ; `sub`
 claimsMatch          ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ; (none)
 adminUiScope         ; Define what scope is requested when logging in from Admin UI ; If not defined, the first scope from `scope` parameter is used
-authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided 
-redirectUris         ; Valid location(s) for redirect after external authentication. Takes a string or array of strings. Must be the base URL of Solr, e.g. https://solr1.example.com:8983/solr/ and must match the list of redirect URIs registered with the Identity Provider beforehand. ; Defaults to empty list, i.e. any node is assumed to be a valid redirect target.
+authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided
+redirectUris         ; Valid location(s) for redirect after external authentication. Takes a string or array of strings. Must be the base URL of Solr, e.g., https://solr1.example.com:8983/solr/ and must match the list of redirect URIs registered with the Identity Provider beforehand. ; Defaults to empty list, i.e., any node is assumed to be a valid redirect target.
 |===
 
-== More configuration examples
+== More Configuration Examples
 === With JWK URL
 To start enforcing authentication for all users, requiring a valid JWT in the `Authorization` header, you need to configure the plugin with one or more https://tools.ietf.org/html/rfc7517[JSON Web Key]s (JWK). This is a JSON document containing the key used to sign/encrypt the JWT. It could be a symmetric or asymmetric key. The JWK can either be fetched (and cached) from an external HTTPS endpoint or specified directly in `security.json`. Below is an example of the former:
 
@@ -75,8 +76,8 @@ To start enforcing authentication for all users, requiring a valid JWT in the `A
 }
 ----
 
-=== With Admin UI support   
-The next example shows configuring using https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] with a well-known URI for automatic configuration of many common settings, including ability to use the Admin UI with an OpenID Connect enabled Identity Provider. 
+=== With Admin UI Support
+The next example shows configuring using https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] with a well-known URI for automatic configuration of many common settings, including ability to use the Admin UI with an OpenID Connect enabled Identity Provider.
 
 [source,json]
 ----
@@ -89,11 +90,11 @@ The next example shows configuring using https://openid.net/specs/openid-connect
     "redirectUri": "https://my.solr.server:8983/solr/"
   }
 }
----- 
+----
 
 In this case, `jwkUrl`, `iss` and `authorizationEndpoint` will be automatically configured from the fetched configuration.
 
-=== Complex example
+=== Complex Example
 Let's look at a more complex configuration, this time with a static embedded JWK:
 
 [source,json]
@@ -137,7 +138,7 @@ Let's comment on this config:
 
 All properties mentioned above can be set or changed using the Config Edit API. You can thus start with a simple configuration with only `class` configured and then configure the rest using the API.
 
-=== Set a config Property
+=== Set a Configuration Property
 
 Set properties for the authentication plugin. Each of the configuration keys in the table above can be used as parameter keys for the `set-property` command.
 
@@ -168,7 +169,7 @@ curl http://localhost:8983/api/cluster/security/authentication -H 'Content-type:
 
 Insert a valid JWT access token in compact serialization format (`xxx.yyy.zzz` above) to authenticate with Solr once the plugin is active.
 
-== Using clients with JWT Auth 
+== Using Clients with JWT Auth
 
 [#jwt-soljr]
 === SolrJ
@@ -182,10 +183,10 @@ To authenticate with Solr when using the cURL utility, supply a valid JWT access
 
 [source,bash]
 ----
-curl -H "Authorization: Bearer xxxxxx.xxxxxx.xxxxxx" http://localhost:8983/solr/admin/info/system 
+curl -H "Authorization: Bearer xxxxxx.xxxxxx.xxxxxx" http://localhost:8983/solr/admin/info/system
 ----
 
-=== Admin UI 
+=== Admin UI
 
 When this plugin is enabled, users will be redirected to a login page in the Admin UI once they attempt to do a restricted action. The page has a button that users will click and be redirected to the Identity Provider's login page. Once authenticated, the user will be redirected back to Solr Admin UI to the last known location. The session will last as long as the JWT token expiry time and is valid for one Solr server only. That means you have to login again when navigating to another Solr node. There is also a logout menu in the left column where user can explicitly log out.
 

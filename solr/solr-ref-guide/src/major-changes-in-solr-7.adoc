@@ -68,12 +68,12 @@ See the section <<solrcloud-autoscaling.adoc#solrcloud-autoscaling,SolrCloud Aut
 == Configuration and Default Changes
 
 === New Default ConfigSet
-Several changes have been made to configSets that ship with Solr; not only their content but how Solr behaves in regard to them:
+Several changes have been made to configsets that ship with Solr; not only their content but how Solr behaves in regard to them:
 
 * The `data_driven_configset` and `basic_configset` have been removed, and replaced by the `_default` configset. The `sample_techproducts_configset` also remains, and is designed for use with the example documents shipped with Solr in the `example/exampledocs` directory.
-* When creating a new collection, if you do not specify a configSet, the `_default` will be used.
-** If you use SolrCloud, the `_default` configSet will be automatically uploaded to ZooKeeper.
-** If you use standalone mode, the instanceDir will be created automatically, using the `_default` configSet as it's basis.
+* When creating a new collection, if you do not specify a configset, the `_default` will be used.
+** If you use SolrCloud, the `_default` configset will be automatically uploaded to ZooKeeper.
+** If you use standalone mode, the instanceDir will be created automatically, using the `_default` configset as it's basis.
 
 === Schemaless Improvements
 

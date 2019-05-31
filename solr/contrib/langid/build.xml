@@ -26,7 +26,7 @@
   <import file="../contrib-build.xml"/>
 
   <property name="test.model.dir" location="${tests.userdir}/langid/solr/collection1/conf"/>
-  <property name="test.leipzig.folder.link" value="http://pcai056.informatik.uni-leipzig.de/downloads/corpora"/>
+  <property name="test.leipzig.folder.link" value="http://pcai056.informatik.uni-leipzig.de/downloads/corpora"/><!-- URL broken? -->
   <property name="test.build.models.dir" location="${build.dir}/build-test-models"/>
   <property name="test.build.models.data.dir" location="${test.build.models.dir}/data"/>
   <property name="test.build.models.sentences.dir" location="${test.build.models.dir}/train"/>
@@ -53,7 +53,7 @@
 
   <!--
   Create test models using data for five languages from the Leipzig corpora.
-  See http://opennlp.apache.org/docs/1.8.3/manual/opennlp.html#tools.langdetect.training.leipzig
+  See https://opennlp.apache.org/docs/1.8.3/manual/opennlp.html#tools.langdetect.training.leipzig
   -->
   <target name="train-test-models" description="Train small test models for unit tests" depends="resolve">
     <download-leipzig language.code="eng"/> 

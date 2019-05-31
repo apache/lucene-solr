@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.simpletext;
 
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -155,7 +156,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     if (type == TYPE_STRING) {
       byte[] bytes = new byte[scratch.length() - VALUE.length];
       System.arraycopy(scratch.bytes(), VALUE.length, bytes, 0, bytes.length);
-      visitor.stringField(fieldInfo, bytes);
+      visitor.stringField(fieldInfo, new String(bytes, 0, bytes.length, StandardCharsets.UTF_8));
     } else if (type == TYPE_BINARY) {
       byte[] copy = new byte[scratch.length()-VALUE.length];
       System.arraycopy(scratch.bytes(), VALUE.length, copy, 0, copy.length);

@@ -329,8 +329,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
 
-      // create an alias pointing to the new collection
-      ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(alias, collectionName));
+      // create an alias pointing to the new collection, if different from the collectionName
+      if (!alias.equals(collectionName)) {
+        ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(alias, collectionName));
+      }
 
     } catch (SolrException ex) {
       throw ex;
