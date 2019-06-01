@@ -39,7 +39,7 @@ task packageDist(type: org.apache.lucene.gradle.PackageLuceneSolrDist) {
   description = "Generates the Lucene and Solr distribution."
 }
 
-task jflex(type: org.apache.lucene.gradle.JFlex) {
+task runJflex() {
   group = 'Build Regenerate'
   description = "Runs all jflex targets to regenerate src files."
 }
