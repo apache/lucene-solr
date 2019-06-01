@@ -78,7 +78,7 @@ class PackageLuceneSolrDist extends DefaultTask {
             include "*.jar"
             into (project.relativePath(subproject.projectDir))
           }
-          def files = getFiles(subproject)
+          def files = { getFiles(subproject) }
           from(files) {
             include "*.jar"
             into (project.relativePath(subproject.projectDir) + "/lib")
@@ -112,7 +112,7 @@ class PackageLuceneSolrDist extends DefaultTask {
             include "*.jar"
             into (project.relativePath(subproject.projectDir))
           }
-          def files = getFiles(subproject)
+          def files = { getFiles(subproject) }
           from(files) {
             include "*.jar"
             into (project.relativePath(subproject.projectDir) + "/lib")
