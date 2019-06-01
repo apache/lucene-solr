@@ -19,7 +19,7 @@ import org.apache.lucene.gradle.CheckWorkingCopy
 import org.apache.lucene.gradle.LuceneSolrForbiddenApisPlugin
 
 plugins {
-  id "com.palantir.consistent-versions" version "1.6.1"
+  id "com.palantir.consistent-versions" version "1.8.0"
 }
 
 // define lucene-solr project lists that exclude buildSrc
