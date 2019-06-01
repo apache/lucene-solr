@@ -28,6 +28,8 @@ def luceneSolrSubProjects = subprojects.findAll { project -> project.name != 'bu
 
 def rootProjectDir = project.rootProject.projectDir;
 
+ant.lifecycleLogLevel = "INFO"
+
 // TOC
 // -> lucene-solr all project config
 // -> lucene-solr sub module config
@@ -130,6 +132,11 @@ configure(rootProject) {
   
   // TODO: enable the modified files checking only for jenkins runs! sysprop?
   tasks.create('checkWorkingCopy', CheckWorkingCopy, false)
+  
+  
+  task testTimes(type: org.apache.lucene.gradle.JUnit4) {
+
+  }
   
 }
 
