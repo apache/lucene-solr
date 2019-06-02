@@ -156,7 +156,7 @@ task trainLemmatizerTrainerME(type: JavaExec) {
 
 task trainTestModels {
   group = 'Build'
-  description = "Train all small test models for unit tests."
+  description = "Traines all small test models for unit tests."
 
   dependsOn trainSentenceDetector, trainTokenizerTrainer, trainPOSTaggerTrainer, trainChunkerTrainerME, trainTokenNameFinderTrainer, trainLemmatizerTrainerME
 }
