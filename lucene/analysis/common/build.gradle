@@ -96,6 +96,9 @@ task jflexClassicAnalyzer(type: org.apache.lucene.gradle.JFlex) {
 }
 
 task jflexUAX29URLEmailTokenizer(type: org.apache.lucene.gradle.JFlex) {
+  group = 'Build Regenerate'
+  description = "Generates UAX29URLEmailTokenizer using jflex."
+  
   inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
   fileName = "UAX29URLEmailTokenizerImpl"
   disableBufferExpansion = true
@@ -113,7 +116,7 @@ task cleanJflex() {
   
   doLast {
     ant.delete(failonerror: 'false') {
-      // we exclude UAX29URLEmailTokenizerImpl until it is added back to regenerate
+      // we exclude UAX29URLEmailTokenizerImpl until/unless it is added back to regenerate
       ant.fileset(dir: "src/java/org/apache/lucene/analysis/standard", includes: "**/*.java", excludes: "**/UAX29URLEmailTokenizerImpl.java") {
         ant.containsregexp(expression: "generated.*by.*JFlex")
       }
@@ -125,6 +128,20 @@ task cleanJflex() {
     }
     ant.delete(failonerror: 'false') {
       ant.fileset(dir: "src/java/org/apache/lucene/analysis/charfilter", includes: "**/*.java") {
+        ant.containsregexp(expression: "generated.*by.*JFlex")
+      }
+    }
+  }
+}
+
+task cleanJflexUAX29URLEmailTokenizer() {
+  group = 'Build Regenerate'
+  description = "Removes jflex generated artifacts."
+  
+  doLast {
+    ant.delete(failonerror: 'false') {
+      // we exclude UAX29URLEmailTokenizerImpl until it is added back to regenerate
+      ant.fileset(dir: "src/java/org/apache/lucene/analysis/standard", includes: "**/UAX29URLEmailTokenizerImpl.java") {
         ant.containsregexp(expression: "generated.*by.*JFlex")
       }
     }
