@@ -87,7 +87,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
         "  'cluster-preferences':[{ minimize : cores},{maximize : freedisk, precision : 50}]}";
     if(useNodeset){
       autoScalingjson = "{cluster-policy:[" +
-          "    { replica : '<3' , shard : '#EACH', nodeset:{sysprop.zone: '#EACH'} } ]," +
+          "    { replica : '<3' , shard : '#EACH', nodeset:{sysprop.zone: [east, west]} } ]," +
           "  'cluster-preferences':[{ minimize : cores},{maximize : freedisk, precision : 50}]}";
     }
     policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
