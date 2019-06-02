@@ -22,6 +22,8 @@ plugins {
   id "com.palantir.consistent-versions" version "1.8.0"
 }
 
+buildDir = new File("build")
+
 // define lucene-solr project lists that exclude buildSrc
 def luceneSolrProjects = allprojects.findAll { project -> project.name != 'buildSrc'};
 def luceneSolrSubProjects = subprojects.findAll { project -> project.name != 'buildSrc'}
