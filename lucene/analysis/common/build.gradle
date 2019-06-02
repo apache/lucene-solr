@@ -86,6 +86,8 @@ task jflexWikiTokenizer(type: org.apache.lucene.gradle.JFlex) {
   fileName = "WikipediaTokenizerImpl"
   disableBufferExpansion = false
   target = new File("${projectDir}/src/java/org/apache/lucene/analysis/wikipedia")
+  
+  mustRunAfter project.rootProject.project(":lucene:lucene-core").runJflex
 }
 
 task jflexClassicAnalyzer(type: org.apache.lucene.gradle.JFlex) {
@@ -93,6 +95,8 @@ task jflexClassicAnalyzer(type: org.apache.lucene.gradle.JFlex) {
   fileName = "ClassicTokenizerImpl"
   disableBufferExpansion = false
   target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+
+  mustRunAfter project.rootProject.project(":lucene:lucene-core").runJflex
 }
 
 task jflexUAX29URLEmailTokenizer(type: org.apache.lucene.gradle.JFlex) {
