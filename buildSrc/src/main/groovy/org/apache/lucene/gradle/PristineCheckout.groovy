@@ -39,7 +39,7 @@ class PristineCheckout extends DefaultTask {
   @TaskAction
   void check() {
     try {
-      logger.info('Reseting working copy...')
+      logger.info('Cleaning working copy to pristine state...')
       final Repository repository = new FileRepositoryBuilder()
         .setWorkTree(project.getRootDir())
         .setMustExist(true)
