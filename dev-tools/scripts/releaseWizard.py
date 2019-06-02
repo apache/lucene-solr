@@ -637,11 +637,6 @@ class Todo(SecretYamlObject):
             desc = self.get_description()
             if desc:
                 print("%s" % desc)
-            if self.links:
-                print("\nLinks:\n")
-                for link in self.links:
-                    print("- %s" % expand_jinja(link, self.get_vars_and_state()))
-                print()
             try:
                 if self.function and not self.is_done():
                     if not eval(self.function)(self):
@@ -653,6 +648,11 @@ class Todo(SecretYamlObject):
                 ui_list = ensure_list(self.user_input)
                 for ui in ui_list:
                     ui.run(self.state)
+                print()
+            if self.links:
+                print("\nLinks:\n")
+                for link in self.links:
+                    print("- %s" % expand_jinja(link, self.get_vars_and_state()))
                 print()
             cmds = self.get_commands()
             if cmds:
@@ -847,7 +847,8 @@ def generate_asciidoc():
                 fh.write("|===\n\n")
             cmds = todo.get_commands()
             if cmds:
-                fh.write("%s\n\n" % cmds.get_commands_text())
+                if cmds.commands_text:
+                    fh.write("%s\n\n" % cmds.get_commands_text())
                 fh.write("[source,sh]\n----\n")
                 if cmds.env:
                     for key in cmds.env:
@@ -1308,7 +1309,7 @@ class Commands(SecretYamlObject):
     yaml_tag = u'!Commands'
     hidden_fields = ['todo_id']
     cmd_continuation_char = "^" if is_windows() else "\\"
-    def __init__(self, root_folder, commands_text, commands, logs_prefix=None, run_text=None, enable_execute=None,
+    def __init__(self, root_folder, commands_text=None, commands=None, logs_prefix=None, run_text=None, enable_execute=None,
                  confirm_each_command=None, env=None, vars=None, todo_id=None, remove_files=None):
         self.root_folder = root_folder
         self.commands_text = commands_text
@@ -1332,7 +1333,8 @@ class Commands(SecretYamlObject):
     def run(self):
         root = self.get_root_folder()
 
-        print(self.get_commands_text())
+        if self.commands_text:
+            print(self.get_commands_text())
         if self.env:
             for key in self.env:
                 val = self.jinjaify(self.env[key])

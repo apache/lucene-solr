@@ -826,7 +826,7 @@ groups:
       dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      confirm_each_command: false
+      confirm_each_command: true # TODO: Flip this to false
       commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
       commands:
       - !Command
@@ -890,12 +890,10 @@ groups:
     - http://www.apache.org/dev/cmsref#generated-docs
     commands: !Commands
       root_folder: '{{ release_folder }}'
-      commands_text: Check out the CMS content folder
-      confirm_each_command: false
+      confirm_each_command: true
       commands:
       - !Command
         cmd: svn co --depth=immediates  https://svn.apache.org/repos/asf/lucene/cms/trunk/content  website-source
-        cwd: website-source
         logfile: svn-checkout-website.log
         tee: true
       - !Command
@@ -960,10 +958,11 @@ groups:
       We make it possible to link to latest javadoc by providing redirect links for e.g. 
       http://lucene.apache.org/solr/api/solr-core/ which will auto redirect to whatever 
       is the latest released version, i.e. http://lucene.apache.org/solr/{{ version }}/solr-core/ 
-      for {{ release_version }}. This is handled in .htaccess
+      for {{ release_version }}. This is handled in `.htaccess`
+    function: website_javadoc_redirect
+    post_description: After the task is done, please test that the link redirects to version {{ release_version }}
     links:
     - http://lucene.apache.org/solr/api/solr-core/
-    function: website_javadoc_redirect
 - !TodoGroup
   id: announce
   title: Announce the release
