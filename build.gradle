@@ -141,9 +141,7 @@ configure(rootProject) {
     description = "Show the slowest tests (averages)."
   }
   
-  task pristineCheckout(type: org.apache.lucene.gradle.PristineCheckout) {
-
-  }
+  task pristineClean(type: org.apache.lucene.gradle.PristineClean) {}
   
 }
 
