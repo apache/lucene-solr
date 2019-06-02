@@ -60,6 +60,8 @@ public class LicenseCheckTask extends DefaultTask {
 
   @Inject
   public LicenseCheckTask(File licenseDirectory) {
+    setGroup("Verification");
+    setDescription("Check licenses for dependencies.");
     this.licenseDirectory = licenseDirectory;
     doLast(task -> {
       Set<ResolvedArtifact> deps = new HashSet<>();
