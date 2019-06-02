@@ -16,19 +16,18 @@
  */
 
 repositories {
-  jcenter()
+  jcenter() {
+    url "https://jcenter.bintray.com"
+  }
   maven {
     url "https://oss.sonatype.org/content/repositories/releases"
   }
   maven {
-    url "http://maven.restlet.org"
-  }
-  maven {
-    url "http://repository.cloudera.com/content/repositories/releases"
+    url "https://maven.restlet.com"
   }
   mavenCentral()
   // chinese mirror
   maven {
-    url "http://uk.maven.org/maven2"
+    url "https://uk.maven.org/maven2"
   }
 }
