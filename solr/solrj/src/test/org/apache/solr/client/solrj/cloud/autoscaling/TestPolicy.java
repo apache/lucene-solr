@@ -707,6 +707,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
      assertEquals(Operand.IN, clause.tag.op);
 
     expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{replica:1, nodeset : {sysprop.zone : '#EACH'}}"));
+
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{replica:1, nodeset : {host : '#EACH'}}"));
+
+    expectThrows(IllegalArgumentException.class,
         () -> Clause.create("{replica:1, node: n1, nodeset : {sysprop.zone : east}}"));
 
     IllegalArgumentException exp = expectThrows(IllegalArgumentException.class,
@@ -1912,7 +1918,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "{replica:0, nodeset:{'nodeRole':'overseer'},'strict':false}," +
           "{'replica':'<1','node':'node3'}," +
           "{'replica':'<2','node':'#ANY','shard':'#EACH'}," +
-          "{'replica':'<3','shard':'#EACH', nodeset : { 'sysprop.rack':'#EACH'}}" +
+          "{'replica':'<3','shard':'#EACH', nodeset : { 'sysprop.rack':[rack1, rack2, rack3, rack4]}}" +
           "]" +
           "}" +
           "}";
