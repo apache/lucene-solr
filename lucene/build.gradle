@@ -16,6 +16,7 @@
  */
 
 import org.apache.lucene.gradle.LicenseCheckTask
+import org.apache.lucene.gradle.JarChecksum
 
 subprojects {
   group = 'org.apache.lucene'
@@ -26,13 +27,7 @@ def distDir = "dist"
 tasks.create("checkLicenses", LicenseCheckTask, new File(projectDir.getAbsolutePath()
     + System.properties['file.separator'] + "licenses"))
 
-
-task jarChecksum(type: org.apache.lucene.gradle.JarChecksum) {
-  group = 'Build'
-  description = "Generates checksums for Lucene dependency jars."
-  inputDir = new File(project.rootProject.projectDir, "/lucene")
-  target = new File(project.rootProject.projectDir, "/lucene/licenses")
-}
+tasks.create("jarChecksums", JarChecksum, new File(project.rootProject.projectDir, "/lucene"), new File(project.rootProject.projectDir, "/lucene/licenses"))
 
 task packageDist(type: org.apache.lucene.gradle.PackageLuceneSolrDist) {
   group = 'Dist'
