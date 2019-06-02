@@ -48,10 +48,12 @@ class LuceneSolrForbiddenApisPlugin implements Plugin<Project> {
         task.signaturesURLs += getClass().getResource('/forbidden/lucene.txt')
       } else if (project.group ==~ /.*?\.solr(?:\.\w+)?/) {
         task.signaturesURLs += getClass().getResource((project.name == 'solrj') ? '/forbidden/solrj.txt' : '/forbidden/solr.txt')
-        task.bundledSignatures += [ 'commons-io-unsafe-' + COMMONS_IO_VERSION ]
         
-        // we delay adding the servlet-api checks until we figured out that we have a servlet-api.jar on forbidden's classpath:
+
         task.doFirst{
+          task.bundledSignatures += [ 'commons-io-unsafe-' + project.getVersion("commons-io:commons-io") ]
+          
+          // we delay adding the servlet-api checks until we figured out that we have a servlet-api.jar on forbidden's classpath:
           if (task.classpath.filter { it.name ==~ /.*?\bservlet-api\b.*?\.jar/ }.empty == false) {
             task.signaturesURLs += getClass().getResource('/forbidden/servlet-api.txt')
           }
