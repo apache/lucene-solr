@@ -54,7 +54,7 @@ task downloadEnwiki(type: org.apache.lucene.gradle.Download) {
 
 task installEnwiki(){
   group = 'Benchmark Data'
-  description = "Install Enwiki data files."
+  description = "Installs Enwiki data files."
   doLast {
     ant.bunzip2(src: "${projectDir}/temp/enwiki-20070527-pages-articles.xml.bz2", dest:"${projectDir}/temp/")
   }
@@ -71,14 +71,13 @@ task downloadGeoNames(type: org.apache.lucene.gradle.Download) {
 
 task installGeoNames(){
   group = 'Benchmark Data'
-  description = "Install GeoNames data files."
+  description = "Installs GeoNames data files."
   doLast {
     new File("${workingDir}/geonames").mkdirs()
     ant.bunzip2(src: "${projectDir}/temp/allCountries.txt.bz2", dest:"${workingDir}/geonames")
   }
+  dependsOn downloadGeoNames
 }
-
-installGeoNames.dependsOn downloadGeoNames
 
 // Reuters
 
@@ -92,11 +91,12 @@ task extractReuters(type: JavaExec) {
   main = 'org.apache.lucene.benchmark.utils.ExtractReuters'
   args "${workingDir}/reuters"
   args "${workingDir}/reuters-out"
+  dependsOn downloadReuters
 }
 
 task installReuters(){
   group = 'Benchmark Data'
-  description = "Install Reuters data files."
+  description = "Installs Reuters data files."
   doLast {
     new File("${workingDir}/reuters").mkdirs()
     ant.gunzip(src: "${projectDir}/temp/reuters21578.tar.gz", dest:"${projectDir}/temp/")
@@ -105,10 +105,8 @@ task installReuters(){
     tree.include '**/*.txt'
     tree.each { it.delete() }
   }
+  dependsOn extractReuters
 }
-
-installReuters.dependsOn extractReuters
-extractReuters.dependsOn downloadReuters
 
 
 forbiddenApisMain {

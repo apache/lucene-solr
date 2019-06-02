@@ -86,7 +86,7 @@ configurations {
 
 task buildTest(type: Test) {
   group = LifecycleBasePlugin.VERIFICATION_GROUP
-  description = 'Runs the build tests.'
+  description = 'Runs the build tests (if using a unix env and docker is available).'
 
   maxHeapSize = '1024m'
 
