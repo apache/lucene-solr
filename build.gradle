@@ -135,7 +135,8 @@ configure(rootProject) {
   
   
   task testTimes(type: org.apache.lucene.gradle.JUnit4) {
-
+    group = 'Tests'
+    description = "Show the slowest tests (averages)."
   }
   
 }
