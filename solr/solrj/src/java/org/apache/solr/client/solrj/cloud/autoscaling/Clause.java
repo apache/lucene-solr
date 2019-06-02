@@ -84,7 +84,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   // internal use only
-  Clause(Map<String, Object> original, Condition tag, Condition globalTag, boolean isStrict, boolean nodeSetPresent) {
+  Clause(Map<String, Object> original, Condition tag, Condition globalTag, boolean isStrict,  boolean nodeSetPresent) {
     this.hashCode = original.hashCode();
     this.original = original;
     this.tag = tag;
@@ -233,7 +233,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     if (tag != null) {
       throwExp(m, "Only one tag other than collection, shard, replica is possible");
     }
-    tag = parse(s, o instanceof Map ? (Map<String, Object>) o : singletonMap(s, o));
+    tag = parse(s, o instanceof Map? (Map<String, Object>) o : singletonMap(s, o));
   }
 
   private int compareTypes(Replica.Type t1, Replica.Type t2) {
@@ -568,9 +568,6 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   public List<Violation> test(Policy.Session session, double[] deviations) {
     if (isPerCollectiontag()) {
-      if (nodeSetPresent) {
-
-      }
 
       return tag.varType == Type.NODE ||
           (tag.varType.meta.isNodeSpecificVal() && replica.computedType == null) ?
