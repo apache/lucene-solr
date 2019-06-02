@@ -60,7 +60,7 @@ task downloadDict(type: org.apache.lucene.gradle.Download) {
 }
 
 task buildNoriDict(type: JavaExec) {
-  group = 'Build'
+  group = 'Build Regenerate'
   description = "Downloads, patches, and builds dict for nori."
   
   doFirst {
