@@ -48,8 +48,6 @@ configurations {
   jflex.extendsFrom implementation
 }
 
-
-
 dependencies {
   jflex "de.jflex:jflex:1.7.0"
   rat "org.apache.rat:apache-rat:0.11"
