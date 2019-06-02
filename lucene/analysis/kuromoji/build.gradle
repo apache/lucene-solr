@@ -67,9 +67,9 @@ task patchDict {
   dependsOn downloadDict
 }
 
-task buildDict(type: JavaExec) {
+task buildKuromojiDict(type: JavaExec) {
   group = 'Build Regenerate'
-  description = "Download, patch, and build dict for kuromoji."
+  description = "Downloads, patches, and builds dict for kuromoji."
   
   doFirst {
     def tree = fileTree("${projectDir}/src/resources/org/apache/lucene/analysis/ja/dict")
@@ -94,7 +94,7 @@ task buildDict(type: JavaExec) {
 }
 
 task regenerate {
-  dependsOn buildDict
+  dependsOn buildKuromojiDict
 }
 
 forbiddenApisTools {
