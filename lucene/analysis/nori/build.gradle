@@ -59,9 +59,9 @@ task downloadDict(type: org.apache.lucene.gradle.Download) {
   }
 }
 
-task buildDict(type: JavaExec) {
+task buildNoriDict(type: JavaExec) {
   group = 'Build'
-  description = "Download, patch, and build dict for kuromoji."
+  description = "Downloads, patches, and builds dict for nori."
   
   doFirst {
     def tree = fileTree("${projectDir}/org/apache/lucene/analysis/ko/dict")
@@ -85,7 +85,7 @@ task buildDict(type: JavaExec) {
 }
 
 task regenerate {
-  dependsOn buildDict
+  dependsOn buildNoriDict
 }
 
 forbiddenApisTools {
