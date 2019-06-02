@@ -43,7 +43,7 @@ sourceSets {
 
 task genUtr30DataFiles(type: JavaExec) {
   group = 'Build Regenerate'
-  description = "Compile UTR30 rules."
+  description = "Compiles UTR30 rules."
   
   classpath = sourceSets.tools.runtimeClasspath
   main = 'org.apache.lucene.analysis.icu.GenerateUTR30DataFiles'
@@ -55,7 +55,7 @@ def resourcesDir = "${projectDir}/src/resources"
 
 task gennorm2() {
   group = 'Build Regenerate'
-  description = "Compile norm2 rules. Note that the gennorm2 and icupkg tools must be on your PATH. These tools are part of the ICU4C package. See http://site.icu-project.org/ or sudo apt install icu-devtools"
+  description = "Compiles norm2 rules. Note that the gennorm2 and icupkg tools must be on your PATH. These tools are part of the ICU4C package. See http://site.icu-project.org/ or sudo apt install icu-devtools"
   doLast {
     new File(buildDir, "gennorm2").mkdirs()
     exec {
@@ -73,7 +73,7 @@ task gennorm2() {
 
 task genrbbi(type: JavaExec) {
   group = 'Build Regenerate'
-  description = "Compile RBBI rules."
+  description = "Compiles RBBI rules."
   
   classpath = sourceSets.tools.runtimeClasspath
   main = 'org.apache.lucene.analysis.icu.RBBIRuleCompiler'
