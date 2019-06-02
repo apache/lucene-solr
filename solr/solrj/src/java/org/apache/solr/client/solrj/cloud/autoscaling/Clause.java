@@ -57,13 +57,13 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class Clause implements MapWriter, Comparable<Clause> {
   public static final String NODESET = "nodeset";
-  private static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type", "put", NODESET));
+  static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type", "put", NODESET));
 
   private final int hashCode;
   final boolean hasComputedValue;
   final Map<String, Object> original;
   final Clause derivedFrom;
-  private boolean nodeSetPresent = false;
+  boolean nodeSetPresent = false;
   Condition collection, shard, replica, tag, globalTag;
   final Replica.Type type;
   boolean strict;
@@ -568,10 +568,6 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   public List<Violation> test(Policy.Session session, double[] deviations) {
     if (isPerCollectiontag()) {
-      if(nodeSetPresent) {
-
-      }
-
       return tag.varType == Type.NODE ||
           (tag.varType.meta.isNodeSpecificVal() && replica.computedType == null) ?
           testPerNode(session, deviations) :
