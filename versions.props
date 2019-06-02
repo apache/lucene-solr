@@ -108,7 +108,6 @@ org.restlet.jee:*=2.3.0
 org.rrd4j:rrd4j=3.5
 org.simpleframework:simple-xml=2.7.1
 org.slf4j:*=1.7.24
-org.slf4j:*=1.7.24
 org.tallison:jmatio=1.5
 org.tukaani:xz=1.8
 ua.net.nlp:morfologik-ukrainian-search=3.9.0
