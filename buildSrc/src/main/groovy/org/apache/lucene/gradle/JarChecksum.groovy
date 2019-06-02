@@ -46,7 +46,7 @@ class JarChecksum extends DefaultTask {
       tmpDir.deleteOnExit()
       tmpDir.mkdirs()
       
-      List<File> deps = new ArrayList<>()
+      Set<File> deps = new HashSet<>()
       project.allprojects.each { p ->
         p.configurations.each { Configuration config ->
           if (config.isCanBeResolved()) {
