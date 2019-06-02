@@ -18,16 +18,12 @@
 apply plugin: 'groovy'
 apply plugin: 'java'
 apply plugin: 'java-gradle-plugin'
-apply plugin: 'idea'
 
 buildDir = new File("build")
 
 group = 'org.apache.lucene.gradle'
 
-repositories {
-  jcenter()
-  mavenCentral()
-}
+apply from: new File("common/configure-repositories.gradle")
 
 dependencies {
   implementation gradleApi()
