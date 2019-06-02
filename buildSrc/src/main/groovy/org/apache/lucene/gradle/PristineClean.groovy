@@ -28,12 +28,12 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 
 
-class PristineCheckout extends DefaultTask {
+class PristineClean extends DefaultTask {
 
 
-  PristineCheckout() {
+  PristineClean() {
     this.group = 'Build'
-    this.description = "Cleans the checkout for a pristine state (WARNING: the ultimate clean task - removes all files unknown by or ignored by git: git clean -d -x -f!)."
+    this.description = "Cleans the checkout for a pristine local state (WARNING: the ultimate clean task - removes all files unknown by or ignored by git: git clean -d -x -f!)."
   }
 
   @TaskAction
