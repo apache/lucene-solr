@@ -113,6 +113,9 @@ Bug Fixes
 
 * SOLR-13491: SolrZkClient's watch wrapper no longer allows zookeeper to hold the same watch object multiple times.
 
+* SOLR-13489: Stop the leader from trying to rejoin the election on session expiration and harden our zk reconnect code path.
+  (Mark Miller, Anshum Gupta)
+
 Other Changes
 ----------------------
 
