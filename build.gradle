@@ -37,6 +37,7 @@ ant.lifecycleLogLevel = "INFO"
 // -> lucene-solr sub module config
 // -> lucene-solr root project config
 // -> lucene-solr IDE config
+// -> other config
 
 // -> lucene-solr all module config - configure all lucene-solr projects, including root project
 configure(luceneSolrProjects) {
@@ -78,6 +79,11 @@ configure(luceneSolrProjects) {
   }
   
   // TODO: check.dependsOn checkMissingJavaDocs
+  
+  task listDeps(type: org.apache.lucene.gradle.ListDeps) {
+    group = 'Help'
+    description = "List deps for a module."
+  }
 }
 
 // -> lucene-solr sub module config - configure all lucene-solr modules (excludes the root project)
@@ -150,14 +156,21 @@ configure(rootProject) {
 configure(allprojects) {
   apply plugin: 'eclipse'
   apply plugin: 'idea'
-}
-
-configure(allprojects) {
+  
   plugins.withType(JavaPlugin) {
-
     project.apply from: new File(rootProjectDir, "buildSrc/ide/eclipse.gradle")
     project.apply from: new File(rootProjectDir, "buildSrc/ide/idea.gradle")
+  }
+}
 
+// -> other config
+
+configure(allprojects) {
+
+  dependencies {
+    modules {
+      module("commons-logging:commons-logging") { replacedBy("org.slf4j:jcl-over-slf4j") }
+    }
   }
 }
 
