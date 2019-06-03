@@ -701,10 +701,16 @@ public class TestPolicy extends SolrTestCaseJ4 {
     expectThrows(IllegalArgumentException.class,
         () -> Clause.create("{cores: '>14%' , node:'#ANY'}"));
      clause  = Clause.create("{replica:1, nodeset : {sysprop.zone : east}}");
-     assertEquals(Variable.Type.STRING, clause.tag.varType);
+     assertEquals(Variable.Type.SYSPROP, clause.tag.varType);
      clause  =Clause.create("{replica:1, nodeset : [node1, node2, node3]}");
      assertEquals(Variable.Type.NODE, clause.tag.varType);
      assertEquals(Operand.IN, clause.tag.op);
+
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{replica:1, nodeset : {sysprop.zone : '#EACH'}}"));
+
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{replica:1, nodeset : {host : '#EACH'}}"));
 
     expectThrows(IllegalArgumentException.class,
         () -> Clause.create("{replica:1, node: n1, nodeset : {sysprop.zone : east}}"));
@@ -713,7 +719,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
         () -> Clause.create("{replica:1, nodeset : {sysprop.zone : east  , port: 8983 }}"));
     assertTrue(exp.getMessage().contains("nodeset must only have one and only one key"));
     clause = Clause.create("{'replica': '#ALL', 'nodeset': {'freedisk': '>700'}, 'strict': false}");
+    assertEquals(clause.put, Clause.Put.ON_ALL);
     assertEquals(Operand.GREATER_THAN , clause.tag.op);
+    clause = Clause.create("{'replica': '#ALL', put: on-each,  'nodeset': {sysprop.zone : east}}");
+    assertEquals(clause.put, Clause.Put.ON_EACH);
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{'replica': '#ALL', put: on-Each,  'nodeset': {sysprop.zone : east}}"));
+    assertTrue(exp.getMessage().contains("invalid value for put : on-Each"));
 
   }
 
@@ -1234,8 +1245,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "  'cluster-policy': [" +
           "    { 'replica': 0, nodeset : {'nodeRole': 'overseer'}}" +
           "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
-          "    { 'replica': 0, 'shard': '#EACH', nodeset : { sysprop.fs : '!ssd'},  type : TLOG }" +
-          "    { 'replica': 0, 'shard': '#EACH', nodeset : {sysprop.fs : '!slowdisk'} ,  type : PULL }" +
+          "    { 'replica': 0, 'shard': '#EACH',  nodeset : { sysprop.fs : '!ssd'},  type : TLOG }" +
+          "    { 'replica': 0, 'shard': '#EACH', put:'on-each' nodeset : {sysprop.fs : '!slowdisk'} ,  type : PULL }" +
           "  ]" +
           "}");
 
@@ -1360,8 +1371,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl'}," +
           "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl2', type : PULL}," +
           "    { 'replica': '<3', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl2'}," +
-          "    { 'replica': 0, 'shard': '#EACH', nodeset:{ sysprop.fs : '!ssd'},  type : TLOG }" +
-          "    { 'replica': 0, 'shard': '#EACH', nodeset : {sysprop.fs : '!slowdisk'} ,  type : PULL }" +
+          "    { 'replica': 0, 'shard': '#EACH', put: on-each , nodeset:{ sysprop.fs : '!ssd'},  type : TLOG }" +
+          "    { 'replica': 0, 'shard': '#EACH', put: on-each ,nodeset : {sysprop.fs : '!slowdisk'} ,  type : PULL }" +
           "  ]" +
           "}");
 
@@ -1912,7 +1923,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "{replica:0, nodeset:{'nodeRole':'overseer'},'strict':false}," +
           "{'replica':'<1','node':'node3'}," +
           "{'replica':'<2','node':'#ANY','shard':'#EACH'}," +
-          "{'replica':'<3','shard':'#EACH', nodeset : { 'sysprop.rack':'#EACH'}}" +
+          "{'replica':'<3','shard':'#EACH', nodeset : { 'sysprop.rack':[rack1, rack2, rack3, rack4]}}" +
           "]" +
           "}" +
           "}";
@@ -2383,8 +2394,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "  cluster-preferences :[{ minimize : cores, precision : 2 }]}";
     if(useNodeset){
       autoScalingjson = "  { cluster-policy:[" +
-          "    { replica :'0', nodeset:{ freedisk:'<1000'}}," +
-          "    { replica :0, nodeset : {nodeRole : overseer}}]," +
+          "    { replica :'0', put:on-each ,   nodeset:{ freedisk:'<1000'}}," +
+          "    { replica :0, put : on-each , nodeset : {nodeRole : overseer}}]," +
           "  cluster-preferences :[{ minimize : cores, precision : 2 }]}";
     }
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
@@ -2416,7 +2427,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     if(useNodeset){
       autoScalingjson =  "  { cluster-policy:[" +
           "    { replica :'#ALL', nodeset:{ freedisk:'>1000'}}," +
-          "    { replica :0 , nodeset : {nodeRole : overseer}}]," +
+          "    { replica :0 , put: on-each , nodeset : {nodeRole : overseer}}]," +
           "  cluster-preferences :[{ minimize : cores, precision : 2 }]}";
     }
     cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));

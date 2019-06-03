@@ -714,6 +714,22 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     List clusterPolicy = (List) loaded.get("cluster-policy");
     assertNotNull(clusterPolicy);
     assertEquals(3, clusterPolicy.size());
+
+    setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'replica':0, put : on-each, nodeset:{'nodeRole':'overseer'} }" +
+        "    ]" +
+        "}";
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    clusterPolicy = (List) loaded.get("cluster-policy");
+    assertNotNull(clusterPolicy);
+    assertEquals(3, clusterPolicy.size());
   }
 
   @Test

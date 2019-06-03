@@ -102,6 +102,9 @@ New Features
 * SOLR-13504: In autoscaling policies, use an explicit 'nodeset' attribute for filtering
   nodes instead of using them directly at the toplevel (noble)
 
+* SOLR-13329: In autoscaling policies, use an explicit 'put : on-each'
+  to specify the the rules is applied on each node  (noble)
+
 Bug Fixes
 ----------------------
 
@@ -112,6 +115,9 @@ Bug Fixes
 * SOLR-12941: Fix IndexSizeTrigger to correctly work with "aboveBytes" and "splitMethod=link" parameters. (ab)
 
 * SOLR-13491: SolrZkClient's watch wrapper no longer allows zookeeper to hold the same watch object multiple times.
+
+* SOLR-13489: Stop the leader from trying to rejoin the election on session expiration and harden our zk reconnect code path.
+  (Mark Miller, Anshum Gupta)
 
 Other Changes
 ----------------------
