@@ -102,6 +102,9 @@ New Features
 * SOLR-13504: In autoscaling policies, use an explicit 'nodeset' attribute for filtering
   nodes instead of using them directly at the toplevel (noble)
 
+* SOLR-13504: In autoscaling policies, use an explicit 'put : on-each'
+  to specify the the rules is applied on each node  (noble)
+
 Bug Fixes
 ----------------------
 

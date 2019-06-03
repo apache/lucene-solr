@@ -106,7 +106,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.hashCode = original.hashCode();
     String type = (String) m.get("type");
     this.type = type == null || ANY.equals(type) ? null : Replica.Type.valueOf(type.toUpperCase(Locale.ROOT));
-    String put = (String) m.getOrDefault("put", m.containsKey(NODESET)? Put.ON_ANY.val: null );
+    String put = (String) m.getOrDefault("put", m.containsKey(NODESET)? Put.ON_ALL.val: null );
     if (put != null) {
       this.put = Put.get(put);
       if (this.put == null) throwExp(m, "invalid value for put : {0}", put);
@@ -751,7 +751,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
   public static final String METRICS_PREFIX = "metrics:";
 
   enum Put {
-    ON_ANY_EQUALLY("equally-on-any"), ON_ANY("on-any"), ON_EACH("on-each");
+    ON_ALL("on-all"), ON_EACH("on-each");
 
     public final String val;
 

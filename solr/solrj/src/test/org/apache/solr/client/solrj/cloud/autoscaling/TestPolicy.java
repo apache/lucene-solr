@@ -713,7 +713,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         () -> Clause.create("{replica:1, nodeset : {sysprop.zone : east  , port: 8983 }}"));
     assertTrue(exp.getMessage().contains("nodeset must only have one and only one key"));
     clause = Clause.create("{'replica': '#ALL', 'nodeset': {'freedisk': '>700'}, 'strict': false}");
-    assertEquals(clause.put, Clause.Put.ON_ANY);
+    assertEquals(clause.put, Clause.Put.ON_ALL);
     assertEquals(Operand.GREATER_THAN , clause.tag.op);
     clause = Clause.create("{'replica': '#ALL', put: on-each,  'nodeset': {sysprop.zone : east}}");
     assertEquals(clause.put, Clause.Put.ON_EACH);
