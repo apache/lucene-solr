@@ -8,3 +8,7 @@
 * SOLR-13468: autoscaling/suggestions should be able to give suggestions from config sent as a payload (Generally available from SOLR 8.2)(noble)
 * SOLR-13484: autoscaling/diagnostics API should be able to give diagnostics output from config sent as a payload (Generally available from SOLR 8.2) (noble)
 * SOLR-13493: /autoscaling/suggestions to be able to filter by type (Generally available from SOLR 8.2) (noble)
+* SOLR-13504: In autoscaling policies, use an explicit 'nodeset' attribute for filtering
+  nodes instead of using them directly at the toplevel (Generally available from SOLR 8.2)(noble)
+* SOLR-13504: In autoscaling policies, use an explicit 'put : on-each'
+  to specify the the rules is applied on each node (Generally available from SOLR 8.2)(noble)
