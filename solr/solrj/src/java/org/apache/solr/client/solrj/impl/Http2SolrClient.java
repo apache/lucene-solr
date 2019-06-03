@@ -459,6 +459,9 @@ public class Http2SolrClient extends SolrClient {
 
   private void decorateRequest(Request req, SolrRequest solrRequest) {
     req.header(HttpHeader.ACCEPT_ENCODING, null);
+    if (solrRequest.getUserPrincipal() != null) {
+      req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
+    }
 
     setBasicAuthHeader(solrRequest, req);
     for (HttpListenerFactory factory : listenerFactory) {
@@ -468,9 +471,6 @@ public class Http2SolrClient extends SolrClient {
       req.onComplete(listener);
     }
 
-    if (solrRequest.getUserPrincipal() != null) {
-      req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
-    }
     Map<String, String> headers = solrRequest.getHeaders();
     if (headers != null) {
       for (Map.Entry<String, String> entry : headers.entrySet()) {
