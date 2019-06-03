@@ -318,8 +318,7 @@ public class Http2SolrClient extends SolrClient {
         .newRequest(basePath + "update"
             + requestParams.toQueryString())
         .method(HttpMethod.POST)
-        .header("User-Agent", HttpSolrClient.AGENT)
-        .header("Content-Type", contentType)
+        .header(HttpHeader.CONTENT_TYPE, contentType)
         .content(provider);
     decorateRequest(postRequest, updateRequest);
     InputStreamResponseListener responseListener = new InputStreamResponseListener();
