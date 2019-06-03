@@ -553,7 +553,7 @@ public class Policy implements MapWriter {
           if (!withCollMap.isEmpty()) {
             Clause withCollClause = new Clause((Map<String,Object>)Utils.fromJSONString("{withCollection:'*' , node: '#ANY'}") ,
                 new Condition(NODE.tagName, "#ANY", Operand.EQUAL, null, null),
-                new Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true, false
+                new Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true, null, false
             );
             expandedClauses.add(withCollClause);
           }
