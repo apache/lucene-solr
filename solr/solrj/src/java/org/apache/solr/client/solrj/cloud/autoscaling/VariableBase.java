@@ -84,7 +84,7 @@ public class VariableBase implements Variable {
 
   public static Type getTagType(String name) {
     Type info = Type.get(name);
-    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = Type.STRING;
+    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = Type.SYSPROP;
     if (info == null && name.startsWith(Clause.METRICS_PREFIX)) info = Type.LAZY;
     return info;
   }

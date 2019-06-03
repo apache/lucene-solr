@@ -57,21 +57,23 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class Clause implements MapWriter, Comparable<Clause> {
   public static final String NODESET = "nodeset";
-  private static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type", "put", NODESET));
+  static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type", "put", NODESET));
 
   private final int hashCode;
   final boolean hasComputedValue;
   final Map<String, Object> original;
   final Clause derivedFrom;
-  private boolean nodeSetPresent = false;
+  boolean nodeSetPresent = false;
   Condition collection, shard, replica, tag, globalTag;
   final Replica.Type type;
+  Put put;
   boolean strict;
 
   protected Clause(Clause clause, Function<Condition, Object> computedValueEvaluator) {
     this.original = clause.original;
     this.hashCode = original.hashCode();
     this.type = clause.type;
+    this.put = clause.put;
     this.nodeSetPresent = clause.nodeSetPresent;
     this.collection = clause.collection;
     this.shard = clause.shard;
@@ -84,7 +86,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   // internal use only
-  Clause(Map<String, Object> original, Condition tag, Condition globalTag, boolean isStrict,  boolean nodeSetPresent) {
+  Clause(Map<String, Object> original, Condition tag, Condition globalTag, boolean isStrict, Put put, boolean nodeSetPresent) {
     this.hashCode = original.hashCode();
     this.original = original;
     this.tag = tag;
@@ -94,6 +96,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.hasComputedValue = false;
     this.strict = isStrict;
     derivedFrom = null;
+    this.put = put;
     this.nodeSetPresent = nodeSetPresent;
   }
 
@@ -103,6 +106,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.hashCode = original.hashCode();
     String type = (String) m.get("type");
     this.type = type == null || ANY.equals(type) ? null : Replica.Type.valueOf(type.toUpperCase(Locale.ROOT));
+    String put = (String) m.getOrDefault("put", m.containsKey(NODESET)? Put.ON_ANY.val: null );
+    if (put != null) {
+      this.put = Put.get(put);
+      if (this.put == null) throwExp(m, "invalid value for put : {0}", put);
+    }
+
     strict = Boolean.parseBoolean(String.valueOf(m.getOrDefault("strict", "true")));
     Optional<String> globalTagName = m.keySet().stream().filter(Policy.GLOBAL_ONLY_TAGS::contains).findFirst();
     if (globalTagName.isPresent()) {
@@ -348,7 +357,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } catch (IllegalArgumentException iae) {
       throw iae;
     } catch (Exception e) {
-      throwExp(m, "Invalid tag : {0} ", s);
+      throwExp(m, " Invalid tag : {0} "+ e.getMessage(), s);
       return null;
     }
   }
@@ -400,26 +409,25 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return operand;
   }
 
+
+  private boolean isRowPass(ComputedValueEvaluator eval, Object t, Row row) {
+    eval.node = row.node;
+    if (t instanceof Condition) {
+      Condition tag = (Condition) t;
+      if (tag.computedType != null) tag = evaluateValue(tag, eval);
+      return tag.isPass(row);
+    } else {
+      return t.equals(row.getVal(tag.name));
+    }
+  }
+
   List<Violation> testGroupNodes(Policy.Session session, double[] deviations) {
     //e.g:  {replica:'#EQUAL', shard:'#EACH',  sysprop.zone:'#EACH'}
     ComputedValueEvaluator eval = new ComputedValueEvaluator(session);
     eval.collName = (String) collection.getValue();
     Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, eval);
 
-    Set tags = new HashSet();
-    for (Row row : session.matrix) {
-      eval.node = row.node;
-      Condition tag = this.tag;
-      if (tag.computedType != null) tag = evaluateValue(tag, eval);
-      Object val = row.getVal(tag.name);
-      if (val != null) {
-        if (tag.op == LESS_THAN || tag.op == GREATER_THAN) {
-          tags.add(this.tag);
-        } else if (tag.isPass(val)) {
-          tags.add(val);
-        }
-      }
-    }
+    Set tags = getUniqueTags(session, eval);
     if (tags.isEmpty()) return Collections.emptyList();
 
     Set<String> shards = getShardNames(session, eval);
@@ -428,17 +436,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
       final ReplicaCount replicaCount = new ReplicaCount();
       eval.shardName = s;
 
-      for (Object t : tags) {
+      for (Object tag : tags) {
         replicaCount.reset();
         for (Row row : session.matrix) {
-          eval.node = row.node;
-          if (t instanceof Condition) {
-            Condition tag = (Condition) t;
-            if (tag.computedType != null) tag = evaluateValue(tag, eval);
-            if (!tag.isPass(row)) continue;
-          } else {
-            if (!t.equals(row.getVal(tag.name))) continue;
-          }
+         if(!isRowPass(eval, tag, row)) continue;
           addReplicaCountsForNode(eval, replicaCount, row);
         }
 
@@ -451,27 +452,57 @@ public class Clause implements MapWriter, Comparable<Clause> {
               null,
               replicaCountCopy,
               sealedClause.getReplica().replicaCountDelta(replicaCountCopy),
-              t);
-          ctx.resetAndAddViolation(t, replicaCountCopy, violation);
-          sealedClause.addViolatingReplicas(sealedClause.tag, eval, ctx, tag.name, t, violation, session);
+              tag);
+          ctx.resetAndAddViolation(tag, replicaCountCopy, violation);
+          sealedClause.addViolatingReplicasForGroup(sealedClause.tag, eval, ctx, this.tag.name, tag, violation, session.matrix);
           if (!this.strict && deviations != null) {
-            tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
+            this.tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
           }
         } else {
-          if (replica.op == RANGE_EQUAL) tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
+          if (replica.op == RANGE_EQUAL) this.tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
         }
       }
     }
     return ctx.allViolations;
   }
 
-  void addViolatingReplicas(Condition tag,
-                            ComputedValueEvaluator eval,
-                            Violation.Ctx ctx, String tagName, Object tagVal,
-                            Violation violation,
-                            Policy.Session session) {
+  private Set getUniqueTags(Policy.Session session, ComputedValueEvaluator eval) {
+    Set tags =  new HashSet();
+    if(tag.op == WILDCARD){
+      for (Row row : session.matrix) {
+        eval.node = row.node;
+        Condition tag = this.tag;
+        if (tag.computedType != null) tag = evaluateValue(tag, eval);
+        Object val = row.getVal(tag.name);
+        if (val != null) {
+          if (tag.op == LESS_THAN || tag.op == GREATER_THAN) {
+            tags.add(this.tag);
+          } else if (tag.isPass(val)) {
+            tags.add(val);
+          }
+        }
+      }
+
+    } else {
+
+      if (tag.op == LESS_THAN || tag.op == GREATER_THAN || tag.op == RANGE_EQUAL || tag.op == NOT_EQUAL) {
+        tags.add(tag); // eg: freedisk > 100
+      } else if (tag.val instanceof Collection) {
+        tags.addAll((Collection) tag.val); //e: sysprop.zone:[east,west]
+      } else {
+        tags.add(tag.val);//
+      }
+    }
+    return tags;
+  }
+
+  void addViolatingReplicasForGroup(Condition tag,
+                                    ComputedValueEvaluator eval,
+                                    Violation.Ctx ctx, String tagName, Object tagVal,
+                                    Violation violation,
+                                    List<Row> nodes) {
     if (tag.varType.addViolatingReplicas(ctx)) return;
-    for (Row row : session.matrix) {
+    for (Row row : nodes) {
       if (tagVal.equals(row.getVal(tagName))) {
         row.forEachReplica(eval.collName, ri -> {
           if (Policy.ANY.equals(eval.shardName)
@@ -535,7 +566,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
               sealedClause.getReplica().replicaCountDelta(replicaCountCopy),
               eval.node);
           ctx.resetAndAddViolation(row.node, replicaCountCopy, violation);
-          sealedClause.addViolatingReplicas(sealedClause.tag, eval, ctx, NODE, row.node, violation, session);
+          sealedClause.addViolatingReplicasForGroup(sealedClause.tag, eval, ctx, NODE, row.node, violation,
+              Collections.singletonList(row));
           if (!this.strict && deviations != null) {
             tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
           }
@@ -569,7 +601,11 @@ public class Clause implements MapWriter, Comparable<Clause> {
   public List<Violation> test(Policy.Session session, double[] deviations) {
     if (isPerCollectiontag()) {
       if(nodeSetPresent) {
-
+        if(put == Put.ON_EACH){
+          return testPerNode(session, deviations) ;
+        } else {
+          return testGroupNodes(session, deviations);
+        }
       }
 
       return tag.varType == Type.NODE ||
@@ -585,7 +621,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
         if (!sealedClause.getGlobalTag().isPass(r)) {
           ctx.resetAndAddViolation(r.node, null, new Violation(sealedClause, null, null, r.node, r.getVal(sealedClause.globalTag.name),
               sealedClause.globalTag.delta(r.getVal(globalTag.name)), r.node));
-          addViolatingReplicas(sealedClause.globalTag, computedValueEvaluator, ctx, Type.CORES.tagName, r.node, ctx.currentViolation, session);
+          addViolatingReplicasForGroup(sealedClause.globalTag, computedValueEvaluator, ctx, Type.CORES.tagName, r.node, ctx.currentViolation, session.matrix);
 
         }
       }
@@ -713,5 +749,22 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   public static final String METRICS_PREFIX = "metrics:";
+
+  enum Put {
+    ON_ANY_EQUALLY("equally-on-any"), ON_ANY("on-any"), ON_EACH("on-each");
+
+    public final String val;
+
+    Put(String s) {
+      this.val = s;
+    }
+
+    public static Put get(String s) {
+      for (Put put : values()) {
+        if (put.val.equals(s)) return put;
+      }
+      return null;
+    }
+  }
 
 }
