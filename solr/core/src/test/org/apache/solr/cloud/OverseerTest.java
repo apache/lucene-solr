@@ -16,15 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -43,8 +35,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.xml.parsers.ParserConfigurationException;
-
+import com.codahale.metrics.Snapshot;
+import com.codahale.metrics.Timer;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -83,6 +75,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher.Event;
 import org.apache.zookeeper.data.Stat;
@@ -101,8 +94,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import com.codahale.metrics.Snapshot;
-import com.codahale.metrics.Timer;
+import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @Slow
 public class OverseerTest extends SolrTestCaseJ4 {
@@ -914,7 +913,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
         mockController = new MockZKController(server.getZkAddress(), "node1", overseers);
 
-        TimeOut timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             mockController.createCollection(COLLECTION, 1);
@@ -924,7 +923,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           }
         }
 
-        timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             mockController.publishState(COLLECTION, "core1", "node1", "shard1", Replica.State.ACTIVE,
@@ -955,7 +954,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
         mockController2 = new MockZKController(server.getZkAddress(), "node2", overseers);
 
-       timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+       timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             mockController.publishState(COLLECTION, "core1", "node1", "shard1", Replica.State.ACTIVE,
@@ -969,7 +968,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         verifyShardLeader(reader, COLLECTION, "shard1", "core1");
 
 
-        timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             mockController2.publishState(COLLECTION, "core4", "node2", "shard1", Replica.State.ACTIVE,
@@ -992,11 +991,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
           ZkCoreNodeProps leaderProps;
           try {
-            leaderProps = zkController.getLeaderProps(COLLECTION, "shard1", 1000);
+            leaderProps = zkController.getLeaderProps(COLLECTION, "shard1", 1000, false);
           } catch (SolrException e) {
             return false;
           } catch (InterruptedException e) {
             throw new RuntimeException(e);
+          } catch (SessionExpiredException e) {
+            return false;
           }
           if (leaderProps.getCoreName().equals("core4")) {
             return true;
@@ -1428,7 +1429,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     return zkClient;
   }
 
-  private ZkController createMockZkController(String zkAddress, SolrZkClient zkClient, ZkStateReader reader) throws InterruptedException, NoSuchFieldException, SecurityException {
+  private ZkController createMockZkController(String zkAddress, SolrZkClient zkClient, ZkStateReader reader) throws InterruptedException, NoSuchFieldException, SecurityException, SessionExpiredException {
     ZkController zkController = mock(ZkController.class);
 
     if (zkClient == null) {

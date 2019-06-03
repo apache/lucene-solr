@@ -94,7 +94,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     public boolean offer(E e, long timeout, TimeUnit unit) throws InterruptedException {
       boolean success = available.tryAcquire(timeout, unit);
       if (success) {
-        queue.offer(e);
+        queue.offer(e, timeout, unit);
       }
       return success;
     }
