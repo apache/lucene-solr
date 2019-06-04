@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
@@ -56,7 +57,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   protected ZkTestServer zkServer;
 
-  protected String zkDir;
+  protected Path zkDir;
 
   private String solrHome;
 
@@ -81,11 +82,10 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     String exampleHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
 
-    File tmpDir = createTempDir().toFile();
+    Path tmpDir = createTempDir();
     solrHome = exampleHome;
 
-    zkDir = tmpDir.getAbsolutePath() + File.separator
-        + "zookeeper/server1/data";
+    zkDir = tmpDir.resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:" + zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
@@ -331,9 +331,10 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     assertEquals(e.code(), KeeperException.Code.NONODE);
   }
 
-  @Test(expected = SolrException.class)
-  public void testInvalidZKAddress() throws SolrException{
-    SolrZkClient zkClient = new SolrZkClient("----------:33332", 100);
+  public void testInvalidZKAddress() throws SolrException {
+    SolrException ex = expectThrows(SolrException.class, () -> {
+      new SolrZkClient("----------:33332", 100);
+    });
     zkClient.close();
   }
 
@@ -341,13 +342,13 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void testSetClusterProperty() throws Exception {
     ClusterProperties properties = new ClusterProperties(zkClient);
     // add property urlScheme=http
-    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(),
+    String[] args = new String[]{"-zkhost", zkServer.getZkAddress(),
         "-cmd", "CLUSTERPROP", "-name", "urlScheme", "-val", "http"};
     ZkCLI.main(args);
     assertEquals("http", properties.getClusterProperty("urlScheme", "none"));
 
     // remove it again
-    args = new String[] {"-zkhost", zkServer.getZkAddress(),
+    args = new String[]{"-zkhost", zkServer.getZkAddress(),
         "-cmd", "CLUSTERPROP", "-name", "urlScheme"};
     ZkCLI.main(args);
     assertNull(properties.getClusterProperty("urlScheme", (String) null));
@@ -361,7 +362,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
       System.setProperty(VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME, "user");
       System.setProperty(VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME, "pass");
 
-      String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "updateacls", "/"};
+      String[] args = new String[]{"-zkhost", zkServer.getZkAddress(), "-cmd", "updateacls", "/"};
       ZkCLI.main(args);
     } finally {
       // Need to clear these before we open the next SolrZkClient

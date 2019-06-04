@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
@@ -30,7 +31,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkACLProvider;
 import org.apache.solr.util.BadZookeeperThreadsFilter;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -72,10 +72,9 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     log.info("####SETUP_START " + getTestName());
     createTempDir();
 
-    String zkDir = createTempDir() + File.separator
-        + "zookeeper/server1/data";
+    Path zkDir = createTempDir().resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:" + zkDir);
-    zkServer = new SaslZkTestServer(zkDir, createTempDir() + File.separator + "miniKdc");
+    zkServer = new SaslZkTestServer(zkDir, createTempDir().resolve("miniKdc"));
     zkServer.run();
 
     System.setProperty("zkHost", zkServer.getZkAddress());
@@ -175,16 +174,11 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
    * A ZkTestServer with Sasl support
    */
   public static class SaslZkTestServer extends ZkTestServer {
-    private String kdcDir;
+    private Path kdcDir;
     private KerberosTestServices kerberosTestServices;
 
-    public SaslZkTestServer(String zkDir, String kdcDir) throws Exception {
+    public SaslZkTestServer(Path zkDir, Path kdcDir) throws Exception {
       super(zkDir);
-      this.kdcDir = kdcDir;
-    }
-
-    public SaslZkTestServer(String zkDir, int port, String kdcDir) throws KeeperException, InterruptedException {
-      super(zkDir, port);
       this.kdcDir = kdcDir;
     }
 
@@ -195,12 +189,12 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
         // can match "solr" rather than "solr/host@DOMAIN"
         System.setProperty("zookeeper.kerberos.removeRealmFromPrincipal", "true");
         System.setProperty("zookeeper.kerberos.removeHostFromPrincipal", "true");
-        File keytabFile = new File(kdcDir, "keytabs");
+        File keytabFile = kdcDir.resolve("keytabs").toFile();
         String zkClientPrincipal = "solr";
         String zkServerPrincipal = "zookeeper/localhost";
 
         kerberosTestServices = KerberosTestServices.builder()
-            .withKdc(new File(kdcDir))
+            .withKdc(kdcDir.toFile())
             .withJaasConfiguration(zkClientPrincipal, keytabFile, zkServerPrincipal, keytabFile)
            
             .build();

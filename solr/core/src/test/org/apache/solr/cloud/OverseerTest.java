@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -286,7 +287,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     System.setProperty("solr.zkclienttimeout", "30000");
 
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
 
     server = new ZkTestServer(zkDir);
     server.run();
