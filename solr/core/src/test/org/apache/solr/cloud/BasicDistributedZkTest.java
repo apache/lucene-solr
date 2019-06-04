@@ -57,10 +57,15 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.FacetField;
+import org.apache.solr.client.solrj.response.Group;
+import org.apache.solr.client.solrj.response.GroupCommand;
+import org.apache.solr.client.solrj.response.GroupResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -102,6 +107,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   String t1="a_t";
   String i1="a_i1";
   String tlong = "other_tl1";
+  String tsort="t_sortable";
 
   String oddField="oddField_s";
   String missingField="ignore_exception__missing_but_valid_field_t";
@@ -216,23 +222,25 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
 
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
-            ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
-    indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country."
-    );
-    indexr(id,3, i1, 2, tlong, 2,t1,"how now brown cow"
-    );
-    indexr(id,4, i1, -100 ,tlong, 101,t1,"the quick fox jumped over the lazy dog"
-    );
-    indexr(id,5, i1, 500, tlong, 500 ,t1,"the quick fox jumped way over the lazy dog"
-    );
-    indexr(id,6, i1, -600, tlong, 600 ,t1,"humpty dumpy sat on a wall");
-    indexr(id,7, i1, 123, tlong, 123 ,t1,"humpty dumpy had a great fall");
-    indexr(id,8, i1, 876, tlong, 876,t1,"all the kings horses and all the kings men");
-    indexr(id,9, i1, 7, tlong, 7,t1,"couldn't put humpty together again");
-    indexr(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass");
-    indexr(id,11, i1, -987, tlong, 987,t1,"An eye for eye only ends up making the whole world blind.");
-    indexr(id,12, i1, 379, tlong, 379,t1,"Great works are performed, not by strength, but by perseverance.");
-    indexr(id,13, i1, 232, tlong, 232,t1,"no eggs on wall, lesson learned", oddField, "odd man out");
+            ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d, tsort, "now is the time for all good men");
+    indexr(id, 2, i1, 50, tlong, 50, t1, "to come to the aid of their country."
+        , tsort, "to come to the aid of their country.");
+    indexr(id, 3, i1, 2, tlong, 2, t1, "how now brown cow", tsort, "how now brown cow");
+    indexr(id, 4, i1, -100, tlong, 101, t1, "the quick fox jumped over the lazy dog"
+        , tsort, "the quick fox jumped over the lazy dog");
+    indexr(id, 5, i1, 500, tlong, 500, t1, "the quick fox jumped way over the lazy dog"
+        , tsort, "the quick fox jumped over the lazy dog");
+    indexr(id, 6, i1, -600, tlong, 600, t1, "humpty dumpy sat on a wall", tsort, "the quick fox jumped over the lazy dog");
+    indexr(id, 7, i1, 123, tlong, 123, t1, "humpty dumpy had a great fall", tsort, "the quick fox jumped over the lazy dog");
+    indexr(id,8, i1, 876, tlong, 876,t1,"all the kings horses and all the kings men",tsort,"all the kings horses and all the kings men");
+    indexr(id, 9, i1, 7, tlong, 7, t1, "couldn't put humpty together again", tsort, "the quick fox jumped over the lazy dog");
+    indexr(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass",tsort,"this too shall pass");
+    indexr(id,11, i1, -987, tlong, 987,t1,"An eye for eye only ends up making the whole world blind."
+        ,tsort,"An eye for eye only ends up making the whole world blind.");
+    indexr(id,12, i1, 379, tlong, 379,t1,"Great works are performed, not by strength, but by perseverance.",
+        tsort,"Great works are performed, not by strength, but by perseverance.");
+    indexr(id,13, i1, 232, tlong, 232,t1,"no eggs on wall, lesson learned", oddField, "odd man out",
+        tsort,"no eggs on wall, lesson learned");
 
     indexr(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"});
     indexr(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
@@ -248,6 +256,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
 
     commit();
+
+    testTokenizedGrouping();
+    testSortableTextFaceting();
+    testSortableTextSorting();
+    testSortableTextGrouping();
+
     queryAndCompareShards(params("q", "*:*", 
                                  "sort", "id desc",
                                  "distrib", "false", 
@@ -425,6 +439,96 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-implicit");
 
     testStopAndStartCoresInOneInstance();
+  }
+
+  private void testSortableTextFaceting() throws Exception {
+    SolrQuery query = new SolrQuery("*:*");
+    query.addFacetField(tsort);
+    query.setFacetMissing(false);
+    QueryResponse resp = queryServer(query);
+    List<FacetField> ffs = resp.getFacetFields();
+    for (FacetField ff : ffs) {
+      if (ff.getName().equals(tsort) == false) continue;
+      for (FacetField.Count count : ff.getValues()) {
+        long num = count.getCount();
+        switch (count.getName()) {
+          case "all the kings horses and all the kings men":
+          case "An eye for eye only ends up making the whole world blind.":
+          case "Great works are performed, not by strength, but by perseverance.":
+          case "how now brown cow":
+          case "no eggs on wall, lesson learned":
+          case "now is the time for all good men":
+          case "this too shall pass":
+          case "to come to the aid of their country.":
+            assertEquals("Should have exactly one facet count for field " + ff.getName(), 1, num);
+            break;
+          case "the quick fox jumped over the lazy dog":
+            assertEquals("Should have 5 docs for the lazy dog", 5, num);
+            break;
+          default:
+            fail("No case for facet '" + ff.getName() + "'");
+
+        }
+      }
+    }
+  }
+
+  private void testSortableTextSorting() throws Exception {
+    SolrQuery query = new SolrQuery("*:*");
+    query.addSort(tsort, SolrQuery.ORDER.desc);
+    query.addField("*");
+    query.addField("eoe_sortable");
+    query.addField(tsort);
+    QueryResponse resp = queryServer(query);
+
+    SolrDocumentList docs = resp.getResults();
+
+    String title = docs.get(0).getFieldValue(tsort).toString();
+    for (SolrDocument doc : docs) {
+      assertTrue("Docs should be back in sorted order, descending", title.compareTo(doc.getFieldValue(tsort).toString()) >= 0);
+      title = doc.getFieldValue(tsort).toString();
+    }
+  }
+
+  private void testSortableTextGrouping() throws Exception {
+    SolrQuery query = new SolrQuery("*:*");
+    query.add("group", "true");
+    query.add("group.field", tsort);
+    QueryResponse resp = queryServer(query);
+    GroupResponse groupResp = resp.getGroupResponse();
+    List<GroupCommand> grpCmds = groupResp.getValues();
+    for (GroupCommand grpCmd : grpCmds) {
+      if (grpCmd.getName().equals(tsort) == false) continue;
+      for (Group grp : grpCmd.getValues()) {
+        long count = grp.getResult().getNumFound();
+        if (grp.getGroupValue() == null) continue; // Don't count the groups without an entry as the numnber is variable
+        switch (grp.getGroupValue()) {
+          case "all the kings horses and all the kings men":
+          case "An eye for eye only ends up making the whole world blind.":
+          case "Great works are performed, not by strength, but by perseverance.":
+          case "how now brown cow":
+          case "no eggs on wall, lesson learned":
+          case "now is the time for all good men":
+          case "this too shall pass":
+          case "to come to the aid of their country.":
+            assertEquals("Should have exactly one facet count for field " + grpCmd.getName(), 1, count);
+            break;
+          case "the quick fox jumped over the lazy dog":
+            assertEquals("Should have 5 docs for the lazy dog", 5, count);
+            break;
+          default:
+            fail("No case for facet '" + grpCmd.getName() + "'");
+
+        }
+      }
+    }
+  }
+
+  private void testTokenizedGrouping() throws Exception {
+    SolrException ex = expectThrows(SolrException.class, () -> {
+      query(false, new String[]{"q", "*:*", "group", "true", "group.field", t1});
+    });
+    assertTrue("Expected error from server that SortableTextFields are required", ex.getMessage().contains("Sorting on a tokenized field that is not a SortableTextField is not supported in cloud mode"));
   }
 
   private void assertSliceCounts(String msg, long expected, DocCollection dColl) throws Exception {
