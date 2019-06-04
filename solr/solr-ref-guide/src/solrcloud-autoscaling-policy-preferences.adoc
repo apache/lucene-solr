@@ -109,12 +109,13 @@ Global rules have three parts:
 * <<Core Count Constraint>> (`"cores": "..."`)
 * <<Rule Strictness>> (optional)
 
-Per-collection rules have four parts:
+Per-collection rules have five parts:
 
 * <<Node Selector>>
 * <<Replica Selector and Rule Evaluation Context>>
 * <<Replica Count Constraint>> (`"replica": "..."`)
 * <<Rule Strictness>> (optional)
+* `put` (optional) specifies how to place these replicas on the selected nodes. All the selected nodes are considered as one bucket by default. `"put" : "on-each"` treats each selected node as a bucket
 
 ==== Node Selector
 
@@ -137,14 +138,12 @@ The property names can be one of  `node` , `host` , `sysprop.*` , `freedisk` , `
 
 when using the `nodeset` attribute, an optional attribute `put` can be used to specify how to distribute the replicas in that node set.
 
-e.g:
-
+example:  _put one replica on each node with a system property zone=east_
 [source,json]
-//put one replica on each node with a system property zone=east
 { "replica":1, "put" :"on-each", "nodeset":{"sysprop.zone":"east"}}
 
+example: _put a total of  2 replicas on the set of nodes with property zone=east_
 [source,json]
-//put a total of  2 replicas on the set of nodes with property zone=east
 { "replica":2, "put" :"on-each" "nodeset":{"sysprop.zone":"east"}}
 
 
