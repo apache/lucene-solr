@@ -22,13 +22,14 @@
 
 package org.apache.solr.handler.tagger;
 
-import javax.xml.stream.XMLResolver;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.XMLEvent;
 import java.io.InputStream;
 import java.io.StringReader;
 
-import com.ctc.wstx.stax.WstxInputFactory;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLResolver;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.events.XMLEvent;
+
 import org.apache.commons.io.input.ClosedInputStream;
 import org.codehaus.stax2.LocationInfo;
 import org.codehaus.stax2.XMLInputFactory2;
@@ -47,10 +48,10 @@ public class XmlOffsetCorrector extends OffsetCorrector {
 
   //TODO use StAX without hard requirement on woodstox.   xmlStreamReader.getLocation().getCharacterOffset()
 
-  private static final XMLInputFactory2 XML_INPUT_FACTORY;
+  private static final XMLInputFactory XML_INPUT_FACTORY;
   static {
     // note: similar code in Solr's EmptyEntityResolver
-    XML_INPUT_FACTORY = new WstxInputFactory();
+    XML_INPUT_FACTORY = XMLInputFactory2.newFactory();
     XML_INPUT_FACTORY.setXMLResolver(new XMLResolver() {
       @Override
       public InputStream resolveEntity(String publicId, String systemId, String baseURI, String namespace) {
@@ -59,7 +60,6 @@ public class XmlOffsetCorrector extends OffsetCorrector {
     });
     // TODO disable DTD?
     // XML_INPUT_FACTORY.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE)
-    XML_INPUT_FACTORY.configureForSpeed();
   }
 
   /**
