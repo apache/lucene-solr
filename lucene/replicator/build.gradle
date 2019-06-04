@@ -19,7 +19,7 @@ apply plugin: 'java-library'
 
 dependencies {
   api project(':lucene:lucene-core')
-  api project(':lucene:facet')
+  api project(':lucene:lucene-facet')
   
   runtimeOnly ('org.slf4j:jcl-over-slf4j') { transitive = false }
   
