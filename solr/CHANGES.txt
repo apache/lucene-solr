@@ -87,6 +87,8 @@ Bug Fixes
 
 * SOLR-13510: Intermittent 401's for internode requests with basicauth enabled (Cao Manh Dat, Colvin Cowie)
 
+* SOLR-12249: Better error message when grouping on a tokenized (non SortableText) field in SolrCloud (Erick Erickson)
+
 Other Changes
 ----------------------
 
