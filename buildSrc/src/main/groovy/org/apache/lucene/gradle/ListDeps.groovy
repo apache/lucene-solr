@@ -29,10 +29,22 @@ class ListDeps extends DefaultTask {
   
   @TaskAction
   void list() {
-    def artifacts = project.configurations.runtimeClasspath.getResolvedConfiguration().getResolvedArtifacts()
-    println 'count: ' + artifacts.size()
+    println "Runtime Deps"
+    def runtimeArtifacts = project.configurations.runtimeClasspath.getResolvedConfiguration().getResolvedArtifacts()
+    runtimeArtifacts = runtimeArtifacts.toSorted{a,b -> a.name <=> b.name}
+    runtimeArtifacts.forEach( { ra -> println ra })
     
-    artifacts.forEach( { ra -> println ra })
+    println "-"
+    
+    println "TestRuntime Deps"
+    def testRuntimeArtifacts = project.configurations.testRuntimeClasspath.getResolvedConfiguration().getResolvedArtifacts()
+ 
+    testRuntimeArtifacts = testRuntimeArtifacts.toSorted{a,b -> a.name <=> b.name}
+    testRuntimeArtifacts.forEach( { ra -> println ra })
+    
+    println "-"
+    println 'runtime count: ' + runtimeArtifacts.size()
+    println 'testRuntime count: ' + testRuntimeArtifacts.size()
   }
 }
 

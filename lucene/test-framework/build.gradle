@@ -24,10 +24,10 @@ dependencies {
 	api project(':lucene:lucene-core')
 	implementation project(':lucene:codecs')
   
-	api ("junit:junit") { transitive = false }
-	api ("com.carrotsearch.randomizedtesting:randomizedtesting-runner") { transitive = false }
-	api ('org.hamcrest:hamcrest-all') { transitive = false }
-  
-  implementation ('commons-codec:commons-codec') { transitive = false }
+	api ("junit:junit")
+  api ('org.hamcrest:hamcrest-core')
+	api ("com.carrotsearch.randomizedtesting:randomizedtesting-runner")
+
+  implementation ('commons-codec:commons-codec')
   
 }
