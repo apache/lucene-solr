@@ -150,7 +150,7 @@ If there is no autoscaling policy configured or if you wish to use a configurati
 ----
  curl -X POST -H 'Content-type:application/json'  -d '{
  "cluster-policy": [
-   {"replica": 0,  "port" : "7574"}   ]
+   {"replica": 0, "put" : "on-each", "nodeset": {"port" : "7574"}}]
  }' http://localhost:8983/api/cluster/autoscaling/diagnostics?omitHeader=true
 ----
 
@@ -334,7 +334,7 @@ If there is no autoscaling policy configured or if you wish to use a configurati
 ----
 curl -X POST -H 'Content-type:application/json'  -d '{
  "cluster-policy": [
-   {"replica": 0,  "port" : "7574"}
+    {"replica": 0, "put" : "on-each", "nodeset": {"port" : "7574"}}
    ]
 }' http://localhost:8983/solr/admin/autoscaling/suggestions?omitHeader=true
 ----
@@ -629,7 +629,7 @@ Refer to the <<solrcloud-autoscaling-policy-preferences.adoc#policy-specificatio
 {
 "set-policy": {
   "policy1": [
-    {"replica": "1", "shard": "#EACH", "port": "8983"}
+    {"replica": "1", "shard": "#EACH", "nodeset":{"port": "8983"}}
     ]
   }
 }
