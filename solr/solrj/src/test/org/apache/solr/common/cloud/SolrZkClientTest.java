@@ -19,6 +19,7 @@ package org.apache.solr.common.cloud;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Collections;
@@ -67,7 +68,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     final String SCHEME = "digest";
     final String AUTH = "user:pass";
 
-    String zkDir = createTempDir().toString();
+    Path zkDir = createTempDir();
     log.info("ZooKeeper dataDir:" + zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
