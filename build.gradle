@@ -30,6 +30,7 @@ def luceneSolrSubProjects = subprojects.findAll { project -> project.name != 'bu
 
 def rootProjectDir = project.rootProject.projectDir;
 
+// make sure ant task logging shows up by default
 ant.lifecycleLogLevel = "INFO"
 
 // TOC
@@ -167,7 +168,13 @@ configure(allprojects) {
 
 configure(allprojects) {
 
-  dependencies {
+    dependencies {
+      configurations.all {
+        // these classes are in Java 11
+        exclude group: 'javax.xml.stream', module: 'stax-api'
+        exclude group: 'stax', module: 'stax-api'
+    }
+    
     modules {
       module("commons-logging:commons-logging") { replacedBy("org.slf4j:jcl-over-slf4j") }
     }
