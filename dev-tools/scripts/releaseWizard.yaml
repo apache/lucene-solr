@@ -134,8 +134,11 @@ templates:
 #         comment: # Will display a # or REM comment above the command in printouts
 #         vars: {} # Possible to define local vars for this command only
 #         logfile: my.og # Overrides log file name which may grow very long :)
-#         tee: false       # If true, sends log output to console and file
+#         tee: false       # If true, sends output to console and file
 #         stdout: false    # if true, sends output only to console, not log file
+#         live: false      # If true, sends output live byte-by-byte to console
+#         redirect: file.txt      # Send output to file. Use instead of >
+#         redirect_append: false  # Will cause output to be appended, like >>
 #     user_input: # An array of !UserInput objects for requesting input from user
 #     - !UserInput
 #       prompt: Please enter your gpg key ID, e.g. 0D8D0B93
@@ -826,17 +829,15 @@ groups:
       dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      confirm_each_command: true # TODO: Flip this to false
+      confirm_each_command: true
       commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
       commands:
       - !Command
         cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'lucene', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
         logfile: publish_lucene_maven.log
-        tee: true
       - !Command
         cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
         logfile: publish_solr_maven.log
-        tee: true
     post_description: |
       Once you have transferred all maven artifacts to repository.apache.org,
       you will need to:
@@ -865,9 +866,8 @@ groups:
       commands_text: Run this script to check the number and percentage of mirrors (and Maven Central) that have the release
       commands:
       - !Command
-        cmd: dev-tools/scripts/poll-mirrors.py -version {{ release_version }}
-        logfile: publish_lucene_maven.log
-        tee: true
+        cmd: python3 -u {{ [git_checkout_folder, 'dev-tools', 'scripts', 'poll-mirrors.py'] | path_join }} -version {{ release_version }}
+        live: true
 - !TodoGroup
   id: website
   title: Update the website
@@ -897,17 +897,17 @@ groups:
         logfile: svn-checkout-website.log
         tee: true
       - !Command
-        cmd: echo core/{{ version }} >> extpaths.txt
+        cmd: echo core/{{ version }}
         cwd: website-source
-        logfile: extpaths-lucene.log
+        redirect: extpaths.txt
+        redirect_append: true
         comment: Add Lucene javadocs dir to extpaths
-        tee: true
       - !Command
-        cmd: echo solr/{{ version }} >> extpaths.txt
+        cmd: echo solr/{{ version }}
         cwd: website-source
-        logfile: extpaths-solr.log
+        redirect: extpaths.txt
+        redirect_append: true
         comment: Add Solr javadocs dir to extpaths
-        tee: true
       - !Command
         cmd: svn commit -m "Update CMS production sync exceptions for {{ version }} javadocs" extpaths.txt
         cwd: website-source
@@ -933,6 +933,7 @@ groups:
       - !Command
         cmd: git fetch && git checkout {{ release_tag }}
         comment: Checkout the release branch
+        logfile: checkout-release-tag.log
         tee: true
       - !Command
         cmd: ant documentation -Dversion={{ release_version }}
@@ -941,12 +942,10 @@ groups:
         cmd: svn -m "Add docs, changes and javadocs for Lucene {{ release_version }}"  import {{ git_checkout_folder }}/lucene/build/docs  https://svn.apache.org/repos/infra/websites/production/lucene/content/core/{{ version }}
         logfile: add-docs-lucene.log
         comment: Add docs for Lucene
-        tee: true
       - !Command
         cmd: svn -m "Add docs, changes and javadocs for Solr {{ release_version }}"  import {{ git_checkout_folder }}/solr/build/docs  https://svn.apache.org/repos/infra/websites/production/lucene/content/solr/{{ version }}
         logfile: add-docs-solr.log
         comment: Add docs for Solr
-        tee: true
   - !Todo
     id: website_javadoc_redirect
     title: Update redirect to latest Javadoc

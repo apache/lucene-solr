@@ -125,14 +125,7 @@ def replace_templates(text):
 
 
 def getScriptVersion():
-    topLevelDir = '../..'  # Assumption: this script is in dev-tools/scripts/ of a checkout
-    m = re.compile(r'(.*)/').match(sys.argv[0])  # Get this script's directory
-    if m is not None and m.group(1) != '.':
-        origCwd = os.getcwd()
-        os.chdir(m.group(1))
-        os.chdir('../..')
-        topLevelDir = os.getcwd()
-        os.chdir(origCwd)
+    topLevelDir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
     reBaseVersion = re.compile(r'version\.base\s*=\s*(\d+\.\d+\.\d+)')
     return reBaseVersion.search(open('%s/lucene/version.properties' % topLevelDir).read()).group(1)
 
@@ -1203,14 +1196,14 @@ def tail_file(file, lines):
                 break
 
 
-def run_with_log_tail(command, cwd, logfile=None, tail_lines=10, tee=False):
+def run_with_log_tail(command, cwd, logfile=None, tail_lines=10, tee=False, live=False):
     fh = sys.stdout
     if logfile:
         logdir = os.path.dirname(logfile)
         if not os.path.exists(logdir):
             os.makedirs(logdir)
         fh = open(logfile, 'w')
-    rc = run_follow(command, cwd, fh=fh, tee=tee)
+    rc = run_follow(command, cwd, fh=fh, tee=tee, live=live)
     if logfile:
         fh.close()
         if not tee and tail_lines and tail_lines > 0:
@@ -1246,11 +1239,12 @@ def print_line_cr(line, linenum, stdout=True, tee=False):
             print(line.rstrip())
 
 
-def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
-    if not isinstance(command, list):
+def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False):
+    doShell = '&&' in command or '&' in command
+    if not doShell and not isinstance(command, list):
         command = shlex.split(command)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd,
-                               universal_newlines=True, bufsize=0, close_fds=True)
+                               universal_newlines=True, bufsize=0, close_fds=True, shell=doShell)
     lines_written = 0
 
     fl = fcntl.fcntl(process.stdout, fcntl.F_GETFL)
@@ -1265,26 +1259,46 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False):
         lines_before = lines_written
         if not endstdout:
             try:
-                line = process.stdout.readline()
-                if line == '' and process.poll() is not None:
-                    endstdout = True
+                if live:
+                    chars = process.stdout.read()
+                    if chars == '' and process.poll() is not None:
+                        endstdout = True
+                    else:
+                        fh.write(chars)
+                        fh.flush()
+                        if '\n' in chars:
+                            lines_written += 1
                 else:
-                    fh.write("%s\n" % line.rstrip())
-                    fh.flush()
-                    lines_written += 1
-                    print_line_cr(line, lines_written, stdout=(fh == sys.stdout), tee=tee)
+                    line = process.stdout.readline()
+                    if line == '' and process.poll() is not None:
+                        endstdout = True
+                    else:
+                        fh.write("%s\n" % line.rstrip())
+                        fh.flush()
+                        lines_written += 1
+                        print_line_cr(line, lines_written, stdout=(fh == sys.stdout), tee=tee)
 
             except Exception as ioe:
                 pass
         if not endstderr:
             try:
-                line = process.stderr.readline()
-                if line == '' and process.poll() is not None:
-                    endstderr = True
+                if live:
+                    chars = process.stderr.read()
+                    if chars == '' and process.poll() is not None:
+                        endstderr = True
+                    else:
+                        fh.write(chars)
+                        fh.flush()
+                        if '\n' in chars:
+                            lines_written += 1
                 else:
-                    errlines.append("%s\n" % line.rstrip())
-                    lines_written += 1
-                    print_line_cr(line, lines_written, stdout=(fh == sys.stdout), tee=tee)
+                    line = process.stderr.readline()
+                    if line == '' and process.poll() is not None:
+                        endstderr = True
+                    else:
+                        errlines.append("%s\n" % line.rstrip())
+                        lines_written += 1
+                        print_line_cr(line, lines_written, stdout=(fh == sys.stdout), tee=tee)
             except Exception as e:
                 pass
 
@@ -1398,35 +1412,56 @@ class Commands(SecretYamlObject):
                             print("------------\nRunning '%s' in folder '%s'" % (cmd, cwd))
                         logfilename = cmd.logfile
                         logfile = None
-                        if not cmd.stdout:
-                            if not log_folder:
-                                log_folder = os.path.join(state.get_rc_folder(), "logs")
-                            elif not os.path.isabs(log_folder):
-                                log_folder = os.path.join(state.get_rc_folder(), "logs", log_folder)
-                            if not logfilename:
-                                logfilename = "%s.log" % re.sub(r"\W", "_", cmd.get_cmd())
-                            logfile = os.path.join(log_folder, "%s%s%s" % (log_prefix, folder_prefix, logfilename))
-                            if cmd.tee:
-                                print("Output of command will be printed (logfile=%s)" % logfile)
-                            else:
-                                print("Wait until command completes... Full log in %s\n" % logfile)
-                            if cmd.comment:
-                                print("# %s\n" % cmd.comment)
                         cmd_to_run = "%s%s" % ("echo Dry run, command is: " if dry_run else "", cmd.get_cmd())
-                        returncode = run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee, tail_lines=25)
-                        if not returncode == 0:
-                            if cmd.should_fail:
-                                print("Command failed, which was expected")
-                                success = True
-                            else:
-                                print("WARN: Command %s returned with error" % cmd.get_cmd())
+                        if cmd.redirect:
+                            try:
+                                out = run(cmd_to_run, cwd=cwd)
+                                mode = 'a' if cmd.redirect_append is True else 'w'
+                                with open(os.path.join(root, cwd, cmd.redirect), mode) as outfile:
+                                    outfile.write(out)
+                                    outfile.flush()
+                                print("Wrote %s bytes to redirect file %s" % (len(out), cmd.redirect))
+                            except Exception as e:
+                                print("Command %s failed: %s" % (cmd_to_run, e))
                                 success = False
                                 break
                         else:
-                            if cmd.should_fail and not dry_run:
-                                print("Expected command to fail, but it succeeded.")
-                                success = False
-                                break
+                            if not cmd.stdout:
+                                if not log_folder:
+                                    log_folder = os.path.join(state.get_rc_folder(), "logs")
+                                elif not os.path.isabs(log_folder):
+                                    log_folder = os.path.join(state.get_rc_folder(), "logs", log_folder)
+                                if not logfilename:
+                                    logfilename = "%s.log" % re.sub(r"\W", "_", cmd.get_cmd())
+                                logfile = os.path.join(log_folder, "%s%s%s" % (log_prefix, folder_prefix, logfilename))
+                                if cmd.tee:
+                                    print("Output of command will be printed (logfile=%s)" % logfile)
+                                elif cmd.live:
+                                    print("Output will be shown live byte by byte")
+                                    logfile = None
+                                else:
+                                    print("Wait until command completes... Full log in %s\n" % logfile)
+                                if cmd.comment:
+                                    print("# %s\n" % cmd.comment)
+                            start_time = time.time()
+                            returncode = run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee, tail_lines=25, live=cmd.live)
+                            elapsed = time.time() - start_time
+                            if not returncode == 0:
+                                if cmd.should_fail:
+                                    print("Command failed, which was expected")
+                                    success = True
+                                else:
+                                    print("WARN: Command %s returned with error" % cmd.get_cmd())
+                                    success = False
+                                    break
+                            else:
+                                if cmd.should_fail and not dry_run:
+                                    print("Expected command to fail, but it succeeded.")
+                                    success = False
+                                    break
+                                else:
+                                    if elapsed > 30:
+                                        print("Command completed in %s seconds" % elapsed)
             if not success:
                 print("WARNING: One or more commands failed, you may want to check the logs")
             return success
@@ -1475,16 +1510,32 @@ class Commands(SecretYamlObject):
 class Command(SecretYamlObject):
     yaml_tag = u'!Command'
     hidden_fields = ['todo_id']
-    def __init__(self, cmd, cwd=None, stdout=None, logfile=None, tee=None, comment=None, vars=None, todo_id=None, should_fail=None):
+    def __init__(self, cmd, cwd=None, stdout=None, logfile=None, tee=None, live=None, comment=None, vars=None,
+                 todo_id=None, should_fail=None, redirect=None, redirect_append=None):
         self.cmd = cmd
         self.cwd = cwd
         self.comment = comment
         self.logfile = logfile
         self.vars = vars
         self.tee = tee
+        self.live = live
         self.stdout = stdout
         self.should_fail = should_fail
         self.todo_id = todo_id
+        self.redirect_append = redirect_append
+        self.redirect = redirect
+        if tee and stdout:
+            self.stdout = None
+            print("Command %s specifies 'tee' and 'stdout', using only 'tee'" % self.cmd)
+        if live and stdout:
+            self.stdout = None
+            print("Command %s specifies 'live' and 'stdout', using only 'live'" % self.cmd)
+        if live and tee:
+            self.tee = None
+            print("Command %s specifies 'tee' and 'live', using only 'live'" % self.cmd)
+        if redirect and (tee or stdout or live):
+            self.tee = self.stdout = self.live = None
+            print("Command %s specifies 'redirect' and other out options at the same time. Using redirect only" % self.cmd)
 
     @classmethod
     def from_yaml(cls, loader, node):
