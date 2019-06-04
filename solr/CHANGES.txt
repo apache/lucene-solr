@@ -85,6 +85,8 @@ Bug Fixes
 * SOLR-13489: Stop the leader from trying to rejoin the election on session expiration and harden our zk reconnect code path.
   (Mark Miller, Anshum Gupta)
 
+* SOLR-13510: Intermittent 401's for internode requests with basicauth enabled (Cao Manh Dat, Colvin Cowie)
+
 Other Changes
 ----------------------
 
