@@ -22,23 +22,23 @@ archivesBaseName = 'solr-core'
 dependencies {
   
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:codecs')
-  implementation project(':lucene:analysis:analyzers-common')
-  implementation project(':lucene:analysis:analyzers-phonetic')
-  implementation project(':lucene:analysis:analyzers-kuromoji')
-  implementation project(':lucene:analysis:analyzers-nori')
-  implementation project(':lucene:suggest')
-  implementation project(':lucene:queries')
-  implementation project(':lucene:highlighter')
-  implementation project(':lucene:spatial-extras')
-  implementation project(':lucene:grouping')
-  implementation project(':lucene:classification')
-  implementation project(':lucene:expressions')
-  implementation project(':lucene:sandbox')
-  implementation project(':lucene:queryparser')
-  implementation project(':lucene:misc')
-  implementation project(':lucene:join')
-  implementation project(':solr:solrj')
+  implementation project(':lucene:lucene-codecs')
+  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:analysis:lucene-analyzers-phonetic')
+  implementation project(':lucene:analysis:lucene-analyzers-kuromoji')
+  implementation project(':lucene:analysis:lucene-analyzers-nori')
+  implementation project(':lucene:lucene-suggest')
+  implementation project(':lucene:lucene-queries')
+  implementation project(':lucene:lucene-highlighter')
+  implementation project(':lucene:lucene-spatial-extras')
+  implementation project(':lucene:lucene-grouping')
+  implementation project(':lucene:lucene-classification')
+  implementation project(':lucene:lucene-expressions')
+  implementation project(':lucene:lucene-sandbox')
+  implementation project(':lucene:lucene-queryparser')
+  implementation project(':lucene:lucene-misc')
+  implementation project(':lucene:lucene-join')
+  implementation project(':solr:solr-solrj')
   
   compileOnly ('javax.servlet:javax.servlet-api')
   
@@ -191,12 +191,12 @@ dependencies {
   testImplementation ('org.apache.kerby:kerb-admin') { transitive = false }
   testImplementation ('org.apache.kerby:kerby-kdc') { transitive = false }
   
-  testImplementation project(path: ':lucene:backward-codecs', configuration: 'testOutput')
-  testImplementation project(path: ':lucene:queryparser', configuration: 'testOutput')
+  testImplementation project(path: ':lucene:lucene-backward-codecs', configuration: 'testOutput')
+  testImplementation project(path: ':lucene:lucene-queryparser', configuration: 'testOutput')
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
-  testImplementation project(':lucene:analysis:analyzers-icu')
-  testImplementation project(':solr:contrib:analysis-extras')
+  testImplementation project(':lucene:analysis:lucene-analyzers-icu')
+  testImplementation project(':solr:contrib:solr-contrib-analysis-extras')
   
 }
 

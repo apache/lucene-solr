@@ -19,8 +19,8 @@ apply plugin: 'java-library'
 
 dependencies {
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:codecs')
+  implementation project(':lucene:lucene-codecs')
 
   testImplementation project(':lucene:lucene-test-framework')
-  testImplementation project(':lucene:queryparser')
+  testImplementation project(':lucene:lucene-queryparser')
 }

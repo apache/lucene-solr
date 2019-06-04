@@ -19,7 +19,7 @@ apply plugin: 'java-library'
 
 dependencies {
   implementation project(':solr:solr-core')
-  implementation project(':solr:solrj')
+  implementation project(':solr:solr-solrj')
   implementation project(':lucene:lucene-core')
   
   implementation ('com.fasterxml.jackson.core:jackson-core') { transitive = false }
@@ -82,15 +82,15 @@ dependencies {
   testRuntimeOnly ('commons-io:commons-io') { transitive = false }
   testRuntimeOnly ('org.slf4j:jcl-over-slf4j') { transitive = false }
   
-  testRuntimeOnly project(':lucene:analysis:analyzers-common')
-  testRuntimeOnly project(':lucene:codecs')
-  testRuntimeOnly project(':lucene:join')
-  testRuntimeOnly project(':lucene:highlighter')
-  testRuntimeOnly project(':lucene:suggest')
-  testRuntimeOnly project(':lucene:grouping')
-  testRuntimeOnly project(':lucene:sandbox')
-  testRuntimeOnly project(':lucene:queries')
-  testRuntimeOnly project(':lucene:misc')
+  testRuntimeOnly project(':lucene:analysis:lucene-analyzers-common')
+  testRuntimeOnly project(':lucene:lucene-codecs')
+  testRuntimeOnly project(':lucene:lucene-join')
+  testRuntimeOnly project(':lucene:lucene-highlighter')
+  testRuntimeOnly project(':lucene:lucene-suggest')
+  testRuntimeOnly project(':lucene:lucene-grouping')
+  testRuntimeOnly project(':lucene:lucene-sandbox')
+  testRuntimeOnly project(':lucene:lucene-queries')
+  testRuntimeOnly project(':lucene:lucene-misc')
   
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
