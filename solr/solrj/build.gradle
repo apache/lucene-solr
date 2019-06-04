@@ -56,7 +56,9 @@ dependencies {
   testImplementation ('org.eclipse.jetty:jetty-server')
   testImplementation ('org.eclipse.jetty:jetty-xml')
   testImplementation ('commons-collections:commons-collections')
-  testImplementation ('com.google.guava:guava')
+  testImplementation ('com.google.guava:guava') {
+    exclude group: '*', module: '*' // many annotation deps we don't need
+  }
   testImplementation ('org.apache.commons:commons-compress')
   testImplementation ('org.mockito:mockito-core')
   testImplementation ('net.bytebuddy:byte-buddy')
