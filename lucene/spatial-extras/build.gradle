@@ -20,8 +20,8 @@ apply plugin: 'java-library'
 dependencies {
   
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:spatial')
-  implementation project(':lucene:spatial3d')
+  implementation project(':lucene:lucene-spatial')
+  implementation project(':lucene:lucene-spatial3d')
   
   implementation ('org.locationtech.spatial4j:spatial4j') { transitive = false }
   implementation ('io.sgr:s2-geometry-library-java') { transitive = false }
@@ -30,5 +30,5 @@ dependencies {
   testImplementation ('org.locationtech.spatial4j:spatial4j::tests') { transitive = false }
   
   testImplementation project(':lucene:lucene-test-framework')
-  testImplementation project(path: ':lucene:spatial3d', configuration: 'testOutput')
+  testImplementation project(path: ':lucene:lucene-spatial3d', configuration: 'testOutput')
 }

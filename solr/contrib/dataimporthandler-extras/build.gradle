@@ -19,10 +19,10 @@ apply plugin: 'java-library'
 
 dependencies {
   implementation project(':solr:solr-core')
-  implementation project(':solr:solrj')
-  implementation project(':solr:contrib:dataimporthandler')
-  implementation project(':lucene:analysis:analyzers-common')
-  implementation project(':solr:contrib:extraction')
+  implementation project(':solr:solr-solrj')
+  implementation project(':solr:contrib:solr-contrib-dataimporthandler')
+  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':solr:contrib:solr-contrib-extraction')
   
   implementation ('org.slf4j:slf4j-api') { transitive = false }
   implementation ('javax.activation:activation') { transitive = false }
@@ -33,7 +33,7 @@ dependencies {
   implementation ('org.apache.tika:tika-core') { transitive = false }
   implementation 'org.apache.tika:tika-parsers'
   
-  testImplementation project(path: ':solr:contrib:dataimporthandler', configuration: 'testOutput')
+  testImplementation project(path: ':solr:contrib:solr-contrib-dataimporthandler', configuration: 'testOutput')
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
 }
