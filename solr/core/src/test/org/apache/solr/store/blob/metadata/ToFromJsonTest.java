@@ -22,14 +22,14 @@ public class ToFromJsonTest extends Assert {
 
     @Test
     public void jsonCoreMetadataNoFiles() throws Exception {
-        BlobCoreMetadata bcm = new BlobCoreMetadataBuilder(CORE_NAME, 666L, 777L).build();
+        BlobCoreMetadata bcm = new BlobCoreMetadataBuilder(CORE_NAME, 666L).build();
 
         verifyToJsonAndBack(bcm);
     }
 
     @Test
     public void jsonCoreMetadataFile() throws Exception {
-        BlobCoreMetadataBuilder bb = new BlobCoreMetadataBuilder(CORE_NAME, 777L, 888L);
+        BlobCoreMetadataBuilder bb = new BlobCoreMetadataBuilder(CORE_NAME, 777L);
 
         BlobCoreMetadata bcm = bb.addFile(new BlobCoreMetadata.BlobFile("solrFilename", "blobFilename", 123000L)).build();
 
@@ -38,7 +38,7 @@ public class ToFromJsonTest extends Assert {
 
     @Test
     public void jsonCoreMetadataMultiFiles() throws Exception {
-        BlobCoreMetadataBuilder bb = new BlobCoreMetadataBuilder(CORE_NAME, 123L, 567L);
+        BlobCoreMetadataBuilder bb = new BlobCoreMetadataBuilder(CORE_NAME, 123L);
         Set<BlobCoreMetadata.BlobFile> files = new HashSet<>(Arrays.asList(
                 new BlobCoreMetadata.BlobFile("solrFilename11", "blobFilename11", 1234L),
                 new BlobCoreMetadata.BlobFile("solrFilename21", "blobFilename21", 2345L),
@@ -54,8 +54,7 @@ public class ToFromJsonTest extends Assert {
 
         verifyToJsonAndBack(bcm);
 
-        assertEquals("blob core metadata should have core name specified to builder", CORE_NAME, bcm.getCoreName());
-        assertEquals("blob core metadata should have sequence number specified to builder",123L, bcm.getSequenceNumber());
+        assertEquals("blob core metadata should have core name specified to builder", CORE_NAME, bcm.getSharedBlobName());
         assertEquals("blob core metadata should have generation specified to builder",567L, bcm.getGeneration());
 
         // Files are not necessarily in the same order

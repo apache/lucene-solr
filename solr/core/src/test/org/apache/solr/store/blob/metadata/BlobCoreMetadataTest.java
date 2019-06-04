@@ -19,20 +19,18 @@ public class BlobCoreMetadataTest extends Assert {
 
     @Test
     public void buildCoreMetadataNoFiles() throws Exception {
-        BlobCoreMetadata bcm = new BlobCoreMetadataBuilder(CORE_NAME, 123L, 456L).build();
+        BlobCoreMetadata bcm = new BlobCoreMetadataBuilder(CORE_NAME, 456L).build();
 
         assertEquals("Blob metadata without any files should not have any files", 0, bcm.getBlobFiles().length);
-        assertEquals("Blob metadata should have specified core name", CORE_NAME, bcm.getCoreName());
-        assertEquals("Blob metadata should have specified sequence number", 123L, bcm.getSequenceNumber());
+        assertEquals("Blob metadata should have specified core name", CORE_NAME, bcm.getSharedBlobName());
         assertEquals("Blob metadata should have specified generation", 456L, bcm.getGeneration());
     }
 
     @Test
     public void buildCoreMetadataWithFile() throws Exception {
-        BlobCoreMetadata bcm = new BlobCoreMetadataBuilder(CORE_NAME, 123L, 456L).addFile(new BlobCoreMetadata.BlobFile("solrFilename", "blobFilename", 123000L)).build();
+        BlobCoreMetadata bcm = new BlobCoreMetadataBuilder(CORE_NAME, 456L).addFile(new BlobCoreMetadata.BlobFile("solrFilename", "blobFilename", 123000L)).build();
 
-        assertEquals("Blob metadata should have specified core name", CORE_NAME, bcm.getCoreName());
-        assertEquals("Blob metadata should have specified sequence number", 123L, bcm.getSequenceNumber());
+        assertEquals("Blob metadata should have specified core name", CORE_NAME, bcm.getSharedBlobName());
         assertEquals("Blob metadata should have specified generation", 456L, bcm.getGeneration());
         assertEquals("Blob metadata should have the correct number of added files", 1, bcm.getBlobFiles().length);
         assertEquals("Blob metadata file should have correct solr filename", "solrFilename", bcm.getBlobFiles()[0].getSolrFileName());

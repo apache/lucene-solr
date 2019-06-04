@@ -64,11 +64,11 @@ public class MetadataResolverTest {
      */
     @Test
     public void testPushNeededWhenBlobNull() throws Exception {
-        final long localSequenceNumber = 1;
+//        final long localSequenceNumber = 1;
         final long localGenerationNumber = 1;
         final long localFileSize = 10;
         // local core metadata
-        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, localSequenceNumber, localGenerationNumber)
+        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, /* localSequenceNumber, */ localGenerationNumber)
                 .addFile(new CoreFileData(getSolrSegmentFileName(localGenerationNumber), localFileSize))
                 .build();
         // expected resolution
@@ -93,18 +93,18 @@ public class MetadataResolverTest {
      */
     @Test
     public void testPushNeededWhenLocalAheadOfBlob() throws Exception {
-        final long localSequenceNumber = 2;
+//        final long localSequenceNumber = 2;
         final long localGenerationNumber = 2;
         final long localFileSize = 20;
-        final long blobSequenceNumber = 1;
+//      final long blobSequenceNumber = 1;
         final long blobGenerationNumber = 1;
         final long blobFileSize = 10;
         // local core metadata ahead of blob
-        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, localSequenceNumber, localGenerationNumber)
+        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, /* localSequenceNumber, */ localGenerationNumber)
                 .addFile(new CoreFileData(getSolrSegmentFileName(localGenerationNumber), localFileSize))
                 .build();
         // blob core metadata
-        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, blobSequenceNumber, blobGenerationNumber)
+        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, /* blobSequenceNumber, */ blobGenerationNumber)
                 .addFile(new BlobFile(getSolrSegmentFileName(blobGenerationNumber), getBlobFileName(blobGenerationNumber), blobFileSize))
                 .build();
         // expected resolution
@@ -129,18 +129,18 @@ public class MetadataResolverTest {
      */
     @Test
     public void testPushNeededWhenLocalAheadOfBlobJustByGenerationNumber() throws Exception {
-        final long localSequenceNumber = 1;
+//        final long localSequenceNumber = 1;
         final long localGenerationNumber = 2;
         final long localFileSize = 20;
-        final long blobSequenceNumber = 1;
+//        final long blobSequenceNumber = 1;
         final long blobGenerationNumber = 1;
         final long blobFileSize = 10;
         // local core metadata ahead of blob just by generation number
-        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, localSequenceNumber, localGenerationNumber)
+        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, /* localSequenceNumber, */ localGenerationNumber)
                 .addFile(new CoreFileData(getSolrSegmentFileName(localGenerationNumber), localFileSize))
                 .build();
         // blob core metadata
-        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, blobSequenceNumber, blobGenerationNumber)
+        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, /* blobSequenceNumber, */ blobGenerationNumber)
                 .addFile(new BlobFile(getSolrSegmentFileName(blobGenerationNumber), getBlobFileName(blobGenerationNumber), blobFileSize))
                 .build();
         // expected resolution
@@ -165,12 +165,12 @@ public class MetadataResolverTest {
      */
     @Test
     public void testPullNeededWhenLocalNull() throws Exception {
-        final long blobSequenceNumber = 1;
+//        final long blobSequenceNumber = 1;
         final long blobGenerationNumber = 1;
         final long bloblFileSize = 10;
         // blob core metadata
-        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, blobSequenceNumber, blobGenerationNumber)
-                .addFile(new BlobFile(getSolrSegmentFileName(blobSequenceNumber), getBlobFileName(blobGenerationNumber), bloblFileSize))
+        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, /* blobSequenceNumber, */ blobGenerationNumber)
+                .addFile(new BlobFile(getSolrSegmentFileName(blobGenerationNumber), getBlobFileName(blobGenerationNumber), bloblFileSize))
                 .build();
         // expected resolution
         final Action expectedAction = Action.PULL;
@@ -195,18 +195,18 @@ public class MetadataResolverTest {
      */
     @Test
     public void testPullNeededWhenBlobAheadOfLocal() throws Exception {
-        final long localSequenceNumber = 1;
+//        final long localSequenceNumber = 1;
         final long localGenerationNumber = 1;
         final long localFileSize = 10;
-        final long blobSequenceNumber = 2;
+//        final long blobSequenceNumber = 2;
         final long blobGenerationNumber = 2;
         final long blobFileSize = 20;
         // local core metadata
-        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, localSequenceNumber, localGenerationNumber)
+        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, /* localSequenceNumber, */ localGenerationNumber)
                 .addFile(new CoreFileData(getSolrSegmentFileName(localGenerationNumber), localFileSize))
                 .build();
         // blob core metadata ahead of local
-        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, blobSequenceNumber, blobGenerationNumber)
+        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, /* blobSequenceNumber, */ blobGenerationNumber)
                 .addFile(new BlobFile(getSolrSegmentFileName(blobGenerationNumber), getBlobFileName(blobGenerationNumber), blobFileSize))
                 .build();
         // expected resolution
@@ -231,18 +231,18 @@ public class MetadataResolverTest {
      */
     @Test
     public void testPullNeededWhenBlobAheadOfLocalJustByGenerationNumber() throws Exception {
-        final long localSequenceNumber = 1;
+//        final long localSequenceNumber = 1;
         final long localGenerationNumber = 1;
         final long localFileSize = 10;
-        final long blobSequenceNumber = 1;
+//        final long blobSequenceNumber = 1;
         final long blobGenerationNumber = 2;
         final long blobFileSize = 20;
         // local core metadata
-        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, localSequenceNumber, localGenerationNumber)
+        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, /* localSequenceNumber, */ localGenerationNumber)
                 .addFile(new CoreFileData(getSolrSegmentFileName(localGenerationNumber), localFileSize))
                 .build();
         // blob core metadata ahead of local just by generation number
-        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, blobSequenceNumber, blobGenerationNumber)
+        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, /* blobSequenceNumber, */ blobGenerationNumber)
                 .addFile(new BlobFile(getSolrSegmentFileName(blobGenerationNumber), getBlobFileName(blobGenerationNumber), blobFileSize))
                 .build();
         // expected resolution
@@ -267,18 +267,18 @@ public class MetadataResolverTest {
      */
     @Test
     public void testIdenticalCores() throws Exception {
-        final long localSequenceNumber = 1;
+//        final long localSequenceNumber = 1;
         final long localGenerationNumber = 1;
         final long localFileSize = 10;
-        final long blobSequenceNumber = 1;
+//        final long blobSequenceNumber = 1;
         final long blobGenerationNumber = 1;
         final long blobFileSize = 10;
         // local core metadata
-        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, localSequenceNumber, localGenerationNumber)
+        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, /* localSequenceNumber, */ localGenerationNumber)
                 .addFile(new CoreFileData(getSolrSegmentFileName(localGenerationNumber), localFileSize))
                 .build();
         // blob core metadata identical to local core metadata
-        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, blobSequenceNumber, blobGenerationNumber)
+        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, /* blobSequenceNumber, */ blobGenerationNumber)
                 .addFile(new BlobFile(getSolrSegmentFileName(blobGenerationNumber), getBlobFileName(blobGenerationNumber), blobFileSize))
                 .build();
         // expected resolution
@@ -303,11 +303,11 @@ public class MetadataResolverTest {
      */
     @Test
     public void testBlobCoreMarkedAsDeleted() throws Exception {
-        final long blobSequenceNumber = 1;
+//        final long blobSequenceNumber = 1;
         final long blobGenerationNumber = 1;
         final long blobFileSize = 10;
         // blob core metadata marked as deleted
-        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, blobSequenceNumber, blobGenerationNumber)
+        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, /* blobSequenceNumber, */ blobGenerationNumber)
                 .addFile(new BlobFile(getSolrSegmentFileName(blobGenerationNumber), getBlobFileName(blobGenerationNumber), blobFileSize))
                 .build()
                 .getDeletedOf();
@@ -333,18 +333,18 @@ public class MetadataResolverTest {
      */
     @Test
     public void testBlobCoreMarkedAsCorrupted() throws Exception {
-        final long localSequenceNumber = 1;
+//        final long localSequenceNumber = 1;
         final long localGenerationNumber = 1;
         final long localFileSize = 10;
-        final long blobSequenceNumber = 1;
+//        final long blobSequenceNumber = 1;
         final long blobGenerationNumber = 1;
         final long blobFileSize = 10;
         // local core metadata
-        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, localSequenceNumber, localGenerationNumber)
+        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, /* localSequenceNumber, */ localGenerationNumber)
                 .addFile(new CoreFileData(getSolrSegmentFileName(localGenerationNumber), localFileSize))
                 .build();
         // blob core metadata marked as corrupt
-        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, blobSequenceNumber, blobGenerationNumber)
+        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, /* blobSequenceNumber, */ blobGenerationNumber)
                 .addFile(new BlobFile(getSolrSegmentFileName(blobGenerationNumber), getBlobFileName(blobGenerationNumber), blobFileSize))
                 .build()
                 .getCorruptOf();
@@ -370,18 +370,18 @@ public class MetadataResolverTest {
      */
     @Test
     public void testConflictingFileSizes() throws Exception {
-        final long localSequenceNumber = 1;
+//        final long localSequenceNumber = 1;
         final long localGenerationNumber = 1;
         final long localFileSize = 10;
-        final long blobSequenceNumber = 1;
+//        final long blobSequenceNumber = 1;
         final long blobGenerationNumber = 1;
         final long blobFileSize = 100;
         // local core metadata
-        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, localSequenceNumber, localGenerationNumber)
+        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, /* localSequenceNumber, */ localGenerationNumber)
                 .addFile(new CoreFileData(getSolrSegmentFileName(localGenerationNumber), localFileSize))
                 .build();
         // blob core metadata identical to local core metadata but different file size
-        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, blobSequenceNumber, blobGenerationNumber)
+        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, /* blobSequenceNumber, */ blobGenerationNumber)
                 .addFile(new BlobFile(getSolrSegmentFileName(blobGenerationNumber), getBlobFileName(blobGenerationNumber), blobFileSize))
                 .build();        
         // expected resolution
@@ -407,19 +407,19 @@ public class MetadataResolverTest {
      */
     @Test
     public void testBlobCoreWithConflictingSegmentFiles() throws Exception {
-        final long localSequenceNumber = 1;
+//        final long localSequenceNumber = 1;
         final long localGenerationNumber = 1;
         final long localFileSize = 10;
-        final long blobSequenceNumber = 2;
+//        final long blobSequenceNumber = 2;
         final long blobGenerationNumber = 2;
         final long blobFileSize = 10;
         final long conflictingBlobGenerationNumber = 1;
         // local core metadata
-        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, localSequenceNumber, localGenerationNumber)
+        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, /* localSequenceNumber, */ localGenerationNumber)
                 .addFile(new CoreFileData(getSolrSegmentFileName(localGenerationNumber), localFileSize))
                 .build();
         // blob core metadata with conflicting segment files
-        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, blobSequenceNumber, blobGenerationNumber)
+        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, /* blobSequenceNumber, */ blobGenerationNumber)
                 .addFile(new BlobFile(getSolrSegmentFileName(conflictingBlobGenerationNumber), getBlobFileName(conflictingBlobGenerationNumber), blobFileSize))
                 .addFile(new BlobFile(getSolrSegmentFileName(blobGenerationNumber), getBlobFileName(blobGenerationNumber), blobFileSize))
                 .build();
@@ -446,10 +446,10 @@ public class MetadataResolverTest {
      */
     @Test
     public void testBlobCoreWithMissingSegmentFile() throws Exception {
-        final long blobSequenceNumber = 1;
+//        final long blobSequenceNumber = 1;
         final long blobGenerationNumber = 1;
         // blob core metadata with missing segment file
-        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, blobSequenceNumber, blobGenerationNumber).build();
+        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, /* blobSequenceNumber, */ blobGenerationNumber).build();
         // expected resolution
         final Action expectedAction = Action.BLOB_CORRUPT;
         final Collection<CoreFileData> expectedFilesToPush = Collections.emptySet();
@@ -472,10 +472,10 @@ public class MetadataResolverTest {
      */
     @Test
     public void testConfigOnlyChange() throws Exception {
-        final long localSequenceNumber = 1;
+//        final long localSequenceNumber = 1;
         final long localGenerationNumber = 1;
         final long localFileSize = 10;
-        final long blobSequenceNumber = 1;
+//        final long blobSequenceNumber = 1;
         final long blobGenerationNumber = 1;
         final long blobFileSize = 10;
         final String configMissingOnBlobName = "configMissingOnBlob.txt";
@@ -489,14 +489,14 @@ public class MetadataResolverTest {
         final BlobConfigFile blobConfigBehindOnBlob = new BlobConfigFile(configBehindOnBlobName, configBehindOnBlobName,10, 1);
         final BlobConfigFile blobConfigBehindOnLocal = new BlobConfigFile(configBehindOnLocalName, configBehindOnLocalName,10, 2);
         // local core metadata
-        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, localSequenceNumber, localGenerationNumber)
+        final ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadataBuilder(CORE_NAME, /* localSequenceNumber, */ localGenerationNumber)
                 .addFile(new CoreFileData(getSolrSegmentFileName(localGenerationNumber), localFileSize))
                 .addConfigFile(localConfigMissingOnBlob)
                 .addConfigFile(localConfigBehindOnBlob)
                 .addConfigFile(localConfigBehindOnLocal)
                 .build();
         // blob core metadata identical to local core metadata
-        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, blobSequenceNumber, blobGenerationNumber)
+        final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(CORE_NAME, /* blobSequenceNumber, */ blobGenerationNumber)
                 .addFile(new BlobFile(getSolrSegmentFileName(blobGenerationNumber), getBlobFileName(blobGenerationNumber), blobFileSize))
                 .addConfigFile(blobConfigMissingOnLocal)
                 .addConfigFile(blobConfigBehindOnBlob)
@@ -614,14 +614,14 @@ public class MetadataResolverTest {
      */
     private static class ServerSideCoreMetadataBuilder {
         final private String coreName;
-        final private long sequenceNumber;
+//        final private long sequenceNumber;
         final private long generation;
         final private ImmutableSet.Builder<CoreFileData> files;
         final private ImmutableList.Builder<CoreConfigFileData> configFiles;
 
-        ServerSideCoreMetadataBuilder(String coreName, long sequenceNumber, long generation){
+        ServerSideCoreMetadataBuilder(String coreName, /* long sequenceNumber, */ long generation){
             this.coreName = coreName;
-            this.sequenceNumber = sequenceNumber;
+//            this.sequenceNumber = sequenceNumber;
             this.generation = generation;
             files = new ImmutableSet.Builder();
             configFiles = new ImmutableList.Builder<>();
@@ -640,8 +640,7 @@ public class MetadataResolverTest {
         public ServerSideCoreMetadata build() {
             ServerSideCoreMetadata serverMetadata = mock(ServerSideCoreMetadata.class);
             when(serverMetadata.getCoreName()).thenReturn(coreName);
-            when(serverMetadata.getGeneration()).thenReturn(sequenceNumber);
-            when(serverMetadata.getSequenceNumber()).thenReturn(generation);
+            when(serverMetadata.getGeneration()).thenReturn(generation);
             when(serverMetadata.getFiles()).thenReturn(files.build());
             when(serverMetadata.getConfigFiles()).thenReturn(configFiles.build());
 

@@ -54,7 +54,7 @@ public class DeleteBlobStrategyTest {
         };
 
         // Now create a metadata builder with a set of files to delete and verify the right ones are deleted.
-        BlobCoreMetadataBuilder bcmBuilder = new BlobCoreMetadataBuilder("randomCoreName", 0L,0L);
+        BlobCoreMetadataBuilder bcmBuilder = new BlobCoreMetadataBuilder("randomCoreName", 0L);
 
         // file 1 deleted at 5000 (should be removed)
         BlobCoreMetadata.BlobFileToDelete blobFile1 = new BlobCoreMetadata.BlobFileToDelete("solrFile1", "BlobFile1", 1234L, 5000L);
@@ -126,7 +126,7 @@ public class DeleteBlobStrategyTest {
         };
 
         // Now create a metadata builder with a set of files to delete
-        BlobCoreMetadataBuilder bcmBuilder = new BlobCoreMetadataBuilder("randomCoreName", 0L, 0L);
+        BlobCoreMetadataBuilder bcmBuilder = new BlobCoreMetadataBuilder("randomCoreName", 0L);
 
         bcmBuilder.addFileToDelete(new BlobCoreMetadata.BlobFileToDelete("solrFile1", "BlobFile1", 1234L, 123456L));
         bcmBuilder.addFileToDelete(new BlobCoreMetadata.BlobFileToDelete("solrFile2", "BlobFile2", 1234L, 234567L));

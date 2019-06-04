@@ -159,7 +159,7 @@ public class CoreStorageClientTest {
     @Test
     public void testPushPullCoreMetadata() throws Exception {
         blobClient.deleteCore(TEST_CORE_NAME_1);
-        BlobCoreMetadata pushedBcm = new BlobCoreMetadataBuilder(TEST_CORE_NAME_1, 19L, 68L).build();
+        BlobCoreMetadata pushedBcm = new BlobCoreMetadataBuilder(TEST_CORE_NAME_1, 19L).build();
         Assert.assertNull(blobClient.pullCoreMetadata(TEST_CORE_NAME_1));
         
         blobClient.pushCoreMetadata(TEST_CORE_NAME_1, pushedBcm);
