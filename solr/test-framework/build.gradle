@@ -23,12 +23,12 @@ dependencies {
   runtimeOnly "org.slf4j:jcl-over-slf4j"
   
   api project(':lucene:lucene-test-framework')
-  api project(':solr:solrj')
+  api project(':solr:solr-solrj')
   api project(':solr:solr-core')
   api project(':lucene:lucene-core')
-  api project(':lucene:codecs')
-  api project(':lucene:queries')
-  api project(':lucene:analysis:analyzers-common')
+  api project(':lucene:lucene-codecs')
+  api project(':lucene:lucene-queries')
+  api project(':lucene:analysis:lucene-analyzers-common')
   
   api ('junit:junit') { transitive = false }
   implementation ('org.apache.httpcomponents:httpclient') { transitive = false }

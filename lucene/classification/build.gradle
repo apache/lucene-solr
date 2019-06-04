@@ -20,10 +20,10 @@ apply plugin: 'java-library'
 dependencies {
   
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:queries')
-  implementation project(':lucene:grouping')
+  implementation project(':lucene:lucene-queries')
+  implementation project(':lucene:lucene-grouping')
   
   testImplementation project(':lucene:lucene-test-framework')
-  testImplementation project(':lucene:analysis:analyzers-common')
-  testImplementation project(':lucene:codecs')
+  testImplementation project(':lucene:analysis:lucene-analyzers-common')
+  testImplementation project(':lucene:lucene-codecs')
 }

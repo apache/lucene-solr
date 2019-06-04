@@ -33,10 +33,10 @@ artifacts {
 dependencies {
   
   implementation project(':solr:solr-core')
-  implementation project(':solr:solrj')
+  implementation project(':solr:solr-solrj')
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:analyzers-common')
-  implementation project(':lucene:join')
+  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-join')
   
   implementation ('org.slf4j:slf4j-api') { transitive = false }
   implementation ('com.google.guava:guava') { transitive = false }

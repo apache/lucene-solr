@@ -19,7 +19,7 @@ apply plugin: 'java-library'
 
 dependencies {
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:analyzers-common')
+  implementation project(':lucene:analysis:lucene-analyzers-common')
   
   api ('org.apache.opennlp:opennlp-tools') { transitive = false }
   

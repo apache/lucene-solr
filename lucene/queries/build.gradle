@@ -19,12 +19,12 @@ apply plugin: 'java-library'
 
 dependencies {
 	implementation project(':lucene:lucene-core')
-	implementation project(':lucene:codecs')
+	implementation project(':lucene:lucene-codecs')
 	
 	runtimeOnly 'org.antlr:antlr4-runtime'
 	runtimeOnly 'org.ow2.asm:asm'
 	runtimeOnly 'org.ow2.asm:asm-commons'
 	
 	testImplementation project(':lucene:lucene-test-framework')
-	testImplementation project(':lucene:expressions')
+	testImplementation project(':lucene:lucene-expressions')
 }    

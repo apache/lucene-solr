@@ -22,7 +22,7 @@ archivesBaseName = 'lucene-test-framework'
 dependencies {
   
 	api project(':lucene:lucene-core')
-	implementation project(':lucene:codecs')
+	implementation project(':lucene:lucene-codecs')
   
 	api ("junit:junit")
   api ('org.hamcrest:hamcrest-core')

@@ -17,7 +17,7 @@
 
 eclipse {
   project {
-    if (project.name == 'benchmark') {
+    if (project.name.equals('lucene-benchmark')) {
       resourceFilter {
         appliesTo = 'FOLDERS'
         type = 'EXCLUDE_ALL'

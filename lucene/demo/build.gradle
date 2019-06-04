@@ -20,11 +20,11 @@ apply plugin: 'java-library'
 
 dependencies {
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:facet')
-  implementation project(':lucene:queries')
-  implementation project(':lucene:analysis:analyzers-common')
-  implementation project(':lucene:queryparser')
-  implementation project(':lucene:expressions')
+  implementation project(':lucene:lucene-facet')
+  implementation project(':lucene:lucene-queries')
+  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-queryparser')
+  implementation project(':lucene:lucene-expressions')
   
   runtimeOnly ('org.antlr:antlr4-runtime') { transitive = false }
   runtimeOnly ('org.ow2.asm:asm') { transitive = false }

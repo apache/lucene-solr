@@ -22,7 +22,7 @@ archivesBaseName = 'analyzers-phonetic'
 dependencies {
   
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:analyzers-common')
+  implementation project(':lucene:analysis:lucene-analyzers-common')
   
   implementation ('commons-codec:commons-codec') { transitive = false }
   

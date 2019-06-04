@@ -70,6 +70,6 @@ dependencies {
   testImplementation project(':lucene:lucene-core')
   testImplementation project(':solr:solr-test-framework')
   testImplementation project(':lucene:lucene-test-framework')
-  testImplementation project(':lucene:analysis:analyzers-common')
-  testImplementation project(':solr:example:example-DIH')
+  testImplementation project(':lucene:analysis:lucene-analyzers-common')
+  testImplementation project(':solr:example:solr-example-DIH')
 }

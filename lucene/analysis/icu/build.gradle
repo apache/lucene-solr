@@ -26,7 +26,7 @@ configurations {
 dependencies {
   
   api project(':lucene:lucene-core')
-  api project(':lucene:analysis:analyzers-common')
+  api project(':lucene:analysis:lucene-analyzers-common')
   
   api ('com.ibm.icu:icu4j') { transitive = false }
   

@@ -22,12 +22,12 @@ def workingDir = "${projectDir}/work"
 dependencies {
   
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:analyzers-common')
-  implementation project(':lucene:facet')
-  implementation project(':lucene:highlighter')
-  implementation project(':lucene:queries')
-  implementation project(':lucene:spatial-extras')
-  implementation project(':lucene:queryparser')
+  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-facet')
+  implementation project(':lucene:lucene-highlighter')
+  implementation project(':lucene:lucene-queries')
+  implementation project(':lucene:lucene-spatial-extras')
+  implementation project(':lucene:lucene-queryparser')
   
   implementation ("org.apache.commons:commons-compress") { transitive = false }
   implementation ("xerces:xercesImpl") { transitive = false }

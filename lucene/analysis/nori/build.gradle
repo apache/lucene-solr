@@ -25,7 +25,7 @@ configurations {
 
 dependencies {
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:analyzers-common')
+  implementation project(':lucene:analysis:lucene-analyzers-common')
   
   tools ('com.ibm.icu:icu4j') { transitive = false }
   

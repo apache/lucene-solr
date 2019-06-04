@@ -33,9 +33,9 @@ artifacts {
 dependencies {
   
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:codecs')
-  implementation project(':lucene:queries')
-  implementation project(':lucene:sandbox')
+  implementation project(':lucene:lucene-codecs')
+  implementation project(':lucene:lucene-queries')
+  implementation project(':lucene:lucene-sandbox')
   
   testImplementation project(':lucene:lucene-test-framework')
   
