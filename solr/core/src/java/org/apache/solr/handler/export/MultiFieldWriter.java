@@ -60,7 +60,7 @@ class MultiFieldWriter extends FieldWriter {
       if (!vals.advanceExact(sortDoc.docId)) return false;
       out.put(this.field,
           (IteratorWriter) w -> {
-            for (int i = 0; i < vals.docValueCount(); i++) {
+            for (int i = 0, count = vals.docValueCount(); i < count; i++) {
               w.add(bitsToValue.apply(vals.nextValue()));
             }
           });

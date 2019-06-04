@@ -49,7 +49,7 @@ public class SortedDateStatsValues implements StatsValues {
     if (!sndv.advanceExact(docId)) {
       missing();
     } else {
-      for (int i = 0 ; i < sndv.docValueCount(); i++) {
+      for (int i = 0, count = sndv.docValueCount(); i < count; i++) {
         dsv.accumulate(new Date(sndv.nextValue()), 1);
       }
     }

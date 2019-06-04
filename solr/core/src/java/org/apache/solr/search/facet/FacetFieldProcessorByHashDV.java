@@ -387,7 +387,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
             if (values.advanceExact(segDoc)) {
               long l = values.nextValue(); // This document must have at least one value
               collectValFirstPhase(segDoc, l);
-              for (int i = 1; i < values.docValueCount(); i++) {
+              for (int i = 1, count = values.docValueCount(); i < count; i++) {
                 long lnew = values.nextValue();
                 if (lnew != l) { // Skip the value if it's equal to the last one, we don't want to double-count it
                   collectValFirstPhase(segDoc, lnew);

@@ -254,7 +254,7 @@ public class UniqueAgg extends StrAggValueSource {
 
     @Override
     protected void collectValues(int doc, LongSet set) throws IOException {
-      for (int i = 0; i < values.docValueCount(); i++) {
+      for (int i = 0, count = values.docValueCount(); i < count; i++) {
         // duplicates may be produced for a single doc, but won't matter here.
         set.add(values.nextValue());
       }

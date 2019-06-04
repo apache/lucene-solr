@@ -200,7 +200,7 @@ public final class JoinUtil {
         @Override
         public void collect(int doc) throws IOException {
           if (sortedNumericDocValues.advanceExact(doc)) {
-            for (int i = 0; i < sortedNumericDocValues.docValueCount(); i++) {
+            for (int i = 0, count = sortedNumericDocValues.docValueCount(); i < count; i++) {
               long value = sortedNumericDocValues.nextValue();
               joinValues.add(value);
               if (needsScore) {
