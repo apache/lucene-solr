@@ -20,9 +20,9 @@ apply plugin: 'java-library'
 dependencies {
   
   implementation project(':solr:solr-core')
-  implementation project(':solr:solrj')
+  implementation project(':solr:solr-solrj')
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:analyzers-common')
+  implementation project(':lucene:analysis:lucene-analyzers-common')
   
   implementation ('io.prometheus:simpleclient') { transitive = false }
   implementation ('io.prometheus:simpleclient_common') { transitive = false }

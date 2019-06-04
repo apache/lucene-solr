@@ -20,11 +20,11 @@ apply plugin: 'java-library'
 dependencies {
   
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:queries')
-  implementation project(':lucene:memory')
+  implementation project(':lucene:lucene-queries')
+  implementation project(':lucene:lucene-memory')
   
   testImplementation project(':lucene:lucene-test-framework')
-  testImplementation project(':lucene:analysis:analyzers-common')
+  testImplementation project(':lucene:analysis:lucene-analyzers-common')
 }
 
 ratSources {

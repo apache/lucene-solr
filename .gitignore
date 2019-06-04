@@ -1,6 +1,5 @@
 # .
-/eclipse-build
-build-eclipse
+eclipse-build
 /maven-build
 /classes
 build
