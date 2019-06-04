@@ -43,6 +43,7 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -938,6 +939,14 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     final BytesRef term;
     long ord = -1;
 
+    // Fields holding the result of the last search: term found, index and block reached, file pointer in the index input.
+    final BytesRefBuilder lastTerm;
+    long lastTermIndex = -1;
+    long lastTermBlock = -1;
+    long lastTermEndFP;
+    boolean isAfterLastTerm;
+    final BytesRefBuilder nextBlockFirstTerm;
+
     TermsDict(TermsDictEntry entry, IndexInput data) throws IOException {
       this.entry = entry;
       RandomAccessInput addressesSlice = data.randomAccessSlice(entry.termsAddressesOffset, entry.termsAddressesLength);
@@ -948,16 +957,20 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       indexAddresses = DirectMonotonicReader.getInstance(entry.termsIndexAddressesMeta, indexAddressesSlice);
       indexBytes = data.slice("terms-index", entry.termsIndexOffset, entry.termsIndexLength);
       term = new BytesRef(entry.maxTermLength);
+      lastTerm = new BytesRefBuilder();
+      nextBlockFirstTerm = new BytesRefBuilder();
     }
 
     @Override
     public BytesRef next() throws IOException {
       if (++ord >= entry.termsDictSize) {
+        clearLastTermBlock();
         return null;
       }
       if ((ord & blockMask) == 0L) {
         term.length = bytes.readVInt();
         bytes.readBytes(term.bytes, 0, term.length);
+        clearLastTermBlock();
       } else {
         final int token = Byte.toUnsignedInt(bytes.readByte());
         int prefixLength = token & 0x0F;
@@ -970,6 +983,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         }
         term.length = prefixLength + suffixLength;
         bytes.readBytes(term.bytes, prefixLength, suffixLength);
+        updateLastTerm();
       }
       return term;
     }
@@ -980,12 +994,21 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         throw new IndexOutOfBoundsException();
       }
       final long blockIndex = ord >>> entry.termsDictBlockShift;
-      final long blockAddress = blockAddresses.get(blockIndex);
-      bytes.seek(blockAddress);
-      this.ord = (blockIndex << entry.termsDictBlockShift) - 1;
-      do {
+      if (blockIndex == this.lastTermBlock && ord >= this.ord) {
+        // We lookup a term ordinal that is located in the rest of the current block (the block reached by the last lookup).
+        // Restore the file pointer and the term as they were after the last lookup. This way we avoid scanning the block
+        // from the beginning and decoding the terms sequentially up to the last reached term.
+        continueFromLastTerm();
+      } else {
+        // We have to scan and decode the terms sequentially up to the right ordinal (terms are delta encoded in the block).
+        final long blockAddress = blockAddresses.get(blockIndex);
+        bytes.seek(blockAddress);
+        this.ord = (blockIndex << entry.termsDictBlockShift) - 1;
+        updateLastTermBlock(blockIndex, -1);
+      }
+      while (this.ord < ord) {
         next();
-      } while (this.ord < ord);
+      }
     }
 
     private BytesRef getTermFromIndex(long index) throws IOException {
@@ -998,8 +1021,10 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     }
 
     private long seekTermsIndex(BytesRef text) throws IOException {
-      long lo = 0L;
-      long hi = (entry.termsDictSize - 1) >>> entry.termsDictIndexShift;
+      // If index of the last search has been recorded, then use it to reduce the binary search range.
+      long maxIndex = (entry.termsDictSize - 1) >>> entry.termsDictIndexShift;
+      long lo = lastTermIndex != -1 && isAfterLastTerm ? lastTermIndex : 0L;
+      long hi = lastTermIndex != -1 && !isAfterLastTerm ? lastTermIndex : maxIndex;
       while (lo <= hi) {
         final long mid = (lo + hi) >>> 1;
         getTermFromIndex(mid);
@@ -1012,7 +1037,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       }
 
       assert hi < 0 || getTermFromIndex(hi).compareTo(text) <= 0;
-      assert hi == ((entry.termsDictSize - 1) >>> entry.termsDictIndexShift) || getTermFromIndex(hi + 1).compareTo(text) > 0;
+      assert hi == maxIndex || getTermFromIndex(hi + 1).compareTo(text) > 0;
 
       return hi;
     }
@@ -1029,6 +1054,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     private long seekBlock(BytesRef text) throws IOException {
       long index = seekTermsIndex(text);
       if (index == -1L) {
+        clearLastTermBlock();
         return -1L;
       }
 
@@ -1052,32 +1078,85 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       assert blockHi < 0 || getFirstTermFromBlock(blockHi).compareTo(text) <= 0;
       assert blockHi == ((entry.termsDictSize - 1) >>> entry.termsDictBlockShift) || getFirstTermFromBlock(blockHi + 1).compareTo(text) > 0;
 
+      updateLastTermBlock(blockHi, index);
       return blockHi;
     }
 
     @Override
     public SeekStatus seekCeil(BytesRef text) throws IOException {
-      final long block = seekBlock(text);
-      if (block == -1) {
-        // before the first term
-        seekExact(0L);
-        return SeekStatus.NOT_FOUND;
+      boolean shouldContinueFromLastTerm = false;
+      assert lastTermIndex == -1 || lastTermBlock != -1;
+      if (lastTermBlock != -1) {
+        isAfterLastTerm = text.compareTo(lastTerm.get()) >= 0;
+        long maxBlock = (entry.termsDictSize - 1) >>> entry.termsDictBlockShift;
+        assert lastTermBlock <= maxBlock;
+        shouldContinueFromLastTerm = isAfterLastTerm && (lastTermBlock == maxBlock || text.compareTo(getNextBlockFirstTerm()) < 0);
       }
-      final long blockAddress = blockAddresses.get(block);
-      this.ord = block << entry.termsDictBlockShift;
-      bytes.seek(blockAddress);
-      term.length = bytes.readVInt();
-      bytes.readBytes(term.bytes, 0, term.length);
+      if (shouldContinueFromLastTerm) {
+        // We search a term that may only be located in the rest of the current block (the block reached by the last search).
+        // Restore the file pointer and the term as they were after the last search. This way we avoid scanning the block
+        // from the beginning and decoding the terms sequentially up to the last reached term.
+        continueFromLastTerm();
+      } else {
+        // We have to seek the right block, and then scan and decode the terms sequentially up to the searched term (terms
+        // are delta encoded in the block).
+        final long block = seekBlock(text);
+        if (block == -1) {
+          // before the first term
+          seekExact(0L);
+          return SeekStatus.NOT_FOUND;
+        }
+        final long blockAddress = blockAddresses.get(block);
+        this.ord = block << entry.termsDictBlockShift;
+        bytes.seek(blockAddress);
+        term.length = bytes.readVInt();
+        bytes.readBytes(term.bytes, 0, term.length);
+      }
       while (true) {
         int cmp = term.compareTo(text);
         if (cmp == 0) {
+          updateLastTerm();
           return SeekStatus.FOUND;
         } else if (cmp > 0) {
+          updateLastTerm();
           return SeekStatus.NOT_FOUND;
         }
         if (next() == null) {
           return SeekStatus.END;
         }
+      }
+    }
+
+    private void updateLastTermBlock(long block, long index) {
+      assert block >= -1 && block <= (entry.termsDictSize - 1) >>> entry.termsDictBlockShift;
+      assert index >= -1 && index <= (entry.termsDictSize - 1) >>> entry.termsDictIndexShift;
+      this.lastTermBlock = block;
+      this.lastTermIndex = block == -1 ? -1 : index;
+      nextBlockFirstTerm.clear();
+    }
+
+    private void clearLastTermBlock() {
+      updateLastTermBlock(-1, -1);
+    }
+
+    private void updateLastTerm() {
+      lastTerm.copyBytes(term);
+      lastTermEndFP = bytes.getFilePointer();
+    }
+
+    private BytesRef getNextBlockFirstTerm() throws IOException {
+      if (nextBlockFirstTerm.length() == 0) {
+        nextBlockFirstTerm.copyBytes(getFirstTermFromBlock(lastTermBlock + 1));
+      }
+      return nextBlockFirstTerm.get();
+    }
+
+    private void continueFromLastTerm() throws IOException {
+      bytes.seek(lastTermEndFP);
+      if (!term.equals(lastTerm.get())) {
+        System.arraycopy(lastTerm.get().bytes, 0, term.bytes, 0, lastTerm.length());
+        term.length = lastTerm.length();
+        assert term.offset == 0;
       }
     }
 
