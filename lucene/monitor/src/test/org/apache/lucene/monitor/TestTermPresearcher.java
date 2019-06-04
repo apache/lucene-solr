@@ -133,7 +133,9 @@ public class TestTermPresearcher extends PresearcherTestBase {
         mindex.addField("f", "this is a test document", WHITESPACE);
         LeafReader docsReader = (LeafReader) mindex.createSearcher().getIndexReader();
 
-        BooleanQuery q = (BooleanQuery) presearcher.buildQuery(docsReader, (s, b) -> b.bytesEquals(new BytesRef("test")));
+        QueryIndex.QueryTermFilter termFilter = new QueryIndex.QueryTermFilter(reader);
+
+        BooleanQuery q = (BooleanQuery) presearcher.buildQuery(docsReader, termFilter);
         BooleanQuery expected = new BooleanQuery.Builder()
             .add(should(new BooleanQuery.Builder()
                 .add(should(new TermInSetQuery("f", new BytesRef("test")))).build()))

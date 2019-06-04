@@ -55,6 +55,7 @@
     <module>join</module>
     <module>memory</module>
     <module>misc</module>
+    <module>monitor</module>
     <module>queries</module>
     <module>queryparser</module>
     <module>replicator</module>
