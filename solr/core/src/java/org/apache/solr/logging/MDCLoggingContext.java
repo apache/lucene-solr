@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -37,6 +38,7 @@ import org.slf4j.MDC;
  * {@link #setCoreDescriptor(CoreContainer, CoreDescriptor)} and then {@link #clear()} in a finally block.
  */
 public class MDCLoggingContext {
+  public static final String TRACE_ID = "trace_id";
   // When a thread sets context and finds that the context is already set, we should noop and ignore the finally clear
   private static ThreadLocal<Integer> CALL_DEPTH = ThreadLocal.withInitial(new Supplier<Integer>() {
     @Override
@@ -50,6 +52,14 @@ public class MDCLoggingContext {
       MDC.put(COLLECTION_PROP, "c:" + collection);
     } else {
       MDC.remove(COLLECTION_PROP);
+    }
+  }
+
+  public static void setTracerId(String traceId) {
+    if (!StringUtils.isEmpty(traceId)) {
+      MDC.put(TRACE_ID, "t:" + traceId);
+    } else {
+      MDC.remove(TRACE_ID);
     }
   }
   
@@ -151,6 +161,7 @@ public class MDCLoggingContext {
     MDC.remove(REPLICA_PROP);
     MDC.remove(SHARD_ID_PROP);
     MDC.remove(NODE_NAME_PROP);
+    MDC.remove(TRACE_ID);
   }
   
   public static void reset() {

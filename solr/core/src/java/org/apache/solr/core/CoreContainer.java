@@ -617,8 +617,11 @@ public class CoreContainer {
     hostName = cfg.getNodeName();
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
-    if(isZooKeeperAware())  pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
-        (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
+    if(isZooKeeperAware())  {
+      pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
+          (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
+      TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
+    }
 
     MDCLoggingContext.setNode(this);
 

@@ -265,7 +265,7 @@ Here is an example for configuring the default `log4j2.xml` which ships in Solr.
         filePattern="${sys:solr.log.dir}/solr_metrics.log.%i" >
       <PatternLayout>
         <Pattern>
-          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core}] %m%n
+          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core} %X{trace_id}] %m%n
         </Pattern>
       </PatternLayout>
       <Policies>

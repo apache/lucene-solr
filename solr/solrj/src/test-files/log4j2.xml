@@ -21,7 +21,7 @@
     <Console name="STDERR" target="SYSTEM_ERR">
       <PatternLayout>
         <Pattern>
-          %maxLen{%-4r %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%notEmpty{
+          %maxLen{%-4r %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core} %X{trace_id}] %c{1.} %m%notEmpty{
           =>%ex{short}}}{10240}%n
         </Pattern>
       </PatternLayout>
