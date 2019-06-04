@@ -465,7 +465,7 @@ public class Http2SolrClient extends SolrClient {
     setBasicAuthHeader(solrRequest, req);
     for (HttpListenerFactory factory : listenerFactory) {
       HttpListenerFactory.RequestResponseListener listener = factory.get();
-      req.onRequestQueued(listener);
+      listener.onQueued(req);
       req.onRequestBegin(listener);
       req.onComplete(listener);
     }
