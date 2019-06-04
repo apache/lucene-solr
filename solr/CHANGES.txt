@@ -114,6 +114,8 @@ New Features
 * SOLR-13329: In autoscaling policies, use an explicit 'put : on-each'
   to specify the the rules is applied on each node  (noble)
 
+* SOLR-13434: OpenTracing support for Solr (Cao Manh Dat)
+
 Bug Fixes
 ----------------------
 
