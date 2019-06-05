@@ -51,6 +51,8 @@ New Features
 
 Bug Fixes
 
+* LUCENE-8831: Fixed LatLonShapeBoundingBoxQuery .hashCode methods. (Ignacio Vera)
+
 * LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
   This causes assertion errors and potentially broken field attributes in the IndexWriter when
   IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer)
