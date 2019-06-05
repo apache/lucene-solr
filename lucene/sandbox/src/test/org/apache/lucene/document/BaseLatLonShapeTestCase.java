@@ -123,6 +123,13 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     return new Line(lats, lons);
   }
 
+  public static Circle nextCircle() {
+    double lat = GeoTestUtil.nextLatitude();
+    double lon = GeoTestUtil.nextLongitude();
+    double distance = randomIntBetween(1, (int)Circle.MAXRADIUS);
+    return new Circle(lat, lon, distance);
+  }
+
   /**
    * return a semi-random line used for queries
    *
@@ -245,6 +252,34 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
   /** factory method to create a new polygon query */
   protected Query newDistanceQuery(String field, QueryRelation queryRelation, Circle circle) {
     return LatLonShape.newDistanceQuery(field, queryRelation, circle);
+  }
+
+  public void testDistanceQueryEqualsAndHashcode() {
+    Circle circle = nextCircle();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    String fieldName = "foo";
+    Query q1 = newDistanceQuery(fieldName, queryRelation, circle);
+    Query q2 = newDistanceQuery(fieldName, queryRelation, circle);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newDistanceQuery("bar", queryRelation, circle);
+    QueryUtils.checkUnequal(q1, q3);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), POINT_LINE_RELATIONS);
+    Query q4 = newDistanceQuery(fieldName, newQueryRelation, circle);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    //different shape
+    Circle newCircle = nextCircle();
+    Query q5 = newDistanceQuery(fieldName, queryRelation, newCircle);
+    if (circle.equals(newCircle)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
   }
 
   // A particularly tricky adversary for BKD tree:

@@ -30,10 +30,12 @@ import org.apache.lucene.util.NumericUtils;
  *  @lucene.experimental
  **/
 final class LatLonShapeDistanceQuery extends LatLonShapeQuery {
+  final Circle circle;
   final Circle2D circle2D;
 
   public LatLonShapeDistanceQuery(String field, LatLonShape.QueryRelation queryRelation, Circle circle) {
     super(field, queryRelation);
+    this.circle = circle;
     this.circle2D = Circle2D.create(circle);
   }
 
@@ -68,13 +70,13 @@ final class LatLonShapeDistanceQuery extends LatLonShapeQuery {
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && circle2D.equals(((LatLonShapeDistanceQuery)o).circle2D);
+    return super.equalsTo(o) && circle.equals(((LatLonShapeDistanceQuery)o).circle);
   }
 
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash = 31 * hash + circle2D.hashCode();
+    hash = 31 * hash + circle.hashCode();
     return hash;
   }
 
@@ -88,7 +90,7 @@ final class LatLonShapeDistanceQuery extends LatLonShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append(circle2D.toString());
+    sb.append(circle.toString());
     return sb.toString();
   }
 }

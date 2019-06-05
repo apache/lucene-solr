@@ -156,29 +156,4 @@ public class Circle2D {
     }
     return false;
   }
-
-  @Override
-  public boolean equals(Object o) {
-    Circle2D other = (Circle2D)o;
-    return lon == other.lon && lat == other.lat && distance == other.distance;
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = super.hashCode();
-    hash = 31 * hash + Double.hashCode(lat);
-    hash = 31 * hash + Double.hashCode(lon);
-    hash = 31 * hash + Double.hashCode(distance);
-    return hash;
-  }
-
-  @Override
-  public String toString() {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("Circle(lat=" + lat);
-    sb.append(", lon=" + lon);
-    sb.append(", distance=" + distance);
-    sb.append(")");
-    return sb.toString();
-  }
 }
