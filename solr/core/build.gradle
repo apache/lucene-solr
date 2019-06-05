@@ -120,10 +120,10 @@ dependencies {
   implementation ('org.apache.curator:curator-recipes') {
     exclude group: '*', module: '*' // brings in a lot we don't use
   }
-  implementation ('org.apache.kerby:kerb-core') 
-  implementation ('org.apache.kerby:kerb-util') 
-  implementation ('org.apache.kerby:kerby-asn1') 
-  implementation ('org.apache.kerby:kerby-pkix') 
+  implementation ('org.apache.kerby:kerb-core')
+  implementation ('org.apache.kerby:kerb-util')
+  implementation ('org.apache.kerby:kerby-asn1')
+  implementation ('org.apache.kerby:kerby-pkix')
   
   implementation ('com.tdunning:t-digest')
   implementation ('org.apache.calcite:calcite-core') {

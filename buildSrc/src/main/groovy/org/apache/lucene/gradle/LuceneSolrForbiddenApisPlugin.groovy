@@ -44,9 +44,8 @@ class LuceneSolrForbiddenApisPlugin implements Plugin<Project> {
       if (project.group ==~ /.*?\.lucene(?:\.\w+)?/) {
         task.signaturesURLs += getClass().getResource('/forbidden/lucene.txt')
       } else if (project.group ==~ /.*?\.solr(?:\.\w+)?/) {
-        task.signaturesURLs += getClass().getResource((project.name == 'solrj') ? '/forbidden/solrj.txt' : '/forbidden/solr.txt')
+        task.signaturesURLs += getClass().getResource((project.name == 'solr-solrj') ? '/forbidden/solrj.txt' : '/forbidden/solr.txt')
         
-
         task.doFirst{
           task.bundledSignatures += [ 'commons-io-unsafe-' + project.getVersion("commons-io:commons-io") ]
           
