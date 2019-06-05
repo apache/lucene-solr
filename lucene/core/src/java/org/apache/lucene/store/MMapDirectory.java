@@ -231,6 +231,10 @@ public class MMapDirectory extends FSDirectory {
   /** Creates an IndexInput for the file with the given name. */
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
+    return openInput(name, context, this.preload);
+  }
+
+  protected IndexInput openInput(String name, IOContext context, boolean preload) throws IOException {
     ensureOpen();
     ensureCanRead(name);
     Path path = directory.resolve(name);
@@ -238,13 +242,13 @@ public class MMapDirectory extends FSDirectory {
       final String resourceDescription = "MMapIndexInput(path=\"" + path.toString() + "\")";
       final boolean useUnmap = getUseUnmap();
       return ByteBufferIndexInput.newInstance(resourceDescription,
-          map(resourceDescription, c, 0, c.size()), 
+          map(resourceDescription, c, 0, c.size(), preload),
           c.size(), chunkSizePower, new ByteBufferGuard(resourceDescription, useUnmap ? CLEANER : null));
     }
   }
 
   /** Maps a file into a set of buffers */
-  final ByteBuffer[] map(String resourceDescription, FileChannel fc, long offset, long length) throws IOException {
+  final ByteBuffer[] map(String resourceDescription, FileChannel fc, long offset, long length, boolean preload) throws IOException {
     if ((length >>> chunkSizePower) >= Integer.MAX_VALUE)
       throw new IllegalArgumentException("RandomAccessFile too big for chunk size: " + resourceDescription);
     
