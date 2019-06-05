@@ -40,11 +40,7 @@ class JarChecksum extends DefaultTask {
   @Inject
   public JarChecksum(File inputDir,  File target) {
     
-    
     doLast({
-      File tmpDir = File.createTempDir()
-      tmpDir.deleteOnExit()
-      tmpDir.mkdirs()
       
       Set<File> deps = new HashSet<>()
       project.allprojects.each { p ->
@@ -62,15 +58,6 @@ class JarChecksum extends DefaultTask {
               }
             }
             deps = deps - ourJars
-            
-            // copy files to tmp dir
-            deps.each {
-              def file = it
-              File destFile = new File(tmpDir, file.name)
-              if (file.name.endsWith(".jar") && file.exists() && !destFile.exists()) {
-                Files.copy(file.toPath(), destFile.toPath())
-              }
-            }
           }
         }
       }
@@ -78,10 +65,12 @@ class JarChecksum extends DefaultTask {
       project.delete project.fileTree(dir: target.getAbsolutePath(), include: '**/*.jar.sha1')
       
       ant.checksum(algorithm: "SHA1", fileext: ".sha1", todir: target.getAbsolutePath()) {
-        ant.fileset(dir: tmpDir.getAbsolutePath())
+        for (File file : deps) {
+          if (file.getName().endsWith(".jar")) {
+            ant.fileset(file: file.getAbsolutePath())
+          }
+        }
       }
-      
-      project.delete(tmpDir)
       
       ant.fixcrlf(srcdir: target.getAbsolutePath(), includes: "**/*.jar.sha1", eol: "lf", fixlast: "true", encoding: "US-ASCII")
       
