@@ -50,7 +50,6 @@ configure(luceneSolrProjects) {
   
   apply plugin: 'idea'
   apply plugin: 'eclipse'
-  apply plugin: 'maven-publish'
   
   task ratSources(type: org.apache.lucene.gradle.RatSources) {
     group = 'Verification'
@@ -123,11 +122,13 @@ configure(luceneSolrSubProjects) {
     }
     
     // configure maven
-    publishing {
-      publications {
-        mavenJava(MavenPublication) {
-          from components.java
-          artifact tasks.sourceJar
+    if (project.getPlugins().hasPlugin('publish-maven')) {
+      publishing {
+        publications {
+          mavenJava(MavenPublication) {
+            from components.java
+            artifact tasks.sourceJar
+          }
         }
       }
     }
