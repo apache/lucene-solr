@@ -90,8 +90,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   private static final String parent = "parent_s";
   private static final String type = "type_s";
 
+  private final static AtomicInteger counter = new AtomicInteger();
   private static ExecutorService exe;
-  private static AtomicInteger counter = new AtomicInteger();
   private static boolean cachedMode;
 
   private static XMLInputFactory inputFactory;
@@ -117,7 +117,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     rarely() ? ExecutorUtil.newMDCAwareFixedThreadPool(atLeast(2), new DefaultSolrThreadFactory("AddBlockUpdateTest")) : ExecutorUtil
         .newMDCAwareCachedThreadPool(new DefaultSolrThreadFactory("AddBlockUpdateTest"));
 
-
+    counter.set(0);
     initCore("solrconfig.xml", "schema15.xml");
   }
 
@@ -157,7 +157,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
     exe = null;
     inputFactory = null;
-    counter = null;
   }
 
   @Test

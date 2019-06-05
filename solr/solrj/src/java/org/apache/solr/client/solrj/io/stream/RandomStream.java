@@ -66,6 +66,10 @@ public class RandomStream extends TupleStream implements Expressible  {
   protected transient CloudSolrClient cloudSolrClient;
   private Iterator<SolrDocument> documentIterator;
 
+  public RandomStream() {
+    // Used by the RandomFacade
+  }
+
   public RandomStream(String zkHost,
                       String collection,
                      Map<String, String> props) throws IOException {
@@ -116,7 +120,7 @@ public class RandomStream extends TupleStream implements Expressible  {
     init(zkHost, collectionName, params);
   }
 
-  private void init(String zkHost, String collection, Map<String, String> props) throws IOException {
+  void init(String zkHost, String collection, Map<String, String> props) throws IOException {
     this.zkHost  = zkHost;
     this.props   = props;
     this.collection = collection;

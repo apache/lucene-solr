@@ -62,7 +62,7 @@ public class TestSimDistribStateManager extends SolrTestCaseJ4 {
     if (simulated) {
       root = SimDistribStateManager.createNewRootNode();
     } else {
-      zkTestServer = new ZkTestServer(createTempDir("zkDir").toString());
+      zkTestServer = new ZkTestServer(createTempDir("zkDir"));
       zkTestServer.run();
     }
     reInit();

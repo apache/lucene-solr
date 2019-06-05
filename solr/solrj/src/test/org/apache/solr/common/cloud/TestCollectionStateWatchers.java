@@ -32,9 +32,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,34 +42,26 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int CLUSTER_SIZE = 4;
-
-  private static final ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("backgroundWatchers");
-
   private static final int MAX_WAIT_TIMEOUT = 30;
 
-  @BeforeClass
-  public static void startCluster() throws Exception {
-
-  }
-
-  @AfterClass
-  public static void shutdownBackgroundExecutors() {
-    executor.shutdown();
-  }
+  private ExecutorService executor = null;
 
   @Before
   public void prepareCluster() throws Exception {
     configureCluster(CLUSTER_SIZE)
     .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
     .configure();
+    executor = ExecutorUtil.newMDCAwareCachedThreadPool("backgroundWatchers");
   }
   
   @After
   public void tearDownCluster() throws Exception {
+    executor.shutdown();
     shutdownCluster();
+    executor = null;
   }
 
-  private static Future<Boolean> waitInBackground(String collection, long timeout, TimeUnit unit,
+  private Future<Boolean> waitInBackground(String collection, long timeout, TimeUnit unit,
                                                   CollectionStatePredicate predicate) {
     return executor.submit(() -> {
       try {
@@ -83,7 +73,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     });
   }
 
-  private static void waitFor(String message, long timeout, TimeUnit unit, Callable<Boolean> predicate)
+  private void waitFor(String message, long timeout, TimeUnit unit, Callable<Boolean> predicate)
       throws InterruptedException, ExecutionException {
     Future<Boolean> future = executor.submit(() -> {
       try {
