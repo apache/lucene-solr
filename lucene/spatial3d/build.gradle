@@ -16,6 +16,7 @@
  */
 
 apply plugin: 'java-library'
+apply plugin: org.apache.lucene.gradle.PartOfDist
 
 task jarTest (type: Jar) {
   from sourceSets.test.output

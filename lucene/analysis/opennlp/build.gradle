@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 apply plugin: 'java-library'
+apply plugin: org.apache.lucene.gradle.PartOfDist
 
 dependencies {
   implementation project(':lucene:lucene-core')
