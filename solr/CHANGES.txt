@@ -132,6 +132,9 @@ Bug Fixes
 
 * SOLR-12249: Better error message when grouping on a tokenized (non SortableText) field in SolrCloud (Erick Erickson)
 
+* SOLR-13521: Fix input parameter handling in SchemaRequest.DynamicField and SchemaRequest.FieldTypes (Schema API)
+  (Tomás Fernández Löbbe)
+
 Other Changes
 ----------------------
 

@@ -243,7 +243,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     public DynamicField(String dynamicFieldName, SolrParams q) {
-      super(METHOD.GET, "/schema/dynamicfields/" + dynamicFieldName);
+      super(METHOD.GET, "/schema/dynamicfields/" + dynamicFieldName, q);
     }
 
     @Override
@@ -262,7 +262,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
 
     public FieldTypes(SolrParams q) {
-      super(METHOD.GET, "/schema/fieldtypes");
+      super(METHOD.GET, "/schema/fieldtypes", q);
     }
 
     @Override
