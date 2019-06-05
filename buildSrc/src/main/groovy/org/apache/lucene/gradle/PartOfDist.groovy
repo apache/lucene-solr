@@ -1,3 +1,4 @@
+package org.apache.lucene.gradle
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,14 +16,15 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
-apply plugin: org.apache.lucene.gradle.PartOfDist
+import de.thetaphi.forbiddenapis.gradle.CheckForbiddenApis
+import de.thetaphi.forbiddenapis.gradle.ForbiddenApisPlugin
+import org.gradle.api.Plugin
+import org.gradle.api.Project
 
-archivesBaseName = 'codecs'
+class PartOfDist implements Plugin<Project> {
 
-dependencies {
+
+  @Override
+  void apply(Project project) {}
   
-    implementation project(':lucene:lucene-core')
-    
-    testImplementation project(':lucene:lucene-test-framework')
 }
