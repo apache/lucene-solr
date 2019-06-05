@@ -22,11 +22,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Locale;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
 
-public class TransactionLogTest extends LuceneTestCase {
+public class TransactionLogTest extends SolrTestCase {
 
   @Test
   public void testBigLastAddSize() {

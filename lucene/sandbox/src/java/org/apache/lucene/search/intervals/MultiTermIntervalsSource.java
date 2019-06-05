@@ -19,16 +19,17 @@ package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
@@ -89,13 +90,18 @@ class MultiTermIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public void extractTerms(String field, Set<Term> terms) {
+  public void visit(String field, QueryVisitor visitor) {
 
   }
 
   @Override
   public int minExtent() {
     return 1;
+  }
+
+  @Override
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    return Collections.singleton(this);
   }
 
   @Override

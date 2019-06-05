@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 /**
@@ -34,7 +34,7 @@ import org.junit.Test;
  * @see org.apache.solr.search.QParserPlugin#standardPlugins
  *
  */
-public class TestStandardQParsers extends LuceneTestCase {
+public class TestStandardQParsers extends SolrTestCase {
   /**
    * Field name of constant mandatory for query parser plugin.
    */

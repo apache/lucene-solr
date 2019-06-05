@@ -81,7 +81,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
 
   /** Service to execute all parallel work 
    * @see #NUM_THREADS
@@ -136,6 +136,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
+    CLIENTS.clear();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       assertNotNull("Cluster contains null jetty?", jetty);
       final URL baseUrl = jetty.getBaseUrl();
@@ -167,7 +168,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       }
       IOUtils.closeQuietly(client);
     }
-    CLIENTS = null;
+    CLIENTS.clear();
   }
   
   @Before

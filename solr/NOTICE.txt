@@ -591,3 +591,16 @@ Apache Commons Codec project. http://commons.apache.org/proper/commons-codec/
 
 JSON processing in this software was derived from the JSON.simple toolkit.
 https://code.google.com/p/json-simple/
+
+=========================================================================
+==         noggit notice                                               ==
+=========================================================================
+
+noggit
+
+Copyright 2006- Yonik Seeley
+
+Noggit is a  fast streaming JSON parser for java. The code is included
+into Solr codebase.
+
+https://github.com/yonik/noggit

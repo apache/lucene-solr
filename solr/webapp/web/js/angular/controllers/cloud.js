@@ -107,6 +107,10 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
+function coreNameToLabel(name) {
+  return name.replace(/(.*?)_shard((\d+_?)+)_replica_?[ntp]?(\d+)/, '\$1_s\$2r\$4');
+}
+
 var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
@@ -160,6 +164,17 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     return nodesInHost[0] === node;
   };
   
+  // Returns the first live node for this host, to make sure we pick host-level metrics from a live node
+  $scope.firstLiveNodeForHost = function(key) {
+    var hostName = key.split(":")[0]; 
+    var liveNodesInHost = $scope.filteredNodes.filter(function (key) {
+      return key.startsWith(hostName);
+    }).filter(function (key) {
+      return $scope.live_nodes.includes(key);
+    });
+    return liveNodesInHost.length > 0 ? liveNodesInHost[0] : key; 
+  };
+
   // Initializes the cluster state, list of nodes, collections etc
   $scope.initClusterState = function() {
     var nodes = {};
@@ -183,6 +198,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
           for (var replicaName in replicas) {
             var core = replicas[replicaName];
             core.name = replicaName;
+            core.label = coreNameToLabel(core['core']);
             core.collection = collection.name;
             core.shard = shard.name;
             core.shard_state = shard.state;
@@ -320,7 +336,15 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
         nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
       }
     }
-    nodesParam = nodesToShow.join(',');
+    nodesParam = nodesToShow.filter(function (node) {
+      return live_nodes.includes(node); 
+    }).join(',');
+    var deadNodes = nodesToShow.filter(function (node) {
+      return !live_nodes.includes(node);
+    });
+    deadNodes.forEach(function (node) {
+      nodes[node]['dead'] = true;
+    });
     $scope.nextEnabled = $scope.from + pageSize < filteredHosts.length;
     $scope.prevEnabled = $scope.from - pageSize >= 0;
     nodesToShow.sort();
@@ -410,7 +434,6 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
-                  core['label'] = core['core'].replace(/(.*?)_shard((\d+_?)+)_replica_?[ntp]?(\d+)/, '\$1_s\$2r\$4');
                   if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
                     // If core state is not active, display the real state, or if shard is inactive, display that
                     var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];
@@ -708,7 +731,9 @@ var graphSubController = function ($scope, Zookeeper) {
                                 name: shard_status == "shard-inactive" ? s + ' (inactive)' : s,
                                 data: {
                                     type: 'shard',
-                                    state: shard_status
+                                    state: shard_status,
+                                    range: state[c].shards[s].range
+
                                 },
                                 children: nodes
                             };
@@ -718,13 +743,20 @@ var graphSubController = function ($scope, Zookeeper) {
                         var collection = {
                             name: c,
                             data: {
-                                type: 'collection'
+                                type: 'collection',
+                                pullReplicas: state[c].pullReplicas,
+                                replicationFactor: state[c].replicationFactor,
+                                router: state[c].router.name,
+                                maxShardsPerNode: state[c].maxShardsPerNode,
+                                autoAddReplicas: state[c].autoAddReplicas,
+                                nrtReplicas: state[c].nrtReplicas,
+                                tlogReplicas: state[c].tlogReplicas,
+                                numShards: shards.length
                             },
                             children: shards
                         };
                         graph_data.children.push(collection);
                     }
-
                     $scope.helperData.protocol = $.unique($scope.helperData.protocol);
                     $scope.helperData.host = $.unique($scope.helperData.host);
                     $scope.helperData.hostname = $.unique($scope.helperData.hostname);
@@ -821,21 +853,44 @@ solrAdminApp.directive('graph', function(Constants) {
             };
 
             var helper_tooltip_text = function (d) {
-                if (!d.data || !d.data.uri) {
-                    return tooltip;
+                if (!d.data) {
+                  return tooltip;
+                }
+                var tooltip;
+
+                if (! d.data.type) {
+                  return tooltip;
                 }
 
-                var tooltip = d.data.uri.core_node + " {<br/>";
 
-                if (0 !== scope.helperData.core.length) {
-                    tooltip += "core: [" + d.data.uri.core + "],<br/>";
+                if (d.data.type == 'collection') {
+                  tooltip = d.name + " {<br/> ";
+                  tooltip += "numShards: [" + d.data.numShards + "],<br/>";
+                  tooltip += "maxShardsPerNode: [" + d.data.maxShardsPerNode + "],<br/>";
+                  tooltip += "router: [" + d.data.router + "],<br/>";
+                  tooltip += "autoAddReplicas: [" + d.data.autoAddReplicas + "],<br/>";
+                  tooltip += "replicationFactor: [" + d.data.replicationFactor + "],<br/>";
+                  tooltip += "nrtReplicas: [" + d.data.nrtReplicas + "],<br/>";
+                  tooltip += "pullReplicas: [" + d.data.pullReplicas + "],<br/>";
+                  tooltip += "tlogReplicas: [" + d.data.tlogReplicas + "],<br/>";
+                  tooltip += "}";
+                } else if (d.data.type == 'shard') {
+                  tooltip = d.name + " {<br/> ";
+                  tooltip += "range: [" + d.data.range + "],<br/>";
+                  tooltip += "state: [" + d.data.state + "],<br/>";
+                  tooltip += "}";
+                } else if (d.data.type == 'node') {
+                  tooltip = d.data.uri.core_node + " {<br/>";
+
+                  if (0 !== scope.helperData.core.length) {
+                      tooltip += "core: [" + d.data.uri.core + "],<br/>";
+                  }
+
+                  if (0 !== scope.helperData.node_name.length) {
+                      tooltip += "node_name: [" + d.data.uri.node_name + "],<br/>";
+                  }
+                  tooltip += "}";
                 }
-
-                if (0 !== scope.helperData.node_name.length) {
-                    tooltip += "node_name: [" + d.data.uri.node_name + "],<br/>";
-                }
-
-                tooltip += "}";
 
                 return tooltip;
             };
@@ -846,7 +901,6 @@ solrAdminApp.directive('graph', function(Constants) {
                 }
 
                 var name = d.data.uri.hostname;
-
                 if (1 !== scope.helperData.protocol.length) {
                     name = d.data.uri.protocol + '//' + name;
                 }

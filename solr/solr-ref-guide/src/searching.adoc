@@ -10,6 +10,7 @@
   spell-checking, +
   query-re-ranking, +
   transforming-result-documents, +
+  searching-nested-documents, +
   suggester, +
   morelikethis, +
   pagination-of-results, +
@@ -69,6 +70,7 @@ This section describes how Solr works with search requests. It covers the follow
 ** <<learning-to-rank.adoc#learning-to-rank,Learning To Rank>>: How to use LTR to run machine learned ranking models in Solr.
 
 * <<transforming-result-documents.adoc#transforming-result-documents,Transforming Result Documents>>: Detailed information about using `DocTransformers` to add computed information to individual documents
+* <<searching-nested-documents.adoc#searching-nested-documents,Searching Nested Documents>>: Detailed information about constructing nested and hierarchical queries.
 * <<suggester.adoc#suggester,Suggester>>: Detailed information about Solr's powerful autosuggest component.
 * <<morelikethis.adoc#morelikethis,MoreLikeThis>>: Detailed information about Solr's similar results query component.
 * <<pagination-of-results.adoc#pagination-of-results,Pagination of Results>>: Detailed information about fetching paginated results for display in a UI, or for fetching all documents matching a query.

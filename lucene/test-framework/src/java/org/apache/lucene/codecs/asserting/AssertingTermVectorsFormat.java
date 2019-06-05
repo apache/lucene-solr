@@ -97,7 +97,7 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     }
     
     @Override
-    public TermVectorsReader getMergeInstance() throws IOException {
+    public TermVectorsReader getMergeInstance() {
       return new AssertingTermVectorsReader(in.getMergeInstance());
     }
 

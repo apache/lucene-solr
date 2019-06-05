@@ -16,11 +16,13 @@
  */
 package org.apache.solr.security;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Properties;
 
 import org.apache.http.HttpResponse;
@@ -30,14 +32,10 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWriter;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.SecurityConfHandler;
@@ -86,6 +84,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
   public void testBasicAuth() throws Exception {
 
     String authcPrefix = "/admin/authentication";
+    String authzPrefix = "/admin/authorization";
 
     HttpClient cl = null;
     HttpSolrClient httpSolrClient = null;
@@ -106,40 +105,56 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
           "'set-user': {'harry':'HarryIsCool'}\n" +
           "}";
 
-      GenericSolrRequest genericReq = new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
-      genericReq.setContentWriter(new StringPayloadContentWriter(command, CommonParams.JSON_MIME));
-
-      HttpSolrClient finalHttpSolrClient = httpSolrClient;
-      HttpSolrClient.RemoteSolrException exp = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
-        finalHttpSolrClient.request(genericReq);
-      });
-      assertEquals(401, exp.code());
+      doHttpPost(cl, baseUrl + authcPrefix, command, null, null, 401);
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
 
       command = "{\n" +
           "'set-user': {'harry':'HarryIsUberCool'}\n" +
           "}";
 
-      HttpPost httpPost = new HttpPost(baseUrl + authcPrefix);
-      setBasicAuthHeader(httpPost, "solr", "SolrRocks");
-      httpPost.setEntity(new ByteArrayEntity(command.getBytes(UTF_8)));
-      httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
-      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
-      HttpResponse r = cl.execute(httpPost);
-      int statusCode = r.getStatusLine().getStatusCode();
-      Utils.consumeFully(r.getEntity());
-      assertEquals("proper_cred sent, but access denied", 200, statusCode);
 
+      doHttpPost(cl, baseUrl + authcPrefix, command, "solr", "SolrRocks");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/credentials/harry", NOT_NULL_PREDICATE, 20);
 
       // Read file from SOLR_HOME and verify that it contains our new user
       assertTrue(new String(Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()), 
           Charset.forName("UTF-8")).contains("harry"));
+
+      // Edit authorization
+      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[1]/role", null, 20);
+      doHttpPost(cl, baseUrl + authzPrefix, "{'set-permission': {'name': 'update', 'role':'updaterole'}}", "solr", "SolrRocks");
+      command = "{\n" +
+          "'set-permission': {'name': 'read', 'role':'solr'}\n" +
+          "}";
+      doHttpPost(cl, baseUrl + authzPrefix, command, "solr", "SolrRocks");
+      try {
+        httpSolrClient.query("collection1", new MapSolrParams(Collections.singletonMap("q", "foo")));
+        fail("Should return a 401 response");
+      } catch (Exception e) {
+        // Test that the second doPost request to /security/authorization went through
+        verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20);
+      }
     } finally {
       if (cl != null) {
         HttpClientUtil.close(cl);
         httpSolrClient.close();
       }
     }
+  }
+
+  private void doHttpPost(HttpClient cl, String url, String jsonCommand, String basicUser, String basicPass) throws IOException {
+    doHttpPost(cl, url, jsonCommand, basicUser, basicPass, 200);
+  }
+
+  private void doHttpPost(HttpClient cl, String url, String jsonCommand, String basicUser, String basicPass, int expectStatusCode) throws IOException {
+    HttpPost httpPost = new HttpPost(url);
+    setBasicAuthHeader(httpPost, basicUser, basicPass);
+    httpPost.setEntity(new ByteArrayEntity(jsonCommand.replaceAll("'", "\"").getBytes(UTF_8)));
+    httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
+    HttpResponse r = cl.execute(httpPost);
+    int statusCode = r.getStatusLine().getStatusCode();
+    Utils.consumeFully(r.getEntity());
+    assertEquals("proper_cred sent, but access denied", expectStatusCode, statusCode);
   }
 
   public static void setBasicAuthHeader(AbstractHttpMessage httpMsg, String user, String pwd) {

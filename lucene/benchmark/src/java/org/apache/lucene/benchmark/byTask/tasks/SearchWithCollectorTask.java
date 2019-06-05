@@ -55,7 +55,7 @@ public class SearchWithCollectorTask extends SearchTask {
     if (clnName.equalsIgnoreCase("topScoreDoc") == true) {
       collector = TopScoreDocCollector.create(numHits(), Integer.MAX_VALUE);
     } else if (clnName.length() > 0){
-      collector = Class.forName(clnName).asSubclass(Collector.class).newInstance();
+      collector = Class.forName(clnName).asSubclass(Collector.class).getConstructor().newInstance();
 
     } else {
       collector = super.createCollector();

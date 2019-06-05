@@ -186,7 +186,11 @@ By default, the `bin/solr` script sets the maximum Java heap size to 512M (-Xmx5
 SOLR_JAVA_MEM="-Xms10g -Xmx10g"
 ----
 
-Also, the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>> comes with a set of pre-configured Java Garbage Collection settings that have shown to work well with Solr for a number of different workloads. However, these settings may not work well for your specific use of Solr. Consequently, you may need to change the GC settings, which should also be done with the `GC_TUNE` variable in the `/etc/default/solr.in.sh` include file. For more information about tuning your memory and garbage collection settings, see: <<jvm-settings.adoc#jvm-settings,JVM Settings>>.
+Also, the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>> comes with a set of pre-configured Garbage First Garbage Collection settings that have shown to work well with Solr for a number of different workloads.
+However, these settings may not work well for your specific use of Solr. Consequently, you may need to change the GC settings, which should also be done with the `GC_TUNE` variable in the `/etc/default/solr.in.sh` include file. For more information about garbage collection settings refer to folowing articles:
+1. https://wiki.apache.org/solr/ShawnHeisey
+2. https://www.oracle.com/technetwork/articles/java/g1gc-1984535.html
+You can also refer to <<jvm-settings.adoc#jvm-settings,JVM Settings>> for tuning your memory and garbage collection settings.
 
 ==== Out-of-Memory Shutdown Hook
 

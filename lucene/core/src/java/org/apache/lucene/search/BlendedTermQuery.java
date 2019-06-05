@@ -25,8 +25,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.InPlaceMergeSorter;
@@ -292,6 +292,15 @@ public final class BlendedTermQuery extends Query {
       }
     }
     return rewriteMethod.rewrite(termQueries);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    Term[] termsToVisit = Arrays.stream(terms).filter(t -> visitor.acceptField(t.field())).toArray(Term[]::new);
+    if (termsToVisit.length > 0) {
+      QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
+      v.consumeTerms(this, termsToVisit);
+    }
   }
 
   private static TermStates adjustFrequencies(IndexReaderContext readerContext,

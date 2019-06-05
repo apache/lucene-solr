@@ -52,6 +52,7 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     String collection = "testschemaapi";
     CollectionAdminRequest.createCollection(collection, "conf1", 1, 2)
         .process(cluster.getSolrClient());
+    testModifyField(collection);
     testReloadAndAddSimple(collection);
     testAddFieldAndDocument(collection);
   }
@@ -97,6 +98,28 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     assertNull(addFieldResponse.getResponse().get("errors"));
 
     log.info("added new field="+fieldName);
+  }
+
+  private void testModifyField(String collection) throws IOException, SolrServerException {
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+
+    SolrInputDocument doc = new SolrInputDocument("id", "3");
+    cloudClient.add(collection, doc);
+    cloudClient.commit(collection);
+
+    String fieldName = "id";
+    SchemaRequest.Field getFieldRequest = new SchemaRequest.Field(fieldName);
+    SchemaResponse.FieldResponse getFieldResponse = getFieldRequest.process(cloudClient, collection);
+    Map<String, Object> field = getFieldResponse.getField();
+    field.put("docValues", true);
+    SchemaRequest.ReplaceField replaceRequest = new SchemaRequest.ReplaceField(field);
+    SchemaResponse.UpdateResponse replaceResponse = replaceRequest.process(cloudClient, collection);
+    assertNull(replaceResponse.getResponse().get("errors"));
+    CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(collection);
+    CollectionAdminResponse response = reloadRequest.process(cloudClient);
+    assertEquals(0, response.getStatus());
+    assertTrue(response.isSuccess());
+
   }
 
 }

@@ -18,12 +18,13 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.QueryVisitor;
 
 /**
  * Tracks a reference intervals source, and produces a pseudo-interval that appears
@@ -144,13 +145,18 @@ class OffsetIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public void extractTerms(String field, Set<Term> terms) {
-    in.extractTerms(field, terms);
+  public void visit(String field, QueryVisitor visitor) {
+    in.visit(field, visitor);
   }
 
   @Override
   public int minExtent() {
     return 1;
+  }
+
+  @Override
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    return Collections.singleton(this);
   }
 
   @Override

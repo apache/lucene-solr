@@ -40,7 +40,7 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
 
   @Override
   public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
-    return new AssertingStoredFieldsReader(in.fieldsReader(directory, si, fn, context), si.maxDoc());
+    return new AssertingStoredFieldsReader(in.fieldsReader(directory, si, fn, context), si.maxDoc(), false);
   }
 
   @Override
@@ -51,10 +51,14 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
   static class AssertingStoredFieldsReader extends StoredFieldsReader {
     private final StoredFieldsReader in;
     private final int maxDoc;
+    private final boolean merging;
+    private final Thread creationThread;
     
-    AssertingStoredFieldsReader(StoredFieldsReader in, int maxDoc) {
+    AssertingStoredFieldsReader(StoredFieldsReader in, int maxDoc, boolean merging) {
       this.in = in;
       this.maxDoc = maxDoc;
+      this.merging = merging;
+      this.creationThread = Thread.currentThread();
       // do a few simple checks on init
       assert toString() != null;
       assert ramBytesUsed() >= 0;
@@ -69,13 +73,15 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
 
     @Override
     public void visitDocument(int n, StoredFieldVisitor visitor) throws IOException {
+      AssertingCodec.assertThread("StoredFieldsReader", creationThread);
       assert n >= 0 && n < maxDoc;
       in.visitDocument(n, visitor);
     }
 
     @Override
     public StoredFieldsReader clone() {
-      return new AssertingStoredFieldsReader(in.clone(), maxDoc);
+      assert merging == false : "Merge instances do not support cloning";
+      return new AssertingStoredFieldsReader(in.clone(), maxDoc, false);
     }
 
     @Override
@@ -98,8 +104,8 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     }
 
     @Override
-    public StoredFieldsReader getMergeInstance() throws IOException {
-      return new AssertingStoredFieldsReader(in.getMergeInstance(), maxDoc);
+    public StoredFieldsReader getMergeInstance() {
+      return new AssertingStoredFieldsReader(in.getMergeInstance(), maxDoc, true);
     }
 
     @Override

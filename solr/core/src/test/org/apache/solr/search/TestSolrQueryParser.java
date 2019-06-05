@@ -35,9 +35,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
@@ -45,13 +46,14 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
 
+import static org.hamcrest.core.StringContains.containsString;
 
 public class TestSolrQueryParser extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty("solr.max.booleanClauses", "42"); // lower for testing
     initCore("solrconfig.xml", "schema12.xml");
     createIndex();
   }
@@ -341,30 +343,62 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testManyClauses() throws Exception {
-    String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
-    StringBuilder sb = new StringBuilder("id:(");
-    for (int i = 0; i < 1024; i++) { // historically, the max number of boolean clauses defaulted to 1024
+  public void testManyClauses_Solr() throws Exception {
+    final String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
+    
+    // this should exceed our solrconfig.xml level (solr specific) maxBooleanClauses limit
+    // even though it's not long enough to trip the Lucene level (global) limit
+    final String too_long = "id:(" + a + a + a + a + a + ")";
+
+    final String expectedMsg = "Too many clauses";
+    ignoreException(expectedMsg);
+    SolrException e = expectThrows(SolrException.class, "expected SolrException",
+                                   () -> assertJQ(req("q", too_long), "/response/numFound==6"));
+    assertThat(e.getMessage(), containsString(expectedMsg));
+    
+    // but should still work as a filter query since TermsQuery can be used...
+    assertJQ(req("q","*:*", "fq", too_long)
+             ,"/response/numFound==6");
+    assertJQ(req("q","*:*", "fq", too_long, "sow", "false")
+             ,"/response/numFound==6");
+    assertJQ(req("q","*:*", "fq", too_long, "sow", "true")
+             ,"/response/numFound==6");
+  }
+    
+  @Test
+  public void testManyClauses_Lucene() throws Exception {
+    final int numZ = BooleanQuery.getMaxClauseCount();
+    
+    final String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
+    final StringBuilder sb = new StringBuilder("id:(");
+    for (int i = 0; i < numZ; i++) {
       sb.append('z').append(i).append(' ');
     }
     sb.append(a);
     sb.append(")");
+    
+    // this should trip the lucene level global BooleanQuery.getMaxClauseCount() limit,
+    // causing a parsing error, before Solr even get's a chance to enforce it's lower level limit
+    final String way_too_long = sb.toString();
 
-    String q = sb.toString();
+    final String expectedMsg = "too many boolean clauses";
+    ignoreException(expectedMsg);
+    SolrException e = expectThrows(SolrException.class, "expected SolrException",
+                                   () -> assertJQ(req("q", way_too_long), "/response/numFound==6"));
+    assertThat(e.getMessage(), containsString(expectedMsg));
+    
+    assertNotNull(e.getCause());
+    assertEquals(SyntaxError.class, e.getCause().getClass());
+    
+    assertNotNull(e.getCause().getCause());
+    assertEquals(BooleanQuery.TooManyClauses.class, e.getCause().getCause().getClass());
 
-    // This will still fail when used as the main query, but will pass in a filter query since TermsQuery can be used.
-    {
-      ignoreException("Too many clauses");
-      SolrException e = expectThrows(SolrException.class, "exoected too many clauses exception",
-          () -> assertJQ(req("q", q), "/response/numFound==6"));
-      assertTrue(e.getMessage().contains("many clauses"));
-    }
-
-    assertJQ(req("q","*:*", "fq", q)
+    // but should still work as a filter query since TermsQuery can be used...
+    assertJQ(req("q","*:*", "fq", way_too_long)
         ,"/response/numFound==6");
-    assertJQ(req("q","*:*", "fq", q, "sow", "false")
+    assertJQ(req("q","*:*", "fq", way_too_long, "sow", "false")
         ,"/response/numFound==6");
-    assertJQ(req("q","*:*", "fq", q, "sow", "true")
+    assertJQ(req("q","*:*", "fq", way_too_long, "sow", "true")
         ,"/response/numFound==6");
   }
 
@@ -929,7 +963,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
 
-    Map all = (Map)ObjectBuilder.fromJSON(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
+    Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
     int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;
 

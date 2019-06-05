@@ -57,7 +57,7 @@ This registry is returned at `solr.jvm` and includes the following information. 
 
 This registry is returned at `solr.node` and includes the following information. When making requests with the <<Metrics API>>, you can specify `&group=node` to limit to only these metrics.
 
-* handler requests (count, timing): collections, info, admin, configSets, etc.
+* handler requests (count, timing): collections, info, admin, configsets, etc.
 * number of cores (loaded, lazy, unloaded)
 
 === Core (SolrCore) Registry
@@ -265,7 +265,7 @@ Here is an example for configuring the default `log4j2.xml` which ships in Solr.
         filePattern="${sys:solr.log.dir}/solr_metrics.log.%i" >
       <PatternLayout>
         <Pattern>
-          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core}] %m%n
+          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core} %X{trace_id}] %m%n
         </Pattern>
       </PatternLayout>
       <Policies>

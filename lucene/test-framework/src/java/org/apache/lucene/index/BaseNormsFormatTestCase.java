@@ -37,6 +37,7 @@ import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
@@ -451,7 +452,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     
     Directory dir = applyCreatedVersionMajor(newDirectory());
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    IndexWriterConfig conf = newIndexWriterConfig(analyzer).setMergePolicy(NoMergePolicy.INSTANCE);
+    IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     CannedNormSimilarity sim = new CannedNormSimilarity(norms);
     conf.setSimilarity(sim);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
@@ -491,14 +492,14 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
     writer.commit();
     
     // compare
-    DirectoryReader ir = DirectoryReader.open(dir);
+    DirectoryReader ir = maybeWrapWithMergingReader(DirectoryReader.open(dir));
     checkNormsVsDocValues(ir);
     ir.close();
     
     writer.forceMerge(1);
     
     // compare again
-    ir = DirectoryReader.open(dir);
+    ir = maybeWrapWithMergingReader(DirectoryReader.open(dir));
     checkNormsVsDocValues(ir);
     
     writer.close();
@@ -605,7 +606,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
       w.deleteDocuments(new Term("id", ""+id));
     }
     w.forceMerge(1);
-    IndexReader r = w.getReader();
+    IndexReader r = maybeWrapWithMergingReader(w.getReader());
     assertFalse(r.hasDeletions());
 
     // Confusingly, norms should exist, and should all be 0, even though we deleted all docs that had the field "content".  They should not
@@ -679,7 +680,7 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
       }
     }
 
-    DirectoryReader reader = writer.getReader();
+    DirectoryReader reader = maybeWrapWithMergingReader(writer.getReader());
     writer.close();
 
     final int numThreads = TestUtil.nextInt(random(), 3, 30);
@@ -710,5 +711,73 @@ public abstract class BaseNormsFormatTestCase extends BaseIndexFileFormatTestCas
 
     reader.close();
     dir.close();
+  }
+
+  public void testIndependantIterators() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig().setMergePolicy(newLogMergePolicy());
+    CannedNormSimilarity sim = new CannedNormSimilarity(new long[] {42, 10, 20});
+    conf.setSimilarity(sim);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
+    Document doc = new Document();
+    Field indexedField = new TextField("indexed", "a", Field.Store.NO);
+    doc.add(indexedField);
+    for (int i = 0; i < 3; ++i) {
+      writer.addDocument(doc);
+    }
+    writer.forceMerge(1);
+    LeafReader r = getOnlyLeafReader(maybeWrapWithMergingReader(writer.getReader()));
+    NumericDocValues n1 = r.getNormValues("indexed");
+    NumericDocValues n2 = r.getNormValues("indexed");
+    assertEquals(0, n1.nextDoc());
+    assertEquals(42, n1.longValue());
+    assertEquals(1, n1.nextDoc());
+    assertEquals(10, n1.longValue());
+    assertEquals(0, n2.nextDoc());
+    assertEquals(42, n2.longValue());
+    assertEquals(1, n2.nextDoc());
+    assertEquals(10, n2.longValue());
+    assertEquals(2, n2.nextDoc());
+    assertEquals(20, n2.longValue());
+    assertEquals(2, n1.nextDoc());
+    assertEquals(20, n1.longValue());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, n1.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, n2.nextDoc());
+    IOUtils.close(r, writer, dir);
+  }
+
+  public void testIndependantSparseIterators() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig().setMergePolicy(newLogMergePolicy());
+    CannedNormSimilarity sim = new CannedNormSimilarity(new long[] {42, 10, 20});
+    conf.setSimilarity(sim);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
+    Document doc = new Document();
+    Field indexedField = new TextField("indexed", "a", Field.Store.NO);
+    doc.add(indexedField);
+    Document emptyDoc = new Document();
+    for (int i = 0; i < 3; ++i) {
+      writer.addDocument(doc);
+      writer.addDocument(emptyDoc);
+    }
+    writer.forceMerge(1);
+    LeafReader r = getOnlyLeafReader(maybeWrapWithMergingReader(writer.getReader()));
+    NumericDocValues n1 = r.getNormValues("indexed");
+    NumericDocValues n2 = r.getNormValues("indexed");
+    assertEquals(0, n1.nextDoc());
+    assertEquals(42, n1.longValue());
+    assertEquals(2, n1.nextDoc());
+    assertEquals(10, n1.longValue());
+    assertEquals(0, n2.nextDoc());
+    assertEquals(42, n2.longValue());
+    assertEquals(2, n2.nextDoc());
+    assertEquals(10, n2.longValue());
+    assertEquals(4, n2.nextDoc());
+    assertEquals(20, n2.longValue());
+    assertEquals(4, n1.nextDoc());
+    assertEquals(20, n1.longValue());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, n1.nextDoc());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, n2.nextDoc());
+    IOUtils.close(r, writer, dir);
   }
 }

@@ -65,6 +65,7 @@ public class SolrStream extends TupleStream {
   private String slice;
   private long checkpoint = -1;
   private CloseableHttpResponse closeableHttpResponse;
+  private boolean distrib = true;
 
   /**
    * @param baseUrl Base URL of the stream.
@@ -89,6 +90,7 @@ public class SolrStream extends TupleStream {
   }
 
   public void setStreamContext(StreamContext context) {
+    this.distrib = !context.isLocal();
     this.numWorkers = context.numWorkers;
     this.workerID = context.workerID;
     this.cache = context.getSolrClientCache();
@@ -106,7 +108,11 @@ public class SolrStream extends TupleStream {
     }
 
     try {
-      tupleStreamParser = constructParser(client, loadParams(params));
+      SolrParams requestParams = loadParams(params);
+      if (!distrib) {
+        ((ModifiableSolrParams) requestParams).add("distrib","false");
+      }
+      tupleStreamParser = constructParser(client, requestParams);
     } catch (Exception e) {
       throw new IOException("params " + params, e);
     }
@@ -128,7 +134,7 @@ public class SolrStream extends TupleStream {
     this.checkpoint = checkpoint;
   }
 
-  private SolrParams loadParams(SolrParams paramsIn) throws IOException {
+  private ModifiableSolrParams loadParams(SolrParams paramsIn) throws IOException {
     ModifiableSolrParams solrParams = new ModifiableSolrParams(paramsIn);
     if (params.get("partitionKeys") != null) {
       if(!params.get("partitionKeys").equals("none") && numWorkers > 1) {
@@ -164,7 +170,7 @@ public class SolrStream extends TupleStream {
       .withExpressionType(ExpressionType.STREAM_SOURCE)
       .withExpression("non-expressible");
   }
-  
+
   /**
   *  Closes the Stream to a single Solr Instance
   * */
@@ -219,12 +225,20 @@ public class SolrStream extends TupleStream {
     }
   }
 
+  public void setDistrib(boolean distrib) {
+    this.distrib = distrib;
+  }
+
+  public boolean getDistrib() {
+    return distrib;
+  }
+
   public static class HandledException extends IOException {
     public HandledException(String msg) {
       super(msg);
     }
   }
-  
+
   /** There is no known sort applied to a SolrStream */
   public StreamComparator getStreamSort(){
     return null;

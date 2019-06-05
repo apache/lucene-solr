@@ -33,11 +33,11 @@ import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.NumericUtils;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
@@ -73,6 +73,13 @@ final class LatLonPointInPolygonQuery extends Query {
     this.field = field;
     this.polygons = polygons.clone();
     // TODO: we could also compute the maximal inner bounding box, to make relations faster to compute?
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
   }
 
   @Override
@@ -141,10 +148,10 @@ final class LatLonPointInPolygonQuery extends Query {
 
                            @Override
                            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                             if (FutureArrays.compareUnsigned(minPackedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
-                                 FutureArrays.compareUnsigned(maxPackedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0 ||
-                                 FutureArrays.compareUnsigned(minPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
-                                 FutureArrays.compareUnsigned(maxPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0) {
+                             if (Arrays.compareUnsigned(minPackedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
+                                 Arrays.compareUnsigned(maxPackedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0 ||
+                                 Arrays.compareUnsigned(minPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
+                                 Arrays.compareUnsigned(maxPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0) {
                                // outside of global bounding box range
                                return Relation.CELL_OUTSIDE_QUERY;
                              }

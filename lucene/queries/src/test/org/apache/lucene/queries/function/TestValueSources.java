@@ -36,46 +36,13 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
-import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
-import org.apache.lucene.queries.function.valuesource.ConstValueSource;
-import org.apache.lucene.queries.function.valuesource.DivFloatFunction;
-import org.apache.lucene.queries.function.valuesource.DocFreqValueSource;
-import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
-import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.IDFValueSource;
-import org.apache.lucene.queries.function.valuesource.IfFunction;
-import org.apache.lucene.queries.function.valuesource.IntFieldSource;
-import org.apache.lucene.queries.function.valuesource.JoinDocFreqValueSource;
-import org.apache.lucene.queries.function.valuesource.LinearFloatFunction;
-import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
-import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.queries.function.valuesource.MaxDocValueSource;
-import org.apache.lucene.queries.function.valuesource.MaxFloatFunction;
-import org.apache.lucene.queries.function.valuesource.MinFloatFunction;
-import org.apache.lucene.queries.function.valuesource.MultiFloatFunction;
-import org.apache.lucene.queries.function.valuesource.MultiFunction;
-import org.apache.lucene.queries.function.valuesource.MultiValuedDoubleFieldSource;
-import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
-import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
-import org.apache.lucene.queries.function.valuesource.NormValueSource;
-import org.apache.lucene.queries.function.valuesource.NumDocsValueSource;
-import org.apache.lucene.queries.function.valuesource.PowFloatFunction;
-import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.queries.function.valuesource.RangeMapFloatFunction;
-import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
-import org.apache.lucene.queries.function.valuesource.ScaleFloatFunction;
-import org.apache.lucene.queries.function.valuesource.SumFloatFunction;
-import org.apache.lucene.queries.function.valuesource.SumTotalTermFreqValueSource;
-import org.apache.lucene.queries.function.valuesource.TFValueSource;
-import org.apache.lucene.queries.function.valuesource.TermFreqValueSource;
-import org.apache.lucene.queries.function.valuesource.TotalTermFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.*;
 import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector.Type;
@@ -599,6 +566,25 @@ public class TestValueSources extends LuceneTestCase {
         
       }
     }
+  }
+
+  public void testWrappingAsDoubleValues() throws IOException {
+
+    FunctionScoreQuery q = FunctionScoreQuery.boostByValue(new TermQuery(new Term("f", "t")),
+        new DoubleFieldSource("double").asDoubleValuesSource());
+
+    searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
+
+    // assert that the query has not cached a reference to the IndexSearcher
+    FunctionScoreQuery.MultiplicativeBoostValuesSource source1 = (FunctionScoreQuery.MultiplicativeBoostValuesSource) q.getSource();
+    ValueSource.WrappedDoubleValuesSource source2 = (ValueSource.WrappedDoubleValuesSource) source1.boost;
+    assertNull(source2.searcher);
+
+  }
+
+  public void testBuildingFromDoubleValues() throws Exception {
+    DoubleValuesSource dvs = ValueSource.fromDoubleValuesSource(DoubleValuesSource.fromDoubleField("double")).asDoubleValuesSource();
+    assertHits(new FunctionQuery(ValueSource.fromDoubleValuesSource(dvs)), new float[] { 3.63f, 5.65f });
   }
     
   /** 

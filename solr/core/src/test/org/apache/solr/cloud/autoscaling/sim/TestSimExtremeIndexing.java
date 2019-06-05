@@ -26,8 +26,8 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -46,8 +46,10 @@ import org.slf4j.LoggerFactory;
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
- *
+ * TODO: test can easily fail w/a count that is too low by a small amount (unrelated to BATCH_SIZE)
+ * TODO: test should not need arbitrary sleep calls if code + test are both working properly w/o concurrency bugs
  */
+@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12923")
 @TimeoutSuite(millis = 48 * 3600 * 1000)
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.autoscaling.NodeLostTrigger=INFO;org.apache.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.autoscaling.ComputePlanAction=INFO;org.apache.solr.cloud.autoscaling.ExecutePlanAction=DEBUG;org.apache.solr.cloud.autoscaling.ScheduledTriggers=DEBUG")
 //@LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.autoscaling.NodeLostTrigger=INFO;org.apache.client.solrj.cloud.autoscaling=DEBUG;org.apache.solr.cloud.CloudTestUtils=TRACE")
@@ -99,9 +101,9 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 2, 2).setMaxShardsPerNode(10);
     create.process(solrClient);
-    
-    CloudTestUtils.waitForState(cluster, collectionName, 90, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(2, 2, false, true));
+
+    CloudUtil.waitForState(cluster, collectionName, 90, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(2, 2, false, true));
 
     //long waitForSeconds = 3 + random().nextInt(5);
     long waitForSeconds = 1;

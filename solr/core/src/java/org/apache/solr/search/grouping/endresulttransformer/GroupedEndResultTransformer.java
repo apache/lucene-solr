@@ -16,6 +16,12 @@
  */
 package org.apache.solr.search.grouping.endresulttransformer;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
@@ -23,6 +29,8 @@ import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -30,10 +38,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Implementation of {@link EndResultTransformer} that keeps each grouped result separate in the final response.
@@ -67,9 +71,15 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         for (GroupDocs<BytesRef> group : topGroups.groups) {
           SimpleOrderedMap<Object> groupResult = new SimpleOrderedMap<>();
           if (group.groupValue != null) {
-            groupResult.add(
-                "groupValue", groupFieldType.toObject(groupField.createField(group.groupValue.utf8ToString()))
-            );
+            // use createFields so that fields having doc values are also supported
+            List<IndexableField> fields = groupField.createFields(group.groupValue.utf8ToString());
+            if (CollectionUtils.isNotEmpty(fields)) {
+              groupResult.add("groupValue", groupFieldType.toObject(fields.get(0)));
+            } else {
+              throw new SolrException(ErrorCode.INVALID_STATE,
+                  "Couldn't create schema field for grouping, group value: " + group.groupValue.utf8ToString()
+                  + ", field: " + groupField);
+            }
           } else {
             groupResult.add("groupValue", null);
           }

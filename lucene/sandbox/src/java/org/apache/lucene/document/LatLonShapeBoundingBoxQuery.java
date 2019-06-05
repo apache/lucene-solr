@@ -29,12 +29,13 @@ import org.apache.lucene.index.PointValues.Relation;
  *  @lucene.experimental
  **/
 final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
+  final Rectangle rectangle;
   final Rectangle2D rectangle2D;
 
   public LatLonShapeBoundingBoxQuery(String field, LatLonShape.QueryRelation queryRelation, double minLat, double maxLat, double minLon, double maxLon) {
     super(field, queryRelation);
-    Rectangle rectangle = new Rectangle(minLat, maxLat, minLon, maxLon);
-    this.rectangle2D = Rectangle2D.create(rectangle);
+    this.rectangle = new Rectangle(minLat, maxLat, minLon, maxLon);
+    this.rectangle2D = Rectangle2D.create(this.rectangle);
   }
 
   @Override
@@ -69,13 +70,13 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && rectangle2D.equals(((LatLonShapeBoundingBoxQuery)o).rectangle2D);
+    return super.equalsTo(o) && rectangle.equals(((LatLonShapeBoundingBoxQuery)o).rectangle);
   }
 
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash = 31 * hash + rectangle2D.hashCode();
+    hash = 31 * hash + rectangle.hashCode();
     return hash;
   }
 
@@ -89,7 +90,7 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append(rectangle2D.toString());
+    sb.append(rectangle.toString());
     return sb.toString();
   }
 }

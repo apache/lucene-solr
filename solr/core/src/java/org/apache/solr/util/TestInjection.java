@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
@@ -31,13 +32,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +52,7 @@ import org.slf4j.LoggerFactory;
  * @lucene.internal
  */
 public class TestInjection {
-  
+
   public static class TestShutdownFailError extends OutOfMemoryError {
 
     public TestShutdownFailError(String msg) {
@@ -128,7 +127,9 @@ public class TestInjection {
 
   public volatile static CountDownLatch splitLatch = null;
 
-  public volatile static String waitForReplicasInSync = "true:60";
+  public volatile static CountDownLatch reindexLatch = null;
+
+  public volatile static String reindexFailure = null;
 
   public volatile static String failIndexFingerprintRequests = null;
 
@@ -142,6 +143,8 @@ public class TestInjection {
 
   public volatile static boolean uifOutOfMemoryError = false;
 
+  public volatile static Map<String, String> additionalSystemProps = null;
+
   private volatile static CountDownLatch notifyPauseForeverDone = new CountDownLatch(1);
   
   public static void notifyPauseForeverDone() {
@@ -150,6 +153,7 @@ public class TestInjection {
   }
 
   public static void reset() {
+    additionalSystemProps = null;
     nonGracefullClose = null;
     failReplicaRequests = null;
     failUpdateRequests = null;
@@ -160,9 +164,10 @@ public class TestInjection {
     splitFailureBeforeReplicaCreation = null;
     splitFailureAfterReplicaCreation = null;
     splitLatch = null;
+    reindexLatch = null;
+    reindexFailure = null;
     prepRecoveryOpPauseForever = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
-    waitForReplicasInSync = "true:60";
     failIndexFingerprintRequests = null;
     wrongIndexFingerprint = null;
     delayBeforeSlaveCommitRefresh = null;
@@ -428,14 +433,35 @@ public class TestInjection {
     return true;
   }
 
-  public static boolean waitForInSyncWithLeader(SolrCore core, ZkController zkController, String collection, String shardId) {
-    // NOTE: this method should do *NOTHING* unless LUCENE_TEST_CASE is non-null
-    
-    if (waitForReplicasInSync == null) return true;
-    
-    return true; // No-Op: see SOLR-12313
+  public static boolean injectReindexFailure() {
+    if (reindexFailure != null)  {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean,Integer> pair = parseValue(reindexFailure);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        log.info("Test injection failure");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Test injection failure");
+      }
+    }
+    return true;
   }
-  
+
+
+  public static boolean injectReindexLatch() {
+    if (reindexLatch != null) {
+      try {
+        log.info("Waiting in ReindexCollectionCmd for up to 60s");
+        return reindexLatch.await(60, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    return true;
+  }
+
   private static Pair<Boolean,Integer> parseValue(final String raw) {
     if (raw == null) return new Pair<>(false, 0);
     Matcher m = ENABLED_PERCENT.matcher(raw);
@@ -460,6 +486,10 @@ public class TestInjection {
       }
     }
     return true;
+  }
+
+  public static Map<String,String> injectAdditionalProps() {
+    return additionalSystemProps;
   }
 
   public static boolean injectUIFOutOfMemoryError() {

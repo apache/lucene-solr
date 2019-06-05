@@ -19,9 +19,13 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -215,5 +219,39 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       reader.close();
       directory.close();
     }
+  }
+
+  public void testEarlyTermination() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(analyzer).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
+    final int numDocs = 50;
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      Field f = newTextField("key", i % 2 == 0 ? "foo bar" : "baz", Field.Store.YES);
+      doc.add(f);
+      iw.addDocument(doc);
+    }
+    IndexReader ir = DirectoryReader.open(iw);
+
+    IndexSearcher is = newSearcher(ir);
+
+    TopScoreDocCollector c = TopScoreDocCollector.create(10, null, 10);
+    is.search(new ConstantScoreQuery(new TermQuery(new Term("key", "foo"))), c);
+    assertEquals(11, c.totalHits);
+    assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, c.totalHitsRelation);
+
+    c = TopScoreDocCollector.create(10, null, 10);
+    Query query = new BooleanQuery.Builder()
+        .add(new ConstantScoreQuery(new TermQuery(new Term("key", "foo"))), Occur.SHOULD)
+        .add(new ConstantScoreQuery(new TermQuery(new Term("key", "bar"))), Occur.FILTER)
+        .build();
+    is.search(query, c);
+    assertEquals(11, c.totalHits);
+    assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, c.totalHitsRelation);
+
+    iw.close();
+    ir.close();
+    dir.close();
   }
 }

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.ltr.feature;
 
+import java.util.LinkedHashMap;
+
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
@@ -160,6 +162,16 @@ public class TestValueFeature extends TestRerankBase {
     query.add("rq", "{!ltr model=m8 reRankDocs=4}");
 
     assertJQ("/query" + query.toQueryString(), "/responseHeader/status==400");
+  }
+
+  @Test
+  public void testParamsToMap() throws Exception {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<String,Object>();
+    params.put("value", "${val"+random().nextInt(10)+"}");
+    if (random().nextBoolean()) {
+      params.put("required", random().nextBoolean());
+    }
+    doTestParamsToMap(ValueFeature.class.getName(), params);
   }
 
 }

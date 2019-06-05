@@ -235,15 +235,12 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private String metricTag = Integer.toHexString(hashCode());
 
-  public boolean searchEnabled = true;
-  public boolean indexEnabled = true;
+  public volatile boolean searchEnabled = true;
+  public volatile boolean indexEnabled = true;
+  public volatile boolean readOnly = false;
 
   public Set<String> getMetricNames() {
     return metricNames;
-  }
-
-  public boolean isSearchEnabled(){
-    return searchEnabled;
   }
 
   public Date getStartTimeStamp() { return startTime; }
@@ -1387,7 +1384,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
     if (info != null) {
-      factory = schema.getResourceLoader().newInstance(info.className, CodecFactory.class);
+      factory = resourceLoader.newInstance(info.className, CodecFactory.class);
       factory.init(info.initArgs);
     } else {
       factory = new CodecFactory() {
@@ -1698,17 +1695,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       return refCount.get() <= 0;
   }
 
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if (getOpenCount() != 0) {
-        log.error("REFCOUNT ERROR: unreferenced {} ({}) has a reference count of {}", this, getName(), getOpenCount());
-      }
-    } finally {
-      super.finalize();
-    }
-  }
-
   private Collection<CloseHook> closeHooks = null;
 
    /**
@@ -1879,7 +1865,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    * @see #withSearcher(IOFunction)
    */
   public RefCounted<SolrIndexSearcher> getSearcher() {
-    return getSearcher(false,true,null);
+    if ( searchEnabled ) {
+      return getSearcher(false,true,null);
+    }
+    throw new SolrException( SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Search is temporarily disabled");
   }
 
   /**
@@ -2697,7 +2686,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
     try {
       m.put("xlsx",
-          (QueryResponseWriter) Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter").newInstance());
+          (QueryResponseWriter) Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter").getConstructor().newInstance());
     } catch (Exception e) {
       //don't worry; solrcell contrib not in class path
     }

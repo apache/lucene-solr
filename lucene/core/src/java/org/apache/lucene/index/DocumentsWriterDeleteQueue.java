@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.index;
 
-import java.io.IOException;
+import java.io.Closeable;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -24,6 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.InfoStream;
 
@@ -68,10 +69,12 @@ import org.apache.lucene.util.InfoStream;
  * will also not be added to its private deletes neither to the global deletes.
  * 
  */
-final class DocumentsWriterDeleteQueue implements Accountable {
+final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
 
   // the current end (latest delete operation) in the delete queue:
   private volatile Node<?> tail;
+
+  private volatile boolean closed = false;
 
   /** Used to record deletes against all prior (already written to disk) segments.  Whenever any segment flushes, we bundle up this set of
    *  deletes and insert into the buffered updates stream before the newly flushed segment(s). */
@@ -163,6 +166,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
   }
 
   synchronized long add(Node<?> newNode) {
+    ensureOpen();
     tail.next = newNode;
     this.tail = newNode;
     return getNextSequenceNumber();
@@ -184,6 +188,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
 
   void tryApplyGlobalSlice() {
     if (globalBufferLock.tryLock()) {
+      ensureOpen();
       /*
        * The global buffer must be locked but we don't need to update them if
        * there is an update going on right now. It is sufficient to apply the
@@ -200,35 +205,65 @@ final class DocumentsWriterDeleteQueue implements Accountable {
     }
   }
 
-  FrozenBufferedUpdates freezeGlobalBuffer(DeleteSlice callerSlice) throws IOException {
-    globalBufferLock.lock();
-    /*
-     * Here we freeze the global buffer so we need to lock it, apply all
-     * deletes in the queue and reset the global slice to let the GC prune the
-     * queue.
-     */
-    final Node<?> currentTail = tail; // take the current tail make this local any
-    // Changes after this call are applied later
-    // and not relevant here
-    if (callerSlice != null) {
-      // Update the callers slices so we are on the same page
-      callerSlice.sliceTail = currentTail;
-    }
-    try {
-      if (globalSlice.sliceTail != currentTail) {
-        globalSlice.sliceTail = currentTail;
-        globalSlice.apply(globalBufferedUpdates, BufferedUpdates.MAX_INT);
-      }
 
-      if (globalBufferedUpdates.any()) {
-        final FrozenBufferedUpdates packet = new FrozenBufferedUpdates(infoStream, globalBufferedUpdates, null);
-        globalBufferedUpdates.clear();
-        return packet;
+  FrozenBufferedUpdates freezeGlobalBuffer(DeleteSlice callerSlice) {
+    globalBufferLock.lock();
+    try {
+      ensureOpen();
+      /*
+       * Here we freeze the global buffer so we need to lock it, apply all
+       * deletes in the queue and reset the global slice to let the GC prune the
+       * queue.
+       */
+      final Node<?> currentTail = tail; // take the current tail make this local any
+      // Changes after this call are applied later
+      // and not relevant here
+      if (callerSlice != null) {
+        // Update the callers slices so we are on the same page
+        callerSlice.sliceTail = currentTail;
+      }
+      return freezeGlobalBufferInternal(currentTail);
+    } finally {
+      globalBufferLock.unlock();
+    }
+  }
+
+  /**
+   * This may freeze the global buffer unless the delete queue has already been closed.
+   * If the queue has been closed this method will return <code>null</code>
+   */
+  FrozenBufferedUpdates maybeFreezeGlobalBuffer() {
+    globalBufferLock.lock();
+    try {
+      if (closed == false) {
+        /*
+         * Here we freeze the global buffer so we need to lock it, apply all
+         * deletes in the queue and reset the global slice to let the GC prune the
+         * queue.
+         */
+        return freezeGlobalBufferInternal(tail); // take the current tail make this local any
       } else {
+        assert anyChanges() == false : "we are closed but have changes";
         return null;
       }
     } finally {
       globalBufferLock.unlock();
+    }
+  }
+
+  private FrozenBufferedUpdates freezeGlobalBufferInternal(final Node<?> currentTail ) {
+    assert globalBufferLock.isHeldByCurrentThread();
+    if (globalSlice.sliceTail != currentTail) {
+      globalSlice.sliceTail = currentTail;
+      globalSlice.apply(globalBufferedUpdates, BufferedUpdates.MAX_INT);
+    }
+
+    if (globalBufferedUpdates.any()) {
+      final FrozenBufferedUpdates packet = new FrozenBufferedUpdates(infoStream, globalBufferedUpdates, null);
+      globalBufferedUpdates.clear();
+      return packet;
+    } else {
+      return null;
     }
   }
 
@@ -238,6 +273,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
 
   /** Negative result means there were new deletes since we last applied */
   synchronized long updateSlice(DeleteSlice slice) {
+    ensureOpen();
     long seqNo = getNextSequenceNumber();
     if (slice.sliceTail != tail) {
       // new deletes arrived since we last checked
@@ -255,6 +291,29 @@ final class DocumentsWriterDeleteQueue implements Accountable {
       return true;
     }
     return false;
+  }
+
+  private void ensureOpen() {
+    if (closed) {
+      throw new AlreadyClosedException("This " + DocumentsWriterDeleteQueue.class.getSimpleName() + " is already closed");
+    }
+  }
+
+  public boolean isOpen() {
+    return closed == false;
+  }
+
+  @Override
+  public synchronized void close() {
+    globalBufferLock.lock();
+    try {
+      if (anyChanges()) {
+        throw new IllegalStateException("Can't close queue unless all changes are applied");
+      }
+      this.closed = true;
+    } finally {
+      globalBufferLock.unlock();
+    }
   }
 
   static class DeleteSlice {

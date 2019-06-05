@@ -19,14 +19,13 @@ package org.apache.solr.ltr.feature;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.core.SolrResourceLoader;
@@ -62,6 +61,7 @@ public abstract class Feature extends Query {
   final protected String name;
   private int index = -1;
   private float defaultValue = 0.0f;
+  private Object defaultValueObject = null;
 
   final private Map<String,Object> params;
 
@@ -114,8 +114,21 @@ public abstract class Feature extends Query {
     return defaultValue;
   }
 
-  public void setDefaultValue(String value){
-    defaultValue = Float.parseFloat(value);
+  public void setDefaultValue(Object obj){
+    this.defaultValueObject = obj;
+    if (obj instanceof String) {
+      defaultValue = Float.parseFloat((String)obj);
+    } else if (obj instanceof Double) {
+      defaultValue = ((Double) obj).floatValue();
+    } else if (obj instanceof Float) {
+      defaultValue = ((Float) obj).floatValue();
+    } else if (obj instanceof Integer) {
+      defaultValue = ((Integer) obj).floatValue();
+    } else if (obj instanceof Long) {
+      defaultValue = ((Long) obj).floatValue();
+    } else {
+      throw new FeatureException("Invalid type for 'defaultValue' in params for " + this);
+    }
   }
 
 
@@ -132,6 +145,11 @@ public abstract class Feature extends Query {
   @Override
   public boolean equals(Object o) {
     return sameClassAs(o) &&  equalsTo(getClass().cast(o));
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   private boolean equalsTo(Feature other) {
@@ -180,6 +198,15 @@ public abstract class Feature extends Query {
   }
 
   public abstract LinkedHashMap<String,Object> paramsToMap();
+
+  protected LinkedHashMap<String,Object> defaultParamsToMap() {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<>();
+    if (defaultValueObject != null) {
+      params.put("defaultValue", defaultValueObject);
+    }
+    return params;
+  }
+
   /**
    * Weight for a feature
    **/
@@ -259,11 +286,6 @@ public abstract class Feature extends Query {
     @Override
     public String toString() {
       return Feature.this.toString();
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      // no-op
     }
 
     /**

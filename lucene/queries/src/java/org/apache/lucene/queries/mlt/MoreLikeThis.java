@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermFrequencyAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -763,15 +764,13 @@ public final class MoreLikeThis {
       IOException {
     Map<String, Map<String, Int>> field2termFreqMap = new HashMap<>();
     for (String fieldName : fieldNames) {
-      for (String field : field2fieldValues.keySet()) {
-        Collection<Object> fieldValues = field2fieldValues.get(field);
-        if(fieldValues == null)
-          continue;
-        for(Object fieldValue:fieldValues) {
-          if (fieldValue != null) {
-            addTermFrequencies(new StringReader(String.valueOf(fieldValue)), field2termFreqMap,
-                fieldName);
-          }
+      Collection<Object> fieldValues = field2fieldValues.get(fieldName);
+      if (fieldValues == null)
+        continue;
+      for (Object fieldValue : fieldValues) {
+        if (fieldValue != null) {
+          addTermFrequencies(new StringReader(String.valueOf(fieldValue)), field2termFreqMap,
+              fieldName);
         }
       }
     }
@@ -826,6 +825,7 @@ public final class MoreLikeThis {
       int tokenCount = 0;
       // for every token
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      TermFrequencyAttribute tfAtt = ts.addAttribute(TermFrequencyAttribute.class);
       ts.reset();
       while (ts.incrementToken()) {
         String word = termAtt.toString();
@@ -840,9 +840,9 @@ public final class MoreLikeThis {
         // increment frequency
         Int cnt = termFreqMap.get(word);
         if (cnt == null) {
-          termFreqMap.put(word, new Int());
+          termFreqMap.put(word, new Int(tfAtt.getTermFrequency()));
         } else {
-          cnt.x++;
+          cnt.x += tfAtt.getTermFrequency();
         }
       }
       ts.end();
@@ -984,7 +984,11 @@ public final class MoreLikeThis {
     int x;
 
     Int() {
-      x = 1;
+      this(1);
+    }
+
+    Int(int initialValue) {
+      x = initialValue;
     }
   }
 }

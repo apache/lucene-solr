@@ -17,7 +17,6 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,8 +53,8 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -140,11 +139,11 @@ public class UnifiedHighlighter {
   private int cacheFieldValCharsThreshold = DEFAULT_CACHE_CHARS_THRESHOLD;
 
   /**
-   * Calls {@link Weight#extractTerms(Set)} on an empty index for the query.
+   * Extracts matching terms after rewriting against an empty index
    */
   protected static Set<Term> extractTerms(Query query) throws IOException {
     Set<Term> queryTerms = new HashSet<>();
-    EMPTY_INDEXSEARCHER.createWeight(EMPTY_INDEXSEARCHER.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1).extractTerms(queryTerms);
+    EMPTY_INDEXSEARCHER.rewrite(query).visit(QueryVisitor.termCollector(queryTerms));
     return queryTerms;
   }
 
@@ -816,7 +815,7 @@ public class UnifiedHighlighter {
         || highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES); // Weight.Matches will find all
 
     return highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
-        ? MultiTermHighlighting.extractAutomata(query, getFieldMatcher(field), lookInSpan, this::preMultiTermQueryRewrite)
+        ? MultiTermHighlighting.extractAutomata(query, getFieldMatcher(field), lookInSpan)
         : ZERO_LEN_AUTOMATA_ARRAY;
   }
 
@@ -863,7 +862,7 @@ public class UnifiedHighlighter {
           //skip using a memory index since it's pure term filtering
           return new TokenStreamOffsetStrategy(components, getIndexAnalyzer());
         } else {
-          return new MemoryIndexOffsetStrategy(components, getIndexAnalyzer(), this::preMultiTermQueryRewrite);
+          return new MemoryIndexOffsetStrategy(components, getIndexAnalyzer());
         }
       case NONE_NEEDED:
         return NoOpOffsetStrategy.INSTANCE;
@@ -899,19 +898,6 @@ public class UnifiedHighlighter {
    * @return A Collection of Query object(s) if needs to be rewritten, otherwise null.
    */
   protected Collection<Query> preSpanQueryRewrite(Query query) {
-    return null;
-  }
-
-  /**
-   * When dealing with multi term queries / span queries, we may need to handle custom queries that aren't supported
-   * by the default automata extraction in {@code MultiTermHighlighting}. This can be overridden to return a collection
-   * of queries if appropriate, or null if nothing to do. If query is not custom, simply returning null will allow the
-   * default rules to apply.
-   *
-   * @param query Query to be highlighted
-   * @return A Collection of Query object(s) if needst o be rewritten, otherwise null.
-   */
-  protected Collection<Query> preMultiTermQueryRewrite(Query query) {
     return null;
   }
 
@@ -1008,9 +994,9 @@ public class UnifiedHighlighter {
     }
 
     @Override
-    public void stringField(FieldInfo fieldInfo, byte[] byteValue) throws IOException {
-      String value = new String(byteValue, StandardCharsets.UTF_8);
+    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
       assert currentField >= 0;
+      Objects.requireNonNull(value, "String value should not be null");
       CharSequence curValue = values[currentField];
       if (curValue == null) {
         //question: if truncate due to maxLength, should we try and avoid keeping the other chars in-memory on

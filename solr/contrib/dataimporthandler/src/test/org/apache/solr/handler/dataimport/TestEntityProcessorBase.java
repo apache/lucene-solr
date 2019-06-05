@@ -55,7 +55,7 @@ public class TestEntityProcessorBase extends AbstractDataImportHandlerTestCase {
     assertNotNull(res.get("T3"));
   }
 
-  static class T1 extends Transformer {
+  public static class T1 extends Transformer {
 
     @Override
     public Object transformRow(Map<String, Object> aRow, Context context) {
@@ -65,7 +65,7 @@ public class TestEntityProcessorBase extends AbstractDataImportHandlerTestCase {
     }
   }
 
-  static class T2 extends Transformer {
+  public static class T2 extends Transformer {
 
     @Override
     public Object transformRow(Map<String, Object> aRow, Context context) {
@@ -74,7 +74,7 @@ public class TestEntityProcessorBase extends AbstractDataImportHandlerTestCase {
     }
   }
 
-  static class T3 {
+  public static class T3 {
 
     public Object transformRow(Map<String, Object> aRow) {
       aRow.put("T3", "T3 called");

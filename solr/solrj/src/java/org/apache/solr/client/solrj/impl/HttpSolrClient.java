@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -66,7 +67,6 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
@@ -91,7 +91,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 /**
  * A SolrClient implementation that talks directly to a Solr server via HTTP
  */
-public class HttpSolrClient extends SolrClient {
+public class HttpSolrClient extends BaseHttpSolrClient {
 
   private static final String UTF_8 = StandardCharsets.UTF_8.name();
   private static final String DEFAULT_PATH = "/select";
@@ -253,6 +253,12 @@ public class HttpSolrClient extends SolrClient {
       throws SolrServerException, IOException {
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
+    if (request.getHeaders() != null) {
+      Map<String, String> headers = request.getHeaders();
+      for (Map.Entry<String, String> entry : headers.entrySet()) {
+        method.setHeader(entry.getKey(), entry.getValue());
+      }
+    }
     return executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
   }
 
@@ -560,7 +566,7 @@ public class HttpSolrClient extends SolrClient {
       } else {
         contentType = "";
       }
-      
+
       // handle some http level checks before trying to parse the response
       switch (httpStatus) {
         case HttpStatus.SC_OK:
@@ -798,53 +804,26 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
     this.useMultiPartPost = useMultiPartPost;
   }
 
+
   /**
-   * Subclass of SolrException that allows us to capture an arbitrary HTTP
-   * status code that may have been returned by the remote server or a 
-   * proxy along the way.
+   * @deprecated since 8.0, catch {@link BaseHttpSolrClient.RemoteSolrException} instead
    */
-  public static class RemoteSolrException extends SolrException {
-    /**
-     * @param remoteHost the host the error was received from
-     * @param code Arbitrary HTTP status code
-     * @param msg Exception Message
-     * @param th Throwable to wrap with this Exception
-     */
+  @Deprecated
+  public static class RemoteSolrException extends BaseHttpSolrClient.RemoteSolrException {
+
     public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
-      super(code, "Error from server at " + remoteHost + ": " + msg, th);
+      super(remoteHost, code, msg, th);
     }
   }
 
   /**
-   * This should be thrown when a server has an error in executing the request and
-   * it sends a proper payload back to the client
+   * @deprecated since 8.0, catch {@link BaseHttpSolrClient.RemoteExecutionException} instead
    */
-  public static class RemoteExecutionException extends RemoteSolrException {
-    private NamedList meta;
+  @Deprecated
+  public static class RemoteExecutionException extends BaseHttpSolrClient.RemoteExecutionException {
 
     public RemoteExecutionException(String remoteHost, int code, String msg, NamedList meta) {
-      super(remoteHost, code, msg, null);
-      this.meta = meta;
-    }
-
-
-    public static RemoteExecutionException create(String host, NamedList errResponse) {
-      Object errObj = errResponse.get("error");
-      if (errObj != null) {
-        Number code = (Number) getObjectByPath(errObj, true, Collections.singletonList("code"));
-        String msg = (String) getObjectByPath(errObj, true, Collections.singletonList("msg"));
-        return new RemoteExecutionException(host, code == null ? ErrorCode.UNKNOWN.code : code.intValue(),
-            msg == null ? "Unknown Error" : msg, errResponse);
-
-      } else {
-        throw new RuntimeException("No error");
-      }
-
-    }
-
-    public NamedList getMetaData() {
-
-      return meta;
+      super(remoteHost, code, msg, meta);
     }
   }
 

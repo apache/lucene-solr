@@ -100,6 +100,7 @@ public class SolrXmlConfig {
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getShardHandlerFactoryPluginInfo(config));
     configBuilder.setSolrCoreCacheFactoryConfig(getTransientCoreCacheFactoryPluginInfo(config));
+    configBuilder.setTracerConfig(getTracerPluginInfo(config));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(config, "solr/logging/*[@name]", "solr/logging/watcher/*[@name]"));
     configBuilder.setSolrProperties(loadProperties(config));
     if (cloudConfig != null)
@@ -256,6 +257,9 @@ public class SolrXmlConfig {
           break;
         case "solrDataHome":
           builder.setSolrDataHome(value);
+          break;
+        case "maxBooleanClauses":
+          builder.setBooleanQueryMaxClauseCount(parseInt(name, value));
           break;
         case "managementPath":
           builder.setManagementPath(value);
@@ -549,5 +553,10 @@ public class SolrXmlConfig {
   private static PluginInfo getTransientCoreCacheFactoryPluginInfo(XmlConfigFile config) {
     Node node = config.getNode("solr/transientCoreCacheFactory", false);
     return (node == null) ? null : new PluginInfo(node, "transientCoreCacheFactory", false, true);
+  }
+
+  private static PluginInfo getTracerPluginInfo(XmlConfigFile config) {
+    Node node = config.getNode("solr/tracerConfig", false);
+    return (node == null) ? null : new PluginInfo(node, "tracerConfig", false, true);
   }
 }

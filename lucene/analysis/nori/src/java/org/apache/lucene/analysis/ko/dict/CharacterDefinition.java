@@ -37,7 +37,7 @@ public final class CharacterDefinition {
   public static final int CLASS_COUNT = CharacterClass.values().length;
 
   // only used internally for lookup:
-  private enum CharacterClass {
+  enum CharacterClass {
     NGRAM, DEFAULT, SPACE, SYMBOL, NUMERIC, ALPHA, CYRILLIC, GREEK, HIRAGANA, KATAKANA, KANJI, HANGUL, HANJA, HANJANUMERIC;
   }
 

@@ -20,9 +20,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FutureObjects;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -106,7 +106,7 @@ final class BooleanScorer extends BulkScorer {
     }
 
     public BulkScorerAndDoc get(int i) {
-      FutureObjects.checkIndex(i, size());
+      Objects.checkIndex(i, size());
       return (BulkScorerAndDoc) getHeapArray()[1 + i];
     }
 

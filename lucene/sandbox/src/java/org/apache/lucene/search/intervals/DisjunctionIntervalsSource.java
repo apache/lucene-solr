@@ -19,24 +19,41 @@ package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.util.PriorityQueue;
 
 class DisjunctionIntervalsSource extends IntervalsSource {
 
-  final List<IntervalsSource> subSources;
+  final Collection<IntervalsSource> subSources;
 
-  public DisjunctionIntervalsSource(List<IntervalsSource> subSources) {
-    this.subSources = subSources;
+  public DisjunctionIntervalsSource(Collection<IntervalsSource> subSources) {
+    this.subSources = simplify(subSources);
+  }
+
+  private static Collection<IntervalsSource> simplify(Collection<IntervalsSource> sources) {
+    Set<IntervalsSource> simplified = new HashSet<>();
+    for (IntervalsSource source : sources) {
+      if (source instanceof DisjunctionIntervalsSource) {
+        simplified.addAll(source.pullUpDisjunctions());
+      }
+      else {
+        simplified.add(source);
+      }
+    }
+    return simplified;
   }
 
   @Override
@@ -84,19 +101,26 @@ class DisjunctionIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public void extractTerms(String field, Set<Term> terms) {
+  public void visit(String field, QueryVisitor visitor) {
+    Query parent = new IntervalQuery(field, this);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, parent);
     for (IntervalsSource source : subSources) {
-      source.extractTerms(field, terms);
+      source.visit(field, v);
     }
   }
 
   @Override
   public int minExtent() {
-    int minExtent = subSources.get(0).minExtent();
-    for (int i = 1; i < subSources.size(); i++) {
-      minExtent = Math.min(minExtent, subSources.get(i).minExtent());
+    int minExtent = Integer.MAX_VALUE;
+    for (IntervalsSource subSource : subSources) {
+      minExtent = Math.min(minExtent, subSource.minExtent());
     }
     return minExtent;
+  }
+
+  @Override
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    return subSources;
   }
 
   static class DisjunctionIntervalIterator extends IntervalIterator {

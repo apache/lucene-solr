@@ -31,7 +31,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Ignore;
 
 public class TestIntervalQuery extends LuceneTestCase {
 
@@ -71,7 +70,8 @@ public class TestIntervalQuery extends LuceneTestCase {
       "w2 w1",
       "w2 w1 w3 w2 w4",
       "coordinate genome mapping research",
-      "coordinate genome research"
+      "coordinate genome research",
+      "greater new york"
   };
 
   private void checkHits(Query query, int[] results) throws IOException {
@@ -166,16 +166,45 @@ public class TestIntervalQuery extends LuceneTestCase {
     checkHits(q, new int[]{});
   }
 
-  // The Vigna paper doesn't deal with prefix disjunctions.  For now, we keep the same
-  // logic as detailed in the paper, but we may want to address it in future so that tests
-  // like the one below will pass
-  @Ignore
   public void testNestedOr() throws IOException {
     Query q = new IntervalQuery(field, Intervals.phrase(
         Intervals.term("coordinate"),
         Intervals.or(Intervals.phrase("genome", "mapping"), Intervals.term("genome")),
         Intervals.term("research")));
     checkHits(q, new int[]{ 6, 7 });
+  }
+
+  public void testNestedOrWithGaps() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.phrase(
+        Intervals.term("coordinate"),
+        Intervals.or(Intervals.term("genome"), Intervals.extend(Intervals.term("mapping"), 1, 0)),
+        Intervals.term("research")));
+    checkHits(q, new int[]{ 6, 7 });
+  }
+
+  public void testNestedOrWithinDifference() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.phrase(
+        Intervals.term("coordinate"),
+        Intervals.notContaining(
+            Intervals.or(Intervals.phrase("genome", "mapping"), Intervals.term("genome")),
+            Intervals.term("wibble")),
+        Intervals.term("research")));
+    checkHits(q, new int[]{ 6, 7 });
+  }
+
+  public void testNestedOrWithinConjunctionFilter() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.phrase(
+        Intervals.term("coordinate"),
+        Intervals.containing(
+            Intervals.or(Intervals.phrase("genome", "mapping"), Intervals.term("genome")),
+            Intervals.term("genome")),
+        Intervals.term("research")));
+    checkHits(q, new int[]{ 6, 7 });
+
+    q = new IntervalQuery(field, Intervals.phrase(
+        Intervals.term("greater"),
+        Intervals.or(Intervals.phrase("new", "york"), Intervals.term("york"))));
+    checkHits(q, new int[]{ 8 });
   }
 
   public void testUnordered() throws IOException {
@@ -189,6 +218,21 @@ public class TestIntervalQuery extends LuceneTestCase {
         )
     );
     checkHits(q, new int[]{3});
+  }
+
+  public void testNestedOrInUnorderedMaxGaps() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.maxgaps(1, Intervals.unordered(
+            Intervals.or(Intervals.term("coordinate"), Intervals.phrase("coordinate", "genome")),
+            Intervals.term("research"))
+    ));
+    checkHits(q, new int[]{ 6, 7 });
+  }
+
+  public void testNestedOrInContainedBy() throws IOException {
+    Query q = new IntervalQuery(field, Intervals.containedBy(
+        Intervals.term("genome"),
+        Intervals.or(Intervals.term("coordinate"), Intervals.ordered(Intervals.term("coordinate"), Intervals.term("research")))));
+    checkHits(q, new int[]{ 6, 7 });
   }
 
   public void testDefinedGaps() throws IOException {

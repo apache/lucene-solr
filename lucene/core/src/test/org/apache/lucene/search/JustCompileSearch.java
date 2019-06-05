@@ -18,11 +18,9 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -154,6 +152,11 @@ final class JustCompileSearch {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
     public boolean equals(Object obj) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -240,11 +243,6 @@ final class JustCompileSearch {
 
     protected JustCompileWeight() {
       super(null);
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override

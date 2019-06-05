@@ -289,6 +289,8 @@ public interface CommonParams {
 
   String VERSION_FIELD="_version_";
 
+  String FAIL_ON_VERSION_CONFLICTS ="failOnVersionConflicts";
+
   String ID = "id";
   String JSON_MIME = "application/json";
 

@@ -27,6 +27,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.MockSearchableSolrClient;
 import org.junit.After;
 import org.junit.Before;
@@ -42,6 +43,7 @@ import org.rrd4j.core.Sample;
 /**
  *
  */
+@LogLevel("org.apache.solr.metrics.rrd=DEBUG")
 public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
 
   private SolrRrdBackendFactory factory;
