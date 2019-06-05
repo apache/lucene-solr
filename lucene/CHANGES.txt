@@ -43,7 +43,7 @@ New Features
 
 * LUCENE-8815: Provide a DoubleValues implementation for retrieving the value of features without
   requiring a separate numeric field. The feature sort added previously has been updated to use this
-  new DoubleValues implementation. note that as feature values are stored with only 8 bits of mantissa
+  new DoubleValues implementation. Note that as feature values are stored with only 8 bits of mantissa
   the values returned may have a delta from the original value indexed.
   (Colin Goodheart-Smithe via Adrien Grand)
 

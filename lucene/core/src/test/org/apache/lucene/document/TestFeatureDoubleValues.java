@@ -25,11 +25,10 @@ import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /*
- * Test for sorting using a feature from a FeatureDoubleValuesSource.
+ * Test for retrieving values from a feature using a FeatureDoubleValuesSource.
  *
  * THE RULES:
  * 1. keywords like 'abstract' and 'static' should not appear in this file.
@@ -193,11 +192,11 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
   }
   
   public void testHashCodeAndEquals() {
-    FeatureDoubleValuesSource valuesSource = new FeatureDoubleValuesSource("test_field", new BytesRef("test_feature"));
-    FeatureDoubleValuesSource equal = new FeatureDoubleValuesSource("test_field", new BytesRef("test_feature"));
+    FeatureDoubleValuesSource valuesSource = new FeatureDoubleValuesSource("test_field", "test_feature");
+    FeatureDoubleValuesSource equal = new FeatureDoubleValuesSource("test_field", "test_feature");
 
-    FeatureDoubleValuesSource differentField = new FeatureDoubleValuesSource("other field", new BytesRef("test_feature"));
-    FeatureDoubleValuesSource differentFeature = new FeatureDoubleValuesSource("test_field", new BytesRef("other_feature"));
+    FeatureDoubleValuesSource differentField = new FeatureDoubleValuesSource("other field", "test_feature");
+    FeatureDoubleValuesSource differentFeature = new FeatureDoubleValuesSource("test_field", "test_feature");
     DoubleValuesSource otherImpl = new DoubleValuesSource() {
       
       @Override

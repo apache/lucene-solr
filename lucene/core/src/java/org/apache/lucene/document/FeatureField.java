@@ -36,7 +36,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
-import org.apache.lucene.util.BytesRef;
 
 /**
  * {@link Field} that can be used to store static scoring factors into
@@ -551,6 +550,6 @@ public final class FeatureField extends Field {
    * @throws NullPointerException if {@code field} or {@code featureName} is null.
    */
   public static DoubleValuesSource newDoubleValues(String field, String featureName) {
-    return new FeatureDoubleValuesSource(field, new BytesRef(featureName));
+    return new FeatureDoubleValuesSource(field, featureName);
   }
 }

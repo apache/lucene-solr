@@ -29,13 +29,13 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A {@link DoubleValuesSource} instance which can be used to read the values of a feature from the a 
+ * A {@link DoubleValuesSource} instance which can be used to read the values of a feature from a 
  * {@link FeatureField} for documents.
  */
-public class FeatureDoubleValuesSource extends DoubleValuesSource {
+class FeatureDoubleValuesSource extends DoubleValuesSource {
   
-  private BytesRef featureName;
-  private String field;
+  private final BytesRef featureName;
+  private final String field;
 
   /**
    * Creates a {@link DoubleValuesSource} instance which can be used to read the values of a feature from the a 
@@ -45,14 +45,14 @@ public class FeatureDoubleValuesSource extends DoubleValuesSource {
    * @param featureName feature name. Must not be null.
    * @throws NullPointerException if {@code field} or {@code featureName} is null.
    */
-  public FeatureDoubleValuesSource(String field, BytesRef featureName) {
+  public FeatureDoubleValuesSource(String field, String featureName) {
     this.field = Objects.requireNonNull(field);
-    this.featureName = Objects.requireNonNull(featureName);
+    this.featureName = new BytesRef(Objects.requireNonNull(featureName));
   }
 
   @Override
   public boolean isCacheable(LeafReaderContext ctx) {
-    return false;
+    return true;
   }
 
   @Override
@@ -101,7 +101,7 @@ public class FeatureDoubleValuesSource extends DoubleValuesSource {
 
   @Override
   public String toString() {
-    return "FeatureDoubleValuesSource("+field+", "+featureName+")";
+    return "FeatureDoubleValuesSource("+field+", "+featureName.utf8ToString()+")";
   }
   
   static class FeatureDoubleValues extends DoubleValues {
