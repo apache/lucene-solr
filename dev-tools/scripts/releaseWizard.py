@@ -70,6 +70,8 @@ def expand_jinja(text, vars=None):
     global_vars = OrderedDict({
         'script_version': state.script_version,
         'release_version': state.release_version,
+        'release_version_underscore': state.release_version.replace('.', '_'),
+        'release_date': state.get_release_date(),
         'ivy2_folder': os.path.expanduser("~/.ivy2/"),
         'config_path': state.config_path,
         'rc_number': state.rc_number,
@@ -85,6 +87,7 @@ def expand_jinja(text, vars=None):
         'stable_branch': state.get_stable_branch_name(),
         'minor_branch': state.get_minor_branch_name(),
         'release_type': state.release_type,
+        'is_feature_release': state.release_type in ['minor', 'major'],
         'release_version_major': state.release_version_major,
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
@@ -93,8 +96,21 @@ def expand_jinja(text, vars=None):
         'get_next_version': state.get_next_version(),
         'current_git_rev': state.get_current_git_rev(),
         'keys_downloaded': keys_downloaded(),
+        'editor': os.environ['EDITOR'] if 'EDITOR' in os.environ else 'wordpad.exe' if is_windows() else 'vi',
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
-        'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date())
+        'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date()),
+        'lucene_highlights_file': lucene_highlights_file,
+        'solr_highlights_file': solr_highlights_file,
+        'tlp_news_draft': tlp_news_draft,
+        'lucene_news_draft': lucene_news_draft,
+        'solr_news_draft': solr_news_draft,
+        'tlp_news_file': tlp_news_file,
+        'lucene_news_file': lucene_news_file,
+        'solr_news_file': solr_news_file,
+        'load_lines': load_lines,
+        'set_java_home': set_java_home,
+        'latest_version': state.get_latest_version(),
+        'master_version': state.get_master_version()
     })
     global_vars.update(state.get_todo_states())
     if vars:
@@ -233,6 +249,7 @@ class ReleaseState:
         self.config_path = config_path
         self.todo_groups = None
         self.todos = None
+        self.latest_version = None
         self.previous_rcs = {}
         self.rc_number = 1
         self.start_date = unix_time_millis(datetime.utcnow())
@@ -251,13 +268,37 @@ class ReleaseState:
         self.release_version_major = v.major
         self.release_version_minor = v.minor
         self.release_version_bugfix = v.bugfix
-        self.release_branch = self.get_minor_branch_name()
+        self.release_branch = "branch_%s_%s" % (v.major, v.minor)
         if v.is_major_release():
             self.release_type = 'major'
         elif v.is_minor_release():
             self.release_type = 'minor'
         else:
             self.release_type = 'bugfix'
+
+    def get_release_date(self):
+        publish_task = self.get_todo_by_id('publish_maven')
+        if publish_task.is_done():
+            return unix_to_datetime(publish_task.get_state()['done_date'])
+        else:
+            return None
+
+    def get_latest_version(self):
+        if self.latest_version is None:
+            releases_str = load("https://projects.apache.org/json/foundation/releases.json", "utf-8")
+            releases = json.loads(releases_str)['lucene']
+            versions = [ r for r in list(map(lambda y: y[7:], filter(lambda x: x.startswith('lucene-'), list(releases.keys())))) ]
+            latest = versions[0]
+            for ver in versions:
+                if Version.parse(ver).gt(Version.parse(latest)):
+                    latest = ver
+            self.latest_version = latest
+            self.save()
+        return state.latest_version
+
+    def get_master_version(self):
+        v = Version.parse(self.get_latest_version())
+        return "%s.%s.%s" % (v.major + 1, 0, 0)
 
     def validate_release_version(self, branch_type, branch, release_version):
         ver = Version.parse(release_version)
@@ -323,7 +364,7 @@ class ReleaseState:
         for todo_id in self.todos:
             t = self.todos[todo_id]
             tmp_todos[todo_id] = copy.deepcopy(t.state)
-        return {
+        dict = {
             'script_version': self.script_version,
             'release_version': self.release_version,
             'start_date': self.start_date,
@@ -332,12 +373,19 @@ class ReleaseState:
             'todos': tmp_todos,
             'previous_rcs': self.previous_rcs
         }
+        if self.latest_version:
+            dict['latest_version'] = self.latest_version
+        return dict
 
     def restore_from_dict(self, dict):
         self.script_version = dict['script_version']
         assert dict['release_version'] == self.release_version
         if 'start_date' in dict:
             self.start_date = dict['start_date']
+        if 'latest_version' in dict:
+            self.latest_version = dict['latest_version']
+        else:
+            self.latest_version = None
         self.rc_number = dict['rc_number']
         self.script_branch = dict['script_branch']
         self.previous_rcs = copy.deepcopy(dict['previous_rcs'])
@@ -430,27 +478,39 @@ class ReleaseState:
         return folder
 
     def get_minor_branch_name(self):
-        return "branch_%s_%s" % (self.release_version_major, self.release_version_minor)
+        latest = state.get_latest_version()
+        if latest is not None:
+            v = Version.parse(latest)
+            return "branch_%s_%s" % (v.major, v.minor)
+        else:
+            raise Exception("Cannot find latest version")
 
     def get_stable_branch_name(self):
-        return "branch_%sx" % self.release_version_major
+        v = Version.parse(self.get_latest_version())
+        return "branch_%sx" % v.major
 
     def get_next_version(self):
         if self.release_type == 'major':
-            return "master (%s.0)" % (self.release_version_major + 1)
+            return "%s.0" % (self.release_version_major + 1)
         if self.release_type == 'minor':
             return "%s.%s" % (self.release_version_major, self.release_version_minor + 1)
         if self.release_type == 'bugfix':
             return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix + 1)
 
     def get_java_home(self):
-        v = Version.parse(self.release_version)
+        return self.get_java_home_for_version(self.release_version)
+
+    def get_java_home_for_version(self, version):
+        v = Version.parse(version)
         java_ver = java_versions[v.major]
         java_home_var = "JAVA%s_HOME" % java_ver
         if java_home_var in os.environ:
             return os.environ.get(java_home_var)
         else:
             raise Exception("Script needs environment variable %s" % java_home_var )
+
+    def get_java_cmd_for_version(self, version):
+        return os.path.join(self.get_java_home_for_version(version), "bin", "java")
 
     def get_java_cmd(self):
         return os.path.join(self.get_java_home(), "bin", "java")
@@ -666,11 +726,11 @@ class Todo(SecretYamlObject):
                         continue
                     print("* %s = %s" % (k, todostate[k]))
                 print()
-            completed = ask_yes_no("Mark task '%s' as completed?" % self.title)
+            completed = ask_yes_no("Mark task '%s' as completed?" % self.get_title())
             self.set_done(completed)
             state.save()
         except Exception as e:
-            print("ERROR while executing todo %s (%s)" % (self.title, e))
+            print("ERROR while executing todo %s (%s)" % (self.get_title(), e))
 
     def get_menu_item(self):
         return FunctionItem(self.get_title, self.display_and_confirm)
@@ -788,6 +848,10 @@ def expand_multiline(cmd_txt, indent=0):
     return re.sub(r'  +', " %s\n    %s" % (Commands.cmd_continuation_char, " "*indent), cmd_txt)
 
 
+def unix_to_datetime(unix_stamp):
+    return datetime.utcfromtimestamp(unix_stamp / 1000)
+
+
 def generate_asciidoc():
     base_filename = os.path.join(state.get_release_folder(),
                                  "lucene_solr_release_%s"
@@ -812,7 +876,7 @@ def generate_asciidoc():
                 continue
             fh.write("=== %s\n\n" % todo.title)
             if todo.is_done():
-                fh.write("_Completed %s_\n\n" % datetime.utcfromtimestamp(todo.state['done_date'] / 1000).strftime(
+                fh.write("_Completed %s_\n\n" % unix_to_datetime(todo.state['done_date']).strftime(
                     "%Y-%m-%d %H:%M UTC"))
             if todo.get_asciidoc():
                 fh.write("%s\n\n" % todo.get_asciidoc())
@@ -853,16 +917,8 @@ def generate_asciidoc():
                 fh.write("cd %s\n" % cmds.get_root_folder())
                 cmds2 = ensure_list(cmds.commands)
                 for c in cmds2:
-                    pre = post = ""
-                    if c.cwd:
-                        pre = "pushd %s && " % c.cwd
-                        post = " && popd"
-                    if c.comment:
-                        if is_windows():
-                            fh.write("REM %s\n" % c.get_comment())
-                        else:
-                            fh.write("# %s\n" % c.get_comment())
-                    fh.write("%s%s%s\n" % (pre, expand_multiline(c.get_cmd()), post))
+                    for line in c.display_cmd():
+                        fh.write("%s\n" % line)
                 fh.write("----\n\n")
             if todo.post_description and not todo.get_asciidoc():
                 fh.write("\n%s\n\n" % todo.get_post_description())
@@ -1129,6 +1185,25 @@ def main():
     os.environ['JAVA_HOME'] = state.get_java_home()
     os.environ['JAVACMD'] = state.get_java_cmd()
 
+    global tlp_news_draft
+    global lucene_news_draft
+    global solr_news_draft
+    global lucene_highlights_file
+    global solr_highlights_file
+    global website_folder
+    global tlp_news_file
+    global lucene_news_file
+    global solr_news_file
+    lucene_highlights_file = os.path.join(state.get_release_folder(), 'lucene_highlights.txt')
+    solr_highlights_file = os.path.join(state.get_release_folder(), 'solr_highlights.txt')
+    tlp_news_draft = os.path.join(state.get_release_folder(), 'tlp_news.md')
+    lucene_news_draft = os.path.join(state.get_release_folder(), 'lucene_news.md')
+    solr_news_draft = os.path.join(state.get_release_folder(), 'solr_news.md')
+    website_folder = os.path.join(state.get_release_folder(), 'website-source')
+    tlp_news_file = os.path.join(website_folder, 'content', 'mainnews.mdtext')
+    lucene_news_file = os.path.join(website_folder, 'content', 'core', 'corenews.mdtext')
+    solr_news_file = os.path.join(website_folder, 'content', 'solr', 'news.mdtext')
+
     main_menu = ConsoleMenu(title="Lucene/Solr ReleaseWizard (script-ver=v%s ALPHA)" % getScriptVersion(),
                             subtitle=get_releasing_text,
                             prologue_text="Welcome to the release wizard. From here you can manage the process including creating new RCs. "
@@ -1360,16 +1435,8 @@ class Commands(SecretYamlObject):
         print("\n  cd %s" % root)
         commands = ensure_list(self.commands)
         for cmd in commands:
-            pre = post = ''
-            if cmd.comment:
-                if is_windows():
-                    print("  REM %s" % cmd.comment)
-                else:
-                    print("  # %s" % cmd.comment)
-            if cmd.cwd:
-                pre = "pushd %s && " % cmd.cwd
-                post = " && popd"
-            print("  %s%s%s" % (pre, expand_multiline(cmd.get_cmd(), indent=2), post))
+            for line in cmd.display_cmd():
+                print("  %s" % line)
         print()
         if not self.enable_execute is False:
             if self.run_text:
@@ -1417,10 +1484,10 @@ class Commands(SecretYamlObject):
                             try:
                                 out = run(cmd_to_run, cwd=cwd)
                                 mode = 'a' if cmd.redirect_append is True else 'w'
-                                with open(os.path.join(root, cwd, cmd.redirect), mode) as outfile:
+                                with open(os.path.join(root, cwd, cmd.get_redirect()), mode) as outfile:
                                     outfile.write(out)
                                     outfile.flush()
-                                print("Wrote %s bytes to redirect file %s" % (len(out), cmd.redirect))
+                                print("Wrote %s bytes to redirect file %s" % (len(out), cmd.get_redirect()))
                             except Exception as e:
                                 print("Command %s failed: %s" % (cmd_to_run, e))
                                 success = False
@@ -1442,7 +1509,7 @@ class Commands(SecretYamlObject):
                                 else:
                                     print("Wait until command completes... Full log in %s\n" % logfile)
                                 if cmd.comment:
-                                    print("# %s\n" % cmd.comment)
+                                    print("# %s\n" % cmd.get_comment())
                             start_time = time.time()
                             returncode = run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee, tail_lines=25, live=cmd.live)
                             elapsed = time.time() - start_time
@@ -1545,6 +1612,9 @@ class Command(SecretYamlObject):
     def get_comment(self):
         return self.jinjaify(self.comment)
 
+    def get_redirect(self):
+        return self.jinjaify(self.redirect)
+
     def get_cmd(self):
         return self.jinjaify(self.cmd, join=True)
 
@@ -1577,6 +1647,21 @@ class Command(SecretYamlObject):
         else:
             return expand_jinja(data, v)
 
+    def display_cmd(self):
+        lines = []
+        pre = post = ''
+        if self.comment:
+            if is_windows():
+                lines.append("REM %s" % self.get_comment())
+            else:
+                lines.append("# %s" % self.get_comment())
+        if self.cwd:
+            lines.append("pushd %s" % self.cwd)
+        redir = "" if self.redirect is None else " %s %s" % (">" if self.redirect_append is None else ">>" , self.get_redirect())
+        lines.append("%s%s" % (expand_multiline(self.get_cmd(), indent=2), redir))
+        if self.cwd:
+            lines.append("popd")
+        return lines
 
 class UserInput(SecretYamlObject):
     yaml_tag = u'!UserInput'
@@ -1660,12 +1745,97 @@ def clear_ivy_cache(todo):
             print("Moved ivy cache folder to %s" % bak_folder)
     return True
 
-
 def website_javadoc_redirect(todo):
-    htfile = os.path.join(state.get_release_folder(), 'website_content')
-    htaccess = file_to_string(htfile)
-    print("Got htaccess file %s with conent:\n%s" % (htfile, htaccess))
+    htfile = os.path.join(website_folder, 'content', '.htaccess')
+    latest = state.get_latest_version()
+    if Version.parse(state.release_version).gt(Version.parse(latest)):
+        print("We are releasing the latest version ")
+        htaccess = file_to_string(htfile)
+        # print("Got htaccess file %s with conent:\n%s" % (htfile, htaccess))
+        return False
+    else:
+        print("Task not necessary since %s is not the latest release version" % state.release_version)
+        return True
+
+
+def prepare_highlights(todo):
+    if not os.path.exists(lucene_highlights_file):
+        with open(lucene_highlights_file, 'w') as fp:
+            fp.write("* New cool Lucene feature\n* Important bugfix")
+    if not os.path.exists(solr_highlights_file):
+        with open(solr_highlights_file, 'w') as fp:
+            fp.write("* New cool Solr feature\n* Important bugfix")
     return True
+
+
+def prepare_announce(todo):
+    if not os.path.exists(tlp_news_draft):
+        tlp_text = expand_jinja("(( template=announce_tlp ))")
+        with open(tlp_news_draft, 'w') as fp:
+            fp.write(tlp_text)
+        # print("Wrote TLP announce draft to %s" % tlp_news_file)
+
+        lucene_text = expand_jinja("(( template=announce_lucene ))")
+        with open(lucene_news_draft, 'w') as fp:
+            fp.write(lucene_text)
+        # print("Wrote Lucene announce draft to %s" % lucene_news_file)
+
+        solr_text = expand_jinja("(( template=announce_solr ))")
+        with open(solr_news_draft, 'w') as fp:
+            fp.write(solr_text)
+        # print("Wrote Solr announce draft to %s" % solr_news_file)
+    else:
+        print("Drafts already exist, not re-generating")
+    return True
+
+
+def patch_news_file(orig, draft, sticky_lines):
+    orig_lines = open(orig).readlines()
+    draft_lines = open(draft).readlines()
+    lines = orig_lines[0:sticky_lines]
+    lines.extend(draft_lines)
+    lines.append('\n')
+    lines.append('\n')
+    lines.extend(orig_lines[sticky_lines:])
+    with open(orig, 'w') as fp:
+        fp.writelines(lines)
+    print("Added news to %s" % orig)
+
+
+def update_news(todo):
+    touch_file = os.path.join(state.get_release_folder(), 'news_updated')
+    if not os.path.exists(touch_file):
+        patch_news_file(tlp_news_file, tlp_news_draft, 2)
+        patch_news_file(lucene_news_file, lucene_news_draft, 2)
+        patch_news_file(solr_news_file, solr_news_draft, 4)
+
+        latest = state.get_latest_version()
+        if Version.parse(state.release_version).gt(Version.parse(latest)):
+            print("We are releasing the latest version, updating latestversion.mdtext")
+            with open(os.path.join(website_folder, 'content', 'latestversion.mdtext'), 'w') as fp:
+                fp.write(state.release_version)
+
+        with open(touch_file, 'w') as fp:
+            fp.write("true")
+        print("News files in website folder updated with draft announcements")
+    else:
+        print("News files not changed, already patched earlier. Please edit by hand")
+
+    return True
+
+
+def set_java_home(version):
+    os.environ['JAVA_HOME'] = state.get_java_home_for_version(version)
+    os.environ['JAVACMD'] = state.get_java_cmd_for_version(version)
+
+
+def load_lines(file):
+    if os.path.exists(file):
+        with open(file, 'r') as fp:
+            return fp.readlines()
+    else:
+        return ['* foo', '* bar']
+
 
 if __name__ == '__main__':
     try:

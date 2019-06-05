@@ -85,7 +85,135 @@ templates:
     This vote has {% if passed %}PASSED{% else %}FAILED{% endif %} 
     ----
     {%- endmacro %}
-#
+  announce_tlp: |
+    ## {{ release_date.strftime("%-d %B %Y") | default('<date>') }}, Apache Lucene {{ release_version }} and Apache Solr {{ release_version }} available
+
+    The Lucene PMC is pleased to announce the release of Apache® Lucene™ {{ release_version }} and Apache® Solr™ {{ release_version }}.
+
+    Lucene can be downloaded from <https://lucene.apache.org/core/downloads.html>
+    and Solr can be downloaded from <https://lucene.apache.org/solr/downloads.html>
+
+    ### Highlights of this Lucene release include:
+    
+    {% for line in load_lines(lucene_highlights_file) %}
+      {{ line }}
+    {%- endfor %}
+
+
+    ### Highlights of this Solr release include:
+
+    {% for line in load_lines(solr_highlights_file) %}
+      {{ line }}
+    {%- endfor %}
+  announce_lucene: |
+    ## {{ release_date.strftime("%-d %B %Y") | default('<date>') }}, Apache Lucene™ {{ release_version }} available
+
+    The Lucene PMC is pleased to announce the release of Apache Lucene {{ release_version }}.
+
+    Apache Lucene is a high-performance, full-featured text search engine library written entirely in Java. It is a technology suitable for nearly any application that requires full-text search, especially cross-platform.
+
+    This release contains numerous bug fixes, optimizations, and improvements, some of which are highlighted below. The release is available for immediate download at:
+      <https://lucene.apache.org/core/downloads.html>
+
+    ### Lucene {{ release_version }} Release Highlights:
+
+    {% for line in load_lines(lucene_highlights_file) %}
+      {{ line }}
+    {%- endfor %}
+
+
+    Please read CHANGES.txt for a full list of {% if is_feature_release %}new features and {% endif %}changes:
+      <https://lucene.apache.org/core/{{ release_version_underscore }}/changes/Changes.html>
+  announce_solr: |
+    ## {{ release_date.strftime("%-d %B %Y") | default('<date>') }}, Apache Solr™ {{ release_version }} available
+
+    The Lucene PMC is pleased to announce the release of Apache Solr {{ release_version }}.
+
+    Solr is the popular, blazing fast, open source NoSQL search platform from the Apache Lucene project. Its major features include powerful full-text search, hit highlighting, faceted search, dynamic clustering, database integration, rich document handling, and geospatial search. Solr is highly scalable, providing fault tolerant distributed search and indexing, and powers the search and navigation features of many of the world's largest internet sites.
+
+    Solr {{ release_version }} is available for immediate download at:
+      <https://lucene.apache.org/solr/downloads.html>
+
+    ### Solr {{ release_version }} Release Highlights:
+
+    {% for line in load_lines(solr_highlights_file) %}
+      {{ line }}
+    {%- endfor %}
+
+
+    Please read CHANGES.txt for a full list of {% if is_feature_release %}new features {% endif %}and changes:
+      <https://lucene.apache.org/solr/{{ release_version_underscore }}/changes/Changes.html>
+
+    Solr {{ release_version }} also includes {% if is_feature_release %}other new features as well as {% endif %} optimizations and bugfixes in the corresponding Apache Lucene release:
+      <https://lucene.apache.org/core/{{ release_version_underscore }}/changes/Changes.html>
+  announce_lucene_mail: |
+    The template below can be used to announce the Lucene release to the
+    internal mailing lists.
+
+    .Mail template
+    ----
+    To: dev@lucene.apache.org, general@lucene.apache.org, java-user@lucene.apache.org
+    Subject: [ANNOUNCE] Apache Lucene {{ release_version }} released
+
+    (( template=announce_lucene_mail_body ))
+    ----
+  announce_lucene_sign_mail: |
+    The template below can be used to announce the Lucene release to the
+    `announce@apache.org` mailing list. The mail *should be signed with PGP.*
+    and sent *from your `@apache.org` account*.    
+
+    .Mail template
+    ----
+    From: {{ gpg.apache_id }}@apache.org
+    To: announce@apache.org
+    Subject: [ANNOUNCE] Apache Lucene {{ release_version }} released
+
+    (( template=announce_lucene_mail_body ))
+    ----
+  announce_lucene_mail_body: |
+    {% for line in load_lines(lucene_news_draft) -%}
+    {{ line }}
+    {%- endfor %}
+
+
+    Note: The Apache Software Foundation uses an extensive mirroring network for
+    distributing releases. It is possible that the mirror you are using may not have
+    replicated the release yet. If that is the case, please try another mirror.
+    This also applies to Maven access.
+  announce_solr_mail: |
+    The template below can be used to announce the Solr release to the
+    internal mailing lists.
+
+    .Mail template
+    ----
+    To: dev@lucene.apache.org, general@lucene.apache.org, solr-user@lucene.apache.org
+    Subject: [ANNOUNCE] Apache Solr {{ release_version }} released
+
+    (( template=announce_solr_mail_body ))
+    ----
+  announce_solr_sign_mail: |
+    The template below can be used to announce the Solr release to the
+    `announce@apache.org` mailing list. The mail *should be signed with PGP.*
+    and sent *from your `@apache.org` account*.
+
+    .Mail template
+    ----
+    From: {{ gpg.apache_id }}@apache.org
+    To: announce@apache.org
+    Subject: [ANNOUNCE] Apache Solr {{ release_version }} released
+
+    (( template=announce_solr_mail_body ))
+    ----
+  announce_solr_mail_body: |
+    {% for line in load_lines(solr_news_draft) -%}
+    {{ line }}
+    {%- endfor %}
+
+
+    Note: The Apache Software Foundation uses an extensive mirroring network for
+    distributing releases. It is possible that the mirror you are using may not have
+    replicated the release yet. If that is the case, please try another mirror.
+    This also applies to Maven access.
 # TODOs belong to groups for easy navigation in menus. Todo objects may contain asciidoc
 # descriptions, a number of commands to execute, some links to display, user input to gather
 # etc. Here is the documentation of each type of object. For further details, please consult
@@ -882,8 +1010,6 @@ groups:
       The file extpaths.txt lists paths in the svn production tree, relative to the project website's root directory, 
       that are allowed to be out of sync with the staging tree. We need to update this in order to push generated
       javadocs directly to production SVN and thus avoid breaking the CMS staging capability.
-    vars:
-      version: "{{ release_version_major }}_{{ release_version_minor }}_{{ release_version_bugfix }}"
     links:
     - http://www.apache.org/dev/cmsref
     - http://www.apache.org/dev/cmsref#extpaths
@@ -893,24 +1019,24 @@ groups:
       confirm_each_command: true
       commands:
       - !Command
-        cmd: svn co --depth=immediates  https://svn.apache.org/repos/asf/lucene/cms/trunk/content  website-source
+        cmd: svn co https://svn.apache.org/repos/asf/lucene/cms/trunk  website-source
         logfile: svn-checkout-website.log
         tee: true
       - !Command
-        cmd: echo core/{{ version }}
-        cwd: website-source
+        cmd: echo core/{{ release_version_underscore }}
+        cwd: website-source/content
         redirect: extpaths.txt
         redirect_append: true
         comment: Add Lucene javadocs dir to extpaths
       - !Command
-        cmd: echo solr/{{ version }}
-        cwd: website-source
+        cmd: echo solr/{{ release_version_underscore }}
+        cwd: website-source/content
         redirect: extpaths.txt
         redirect_append: true
         comment: Add Solr javadocs dir to extpaths
       - !Command
-        cmd: svn commit -m "Update CMS production sync exceptions for {{ version }} javadocs" extpaths.txt
-        cwd: website-source
+        cmd: svn commit -m "Update CMS production sync exceptions for {{ release_version_underscore }} javadocs" extpaths.txt
+        cwd: website-source/content
         logfile: svn_commit_website.log
         tee: true
   - !Todo
@@ -956,20 +1082,272 @@ groups:
     description: |
       We make it possible to link to latest javadoc by providing redirect links for e.g. 
       http://lucene.apache.org/solr/api/solr-core/ which will auto redirect to whatever 
-      is the latest released version, i.e. http://lucene.apache.org/solr/{{ version }}/solr-core/ 
-      for {{ release_version }}. This is handled in `.htaccess`
+      is the latest released version, i.e. http://lucene.apache.org/solr/{{ version }}/solr-core/<version>.
+      This is handled in `.htaccess`
     function: website_javadoc_redirect
-    post_description: After the task is done, please test that the link redirects to version {{ release_version }}
+    asciidoc: |
+      We make it possible to link to latest javadoc by providing redirect links for e.g. 
+      http://lucene.apache.org/solr/api/solr-core/ which will auto redirect to whatever 
+      is the latest released version, i.e. http://lucene.apache.org/solr/{{ version }}/solr-core/<version>.
+
+      If we are releasing the latest version, this task will offer to patch the `.htaccess`
+      file with latest redirect info and commit this file back to website svn.
+    post_description: After the task is done, please test that the links below redirect to the correct version
     links:
     - http://lucene.apache.org/solr/api/solr-core/
+    - http://lucene.apache.org/core/api/core/
+  - !Todo
+    id: prepare_highlights
+    title: Edit the release highlights for Lucene and Solr
+    description: |
+      You will edit the release highlights for Lucene and Solr.
+      This will be done in two separate files, one highlight per line,
+      each line starting with a '*'.
+    function: prepare_highlights
+    commands: !Commands
+      root_folder: '{{ release_folder }}'
+      commands_text: |
+        Edit the highlights files, one highlight per line.
+        You have to exit the editor after edit to continue.
+      commands:
+      - !Command
+        cmd: "{{ editor }} {{ lucene_highlights_file }}"
+        comment: Edit the Lucene highlights      
+      - !Command
+        cmd: "{{ editor }} {{ solr_highlights_file }}"
+        comment: Edit the Solr highlights      
+  - !Todo
+    id: prepare_announce
+    title: Edit the drafts for the website news
+    description: |
+      Edit draft news texts for the TLP site and for Lucene and Solr sites.
+      These texts will also be used as a starting point for the release email later.
+    function: prepare_announce
+    commands: !Commands
+      root_folder: '{{ release_folder }}'
+      commands_text: |
+        Proof read the draft announcements and edit as you see fit.
+        You have to exit the editor after edit to continue.
+      commands:
+      - !Command
+        cmd: "{{ editor }} {{ tlp_news_draft }}"
+        comment: Edit the draft for TLP news announcement
+      - !Command
+        cmd: "{{ editor }} {{ lucene_news_draft }}"
+        comment: Edit the draft for Lucene announcement
+      - !Command
+        cmd: "{{ editor }} {{ solr_news_draft }}"
+        comment: Edit the draft for Solr announcement
+  - !Todo
+    id: update_news
+    title: Publish news to the web site
+    depends: prepare_announce
+    description: |
+      Update the news sections of the TLP, Lucene and Solr sites
+    vars:
+      website_source: "{{ [release_folder, 'website-source'] | path_join }}"
+    function: update_news
+    commands: !Commands
+      root_folder: '{{ website_source }}'
+      commands_text: |
+        Add news to the site. We'll first add the {{ release_version }} text to the file, 
+        then ask you to edit the file to verify the end result. You will now only edit
+        the files, we'll commit all changes in a later step.
+
+        You have to exit the editor after edit to continue.
+      commands:
+      - !Command
+        cmd: "{{ editor }} {{ tlp_news_file }}"
+        comment: Edit the complete website file for TLP news
+      - !Command
+        cmd: "{{ editor }} {{ lucene_news_file }}"
+        comment: Edit the complete website file for Lucene news
+      - !Command
+        cmd: "{{ editor }} {{ solr_news_file }}"
+        comment: Edit the complete website file for Solr news
+    post_description: |
+      You will review and commit all changes later
+  - !Todo
+    id: update_download_page
+    title: Update the download pages
+    depends: prepare_announce
+    description: |
+      Update the download pages
+    vars:
+      website_source: "{{ [release_folder, 'website-source'] | path_join }}"
+    commands: !Commands
+      root_folder: '{{ website_source }}'
+      commands_text: |
+        Update download pages to point to the latest release.
+        You have to exit the editor after edit to continue.
+      commands:
+      - !Command
+        cmd: "{{ editor }} content/solr/downloads.mdtext"
+        comment: Edit the Solr downloads page
+        stdout: true
+      - !Command
+        cmd: "{{ editor }} content/core/downloads.mdtext"
+        comment: Edit the Lucene downloads page
+        stdout: true
+    post_description: |
+      You will review and commit all changes later
+  - !Todo
+    id: update_other
+    title: Update rest of webpage
+    depends: prepare_announce
+    description: |
+      Update the rest of the web page. Please review all files in the checkout
+      and consider if any need change based on what changes there are in the
+      release you are doing. Things to consider:
+
+      * System requirements
+      * Quickstart and tutorial?
+    vars:
+      website_source: "{{ [release_folder, 'website-source'] | path_join }}"
+    commands: !Commands
+      root_folder: '{{ website_source }}'
+      commands_text: |
+        We'll open an editor on the root folder of the site checkout
+        You have to exit the editor after edit to continue.
+      commands:
+      - !Command
+        cmd: "{{ editor }} ."
+        comment: Open an editor on the root folder
+        stdout: true
+  - !Todo
+    id: publish_website
+    title: Publish the website changes
+    depends:
+    - update_news
+    - update_download_page
+    description: |
+      Publish the website changes
+    vars:
+      website_source: "{{ [release_folder, 'website-source'] | path_join }}"
+    commands: !Commands
+      root_folder: '{{ website_source }}'
+      commands_text: |
+        Verify that changes look good, and then publish.
+        You have to exit the editor after review to continue.
+      commands:
+      - !Command
+        cmd: svn st
+        stdout: true
+      - !Command
+        cmd: svn diff
+        redirect: "{{ [release_folder, 'website.diff'] | path_join }}"
+        comment: Make a diff of all edits. Will open in next step
+      - !Command
+        cmd: "{{ editor }} {{ [release_folder, 'website.diff'] | path_join }}"
+        comment: View the diff of the website changes
+        stdout: true
+      - !Command
+        cmd: svn commit -m "Update website for {{ release_version }} release"
+        comment: Commit changes if all looks good
+        logfile: commit-website.log
+    post_description: |
+      * Go to https://ci.apache.org/builders/lucene-site-staging and see that site is built
+      * Open http://lucene.staging.apache.org and see that everything looks fine
+      * Publish the site at https://cms.apache.org/lucene/publish
+
+      Wait for these changes to appear on both of Apache's main webservers 
+      (US: http://lucene.us.apache.org, EU: http://lucene.eu.apache.org, http://lucene.apache.org 
+      is dependent on your own geographic location, so the other mirror may still be outdated) 
+      before doing the next steps (see http://www.apache.org/dev/project-site.html for details on 
+      how the site is mirrored to Apache's main web servers). Once they appear, verify all links 
+      are correct in your changes!
+    links:
+    - https://ci.apache.org/builders/lucene-site-staging
+    - http://lucene.staging.apache.org
+    - https://svn.apache.org/repos/asf/lucene/cms/trunk/
+    - https://cms.apache.org/lucene/publish
+  - !Todo
+    id: update_doap
+    title: Update the DOAP files
+    description: |
+      Update the Core & Solr DOAP RDF files on the unstable, stable and release branches to 
+      reflect the new versions (note that the website .htaccess file redirects from their 
+      canonical URLs to their locations in the Lucene/Solr Git source repository - see 
+      dev-tools/doap/README.txt for more info)
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Edit DOAP files
+      commands:
+      - !Command
+        cmd: git checkout master && git pull
+        stdout: true
+        comment: Goto master branch
+      - !Command
+        cmd: "{{ editor }} dev-tools/doap/lucene.rdf"
+        comment: Edit Lucene DOAP, add version {{ release_version }}
+        stdout: true
+      - !Command
+        cmd: "{{ editor }} dev-tools/doap/solr.rdf"
+        comment: Edit Solr DOAP, add version {{ release_version }}
+        stdout: true
+      - !Command
+        cmd: git add dev-tools/doap/lucene.rdf dev-tools/doap/solr.rdf  && git commit -m "DOAP changes for release {{ release_version }}"
+        logfile: commit.log
+        stdout: true
+      - !Command
+        cmd: git push origin
+        logfile: push.log
+        stdout: true
 - !TodoGroup
   id: announce
   title: Announce the release
-  description: description
+  description: |
+    For feature releases, your announcement should describe the main features included 
+    in the release. *Send the announce as Plain-text email, not HTML.*
+
+    NOTE: Copy-pasting from the release notes might sometimes make cause it to be sent
+          as HTML formatted, which can break at the mailing list bot.
+          Better to copy-paste the raw/edit text.
   todos:
   - !Todo
-    id: id
-    title: title
+    id: announce_lucene
+    title: Announce the Lucene release (@l.a.o)
+    description: |
+      (( template=announce_lucene_mail ))
+  - !Todo
+    id: announce_solr
+    title: Announce the Solr release (@l.a.o)
+    description: |
+      (( template=announce_solr_mail ))
+  - !Todo
+    id: setup_pgp_mail
+    title: Setup your mail client for PGP
+    description: |
+      The announce mail to `announce@apache.org` should be cryptographically signed.
+      Make sure you have a PGP enabled email client with your apache ket installed.
+      There are plugins for popular email programs, as well as browser plugins for webmail.
+      See links for help on how to setup your email client for PGP.
+    links:
+    - https://www.openpgp.org/software/
+    - https://ssd.eff.org/en/module/how-use-pgp-mac-os-x
+    - https://ssd.eff.org/en/module/how-use-pgp-linux
+    - https://ssd.eff.org/en/module/how-use-pgp-windows
+    - https://www.openpgp.org/software/mailvelope/
+  - !Todo
+    id: announce_lucene_sig
+    title: Announce the Lucene release (announce@a.o)
+    description: |
+      (( template=announce_solr_sign_mail ))
+  - !Todo
+    id: announce_solr_sig
+    title: Announce the Solr release (announce@a.o)
+    description: |
+      (( template=announce_solr_sign_mail ))
+  - !Todo
+    id: add_to_wikipedia
+    title: Add the new version to Wikipedia
+    description: |
+      Go to Wikipedia and edit the page to include the new release.
+      Major versions should have a small new paragraph under 'History'.
+      If you know other languages than English, edit those as well.
+    links:
+    - https://en.wikipedia.org/wiki/Apache_Lucene
+    - https://en.wikipedia.org/wiki/Apache_Solr
 - !TodoGroup
   id: post_release
   title: Tasks to do after release
@@ -977,15 +1355,258 @@ groups:
   todos:
   - !Todo
     id: add_version_bugfix
-    title: Add a new bugfix version on release branch
+    title: Add a new bugfix version to stable and unstable branches
     types:
     - bugfix
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: 'Do the following on the release branch only:'
-      confirm_each_command: false
+      commands_text: |
+        Update versions on master and stable branch.
+        You may have to hand-edit some files before commit, so go slowly :)
+      confirm_each_command: true
       commands:
       - !Command
-        cmd: git checkout branch_7_7
+        cmd: git checkout master && git pull && git clean -df && git checkout -- .
+        comment: Go to master branch
+        logfile: checkout-master.log
       - !Command
-        cmd: python3 -u /Users/janhoy/git/lucene-solr/dev-tools/scripts/addVersion.py {{ get_next_version }}
+        cmd: python3 -u dev-tools/scripts/addVersion.py {{ release_version }}
+        logfile: addversion-master.log
+      - !Command
+        cmd: git diff
+        logfile: diff-master.log
+        tee: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
+        logfile: commit-master.log
+      - !Command
+        cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
+        logfile: checkout-stable.log
+        comment: Now the same for the stable branch
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addVersion.py {{ release_version }}
+        logfile: addversion-stable.log
+      - !Command
+        cmd: git diff
+        logfile: diff-stable.log
+        tee: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
+        logfile: commit-stable.log
+  - !Todo
+    id: synchronize_changes
+    title: Synchronize CHANGES.txt
+    description: |
+      Copy the CHANGES.txt section for this release back to the stable and unstable branches' 
+      CHANGES.txt files, removing any duplicate entries, but only from sections for as-yet 
+      unreleased versions; leave intact duplicate entries for already-released versions.
+
+      There is a script to generate a regex that will match JIRAs fixed in a release: 
+      `releasedJirasRegex.py`. The following examples will print regexes matching all JIRAs 
+      fixed in {{ release_version }}, which can then be used to find duplicates in unreleased 
+      version sections of the corresponding CHANGES.txt files.
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Synchronize CHANGES.txt
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        comment: Go to release branch
+        logfile: checkout-release.log
+        stdout: true
+      - !Command
+        cmd: python3 -u -B dev-tools/scripts/releasedJirasRegex.py {{ release_version }} lucene/CHANGES.txt  && python3 -u -B dev-tools/scripts/releasedJirasRegex.py {{ release_version }} solr/CHANGES.txt
+        tee: true
+        comment: Find version regexes
+      - !Command
+        cmd: git checkout master && git pull && git clean -df && git checkout -- .
+        comment: Go to master branch
+        logfile: checkout-master.log
+      - !Command
+        cmd: "{{ editor }} solr/CHANGES.txt"
+        comment: Edit Solr CHANGES, do necessary changes
+        stdout: true
+      - !Command
+        cmd: "{{ editor }} lucene/CHANGES.txt"
+        comment: Edit Lucene CHANGES, do necessary changes
+        stdout: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
+        logfile: commit-master.log
+      - !Command
+        cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
+        comment: Go to stable branch
+        logfile: checkout-stable.log
+      - !Command
+        cmd: "{{ editor }} solr/CHANGES.txt"
+        comment: Edit Solr CHANGES, do necessary changes
+        stdout: true
+      - !Command
+        cmd: "{{ editor }} lucene/CHANGES.txt"
+        comment: Edit Lucene CHANGES, do necessary changes
+        stdout: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
+        logfile: commit-stable.log
+  - !Todo
+    id: increment_release_version
+    title: Add the next version on release branch
+    description: Add the next version after the just-released version on the release branch
+    depends: publish_maven
+    vars:
+      next_version: "{{ release_version_major }}.{{ release_version_minor }}.{{ release_version_bugfix + 1 }}"
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to add the new bugfix version {{ next_version }} to the release branch
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        tee: true
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
+        tee: true
+      - !Command
+        cmd: git diff
+        logfile: diff.log
+        comment: Check the git diff before committing. Do any edits if necessary
+        tee: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Add next bugfix version {{ next_version }}"  && git push
+        logfile: commit-stable.log
+  - !Todo
+    id: backcompat_release
+    title: Generate Backcompat Indexes {{ release_branch }}
+    description: |
+      After each version of Lucene is released, compressed CFS, non-CFS, and sorted indexes created with 
+      the newly released version are added to lucene/backwards-codecs/src/test/org/apache/lucene/index/, 
+      for use in testing backward index compatibility via org.apache.lucene.index.TestBackwardsCompatibility, 
+      which is also located under the backwards-codecs/ module. There are also three indexes created only 
+      with major Lucene versions: moreterms, empty, and dvupdates. These indexes are created via methods 
+      on TestBackwardsCompatibility itself - see comments in the source for more information.
+
+      There is a script (dev-tools/scripts/addBackcompatIndexes.py) that automates most of the process: 
+      it downloads the source for the specified release; generates indexes for the current release using 
+      TestBackwardsCompatibility; compresses the indexes and places them in the correct place in the source 
+      tree; modifies TestBackwardsCompatibility.java to include the generated indexes in the list of indexes 
+      to test; and then runs TestBackwardsCompatibility. Run this script on the stable branch, the unstable 
+      branch, and on the release branch. On each branch, after running the script, git add the generated 
+      indexes, then cd lucene/backwards-codecs and run ant test -Dtestcase=TestBackwardsCompatibility and 
+      make sure it passes before running git commit and git push.
+
+      TestBackwardsCompatibility will not test indexes for Version.LATEST, and will fail if it finds indexes 
+      from that version, so *before you run addBackcompatIndexes.py*, make sure dev-tools/scripts/addVersion.py 
+      has been run with the next version to be released on each of the branches - see item #3, about adding 
+      a new version, in the Branching & Feature Freeze section, above.
+
+      To print the script's usage, run it with the `--help` option:
+
+      ---
+      python3 -u dev-tools/scripts/addBackcompatIndexes.py --help
+      ---
+
+      The script uses a scratch directory - /tmp/lucenebwc/ by default if you don't specify `--temp-dir` DIR,
+      to store the source for the current release that it downloads, along with the generated indexes. 
+      This directory will be removed by the script unless you specify the --no-cleanup option, which is 
+      useful when running the script on multiple branches; in the example below, the --no-cleanup option 
+      is included on the non-final script invocations, but not on the final invocation, so that the 
+      scratch directory will be cleaned up after it's no longer needed.
+
+    depends: 
+    - increment_release_version
+    vars:
+      temp_dir: "{{ [release_folder, 'backcompat'] | path_join }}"
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to add back-compat indices to release branch
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}  && git pull && git clean -df && git checkout -- .
+        tee: true
+        logfile: checkout.log
+      - !Command
+        cmd: ant clean
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --no-cleanup  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
+        logfile: add-bakccompat.log
+      - !Command
+        cmd: git diff
+        comment: Check the git diff before committing
+        tee: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Add back-compat indices for {{ release_version }}"  && git push
+        logfile: commit.log
+  - !Todo
+    id: backcompat_stable
+    title: Generate Backcompat Indexes {{ stable_branch }}
+    description: |
+      Now generate back-compat for stable branch
+    depends: 
+    - increment_release_version
+    vars:
+      temp_dir: "{{ [release_folder, 'backcompat'] | path_join }}"
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to add back-compat indices to {{ stable_branch }}
+      commands:
+      - !Command
+        cmd: git checkout {{ stable_branch }}  && git pull && git clean -df && git checkout -- .
+        tee: true
+        logfile: checkout.log
+      - !Command
+        cmd: ant clean
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --no-cleanup  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
+        logfile: add-bakccompat.log
+      - !Command
+        cmd: git diff
+        comment: Check the git diff before committing
+        tee: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Add back-compat indices for {{ release_version }}"  && git push
+        logfile: commit.log
+  - !Todo
+    id: backcompat_master
+    title: Generate Backcompat Indexes master
+    description: |
+      Now generate back-compat for unstable (master) branch.
+      Note that this time we do not specify `--no-cleanup` meaning the tmp folder will be deleted
+    depends: 
+    - increment_release_version
+    vars:
+      temp_dir: "{{ [release_folder, 'backcompat'] | path_join }}"
+      version: "{{ set_java_home(master_version) }}"
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to add back-compat indices to master
+      commands:
+      - !Command
+        cmd: git checkout master && git pull && git clean -df && git checkout -- .
+        tee: true
+        logfile: checkout.log
+      - !Command
+        cmd: ant clean
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
+        logfile: add-bakccompat.log
+      - !Command
+        cmd: git diff
+        comment: Check the git diff before committing
+        tee: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Add back-compat indices for {{ release_version }}"  && git push
+        logfile: commit.log
+    post_description: |
+      When doing a major version release, eg. 8.0.0, you might also need to reenable some 
+      backward compatibility tests for corner cases. To find them, run grep -r assume 
+      lucene/backward-codecs/, which should find tests that have been disabled on master 
+      because there was no released Lucene version to test against.
+      {{ set_java_home(release_version) }}
+  - !Todo
+    id: update_jira
+    title: Update JIRA
+  - !Todo
+    id: stop_mirroring
+    title: Stop mirroring old releases
+  - !Todo
+    id: update_wiki
+    title: Update WIKI

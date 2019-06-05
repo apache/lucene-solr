@@ -70,6 +70,11 @@ class Version(object):
            (self.bugfix > other.bugfix or self.bugfix == other.bugfix and
            self.prerelease >= other.prerelease)))
 
+  def gt(self, other):
+    return (self.major > other.major or
+           (self.major == other.major and self.minor > other.minor) or
+           (self.major == other.major and self.minor == other.minor and self.bugfix > other.bugfix))
+
   def is_back_compat_with(self, other):
     if not self.on_or_after(other):
       raise Exception('Back compat check disallowed for newer version: %s < %s' % (self, other))
