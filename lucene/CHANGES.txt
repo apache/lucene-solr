@@ -3,6 +3,13 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 8.1.2 =======================
+
+Bug fixes
+
+* LUCENE-8809: Fix concurrent refreshes and rollback can leave
+  segment states unclosed (Nhat Nguyen)
+
 ======================= Lucene 8.1.1 =======================
 (No Changes)
 
