@@ -196,7 +196,7 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
     FeatureDoubleValuesSource equal = new FeatureDoubleValuesSource("test_field", "test_feature");
 
     FeatureDoubleValuesSource differentField = new FeatureDoubleValuesSource("other field", "test_feature");
-    FeatureDoubleValuesSource differentFeature = new FeatureDoubleValuesSource("test_field", "test_feature");
+    FeatureDoubleValuesSource differentFeature = new FeatureDoubleValuesSource("test_field", "other_feature");
     DoubleValuesSource otherImpl = new DoubleValuesSource() {
       
       @Override
