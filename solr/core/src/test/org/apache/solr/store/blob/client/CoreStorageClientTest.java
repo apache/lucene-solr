@@ -50,22 +50,22 @@ public class CoreStorageClientTest {
      */
     @Test
     public void testPushStreamReturnsPath() throws Exception {
-        String blobPath = blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length);
+        String blobPath = blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "xxx");
         Assert.assertTrue(blobPath.contains(TEST_CORE_NAME_1));
         Assert.assertTrue(blobPath.contains("/"));
         // The generated UUID for blob files is a 128 bit value which is represented with 36 chars in a hex string
         int uuid4length = 36;
-        // core name length + uuid4 length + 1 for delimiter 
-        int expectedBlobKeyLength = TEST_CORE_NAME_1.length() + uuid4length + 1;
+        // core name length + uuid4 length + 1 for delimiter + 4 for the "xxx." prepended
+        int expectedBlobKeyLength = TEST_CORE_NAME_1.length() + uuid4length + 1 + 4;
         Assert.assertEquals(blobPath.length(), expectedBlobKeyLength);
     }
     
     @Test
     public void testListBlobCommonPrefixes() throws Exception {
-        blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length);
-        blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length);
-        blobClient.pushStream(TEST_CORE_NAME_2, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length);
-        blobClient.pushStream(TEST_CORE_NAME_2, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length);
+        blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "xxx");
+        blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "yyy");
+        blobClient.pushStream(TEST_CORE_NAME_2, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "zzzz");
+        blobClient.pushStream(TEST_CORE_NAME_2, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "1234");
         // the common prefix is s_test_core_name for these blob files
         List<String> commonPrefixes = blobClient.listCommonBlobPrefix("s_test_core_name");
         Assert.assertTrue(commonPrefixes.containsAll(ImmutableList.of(TEST_CORE_NAME_1, TEST_CORE_NAME_2)));
@@ -86,7 +86,7 @@ public class CoreStorageClientTest {
             FileUtils.writeByteArrayToFile(local, bytesWritten);
 
             String blobPath;
-            blobPath = blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(bytesWritten), bytesWritten.length);
+            blobPath = blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(bytesWritten), bytesWritten.length, local.getName());
 
             // Now pull the blob file into the pulled local file
             Files.copy(blobClient.pullStream(blobPath), Paths.get(pulled.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
@@ -111,7 +111,7 @@ public class CoreStorageClientTest {
         byte bytesWritten[] = {0, 1, 2, 5};
 
         // Create a blob
-        String blobPath = blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(bytesWritten), bytesWritten.length);
+        String blobPath = blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(bytesWritten), bytesWritten.length, "rrtr");
 
         // Pull it back (actual pulled content tested in pushPullIdentity(), not testing here).
         blobClient.pullStream(blobPath).close();
@@ -131,9 +131,9 @@ public class CoreStorageClientTest {
         byte bytesWritten[] = {0, 1, 2, 5};
 
         // Create some blobs
-        String blobPath1 = blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(bytesWritten), bytesWritten.length);
-        String blobPath2 = blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(bytesWritten), bytesWritten.length);
-        String blobPath3 = blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(bytesWritten), bytesWritten.length);
+        String blobPath1 = blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(bytesWritten), bytesWritten.length, "azerty");
+        String blobPath2 = blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(bytesWritten), bytesWritten.length, "qsdf");
+        String blobPath3 = blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(bytesWritten), bytesWritten.length, "wxcv");
         
         // deleteBlobs should still return true if the specified file does not exist
         String blobPath4 = "pathDoesNotExist";

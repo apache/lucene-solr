@@ -37,12 +37,11 @@ public class LocalStorageClient implements CoreStorageClient {
     }
 
     @Override
-    public String pushStream(String blobName, InputStream is, long contentLength) throws BlobException {
+    public String pushStream(String blobName, InputStream is, long contentLength, String fileNamePrefix) throws BlobException {
         try {
             createCoreStorage(blobName);
-            String randomBlobId = createNewNonExistingBlob(blobName);
-            String blobPath = BlobClientUtils.concatenatePaths(blobName, randomBlobId); 
-            
+            String blobPath = createNewNonExistingBlob(blobName, fileNamePrefix);
+
             Files.copy(is, Paths.get(getblobAbsolutePath(blobPath)), StandardCopyOption.REPLACE_EXISTING);
     
             assert new File(getblobAbsolutePath(blobPath)).length() == contentLength;
@@ -56,12 +55,11 @@ public class LocalStorageClient implements CoreStorageClient {
     /**
      * Picks a unique name for a new blob for the given core.<p>
      * The current implementation creates a file, but eventually we just pick up a random blob name then delegate to S3...
-     *
+     * @return the blob file name, including the "path" part of the name
      */
-    private String createNewNonExistingBlob(String blobName) throws BlobException {
+    private String createNewNonExistingBlob(String blobName, String fileNamePrefix) throws BlobException {
         try {
-            String randomBlobPath = UUID.randomUUID().toString();
-            String blobPath = BlobClientUtils.concatenatePaths(blobName, randomBlobPath);
+            String blobPath = BlobClientUtils.generateNewBlobCorePath(blobName, fileNamePrefix);
             final File blobFile = new File(getblobAbsolutePath(blobPath));
             if (blobFile.exists()) {
                 // Not expecting this ever to happen. In theory we could just do "continue" here to try a new
@@ -70,7 +68,7 @@ public class LocalStorageClient implements CoreStorageClient {
                 throw new IllegalStateException("The random file name chosen using UUID already exists. Very worrying! " + blobFile.getAbsolutePath());
             }
 
-            return randomBlobPath;
+            return blobPath;
         } catch (Exception ex) {
             throw new BlobException(ex);
         }

@@ -470,7 +470,7 @@ public class CorePushPull {
         String blobPath;
         IndexInput ii = dir.openInput(fileName, IOContext.READONCE);
         try (InputStream is = new IndexInputStream(ii)) {
-            blobPath = blob.pushStream(blobMetadata.getSharedBlobName(), is, fileSize);
+            blobPath = blob.pushStream(blobMetadata.getSharedBlobName(), is, fileSize, fileName);
         }
         return blobPath;
     }

@@ -55,7 +55,7 @@ public class ToFromJsonTest extends Assert {
         verifyToJsonAndBack(bcm);
 
         assertEquals("blob core metadata should have core name specified to builder", CORE_NAME, bcm.getSharedBlobName());
-        assertEquals("blob core metadata should have generation specified to builder",567L, bcm.getGeneration());
+        assertEquals("blob core metadata should have generation specified to builder",123L, bcm.getGeneration());
 
         // Files are not necessarily in the same order
         assertEquals("blob core metadata should have file set specified to builder", files, new HashSet<>(Arrays.asList(bcm.getBlobFiles())));

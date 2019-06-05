@@ -24,10 +24,12 @@ public class BlobClientUtils {
      * Creates a new file path with a random name for the specified core
      * 
      * @param coreName name of core
-     * @return filepath path to core files
+     * @param fileNamePrefix the prefix of the last part of the returned path
+     * @return filepath path to core files. Expected to be of the form /path1/.../pathn/_filenamePrefix_._random string_
      */
-    public static String generateNewBlobCorePath(String coreName) {
-        String randomBlobPath = UUID.randomUUID().toString();
+    public static String generateNewBlobCorePath(String coreName, String fileNamePrefix) {
+        // Make the blob name random but have it contain the local solr filename to ease debug and looking at files
+        String randomBlobPath = fileNamePrefix + "." + UUID.randomUUID().toString();
         return BlobClientUtils.concatenatePaths(coreName, randomBlobPath);
     }
 }

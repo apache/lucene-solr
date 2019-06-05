@@ -46,9 +46,10 @@ public interface CoreStorageClient {
      * @param blobName name of the core to be pulled from the store
      * @param is input stream of the core
      * @param contentLength size of the stream's data
-     * @return the unique path to the written blob
+     * @param fileNamePrefix have this string followed by a "." be how the "filename" of the written blob starts
+     * @return the unique path to the written blob. Expected to be of the form /path1/.../pathn/_filenamePrefix_._random string_
      */
-    public String pushStream(String blobName, InputStream is, long contentLength) throws BlobException;
+    public String pushStream(String blobName, InputStream is, long contentLength, String fileNamePrefix) throws BlobException;
     
     /**
      * Checks if the core metadata file exists for the given blobName.

@@ -117,7 +117,7 @@ public class S3StorageClient implements CoreStorageClient {
     }
 
     @Override
-    public String pushStream(String blobName, InputStream is, long contentLength) throws BlobException {
+    public String pushStream(String blobName, InputStream is, long contentLength, String fileNamePrefix) throws BlobException {
         try {
             /*
              * This object metadata is associated per blob. This is different than the Solr Core metadata 
@@ -127,7 +127,7 @@ public class S3StorageClient implements CoreStorageClient {
             ObjectMetadata objectMetadata = new ObjectMetadata();
             objectMetadata.setContentLength(contentLength);
             
-            String blobPath = BlobClientUtils.generateNewBlobCorePath(blobName);
+            String blobPath = BlobClientUtils.generateNewBlobCorePath(blobName, fileNamePrefix);
             PutObjectRequest putRequest = new PutObjectRequest(blobBucketName, blobPath, is, objectMetadata);
             
             s3Client.putObject(putRequest);
