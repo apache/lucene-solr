@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -92,7 +93,7 @@ public class AssignTest extends SolrTestCaseJ4 {
 
   @Test
   public void testIdIsUnique() throws Exception {
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
     Object fixedValue = new Object();
     String[] collections = new String[]{"c1","c2","c3","c4","c5","c6","c7","c8","c9"};
@@ -139,7 +140,7 @@ public class AssignTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBuildCoreName() throws Exception {
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
     server.run();
     try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {

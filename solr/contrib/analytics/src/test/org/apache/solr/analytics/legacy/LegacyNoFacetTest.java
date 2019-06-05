@@ -69,11 +69,17 @@ public class LegacyNoFacetTest extends LegacyAbstractAnalyticsTest {
     defaults.put("string_sd", "str0");
     
     intTestStart = new ArrayList<>();
+    intMissing = 0;
     longTestStart = new ArrayList<>();
+    longMissing = 0;
     floatTestStart = new ArrayList<>();
+    floatMissing = 0;
     doubleTestStart = new ArrayList<>();
+    doubleMissing = 0;
     dateTestStart = new ArrayList<>();
+    dateMissing = 0;
     stringTestStart = new ArrayList<>();
+    stringMissing = 0;
     
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;

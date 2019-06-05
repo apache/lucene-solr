@@ -26,5 +26,4 @@ pom.xml
 /nbproject
 /nb-build
 .pydevproject
-/rev.txt
 __pycache__
