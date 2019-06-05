@@ -20,6 +20,7 @@ package org.apache.solr.cloud.autoscaling;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -40,6 +41,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.AutoScalingParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -51,6 +53,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.Type.repair;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
@@ -124,6 +127,31 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
       }
     });
     assertTrue(passed[0]);
+
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, "/suggestions", configPayload, new MapSolrParams(Collections.singletonMap("type", repair.name())));
+    response = solrClient.request(req);
+    assertTrue(((Collection) response.get("suggestions")).isEmpty());
+
+    CollectionAdminRequest.deleteCollection(COLLNAME)
+        .process(cluster.getSolrClient());
+  }
+  public void testDiagnosticsWithPayload() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String COLLNAME = "testDiagnosticsWithPayload.COLL";
+    CollectionAdminResponse adminResponse = CollectionAdminRequest.createCollection(COLLNAME, CONFIGSET_NAME, 1, 2)
+        .setMaxShardsPerNode(4)
+        .process(solrClient);
+    cluster.waitForActiveCollection(COLLNAME, 1, 2);
+    DocCollection collection = solrClient.getClusterStateProvider().getCollection(COLLNAME);
+    Replica aReplica = collection.getReplicas().get(0);
+
+    String configPayload = "{\n" +
+        "  'cluster-policy': [{'replica': 0, 'node': '_NODE'}]\n" +
+        "}";
+    configPayload = configPayload.replaceAll("_NODE", aReplica.getNodeName());
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, "/diagnostics", configPayload);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response._getStr("diagnostics/violations[0]/node",null),response._getStr("diagnostics/violations[0]/node",null));
     CollectionAdminRequest.deleteCollection(COLLNAME)
         .process(cluster.getSolrClient());
   }
@@ -684,6 +712,22 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
     data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
     loaded = ZkNodeProps.load(data);
     List clusterPolicy = (List) loaded.get("cluster-policy");
+    assertNotNull(clusterPolicy);
+    assertEquals(3, clusterPolicy.size());
+
+    setClusterPolicyCommand = "{" +
+        " 'set-cluster-policy': [" +
+        "      {'cores':'<10', 'node':'#ANY'}," +
+        "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+        "      {'replica':0, put : on-each, nodeset:{'nodeRole':'overseer'} }" +
+        "    ]" +
+        "}";
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+    data = zkClient().getData(SOLR_AUTOSCALING_CONF_PATH, null, null, true);
+    loaded = ZkNodeProps.load(data);
+    clusterPolicy = (List) loaded.get("cluster-policy");
     assertNotNull(clusterPolicy);
     assertEquals(3, clusterPolicy.size());
   }

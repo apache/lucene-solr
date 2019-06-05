@@ -101,7 +101,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
     final int numDocs = atLeast(1000);
     final int maxTermId = atLeast(TERM_VALUES_RANDOMIZER);
-    
+
+    // clear the RANGE_MODEL
+    Arrays.fill(RANGE_MODEL, 0);
     // seed the TERM_MODEL Maps so we don't have null check later
     for (int i = 0; i < NUM_RANGE_VALUES; i++) {
       TERM_MODEL[i] = new LinkedHashMap<>();

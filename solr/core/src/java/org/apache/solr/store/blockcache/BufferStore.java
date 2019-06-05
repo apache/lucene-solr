@@ -48,6 +48,15 @@ public class BufferStore implements Store {
   private final AtomicLong shardBuffercacheAllocate;
   private final AtomicLong shardBuffercacheLost;
 
+  /**
+   * For testing only
+   *
+   * @lucene.internal
+   */
+  static void clearBufferStores() {
+    bufferStores.clear();
+  }
+  
   public synchronized static void initNewBuffer(int bufferSize, long totalAmount) {
     initNewBuffer(bufferSize, totalAmount, null);
   }
