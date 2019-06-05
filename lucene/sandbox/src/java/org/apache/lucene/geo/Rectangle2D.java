@@ -25,8 +25,6 @@ import org.apache.lucene.util.NumericUtils;
 import static java.lang.Integer.BYTES;
 import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
 import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
