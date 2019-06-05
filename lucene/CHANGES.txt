@@ -454,6 +454,31 @@ Optimizations
 * LUCENE-8585: Index-time jump-tables for DocValues, for O(1) advance when retrieving doc values.
   (Toke Eskildsen, Adrien Grand)
 
+======================= Lucene 7.7.2 =======================
+
+Bug fixes
+
+* LUCENE-8726: ValueSource.asDoubleValuesSource() could leak a reference to
+  IndexSearcher (Alan Woodward, Yury Pakhomov)
+
+* LUCENE-8735: FilterDirectory.getPendingDeletions now forwards to the delegate
+  even the method is not abstract in the super class. This prevents issues
+  where our best effort in carrying on generations in the IndexWriter since pending
+  deletions are swallowed by the FilterDirectory. (Henning Andersen, Simon Willnauer)
+
+* LUCENE-8688: TieredMergePolicy#findForcedMerges now tries to create the
+  cheapest merges that allow the index to go down to `maxSegmentCount` segments
+  or less. (Armin Braun via Adrien Grand)
+
+* LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
+  This causes assertion errors and potentially broken field attributes in the IndexWriter when
+  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer) 
+
+* LUCENE-8720: NameIntCacheLRU (in the facets module) had an int
+  overflow bug that disabled cleaning of the cache (Russell A Brown)
+
+* LUCENE-8809: Refresh and rollback concurrently can leave segment states unclosed (Nhat Nguyen)
+
 ======================= Lucene 7.7.1 =======================
 (No Changes)
 

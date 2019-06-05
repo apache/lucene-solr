@@ -680,6 +680,100 @@ Other Changes
 
 * SOLR-9515: Hadoop dependencies have been upgraded to Hadoop 3.2.0 from 2.7.2. (Mark Miller, Kevin Risden)
 
+==================  7.7.2 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache ZooKeeper 3.4.14
+Jetty 9.4.14.v20181114
+
+Upgrade Notes
+----------------------
+
+* SOLR-13234: The Prometheus Metric Exporter now collects metrics from Solr at a fixed schedule that is controlled
+  by the exporter itself. The default interval is 60s but it can be changed by specifying the --scrape-interval
+  command line parameter to the tool. The collected metrics are cached and returned for any requests coming in before
+  the next scheduled collection. This can impact the freshness of the metrics if prometheus is configured to query the
+  tool more frequently.
+
+* SOLR-12708: When requesting the status of an async request via REQUESTSTATUS collections API, the response will
+  include the list of internal async requests (if any) in the "success" or "failed" keys (in addition
+  to them being included outside those keys for backwards compatibility). See SOLR-12708 for more 
+  details
+
+Bug fixes
+----------------------
+
+* SOLR-13234: Prometheus Metric Exporter not threadsafe. This changes the prometheus exporter to collect metrics
+  from Solr on a fixed interval controlled by this tool and prevents concurrent collections. This change also improves
+  performance slightly by using the cluster state instead of sending multiple HTTP requests to each node to lookup
+  all the cores.
+  (Danyal Prout via shalin)
+
+* SOLR-12708: Async collection actions should not hide internal failures (Mano Kovacs, Varun Thacker, Tomás Fernández Löbbe)
+
+* SOLR-11876: In-place update fails when resolving from Tlog if schema has a required field (Justin Deoliveira, janhoy,
+  Ishan Chattopadhyaya)
+
+* SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
+
+* SOLR-13355: 'all' permission ignored by RuleBasedAuthorizationPlugin in most cases (Jason Gerlowski, janhoy)
+
+* SOLR-13344: Admin UI inaccessible with RuleBasedAuthorizationPlugin (janhoy, Jason Gerlowski)
+
+* SOLR-12860: MetricsHistoryHandler now uses PKI Auth for metrics collection in background thread (janhoy, Lorenzo)
+
+* SOLR-13331: Atomic Update 'remove' operations broken for certain field types in SolrJ (Thomas Wockinger via Jason Gerlowski)
+
+* SOLR-13285: Updates with enum fields and javabin cause ClassCastException (noble)
+
+* SOLR-12371: Editing authorization config via REST API now works in standalone mode (janhoy)
+
+* SOLR-13281: Fixed NPE in DocExpirationUpdateProcessorFactory (Munendra S N, Tomás Fernández Löbbe)
+
+* SOLR-13409: Disable HTML directory listings in admin interface to prevent possible security issues (Uwe Schindler)
+
+* SOLR-13126: Query boosts were not being combined correctly for documents where not all boost queries
+  matched (Alan Woodward, Mikhail Khludnev)
+
+* SOLR-13414: SolrSchema - Avoid NPE if Luke returns field with no type defined (Kevin Risden)
+
+* SOLR-12833: Avoid unnecessary memory cost when DistributedUpdateProcessor timed-out lock is not used. (ab)
+
+* SOLR-13449: SolrClientNodeStateProvider always retries on requesting metrics from other nodes (Cao Manh Dat)
+
+* SOLR-13112: Upgrade jackson to 2.9.8 (Kevin Risden)
+
+* SOLR-13410: Designated overseer wasn't able to rejoin election queue at head upon restart (Ishan Chattopadhyaya,
+  Kesharee Nandan Vishwakarma)
+
+* SOLR-13254: Correct message that is logged in solrj's ConnectionManager when an exception
+  occurred while reconnecting to ZooKeeper. (hu xiaodong via Christine Poerschke)
+
+* SOLR-13252: Fix an NPE when setting a "policy" property for an existing collection (ab)
+
+* SOLR-13398: Move log line "Processing SSL Credential Provider chain..." from INFO to DEBUG (janhoy)
+
+* SOLR-13386: OverseerTaskQueue#remove should not throw an exception when no node exists after an exists
+  check and the Overseer work loop should not allow free spinning the loop when it hits a KeeperException.
+  (Mark Miller, Fernandez-Lobbe, Mike Drob)
+
+* SOLR-13366: Clarify 'Invalid stage name' warning logging in AutoScalingConfig (Christine Poerschke)
+
+* SOLR-13352: Remove risk of deadlock/threadleak when shutting down an Overseer(TriggerThread).  (hossman)
+
+* SOLR-13229: Cleanup replicasMetTragicEvent after all types of exception (Tomás Fernández Löbbe)
+
+Other Changes
+----------------------
+
+* SOLR-13363: Upgrade to ZooKeeper 3.4.14 (Erick Erickson)
+
 ==================  7.7.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
