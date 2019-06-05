@@ -16,14 +16,11 @@
  */
 
 apply plugin: 'java-library'
+apply plugin: org.apache.lucene.gradle.PartOfDist
 
 dependencies {
 	implementation project(':lucene:lucene-core')
 	implementation project(':lucene:lucene-codecs')
-	
-	runtimeOnly 'org.antlr:antlr4-runtime'
-	runtimeOnly 'org.ow2.asm:asm'
-	runtimeOnly 'org.ow2.asm:asm-commons'
 	
 	testImplementation project(':lucene:lucene-test-framework')
 	testImplementation project(':lucene:lucene-expressions')

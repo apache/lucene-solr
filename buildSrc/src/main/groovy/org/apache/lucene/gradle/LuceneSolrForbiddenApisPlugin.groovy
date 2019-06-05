@@ -23,9 +23,6 @@ import org.gradle.api.Project
 
 class LuceneSolrForbiddenApisPlugin implements Plugin<Project> {
 
-  // TODO: somehow determine this from versions.props
-  static final String COMMONS_IO_VERSION = '2.5'
-
   @Override
   void apply(Project project) {
     project.pluginManager.apply(ForbiddenApisPlugin.class)

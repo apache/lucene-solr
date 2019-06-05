@@ -15,6 +15,9 @@ package org.apache.lucene.gradle
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.lucene.gradle.PartOfDist
+
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.Input
@@ -40,7 +43,7 @@ class PackageLuceneSolrDist extends DefaultTask {
       "CHANGES.txt",
       "licenses/**",
       "*/docs/",
-      "**/README*"
+      "**/README.txt"
     ]
     
     def standardExcludes = [
@@ -73,7 +76,7 @@ class PackageLuceneSolrDist extends DefaultTask {
       
       project.subprojects.each {subproject ->
         project.evaluationDependsOn(subproject.path)
-        if (subproject.tasks.findByName('jar') && subproject.configurations.hasProperty('runtimeClasspath')) {
+        if (subproject.getPlugins().hasPlugin(PartOfDist) && subproject.tasks.findByName('jar') && subproject.configurations.hasProperty('runtimeClasspath')) {
           from(subproject.jar.outputs.files) {
             include "*.jar"
             into (project.relativePath(subproject.projectDir))
@@ -107,7 +110,7 @@ class PackageLuceneSolrDist extends DefaultTask {
       
       project.subprojects.each {subproject ->
         project.evaluationDependsOn(subproject.path)
-        if (subproject.tasks.findByName('jar') && subproject.configurations.hasProperty('runtimeClasspath')) {
+        if (subproject.getPlugins().hasPlugin(PartOfDist) && subproject.tasks.findByName('jar') && subproject.configurations.hasProperty('runtimeClasspath')) {
           from(subproject.jar.outputs.files) {
             include "*.jar"
             into (project.relativePath(subproject.projectDir))

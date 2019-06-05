@@ -15,14 +15,8 @@
  * limitations under the License.
  */
 
-plugins {
-  id 'java-library'
-  id 'eclipse'
-}
-
-repositories{
-  mavenCentral()
-}
+apply plugin: 'java-library'
+apply plugin: org.apache.lucene.gradle.PartOfDist
 
 dependencies {
   
