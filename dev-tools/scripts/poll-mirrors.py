@@ -78,16 +78,15 @@ def ftp_file_exists(url):
 
   return len(listing) > 0
 
-def check_url_list(lst):
-  ret = []
-  for url in lst:
-    if mirror_contains_file(url):
-      p('.')
-    else:
-      p('\nFAIL: ' + url + '\n' if args.details else 'X')
-      ret.append(url)
 
-  return ret
+def check_mirror(url):
+  if mirror_contains_file(url):
+    p('.')
+    return None
+  else:
+    p('\nFAIL: ' + url + '\n' if args.details else 'X')
+    return url
+
 
 desc = 'Periodically checks that all Lucene/Solr mirrors contain either a copy of a release or a specified path'
 parser = argparse.ArgumentParser(description=desc)
@@ -142,7 +141,8 @@ while True:
     maven_available = mirror_contains_file(maven_url)
 
   start = time.time()
-  pending_mirrors = check_url_list(pending_mirrors)
+  with Pool(processes=5) as pool:
+    pending_mirrors = list(filter(lambda x: x is not None, pool.map(check_mirror, pending_mirrors)))
   stop = time.time()
   remaining = args.interval - (stop - start)
 
