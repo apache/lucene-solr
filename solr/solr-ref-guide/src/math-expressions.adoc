@@ -23,6 +23,8 @@
 
 image::images/math-expressions/curve-fitting.png[]
 
+== Table of Contents
+
 *<<visualization.adoc#visualization,Visualization>>*: Visualizing Streaming Expressions and Math Expressions.
 
 *<<scalar-math.adoc#scalar-math,Scalar Math>>*: The functions that apply to scalar numbers.
