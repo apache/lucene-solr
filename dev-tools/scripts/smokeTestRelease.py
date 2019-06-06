@@ -14,35 +14,31 @@
 # limitations under the License.
 
 import argparse
-import os
-import zipfile
 import codecs
-import tarfile
-import zipfile
-import threading
-import traceback
 import datetime
-import time
-import subprocess
-import signal
-import shutil
+import filecmp
 import hashlib
 import http.client
-import re
-import urllib.request, urllib.error, urllib.parse
-import urllib.parse
-import sys
-import html.parser
-from collections import defaultdict
-import xml.etree.ElementTree as ET
-import filecmp
+import os
 import platform
+import re
+import shutil
+import subprocess
+import sys
+import textwrap
+import traceback
+import urllib.error
+import urllib.parse
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
+import zipfile
+from collections import defaultdict
+from collections import namedtuple
+from scriptutil import download
+
 import checkJavaDocs
 import checkJavadocLinks
-import io
-import codecs
-import textwrap
-from collections import namedtuple
 
 # This tool expects to find /lucene and /solr off the base URL.  You
 # must have a working gpg, tar, unzip in your path.  This has been
@@ -111,44 +107,6 @@ def getHREFs(urlString):
     links.append((text, fullURL))
   return links
 
-def download(name, urlString, tmpDir, quiet=False):
-  startTime = time.time()
-  fileName = '%s/%s' % (tmpDir, name)
-  if not FORCE_CLEAN and os.path.exists(fileName):
-    if not quiet and fileName.find('.asc') == -1:
-      print('    already done: %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
-    return
-  try:
-    attemptDownload(urlString, fileName)
-  except Exception as e:
-    print('Retrying download of url %s after exception: %s' % (urlString, e))
-    try:
-      attemptDownload(urlString, fileName)
-    except Exception as e:
-      raise RuntimeError('failed to download url "%s"' % urlString) from e
-  if not quiet and fileName.find('.asc') == -1:
-    t = time.time()-startTime
-    sizeMB = os.path.getsize(fileName)/1024./1024.
-    print('    %.1f MB in %.2f sec (%.1f MB/sec)' % (sizeMB, t, sizeMB/t))
-  
-def attemptDownload(urlString, fileName):
-  fIn = urllib.request.urlopen(urlString)
-  fOut = open(fileName, 'wb')
-  success = False
-  try:
-    while True:
-      s = fIn.read(65536)
-      if s == b'':
-        break
-      fOut.write(s)
-    fOut.close()
-    fIn.close()
-    success = True
-  finally:
-    fIn.close()
-    fOut.close()
-    if not success:
-      os.remove(fileName)
 
 def load(urlString):
   try:
