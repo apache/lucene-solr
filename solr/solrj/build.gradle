@@ -20,9 +20,7 @@ apply plugin: 'maven-publish'
 apply plugin: org.apache.lucene.gradle.PartOfDist
 
 dependencies {
-  
-  runtimeOnly ('org.eclipse.jetty:jetty-security') { transitive = false }
-  
+
   implementation ('org.apache.zookeeper:zookeeper') {
     exclude group: '*', module: '*' // zk has many deps we don't need
   }
@@ -32,16 +30,11 @@ dependencies {
   implementation ('org.slf4j:jcl-over-slf4j')
   implementation ('commons-io:commons-io')
   implementation ('org.apache.commons:commons-math3')
-  implementation ('org.noggit:noggit')
   implementation ('org.slf4j:slf4j-api')
   implementation ('org.eclipse.jetty.http2:http2-client')
   implementation ('org.eclipse.jetty.http2:http2-http-client-transport')
-  implementation ('org.eclipse.jetty.http2:http2-common')
-  implementation ('org.eclipse.jetty.http2:http2-hpack')
-  implementation ('org.eclipse.jetty:jetty-client')
   implementation ('org.eclipse.jetty:jetty-util')
   implementation ('org.eclipse.jetty:jetty-http')
-  implementation ('commons-codec:commons-codec')
   
   testImplementation ('org.eclipse.jetty:jetty-servlet')
   testImplementation ('io.dropwizard.metrics:metrics-core')
@@ -68,3 +61,4 @@ dependencies {
   testImplementation project(':lucene:analysis:lucene-analyzers-common')
   testImplementation project(':solr:example:solr-example-DIH')
 }
+
