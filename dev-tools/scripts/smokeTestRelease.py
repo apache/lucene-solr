@@ -375,7 +375,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned, keysFile):
       run('gpg --homedir %s --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
           logFile)
       # Forward any GPG warnings, except the expected one (since it's a clean world)
-      f = open(logFile, encoding='UTF-8')
+      f = open(logFile)
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
         and line.find('WARNING: This key is not certified with a trusted signature') == -1:
@@ -389,7 +389,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned, keysFile):
       logFile = '%s/%s.%s.gpg.trust.log' % (tmpDir, project, artifact)
       run('gpg --verify %s %s' % (sigFile, artifactFile), logFile)
       # Forward any GPG warnings:
-      f = open(logFile, encoding='UTF-8')
+      f = open(logFile)
       for line in f.readlines():
         if line.lower().find('warning') != -1:
           print('      GPG: %s' % line.strip())
@@ -1120,7 +1120,7 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts, keysFile):
       run('gpg --homedir %s --verify %s %s' % (gpgHomeDir, sigFile, artifactFile),
           logFile)
       # Forward any GPG warnings, except the expected one (since it's a clean world)
-      f = open(logFile, encoding='UTF-8')
+      f = open(logFile)
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
            and line.find('WARNING: This key is not certified with a trusted signature') == -1 \
@@ -1134,7 +1134,7 @@ def verifyMavenSigs(baseURL, tmpDir, artifacts, keysFile):
       logFile = '%s/%s.%s.gpg.trust.log' % (tmpDir, project, artifact)
       run('gpg --verify %s %s' % (sigFile, artifactFile), logFile)
       # Forward any GPG warnings:
-      f = open(logFile, encoding='UTF-8')
+      f = open(logFile)
       for line in f.readlines():
         if line.lower().find('warning') != -1 \
            and line.find('WARNING: This key is not certified with a trusted signature') == -1 \

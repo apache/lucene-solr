@@ -17,7 +17,6 @@ import argparse
 import datetime
 import re
 import time
-import shutil
 import os
 import sys
 import subprocess
