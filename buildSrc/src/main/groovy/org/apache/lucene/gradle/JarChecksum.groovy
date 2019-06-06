@@ -72,7 +72,7 @@ class JarChecksum extends DefaultTask {
         }
       }
       
-      ant.fixcrlf(srcdir: target.getAbsolutePath(), includes: "**/*.jar.sha1", eol: "lf", fixlast: "true", encoding: "US-ASCII")
+      ant.fixcrlf(srcdir: target.getAbsolutePath(), includes: "**/*.jar.sha1", eol: "lf", fixlast: "true", encoding: "UTF-8")
       
     })
     
