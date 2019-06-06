@@ -10,6 +10,8 @@ Bug fixes
 * LUCENE-8809: Fix concurrent refreshes and rollback can leave
   segment states unclosed (Nhat Nguyen)
 
+* LUCENE-8818: Fix smokeTestRelease.py encoding bug (janhoy)
+
 ======================= Lucene 8.1.1 =======================
 (No Changes)
 
