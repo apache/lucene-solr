@@ -869,12 +869,12 @@ def generate_asciidoc():
     for group in state.todo_groups:
         if group.num_applies() == 0:
             continue
-        fh.write("== %s\n\n" % group.title)
+        fh.write("== %s\n\n" % group.get_title())
         fh.write("%s\n\n" % group.get_description())
         for todo in group.get_todos():
             if not todo.applies(state.release_type):
                 continue
-            fh.write("=== %s\n\n" % todo.title)
+            fh.write("=== %s\n\n" % todo.get_title())
             if todo.is_done():
                 fh.write("_Completed %s_\n\n" % unix_to_datetime(todo.state['done_date']).strftime(
                     "%Y-%m-%d %H:%M UTC"))
@@ -925,7 +925,7 @@ def generate_asciidoc():
             if todo.links:
                 fh.write("Links:\n\n")
                 for l in todo.links:
-                    fh.write("* %s\n" % l)
+                    fh.write("* %s\n" % expand_jinja(l))
                 fh.write("\n")
 
     fh.close()

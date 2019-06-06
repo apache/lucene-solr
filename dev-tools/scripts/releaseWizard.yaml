@@ -994,7 +994,7 @@ groups:
       commands_text: Run this script to check the number and percentage of mirrors (and Maven Central) that have the release
       commands:
       - !Command
-        cmd: python3 -u {{ [git_checkout_folder, 'dev-tools', 'scripts', 'poll-mirrors.py'] | path_join }} -version {{ release_version }}
+        cmd: python3 -u dev-tools/scripts/poll-mirrors.py -version {{ release_version }} -o
         live: true
 - !TodoGroup
   id: website
@@ -1475,7 +1475,7 @@ groups:
         logfile: commit-stable.log
   - !Todo
     id: backcompat_release
-    title: Generate Backcompat Indexes {{ release_branch }}
+    title: Generate Backcompat Indexes for release branch
     description: |
       After each version of Lucene is released, compressed CFS, non-CFS, and sorted indexes created with 
       the newly released version are added to lucene/backwards-codecs/src/test/org/apache/lucene/index/, 
@@ -1484,33 +1484,13 @@ groups:
       with major Lucene versions: moreterms, empty, and dvupdates. These indexes are created via methods 
       on TestBackwardsCompatibility itself - see comments in the source for more information.
 
-      There is a script (dev-tools/scripts/addBackcompatIndexes.py) that automates most of the process: 
-      it downloads the source for the specified release; generates indexes for the current release using 
+      There is a script (dev-tools/scripts/addBackcompatIndexes.py) that automates most of the process.
+      It downloads the source for the specified release; generates indexes for the current release using 
       TestBackwardsCompatibility; compresses the indexes and places them in the correct place in the source 
       tree; modifies TestBackwardsCompatibility.java to include the generated indexes in the list of indexes 
-      to test; and then runs TestBackwardsCompatibility. Run this script on the stable branch, the unstable 
-      branch, and on the release branch. On each branch, after running the script, git add the generated 
-      indexes, then cd lucene/backwards-codecs and run ant test -Dtestcase=TestBackwardsCompatibility and 
-      make sure it passes before running git commit and git push.
-
-      TestBackwardsCompatibility will not test indexes for Version.LATEST, and will fail if it finds indexes 
-      from that version, so *before you run addBackcompatIndexes.py*, make sure dev-tools/scripts/addVersion.py 
-      has been run with the next version to be released on each of the branches - see item #3, about adding 
-      a new version, in the Branching & Feature Freeze section, above.
-
-      To print the script's usage, run it with the `--help` option:
-
-      ---
-      python3 -u dev-tools/scripts/addBackcompatIndexes.py --help
-      ---
-
-      The script uses a scratch directory - /tmp/lucenebwc/ by default if you don't specify `--temp-dir` DIR,
-      to store the source for the current release that it downloads, along with the generated indexes. 
-      This directory will be removed by the script unless you specify the --no-cleanup option, which is 
-      useful when running the script on multiple branches; in the example below, the --no-cleanup option 
-      is included on the non-final script invocations, but not on the final invocation, so that the 
-      scratch directory will be cleaned up after it's no longer needed.
-
+      to test; and then runs TestBackwardsCompatibility.
+      
+      In this and the next two steps we'll guide you through using this tool on each of the branches.
     depends: 
     - increment_release_version
     vars:
@@ -1537,9 +1517,9 @@ groups:
         logfile: commit.log
   - !Todo
     id: backcompat_stable
-    title: Generate Backcompat Indexes {{ stable_branch }}
+    title: Generate Backcompat Indexes for stable branch
     description: |
-      Now generate back-compat for stable branch
+      Now generate back-compat for stable branch ({{ stable_branch }})
     depends: 
     - increment_release_version
     vars:
@@ -1566,7 +1546,7 @@ groups:
         logfile: commit.log
   - !Todo
     id: backcompat_master
-    title: Generate Backcompat Indexes master
+    title: Generate Backcompat Indexes for unstable branch
     description: |
       Now generate back-compat for unstable (master) branch.
       Note that this time we do not specify `--no-cleanup` meaning the tmp folder will be deleted
@@ -1602,8 +1582,76 @@ groups:
       because there was no released Lucene version to test against.
       {{ set_java_home(release_version) }}
   - !Todo
-    id: update_jira
-    title: Update JIRA
+    id: jira_release
+    title: Mark version as released in JIRA
+    description: |-
+      Go to the JIRA "Manage Versions" Administration pages.
+
+      . Next to version {{ release_version }}, click the gear pop-up menu icon and choose "Release"
+      . Fill in the release date ({{ release_date.strftime("%-d %B %Y") }})
+      . It will give the option of transitioning issues marked fix-for the released version to the 
+        next version, but do not do this as it will send an email for each issue :)
+
+      This needs to be done both for Lucene and Solr JIRAs, see links.
+    links:
+    - https://issues.apache.org/jira/plugins/servlet/project-config/LUCENE/versions
+    - https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions
+  - !Todo
+    id: jira_close_resolved
+    title: Close all issues resolved in the release
+    description: |-
+      Go to JIRA search in both Solr and Lucene and find all issues that were fixed in the release 
+      you just made, whose Status is Resolved.
+
+      . Go to https://issues.apache.org/jira/issues/?jql=project+in+(LUCENE,SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version }}
+      . Do a bulk change (Under Tools... menu) to close all of these issues. This is a workflow transition task
+      . In the 'Comment' box type `Closing after the {{ release_version }} release`
+      . *Uncheck* the box that says `Send mail for this update`
+
+      This needs to be done both for Lucene and Solr JIRAs, see links.
+    links:
+    - https://issues.apache.org/jira/issues/?jql=project+in+(LUCENE,SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version }}
+  - !Todo
+    id: jira_change_unresolved
+    title: Move fixVersion for unresolved
+    description: |-
+      Do another JIRA search to find all issues with Resolution=_Unresolved_ and fixVersion=_{{ release_version }}_.
+      You need to do this separately for Lucene and Solr.
+
+      *Lucene*
+
+      . Open https://issues.apache.org/jira/issues/?jql=project+=+LUCENE+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
+      . Start a bulk change - operation="Edit issues"
+      . Identify issues that *are included* in the release, but are unresolved e.g. due to being REOPENED. These shall *not* be bulk changed!
+      . Check the box next to `Change Fix Version/s` and int the dropdown `Find and remove these`, selecting v {{ release_version }}
+      . On the bottom of the form, uncheck the box that says `Send mail for this update`
+      . Click `Next`, review the changes and click `Confirm`
+
+      *Solr*
+
+      . Open https://issues.apache.org/jira/issues/?jql=project+=+LUCENE+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
+      . Start a bulk change - operation="Edit issues"
+      . Identify issues that *are included* in the release, but are unresolved e.g. due to being REOPENED. These shall *not* be bulk changed!
+      . Check the box next to `Change Fix Version/s` and int the dropdown `Find and remove these`, selecting v {{ release_version }}
+      . On the bottom of the form, uncheck the box that says `Send mail for this update`
+      . Click `Next`, review the changes and click `Confirm`
+    links:
+    - https://issues.apache.org/jira/issues/?jql=project+=+LUCENE+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
+    - https://issues.apache.org/jira/issues/?jql=project+=+LUCENE+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
+  - !Todo
+    id: new_jira_versions_bugfix
+    title: Add a new version in JIRA for the next release
+    description: |-
+      Go to the JIRA "Manage Versions" Administration pages and add the new version:
+
+      . Create a new (unreleased) version `{{ get_next_version }}`
+
+      This needs to be done both for Lucene and Solr JIRAs, see links.
+    types:
+    - bugfix
+    links:
+    - https://issues.apache.org/jira/plugins/servlet/project-config/LUCENE/versions
+    - https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions
   - !Todo
     id: stop_mirroring
     title: Stop mirroring old releases
