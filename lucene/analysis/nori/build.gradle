@@ -48,6 +48,11 @@ sourceSets {
   toolsTest.java.srcDirs = ['src/tools/test']
 }
 
+
+compileToolsJava.options.encoding = "UTF-8"
+compileToolsTestJava.options.encoding = "UTF-8"
+
+
 def mecabVersion = "2.0.3-20170922"
 def mecabFilename = "mecab-ko-dic-${mecabVersion}"
 
