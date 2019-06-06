@@ -36,5 +36,4 @@ task packageDist(type: org.apache.lucene.gradle.PackageLuceneSolrDist) {
 
 subprojects {
   tasks.create("unusedDeps", org.apache.lucene.gradle.UnusedDeps)
-  unusedDeps.dependsOn packageDist
 }
