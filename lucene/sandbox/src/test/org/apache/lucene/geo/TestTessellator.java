@@ -36,7 +36,7 @@ public class TestTessellator extends LuceneTestCase {
     assertFalse(Tessellator.linesIntersect(rect.minLon, rect.maxLat, rect.maxLon, rect.maxLat, rect.minLon - 1d, rect.minLat, rect.minLon - 1, rect.maxLat));
   }
 
-  public void testSimpleTessellation() throws Exception {
+  public void testSimpleTessellation() {
     Polygon poly = GeoTestUtil.createRegularPolygon(0.0, 0.0, 1000000, 1000000);
     Polygon inner = new Polygon(new double[] {-1.0, -1.0, 0.5, 1.0, 1.0, 0.5, -1.0},
         new double[]{1.0, -1.0, -0.5, -1.0, 1.0, 0.5, 1.0});
@@ -110,8 +110,7 @@ public class TestTessellator extends LuceneTestCase {
   public void testLUCENE8559()  throws Exception {
     String wkt = "POLYGON((-0.1348674 51.7458255,-0.1345884 51.7455067,-0.1329898 51.745314,-0.1326358 51.745314,-0.1324105 51.744404,-0.131981 51.7444423,-0.1312196 51.7445102,-0.1310908 51.7456794,-0.1319706 51.7460713,-0.1343095 51.7465828,-0.1348674 51.7458255)," +
         "(-0.1322388 51.7447959,-0.1322388 51.7454336,-0.1318633 51.7457126,-0.1313912 51.7456262,-0.1318985 51.7448032,-0.1322388 51.7447959))";
-    Polygon polygon = (Polygon)SimpleWKTShapeParser.parse(wkt);
-    assertTrue(Tessellator.tessellate(polygon).size() > 0);
+    checkPolygon(wkt);
   }
 
   public void testLUCENE8556()  throws Exception {
