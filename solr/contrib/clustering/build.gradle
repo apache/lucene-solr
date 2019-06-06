@@ -27,17 +27,14 @@ dependencies {
   implementation project(':lucene:lucene-memory')
   implementation project(':lucene:analysis:lucene-analyzers-common')
   
-  implementation ('org.slf4j:slf4j-api') { transitive = false }
-  implementation ('org.carrot2:carrot2-mini') { transitive = false }
-  implementation ('org.carrot2.shaded:carrot2-guava') { transitive = false }
-  implementation ('org.carrot2.attributes:attributes-binder') { transitive = false }
-  implementation ('org.simpleframework:simple-xml') { transitive = false }
-  implementation ('com.fasterxml.jackson.core:jackson-annotations') { transitive = false }
-  implementation ('com.fasterxml.jackson.core:jackson-databind') { transitive = false }
-  implementation ('commons-io:commons-io') { transitive = false }
-  implementation ('com.google.guava:guava') { transitive = false }
-  implementation ('commons-codec:commons-codec') { transitive = false }
-  implementation ('org.apache.commons:commons-lang3') { transitive = false }
+  implementation ('org.slf4j:slf4j-api')
+  implementation ('org.carrot2:carrot2-mini')
+  implementation ('org.carrot2.shaded:carrot2-guava')
+  implementation ('org.carrot2.attributes:attributes-binder')
+  implementation ('org.simpleframework:simple-xml')
+  implementation ('com.fasterxml.jackson.core:jackson-annotations')
+  implementation ('com.fasterxml.jackson.core:jackson-databind')
+  implementation ('commons-io:commons-io')
   
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
