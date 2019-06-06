@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
@@ -91,6 +92,7 @@ import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FSLockFactory;
+import org.apache.lucene.store.FileSwitchDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
@@ -1414,6 +1416,9 @@ public abstract class LuceneTestCase extends Assert {
       }
 
       Directory fsdir = newFSDirectoryImpl(clazz, f, lf);
+      if (rarely()) {
+        fsdir = new FileSwitchDirectory(Set.of("fdt", "fdx", "tim"), fsdir, newFSDirectoryImpl(clazz, f, lf), true);
+      }
       BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare);
       return wrapped;
     } catch (Exception e) {
