@@ -75,6 +75,8 @@ Improvements
   multiple threads, IndexSearcher now groups small segments together, up to
   250k docs per slice. (Atri Sharma via Adrien Grand)
 
+* LUCENE-8818: Fix smokeTestRelease.py encoding bug (janhoy)
+
 ======================= Lucene 8.1.1 =======================
 (No Changes)
 
