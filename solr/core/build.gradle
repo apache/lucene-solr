@@ -208,3 +208,8 @@ forbiddenApisTest {
   exclude 'org/apache/solr/internal/**'
   exclude 'org/apache/hadoop/**'
 }
+
+task javacc(type: org.apache.lucene.gradle.JavaCC) {
+  inputFile file("${projectDir}/src/java/org/apache/solr/parser/QueryParser.jj")
+  target file("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+}
