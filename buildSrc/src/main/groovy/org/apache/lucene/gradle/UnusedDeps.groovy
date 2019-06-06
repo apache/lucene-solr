@@ -17,13 +17,15 @@ package org.apache.lucene.gradle
  */
 
 import org.gradle.api.artifacts.ResolvedArtifact
-
+import org.gradle.api.artifacts.ResolvedDependency
 import javax.inject.Inject
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.file.RelativePath
 import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
+import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.InputDirectory
@@ -40,15 +42,23 @@ class UnusedDeps extends DefaultTask {
   protected static Pattern pattern = Pattern.compile("\\(([^\\s]*?\\.jar)\\)")
   
   protected configuration = "runtimeClasspath"
-  protected File tmpDir
   protected File distDir
   protected File jdepsDir
   
-  public UnusedDeps() {
-    //!project.getPlugins().hasPlugin('java-base') ||
+  @InputDirectory
+  File inputDirectory
+  
+  @Inject
+  public UnusedDeps(File inputDirectory) {
+    
     if (!project.configurations.hasProperty('runtimeClasspath')) {
       return
     }
+    
+    this.inputDirectory = inputDirectory
+    
+    distDir = new File(inputDirectory, 'distDir')
+    jdepsDir = new File(inputDirectory, 'jdepsDir')
     
     if (project.hasProperty('unusedDepsConfig')) {
       configuration = project.unusedDepsConfig
@@ -64,61 +74,6 @@ class UnusedDeps extends DefaultTask {
         buildProjects.add(dProject)
       }
     })
-    
-    project.tasks.create(name: "export", type: org.gradle.api.tasks.Copy) {
-      outputs.upToDateWhen { false }
-      into({ makeDirs(); distDir })
-      buildProjects.each {subproject ->
-        project.evaluationDependsOn(subproject.path)
-        def topLvlProject
-        if (subproject.group ==~ /.*?\.lucene(?:\.\w+)?/) {
-          topLvlProject = project.project(":lucene")
-        } else if (subproject.group ==~ /.*?\.solr(?:\.\w+)?/) {
-          topLvlProject = project.project(":solr")
-        }
-        
-        if (subproject.getPlugins().hasPlugin(PartOfDist) && subproject.tasks.findByName('jar') && subproject.configurations.hasProperty('runtimeClasspath')) {
-          from(subproject.jar.outputs.files) {
-            include "*.jar"
-            into ({topLvlProject.name + '/' + topLvlProject.relativePath(subproject.projectDir)})
-          }
-          def files = { getFiles(subproject) }
-          from(files) {
-            include "*.jar"
-            into ({topLvlProject.name + '/' + topLvlProject.relativePath(subproject.projectDir) + "/lib"})
-          }
-        }
-      }
-      
-      includeEmptyDirs = false
-    }
-    
-    dependsOn project.tasks.export
-  }
-  
-  protected void makeDirs() {
-    tmpDir = File.createTempDir()
-    tmpDir.deleteOnExit()
-    tmpDir.mkdirs()
-    distDir = new File(tmpDir, 'distDir')
-    jdepsDir = new File(tmpDir, 'jdepsDir')
-    distDir.mkdirs()
-    jdepsDir.mkdirs()
-  }
-  
-  private static Collection getFiles(Project subproject) {
-    def files = subproject.configurations.runtimeClasspath.files
-    if (!subproject.name.equals('solr-core') && subproject.path.startsWith(":solr:contrib:")) {
-      subproject.evaluationDependsOn(subproject.rootProject.project(":solr:solr-core").path)
-      files = files - subproject.rootProject.project(":solr:solr-core").configurations.runtimeClasspath.files
-      files = files - subproject.rootProject.project(":solr:solr-core").jar.outputs.files
-    }
-    if (!subproject.name.equals('lucene-core') && subproject.path.startsWith(":lucene:")) {
-      subproject.evaluationDependsOn(subproject.rootProject.project(":lucene:lucene-core").path)
-      files = files - subproject.rootProject.project(":lucene:lucene-core").configurations.runtimeClasspath.files
-      files = files - subproject.rootProject.project(":lucene:lucene-core").jar.outputs.files
-    }
-    return files
   }
   
   @TaskAction
@@ -126,40 +81,30 @@ class UnusedDeps extends DefaultTask {
     // make sure ant task logging shows up by default
     ant.lifecycleLogLevel = "INFO"
     
-    Project topLvlProject
-    
-    if (project.group ==~ /.*?\.lucene(?:\.\w+)?/) {
-      topLvlProject = project.project(":lucene")
-    } else if (project.group ==~ /.*?\.solr(?:\.\w+)?/) {
-      topLvlProject = project.project(":solr")
-    }
-    
-    def luceneDist  = new File("/data1/mark/tmp", "lucene")
-    def solrDist = new File("/data1/mark/tmp", "solr")
+    def topLvlProject = getTopLvlProject(project)
     
     Configuration config = project.configurations[this.configuration]
     
-    Set<String> usedDepJarNames = getDirectlyUsedDeps(topLvlProject, project, distDir, jdepsDir)
+    Set<String> usedDepJarNames = getDefinedDeps(topLvlProject, project, distDir, jdepsDir)
     
-    Set<File> ourDeps = getDeps(project, config)
+    Set<File> ourDeps = getAllDefinedDeps(project, config)
+    
+    Set<File> ourImmediatelyDefinedDeps = getOurImmediateDefinedDeps(project, config)
     
     config.getAllDependencies().forEach({ dep ->
       if (dep instanceof DefaultProjectDependency) {
         Project dProject = dep.getDependencyProject()
-        def depTopLvlProject
-        if (dProject.group ==~ /.*?\.lucene(?:\.\w+)?/) {
-          depTopLvlProject = project.project(":lucene")
-        } else if (dProject.group ==~ /.*?\.solr(?:\.\w+)?/) {
-          depTopLvlProject = project.project(":solr")
-        }
+        def depTopLvlDProject = getTopLvlProject(dProject)
         
-        Set<String> projectUsedDeps = getDirectlyUsedDeps(depTopLvlProject, dProject, distDir, jdepsDir)
+        Set<String> projectUsedDeps = getDefinedDeps(depTopLvlDProject, dProject, distDir, jdepsDir)
         
         usedDepJarNames += projectUsedDeps
       }
     })
     
-    usedDepJarNames -= ["${project.name}-${project.version}.jar"]
+    usedDepJarNames -= [
+      "${project.name}-${project.version}.jar"
+    ]
     
     Set<String> ourDepJarNames = new HashSet<>()
     ourDeps.forEach( { ourDepJarNames.add(it.getName()) } )
@@ -169,64 +114,80 @@ class UnusedDeps extends DefaultTask {
     unusedJarNames -= usedDepJarNames
     unusedJarNames = unusedJarNames.toSorted()
     
-    Set<String> foundDeps = new HashSet<>()
+    Set<String> depsInDirectUse = new HashSet<>()
     
     File jdepsLucene = new File(jdepsDir, "lucene")
     File jdepsSolr = new File(jdepsDir, "solr")
     
     for (File file : jdepsLucene.listFiles()) {
-      lookForDep(file, foundDeps)
+      lookForDep(file, depsInDirectUse)
     }
     for (File file : jdepsSolr.listFiles()) {
-      lookForDep(file, foundDeps)
+      lookForDep(file, depsInDirectUse)
     }
     
     println ''
     println 'Our classpath dependency count ' + ourDepJarNames.size()
     println 'Our directly used dependency count ' + usedDepJarNames.size()
     println ''
-    println 'List of possibly unused jars - they may be used at runtime however (Class.forName or something), this is not definitive.'
-    println 'We take our classpath dependenies, substract our direct dependencies and then subtract dependencies used by our direct dependencies'
+    println 'List of possibly unused jars - they may be used at runtime however (Class.forName on plugins or config text for example). This is not definitive, but helps narrow down what to investigate.'
+    println 'We take our classpath dependencies, substract our direct dependencies and then subtract dependencies used by our direct dependencies.'
     println ''
     
+    println 'Direct deps that may be unused:'
     unusedJarNames.forEach({
-      if (!foundDeps.contains(it)) {
-        println it
+      if (!depsInDirectUse.contains(it) && ourImmediatelyDefinedDeps.contains(it)) {
+        println ' - ' + it
       }
     })
     
-    project.delete(tmpDir)
+    println ''
+    println 'Deps brought in by other modules that may be unused in this module:'
+    unusedJarNames.forEach({
+      if (!depsInDirectUse.contains(it) && !ourImmediatelyDefinedDeps.contains(it)) {
+        println ' - ' + it
+      }
+    })
   }
   
-  protected Set getDeps(Project project, Configuration config) {
+  static class NonProjectSpec implements Spec<Dependency> {
+    @Override
+    public boolean isSatisfiedBy(Dependency dep) {
+      return true
+    }
+  }
+  
+  protected Set getAllDefinedDeps(Project project, Configuration config) {
     Set<File> ourDeps = new HashSet<>()
     
     if (config.isCanBeResolved()) {
       config.getResolvedConfiguration().getResolvedArtifacts().forEach( { ra -> ourDeps.add(ra.getFile()) })
     }
+    
     return ourDeps
   }
   
-  protected Set getDirectlyUsedDeps(Project topLvlProject, Project project, File distDir, File jdepsDir) {
-    def distPath = "${distDir}/" + topLvlProject.name + "/" + topLvlProject.relativePath(project.projectDir)
-    def dotOutPath = jdepsDir.getAbsolutePath() + "/" + topLvlProject.name +  "/" + "${project.name}-${project.version}"
+  protected Set getOurImmediateDefinedDeps(Project project, Configuration config) {
+    Set<String> ourDeps = new HashSet<>()
     
-    ant.exec (executable: "jdeps", failonerror: true, resolveexecutable: true) {
-      ant.arg(line: '--class-path ' + "${distPath}/lib/" + '*')
-      ant.arg(line: '--multi-release 11')
-      ant.arg(value: '-recursive')
-      ant.arg(value: '-verbose:class')
-      ant.arg(line: "-dotoutput ${dotOutPath}")
-      ant.arg(value: "${distPath}/${project.name}-${project.version}.jar")
+    Set<ResolvedDependency> deps = project.configurations.runtimeClasspath.getResolvedConfiguration().getFirstLevelModuleDependencies(new NonProjectSpec())
+    
+    for (ResolvedDependency dep : deps) {
+      dep.getModuleArtifacts().forEach({ourDeps.add(it.file.name)})
     }
     
+    return ourDeps
+  }
+  
+  protected Set getDefinedDeps(Project topLvlProject, Project project, File distDir, File jdepsDir) {
+    
     File dotFile = new File(jdepsDir, topLvlProject.name +  "/" + "${project.name}-${project.version}/${project.name}-${project.version}.jar.dot")
-    Set<String> usedDepJarNames = getUsedJars(project, dotFile)
+    Set<String> usedDepJarNames = getDirectlyUsedJars(project, dotFile)
     
     return usedDepJarNames
   }
   
-  protected Set getUsedJars(Project project, File dotFile) {
+  protected Set getDirectlyUsedJars(Project project, File dotFile) {
     Set<String> usedDepJarNames = new HashSet<>()
     
     def lines = dotFile.readLines()
@@ -244,12 +205,20 @@ class UnusedDeps extends DefaultTask {
     return usedDepJarNames
   }
   
-  protected void lookForDep(File dir, Set<String> foundDeps) {
+  protected void lookForDep(File dir, Set<String> depsInDirectUse) {
     dir.eachFile() {
-      Set<String> usedDepJarNames = getUsedJars(project, it)
-      foundDeps.addAll(usedDepJarNames)
-      
+      depsInDirectUse.addAll(getDirectlyUsedJars(project, it))
     }
+  }
+  
+  protected Project getTopLvlProject(Project proj) {
+    def topLvlProject
+    if (proj.group ==~ /.*?\.lucene(?:\.\w+)?/) {
+      topLvlProject = project.project(":lucene")
+    } else if (proj.group ==~ /.*?\.solr(?:\.\w+)?/) {
+      topLvlProject = project.project(":solr")
+    }
+    return topLvlProject
   }
 }
 
