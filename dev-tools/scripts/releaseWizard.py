@@ -96,7 +96,8 @@ def expand_jinja(text, vars=None):
         'get_next_version': state.get_next_version(),
         'current_git_rev': state.get_current_git_rev(),
         'keys_downloaded': keys_downloaded(),
-        'editor': os.environ['EDITOR'] if 'EDITOR' in os.environ else 'wordpad.exe' if is_windows() else 'vi',
+        'editor': os.environ['EDITOR'] if 'EDITOR' in os.environ else 'notepad.exe' if is_windows() else 'vi',
+        'rename_cmd': 'ren' if is_windows() else 'mv',
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
         'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date()),
         'lucene_highlights_file': lucene_highlights_file,
@@ -113,7 +114,8 @@ def expand_jinja(text, vars=None):
         'latest_lts_version': state.get_latest_lts_version(),
         'master_version': state.get_master_version(),
         'mirrored_versions': state.get_mirrored_versions(),
-        'mirrored_versions_to_delete': state.get_mirrored_versions_to_delete()
+        'mirrored_versions_to_delete': state.get_mirrored_versions_to_delete(),
+        'home': os.path.expanduser("~")
     })
     global_vars.update(state.get_todo_states())
     if vars:
@@ -353,8 +355,10 @@ class ReleaseState:
             return 'master'
         elif v.is_minor_release():
             return self.get_stable_branch_name()
-        else:
+        elif v.major == Version.parse(self.get_latest_version()).major:
             return self.get_minor_branch_name()
+        else:
+            return self.release_branch
 
     def clear_rc(self):
         if ask_yes_no("Are you sure? This will clear and restart RC%s" % self.rc_number):
@@ -1475,7 +1479,8 @@ class Commands(SecretYamlObject):
             success = True
             if ask_yes_no("Do you want me to run these commands now?"):
                 if self.remove_files:
-                    for f in ensure_list(self.get_remove_files()):
+                    for _f in ensure_list(self.get_remove_files()):
+                        f = os.path.join(root, _f)
                         if os.path.exists(f):
                             filefolder = "File" if os.path.isfile(f) else "Folder"
                             if ask_yes_no("%s %s already exists. Shall I remove it now?" % (filefolder, f)) and not dry_run:
@@ -1760,17 +1765,6 @@ def vote_close_72h_date():
             working_days += 1
     return datetime.utcnow() + timedelta(days=day_offset) + timedelta(hours=1)
 
-
-def clear_ivy_cache(todo):
-    cache_folder = os.path.expanduser("~/.ivy2/cache")
-    bak_folder = os.path.expanduser("~/.ivy2/cache_bak")
-    if ask_yes_no("Do you want me to backup your ivy cache folder %s now?" % cache_folder):
-        if os.path.exists(bak_folder):
-            shutil.rmtree(bak_folder)
-        if os.path.exists(cache_folder):
-            os.rename(cache_folder, bak_folder)
-            print("Moved ivy cache folder to %s" % bak_folder)
-    return True
 
 def website_javadoc_redirect(todo):
     htfile = os.path.join(website_folder, 'content', '.htaccess')

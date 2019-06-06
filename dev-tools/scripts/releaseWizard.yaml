@@ -310,7 +310,11 @@ groups:
       * Apache Ant 1.8 or later. (Known issue with 1.10 and GPG password entry)
       * gpg
       * git
+      * svn
       * asciidoctor (to generate HTML version)
+
+      You should also set the $EDITOR environment variable, else we'll fallback to
+      `vi` on Linux and `notepad.exe` on Windows, and you don't want that :)
     function: check_prerequisites
     links:
     - https://gnupg.org/download/index.html
@@ -512,10 +516,12 @@ groups:
     id: sanity_check_doap
     title: Sanity check the DOAP files
     description: |-
-      Sanity check the DOAP files under dev-tools/doap/
+      Sanity check the DOAP files under `dev-tools/doap/`.
       Do they contain all releases less than the one in progress?
 
       TIP: The buildAndPushRelease script run later will check this automatically
+    links:
+    - https://projects.apache.org/doap.html
   - !Todo
     id: jenkins_builds
     title: Add Jenkins task for the release branch
@@ -660,6 +666,7 @@ groups:
       - !Command
         cmd: ant javadocs
         cwd: solr
+    post_description: Check that both tests pass. If they fail, commit fixes for the failures before proceeding.
   - !Todo
     id: clear_ivy_cache
     title: Clear the ivy cache
@@ -667,9 +674,15 @@ groups:
         It is recommended to clean your Ivy cache before building the artifacts.
         This ensures that all Ivy dependencies are freshly downloaded,
         so we emulate a user that never used the Lucene build system before.
-        This script will help you rename the folder so you can get it back later
-        if you wish.
-    function: clear_ivy_cache
+    commands: !Commands
+      root_folder: '{{ home }}'
+      remove_files: .ivy2/cache_bak
+      commands_text: These commands will help you rename the folder so you can get it back later if you wish
+      commands:
+      - !Command
+        cmd: "{{ rename_cmd }} cache cache_bak"
+        cwd: .ivy2
+        stdout: true
   - !Todo
     id: build_rc
     title: Build the release candidate
