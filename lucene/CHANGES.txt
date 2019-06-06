@@ -12,6 +12,9 @@ Bug fixes
 
 * LUCENE-8818: Fix smokeTestRelease.py encoding bug (janhoy)
 
+* LUCENE-8775: Improve tessellator to handle better cases where a hole share a vertex
+  with the polygon. (Ignacio Vera)
+
 ======================= Lucene 8.1.1 =======================
 (No Changes)
 
@@ -87,7 +90,7 @@ Bug fixes
 
 * LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
   This causes assertion errors and potentially broken field attributes in the IndexWriter when
-  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer) 
+  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer)
 
 Improvements
 
