@@ -19,8 +19,6 @@ apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 apply plugin: org.apache.lucene.gradle.PartOfDist
 
-archivesBaseName = 'codecs'
-
 dependencies {
   
     implementation project(':lucene:lucene-core')
