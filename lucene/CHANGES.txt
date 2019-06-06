@@ -7,7 +7,7 @@ http://s.apache.org/luceneversions
 
 New Features
 
-* LUCENE-8803: Provide a FeatureSortfield to allow sorting search hits by descending value of a 
+* LUCENE-8803: Provide a FeatureSortfield to allow sorting search hits by descending value of a
   feature. This is exposed via the factory method FeatureField#newFeatureSort.
   (Colin Goodheart-Smithe via Adrien Grand)
 
@@ -18,6 +18,9 @@ New Features
 Bug Fixes
 
 * LUCENE-8831: Fixed LatLonShapeBoundingBoxQuery .hashCode methods. (Ignacio Vera)
+
+* LUCENE-8775: Improve tessellator to handle better cases where a hole share a vertex
+  with the polygon. (Ignacio Vera)
 
 * LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
   This causes assertion errors and potentially broken field attributes in the IndexWriter when
@@ -474,7 +477,7 @@ Bug fixes
 
 * LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
   This causes assertion errors and potentially broken field attributes in the IndexWriter when
-  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer) 
+  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer)
 
 * LUCENE-8720: NameIntCacheLRU (in the facets module) had an int
   overflow bug that disabled cleaning of the cache (Russell A Brown)
