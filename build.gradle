@@ -37,6 +37,7 @@ ant.lifecycleLogLevel = "INFO"
 // -> lucene-solr all project config
 // -> lucene-solr sub module config
 // -> lucene-solr root project config
+// -> all projects config
 // -> lucene-solr IDE config
 // -> other config
 
@@ -153,9 +154,11 @@ configure(rootProject) {
   
 }
 
-// -> lucene-solr IDE config - setup eclipse and idea
-
+// -> all projects config
 configure(allprojects) {
+  
+  // -> lucene-solr IDE config - setup eclipse and idea
+  
   apply plugin: 'eclipse'
   apply plugin: 'idea'
   
@@ -163,18 +166,14 @@ configure(allprojects) {
     project.apply from: new File(rootProjectDir, "buildSrc/ide/eclipse.gradle")
     project.apply from: new File(rootProjectDir, "buildSrc/ide/idea.gradle")
   }
-}
-
-// -> other config
-
-configure(allprojects) {
-
-    dependencies {
-      configurations.all {
-        // stax-api classes are in Java 11
-        exclude group: 'javax.xml.stream', module: 'stax-api'
-        exclude group: 'stax', module: 'stax-api'
-        exclude group: 'stax', module: 'stax'
+  
+  // dependencies block that applies to all projects
+  dependencies {
+    configurations.all {
+      // stax-api classes are in Java 11
+      exclude group: 'javax.xml.stream', module: 'stax-api'
+      exclude group: 'stax', module: 'stax-api'
+      exclude group: 'stax', module: 'stax'
     }
     
     modules {
@@ -182,6 +181,9 @@ configure(allprojects) {
     }
   }
 }
+
+// -> other config
+
 
 // Single JavaDocs for all modules
 
