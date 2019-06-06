@@ -113,6 +113,7 @@ templates:
     Apache Lucene is a high-performance, full-featured text search engine library written entirely in Java. It is a technology suitable for nearly any application that requires full-text search, especially cross-platform.
 
     This release contains numerous bug fixes, optimizations, and improvements, some of which are highlighted below. The release is available for immediate download at:
+
       <https://lucene.apache.org/core/downloads.html>
 
     ### Lucene {{ release_version }} Release Highlights:
@@ -132,6 +133,7 @@ templates:
     Solr is the popular, blazing fast, open source NoSQL search platform from the Apache Lucene project. Its major features include powerful full-text search, hit highlighting, faceted search, dynamic clustering, database integration, rich document handling, and geospatial search. Solr is highly scalable, providing fault tolerant distributed search and indexing, and powers the search and navigation features of many of the world's largest internet sites.
 
     Solr {{ release_version }} is available for immediate download at:
+
       <https://lucene.apache.org/solr/downloads.html>
 
     ### Solr {{ release_version }} Release Highlights:
@@ -141,10 +143,12 @@ templates:
     {%- endfor %}
 
 
-    Please read CHANGES.txt for a full list of {% if is_feature_release %}new features {% endif %}and changes:
+    Please read CHANGES.txt for a full list of {% if is_feature_release %}new features and {% endif %}changes:
+
       <https://lucene.apache.org/solr/{{ release_version_underscore }}/changes/Changes.html>
 
-    Solr {{ release_version }} also includes {% if is_feature_release %}other new features as well as {% endif %} optimizations and bugfixes in the corresponding Apache Lucene release:
+    Solr {{ release_version }} also includes {% if is_feature_release %}features, optimizations {% endif %} and bugfixes in the corresponding Apache Lucene release:
+
       <https://lucene.apache.org/core/{{ release_version_underscore }}/changes/Changes.html>
   announce_lucene_mail: |
     The template below can be used to announce the Lucene release to the
@@ -690,9 +694,7 @@ groups:
     - gpg
     - run_tests
     vars:
-      logfile: '/tmp/release.log'
-      #logfile: '{{ [rc_folder, ''logs'', ''buildAndPushRelease.log''] | path_join }}'
-      builder_path: '{{ [''dev-tools'', ''scripts'', ''buildAndPushRelease.py''] | path_join }}'      
+      logfile: '{{ [rc_folder, ''logs'', ''buildAndPushRelease.log''] | path_join }}'
       git_rev: '{{ current_git_rev }}' # Note, git_rev will be recorded in todo state AFTER completion of commands
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'      
     persist_vars:
@@ -722,7 +724,7 @@ groups:
         cmd: git pull
         tee: true
       - !Command
-        cmd: python3 -u {{ builder_path }} {{ local_keys }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg.gpg_id | default("<gpg_key_id>", True) }}
+        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg.gpg_id | default("<gpg_key_id>", True) }}
         comment: "NOTE: Remember to type your GPG pass-phrase at the prompt!"
         logfile: build_rc.log
         tee: true
@@ -734,7 +736,6 @@ groups:
       dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       tmp_dir: '{{ [rc_folder, ''smoketest''] | path_join }}'
-      smoker_path: '{{ [''dev-tools'', ''scripts'', ''smokeTestRelease.py''] | path_join }}'
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
@@ -743,7 +744,7 @@ groups:
       - '{{ tmp_dir }}'
       commands:
       - !Command
-        cmd: python3 -u {{ smoker_path }} {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  file://{{ dist_path }}
+        cmd: python3 -u dev-tools/scripts/smokeTestRelease.py {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  file://{{ dist_path }}
         logfile: smoketest.log
   - !Todo
     id: import_svn
@@ -774,7 +775,6 @@ groups:
       dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_url: https://dist.apache.org/repos/dist/dev/lucene/{{ dist_folder}}
       tmp_dir: '{{ [rc_folder, ''smoketest_staged''] | path_join }}'
-      smoker_path: '{{ [''dev-tools'', ''scripts'', ''smokeTestRelease.py''] | path_join }}'
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
@@ -783,7 +783,7 @@ groups:
       - '{{ tmp_dir }}'
       commands:
       - !Command
-        cmd: python3 -u {{ smoker_path }} {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  {{ dist_url }}
+        cmd: python3 -u dev-tools/scripts/smokeTestRelease.py {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  {{ dist_url }}
         logfile: smoketest_staged.log
 - !TodoGroup
   id: voting
