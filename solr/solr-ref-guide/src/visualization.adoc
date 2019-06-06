@@ -17,3 +17,39 @@
 // under the License.
 
 
+== Gallery
+
+=== Monte Carlo Simulations
+
+image::images/math-expressions/monte-carlo.png[]
+
+=== Probability Distributions
+
+=== Time Series
+
+=== XY Scatter Plots
+
+=== XY Vector Plots
+
+=== Aggregations
+
+=== Matrices
+
+=== Linear Regression
+
+=== Knn Regression
+
+=== Curve Fitting
+
+=== Interpolation
+
+=== Sine Waves and Derivatives
+
+=== Fourier Transforms
+
+=== Convolution
+
+=== Mapping
+
+
+== Apache Zeppelin / Zeppelin-Solr Interpreter
