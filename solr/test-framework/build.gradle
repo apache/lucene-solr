@@ -38,7 +38,6 @@ dependencies {
   implementation ('org.apache.httpcomponents:httpmime') { transitive = false }
   implementation ('org.slf4j:slf4j-api') { transitive = false }
   implementation ('org.apache.logging.log4j:log4j-api') { transitive = false }
-  implementation ('org.noggit:noggit') { transitive = false }
   implementation ('org.apache.zookeeper:zookeeper') { transitive = false }
   implementation ('commons-io:commons-io') { transitive = false }
   api ('org.eclipse.jetty:jetty-util') { transitive = false }
@@ -84,3 +83,4 @@ dependencies {
   runtimeOnly ('com.lmax:disruptor') { transitive = false }
   
 }
+
