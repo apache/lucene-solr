@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
 # vim: softtabstop=2 shiftwidth=2 expandtab
 #
@@ -32,19 +32,15 @@ import re
 import sys
 import time
 
-try:
-  from urllib.parse import urlparse
-except:
-  from urlparse import urlparse
+from urllib.parse import urlparse
+from multiprocessing import Pool
+import http.client as http
 
-try:
-  import http.client as http
-except ImportError:
-  import httplib as http
 
 def p(s):
   sys.stdout.write(s)
   sys.stdout.flush()
+
 
 def mirror_contains_file(url):
   url = urlparse(url)
@@ -53,6 +49,7 @@ def mirror_contains_file(url):
     return http_file_exists(url)
   elif url.scheme == 'ftp':
     return ftp_file_exists(url)
+
 
 def http_file_exists(url):
   exists = False
@@ -68,6 +65,7 @@ def http_file_exists(url):
 
   return exists
 
+
 def ftp_file_exists(url):
   listing = []
   try:
@@ -80,16 +78,15 @@ def ftp_file_exists(url):
 
   return len(listing) > 0
 
-def check_url_list(lst):
-  ret = []
-  for url in lst:
-    if mirror_contains_file(url):
-      p('.')
-    else:
-      p('\nFAIL: ' + url + '\n' if args.details else 'X')
-      ret.append(url)
 
-  return ret
+def check_mirror(url):
+  if mirror_contains_file(url):
+    p('.')
+    return None
+  else:
+    p('\nFAIL: ' + url + '\n' if args.details else 'X')
+    return url
+
 
 desc = 'Periodically checks that all Lucene/Solr mirrors contain either a copy of a release or a specified path'
 parser = argparse.ArgumentParser(description=desc)
@@ -97,6 +94,7 @@ parser.add_argument('-version', '-v', help='Lucene/Solr version to check')
 parser.add_argument('-path', '-p', help='instead of a versioned release, check for some/explicit/path')
 parser.add_argument('-interval', '-i', help='seconds to wait before re-querying mirrors', type=int, default=300)
 parser.add_argument('-details', '-d', help='print missing mirror URLs', action='store_true', default=False)
+parser.add_argument('-once', '-o', help='run only once', action='store_true', default=False)
 args = parser.parse_args()
 
 if (args.version is None and args.path is None) \
@@ -143,7 +141,8 @@ while True:
     maven_available = mirror_contains_file(maven_url)
 
   start = time.time()
-  pending_mirrors = check_url_list(pending_mirrors)
+  with Pool(processes=5) as pool:
+    pending_mirrors = list(filter(lambda x: x is not None, pool.map(check_mirror, pending_mirrors)))
   stop = time.time()
   remaining = args.interval - (stop - start)
 
@@ -153,7 +152,7 @@ while True:
     p('\n\n{} is{}downloadable from Maven Central'.format(label, ' ' if maven_available else ' not '))
   p('\n{} is downloadable from {}/{} Apache Mirrors ({:.2f}%)\n'
     .format(label, available_mirrors, total_mirrors, available_mirrors * 100 / total_mirrors))
-  if len(pending_mirrors) == 0:
+  if len(pending_mirrors) == 0 or args.once == True:
     break
 
   if remaining > 0:
