@@ -49,6 +49,11 @@ sourceSets {
   toolsTest.java.srcDirs = ['src/tools/test']
 }
 
+compileToolsJava.options.encoding = "UTF-8"
+compileToolsTestJava.options.encoding = "UTF-8"
+
+
+
 def ipadicVersion = "2.7.0-20070801"
 def ipadicFilename = "mecab-ipadic-${ipadicVersion}"
 
