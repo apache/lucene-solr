@@ -40,6 +40,8 @@ task runJflex() {
 }
 
 subprojects {
-  tasks.create("unusedDeps", org.apache.lucene.gradle.UnusedDeps)
-  unusedDeps.dependsOn packageDist
+  File target = File.createTempDir()
+  tasks.create("jdepsReport", org.apache.lucene.gradle.JdepsReport, target)
+  tasks.create("unusedDeps", org.apache.lucene.gradle.UnusedDeps, target)
+  unusedDeps.dependsOn jdepsReport
 }
