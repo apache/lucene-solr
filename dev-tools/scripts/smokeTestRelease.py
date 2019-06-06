@@ -322,13 +322,13 @@ def checkSigs(project, urlString, version, tmpDir, isSigned, keysFile):
 
   for artifact, urlString in artifacts:
     print('  download %s...' % artifact)
-    download(artifact, urlString, tmpDir)
+    download(artifact, urlString, tmpDir, force_clean=FORCE_CLEAN)
     verifyDigests(artifact, urlString, tmpDir)
 
     if isSigned:
       print('    verify sig')
       # Test sig (this is done with a clean brand-new GPG world)
-      download(artifact + '.asc', urlString + '.asc', tmpDir)
+      download(artifact + '.asc', urlString + '.asc', tmpDir, force_clean=FORCE_CLEAN)
       sigFile = '%s/%s.asc' % (tmpDir, artifact)
       artifactFile = '%s/%s' % (tmpDir, artifact)
       logFile = '%s/%s.%s.gpg.verify.log' % (tmpDir, project, artifact)
@@ -957,7 +957,7 @@ def getBinaryDistFiles(project, tmpDir, version, baseURL):
   if not os.path.exists('%s/%s' % (tmpDir, distribution)):
     distURL = '%s/%s/%s' % (baseURL, project, distribution)
     print('    download %s...' % distribution, end=' ')
-    download(distribution, distURL, tmpDir)
+    download(distribution, distURL, tmpDir, force_clean=FORCE_CLEAN)
   destDir = '%s/unpack-%s-getBinaryDistFiles' % (tmpDir, project)
   if os.path.exists(destDir):
     shutil.rmtree(destDir)
@@ -1186,7 +1186,7 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         crawl(downloadedFiles, subURL, path, exclusions)
       else:
         if not os.path.exists(path) or FORCE_CLEAN:
-          download(text, subURL, targetDir, quiet=True)
+          download(text, subURL, targetDir, quiet=True, force_clean=FORCE_CLEAN)
         downloadedFiles.append(path)
         sys.stdout.write('.')
 
@@ -1451,7 +1451,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   else:
     keysFileURL = "https://archive.apache.org/dist/lucene/KEYS"
     print("    Downloading online KEYS file %s" % keysFileURL)
-    download('KEYS', keysFileURL, tmpDir)
+    download('KEYS', keysFileURL, tmpDir, force_clean=FORCE_CLEAN)
     keysFile = '%s/KEYS' % (tmpDir)
 
   print()
