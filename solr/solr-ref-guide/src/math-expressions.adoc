@@ -1,5 +1,5 @@
 = Math Expressions
-:page-children: scalar-math, vector-math, variables, matrix-math, vectorization, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning, computational-geometry
+:page-children: visualization, scalar-math, vector-math, variables, matrix-math, vectorization, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning, computational-geometry
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -18,17 +18,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Streaming Expression library includes a powerful
-mathematical programing syntax with many of the features of a
-functional programming language. The syntax includes variables,
-data structures and a growing set of mathematical functions.
+== A Visual Guide
 
-This user guide provides an overview of the different areas of
-mathematical coverage starting with basic scalar math and
-ending with machine learning. Along the way the guide covers variables
-and data structures and techniques for combining Solr's
-powerful streams with mathematical functions to make every
-record in your Solr Cloud cluster computable.
+
+image::images/math-expressions/curve-fitting.png[]
+
+*<<visualization.adoc#visualization,Visualization>>*: Visualizing Streaming Expressions and Math Expressions.
 
 *<<scalar-math.adoc#scalar-math,Scalar Math>>*: The functions that apply to scalar numbers.
 
