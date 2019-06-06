@@ -41,7 +41,7 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<probability-distributions.adoc#probability-distributions,Probability>>*: Mathematical models of probability.
 
-*<<simulations.adoc#simulations,Monte Carlo Simulations>>*: Performing uncorrelated and correlated Monte Carlo simulations.
+*<<simulations.adoc#simulations,Simulations and Sampling Distributions>>*:  Monte Carlo simulations and the Sampling Distribution of the Mean.
 
 *<<regression.adoc#regression,Linear Regression>>*: Simple and multivariate linear regression.
 
