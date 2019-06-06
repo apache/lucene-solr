@@ -19,6 +19,8 @@ apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 apply plugin: org.apache.lucene.gradle.PartOfDist
 
+archivesBaseName = 'lucene-analyzers-opennlp'
+
 dependencies {
   implementation project(':lucene:lucene-core')
   implementation project(':lucene:analysis:lucene-analyzers-common')

@@ -37,7 +37,6 @@ dependencies {
   implementation ('org.slf4j:slf4j-api') { transitive = false }
   implementation ('com.google.guava:guava') { transitive = false }
   implementation ('org.apache.zookeeper:zookeeper') { transitive = false }
-  implementation ('org.noggit:noggit') { transitive = false }
   implementation ('commons-codec:commons-codec') { transitive = false }
   implementation ('commons-io:commons-io') { transitive = false }
   implementation ('org.apache.httpcomponents:httpclient') { transitive = false }

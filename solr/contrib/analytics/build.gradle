@@ -28,7 +28,6 @@ dependencies {
   implementation ('com.fasterxml.jackson.core:jackson-databind') { transitive = false }
   implementation ('com.fasterxml.jackson.core:jackson-annotations') { transitive = false }
   implementation ('com.google.guava:guava') { transitive = false }
-  implementation ('org.noggit:noggit') { transitive = false }
   implementation ('commons-codec:commons-codec') { transitive = false }
   implementation ('commons-io:commons-io') { transitive = false }
   implementation ('org.apache.commons:commons-lang3') { transitive = false }
@@ -38,8 +37,6 @@ dependencies {
   
   // if we try to make this compileOnly or testImplementation forbidden apis fails?
   implementation ('javax.servlet:javax.servlet-api') { transitive = false }
-  
-  testRuntimeOnly ('org.noggit:noggit') { transitive = false }
   
   testRuntimeOnly ('javax.servlet:javax.servlet-api') { transitive = false }
   testRuntimeOnly ('commons-fileupload:commons-fileupload') { transitive = false }

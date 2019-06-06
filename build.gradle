@@ -171,9 +171,10 @@ configure(allprojects) {
 
     dependencies {
       configurations.all {
-        // these classes are in Java 11
+        // stax-api classes are in Java 11
         exclude group: 'javax.xml.stream', module: 'stax-api'
         exclude group: 'stax', module: 'stax-api'
+        exclude group: 'stax', module: 'stax'
     }
     
     modules {

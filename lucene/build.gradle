@@ -38,3 +38,8 @@ task runJflex() {
   group = 'Build Regenerate'
   description = "Runs all jflex targets to regenerate src files."
 }
+
+subprojects {
+  tasks.create("unusedDeps", org.apache.lucene.gradle.UnusedDeps)
+  unusedDeps.dependsOn packageDist
+}

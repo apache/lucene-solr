@@ -19,7 +19,7 @@ apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 apply plugin: org.apache.lucene.gradle.PartOfDist
 
-archivesBaseName = 'analyzers-icu'
+archivesBaseName = 'lucene-analyzers-icu'
 
 configurations {
   tools
