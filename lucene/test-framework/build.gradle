@@ -29,7 +29,6 @@ dependencies {
 	api ("junit:junit")
   api ('org.hamcrest:hamcrest-core')
 	api ("com.carrotsearch.randomizedtesting:randomizedtesting-runner")
-
-  implementation ('commons-codec:commons-codec')
+  api ('commons-codec:commons-codec')
   
 }

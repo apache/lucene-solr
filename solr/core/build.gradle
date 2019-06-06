@@ -25,10 +25,10 @@ archivesBaseName = 'solr-core'
 
 dependencies {
   
+  runtimeOnly project(':lucene:analysis:lucene-analyzers-phonetic')
   implementation project(':lucene:lucene-core')
   implementation project(':lucene:lucene-codecs')
   implementation project(':lucene:analysis:lucene-analyzers-common')
-  implementation project(':lucene:analysis:lucene-analyzers-phonetic')
   implementation project(':lucene:analysis:lucene-analyzers-kuromoji')
   implementation project(':lucene:analysis:lucene-analyzers-nori')
   implementation project(':lucene:lucene-suggest')
