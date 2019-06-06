@@ -43,6 +43,8 @@ sourceSets {
   tools.java.srcDirs = ['src/tools/java']
 }
 
+compileToolsJava.options.encoding = "UTF-8"
+
 task genUtr30DataFiles(type: JavaExec) {
   group = 'Build Regenerate'
   description = "Compiles UTR30 rules."
