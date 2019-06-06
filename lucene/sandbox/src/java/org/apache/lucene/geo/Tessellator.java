@@ -479,7 +479,6 @@ final public class Tessellator {
   }
 
   /** Attempt to split a polygon and independently triangulate each side. Return true if the polygon was splitted **/
-  private static final boolean splitEarcut(Polygon polygon, final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
   private static final boolean splitEarcut(final Polygon polygon, final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
     // Search for a valid diagonal that divides the polygon into two.
     Node searchNode = start;

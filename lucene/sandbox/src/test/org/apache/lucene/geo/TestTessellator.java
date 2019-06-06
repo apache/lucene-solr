@@ -521,7 +521,8 @@ public class TestTessellator extends LuceneTestCase {
 
   private void checkPolygon(String wkt) throws Exception {
     Polygon polygon = (Polygon) SimpleWKTShapeParser.parse(wkt);
-    assertTrue(Tessellator.tessellate(polygon).size() > 0);
+    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
+    assertTrue(tessellation.size() > 0);
     for (Tessellator.Triangle t : tessellation) {
       checkTriangleEdgesFromPolygon(polygon, t);
     }
