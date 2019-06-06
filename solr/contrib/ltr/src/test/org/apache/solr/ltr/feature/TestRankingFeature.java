@@ -16,6 +16,8 @@
  */
 package org.apache.solr.ltr.feature;
 
+import java.util.LinkedHashMap;
+
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
@@ -118,6 +120,13 @@ public class TestRankingFeature extends TestRerankBase {
         "Unable to extract feature for powdesS'");
     // aftertest();
 
+  }
+
+  @Test
+  public void testParamsToMap() throws Exception {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<String,Object>();
+    params.put("q", "{!func}pow(popularity,2)");
+    doTestParamsToMap(SolrFeature.class.getName(), params);
   }
 
 }

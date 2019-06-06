@@ -61,6 +61,7 @@ import java.net.UnknownHostException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -90,7 +91,7 @@ public class ZkTestServer {
 
   protected final ZKServerMain zkServer = new ZKServerMain();
 
-  private volatile String zkDir;
+  private volatile Path zkDir;
 
   private volatile int clientPort;
 
@@ -249,6 +250,10 @@ public class ZkTestServer {
           case NodeChildrenChanged:
             childrenLimit.updateForFire(event);
             break;
+          case ChildWatchRemoved:
+            break;
+          case DataWatchRemoved:
+            break;
         }
       }
     }
@@ -259,7 +264,7 @@ public class ZkTestServer {
 
       public TestServerCnxn(ZooKeeperServer zk, SocketChannel sock, SelectionKey sk,
                             NIOServerCnxnFactory factory, WatchLimiter limiter) throws IOException {
-        super(zk, sock, sk, factory);
+        super(zk, sock, sk, factory, null);
         this.limiter = limiter;
       }
 
@@ -277,11 +282,6 @@ public class ZkTestServer {
       public TestServerCnxnFactory(WatchLimiter limiter) throws IOException {
         super();
         this.limiter = limiter;
-      }
-
-      @Override
-      protected NIOServerCnxn createConnection(SocketChannel sock, SelectionKey sk) throws IOException {
-        return new TestServerCnxn(zkServer, sock, sk, this, limiter);
       }
     }
 
@@ -331,11 +331,11 @@ public class ZkTestServer {
         // so rather than spawning another thread, we will just call
         // run() in this thread.
         // create a file logger url from the command line args
-        FileTxnSnapLog ftxn = new FileTxnSnapLog(new File(
-            config.getDataLogDir()), new File(config.getDataDir()));
+        FileTxnSnapLog ftxn = new FileTxnSnapLog(config.getDataLogDir(), config.getDataDir());
+
         zooKeeperServer = new ZooKeeperServer(ftxn, config.getTickTime(),
             config.getMinSessionTimeout(), config.getMaxSessionTimeout(),
-            null /* this is not used */, new TestZKDatabase(ftxn, limiter));
+            new TestZKDatabase(ftxn, limiter));
         cnxnFactory = new TestServerCnxnFactory(limiter);
         cnxnFactory.configure(config.getClientPortAddress(),
             config.getMaxClientCnxns());
@@ -418,11 +418,11 @@ public class ZkTestServer {
     }
   }
 
-  public ZkTestServer(String zkDir) throws Exception {
+  public ZkTestServer(Path zkDir) throws Exception {
     this(zkDir, 0);
   }
 
-  public ZkTestServer(String zkDir, int port) throws KeeperException, InterruptedException {
+  public ZkTestServer(Path zkDir, int port) throws KeeperException, InterruptedException {
     this.zkDir = zkDir;
     this.clientPort = port;
     String reportAction = System.getProperty("tests.zk.violationReportAction");
@@ -541,8 +541,8 @@ public class ZkTestServer {
 
             {
               setClientPort(ZkTestServer.this.clientPort);
-              this.dataDir = zkDir;
-              this.dataLogDir = zkDir;
+              this.dataDir = zkDir.toFile();
+              this.dataLogDir = zkDir.toFile();
               this.tickTime = theTickTime;
               this.maxSessionTimeout = ZkTestServer.this.maxSessionTimeout;
               this.minSessionTimeout = ZkTestServer.this.minSessionTimeout;
@@ -753,7 +753,7 @@ public class ZkTestServer {
     this.theTickTime = theTickTime;
   }
 
-  public String getZkDir() {
+  public Path getZkDir() {
     return zkDir;
   }
 
@@ -788,11 +788,17 @@ public class ZkTestServer {
 
   public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String name)
       throws Exception {
-    putConfig(confName, zkClient, solrhome, name, name);
+    putConfig(confName, zkClient, null, solrhome, name, name);
   }
 
-  public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String srcName, String destName)
-      throws Exception {
+
+  public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String srcName,
+                                 String destName) throws Exception {
+      putConfig(confName, zkClient, null, solrhome, srcName, destName);
+  }
+
+  public static void putConfig(String confName, SolrZkClient zkClient, String zkChroot, File solrhome,
+                               final String srcName, String destName) throws Exception {
     File file = new File(solrhome, "collection1"
         + File.separator + "conf" + File.separator + srcName);
     if (!file.exists()) {
@@ -801,6 +807,9 @@ public class ZkTestServer {
     }
 
     String destPath = "/configs/" + confName + "/" + destName;
+    if (zkChroot != null) {
+      destPath = zkChroot + destPath;
+    }
     log.info("put " + file.getAbsolutePath() + " to " + destPath);
     zkClient.makePath(destPath, file, false, true);
   }

@@ -18,9 +18,9 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
-import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
@@ -41,12 +41,25 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Ignore;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
 /** Test case for indexing polygons and querying by bounding box */
 public class TestLatLonShape extends LuceneTestCase {
   protected static String FIELDNAME = "field";
+
+  /** quantizes a latitude value to be consistent with index encoding */
+  protected static double quantizeLat(double rawLat) {
+    return decodeLatitude(encodeLatitude(rawLat));
+  }
+
+  /** quantizes a longitude value to be consistent with index encoding */
+  protected static double quantizeLon(double rawLon) {
+    return decodeLongitude(encodeLongitude(rawLon));
+  }
+
   protected void addPolygonsToDoc(String field, Document doc, Polygon polygon) {
     Field[] fields = LatLonShape.createIndexableFields(field, polygon);
     for (Field f : fields) {
@@ -283,14 +296,8 @@ public class TestLatLonShape extends LuceneTestCase {
         new double[] {180d, 180d, 176d, 174d, 176d, 180d}
     );
 
-    Field[] fields = LatLonShape.createIndexableFields("test", indexPoly1);
-    for (Field f : fields) {
-      doc.add(f);
-    }
-    fields = LatLonShape.createIndexableFields("test", indexPoly2);
-    for (Field f : fields) {
-      doc.add(f);
-    }
+    addPolygonsToDoc(FIELDNAME, doc, indexPoly1);
+    addPolygonsToDoc(FIELDNAME, doc, indexPoly2);
     w.addDocument(doc);
     w.forceMerge(1);
 
@@ -306,22 +313,22 @@ public class TestLatLonShape extends LuceneTestCase {
             new double[] {180d, 180d, 170d, 170d, 180d})
     };
 
-    Query q = LatLonShape.newPolygonQuery("test", QueryRelation.WITHIN, searchPoly);
+    Query q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.WITHIN, searchPoly);
     assertEquals(1, searcher.count(q));
 
-    q = LatLonShape.newPolygonQuery("test", QueryRelation.INTERSECTS, searchPoly);
+    q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.INTERSECTS, searchPoly);
     assertEquals(1, searcher.count(q));
 
-    q = LatLonShape.newPolygonQuery("test", QueryRelation.DISJOINT, searchPoly);
+    q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.DISJOINT, searchPoly);
     assertEquals(0, searcher.count(q));
 
-    q = LatLonShape.newBoxQuery("test", QueryRelation.WITHIN, -20, 20, 170, -170);
+    q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.WITHIN, -20, 20, 170, -170);
     assertEquals(1, searcher.count(q));
 
-    q = LatLonShape.newBoxQuery("test", QueryRelation.INTERSECTS, -20, 20, 170, -170);
+    q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.INTERSECTS, -20, 20, 170, -170);
     assertEquals(1, searcher.count(q));
 
-    q = LatLonShape.newBoxQuery("test", QueryRelation.DISJOINT, -20, 20, 170, -170);
+    q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.DISJOINT, -20, 20, 170, -170);
     assertEquals(0, searcher.count(q));
 
     IOUtils.close(w, reader, dir);
@@ -333,23 +340,19 @@ public class TestLatLonShape extends LuceneTestCase {
     double blat = 34.26468306870807;
     double blon = -52.67048754768767;
     Polygon polygon = new Polygon(new double[] {-14.448264200949083, 0, 0, -14.448264200949083, -14.448264200949083},
-                                  new double[] {0.9999999403953552, 0.9999999403953552, 124.50086371762484, 124.50086371762484, 0.9999999403953552});
+        new double[] {0.9999999403953552, 0.9999999403953552, 124.50086371762484, 124.50086371762484, 0.9999999403953552});
     Polygon2D polygon2D = Polygon2D.create(polygon);
-    PointValues.Relation rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(alon)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(blat)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(blon)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(blat)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(alon)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(alat)));
+    PointValues.Relation rel = polygon2D.relateTriangle(
+        quantizeLon(alon), quantizeLat(blat),
+        quantizeLon(blon), quantizeLat(blat),
+        quantizeLon(alon), quantizeLat(alat));
 
     assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
 
-    rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(alon)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(blat)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(alon)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(alat)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(blon)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(blat)));
+    rel = polygon2D.relateTriangle(
+        quantizeLon(alon), quantizeLat(blat),
+        quantizeLon(alon), quantizeLat(alat),
+        quantizeLon(blon), quantizeLat(blat));
 
     assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
   }
@@ -358,62 +361,129 @@ public class TestLatLonShape extends LuceneTestCase {
     Polygon p = new Polygon(new double[] {0, 0, 1, 1, 0}, new double[] {0, 1, 1, 0, 0});
     Polygon2D polygon2D = Polygon2D.create(p);
     //3 shared points
-    PointValues.Relation rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    PointValues.Relation rel = polygon2D.relateTriangle(
+        quantizeLon(0.5), quantizeLat(0),
+        quantizeLon(1), quantizeLat(0.5),
+        quantizeLon(0.5), quantizeLat(1));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
     //2 shared points
-    rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.75)));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    rel = polygon2D.relateTriangle(
+        quantizeLon(0.5), quantizeLat(0),
+        quantizeLon(1), quantizeLat(0.5),
+        quantizeLon(0.5), quantizeLat(0.75));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
     //1 shared point
     rel = polygon2D.relateTriangle(
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.75)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.75)));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+        quantizeLon(0.5), quantizeLat(0.5),
+        quantizeLon(0.5), quantizeLat(0),
+        quantizeLon(0.75), quantizeLat(0.75));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
     // 1 shared point but out
-    rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(2)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(2)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(2)));
+    rel = polygon2D.relateTriangle(
+        quantizeLon(1), quantizeLat(0.5),
+        quantizeLon(2), quantizeLat(0),
+        quantizeLon(2), quantizeLat(2));
     assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
     // 1 shared point but crossing
-    rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(2)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)));
+    rel = polygon2D.relateTriangle(
+        quantizeLon(0.5), quantizeLat(0),
+        quantizeLon(2), quantizeLat(0.5),
+        quantizeLon(0.5), quantizeLat(1));
     assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
     //share one edge
-    rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0.5)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0.5)));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    rel = polygon2D.relateTriangle(
+        quantizeLon(0), quantizeLat(0),
+        quantizeLon(0), quantizeLat(1),
+        quantizeLon(0.5), quantizeLat(0.5));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
     //share one edge outside
-    rel = polygon2D.relateTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(0)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1.5)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1.5)),
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(1)));
+    rel = polygon2D.relateTriangle(
+        quantizeLon(0), quantizeLat(1),
+        quantizeLon(1.5), quantizeLat(1.5),
+        quantizeLon(1), quantizeLat(1));
     assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
   }
 
+  public void testLUCENE8736() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    // test polygons:
+    Polygon indexPoly1 = new Polygon(
+        new double[] {4d, 4d, 3d, 3d, 4d},
+        new double[] {3d, 4d, 4d, 3d, 3d}
+    );
+
+    Polygon indexPoly2 = new Polygon(
+        new double[] {2d, 2d, 1d, 1d, 2d},
+        new double[] {6d, 7d, 7d, 6d, 6d}
+    );
+
+    Polygon indexPoly3 = new Polygon(
+        new double[] {1d, 1d, 0d, 0d, 1d},
+        new double[] {3d, 4d, 4d, 3d, 3d}
+    );
+
+    Polygon indexPoly4 = new Polygon(
+        new double[] {2d, 2d, 1d, 1d, 2d},
+        new double[] {0d, 1d, 1d, 0d, 0d}
+    );
+
+    // index polygons:
+    Document doc;
+    addPolygonsToDoc(FIELDNAME, doc = new Document(), indexPoly1);
+    w.addDocument(doc);
+    addPolygonsToDoc(FIELDNAME, doc = new Document(), indexPoly2);
+    w.addDocument(doc);
+    addPolygonsToDoc(FIELDNAME, doc = new Document(), indexPoly3);
+    w.addDocument(doc);
+    addPolygonsToDoc(FIELDNAME, doc = new Document(), indexPoly4);
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    Polygon[] searchPoly = new Polygon[] {
+        new Polygon(new double[] {4d, 4d, 0d, 0d, 4d},
+            new double[] {0d, 7d, 7d, 0d, 0d})
+    };
+
+    Query q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.WITHIN, searchPoly);
+    assertEquals(4, searcher.count(q));
+
+    IOUtils.close(w, reader, dir);
+  }
+
+  public void testTriangleCrossingPolygonVertices() {
+    Polygon p = new Polygon(new double[] {0, 0, -5, -10, -5, 0}, new double[] {-1, 1, 5, 0, -5, -1});
+    Polygon2D polygon2D = Polygon2D.create(p);
+    PointValues.Relation rel = polygon2D.relateTriangle(
+        quantizeLon(-5), quantizeLat(0),
+        quantizeLon(10), quantizeLat(0),
+        quantizeLon(-5), quantizeLat(-15));
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+  }
+
+  public void testLineCrossingPolygonVertices() {
+    Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
+    Polygon2D polygon2D = Polygon2D.create(p);
+    PointValues.Relation rel = polygon2D.relateTriangle(
+        quantizeLon(-1.5), quantizeLat(0),
+        quantizeLon(1.5), quantizeLat(0),
+        quantizeLon(-1.5), quantizeLat(0));
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+  }
+
+  public void testLineSharedLine() {
+    Line l = new Line(new double[] {0, 0, 0, 0}, new double[] {-2, -1, 0, 1});
+    Line2D l2d = Line2D.create(l);
+    PointValues.Relation r = l2d.relateTriangle(
+        quantizeLon(-5), quantizeLat(0),
+        quantizeLon(5), quantizeLat(0),
+        quantizeLon(-5), quantizeLat(0));
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, r);
+  }
 }

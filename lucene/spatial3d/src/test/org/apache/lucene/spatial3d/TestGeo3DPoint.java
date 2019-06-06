@@ -75,7 +75,6 @@ import org.apache.lucene.spatial3d.geom.XYZSolidFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
@@ -1437,11 +1436,11 @@ public class TestGeo3DPoint extends LuceneTestCase {
         for(int dim=0;dim<numDims;dim++) {
           int offset = bytesPerDim * dim;
           // other.min < this.min?
-          if (FutureArrays.compareUnsigned(other.minPackedValue, offset, offset + bytesPerDim, minPackedValue, offset, offset + bytesPerDim) < 0) {
+          if (Arrays.compareUnsigned(other.minPackedValue, offset, offset + bytesPerDim, minPackedValue, offset, offset + bytesPerDim) < 0) {
             return false;
           }
           // other.max < this.max?
-          if (FutureArrays.compareUnsigned(other.maxPackedValue, offset, offset + bytesPerDim, maxPackedValue, offset, offset + bytesPerDim) > 0) {
+          if (Arrays.compareUnsigned(other.maxPackedValue, offset, offset + bytesPerDim, maxPackedValue, offset, offset + bytesPerDim) > 0) {
             return false;
           }
         }

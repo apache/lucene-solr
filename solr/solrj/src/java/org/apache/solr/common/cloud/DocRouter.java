@@ -48,7 +48,7 @@ public abstract class DocRouter {
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown document router '"+ routerName + "'");
   }
 
-  protected String getRouteField(DocCollection coll) {
+  public String getRouteField(DocCollection coll) {
     if (coll == null) return null;
     Map m = (Map) coll.get(DOC_ROUTER);
     if (m == null) return null;

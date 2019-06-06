@@ -176,7 +176,7 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
 
   public static <T extends AttributeImpl> T assertCopyIsEqual(T att) throws Exception {
     @SuppressWarnings("unchecked")
-    T copy = (T) att.getClass().newInstance();
+    T copy = (T) att.getClass().getConstructor().newInstance();
     att.copyTo(copy);
     assertEquals("Copied instance must be equal", att, copy);
     assertEquals("Copied instance's hashcode must be equal", att.hashCode(), copy.hashCode());

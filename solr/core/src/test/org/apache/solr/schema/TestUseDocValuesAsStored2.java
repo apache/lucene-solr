@@ -17,17 +17,15 @@
 package org.apache.solr.schema;
 
 import java.io.File;
-import java.io.StringReader;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.rest.schema.TestBulkSchemaAPI;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.After;
 import org.junit.Before;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 
 /**
  * Tests the useDocValuesAsStored functionality.
@@ -91,7 +89,7 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
 
     String response = harness.post("/schema", json(payload));
 
-    Map m = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    Map m = (Map) Utils.fromJSONString(response);
     assertNull(response, m.get("errors"));
 
     // default value of useDocValuesAsStored

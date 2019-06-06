@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -72,7 +73,7 @@ public final class SegmentReader extends CodecReader {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  SegmentReader(SegmentCommitInfo si, int createdVersionMajor, boolean openedFromWriter, IOContext context) throws IOException {
+  SegmentReader(SegmentCommitInfo si, int createdVersionMajor, boolean openedFromWriter, IOContext context, Map<String, String> readerAttributes) throws IOException {
     this.si = si.clone();
     this.originalSi = si;
     this.metaData = new LeafMetaData(createdVersionMajor, si.info.getMinVersion(), si.info.getIndexSort());
@@ -80,7 +81,7 @@ public final class SegmentReader extends CodecReader {
     // We pull liveDocs/DV updates from disk:
     this.isNRT = false;
     
-    core = new SegmentCoreReaders(si.info.dir, si, openedFromWriter, context);
+    core = new SegmentCoreReaders(si.info.dir, si, openedFromWriter, context, readerAttributes);
     segDocValues = new SegmentDocValues();
     
     boolean success = false;

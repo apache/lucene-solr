@@ -552,7 +552,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
-        .withFunctionName("random", RandomStream.class);
+        .withFunctionName("random", RandomFacadeStream.class);
 
 
     StreamContext context = new StreamContext();
@@ -571,6 +571,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       stream.setStreamContext(context);
       List<Tuple> tuples2 = getTuples(stream);
       assert (tuples2.size() == 1000);
+
 
       boolean different = false;
       for (int i = 0; i < tuples1.size(); i++) {
@@ -601,6 +602,44 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       List<Tuple> tuples3 = getTuples(stream);
       assert (tuples3.size() == 1);
 
+      //Exercise the DeepRandomStream with higher rows
+
+      expression = StreamExpressionParser.parse("random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"10001\", fl=\"id, a_i\")");
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(context);
+      List<Tuple> tuples10 = getTuples(stream);
+      assert (tuples10.size() == 1000);
+
+      expression = StreamExpressionParser.parse("random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"10001\", fl=\"id, a_i\")");
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(context);
+      List<Tuple> tuples11 = getTuples(stream);
+      assert (tuples11.size() == 1000);
+
+      different = false;
+      for (int i = 0; i < tuples10.size(); i++) {
+        Tuple tuple1 = tuples10.get(i);
+        Tuple tuple2 = tuples11.get(i);
+        if (!tuple1.get("id").equals(tuple2.get(id))) {
+          different = true;
+          break;
+        }
+      }
+
+      assertTrue(different);
+
+      Collections.sort(tuples10, new FieldComparator("id", ComparatorOrder.ASCENDING));
+      Collections.sort(tuples11, new FieldComparator("id", ComparatorOrder.ASCENDING));
+
+      for (int i = 0; i < tuples10.size(); i++) {
+        Tuple tuple1 = tuples10.get(i);
+        Tuple tuple2 = tuples11.get(i);
+        if (!tuple1.get("id").equals(tuple2.get(id))) {
+          assert(tuple1.getLong("id").equals(tuple2.get("a_i")));
+        }
+      }
+
+
 
       //Exercise the /stream handler
       ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
@@ -609,6 +648,13 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       List<Tuple> tuples4 = getTuples(solrStream);
       assert (tuples4.size() == 1);
+
+      sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
+      sParams.add("expr", "random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"10001\", fl=\"id, a_i\")");
+      jetty = cluster.getJettySolrRunner(0);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+      tuples4 = getTuples(solrStream);
+      assert (tuples4.size() == 1000);
 
     } finally {
       cache.close();
@@ -836,6 +882,178 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       cache.close();
     }
   }
+
+  @Test
+  public void testFacet2DStream() throws Exception {
+    new UpdateRequest()
+        .add(id, "0",  "diseases_s",  "stroke", "symptoms_s", "confusion", "cases_i", "10")
+        .add(id, "1",  "diseases_s",  "cancer", "symptoms_s", "indigestion","cases_i", "5" )
+        .add(id, "2",  "diseases_s",  "diabetes", "symptoms_s", "thirsty", "cases_i", "20")
+        .add(id, "3",  "diseases_s",  "stroke", "symptoms_s", "confusion", "cases_i", "10")
+        .add(id, "4",  "diseases_s",  "bronchus", "symptoms_s", "nausea", "cases_i", "25")
+        .add(id, "5",  "diseases_s",  "bronchus", "symptoms_s", "cough", "cases_i", "10")
+        .add(id, "6",  "diseases_s",  "bronchus", "symptoms_s", "cough", "cases_i", "10")
+        .add(id, "7",  "diseases_s",  "heart attack", "symptoms_s", "indigestion", "cases_i", "5")
+        .add(id, "8",  "diseases_s",  "diabetes", "symptoms_s", "urination", "cases_i", "10")
+        .add(id, "9",  "diseases_s",  "diabetes", "symptoms_s", "thirsty", "cases_i", "20")
+        .add(id, "10", "diseases_s", "diabetes", "symptoms_s", "thirsty", "cases_i", "20")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    String expr = "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\", count(*))";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+
+    assertEquals(tuples.size(), 3);
+
+    Tuple tuple1 = tuples.get(0);
+    assertEquals(tuple1.getString("diseases_s"), "diabetes");
+    assertEquals(tuple1.getString("symptoms_s"), "thirsty");
+    assertEquals(tuple1.getLong("count(*)").longValue(), 3);
+
+    Tuple tuple2 = tuples.get(1);
+    assertEquals(tuple2.getString("diseases_s"), "bronchus");
+    assertEquals(tuple2.getString("symptoms_s"), "cough");
+    assertEquals(tuple2.getLong("count(*)").longValue(), 2);
+
+    Tuple tuple3 = tuples.get(2);
+    assertEquals(tuple3.getString("diseases_s"), "stroke");
+    assertEquals(tuple3.getString("symptoms_s"), "confusion");
+    assertEquals(tuple3.getLong("count(*)").longValue(), 2);
+
+
+    paramsLoc = new ModifiableSolrParams();
+    expr = "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\")";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+
+    assertEquals(tuples.size(), 3);
+
+    tuple1 = tuples.get(0);
+    assertEquals(tuple1.getString("diseases_s"), "diabetes");
+    assertEquals(tuple1.getString("symptoms_s"), "thirsty");
+    assertEquals(tuple1.getString("count(*)"), "3");
+
+    tuple2 = tuples.get(1);
+    assertEquals(tuple2.getString("diseases_s"), "bronchus");
+    assertEquals(tuple2.getString("symptoms_s"), "cough");
+    assertEquals(tuple2.getString("count(*)"), "2");
+
+    tuple3 = tuples.get(2);
+    assertEquals(tuple3.getString("diseases_s"), "stroke");
+    assertEquals(tuple3.getString("symptoms_s"), "confusion");
+    assertEquals(tuple3.getString("count(*)"), "2");
+
+    paramsLoc = new ModifiableSolrParams();
+    expr = "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\", sum(cases_i))";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+
+    assertEquals(tuples.size(), 3);
+
+
+    tuple1 = tuples.get(0);
+    assertEquals(tuple1.getString("diseases_s"), "diabetes");
+    assertEquals(tuple1.getString("symptoms_s"), "thirsty");
+    assertEquals(tuple1.getLong("sum(cases_i)").longValue(), 60L);
+
+    tuple2 = tuples.get(1);
+    assertEquals(tuple2.getString("diseases_s"), "bronchus");
+    assertEquals(tuple2.getString("symptoms_s"), "nausea");
+    assertEquals(tuple2.getLong("sum(cases_i)").longValue(), 25L);
+
+
+    tuple3 = tuples.get(2);
+    assertEquals(tuple3.getString("diseases_s"), "stroke");
+    assertEquals(tuple3.getString("symptoms_s"), "confusion");
+    assertEquals(tuple3.getLong("sum(cases_i)").longValue(), 20L);
+
+
+    paramsLoc = new ModifiableSolrParams();
+    expr = "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\", avg(cases_i))";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+
+    assertEquals(tuples.size(), 3);
+
+    tuple1 = tuples.get(0);
+    assertEquals(tuple1.getString("diseases_s"), "diabetes");
+    assertEquals(tuple1.getString("symptoms_s"), "thirsty");
+    assertEquals(tuple1.getLong("avg(cases_i)").longValue(), 20);
+
+    tuple2 = tuples.get(1);
+    assertEquals(tuple2.getString("diseases_s"), "bronchus");
+    assertEquals(tuple2.getString("symptoms_s"), "nausea");
+    assertEquals(tuple2.getLong("avg(cases_i)").longValue(), 25);
+
+    tuple3 = tuples.get(2);
+    assertEquals(tuple3.getString("diseases_s"), "stroke");
+    assertEquals(tuple3.getString("symptoms_s"), "confusion");
+    assertEquals(tuple3.getLong("avg(cases_i)").longValue(), 10);
+
+    paramsLoc = new ModifiableSolrParams();
+    expr = "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"2,2\")";
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    solrStream = new SolrStream(url, paramsLoc);
+
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+
+    assertEquals(tuples.size(), 4);
+
+    tuple1 = tuples.get(0);
+    assertEquals(tuple1.getString("diseases_s"), "diabetes");
+    assertEquals(tuple1.getString("symptoms_s"), "thirsty");
+    assertEquals(tuple1.getLong("count(*)").longValue(), 3);
+
+    tuple2 = tuples.get(1);
+    assertEquals(tuple2.getString("diseases_s"), "diabetes");
+    assertEquals(tuple2.getString("symptoms_s"), "urination");
+    assertEquals(tuple2.getLong("count(*)").longValue(), 1);
+
+
+    tuple3 = tuples.get(2);
+    assertEquals(tuple3.getString("diseases_s"), "bronchus");
+    assertEquals(tuple3.getString("symptoms_s"), "cough");
+    assertEquals(tuple3.getLong("count(*)").longValue(), 2);
+
+    Tuple tuple4 = tuples.get(3);
+    assertEquals(tuple4.getString("diseases_s"), "bronchus");
+    assertEquals(tuple4.getString("symptoms_s"), "nausea");
+    assertEquals(tuple4.getLong("count(*)").longValue(), 1);
+  }
+
 
   @Test
   public void testFacetStream() throws Exception {
@@ -2800,7 +3018,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(cache);
-    String longQuery = "\"id:(" + IntStream.range(0, 4000).mapToObj(i -> "a").collect(Collectors.joining(" ", "", "")) + ")\"";
+    // use filter() to allow being parsed as 'terms in set' query instead of a (weighted/scored) BooleanQuery
+    // so we don't trip too many boolean clauses
+    String longQuery = "\"filter(id:(" + IntStream.range(0, 4000).mapToObj(i -> "a").collect(Collectors.joining(" ", "", "")) + "))\"";
 
     try {
       assertSuccess("significantTerms("+COLLECTIONORALIAS+", q="+longQuery+", field=\"test_t\", limit=3, minTermLength=1, maxDocFreq=\".5\")", streamContext);

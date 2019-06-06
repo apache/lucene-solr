@@ -269,7 +269,7 @@ public class MiniSolrCloudCluster {
 
     this.externalZkServer = zkTestServer != null;
     if (!externalZkServer) {
-      String zkDir = baseDir.resolve("zookeeper/server1/data").toString();
+      Path zkDir = baseDir.resolve("zookeeper/server1/data");
       zkTestServer = new ZkTestServer(zkDir);
       try {
         zkTestServer.run();

@@ -189,14 +189,14 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
       # Make sure 1.8 compiler was used to build release bits:
-      'X-Compile-Source-JDK: 8',
+      'X-Compile-Source-JDK: 11',
       # Make sure 1.8, 1.9 or 1.10 ant was used to build release bits: (this will match 1.8.x, 1.9.x, 1.10.x)
       ('Ant-Version: Apache Ant 1.8', 'Ant-Version: Apache Ant 1.9', 'Ant-Version: Apache Ant 1.10'),
       # Make sure .class files are 1.8 format:
-      'X-Compile-Target-JDK: 8',
+      'X-Compile-Target-JDK: 11',
       'Specification-Version: %s' % version,
       # Make sure the release was compiled with 1.8:
-      'Created-By: 1.8'):
+      'Created-By: 11'):
       if type(verify) is not tuple:
         verify = (verify,)
       for x in verify:
@@ -661,7 +661,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
 
   if project == 'lucene':
     # TODO: clean this up to not be a list of modules that we must maintain
-    extras = ('analysis', 'backward-codecs', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial', 'spatial-extras', 'spatial3d', 'suggest', 'test-framework', 'licenses')
+    extras = ('analysis', 'backward-codecs', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'luke', 'memory', 'misc', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial', 'spatial-extras', 'spatial3d', 'suggest', 'test-framework', 'licenses')
     if isSrc:
       extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'top-level-ivy-settings.xml', 'default-nested-ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'version.properties', 'tools', 'site')
   else:
@@ -696,54 +696,54 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
     # Can't run documentation-lint in lucene src, because dev-tools is missing
     validateCmd = 'ant validate' if project == 'lucene' else 'ant validate documentation-lint';
     print('    run "%s"' % validateCmd)
-    java.run_java8(validateCmd, '%s/validate.log' % unpackPath)
+    java.run_java11(validateCmd, '%s/validate.log' % unpackPath)
 
     if project == 'lucene':
-      print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
-      java.run_java8('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
-      java.run_java8('ant jar', '%s/compile.log' % unpackPath)
-      testDemo(java.run_java8, isSrc, version, '1.8')
+      print("    run tests w/ Java 11 and testArgs='%s'..." % testArgs)
+      java.run_java11('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
+      java.run_java11('ant jar', '%s/compile.log' % unpackPath)
+      testDemo(java.run_java11, isSrc, version, '11')
 
-      print('    generate javadocs w/ Java 8...')
-      java.run_java8('ant javadocs', '%s/javadocs.log' % unpackPath)
+      print('    generate javadocs w/ Java 11...')
+      java.run_java11('ant javadocs', '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/build/docs' % unpackPath)
 
-      if java.run_java9:
-        print("    run tests w/ Java 9 and testArgs='%s'..." % testArgs)
-        java.run_java9('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
-        java.run_java9('ant jar', '%s/compile.log' % unpackPath)
-        testDemo(java.run_java9, isSrc, version, '9')
+      if java.run_java12:
+        print("    run tests w/ Java 12 and testArgs='%s'..." % testArgs)
+        java.run_java12('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
+        java.run_java12('ant jar', '%s/compile.log' % unpackPath)
+        testDemo(java.run_java12, isSrc, version, '12')
 
-        #print('    generate javadocs w/ Java 9...')
-        #java.run_java9('ant javadocs', '%s/javadocs.log' % unpackPath)
+        #print('    generate javadocs w/ Java 12...')
+        #java.run_java12('ant javadocs', '%s/javadocs.log' % unpackPath)
         #checkJavadocpathFull('%s/build/docs' % unpackPath)
 
     else:
       os.chdir('solr')
 
-      print("    run tests w/ Java 8 and testArgs='%s'..." % testArgs)
-      java.run_java8('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
+      print("    run tests w/ Java 11 and testArgs='%s'..." % testArgs)
+      java.run_java11('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
 
       # test javadocs
-      print('    generate javadocs w/ Java 8...')
-      java.run_java8('ant clean javadocs', '%s/javadocs.log' % unpackPath)
+      print('    generate javadocs w/ Java 11...')
+      java.run_java11('ant clean javadocs', '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
 
-      print('    test solr example w/ Java 8...')
-      java.run_java8('ant clean server', '%s/antexample.log' % unpackPath)
-      testSolrExample(unpackPath, java.java8_home, True)
+      print('    test solr example w/ Java 11...')
+      java.run_java11('ant clean server', '%s/antexample.log' % unpackPath)
+      testSolrExample(unpackPath, java.java11_home, True)
 
-      if java.run_java9:
-        print("    run tests w/ Java 9 and testArgs='%s'..." % testArgs)
-        java.run_java9('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
+      if java.run_java12:
+        print("    run tests w/ Java 12 and testArgs='%s'..." % testArgs)
+        java.run_java12('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
 
-        #print('    generate javadocs w/ Java 9...')
-        #java.run_java9('ant clean javadocs', '%s/javadocs.log' % unpackPath)
+        #print('    generate javadocs w/ Java 12...')
+        #java.run_java12('ant clean javadocs', '%s/javadocs.log' % unpackPath)
         #checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
 
-        print('    test solr example w/ Java 9...')
-        java.run_java9('ant clean server', '%s/antexample.log' % unpackPath)
-        testSolrExample(unpackPath, java.java9_home, True)
+        print('    test solr example w/ Java 12...')
+        java.run_java12('ant clean server', '%s/antexample.log' % unpackPath)
+        testSolrExample(unpackPath, java.java12_home, True)
 
       os.chdir('..')
       print('    check NOTICE')
@@ -754,32 +754,32 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
     checkAllJARs(os.getcwd(), project, gitRevision, version, tmpDir, baseURL)
 
     if project == 'lucene':
-      testDemo(java.run_java8, isSrc, version, '1.8')
-      if java.run_java9:
-        testDemo(java.run_java9, isSrc, version, '9')
+      testDemo(java.run_java11, isSrc, version, '11')
+      if java.run_java12:
+        testDemo(java.run_java12, isSrc, version, '12')
 
       print('    check Lucene\'s javadoc JAR')
       checkJavadocpath('%s/docs' % unpackPath)
 
     else:
-      print('    copying unpacked distribution for Java 8 ...')
-      java8UnpackPath = '%s-java8' % unpackPath
-      if os.path.exists(java8UnpackPath):
-        shutil.rmtree(java8UnpackPath)
-      shutil.copytree(unpackPath, java8UnpackPath)
-      os.chdir(java8UnpackPath)
-      print('    test solr example w/ Java 8...')
-      testSolrExample(java8UnpackPath, java.java8_home, False)
+      print('    copying unpacked distribution for Java 11 ...')
+      java11UnpackPath = '%s-java11' % unpackPath
+      if os.path.exists(java11UnpackPath):
+        shutil.rmtree(java11UnpackPath)
+      shutil.copytree(unpackPath, java11UnpackPath)
+      os.chdir(java11UnpackPath)
+      print('    test solr example w/ Java 11...')
+      testSolrExample(java11UnpackPath, java.java11_home, False)
 
-      if java.run_java9:
-        print('    copying unpacked distribution for Java 9 ...')
-        java9UnpackPath = '%s-java9' % unpackPath
-        if os.path.exists(java9UnpackPath):
-          shutil.rmtree(java9UnpackPath)
-        shutil.copytree(unpackPath, java9UnpackPath)
-        os.chdir(java9UnpackPath)
-        print('    test solr example w/ Java 9...')
-        testSolrExample(java9UnpackPath, java.java9_home, False)
+      if java.run_java12:
+        print('    copying unpacked distribution for Java 12 ...')
+        java12UnpackPath = '%s-java12' % unpackPath
+        if os.path.exists(java12UnpackPath):
+          shutil.rmtree(java12UnpackPath)
+        shutil.copytree(unpackPath, java12UnpackPath)
+        os.chdir(java12UnpackPath)
+        print('    test solr example w/ Java 12...')
+        testSolrExample(java12UnpackPath, java.java12_home, False)
 
       os.chdir(unpackPath)
 
@@ -1230,7 +1230,7 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         downloadedFiles.append(path)
         sys.stdout.write('.')
 
-def make_java_config(parser, java9_home):
+def make_java_config(parser, java12_home):
   def _make_runner(java_home, version):
     print('Java %s JAVA_HOME=%s' % (version, java_home))
     if cygwin:
@@ -1244,16 +1244,16 @@ def make_java_config(parser, java9_home):
     def run_java(cmd, logfile):
       run('%s; %s' % (cmd_prefix, cmd), logfile)
     return run_java
-  java8_home =  os.environ.get('JAVA_HOME')
-  if java8_home is None:
+  java11_home =  os.environ.get('JAVA_HOME')
+  if java11_home is None:
     parser.error('JAVA_HOME must be set')
-  run_java8 = _make_runner(java8_home, '1.8')
-  run_java9 = None
-  if java9_home is not None:
-    run_java9 = _make_runner(java9_home, '9')
+  run_java11 = _make_runner(java11_home, '11')
+  run_java12 = None
+  if java12_home is not None:
+    run_java12 = _make_runner(java12_home, '12')
 
-  jc = namedtuple('JavaConfig', 'run_java8 java8_home run_java9 java9_home')
-  return jc(run_java8, java8_home, run_java9, java9_home)
+  jc = namedtuple('JavaConfig', 'run_java11 java11_home run_java12 java12_home')
+  return jc(run_java11, java11_home, run_java12, java12_home)
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
 revision_re = re.compile(r'rev([a-f\d]+)')
@@ -1275,8 +1275,8 @@ def parse_config():
                       help='GIT revision number that release was built with, defaults to that in URL')
   parser.add_argument('--version', metavar='X.Y.Z(-ALPHA|-BETA)?',
                       help='Version of the release, defaults to that in URL')
-  parser.add_argument('--test-java9', metavar='JAVA9_HOME',
-                      help='Path to Java9 home directory, to run tests with if specified')
+  parser.add_argument('--test-java12', metavar='JAVA12_HOME',
+                      help='Path to Java12 home directory, to run tests with if specified')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to ant for testing, e.g. -Dwhat=ever.')
@@ -1301,7 +1301,7 @@ def parse_config():
   if c.local_keys is not None and not os.path.exists(c.local_keys):
     parser.error('Local KEYS file "%s" not found' % c.local_keys)
 
-  c.java = make_java_config(parser, c.test_java9)
+  c.java = make_java_config(parser, c.test_java12)
 
   if c.tmp_dir:
     c.tmp_dir = os.path.abspath(c.tmp_dir)

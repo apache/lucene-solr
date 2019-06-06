@@ -28,7 +28,6 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +68,7 @@ public abstract class AbstractAnalysisFactory {
    * Initialize this factory via a set of key-value pairs.
    */
   protected AbstractAnalysisFactory(Map<String,String> args) {
-    originalArgs = Collections.unmodifiableMap(new HashMap<>(args));
+    originalArgs = Map.copyOf(args);
     String version = get(args, LUCENE_MATCH_VERSION_PARAM);
     if (version == null) {
       luceneMatchVersion = Version.LATEST;

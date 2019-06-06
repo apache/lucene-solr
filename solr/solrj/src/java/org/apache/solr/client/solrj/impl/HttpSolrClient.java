@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -252,6 +253,12 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       throws SolrServerException, IOException {
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
+    if (request.getHeaders() != null) {
+      Map<String, String> headers = request.getHeaders();
+      for (Map.Entry<String, String> entry : headers.entrySet()) {
+        method.setHeader(entry.getKey(), entry.getValue());
+      }
+    }
     return executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
   }
 

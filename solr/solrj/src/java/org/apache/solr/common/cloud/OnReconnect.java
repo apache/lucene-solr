@@ -16,6 +16,8 @@
  */
 package org.apache.solr.common.cloud;
 
+import org.apache.zookeeper.KeeperException.SessionExpiredException;
+
 /**
  * Implementations are expected to implement a correct hashCode and equals
  * method needed to uniquely identify the listener as listeners are managed
@@ -24,5 +26,5 @@ package org.apache.solr.common.cloud;
  * when it no longer needs to be notified of ZK reconnection events.
  */
 public interface OnReconnect {
-  void command();
+  void command() throws SessionExpiredException;
 }

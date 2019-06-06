@@ -19,9 +19,9 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -180,10 +180,9 @@ public abstract class StoredFieldsWriter implements Closeable {
     }
 
     @Override
-    public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
+    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
       reset(fieldInfo);
-      // TODO: can we avoid new String here?
-      stringValue = new String(value, StandardCharsets.UTF_8);
+      stringValue = Objects.requireNonNull(value, "String value should not be null");
       write();
     }
 

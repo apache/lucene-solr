@@ -48,6 +48,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.stats.MetricUtils;
 
 /**
@@ -69,6 +70,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
   private static final Pattern KEY_REGEX = Pattern.compile("(?<!" + Pattern.quote("\\") + ")" + Pattern.quote(":"));
   private CoreContainer cc;
+  private final Map<String, String> injectedSysProps = TestInjection.injectAdditionalProps();
 
   public MetricsHandler() {
     this.metricManager = null;
@@ -157,6 +159,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
         propertyFilter = (name) -> name.equals(propertyName);
         // use escaped versions
         key = parts[0] + ":" + parts[1];
+      }
+      if (injectedSysProps != null
+          && SolrMetricManager.JVM_REGISTRY.equals(registryName)
+          && "system.properties".equals(metricName) && injectedSysProps.containsKey(propertyName)) {
+        result.add(registryName+":"+metricName+":"+propertyName, injectedSysProps.get(propertyName));
+        continue;
       }
       MetricUtils.convertMetric(key, m, propertyFilter, false, true, true, false, ":", (k, v) -> {
         if ((v instanceof Map) && propertyName != null) {

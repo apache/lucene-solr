@@ -173,6 +173,15 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     return clauseSets.get(occur);
   }
 
+  /**
+   * Whether this query is a pure disjunction, ie. it only has SHOULD clauses
+   * and it is enough for a single clause to match for this boolean query to match.
+   */
+  boolean isPureDisjunction() {
+    return clauses.size() == getClauses(Occur.SHOULD).size()
+        && minimumNumberShouldMatch <= 1;
+  }
+
   /** Returns an iterator on the clauses in this query. It implements the {@link Iterable} interface to
    * make it possible to do:
    * <pre class="prettyprint">for (BooleanClause clause : booleanQuery) {}</pre>
@@ -183,18 +192,33 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   private BooleanQuery rewriteNoScoring() {
-    if (clauseSets.get(Occur.MUST).size() == 0) {
+    boolean keepShould = getMinimumNumberShouldMatch() > 0
+        || (clauseSets.get(Occur.MUST).size() + clauseSets.get(Occur.FILTER).size() == 0);
+
+    if (clauseSets.get(Occur.MUST).size() == 0 && keepShould) {
       return this;
     }
     BooleanQuery.Builder newQuery = new BooleanQuery.Builder();
+
     newQuery.setMinimumNumberShouldMatch(getMinimumNumberShouldMatch());
     for (BooleanClause clause : clauses) {
-      if (clause.getOccur() == Occur.MUST) {
-        newQuery.add(clause.getQuery(), Occur.FILTER);
-      } else {
-        newQuery.add(clause);
+      switch (clause.getOccur()) {
+        case MUST: {
+          newQuery.add(clause.getQuery(), Occur.FILTER);
+          break;
+        }
+        case SHOULD: {
+          if (keepShould) {
+            newQuery.add(clause);
+          }
+          break;
+        }
+        default: {
+          newQuery.add(clause);
+        }
       }
     }
+
     return newQuery.build();
   }
 
@@ -245,9 +269,13 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         Query query = clause.getQuery();
         Query rewritten = query.rewrite(reader);
         if (rewritten != query) {
+          // rewrite clause
           actuallyRewritten = true;
+          builder.add(rewritten, clause.getOccur());
+        } else {
+          // leave as-is
+          builder.add(clause);
         }
-        builder.add(rewritten, clause.getOccur());
       }
       if (actuallyRewritten) {
         return builder.build();
@@ -445,6 +473,31 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           rewritten = builder.build();
           return rewritten;
         }
+      }
+    }
+
+    // Flatten nested disjunctions, this is important for block-max WAND to perform well
+    if (minimumNumberShouldMatch <= 1) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.setMinimumNumberShouldMatch(minimumNumberShouldMatch);
+      boolean actuallyRewritten = false;
+      for (BooleanClause clause : clauses) {
+        if (clause.getOccur() == Occur.SHOULD && clause.getQuery() instanceof BooleanQuery) {
+          BooleanQuery innerQuery = (BooleanQuery) clause.getQuery();
+          if (innerQuery.isPureDisjunction()) {
+            actuallyRewritten = true;
+            for (BooleanClause innerClause : innerQuery.clauses()) {
+              builder.add(innerClause);
+            }
+          } else {
+            builder.add(clause);
+          }
+        } else {
+          builder.add(clause);
+        }
+      }
+      if (actuallyRewritten) {
+        return builder.build();
       }
     }
 

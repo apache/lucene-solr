@@ -169,7 +169,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
   @Override
   public <T> T newInstance(String cname, Class<T> expectedType) {
     try {
-      return findClass(cname, expectedType).newInstance();
+      return findClass(cname, expectedType).getConstructor().newInstance();
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {

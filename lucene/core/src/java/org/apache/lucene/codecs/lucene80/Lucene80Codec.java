@@ -30,11 +30,9 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.FSTLoadMode;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
@@ -83,20 +81,19 @@ public class Lucene80Codec extends Codec {
    * Instantiates a new codec.
    */
   public Lucene80Codec() {
-    this(Mode.BEST_SPEED, FSTLoadMode.AUTO);
+    this(Mode.BEST_SPEED);
   }
   
   /** 
    * Instantiates a new codec, specifying the stored fields compression
    * mode to use.
-   * @param mode stored fields compression mode to use for newly 
+   * @param mode stored fields compression mode to use for newly
    *             flushed/merged segments.
    */
-  public Lucene80Codec(Mode mode, FSTLoadMode fstLoadMode) {
+  public Lucene80Codec(Mode mode) {
     super("Lucene80");
     this.storedFieldsFormat = new Lucene50StoredFieldsFormat(Objects.requireNonNull(mode));
-    this.defaultFormat = new Lucene50PostingsFormat(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE,
-        BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, Objects.requireNonNull(fstLoadMode));
+    this.defaultFormat = new Lucene50PostingsFormat();
   }
   
   @Override

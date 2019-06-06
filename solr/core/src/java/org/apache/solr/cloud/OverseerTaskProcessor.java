@@ -321,6 +321,15 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             return;
           }
           SolrException.log(log, "", e);
+          
+          // Prevent free-spinning this loop.
+          try {
+            Thread.sleep(1000);
+          } catch (InterruptedException e1) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+          
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           return;

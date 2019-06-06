@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -543,5 +545,14 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     this.softDeletesField = softDeletesField;
     return this;
   }
-  
+
+  /**
+   * Sets the reader attributes used for all readers pulled from the IndexWriter. Reader attributes allow configuration
+   * of low-level aspects like ram utilization on a per-reader basis.
+   * Note: This method make a shallow copy of the provided map.
+   */
+  public IndexWriterConfig setReaderAttributes(Map<String, String> readerAttributes) {
+    this.readerAttributes = Map.copyOf(Objects.requireNonNull(readerAttributes));
+    return this;
+  }
 }

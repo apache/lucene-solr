@@ -32,6 +32,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -68,6 +69,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   private static final int DEFAULT_NUM_THREADS = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
 
   BlockingQueue<AuditEvent> queue;
+  AtomicInteger auditsInFlight = new AtomicInteger(0);
   boolean async;
   boolean blockAsync;
   int blockingQueueSize;
@@ -150,7 +152,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
         audit(event);
       } catch(Exception e) {
         numErrors.mark();
-        throw e;
+        log.error("Exception when attempting to audit log", e);
       } finally {
         totalTime.inc(timer.stop());
       }
@@ -197,6 +199,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     while (!closed && !Thread.currentThread().isInterrupted()) {
       try {
         AuditEvent event = queue.poll(1000, TimeUnit.MILLISECONDS);
+        auditsInFlight.incrementAndGet();
         if (event == null) continue;
         if (event.getDate() != null) {
           queuedTime.update(new Date().getTime() - event.getDate().getTime(), TimeUnit.MILLISECONDS);
@@ -209,8 +212,10 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
         log.warn("Interrupted while waiting for next audit log event");
         Thread.currentThread().interrupt();
       } catch (Exception ex) {
-        log.warn("Exception when attempting to audit log asynchronously", ex);
+        log.error("Exception when attempting to audit log asynchronously", ex);
         numErrors.mark();
+      } finally {
+        auditsInFlight.decrementAndGet();
       }
     }
   }
@@ -309,20 +314,35 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     }
   }
 
+  /**
+   * Waits 30s for async queue to drain, then closes executor threads.
+   * Subclasses should either call <code>super.close()</code> or {@link #waitForQueueToDrain(int)}
+   * <b>before</b> shutting itself down to make sure they can complete logging events in the queue. 
+   */
   @Override
   public void close() throws IOException {
     if (async && executorService != null) {
+      waitForQueueToDrain(30);
+      closed = true;
+      log.info("Shutting down async Auditlogger background thread(s)");
+      executorService.shutdownNow();
+    }
+  }
+
+  /**
+   * Blocks until the async event queue is drained
+   * @param timeoutSeconds number of seconds to wait for queue to drain
+   */
+  protected void waitForQueueToDrain(int timeoutSeconds) {
+    if (async && executorService != null) {
       int timeSlept = 0;
-      while (!queue.isEmpty() && timeSlept < 30) {
+      while ((!queue.isEmpty() || auditsInFlight.get() > 0) && timeSlept < timeoutSeconds) {
         try {
-          log.info("Async auditlogger queue still has {} elements, sleeping to let it drain...", queue.size());
+          log.info("Async auditlogger queue still has {} elements and {} audits in-flight, sleeping to drain...", queue.size(), auditsInFlight.get());
           Thread.sleep(1000);
           timeSlept ++;
         } catch (InterruptedException ignored) {}
       }
-      closed = true;
-      log.info("Shutting down async Auditlogger background thread(s)");
-      executorService.shutdownNow();
     }
   }
 

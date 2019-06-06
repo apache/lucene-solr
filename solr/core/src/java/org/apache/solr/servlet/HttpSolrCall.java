@@ -38,6 +38,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import io.opentracing.Span;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
@@ -106,6 +107,7 @@ import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TimeOut;
+import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -371,17 +373,29 @@ public class HttpSolrCall {
    * {@link #getCollectionsList()}
    */
   protected List<String> resolveCollectionListOrAlias(String collectionStr) {
-    if (collectionStr == null) {
+    if (collectionStr == null || collectionStr.trim().isEmpty()) {
       return Collections.emptyList();
     }
-    LinkedHashSet<String> resultList = new LinkedHashSet<>();
+    List<String> result = null;
+    LinkedHashSet<String> uniqueList = null;
     Aliases aliases = getAliases();
     List<String> inputCollections = StrUtils.splitSmart(collectionStr, ",", true);
+    if (inputCollections.size() > 1) {
+      uniqueList = new LinkedHashSet<>();
+    }
     for (String inputCollection : inputCollections) {
       List<String> resolvedCollections = aliases.resolveAliases(inputCollection);
-      resultList.addAll(resolvedCollections);
+      if (uniqueList != null) {
+        uniqueList.addAll(resolvedCollections);
+      } else {
+        result = resolvedCollections;
+      }
     }
-    return new ArrayList<>(resultList);
+    if (uniqueList != null) {
+      return new ArrayList<>(uniqueList);
+    } else {
+      return result;
+    }
   }
 
   /**
@@ -430,7 +444,7 @@ public class HttpSolrCall {
 
   protected void extractRemotePath(String collectionName, String origCorename) throws UnsupportedEncodingException, KeeperException, InterruptedException {
     assert core == null;
-    coreUrl = getRemotCoreUrl(collectionName, origCorename);
+    coreUrl = getRemoteCoreUrl(collectionName, origCorename);
     // don't proxy for internal update requests
     invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
     if (coreUrl != null
@@ -455,6 +469,11 @@ public class HttpSolrCall {
    */
   public Action call() throws IOException {
     MDCLoggingContext.reset();
+    Span activeSpan = GlobalTracer.getTracer().activeSpan();
+    if (activeSpan != null) {
+      MDCLoggingContext.setTracerId(activeSpan.context().toTraceId());
+    }
+
     MDCLoggingContext.setNode(cores);
 
     if (cores == null) {
@@ -927,7 +946,7 @@ public class HttpSolrCall {
     }
   }
 
-  protected String getRemotCoreUrl(String collectionName, String origCorename) {
+  protected String getRemoteCoreUrl(String collectionName, String origCorename) {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
     Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
@@ -951,7 +970,12 @@ public class HttpSolrCall {
       return null;
     }
 
-    collectionsList.add(collectionName);
+    // XXX (ab) most likely this is not needed? it seems all code paths
+    // XXX already make sure the collectionName is on the list
+    if (!collectionsList.contains(collectionName)) {
+      collectionsList = new ArrayList<>(collectionsList);
+      collectionsList.add(collectionName);
+    }
     String coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
         activeSlices, byCoreName, true);
 

@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -122,19 +123,27 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   @Test
   public void testRptWithGeometryField() throws Exception {
-    testRptWithGeometryField("srptgeom");//note: fails with "srpt_geohash" because it's not as precise
+    //note: fails with "srpt_geohash" because it's not as precise
+    final boolean testCache = true;
+    final boolean testHeatmap = true;
+    final boolean testPolygon = false; // default spatialContext doesn't handle this
+    testRptWithGeometryField("srptgeom", testCache, testHeatmap, testPolygon);
   }
 
   @Test
   public void testRptWithGeometryGeo3dField() throws Exception {
-    String fieldName = "srptgeom_geo3d";
-    testRptWithGeometryField(fieldName);
+    final boolean testCache = true;
+    final boolean testHeatmap = true;
+    final boolean testPolygon = true;
+    testRptWithGeometryField("srptgeom_geo3d", testCache, testHeatmap, testPolygon);
+  }
 
-    // show off that Geo3D supports polygons
-    String polygonWKT = "POLYGON((-11 12, 10.5 12, -11 11, -11 12))"; //right-angle triangle
-    assertJQ(req(
-        "q", "{!cache=false field f=" + fieldName + "}Intersects(" + polygonWKT + ")",
-        "sort", "id asc"), "/response/numFound==2");
+  @Test
+  public void testRptWithGeometryGeo3dS2Field() throws Exception {
+    final boolean testCache = false; // the test data is designed to provoke the cache for non-S2
+    final boolean testHeatmap = false; // incompatible
+    final boolean testPolygon = true;
+    testRptWithGeometryField("srptgeom_s2_geo3d", testCache, testHeatmap, testPolygon);
   }
 
   @Test @Repeat(iterations = 10)
@@ -183,8 +192,8 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     // a random point using the number of decimal places we support for round-tripping.
     String randPointStr =
-        new BigDecimal(GeoTestUtil.nextLatitude()).setScale(7, BigDecimal.ROUND_HALF_UP).stripTrailingZeros().toPlainString() +
-        "," + new BigDecimal(GeoTestUtil.nextLongitude()).setScale(7, BigDecimal.ROUND_HALF_UP).stripTrailingZeros().toPlainString();
+        new BigDecimal(GeoTestUtil.nextLatitude()).setScale(7, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString() +
+        "," + new BigDecimal(GeoTestUtil.nextLongitude()).setScale(7, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
 
     List<RetrievalCombo> combos = Arrays.asList(
         new RetrievalCombo("llp_1_dv_st", ptHighPrecision),
@@ -262,7 +271,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     }
   }
 
-  private void testRptWithGeometryField(String fieldName) throws Exception {
+  private void testRptWithGeometryField(String fieldName, boolean testCache, boolean testHeatmap, boolean testPolygon) throws Exception {
     assertU(adoc("id", "0", fieldName, "ENVELOPE(-10, 20, 15, 10)"));
     assertU(adoc("id", "1", fieldName, "BUFFER(POINT(-10 15), 5)"));//circle at top-left corner
     assertU(optimize("maxSegments", "1"));// one segment.
@@ -275,39 +284,60 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         "sort", "id asc");
     assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
 
-    // The tricky thing is verifying the cache works correctly...
+    if (testCache) {
+      // The tricky thing is verifying the cache works correctly...
 
-    MetricsMap cacheMetrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName)).getGauge();
-    assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
-    assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
+      MetricsMap cacheMetrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName)).getGauge();
+      assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
+      assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
 
-    // Repeat the query earlier
-    assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
-    assertEquals("1", cacheMetrics.getValue().get("cumulative_hits").toString());
+      // Repeat the query earlier
+      assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
+      assertEquals("1", cacheMetrics.getValue().get("cumulative_hits").toString());
 
-    assertEquals("1 segment",
-        1, getSearcher().getRawReader().leaves().size());
-    // Get key of first leaf reader -- this one contains the match for sure.
-    Object leafKey1 = getFirstLeafReaderKey();
+      assertEquals("1 segment",
+          1, getSearcher().getRawReader().leaves().size());
+      // Get key of first leaf reader -- this one contains the match for sure.
+      Object leafKey1 = getFirstLeafReaderKey();
 
-    // add new segment
-    assertU(adoc("id", "3"));
+      // add new segment
+      assertU(adoc("id", "3"));
 
-    assertU(commit()); // sometimes merges (to one seg), sometimes won't
+      assertU(commit()); // sometimes merges (to one seg), sometimes won't
 
-    // can still find the same document
-    assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
+      // can still find the same document
+      assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
 
-    // When there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
-    // Checking equality for the first reader's cache key indicates whether the cache should still be valid.
-    Object leafKey2 = getFirstLeafReaderKey();
-    assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cacheMetrics.getValue().get("cumulative_hits").toString());
+      // When there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
+      // Checking equality for the first reader's cache key indicates whether the cache should still be valid.
+      Object leafKey2 = getFirstLeafReaderKey();
+      assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cacheMetrics.getValue().get("cumulative_hits").toString());
+    }
 
+    if (testHeatmap) {
+      // Now try to see if heatmaps work:
+      assertJQ(req("q", "*:*", "facet", "true", FacetParams.FACET_HEATMAP, fieldName, "json.nl", "map"),
+          "/facet_counts/facet_heatmaps/" + fieldName + "/minX==-180.0");
+    }
 
-    // Now try to see if heatmaps work:
-    assertJQ(req("q", "*:*", "facet", "true", FacetParams.FACET_HEATMAP, fieldName, "json.nl", "map"),
-        "/facet_counts/facet_heatmaps/" + fieldName + "/minX==-180.0");
+    if (testPolygon) {
+      String polygonWKT = "POLYGON((-11 12, -11 11, 10.5 12, -11 12))"; //right-angle triangle.  Counter-clockwise order
+      assertJQ(req(
+          "q", "{!cache=false field f=" + fieldName + "}Intersects(" + polygonWKT + ")",
+          "sort", "id asc"), "/response/numFound==2");
 
+      assertU(adoc("id", "9",
+          fieldName, "POLYGON((" + // rectangle. Counter-clockwise order.
+              "-118.080201721669 54.5864541583249," +
+              "-118.080078279314 54.5864541583249," +
+              "-118.080078279314 54.5865258517606," +
+              "-118.080201721669 54.5865258517606," +
+              "-118.080201721669 54.5864541583249))" ));
+      assertU(commit());
+      // should NOT match
+      assertJQ(req("q", fieldName+":[55.0260828,-115.5085624 TO 55.02646,-115.507337]"),
+          "/response/numFound==0");
+    }
   }
 
   protected SolrIndexSearcher getSearcher() {

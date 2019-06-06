@@ -25,6 +25,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,6 +61,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.LeaderElector;
@@ -75,6 +77,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
@@ -110,7 +113,8 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
- *
+ * Collects metrics from all nodes in the system on a regular basis in a background thread.
+ * @since 7.4
  */
 public class MetricsHistoryHandler extends RequestHandlerBase implements PermissionNameProvider, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -133,7 +137,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
     DEFAULT_NODE_GAUGES.add("CONTAINER.fs.coreRoot.usableSpace");
 
-    DEFAULT_CORE_GAUGES.add("INDEX.sizeInBytes");
+    DEFAULT_CORE_GAUGES.add(Variable.Type.CORE_IDX.metricsAttribute);
 
     DEFAULT_CORE_COUNTERS.add("QUERY./select.requests");
     DEFAULT_CORE_COUNTERS.add("UPDATE./update.requests");
@@ -360,6 +364,9 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
   private void collectMetrics() {
     log.debug("-- collectMetrics");
+    // Make sure we are a solr server thread, so we can use PKI auth, SOLR-12860
+    // This is a workaround since we could not instrument the ScheduledThreadPoolExecutor in ExecutorUtils
+    ExecutorUtil.setServerThreadFlag(true);
     try {
       checkSystemCollection();
     } catch (Exception e) {
@@ -369,6 +376,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     // get metrics
     collectLocalReplicaMetrics();
     collectGlobalMetrics();
+    ExecutorUtil.setServerThreadFlag(false);
   }
 
   private void collectLocalReplicaMetrics() {
@@ -748,7 +756,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         }
         if (factory.exists(name)) {
           // get a throwaway copy (safe to close and discard)
-          RrdDb db = new RrdDb(URI_PREFIX + name, true, factory);
+          RrdDb db = RrdDb.getBuilder().setBackendFactory(factory).setReadOnly(true).setPath(new URI(URI_PREFIX + name)).build();
           SimpleOrderedMap<Object> status = new SimpleOrderedMap<>();
           status.add("status", getDbStatus(db));
           status.add("node", nodeName);

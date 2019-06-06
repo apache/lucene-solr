@@ -109,4 +109,19 @@ public interface CollectionAdminParams {
    * or the autoscaling policy based strategy to assign replicas to nodes. The default is false.
    */
   String USE_LEGACY_REPLICA_ASSIGNMENT = "useLegacyReplicaAssignment";
+
+  /**
+   * When creating a collection create also a specified alias.
+   */
+  String ALIAS = "alias";
+
+  /**
+   * Specifies the target of RENAME operation.
+   */
+  String TARGET = "target";
+
+  /**
+   * Prefix for {@link org.apache.solr.common.cloud.DocRouter} properties
+   */
+  String ROUTER_PREFIX = "router.";
 }

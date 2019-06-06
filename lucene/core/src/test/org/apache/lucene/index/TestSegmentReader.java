@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -43,7 +44,7 @@ public class TestSegmentReader extends LuceneTestCase {
     dir = newDirectory();
     DocHelper.setupDoc(testDoc);
     SegmentCommitInfo info = DocHelper.writeDoc(random(), dir, testDoc);
-    reader = new SegmentReader(info, Version.LATEST.major, false, IOContext.READ);
+    reader = new SegmentReader(info, Version.LATEST.major, false, IOContext.READ, Collections.emptyMap());
   }
   
   @Override

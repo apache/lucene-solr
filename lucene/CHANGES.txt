@@ -5,6 +5,11 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 9.0.0 =======================
 
+System Requirements
+
+* LUCENE-8738: Move to Java 11 as minimum Java version.
+  (Adrien Grand, Uwe Schindler)
+
 API Changes
 
 * LUCENE-8474: RAMDirectory and associated deprecated classes have been 
@@ -13,10 +18,62 @@ API Changes
 * LUCENE-3041: The deprecated Weight#extractTerms() method has been 
   removed (Alan Woodward, Simon Willnauer, David Smiley, Luca Cavanna)
 
-Bug fixes:
+* LUCENE-8805: StoredFieldVisitor#stringField now takes a String rather than a
+  byte[] that stores the UTF-8 bytes of the stored string.
+  (Namgyu Kim via Adrien Grand)
+
+Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
+
+Improvements
+
+* LUCENE-8781: FST lookup performance has been improved in many cases by
+  encoding Arcs using full-sized arrays with gaps. The new encoding is
+  enabled for postings in the default codec and for suggesters. (Mike Sokolov)
+
+Other
+
+* LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
+
+======================= Lucene 8.2.0 =======================
+
+New Features
+
+* LUCENE-8803: Provide a FeatureSortfield to allow sorting search hits by descending value of a 
+  feature. This is exposed via the factory method FeatureField#newFeatureSort.
+  (Colin Goodheart-Smithe via Adrien Grand)
+
+* LUCENE-8784: The KoreanTokenizer now preserves punctuations if discardPunctuation is set
+  to false (defaults to true).
+  (Namgyu Kim via Jim Ferenczi)
+
+Bug Fixes
+
+* LUCENE-8831: Fixed LatLonShapeBoundingBoxQuery .hashCode methods. (Ignacio Vera)
+
+* LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
+  This causes assertion errors and potentially broken field attributes in the IndexWriter when
+  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer)
+
+* LUCENE-8804: Forbid calls to putAttribute on frozen FieldType instances.
+  (Vamshi Vijay Nakkirtha via Adrien Grand)
+
+Improvements
+
+* LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
+  as opposed to eliminating them during scoring construction. (Atri Sharma via Jim Ferenczi)
+
+* LUCENE-8770: BlockMaxConjunctionScorer now leverages two-phase iterators in order to avoid
+  executing the second phase when scorers don't intersect. (Adrien Grand, Jim Ferenczi)
+
+* LUCENE-8757: When provided with an ExecutorService to run queries across
+  multiple threads, IndexSearcher now groups small segments together, up to
+  250k docs per slice. (Atri Sharma via Adrien Grand)
+
+======================= Lucene 8.1.1 =======================
+(No Changes)
 
 ======================= Lucene 8.1.0 =======================
 
@@ -34,7 +91,27 @@ API Changes
   subclasses override it. FilterDirectory now delegates the call, ensuring
   correct default behaviour for subclasses. (Henning Andersen)
 
+New Features
+
+* LUCENE-2562: The well-known graphical user interface for inspecting Lucene
+  indexes "Luke" was added as a Lucene module. It can be started from the
+  binary distribution by calling the shell scripts in the module folder
+  or from the source checkout by using `ant -f lucene/luke/build.xml run`.
+  Luke provides a Swing-based user interface and can be used to open
+  Lucene or Solr (or Elasticsearch) indexes, inspect documents, check index
+  commits and segments, or test (custom) analyzers. It also has maintenance
+  functions to check index structures and force merge indexes for archival.
+  Luke was originally developed by Andrzej Bialecki, later maintained by
+  Dmitry Kan and finally rewritten by Tomoko Uchida to use the ASF licensing
+  compatible Swing framework (as shipped with JDKs).
+  (Tomoko Uchida, Uwe Schindler)
+
 Bug fixes
+
+* LUCENE-8736: LatLonShapePolygonQuery returns incorrect WITHIN results
+  with shared boundaries. Point in Polygon now correctly includes boundary
+  points. Box and Polygon relations with triangles have also been improved to
+  correctly include boundary points. (Nick Knize)
 
 * LUCENE-8712: Polygon2D does not detect crossings through segment edges.
   (Ignacio Vera)
@@ -62,6 +139,12 @@ Bug fixes
   Scorer instead of Scorable, leading to ClassCastExceptions (Markus Jelsma,
   Alan Woodward)
 
+* LUCENE-8754: Fix ConcurrentModificationException in SegmentInfo if
+  attributes are accessed in MergePolicy while the merge is running (Simon Willnauer)
+
+* LUCENE-8765: Fixed validation of the number of added points in KD trees.
+  (Zhao Yang via Adrien Grand)
+
 Improvements
 
 * LUCENE-8673: Use radix partitioning when merging dimensional points instead
@@ -87,11 +170,26 @@ Improvements
 
 * LUCENE-8750: Implements setMissingValue() on sort fields produced from 
   DoubleValuesSource and LongValuesSource (Mike Sokolov via Alan Woodward)
-
+  
 * LUCENE-8701: ToParentBlockJoinQuery now creates a child scorer that disallows skipping over
   non-competitive documents if the score of a parent depends on the score of multiple
   children (avg, max, min). Additionally the score mode `none` that assigns a constant score to
   each parent can early terminate top scores's collection. (Jim Ferenczi)
+
+* LUCENE-8751: Weight#matches now use the ScorerSupplier to build scorers with a lead cost of 1
+  (single document). (Jim Ferenczi)
+
+* LUCENE-8752: Japanese new era name '令和' (Reiwa) is added to the dictionary used in
+  JapaneseTokenizer so that the analyzer handles the era name correctly.
+  Reiwa is set to replace the Heisei Era on May 1, 2019. (Tomoko Uchida)
+
+* LUCENE-8671: Introduced reader attributes allows a per IndexReader configuration
+  of codec internals. This enables a per reader configuration if FSTs are on- or off-heap on a
+  per field basis (Simon Willnauer)
+
+* LUCENE-8787: spatial-extras DateRangePrefixTree used to only parse ISO-8601 timestamps with 0 or 3
+  digits of milliseconds precision but now parses other lengths (although > 3 not used).
+  (Thomas Lemmé via David Smiley)
 
 Changes in Runtime Behavior
 
@@ -103,6 +201,13 @@ Changes in Runtime Behavior
   the only difference in output between the two is in the position length
   attribute.  (Alan Woodward, Jim Ferenczi)
 
+* LUCENE-7386: Disjunctions nested in disjunctions are now flattened. This might
+  trigger changes in the produced scores due to changes to the order in which
+  scores of sub clauses are summed up. (Adrien Grand)
+
+* LUCENE-8756: MoreLikeThisQuery now respects custom term frequencies
+  (TermFrequencyAttribute) at search time (Olli Kuonanoja)
+
 Other
 
 * LUCENE-8680: Refactor EdgeTree#relateTriangle method. (Ignacio Vera)
@@ -113,6 +218,8 @@ Other
 
 * LUCENE-8729: Workaround: Disable accessibility doclints (Java 13+),
   so compilation with recent JDK succeeds.  (Uwe Schindler)
+
+* LUCENE-8725: Make TermsQuery.SeekingTermSetTermsEnum a top level class and public (noble)
 
 ======================= Lucene 8.0.0 =======================
 
@@ -382,6 +489,31 @@ Optimizations
 
 * LUCENE-8585: Index-time jump-tables for DocValues, for O(1) advance when retrieving doc values.
   (Toke Eskildsen, Adrien Grand)
+
+======================= Lucene 7.7.2 =======================
+
+Bug fixes
+
+* LUCENE-8726: ValueSource.asDoubleValuesSource() could leak a reference to
+  IndexSearcher (Alan Woodward, Yury Pakhomov)
+
+* LUCENE-8735: FilterDirectory.getPendingDeletions now forwards to the delegate
+  even the method is not abstract in the super class. This prevents issues
+  where our best effort in carrying on generations in the IndexWriter since pending
+  deletions are swallowed by the FilterDirectory. (Henning Andersen, Simon Willnauer)
+
+* LUCENE-8688: TieredMergePolicy#findForcedMerges now tries to create the
+  cheapest merges that allow the index to go down to `maxSegmentCount` segments
+  or less. (Armin Braun via Adrien Grand)
+
+* LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
+  This causes assertion errors and potentially broken field attributes in the IndexWriter when
+  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer) 
+
+* LUCENE-8720: NameIntCacheLRU (in the facets module) had an int
+  overflow bug that disabled cleaning of the cache (Russell A Brown)
+
+* LUCENE-8809: Refresh and rollback concurrently can leave segment states unclosed (Nhat Nguyen)
 
 ======================= Lucene 7.7.1 =======================
 (No Changes)

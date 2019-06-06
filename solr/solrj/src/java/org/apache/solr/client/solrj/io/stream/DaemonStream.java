@@ -195,7 +195,12 @@ public class DaemonStream extends TupleStream implements Expressible {
     return id;
   }
 
-  public void open() {
+  public void open() throws IOException {
+    if (this.streamRunner != null && this.closed == false) {
+      log.error("There is already a running daemon named '{}', no action taken", id);
+      throw new IOException("There is already an open daemon named '" + id + "', no action taken.");
+    }
+    this.closed = false;
     this.streamRunner = new StreamRunner(runInterval, id);
     this.streamRunner.start();
   }

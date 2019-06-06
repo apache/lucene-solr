@@ -66,13 +66,13 @@ import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.consumer.InvalidJwtException;
+import org.jose4j.jwt.consumer.InvalidJwtSignatureException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.JwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.JoseException;
-import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +114,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private boolean requireSubject;
   private boolean requireExpirationTime;
   private List<String> algWhitelist;
-  private VerificationKeyResolver verificationKeyResolver;
+  VerificationKeyResolver verificationKeyResolver;
   private String principalClaim;
   private HashMap<String, Pattern> claimsMatchCompiled;
   private boolean blockUnknown;
@@ -128,6 +128,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private String authorizationEndpoint;
   private String adminUiScope;
   private List<String> redirectUris;
+  private HttpsJwks httpsJkws;
 
 
   /**
@@ -135,6 +136,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
    */
   public JWTAuthPlugin() {}
 
+  @SuppressWarnings("unchecked")
   @Override
   public void init(Map<String, Object> pluginConfig) {
     List<String> unknownKeys = pluginConfig.keySet().stream().filter(k -> !PROPS.contains(k)).collect(Collectors.toList());
@@ -221,6 +223,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     lastInitTime = Instant.now();
   }
 
+  @SuppressWarnings("unchecked")
   private void initJwk(Map<String, Object> pluginConfig) {
     this.pluginConfig = pluginConfig;
     String confJwkUrl = (String) pluginConfig.get(PARAM_JWK_URL);
@@ -247,6 +250,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       try {
         JsonWebKeySet jwks = parseJwkSet(confJwk);
         verificationKeyResolver = new JwksVerificationKeyResolver(jwks.getJsonWebKeys());
+        httpsJkws = null;
       } catch (JoseException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JWTAuthPlugin configuration, " + PARAM_JWK + " parse error", e);
       }
@@ -255,7 +259,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     log.debug("JWK configured");
   }
 
-  private void setupJwkUrl(String url) {
+  void setupJwkUrl(String url) {
     // The HttpsJwks retrieves and caches keys from a the given HTTPS JWKS endpoint.
     try {
       URL jwkUrl = new URL(url);
@@ -265,11 +269,13 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     } catch (MalformedURLException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be a valid URL");
     }
-    HttpsJwks httpsJkws = new HttpsJwks(url);
+    httpsJkws = new HttpsJwks(url);
     httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
+    httpsJkws.setRefreshReprieveThreshold(5000);
     verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
   }
 
+  @SuppressWarnings("unchecked")
   JsonWebKeySet parseJwkSet(Map<String, Object> jwkObj) throws JoseException {
     JsonWebKeySet webKeySet = new JsonWebKeySet();
     if (jwkObj.containsKey("keys")) {
@@ -297,7 +303,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       if (header == null && !blockUnknown) {
         log.info("JWTAuth not configured, but allowing anonymous access since {}==false", PARAM_BLOCK_UNKNOWN);
         filterChain.doFilter(request, response);
-        numPassThrough.inc();;
+        numPassThrough.inc();
         return true;
       }
       // Retry config
@@ -313,15 +319,24 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
 
     JWTAuthenticationResponse authResponse = authenticate(header);
-    switch(authResponse.getAuthCode()) {
+    if (AuthCode.SIGNATURE_INVALID.equals(authResponse.getAuthCode()) && httpsJkws != null) {
+      log.warn("Signature validation failed. Refreshing JWKs from IdP before trying again: {}",
+          authResponse.getJwtException() == null ? "" : authResponse.getJwtException().getMessage());
+      httpsJkws.refresh();
+      authResponse = authenticate(header);
+    }
+    String exceptionMessage = authResponse.getJwtException() != null ? authResponse.getJwtException().getMessage() : "";
+
+    switch (authResponse.getAuthCode()) {
       case AUTHENTICATED:
+        final Principal principal = authResponse.getPrincipal();
         HttpServletRequestWrapper wrapper = new HttpServletRequestWrapper(request) {
           @Override
           public Principal getUserPrincipal() {
-            return authResponse.getPrincipal();
+            return principal;
           }
         };
-        if (!(authResponse.getPrincipal() instanceof JWTPrincipal)) {
+        if (!(principal instanceof JWTPrincipal)) {
           numErrors.mark();
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin says AUTHENTICATED but no token extracted");
         }
@@ -340,6 +355,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
 
       case AUTZ_HEADER_PROBLEM:
       case JWT_PARSE_ERROR:
+        log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), authResponse.getAuthCode().getMsg());
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
         numErrors.mark();
         return false;
@@ -348,9 +364,13 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       case JWT_EXPIRED:
       case JWT_VALIDATION_EXCEPTION:
       case PRINCIPAL_MISSING:
-        if (authResponse.getJwtException() != null) {
-          log.warn("Exception: {}", authResponse.getJwtException().getMessage());
-        }
+        log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), exceptionMessage);
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
+        numWrongCredentials.inc();
+        return false;
+
+      case SIGNATURE_INVALID:
+        log.warn("Signature validation failed: {}", exceptionMessage);
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         numWrongCredentials.inc();
         return false;
@@ -359,7 +379,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.insufficient_scope);
         numWrongCredentials.inc();
         return false;
-        
+
       case NO_AUTZ_HEADER:
       default:
         authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, null);
@@ -427,6 +447,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
               } else {
                 return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipal(principal, jwtCompact, jwtClaims.getClaimsMap()));
               }
+            } catch (InvalidJwtSignatureException ise) {
+              return new JWTAuthenticationResponse(AuthCode.SIGNATURE_INVALID, ise);
             } catch (InvalidJwtException e) {
               // Whether or not the JWT has expired being one common reason for invalidity
               if (e.hasExpired()) {
@@ -516,7 +538,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     return latestConf;
   }
 
-  private enum BearerWwwAuthErrorCode { invalid_request, invalid_token, insufficient_scope};
+  private enum BearerWwwAuthErrorCode { invalid_request, invalid_token, insufficient_scope}
 
   private void authenticationFailure(HttpServletResponse response, String message, int httpCode, BearerWwwAuthErrorCode responseError) throws IOException {
     List<String> wwwAuthParams = new ArrayList<>();
@@ -537,7 +559,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     data.put("client_id", clientId);
     data.put("scope", adminUiScope);
     data.put("redirect_uris", redirectUris);
-    String headerJson = JSONUtil.toJSON(data);
+    String headerJson = Utils.toJSONString(data);
     return Base64.byteArrayToBase64(headerJson.getBytes(StandardCharsets.UTF_8));
   }
 
@@ -561,8 +583,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       JWT_EXPIRED("JWT token expired"),                  // JWT token has expired 
       CLAIM_MISMATCH("Required JWT claim missing"),      // Some required claims are missing or wrong 
       JWT_VALIDATION_EXCEPTION("JWT validation failed"), // The JWT parser failed validation. More details in exception
-      SCOPE_MISSING("Required scope missing in JWT");    // None of the required scopes were present in JWT
-  
+      SCOPE_MISSING("Required scope missing in JWT"),    // None of the required scopes were present in JWT
+      SIGNATURE_INVALID("Signature invalid");            // Validation of JWT signature failed
+
       public String getMsg() {
         return msg;
       }
@@ -647,6 +670,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       return parse(new ByteArrayInputStream(json.getBytes(charset)));
     }
   
+    @SuppressWarnings("unchecked")
     public static WellKnownDiscoveryConfig parse(InputStream configStream) {
       securityConf = (Map<String, Object>) Utils.fromJSON(configStream);
       return new WellKnownDiscoveryConfig(securityConf);
@@ -673,10 +697,12 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       return (String) securityConf.get("token_endpoint");
     }
 
+    @SuppressWarnings("unchecked")
     public List<String> getScopesSupported() {
       return (List<String>) securityConf.get("scopes_supported");
     }
 
+    @SuppressWarnings("unchecked")
     public List<String> getResponseTypesSupported() {
       return (List<String>) securityConf.get("response_types_supported");
     }

@@ -64,7 +64,6 @@ import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -691,7 +690,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           Map<String, Object> clusterstateJsonMap = null;
           if (dataStr != null) {
             try {
-              clusterstateJsonMap = (Map<String, Object>) ObjectBuilder.fromJSON(dataStr);
+              clusterstateJsonMap = (Map<String, Object>) Utils.fromJSONString(dataStr);
             } catch (Exception e) {
               throw new SolrException(ErrorCode.SERVER_ERROR,
                   "Failed to parse /clusterstate.json from ZooKeeper due to: " + e, e);
@@ -739,7 +738,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
               }
 
               if (childDataStr != null) {
-                Map<String, Object> extColl = (Map<String, Object>) ObjectBuilder.fromJSON(childDataStr);
+                Map<String, Object> extColl = (Map<String, Object>) Utils.fromJSONString(childDataStr);
                 collectionState = extColl.get(collection);
 
                 if (applyStatusFilter) {

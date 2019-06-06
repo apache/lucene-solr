@@ -51,6 +51,8 @@ import org.apache.solr.update.SolrIndexSplitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORE_IDX;
+
 /**
  *
  */
@@ -69,7 +71,10 @@ public class IndexSizeTrigger extends TriggerBase {
   public static final String SPLIT_METHOD_PROP = CommonAdminParams.SPLIT_METHOD;
 
   public static final String BYTES_SIZE_PROP = "__bytes__";
+  public static final String TOTAL_BYTES_SIZE_PROP = "__total_bytes__";
   public static final String DOCS_SIZE_PROP = "__docs__";
+  public static final String MAX_DOC_PROP = "__maxDoc__";
+  public static final String COMMIT_SIZE_PROP = "__commitBytes__";
   public static final String ABOVE_SIZE_PROP = "aboveSize";
   public static final String BELOW_SIZE_PROP = "belowSize";
   public static final String VIOLATION_PROP = "violationType";
@@ -284,9 +289,13 @@ public class IndexSizeTrigger extends TriggerBase {
               replicaName = info.getName(); // which is actually coreNode name...
             }
             String registry = SolrCoreMetricManager.createRegistryName(true, coll, sh, replicaName, null);
-            String tag = "metrics:" + registry + ":INDEX.sizeInBytes";
+            String tag = "metrics:" + registry + ":" + CORE_IDX.metricsAttribute;
             metricTags.put(tag, info);
             tag = "metrics:" + registry + ":SEARCHER.searcher.numDocs";
+            metricTags.put(tag, info);
+            tag = "metrics:" + registry + ":SEARCHER.searcher.maxDoc";
+            metricTags.put(tag, info);
+            tag = "metrics:" + registry + ":SEARCHER.searcher.indexCommitSize";
             metricTags.put(tag, info);
           });
         });
@@ -307,9 +316,13 @@ public class IndexSizeTrigger extends TriggerBase {
 
             ReplicaInfo currentInfo = currentSizes.computeIfAbsent(info.getCore(), k -> (ReplicaInfo)info.clone());
             if (tag.contains("INDEX")) {
-              currentInfo.getVariables().put(BYTES_SIZE_PROP, ((Number) size).longValue());
-            } else if (tag.contains("SEARCHER")) {
+              currentInfo.getVariables().put(TOTAL_BYTES_SIZE_PROP, ((Number) size).longValue());
+            } else if (tag.endsWith("SEARCHER.searcher.numDocs")) {
               currentInfo.getVariables().put(DOCS_SIZE_PROP, ((Number) size).longValue());
+            } else if (tag.endsWith("SEARCHER.searcher.maxDoc")) {
+              currentInfo.getVariables().put(MAX_DOC_PROP, ((Number) size).longValue());
+            } else if (tag.endsWith("SEARCHER.searcher.indexCommitSize")) {
+              currentInfo.getVariables().put(COMMIT_SIZE_PROP, ((Number) size).longValue());
             }
           }
         });
@@ -329,6 +342,17 @@ public class IndexSizeTrigger extends TriggerBase {
     Set<String> splittable = new HashSet<>();
 
     currentSizes.forEach((coreName, info) -> {
+      // calculate estimated bytes
+      long maxDoc = (Long)info.getVariable(MAX_DOC_PROP);
+      long numDocs = (Long)info.getVariable(DOCS_SIZE_PROP);
+      long commitSize = (Long)info.getVariable(COMMIT_SIZE_PROP, 0L);
+      if (commitSize <= 0) {
+        commitSize = (Long)info.getVariable(TOTAL_BYTES_SIZE_PROP);
+      }
+      // calculate estimated size as a side-effect
+      commitSize = estimatedSize(maxDoc, numDocs, commitSize);
+      info.getVariables().put(BYTES_SIZE_PROP, commitSize);
+
       if ((Long)info.getVariable(BYTES_SIZE_PROP) > aboveBytes ||
           (Long)info.getVariable(DOCS_SIZE_PROP) > aboveDocs) {
         if (waitForElapsed(coreName, now, lastAboveEventMap)) {
@@ -475,6 +499,16 @@ public class IndexSizeTrigger extends TriggerBase {
         lastBelowEventMap.put(replicas.get(1).getCore(), now);
       });
     }
+  }
+
+  public static long estimatedSize(long maxDoc, long numDocs, long commitSize) {
+    if (maxDoc == 0) {
+      return 0;
+    }
+    if (maxDoc == numDocs) {
+      return commitSize;
+    }
+    return commitSize * numDocs / maxDoc;
   }
 
   private boolean waitForElapsed(String name, long now, Map<String, Long> lastEventMap) {

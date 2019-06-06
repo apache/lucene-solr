@@ -85,7 +85,9 @@ public class ZkDistribStateManager implements DistribStateManager {
     Stat stat = new Stat();
     try {
       byte[] bytes = zkClient.getData(path, watcher, stat, true);
-      return new VersionedData(stat.getVersion(), bytes, String.valueOf(stat.getEphemeralOwner()));
+      return new VersionedData(stat.getVersion(), bytes,
+          stat.getEphemeralOwner() != 0 ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT,
+          String.valueOf(stat.getEphemeralOwner()));
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (InterruptedException e) {

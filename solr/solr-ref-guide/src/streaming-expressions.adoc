@@ -89,6 +89,7 @@ Stream sources originate streams. There are rich set of searching, sampling and 
 
 A full reference to all available source expressions is available in <<stream-source-reference.adoc#stream-source-reference,Stream Source Reference>>.
 
+
 === Stream Decorators
 
 Stream decorators wrap stream sources and other stream decorators to transform a stream.
