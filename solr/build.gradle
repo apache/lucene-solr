@@ -36,7 +36,12 @@ task packageDist(type: org.apache.lucene.gradle.PackageLuceneSolrDist) {
 
 subprojects {
   File target = File.createTempDir()
+  target.deleteOnExit()
   tasks.create("jdepsReport", org.apache.lucene.gradle.JdepsReport, target)
   tasks.create("unusedDeps", org.apache.lucene.gradle.UnusedDeps, target)
   unusedDeps.dependsOn jdepsReport
+  
+  unusedDeps.doLast {
+    deleteDirectory(target)
+  }
 }
