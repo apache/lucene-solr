@@ -98,10 +98,10 @@ configure(luceneSolrSubProjects) {
     targetCompatibility = "11"
     
     // Use UTF-8, don't rely on local platform encoding.
-    compileJava.options.encoding = "UTF-8"
-    compileTestJava.options.encoding = "UTF-8"
+    project.compileJava.options.encoding = "UTF-8"
+    project.compileTestJava.options.encoding = "UTF-8"
     
-    sourceSets {
+    project.sourceSets {
       main.java.srcDirs = ['src/java']
       main.resources.srcDirs = ['src/resources']
       test.java.srcDirs = ['src/test']
@@ -110,12 +110,6 @@ configure(luceneSolrSubProjects) {
     
     // configure tests
     project.apply from: new File(rootProjectDir, "buildSrc/common/configure-test.gradle")
-    
-    // Custom javac options
-    tasks.withType(JavaCompile) {
-      // Don't output ALL errors in a file, stop after a few
-      options.compilerArgs << "-Xmaxerrs" << "5"
-    }
 
     task sourceJar(type: Jar) {
       classifier 'sources'
