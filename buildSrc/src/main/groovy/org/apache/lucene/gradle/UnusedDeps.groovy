@@ -51,6 +51,9 @@ class UnusedDeps extends DefaultTask {
   @Inject
   public UnusedDeps(File inputDirectory) {
     
+    group = 'Help'
+    description = "Lists dependencies that may be unused for a module."
+    
     if (!project.configurations.hasProperty('runtimeClasspath')) {
       return
     }
