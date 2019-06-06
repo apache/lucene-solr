@@ -17,7 +17,9 @@
 package org.apache.lucene.geo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.geo.GeoUtils.WindingOrder;
 import org.apache.lucene.util.BitUtil;
@@ -144,32 +146,50 @@ final public class Tessellator {
   private static final Node eliminateHoles(final Polygon polygon, Node outerNode) {
     // Define a list to hole a reference to each filtered hole list.
     final List<Node> holeList = new ArrayList<>();
+    // keep a reference to the hole
+    final Map<Node, Polygon> holeListPolygons = new HashMap<>();
     // Iterate through each array of hole vertices.
     Polygon[] holes = polygon.getHoles();
     int nodeIndex = polygon.numPoints();
     for(int i = 0; i < polygon.numHoles(); ++i) {
       // create the doubly-linked hole list
       Node list = createDoublyLinkedList(holes[i], nodeIndex, WindingOrder.CCW);
+
       if (list == list.next) {
         list.isSteiner = true;
       }
       // Determine if the resulting hole polygon was successful.
       if(list != null) {
         // Add the leftmost vertex of the hole.
-        holeList.add(fetchLeftmost(list));
+        Node leftMost = fetchLeftmost(list);
+        holeList.add(leftMost);
+        holeListPolygons.put(leftMost, holes[i]);
       }
       nodeIndex += holes[i].numPoints();
     }
 
     // Sort the hole vertices by x coordinate
     holeList.sort((Node pNodeA, Node pNodeB) ->
-        pNodeA.getX() < pNodeB.getX() ? -1 : pNodeA.getX() == pNodeB.getX() ? 0 : 1);
+    {
+      double diff = pNodeA.getX() - pNodeB.getX();
+      if (diff == 0) {
+        diff = pNodeA.getY() - pNodeB.getY();
+        if (diff == 0) {
+          //same hole node
+          double a = Math.min(pNodeA.previous.getY(), pNodeA.next.getY());
+          double b = Math.min(pNodeB.previous.getY(), pNodeB.next.getY());
+          diff = a - b;
+        }
+      }
+      return diff < 0 ? -1 : diff > 0 ? 1 : 0;
+    });
 
     // Process holes from left to right.
     for(int i = 0; i < holeList.size(); ++i) {
       // Eliminate hole triangles from the result set
       final Node holeNode = holeList.get(i);
-      eliminateHole(holeNode, outerNode);
+      final Polygon hole = holeListPolygons.get(holeNode);
+      eliminateHole(holeNode, outerNode, hole);
       // Filter the new polygon.
       outerNode = filterPoints(outerNode, outerNode.next);
     }
@@ -178,9 +198,10 @@ final public class Tessellator {
   }
 
   /** Finds a bridge between vertices that connects a hole with an outer ring, and links it */
-  private static final void eliminateHole(final Node holeNode, Node outerNode) {
+  private static final void eliminateHole(final Node holeNode, Node outerNode, Polygon hole) {
     // Attempt to find a logical bridge between the HoleNode and OuterNode.
-    outerNode = fetchHoleBridge(holeNode, outerNode);
+    outerNode = fetchHoleBridge(holeNode, outerNode, hole);
+
     // Determine whether a hole bridge could be fetched.
     if(outerNode != null) {
       // compute if the bridge overlaps with a polygon edge. This can be tru if the hole touches a polygon edge.
@@ -197,7 +218,7 @@ final public class Tessellator {
    *
    * see: http://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
    **/
-  private static final Node fetchHoleBridge(final Node holeNode, final Node outerNode) {
+  private static final Node fetchHoleBridge(final Node holeNode, final Node outerNode, Polygon hole) {
     Node p = outerNode;
     double qx = Double.NEGATIVE_INFINITY;
     final double hx = holeNode.getX();
@@ -207,6 +228,13 @@ final public class Tessellator {
     // segment's endpoint with lesser x will be potential connection point
     {
       do {
+        //if vertex of the polygon is a vertex of the hole, just use that point.
+        if (Rectangle.containsPoint(p.getLat(), p.getLon(), hole.minLat, hole.maxLat, hole.minLon, hole.maxLon)) {
+          Node sharedVertex = getSharedVertex(holeNode, p);
+          if (sharedVertex != null) {
+            return sharedVertex;
+          }
+        }
         if (hy <= p.getY() && hy >= p.next.getY() && p.next.getY() != p.getY()) {
           final double x = p.getX() + (hy - p.getY()) * (p.next.getX() - p.getX()) / (p.next.getY() - p.getY());
           if (x <= hx && x > qx) {
@@ -250,8 +278,19 @@ final public class Tessellator {
         p = p.next;
       }
     }
-
     return connection;
+  }
+
+  /** Check if the provided vertex is in the polygon and return it **/
+  private static Node getSharedVertex(Node polygon, Node vertex) {
+    Node next = polygon;
+    do {
+      if (isVertexEquals(next, vertex)) {
+        return next;
+      }
+      next = next.next;
+    } while(next != polygon);
+    return null;
   }
 
   /** Finds the left-most hole of a polygon ring. **/
@@ -260,7 +299,7 @@ final public class Tessellator {
     Node leftMost = start;
     do {
       // Determine if the current node possesses a lesser X position.
-      if (node.getX() < leftMost.getX()) {
+      if (node.getX() < leftMost.getX() || (node.getX() == leftMost.getX() && node.getY() < leftMost.getY())) {
         // Maintain a reference to this Node.
         leftMost = node;
       }
@@ -440,6 +479,7 @@ final public class Tessellator {
   }
 
   /** Attempt to split a polygon and independently triangulate each side. Return true if the polygon was splitted **/
+  private static final boolean splitEarcut(Polygon polygon, final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
   private static final boolean splitEarcut(final Polygon polygon, final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
     // Search for a valid diagonal that divides the polygon into two.
     Node searchNode = start;
@@ -448,7 +488,7 @@ final public class Tessellator {
       nextNode = searchNode.next;
       Node diagonal = nextNode.next;
       while (diagonal != searchNode.previous) {
-        if(isValidDiagonal(searchNode, diagonal)) {
+        if(searchNode.idx != diagonal.idx && isValidDiagonal(searchNode, diagonal)) {
           // Split the polygon into two at the point of the diagonal
           Node splitNode = splitPolygon(searchNode, diagonal, edgeFromPolygon(searchNode, diagonal, mortonIndexed));
           // Filter the resulting polygon.
@@ -605,6 +645,10 @@ final public class Tessellator {
 
   /** Determines whether a diagonal between two polygon nodes lies within a polygon interior. (This determines the validity of the ray.) **/
   private static final boolean isValidDiagonal(final Node a, final Node b) {
+    //If points are equal then use it
+    if (isVertexEquals(a, b)) {
+      return true;
+    }
     return a.next.idx != b.idx && a.previous.idx != b.idx
         && a.idx != b.previous.idx && a.idx != b.next.idx
         && isVertexEquals(a, b) == false
@@ -614,14 +658,19 @@ final public class Tessellator {
   }
 
   private static final boolean isLocallyInside(final Node a, final Node b) {
-    // if a is cw
-    if (area(a.previous.getX(), a.previous.getY(), a.getX(), a.getY(), a.next.getX(), a.next.getY()) < 0) {
+    double area = area(a.previous.getX(), a.previous.getY(), a.getX(), a.getY(), a.next.getX(), a.next.getY());
+    if (area == 0) {
+      // parallel
+      return false;
+    } else if (area < 0) {
+      // if a is cw
       return area(a.getX(), a.getY(), b.getX(), b.getY(), a.next.getX(), a.next.getY()) >= 0
           && area(a.getX(), a.getY(), a.previous.getX(), a.previous.getY(), b.getX(), b.getY()) >= 0;
+    } else {
+      // ccw
+      return area(a.getX(), a.getY(), b.getX(), b.getY(), a.previous.getX(), a.previous.getY()) < 0
+          || area(a.getX(), a.getY(), a.next.getX(), a.next.getY(), b.getX(), b.getY()) < 0;
     }
-    // ccw
-    return area(a.getX(), a.getY(), b.getX(), b.getY(), a.previous.getX(), a.previous.getY()) < 0
-        || area(a.getX(), a.getY(), a.next.getX(), a.next.getY(), b.getX(), b.getY()) < 0;
   }
 
   /** Determine whether the middle point of a polygon diagonal is contained within the polygon */

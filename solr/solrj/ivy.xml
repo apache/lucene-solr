@@ -29,6 +29,7 @@
 
   <dependencies>
     <dependency org="org.apache.zookeeper" name="zookeeper" rev="${/org.apache.zookeeper/zookeeper}" conf="compile"/>
+    <dependency org="org.apache.zookeeper" name="zookeeper-jute" rev="${/org.apache.zookeeper/zookeeper-jute}" conf="compile"/>
     <dependency org="org.apache.httpcomponents" name="httpclient" rev="${/org.apache.httpcomponents/httpclient}" conf="compile"/>
     <dependency org="org.apache.httpcomponents" name="httpmime" rev="${/org.apache.httpcomponents/httpmime}" conf="compile"/>
     <dependency org="org.apache.httpcomponents" name="httpcore" rev="${/org.apache.httpcomponents/httpcore}" conf="compile"/>

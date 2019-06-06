@@ -37,7 +37,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setUpClass() throws Exception {
     zkDir = createTempDir("TestDistributedMap");
-    zkServer = new ZkTestServer(zkDir.toFile().getAbsolutePath());
+    zkServer = new ZkTestServer(zkDir);
     zkServer.run();
   }
   

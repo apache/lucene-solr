@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -52,18 +50,22 @@ import static org.apache.solr.cloud.autoscaling.TriggerIntegrationTest.WAIT_FOR_
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  static Map<String, List<CapturedEvent>> listenerEvents = new HashMap<>();
-  static CountDownLatch listenerCreated = new CountDownLatch(1);
-  static boolean failDummyAction = false;
-  private static CountDownLatch actionConstructorCalled = new CountDownLatch(1);
-  private static CountDownLatch actionInitCalled = new CountDownLatch(1);
+  private static final int waitForSeconds = 1;
+  
+  private static final Map<String, List<CapturedEvent>> listenerEvents = new HashMap<>();
   private static CountDownLatch triggerFiredLatch = new CountDownLatch(1);
-  private static int waitForSeconds = 1;
-  private static AtomicBoolean triggerFired = new AtomicBoolean();
-  private static Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
+  private static final AtomicBoolean triggerFired = new AtomicBoolean();
 
+  private static final void resetTriggerAndListenerState() {
+    // reset the trigger and captured events
+    listenerEvents.clear();
+    triggerFiredLatch = new CountDownLatch(1);
+    triggerFired.compareAndSet(true, false);
+  }
+  
   @BeforeClass
   public static void setupCluster() throws Exception {
+    resetTriggerAndListenerState();
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -76,8 +78,6 @@ public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testCooldown() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
-    failDummyAction = false;
-    waitForSeconds = 1;
     String setTriggerCommand = "{" +
         "'set-trigger' : {" +
         "'name' : 'node_added_cooldown_trigger'," +
@@ -105,9 +105,6 @@ public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    listenerCreated = new CountDownLatch(1);
-    listenerEvents.clear();
-
     JettySolrRunner newNode = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
     boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
@@ -121,10 +118,7 @@ public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
     assertTrue(capturedEvents.toString(), capturedEvents.size() > 0);
     long prevTimestamp = capturedEvents.get(capturedEvents.size() - 1).timestamp;
 
-    // reset the trigger and captured events
-    listenerEvents.clear();
-    triggerFiredLatch = new CountDownLatch(1);
-    triggerFired.compareAndSet(true, false);
+    resetTriggerAndListenerState();
 
     JettySolrRunner newNode2 = cluster.startJettySolrRunner();
     await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
@@ -153,10 +147,7 @@ public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
     req = AutoScalingRequest.create(SolrRequest.METHOD.GET, null);
     response = solrClient.request(req);
 
-    // reset the trigger and captured events
-    listenerEvents.clear();
-    triggerFiredLatch = new CountDownLatch(1);
-    triggerFired.compareAndSet(true, false);
+    resetTriggerAndListenerState();
 
     JettySolrRunner newNode3 = cluster.startJettySolrRunner();
     await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
@@ -187,14 +178,13 @@ public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
   public static class TestTriggerAction extends TriggerActionBase {
 
     public TestTriggerAction() {
-      actionConstructorCalled.countDown();
+      // No-Op
     }
 
     @Override
     public void process(TriggerEvent event, ActionContext actionContext) {
       try {
         if (triggerFired.compareAndSet(false, true)) {
-          events.add(event);
           long currentTimeNanos = actionContext.getCloudManager().getTimeSource().getTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
@@ -214,7 +204,6 @@ public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
     @Override
     public void init() throws Exception {
       log.info("TestTriggerAction init");
-      actionInitCalled.countDown();
       super.init();
     }
   }
@@ -224,7 +213,6 @@ public class TriggerCooldownIntegrationTest extends SolrCloudTestCase {
     @Override
     public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException {
       super.configure(loader, cloudManager, config);
-      listenerCreated.countDown();
       timeSource = cloudManager.getTimeSource();
     }
 

@@ -236,7 +236,7 @@ public class CloudUtil {
    * <p>Note: for shards marked as inactive the current Solr behavior is that replicas remain active.
    * {@link org.apache.solr.cloud.autoscaling.sim.SimCloudManager} follows this behavior.</p>
    * @param expectedShards expected number of shards
-   * @param expectedReplicas expected number of active replicas
+   * @param expectedReplicas expected number of active replicas per shard
    * @param withInactive if true then count also inactive shards
    * @param requireLeaders if true then require that each shard has a leader
    */

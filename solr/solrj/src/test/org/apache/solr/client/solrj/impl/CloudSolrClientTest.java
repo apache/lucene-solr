@@ -892,6 +892,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     queryWithPreferReplicaTypes(getRandomClient(), "TLOG|PULL", true, collectionName);
     queryWithPreferReplicaTypes(getRandomClient(), "NRT", false, collectionName);
     queryWithPreferReplicaTypes(getRandomClient(), "NRT|PULL", true, collectionName);
+    CollectionAdminRequest.deleteCollection(collectionName)
+        .processAndWait(cluster.getSolrClient(), TIMEOUT);
   }
 
   private void queryWithPreferReplicaTypes(CloudSolrClient cloudClient,

@@ -62,7 +62,7 @@ public class KoreanAnalyzer extends Analyzer {
     this.stopTags = stopTags;
     this.outputUnknownUnigrams = outputUnknownUnigrams;
   }
-  
+
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     Tokenizer tokenizer = new KoreanTokenizer(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, userDict, mode, outputUnknownUnigrams);

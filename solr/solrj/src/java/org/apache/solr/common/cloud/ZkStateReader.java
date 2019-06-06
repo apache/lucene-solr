@@ -133,6 +133,7 @@ public class ZkStateReader implements SolrCloseable {
   public final static String CONFIGNAME_PROP="configName";
 
   public static final String LEGACY_CLOUD = "legacyCloud";
+  public static final String SAMPLE_PERCENTAGE = "samplePercentage";
 
   /**
    * @deprecated use {@link org.apache.solr.common.params.CollectionAdminParams#DEFAULTS} instead.
@@ -246,6 +247,7 @@ public class ZkStateReader implements SolrCloseable {
       CoreAdminParams.BACKUP_LOCATION,
       DEFAULT_SHARD_PREFERENCES,
       MAX_CORES_PER_NODE,
+      SAMPLE_PERCENTAGE,
       CollectionAdminParams.DEFAULTS)));
 
   /**

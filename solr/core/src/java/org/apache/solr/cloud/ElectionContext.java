@@ -52,6 +52,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.OpResult.SetDataResult;
@@ -489,6 +490,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           // we made it as leader - send any recovery requests we need to
           syncStrategy.requestRecoveries();
 
+        } catch (SessionExpiredException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+              "ZK session expired - cancelling election for " + collection + " " + shardId);
         } catch (Exception e) {
           isLeader = false;
           SolrException.log(log, "There was a problem trying to register as the leader", e);
@@ -503,7 +507,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             core.getCoreDescriptor().getCloudDescriptor().setLeader(false);
             
             // we could not publish ourselves as leader - try and rejoin election
-            rejoinLeaderElection(core);
+            try {
+              rejoinLeaderElection(core);
+            } catch (SessionExpiredException exc) {
+              throw new SolrException(ErrorCode.SERVER_ERROR,
+                  "ZK session expired - cancelling election for " + collection + " " + shardId);
+            }
           }
         }
       } else {
@@ -719,6 +728,9 @@ final class OverseerElectionContext extends ElectionContext {
   @Override
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
       InterruptedException {
+    if (isClosed) {
+      return;
+    }
     log.info("I am going to be the leader {}", id);
     final String id = leaderSeqPath
         .substring(leaderSeqPath.lastIndexOf("/") + 1);

@@ -69,6 +69,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.SortableTextField;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -280,6 +281,18 @@ public class QueryComponent extends SearchComponent
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "Illegal %s parameter", GroupParams.GROUP_FORMAT));
     }
     groupingSpec.setResponseFormat(responseFormat);
+
+    // See SOLR-12249. Disallow grouping on text fields that are not SortableText in cloud mode
+    if (req.getCore().getCoreContainer().isZooKeeperAware()) {
+      IndexSchema schema = rb.req.getSchema();
+      String[] fields = params.getParams(GroupParams.GROUP_FIELD);
+      for (String field : fields) {
+        SchemaField schemaField = schema.getField(field);
+        if (schemaField.getType().isTokenized() && (schemaField.getType() instanceof SortableTextField) == false) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "Sorting on a tokenized field that is not a SortableTextField is not supported in cloud mode."));
+        }
+      }
+    }
 
     groupingSpec.setFields(params.getParams(GroupParams.GROUP_FIELD));
     groupingSpec.setQueries(params.getParams(GroupParams.GROUP_QUERY));

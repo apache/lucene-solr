@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -46,6 +47,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -55,6 +57,10 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.Type.improvement;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.Type.repair;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.Type.unresolved_violation;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.Type.violation;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
@@ -229,46 +235,60 @@ public class PolicyHelper {
       }
     });
   }
-
   public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf,
-                                                              SolrCloudManager cloudManager) {
-    return getSuggestions(autoScalingConf, cloudManager, 20, 10);
+                                                              SolrCloudManager cloudManager, SolrParams params) {
+    return getSuggestions(autoScalingConf, cloudManager, 20, 10, params);
   }
 
   public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf,
-                                                              SolrCloudManager cloudManager, int max, int timeoutInSecs) {
+                                                              SolrCloudManager cloudManager) {
+    return getSuggestions(autoScalingConf, cloudManager, 20, 10, null);
+  }
+
+
+  public static List<Suggester.SuggestionInfo> getSuggestions(AutoScalingConfig autoScalingConf,
+                                                              SolrCloudManager cloudManager, int max, int timeoutInSecs, SolrParams params) {
     Policy policy = autoScalingConf.getPolicy();
     Suggestion.Ctx ctx = new Suggestion.Ctx();
     ctx.endTime = cloudManager.getTimeSource().getTimeNs() + TimeUnit.SECONDS.toNanos(timeoutInSecs);
     ctx.max = max;
     ctx.session = policy.createSession(cloudManager);
-    List<Violation> violations = ctx.session.getViolations();
-    for (Violation violation : violations) {
-      violation.getClause().getThirdTag().varType.getSuggestions(ctx.setViolation(violation));
-      ctx.violation = null;
-    }
+    String[] t = params == null ? null : params.getParams("type");
+    List<String> types = t == null? Collections.EMPTY_LIST: Arrays.asList(t);
 
-    for (Violation current : ctx.session.getViolations()) {
-      for (Violation old : violations) {
-        if (!ctx.needMore()) return ctx.getSuggestions();
-        if (current.equals(old)) {
-          //could not be resolved
-          ctx.suggestions.add(new Suggester.SuggestionInfo(current, null, "unresolved-violation"));
-          break;
+    if(types.isEmpty() || types.contains(violation.name())) {
+      List<Violation> violations = ctx.session.getViolations();
+      for (Violation violation : violations) {
+        violation.getClause().getThirdTag().varType.getSuggestions(ctx.setViolation(violation));
+        ctx.violation = null;
+      }
+
+      for (Violation current : ctx.session.getViolations()) {
+        for (Violation old : violations) {
+          if (!ctx.needMore()) return ctx.getSuggestions();
+          if (current.equals(old)) {
+            //could not be resolved
+            ctx.suggestions.add(new Suggester.SuggestionInfo(current, null, unresolved_violation));
+            break;
+          }
         }
       }
     }
 
-    if (ctx.needMore()) {
-      try {
-        addMissingReplicas(cloudManager, ctx);
-      } catch (IOException e) {
-        log.error("Unable to fetch cluster state", e);
+    if(types.isEmpty() || types.contains(repair.name())) {
+      if (ctx.needMore()) {
+        try {
+          addMissingReplicas(cloudManager, ctx);
+        } catch (IOException e) {
+          log.error("Unable to fetch cluster state", e);
+        }
       }
     }
 
-    if (ctx.needMore()) {
-      suggestOptimizations(ctx, Math.min(ctx.max - ctx.getSuggestions().size(), 10));
+    if(types.isEmpty() || types.contains(improvement.name())) {
+      if (ctx.needMore()) {
+        suggestOptimizations(ctx, Math.min(ctx.max - ctx.getSuggestions().size(), 10));
+      }
     }
     return ctx.getSuggestions();
   }
@@ -297,7 +317,7 @@ public class PolicyHelper {
       SolrRequest suggestion = ctx.addSuggestion(
           ctx.session.getSuggester(ADDREPLICA)
               .hint(Hint.REPLICATYPE, type)
-              .hint(Hint.COLL_SHARD, new Pair(coll.getName(), shard)), "repair");
+              .hint(Hint.COLL_SHARD, new Pair(coll.getName(), shard)), Suggestion.Type.repair);
       if (suggestion == null) return;
       delta++;
     }
@@ -323,7 +343,7 @@ public class PolicyHelper {
           Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
               .hint(Hint.COLL_SHARD, new Pair<>(e.getKey(), shard))
               .hint(Hint.SRC_NODE, row.node);
-          ctx.addSuggestion(suggester, "improvement");
+          ctx.addSuggestion(suggester, Suggestion.Type.improvement);
           if (ctx.getSuggestions().size() >= maxTotalSuggestions) break;
         }
       }

@@ -499,6 +499,13 @@
   </fieldType>
   <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
+  <fieldType name="sortable_text" class="solr.SortableTextField">
+    <analyzer>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+
+
   <field name="id" type="string" indexed="true" stored="${solr.tests.id.stored:true}" multiValued="false" required="false" docValues="${solr.tests.id.docValues:false}"/>
   <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
@@ -799,7 +806,8 @@
    <dynamicField name="*_ds_p"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_d_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
    <dynamicField name="*_ds_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
-         
+   <dynamicField name="*_sortable"  type="sortable_text" indexed="true" multiValued="false" stored="true" />
+
   <copyField source="single_i_dvn" dest="copy_single_i_dvn"/>
   <copyField source="single_d_dvn" dest="copy_single_d_dvn"/>
   <copyField source="single_s_dvn" dest="copy_single_s_dvn"/>

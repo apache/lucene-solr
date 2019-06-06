@@ -87,7 +87,7 @@ A `false` value makes the results of a collection creation predictable and gives
 This parameter is ignored if `createNodeSet` is not also specified.
 
 `collection.configName`::
-Defines the name of the configuration (which *must already be stored in ZooKeeper*) to use for this collection. If not provided, Solr will use the configuration of `_default` configSet to create a new (and mutable) configSet named `<collectionName>.AUTOCREATED` and will use it for the new collection. When such a collection (that uses a copy of the _default configset) is deleted, the autocreated configset is not deleted by default.
+Defines the name of the configuration (which *must already be stored in ZooKeeper*) to use for this collection. If not provided, Solr will use the configuration of `_default` configset to create a new (and mutable) configset named `<collectionName>.AUTOCREATED` and will use it for the new collection. When such a collection (that uses a copy of the _default configset) is deleted, the autocreated configset is not deleted by default.
 
 `router.field`::
 If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field. If the field specified is null in the document, the document will be rejected.
@@ -204,7 +204,7 @@ The attributes that can be modified are:
 See the <<create,CREATE action>> section above for details on these attributes.
 
 [[readonlymode]]
-==== Read-only mode
+==== Read-Only Mode
 Setting the `readOnly` attribute to `true` puts the collection in read-only mode,
 in which any index update requests are rejected. Other collection-level actions (eg. adding /
 removing / moving replicas) are still available in this mode.
@@ -225,7 +225,7 @@ Removing the `readOnly` property or setting it to false enables the
 processing of updates and reloads the collection.
 
 [[reindexcollection]]
-== REINDEXCOLLECTION: Re-index a Collection
+== REINDEXCOLLECTION: Re-Index a Collection
 
 `/admin/collections?action=REINDEXCOLLECTION&name=_name_`
 
@@ -1693,7 +1693,6 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
                                     "total": 49153,
                                     "postings [PerFieldPostings(segment=_i formats=1)]": {
                                         "total": 31023,
-...
                                 "fields": {
                                     "dc": {
                                         "flags": "I-----------",
@@ -1713,10 +1712,9 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
                                     "dc.date": {
                                         "flags": "-Dsrn-------:1:1:8",
                                         "schemaType": "pdates"
-                                    },
-...
+                                    }
+                                  }}}}}}}}}}}
 ----
-
 
 [[migrate]]
 == MIGRATE: Migrate Documents to Another Collection
@@ -2651,7 +2649,7 @@ Backs up Solr collections and associated configurations to a shared filesystem -
 
 `/admin/collections?action=BACKUP&name=myBackupName&collection=myCollectionName&location=/path/to/my/shared/drive`
 
-The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command takes one copy from each shard for the indexes. For configurations, it backs up the configSet that was associated with the collection and metadata.
+The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command takes one copy from each shard for the indexes. For configurations, it backs up the configset that was associated with the collection and metadata.
 
 === BACKUP Parameters
 
@@ -2678,7 +2676,7 @@ The RESTORE operation will create a collection with the specified name in the co
 
 The collection created will be have the same number of shards and replicas as the original collection, preserving routing information, etc. Optionally, you can override some parameters documented below.
 
-While restoring, if a configSet with the same name exists in ZooKeeper then Solr will reuse that, or else it will upload the backed up configSet in ZooKeeper and use that.
+While restoring, if a configset with the same name exists in ZooKeeper then Solr will reuse that, or else it will upload the backed up configset in ZooKeeper and use that.
 
 You can use the collection <<createalias,CREATEALIAS>> command to make sure clients don't need to change the endpoint to query or index against the newly restored collection.
 

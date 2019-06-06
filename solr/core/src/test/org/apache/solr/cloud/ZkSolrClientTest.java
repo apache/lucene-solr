@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -50,7 +51,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
 
     ZkConnection(boolean makeRoot) throws Exception {
-      String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+      Path zkDir = createTempDir("zkData");
       server = new ZkTestServer(zkDir);
       server.run();
 
@@ -105,7 +106,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
   }
 
   public void testReconnect() throws Exception {
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
     ZkTestServer server = null;
     server = new ZkTestServer(zkDir);
     server.run();
@@ -198,7 +199,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
   }
   
   public void testZkCmdExectutor() throws Exception {
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
     ZkTestServer server = null;
 
     try {

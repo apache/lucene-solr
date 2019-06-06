@@ -52,6 +52,7 @@ public class SimUtils {
       Variable.Type.CORE_IDX.tagName,
       "SEARCHER.searcher.numDocs",
       "SEARCHER.searcher.maxDoc",
+      "SEARCHER.searcher.indexCommitSize",
       "QUERY./select.requests",
       "UPDATE./update.requests"
   ));

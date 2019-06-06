@@ -43,7 +43,7 @@ public class Lang {
         .withFunctionName("jdbc", JDBCStream.class)
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("commit", CommitStream.class)
-        .withFunctionName("random", RandomStream.class)
+        .withFunctionName("random", RandomFacadeStream.class)
         .withFunctionName("knnSearch", KnnStream.class)
 
             // decorator streams

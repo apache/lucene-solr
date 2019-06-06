@@ -56,7 +56,7 @@ With the exception of in-place updates, the whole block must be updated or delet
 === Rudimentary Root-only Schemas
 
 These schemas do not contain any other nested related fields apart from `\_root_`.
-Many schemas in existence are this way simply because default configSets are this way, even if the application isn't using nested documents.
+Many schemas in existence are this way simply because default configsets are this way, even if the application isn't using nested documents.
 If an application uses nested documents with such a schema, keep in mind that that some related features aren't as effective since there is less information.  Mainly the <<searching-nested-documents.adoc#child-doc-transformer,[child]>> transformer returns matching children in a flat list (not nested) and it's attached to the parent using the special field name `\_childDocuments_`.
 
 With such a schema, typically you should have a field that differentiates a root doc from any nested children.

@@ -168,27 +168,28 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
 
   private synchronized long applyDeleteOrUpdate(ToLongFunction<DocumentsWriterDeleteQueue> function) throws IOException {
-    // TODO why is this synchronized?
+    // This method is synchronized to make sure we don't replace the deleteQueue while applying this update / delete
+    // otherwise we might lose an update / delete if this happens concurrently to a full flush.
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
     long seqNo = function.applyAsLong(deleteQueue);
     flushControl.doOnDelete();
     lastSeqNo = Math.max(lastSeqNo, seqNo);
-    if (applyAllDeletes(deleteQueue)) {
+    if (applyAllDeletes()) {
       seqNo = -seqNo;
     }
     return seqNo;
   }
   
   /** If buffered deletes are using too much heap, resolve them and write disk and return true. */
-  private boolean applyAllDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
+  private boolean applyAllDeletes() throws IOException {
+    final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
     if (flushControl.isFullFlush() == false // never apply deletes during full flush this breaks happens before relationship
+        && deleteQueue.isOpen() // if it's closed then it's already fully applied and we have a new delete queue
         && flushControl.getAndResetApplyAllDeletes()) {
-      if (deleteQueue != null) {
-        assert assertTicketQueueModification(deleteQueue);
-        ticketQueue.addDeletes(deleteQueue);
+      if (ticketQueue.addDeletes(deleteQueue)) {
+        flushNotifications.onDeletesApplied(); // apply deletes event forces a purge
+        return true;
       }
-      flushNotifications.onDeletesApplied(); // apply deletes event forces a purge
-      return true;
     }
     return false;
   }
@@ -408,7 +409,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   }
 
   private boolean postUpdate(DocumentsWriterPerThread flushingDWPT, boolean hasEvents) throws IOException {
-    hasEvents |= applyAllDeletes(deleteQueue);
+    hasEvents |= applyAllDeletes();
     if (flushingDWPT != null) {
       hasEvents |= doFlush(flushingDWPT);
     } else if (config.checkPendingFlushOnUpdate) {
@@ -607,7 +608,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     if (ramBufferSizeMB != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
         flushControl.getDeleteBytesUsed() > (1024*1024*ramBufferSizeMB/2)) {
       hasEvents = true;
-      if (applyAllDeletes(deleteQueue) == false) {
+      if (applyAllDeletes() == false) {
         if (infoStream.isEnabled("DW")) {
           infoStream.message("DW", String.format(Locale.ROOT, "force apply deletes after flush bytesUsed=%.1f MB vs ramBuffer=%.1f MB",
                                                  flushControl.getDeleteBytesUsed()/(1024.*1024.),
@@ -673,6 +674,8 @@ final class DocumentsWriter implements Closeable, Accountable {
 
   // for asserts
   private synchronized boolean setFlushingDeleteQueue(DocumentsWriterDeleteQueue session) {
+    assert currentFullFlushDelQueue == null
+        || currentFullFlushDelQueue.isOpen() == false : "Can not replace a full flush queue if the queue is not closed";
     currentFullFlushDelQueue = session;
     return true;
   }
@@ -724,7 +727,7 @@ final class DocumentsWriter implements Closeable, Accountable {
         if (infoStream.isEnabled("DW")) {
           infoStream.message("DW", Thread.currentThread().getName() + ": flush naked frozen global deletes");
         }
-        assertTicketQueueModification(flushingDeleteQueue);
+        assert assertTicketQueueModification(flushingDeleteQueue);
         ticketQueue.addDeletes(flushingDeleteQueue);
       }
       // we can't assert that we don't have any tickets in teh queue since we might add a DocumentsWriterDeleteQueue
@@ -732,6 +735,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       assert !flushingDeleteQueue.anyChanges();
     } finally {
       assert flushingDeleteQueue == currentFullFlushDelQueue;
+      flushingDeleteQueue.close(); // all DWPT have been processed and this queue has been fully flushed to the ticket-queue
     }
     if (anythingFlushed) {
       return -seqNo;
@@ -754,7 +758,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       }
     } finally {
       pendingChangesInCurrentFullFlush = false;
-      applyAllDeletes(deleteQueue); // make sure we do execute this since we block applying deletes during full flush
+      applyAllDeletes(); // make sure we do execute this since we block applying deletes during full flush
     }
   }
 
