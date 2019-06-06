@@ -267,6 +267,7 @@ templates:
 #         live: false      # If true, sends output live byte-by-byte to console
 #         redirect: file.txt      # Send output to file. Use instead of >
 #         redirect_append: false  # Will cause output to be appended, like >>
+#         shell: false     $ Set to true to use built-in shell commands
 #     user_input: # An array of !UserInput objects for requesting input from user
 #     - !UserInput
 #       prompt: Please enter your gpg key ID, e.g. 0D8D0B93
@@ -1351,7 +1352,7 @@ groups:
 - !TodoGroup
   id: post_release
   title: Tasks to do after release
-  description: description
+  description: There are many more tasks to do now that the new version is out there, so hang in there for a few more hours :)
   todos:
   - !Todo
     id: add_version_bugfix
@@ -1613,7 +1614,7 @@ groups:
     - https://issues.apache.org/jira/issues/?jql=project+in+(LUCENE,SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version }}
   - !Todo
     id: jira_change_unresolved
-    title: Move fixVersion for unresolved
+    title: Remove fixVersion for unresolved
     description: |-
       Do another JIRA search to find all issues with Resolution=_Unresolved_ and fixVersion=_{{ release_version }}_.
       You need to do this separately for Lucene and Solr.
@@ -1655,6 +1656,37 @@ groups:
   - !Todo
     id: stop_mirroring
     title: Stop mirroring old releases
+    description: |
+      Shortly after new releases are first mirrored, they are automatically copied to the archives. 
+      Only the latest point release from each active branch should be kept under the Lucene PMC 
+      svnpubsub areas `dist/releases/lucene/` and `dist/releases/solr/`. Older releases can be 
+      safely deleted, since they are already backed up in the archives.
+
+      Currenlty these versions are in the mirrors:
+
+      *{{ mirrored_versions|join(', ') }}*
+
+      The commands below will remove old versions automatically. If this suggestion is wrong,
+      please do *not* execute the commands automatically, but edit the command and run manually.
+      Versions that will be kept are *{{ latest_version }}, {{ latest_lts_version }}* and those
+      to be deleted from the mirrors are:
+
+      *{{ mirrored_versions_to_delete|join(', ') }}*
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: |
+        Run these commands to delete proposed versions from mirrors.
+
+        WARNING: Validate that the proposal is correct!
+      commands:
+      - !Command
+        cmd: |
+          {% for ver in mirrored_versions_to_delete %}svn rm -m "Stop mirroring Lucene {{ ver }}"  https://dist.apache.org/repos/dist/release/lucene/java/{{ ver }}  && {% endfor %}echo Done Lucene
+        logfile: svn-rm-lucene.log
+      - !Command
+        cmd: |
+          {% for ver in mirrored_versions_to_delete %}svn rm -m "Stop mirroring Solr {{ ver }}"  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}  && {% endfor %}echo Done Solr
+        logfile: svn-rm-lucene.log
   - !Todo
     id: update_wiki
     title: Update WIKI

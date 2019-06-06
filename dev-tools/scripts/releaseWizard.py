@@ -110,7 +110,10 @@ def expand_jinja(text, vars=None):
         'load_lines': load_lines,
         'set_java_home': set_java_home,
         'latest_version': state.get_latest_version(),
-        'master_version': state.get_master_version()
+        'latest_lts_version': state.get_latest_lts_version(),
+        'master_version': state.get_master_version(),
+        'mirrored_versions': state.get_mirrored_versions(),
+        'mirrored_versions_to_delete': state.get_mirrored_versions_to_delete()
     })
     global_vars.update(state.get_todo_states())
     if vars:
@@ -254,6 +257,7 @@ class ReleaseState:
         self.rc_number = 1
         self.start_date = unix_time_millis(datetime.utcnow())
         self.script_branch = run("git rev-parse --abbrev-ref HEAD").strip()
+        self.mirrored_versions = None
         try:
             self.script_branch_type = scriptutil.find_branch_type()
         except:
@@ -285,9 +289,7 @@ class ReleaseState:
 
     def get_latest_version(self):
         if self.latest_version is None:
-            releases_str = load("https://projects.apache.org/json/foundation/releases.json", "utf-8")
-            releases = json.loads(releases_str)['lucene']
-            versions = [ r for r in list(map(lambda y: y[7:], filter(lambda x: x.startswith('lucene-'), list(releases.keys())))) ]
+            versions = self.get_mirrored_versions()
             latest = versions[0]
             for ver in versions:
                 if Version.parse(ver).gt(Version.parse(latest)):
@@ -296,9 +298,32 @@ class ReleaseState:
             self.save()
         return state.latest_version
 
+    def get_mirrored_versions(self):
+        if state.mirrored_versions is None:
+            releases_str = load("https://projects.apache.org/json/foundation/releases.json", "utf-8")
+            releases = json.loads(releases_str)['lucene']
+            state.mirrored_versions = [ r for r in list(map(lambda y: y[7:], filter(lambda x: x.startswith('lucene-'), list(releases.keys())))) ]
+        return state.mirrored_versions
+
+    def get_mirrored_versions_to_delete(self):
+        versions = self.get_mirrored_versions()
+        to_keep = [self.get_latest_version(), self.get_latest_lts_version()]
+        return [ver for ver in versions if ver not in to_keep]
+
     def get_master_version(self):
         v = Version.parse(self.get_latest_version())
         return "%s.%s.%s" % (v.major + 1, 0, 0)
+
+    def get_latest_lts_version(self):
+        versions = self.get_mirrored_versions()
+        latest = self.get_latest_version()
+        lts_prefix = "%s." % (Version.parse(latest).major - 1)
+        lts_versions = list(filter(lambda x: x.startswith(lts_prefix), versions))
+        latest_lts = lts_versions[0]
+        for ver in lts_versions:
+            if Version.parse(ver).gt(Version.parse(latest_lts)):
+                latest_lts = ver
+        return latest_lts
 
     def validate_release_version(self, branch_type, branch, release_version):
         ver = Version.parse(release_version)
@@ -1271,14 +1296,14 @@ def tail_file(file, lines):
                 break
 
 
-def run_with_log_tail(command, cwd, logfile=None, tail_lines=10, tee=False, live=False):
+def run_with_log_tail(command, cwd, logfile=None, tail_lines=10, tee=False, live=False, shell=None):
     fh = sys.stdout
     if logfile:
         logdir = os.path.dirname(logfile)
         if not os.path.exists(logdir):
             os.makedirs(logdir)
         fh = open(logfile, 'w')
-    rc = run_follow(command, cwd, fh=fh, tee=tee, live=live)
+    rc = run_follow(command, cwd, fh=fh, tee=tee, live=live, shell=shell)
     if logfile:
         fh.close()
         if not tee and tail_lines and tail_lines > 0:
@@ -1314,8 +1339,8 @@ def print_line_cr(line, linenum, stdout=True, tee=False):
             print(line.rstrip())
 
 
-def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False):
-    doShell = '&&' in command or '&' in command
+def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=None):
+    doShell = '&&' in command or '&' in command or shell is not None
     if not doShell and not isinstance(command, list):
         command = shlex.split(command)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd,
@@ -1511,7 +1536,8 @@ class Commands(SecretYamlObject):
                                 if cmd.comment:
                                     print("# %s\n" % cmd.get_comment())
                             start_time = time.time()
-                            returncode = run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee, tail_lines=25, live=cmd.live)
+                            returncode = run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee, tail_lines=25,
+                                                           live=cmd.live, shell=cmd.shell)
                             elapsed = time.time() - start_time
                             if not returncode == 0:
                                 if cmd.should_fail:
@@ -1578,7 +1604,7 @@ class Command(SecretYamlObject):
     yaml_tag = u'!Command'
     hidden_fields = ['todo_id']
     def __init__(self, cmd, cwd=None, stdout=None, logfile=None, tee=None, live=None, comment=None, vars=None,
-                 todo_id=None, should_fail=None, redirect=None, redirect_append=None):
+                 todo_id=None, should_fail=None, redirect=None, redirect_append=None, shell=None):
         self.cmd = cmd
         self.cwd = cwd
         self.comment = comment
@@ -1588,6 +1614,7 @@ class Command(SecretYamlObject):
         self.live = live
         self.stdout = stdout
         self.should_fail = should_fail
+        self.shell = shell
         self.todo_id = todo_id
         self.redirect_append = redirect_append
         self.redirect = redirect
@@ -1822,6 +1849,7 @@ def update_news(todo):
         print("News files not changed, already patched earlier. Please edit by hand")
 
     return True
+
 
 
 def set_java_home(version):
