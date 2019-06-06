@@ -21,7 +21,7 @@ import os
 import sys
 import subprocess
 from subprocess import TimeoutExpired
-from scriptutil import getGitRev, check_ant
+from scriptutil import check_ant
 import textwrap
 import urllib.request, urllib.error, urllib.parse
 import xml.etree.ElementTree as ET
@@ -73,6 +73,21 @@ def load(urlString, encoding="utf-8"):
     content = urllib.request.urlopen(urlString).read().decode(encoding)
   return content
 
+def getGitRev():
+  status = os.popen('git status').read().strip()
+  if 'nothing to commit, working directory clean' not in status and 'nothing to commit, working tree clean' not in status:
+    raise RuntimeError('git clone is dirty:\n\n%s' % status)
+  branch = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
+  command = 'git log origin/%s..' % branch
+  p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  stdout, stderr = p.communicate()
+  if len(stdout.strip()) > 0:
+    raise RuntimeError('There are unpushed commits - "%s" output is:\n\n%s' % (command, stdout.decode('utf-8')))
+  if len(stderr.strip()) > 0:
+    raise RuntimeError('Command "%s" failed:\n\n%s' % (command, stderr.decode('utf-8')))
+
+  print('  git clone is clean')
+  return os.popen('git rev-parse HEAD').read().strip()
 
 def prepare(root, version, gpgKeyID, gpgPassword):
   print()
