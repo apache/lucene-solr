@@ -31,12 +31,12 @@ dependencies {
 
 task downloadMoman(type: org.apache.lucene.gradle.Download) {
   sourceUrl = "${momanUrl}"
-  target = new File("${buildDir}", 'moman.zip')
+  target = mfile("${buildDir}", 'moman.zip')
 }
 
 task installMoman(){
   doLast {
-    ant.unzip(src: "${buildDir}/moman.zip", dest:"${buildDir}/moman", overwrite:"true") {
+    ant.unzip(src: filePath("${buildDir}/moman.zip"), dest: filePath("${buildDir}/moman"), overwrite:"true") {
       ant.cutdirsmapper(dirs: "1")
     }
   }
@@ -119,10 +119,10 @@ task runJflex(type: org.apache.lucene.gradle.JFlex) {
   group = 'Build Regenerate'
   description = "Runs jflex for StandardTokenizerImpl."
   
-  inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+  inputDir = file("src/java/org/apache/lucene/analysis/standard")
   fileName = "StandardTokenizerImpl"
   disableBufferExpansion = true
-  target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+  target = file("src/java/org/apache/lucene/analysis/standard")
 }
 
 task cleanJflex() {
@@ -131,7 +131,7 @@ task cleanJflex() {
   
   doLast {
     ant.delete(failonerror: 'false') {
-      ant.fileset(dir: "src/java/org/apache/lucene/analysis/standard", includes: "**/*.java") {
+      ant.fileset(dir: file("src/java/org/apache/lucene/analysis/standard"), includes: "**/*.java") {
         ant.containsregexp(expression: "generated.*by.*JFlex")
       }
     }

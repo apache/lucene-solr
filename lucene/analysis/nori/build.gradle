@@ -58,17 +58,17 @@ def mecabFilename = "mecab-ko-dic-${mecabVersion}"
 
 task downloadDict(type: org.apache.lucene.gradle.Download) {
   sourceUrl = "https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/${mecabFilename}.tar.gz"
-  target = new File("${buildDir}/${mecabFilename}.tar.gz")
+  target = mfile(buildDir, "${mecabFilename}.tar.gz")
   
   doLast {
-    ant.gunzip(src: "${buildDir}/${mecabFilename}.tar.gz")
-    ant.untar(src: "${buildDir}/${mecabFilename}.tar", dest: "${buildDir}")
+    ant.gunzip(src: filePath("${buildDir}/${mecabFilename}.tar.gz"))
+    ant.untar(src: filePath("${buildDir}/${mecabFilename}.tar"), dest: "${buildDir}")
   }
 }
 
 task buildNoriDict(type: JavaExec) {
   group = 'Build Regenerate'
-  description = "Downloads, patches, and builds dict for nori."
+  description = 'Downloads, patches, and builds dict for nori.'
   
   doFirst {
     def tree = fileTree("${projectDir}/org/apache/lucene/analysis/ko/dict")
@@ -83,8 +83,8 @@ task buildNoriDict(type: JavaExec) {
  
   jvmArgs '-Xmx1G'
 
-  args "${buildDir}/${mecabFilename}"
-  args "${projectDir}/src/resources"
+  args filePath("${buildDir}/${mecabFilename}")
+  args filePath("src/resources")
   args 'utf-8'
   args 'false'
   

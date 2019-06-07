@@ -34,7 +34,7 @@ dependencies {
 task trainSentenceDetector(type: JavaExec) {
   
   doFirst {
-    new File("${projectDir}/src/tools/test-model-data").mkdirs()
+    mkdir("src/tools/test-model-data")
   }
   
   classpath = sourceSets.main.runtimeClasspath
@@ -44,9 +44,9 @@ task trainSentenceDetector(type: JavaExec) {
   args '-lang' 
   args 'en'
   args '-data' 
-  args "${projectDir}/src/tools/test-model-data/sentences.txt"
+  args filePath('src/tools/test-model-data/sentences.txt')
   args '-model'
-  args "${projectDir}/src/tools/test-model-data/en-test-sent.bin"
+  args filePath('src/tools/test-model-data/en-test-sent.bin')
   
   doLast {
     ant.copy(file: "${projectDir}/src/tools/test-model-data/en-test-sent.bin", todir: "${project.rootProject.projectDir}/solr/contrib/analysis-extras/src/test-files/analysis-extras/solr/collection1/conf")
@@ -57,7 +57,7 @@ task trainSentenceDetector(type: JavaExec) {
 task trainTokenizerTrainer(type: JavaExec) {
   
   doFirst {
-    new File("${projectDir}/src/tools/test-model-data").mkdirs()
+    mkdir("src/tools/test-model-data")
   }
   
   classpath = sourceSets.main.runtimeClasspath
@@ -67,12 +67,12 @@ task trainTokenizerTrainer(type: JavaExec) {
   args '-lang'
   args 'en'
   args '-data'
-  args "${projectDir}/src/tools/test-model-data/tokenizer.txt"
+  args filePath("src/tools/test-model-data/tokenizer.txt")
   args '-model'
-  args "${projectDir}/src/tools/test-model-data/en-test-tokenizer.bin"
+  args filePath("src/tools/test-model-data/en-test-tokenizer.bin")
   
   doLast {
-    ant.copy(file: "${projectDir}/src/tools/test-model-data/en-test-tokenizer.bin", todir: "${project.rootProject.projectDir}/solr/contrib/analysis-extras/src/test-files/analysis-extras/solr/collection1/conf")
+    ant.copy(file: filePath("src/tools/test-model-data/en-test-tokenizer.bin"), todir: filePath("${project.rootProject.projectDir}/solr/contrib/analysis-extras/src/test-files/analysis-extras/solr/collection1/conf"))
   }
 }
 
@@ -80,7 +80,7 @@ task trainTokenizerTrainer(type: JavaExec) {
 task trainPOSTaggerTrainer(type: JavaExec) {
   
   doFirst {
-    new File("${projectDir}/src/tools/test-model-data").mkdirs()
+    mkdir("src/tools/test-model-data")
   }
   
   classpath = sourceSets.main.runtimeClasspath
@@ -90,16 +90,16 @@ task trainPOSTaggerTrainer(type: JavaExec) {
   args '-lang'
   args 'en'
   args '-data'
-  args "${projectDir}/src/tools/test-model-data/pos.txt"
+  args filePath("src/tools/test-model-data/pos.txt")
   args '-model'
-  args "${projectDir}/src/tools/test-model-data/en-test-pos-maxent.bin"
+  args filePath("src/tools/test-model-data/en-test-pos-maxent.bin")
 }
 
 // https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.chunker.training
 task trainChunkerTrainerME(type: JavaExec) {
   
   doFirst {
-    new File("${projectDir}/src/tools/test-model-data").mkdirs()
+    mkdir('src/tools/test-model-data')
   }
   
   classpath = sourceSets.main.runtimeClasspath
@@ -109,16 +109,16 @@ task trainChunkerTrainerME(type: JavaExec) {
   args '-lang'
   args 'en'
   args '-data'
-  args "${projectDir}/src/tools/test-model-data/chunks.txt"
+  args filePath('src/tools/test-model-data/chunks.txt')
   args '-model'
-  args "${projectDir}/src/tools/test-model-data/en-test-chunker.bin"
+  args filePath('src/tools/test-model-data/en-test-chunker.bin')
 }
 
 // https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.namefind.training
 task trainTokenNameFinderTrainer(type: JavaExec) {
   
   doFirst {
-    new File("${projectDir}/src/tools/test-model-data").mkdirs()
+    mkdir('src/tools/test-model-data')
   }
   
   classpath = sourceSets.main.runtimeClasspath
@@ -128,11 +128,11 @@ task trainTokenNameFinderTrainer(type: JavaExec) {
   args '-lang'
   args 'en'
   args '-data'
-  args "${projectDir}/src/tools/test-model-data/ner.txt"
+  args filePath('src/tools/test-model-data/ner.txt')
   args '-model'
-  args "${projectDir}/src/tools/test-model-data/en-test-ner.bin"
+  args filePath('src/tools/test-model-data/en-test-ner.bin')
   args '-params'
-  args "${projectDir}/src/tools/test-model-data/ner_TrainerParams.txt"
+  args filePath('src/tools/test-model-data/ner_TrainerParams.txt')
   
   doLast {
     ant.copy(file: "${projectDir}/src/tools/test-model-data/en-test-ner.bin", todir: "${project.rootProject.projectDir}/solr/contrib/analysis-extras/src/test-files/analysis-extras/solr/collection1/conf")
@@ -143,7 +143,7 @@ task trainTokenNameFinderTrainer(type: JavaExec) {
 task trainLemmatizerTrainerME(type: JavaExec) {
   
   doFirst {
-    new File("${projectDir}/src/tools/test-model-data").mkdirs()
+    mkdir('src/tools/test-model-data')
   }
   
   classpath = sourceSets.main.runtimeClasspath
@@ -153,9 +153,9 @@ task trainLemmatizerTrainerME(type: JavaExec) {
   args '-lang'
   args 'en'
   args '-data'
-  args "${projectDir}/src/tools/test-model-data/lemmas.txt"
+  args filePath('src/tools/test-model-data/lemmas.txt')
   args '-model'
-  args "${projectDir}/src/tools/test-model-data/en-test-lemmatizer.bin"
+  args filePath('src/tools/test-model-data/en-test-lemmatizer.bin')
 }
 
 task trainTestModels {

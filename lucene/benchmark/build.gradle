@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 apply plugin: org.apache.lucene.gradle.PartOfDist
 
-def workingDir = "${projectDir}/work"
+def workingDir = file("work")
 
 dependencies {
   
@@ -43,7 +43,7 @@ dependencies {
 // copy .alg files as resources for testing
 task copyConfResources(type: Copy) {
   from('conf')
-  into new File(sourceSets.test.java.outputDir, "conf")
+  into mfile(sourceSets.test.java.outputDir, "conf")
 }
 processTestResources.dependsOn copyConfResources
 
@@ -51,7 +51,7 @@ processTestResources.dependsOn copyConfResources
 
 task downloadEnwiki(type: org.apache.lucene.gradle.Download) {
   sourceUrl = "http://home.apache.org/~dsmiley/data/enwiki-20070527-pages-articles.xml.bz2"
-  target = new File("${projectDir}/temp/enwiki-20070527-pages-articles.xml.bz2")
+  target = file("temp/enwiki-20070527-pages-articles.xml.bz2")
 }
 
 task installEnwiki(){
@@ -68,14 +68,14 @@ installEnwiki.dependsOn downloadEnwiki
 
 task downloadGeoNames(type: org.apache.lucene.gradle.Download) {
   sourceUrl = "http://home.apache.org/~dsmiley/data/geonames_20130921_randomOrder_allCountries.txt.bz2"
-  target = new File("${projectDir}/temp/allCountries.txt.bz2")
+  target = mfile('temp', 'allCountries.txt.bz2')
 }
 
 task installGeoNames(){
   group = 'Benchmark Data'
   description = "Installs GeoNames data files."
   doLast {
-    new File("${workingDir}/geonames").mkdirs()
+    mkdir("${workingDir}/geonames")
     ant.bunzip2(src: "${projectDir}/temp/allCountries.txt.bz2", dest:"${workingDir}/geonames")
   }
   dependsOn downloadGeoNames
@@ -85,14 +85,14 @@ task installGeoNames(){
 
 task downloadReuters(type: org.apache.lucene.gradle.Download) {
   sourceUrl = "http://www.daviddlewis.com/resources/testcollections/reuters21578/reuters21578.tar.gz"
-  target = new File("${projectDir}/temp/reuters21578.tar.gz")
+  target = file("${projectDir}/temp/reuters21578.tar.gz")
 }
 
 task extractReuters(type: JavaExec) {
   classpath = sourceSets.main.runtimeClasspath
   main = 'org.apache.lucene.benchmark.utils.ExtractReuters'
-  args "${workingDir}/reuters"
-  args "${workingDir}/reuters-out"
+  args filePath("${workingDir}/reuters")
+  args filePath("${workingDir}/reuters-out")
   dependsOn downloadReuters
 }
 
@@ -100,9 +100,9 @@ task installReuters(){
   group = 'Benchmark Data'
   description = "Installs Reuters data files."
   doLast {
-    new File("${workingDir}/reuters").mkdirs()
-    ant.gunzip(src: "${projectDir}/temp/reuters21578.tar.gz", dest:"${projectDir}/temp/")
-    ant.untar(src: "${projectDir}/temp/reuters21578.tar", dest: "${workingDir}/reuters")
+    mkdir("${workingDir}/reuters")
+    ant.gunzip(src: filePath("${projectDir}/temp/reuters21578.tar.gz"), dest:"${projectDir}/temp/")
+    ant.untar(src: filePath("${projectDir}/temp/reuters21578.tar"), dest: "${workingDir}/reuters")
     def tree = fileTree("${workingDir}/reuters")
     tree.include '**/*.txt'
     tree.each { it.delete() }

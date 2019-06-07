@@ -17,12 +17,13 @@
 
 import org.apache.lucene.gradle.CheckWorkingCopy
 import org.apache.lucene.gradle.LuceneSolrForbiddenApisPlugin
+import org.apache.commons.io.FilenameUtils
 
 plugins {
   id "com.palantir.consistent-versions" version "1.8.0"
 }
 
-buildDir = new File("build")
+buildDir = file("build")
 
 // define lucene-solr project lists that exclude buildSrc
 def luceneSolrProjects = allprojects.findAll { project -> project.name != 'buildSrc'};
@@ -30,8 +31,17 @@ def luceneSolrSubProjects = subprojects.findAll { project -> project.name != 'bu
 
 def rootProjectDir = project.rootProject.projectDir;
 
-// make sure ant task logging shows up by default
-ant.lifecycleLogLevel = "INFO"
+allprojects {
+  // make sure ant task logging shows up by default
+  ant.lifecycleLogLevel = "INFO"
+  
+  // sugare file path handler - to deal with path.separator on string paths
+  ext.filePath = { path -> file(path).getAbsolutePath() }
+  
+  // sugar multi part File
+  ext.mfile = { file1, file2 -> new File(file(file1), file2.toString()) }
+  
+}
 
 // TOC
 // -> lucene-solr all project config
@@ -45,9 +55,9 @@ ant.lifecycleLogLevel = "INFO"
 configure(luceneSolrProjects) {
 
   // setup repositories
-  apply from: new File(rootProjectDir, "buildSrc/common/configure-repositories.gradle")
+  apply from: mfile(rootProjectDir, 'buildSrc/common/configure-repositories.gradle')
   
-  buildDir = new File("build")
+  buildDir = file("build")
   
   apply plugin: 'idea'
   apply plugin: 'eclipse'
@@ -109,7 +119,7 @@ configure(luceneSolrSubProjects) {
     }
     
     // configure tests
-    project.apply from: new File(rootProjectDir, "buildSrc/common/configure-test.gradle")
+    project.apply from: mfile(rootProjectDir, 'buildSrc/common/configure-test.gradle')
 
     task sourceJar(type: Jar) {
       classifier 'sources'
@@ -157,8 +167,8 @@ configure(allprojects) {
   apply plugin: 'idea'
   
   plugins.withType(JavaPlugin) {
-    project.apply from: new File(rootProjectDir, "buildSrc/ide/eclipse.gradle")
-    project.apply from: new File(rootProjectDir, "buildSrc/ide/idea.gradle")
+    project.apply from: mfile(rootProjectDir, 'buildSrc/ide/eclipse.gradle')
+    project.apply from: mfile(rootProjectDir, 'buildSrc/ide/idea.gradle')
   }
   
   // dependencies block that applies to all projects
@@ -194,4 +204,3 @@ def javaDocProjects = subprojects.findAll { project -> !noJavaDocModules.contain
 //     destinationDir = file("${buildDir}/docs")
 //   }
 // }
-
