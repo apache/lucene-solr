@@ -19,23 +19,40 @@
 
 == Gallery
 
+=== Numbers
+
+
+
+=== Tables
+
+image::images/math-expressions/table.png[]
+
+
+=== Probability Distributions
+
+image::images/math-expressions/dist.png[]
+
 === Monte Carlo Simulations
 
 image::images/math-expressions/monte-carlo.png[]
-
-=== Probability Distributions
 
 === Time Series
 
 === XY Scatter Plots
 
+image::images/math-expressions/xyscatter.png[]
+
 === XY Vector Plots
+
+image::images/math-expressions/vector.png[]
 
 === Aggregations
 
 === Matrices
 
 === Linear Regression
+
+image::images/math-expressions/linear.png[]
 
 === Knn Regression
 
@@ -44,6 +61,8 @@ image::images/math-expressions/monte-carlo.png[]
 === Interpolation
 
 === Sine Waves and Derivatives
+
+image::images/math-expressions/sined.png[]
 
 === Fourier Transforms
 
