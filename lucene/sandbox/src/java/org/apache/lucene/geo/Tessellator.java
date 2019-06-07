@@ -156,7 +156,7 @@ final public class Tessellator {
       Node list = createDoublyLinkedList(holes[i], nodeIndex, WindingOrder.CCW);
 
       if (list == list.next) {
-        list.isSteiner = true;
+        throw new IllegalArgumentException("Points are all coplanar in hole: " + holes[i]);
       }
       // Determine if the resulting hole polygon was successful.
       if(list != null) {
@@ -694,7 +694,7 @@ final public class Tessellator {
       continueIteration = false;
       nextNode = node.next;
       prevNode = node.previous;
-      if (node.isSteiner == false && isVertexEquals(node, nextNode)
+      if (isVertexEquals(node, nextNode)
           || area(prevNode.getX(), prevNode.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY()) == 0) {
         // Remove the node
         removeNode(node);
@@ -816,8 +816,6 @@ final public class Tessellator {
     private Node previousZ;
     // next z node
     private Node nextZ;
-    // triangle center
-    private boolean isSteiner = false;
 
     protected Node(final Polygon polygon, final int index, final int vertexIndex) {
       this.idx = index;
@@ -844,7 +842,6 @@ final public class Tessellator {
       this.next = other.next;
       this.previousZ = other.previousZ;
       this.nextZ = other.nextZ;
-      this.isSteiner = other.isSteiner;
     }
 
     /** get the x value */
