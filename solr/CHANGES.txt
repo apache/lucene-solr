@@ -92,6 +92,8 @@ Bug Fixes
 * SOLR-13521: Fix input parameter handling in SchemaRequest.DynamicField and SchemaRequest.FieldTypes (Schema API)
   (Tomás Fernández Löbbe)
 
+* SOLR-13496: Fix distributed grouping related NullPointerException in JSONWriter.writeSolrDocument (Christine Poerschke)
+
 Other Changes
 ----------------------
 
