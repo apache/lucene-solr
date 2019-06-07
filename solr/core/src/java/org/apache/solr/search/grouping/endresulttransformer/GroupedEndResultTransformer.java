@@ -28,6 +28,7 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -90,9 +91,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
             docList.setMaxScore(group.maxScore);
           }
           docList.setStart(rb.getGroupingSpec().getWithinGroupOffset());
-          for (ScoreDoc scoreDoc : group.scoreDocs) {
-            docList.add(solrDocumentSource.retrieve(scoreDoc));
-          }
+          retrieveAndAdd(docList, solrDocumentSource, group.scoreDocs);
           groupResult.add("doclist", docList);
           groups.add(groupResult);
         }
@@ -110,14 +109,21 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
           docList.setMaxScore(queryCommandResult.getMaxScore());
         }
         docList.setStart(rb.getGroupingSpec().getWithinGroupOffset());
-        for (ScoreDoc scoreDoc :queryCommandResult.getTopDocs().scoreDocs){
-          docList.add(solrDocumentSource.retrieve(scoreDoc));
-        }
+        retrieveAndAdd(docList, solrDocumentSource, queryCommandResult.getTopDocs().scoreDocs);
         command.add("doclist", docList);
         commands.add(entry.getKey(), command);
       }
     }
     rb.rsp.add("grouped", commands);
+  }
+
+  private static void retrieveAndAdd(SolrDocumentList solrDocumentList, SolrDocumentSource solrDocumentSource, ScoreDoc[] scoreDocs) {
+    for (ScoreDoc scoreDoc : scoreDocs) {
+      SolrDocument solrDocument = solrDocumentSource.retrieve(scoreDoc);
+      if (solrDocument != null) {
+        solrDocumentList.add(solrDocument);
+      }
+    }
   }
 
 }
