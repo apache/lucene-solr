@@ -52,9 +52,9 @@ image::images/math-expressions/xyscatter.png[]
 
 image::images/math-expressions/vector.png[]
 
-=== Aggregations
+=== SQL Aggregations
 
-image::images/math-expressions/aggs.png[]
+image::images/math-expressions/sqlagg.png[]
 
 === Matrices and Heat Maps
 
