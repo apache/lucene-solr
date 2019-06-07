@@ -68,6 +68,8 @@ image::images/math-expressions/hfit.png[]
 
 === Interpolation
 
+image::images/math-expressions/spline.png[]
+
 === Sine Waves and Derivatives
 
 image::images/math-expressions/sined.png[]
