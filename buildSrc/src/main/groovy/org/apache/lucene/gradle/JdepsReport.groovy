@@ -114,7 +114,6 @@ class JdepsReport extends DefaultTask {
     jdepsDir.mkdirs()
   }
 
-  
   @TaskAction
   void execute() {
     // make sure ant task logging shows up by default

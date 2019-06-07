@@ -18,9 +18,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestRatSources extends BaseTestClass {
+public class TestEnforcers extends BaseTestClass {
   
-  public TestRatSources() {
+  public TestEnforcers() {
 
   }
   
@@ -40,6 +40,10 @@ public class TestRatSources extends BaseTestClass {
     
     cmd = new String[]{"bash", "-c", "docker exec --user ${UID} -t ${CONTAINER_NAME} bash -c \"rm /home/lucene/project/lucene/core/src/java/org/no_license_test_file.xml\""};
     runCmd(cmd, env, false, false);
+    
+    
+    cmd = new String[]{"bash", "-c", "docker exec --user ${UID} -t ${CONTAINER_NAME} bash -c \"rm /home/lucene/project/solr/contrib/clustering/src/java/org/tab_file.xml\""};
+    runCmd(cmd, env, false, false);
   }
   
   @Test
@@ -50,4 +54,11 @@ public class TestRatSources extends BaseTestClass {
     assertEquals("Testing test-build.sh failed", 0, result.returnCode);
   }
 
+  @Test
+  public void testCheckSources() throws Exception {
+    System.out.println("Start test-check-sources.sh test in Docker container (" + env + ") ...");
+    String[] cmd = new String[]{"bash", "test-build-wdocker/test-check-sources.sh"};
+    PbResult result = runCmd(cmd, env, false, false, false);
+    assertEquals("Testing test-build.sh failed", 0, result.returnCode);
+  }
 }

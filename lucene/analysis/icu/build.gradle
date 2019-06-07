@@ -55,13 +55,13 @@ task genUtr30DataFiles(type: JavaExec) {
   workingDir "src/data/utr30"
 }
 
-def resourcesDir = "${projectDir}/src/resources"
+def resourcesDir = "src/resources"
 
 task gennorm2() {
   group = 'Build Regenerate'
   description = "Compiles norm2 rules. Note that the gennorm2 and icupkg tools must be on your PATH. These tools are part of the ICU4C package. See http://site.icu-project.org/ or sudo apt install icu-devtools"
   doLast {
-    new File(buildDir, "gennorm2").mkdirs()
+    mkdir("${buildDir}/gennorm2")
     exec {
       executable "gennorm2"
       args = ['-v', '-s', "${projectDir}/src/data/utr30", 'nfc.txt', 'nfkc.txt', 'nfkc_cf.txt', 'BasicFoldings.txt', 'DiacriticFolding.txt', 'DingbatFolding.txt', 'HanRadicalFolding.txt', 'NativeDigitFolding.txt', '-o', "${buildDir}/gennorm2/utr30.tmp"]
