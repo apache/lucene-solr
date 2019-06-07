@@ -60,7 +60,11 @@ image::images/math-expressions/linear.png[]
 
 === Knn Regression
 
+image::images/math-expressions/knnRegress.png[]
+
 === Curve Fitting
+
+image::images/math-expressions/hfit.png[]
 
 === Interpolation
 
