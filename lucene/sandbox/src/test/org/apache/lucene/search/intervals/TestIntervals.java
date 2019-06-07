@@ -401,7 +401,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testUnorderedDistinct() throws IOException {
-    checkIntervals(Intervals.unordered(false, Intervals.term("pease"), Intervals.term("pease")),
+    checkIntervals(Intervals.unorderedNoOverlaps(Intervals.term("pease"), Intervals.term("pease")),
         "field1", 3, new int[][]{
             {},
             { 0, 3, 3, 6 },
@@ -410,18 +410,18 @@ public class TestIntervals extends LuceneTestCase {
             { 0, 3, 3, 6 },
             {}
         });
-    checkIntervals(Intervals.unordered(false,
+    checkIntervals(Intervals.unorderedNoOverlaps(
         Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"), Intervals.term("hot")),
         Intervals.term("porridge")),
         "field1", 3, new int[][]{
             {},
-            { 1, 4, 4, 17 },
+            { 1, 4, 2, 7, 4, 17 },
             { 1, 5, 4, 7 },
             {},
-            { 1, 4, 4, 17 },
+            { 1, 4, 2, 7, 4, 17 },
             {}
         });
-    checkIntervals(Intervals.unordered(false,
+    checkIntervals(Intervals.unorderedNoOverlaps(
         Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"), Intervals.term("hot")),
         Intervals.term("porridge")),
         "field2", 1, new int[][]{
@@ -432,6 +432,16 @@ public class TestIntervals extends LuceneTestCase {
             { 0, 3 },
             {}
         });
+    checkIntervals(Intervals.unorderedNoOverlaps(
+        Intervals.term("porridge"),
+        Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"))), "field1", 3, new int[][]{
+        {},
+        { 1, 4, 4, 7 },
+        { 1, 4, 4, 7 },
+        {},
+        { 1, 4, 4, 7 },
+        {}
+    });
   }
 
   public void testContainedBy() throws IOException {

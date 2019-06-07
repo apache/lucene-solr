@@ -138,13 +138,7 @@ public final class Intervals {
    * @param subSources   the sources to combine
    */
   public static IntervalsSource or(boolean rewrite, List<IntervalsSource> subSources) {
-    if (subSources.size() == 1) {
-      return subSources.get(0);
-    }
-    if (rewrite) {
-      return new DisjunctionIntervalsSource(subSources);
-    }
-    return new NoRewriteDisjunctionIntervalsSource(subSources);
+    return DisjunctionIntervalsSource.create(subSources, rewrite);
   }
 
   /**
@@ -227,19 +221,16 @@ public final class Intervals {
    * @param subSources  an unordered set of {@link IntervalsSource}s
    */
   public static IntervalsSource unordered(IntervalsSource... subSources) {
-    return unordered(true, subSources);
+    return UnorderedIntervalsSource.build(Arrays.asList(subSources));
   }
 
   /**
-   * Create an unordered {@link IntervalsSource}
+   * Create an unordered {@link IntervalsSource} allowing no overlaps between subsources
    *
-   * Returns intervals in which all the subsources appear.
-   *
-   * @param subSources  an unordered set of {@link IntervalsSource}s
-   * @param allowOverlaps whether or not the sources should be allowed to overlap in a hit
+   * Returns intervals in which both the subsources appear and do not overlap.
    */
-  public static IntervalsSource unordered(boolean allowOverlaps, IntervalsSource... subSources) {
-    return UnorderedIntervalsSource.build(Arrays.asList(subSources), allowOverlaps);
+  public static IntervalsSource unorderedNoOverlaps(IntervalsSource a, IntervalsSource b) {
+    return Intervals.or(Intervals.ordered(a, b), Intervals.ordered(b, a));
   }
 
   /**

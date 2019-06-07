@@ -63,6 +63,9 @@ Bug Fixes
 * LUCENE-8804: Forbid calls to putAttribute on frozen FieldType instances.
   (Vamshi Vijay Nakkirtha via Adrien Grand)
 
+* LUCENE-8828: Removes the buggy 'disallow overlaps' boolean from Intervals.unordered(),
+  and replaces it with a new Intervals.unorderedNoOverlaps() method (Alan Woodward)
+
 Improvements
 
 * LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
