@@ -224,7 +224,7 @@ The following changes impact query behavior.
 
 * Authentication plugins can now intercept internode requests on a per-request basis.
 
-* The Basic Authentication plugin now has an option `forwardCredentials` to prevent Basic Auth headers from being sent for inter-node requests.
+* The Basic Authentication plugin now has an option `forwardCredentials` to let Basic Auth headers be forwarded on inter-node requests in case of distributed search, instead of falling back to PKI.
 
 * Metrics are now reported for authentication requests.
 
@@ -278,7 +278,9 @@ When upgrading to Solr 7.7.x, users should be aware of the following major chang
 
 *Admin UI*
 
-* The Admin UI now presents a login screen for any users with authentication enabled on their cluster.  Clusters with <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication>> will prompt users to enter a username and password.  On clusters configured to use <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication>>, users will be directed to configure their browser to provide an appropriate Kerberos ticket.
+* The Admin UI now presents a login screen for any users with authentication enabled on their cluster.
+Clusters with <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication>> will prompt users to enter a username and password.
+On clusters configured to use <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication>>, authentication is handled transparently by the browser as before, but if authentication fails, users will be directed to configure their browser to provide an appropriate Kerberos ticket.
 +
 The login screen's purpose is cosmetic only - Admin UI-triggered Solr requests were subject to authentication prior to 7.7 and still are today.  The login screen changes only the user experience of providing this authentication.
 
