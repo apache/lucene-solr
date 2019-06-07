@@ -38,6 +38,8 @@ image::images/math-expressions/monte-carlo.png[]
 
 === Time Series
 
+image::images/math-expressions/timeseries.png[]
+
 === XY Scatter Plots
 
 image::images/math-expressions/xyscatter.png[]
