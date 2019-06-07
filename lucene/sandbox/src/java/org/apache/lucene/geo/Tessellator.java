@@ -156,7 +156,7 @@ final public class Tessellator {
       Node list = createDoublyLinkedList(holes[i], nodeIndex, WindingOrder.CCW);
 
       if (list == list.next) {
-        list.isSteiner = true;
+        throw new IllegalArgumentException("Points are all coplanar in hole: " + holes[i]);
       }
       // Determine if the resulting hole polygon was successful.
       if(list != null) {
@@ -813,23 +813,12 @@ final public class Tessellator {
       nextNode = node.next;
       prevNode = node.previous;
 
-      boolean equalVertex = isVertexEquals(prevNode, nextNode) || isVertexEquals(node, nextNode) || isVertexEquals(prevNode, node);
-      if ((node.isSteiner == false && equalVertex)
-          || ((prevNode.nextEdgeFromPolygon == node.nextEdgeFromPolygon || node.isSteiner) && area(prevNode.getX(), prevNode.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY()) == 0)) {
-        boolean nextEdgeFromPolygon;
-        if (equalVertex) {
-          if (isVertexEquals(node, nextNode)) {
-            nextEdgeFromPolygon = prevNode.nextEdgeFromPolygon;
-          } else if (isVertexEquals(prevNode, node)) {
-            nextEdgeFromPolygon = node.nextEdgeFromPolygon;
-          } else {
-            nextEdgeFromPolygon = true;
-          }
-        } else {
-          nextEdgeFromPolygon = prevNode.nextEdgeFromPolygon;
-        }
+      if (isVertexEquals(node, nextNode)  ||
+          (prevNode.nextEdgeFromPolygon == node.nextEdgeFromPolygon &&
+           area(prevNode.getX(), prevNode.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY()) == 0)) {
+
         //Remove the node
-        removeNode(node, nextEdgeFromPolygon);
+        removeNode(node, prevNode.nextEdgeFromPolygon);
         node = end = prevNode;
 
         if (node == nextNode) {
@@ -959,8 +948,6 @@ final public class Tessellator {
     private Node previousZ;
     // next z node
     private Node nextZ;
-    // triangle center
-    private boolean isSteiner = false;
     // if the edge from this node to the next node is part of the polygon edges
     private boolean nextEdgeFromPolygon;
 
@@ -990,7 +977,6 @@ final public class Tessellator {
       this.next = other.next;
       this.previousZ = other.previousZ;
       this.nextZ = other.nextZ;
-      this.isSteiner = other.isSteiner;
       this.nextEdgeFromPolygon = other.nextEdgeFromPolygon;
     }
 
