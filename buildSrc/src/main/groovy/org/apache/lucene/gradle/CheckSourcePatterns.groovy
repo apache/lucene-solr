@@ -158,10 +158,10 @@ class CheckSourcePatterns extends DefaultTask {
     (~$/import java\.lang\.\w+;/$) : 'java.lang import is unnecessary'
   ]
   
-   private def found = 0
-   private def violations = new TreeSet()
-   protected def reportViolation = { f, name ->
-    log.error(name + ': ' + f.toString().substring(baseDir.length() + 1).replace(File.separatorChar, (char)'/'))
+  protected def found = 0
+  protected def violations = new TreeSet()
+  protected def reportViolation = { f, name ->
+  log.error(name + ': ' + f.toString().substring(baseDir.length() + 1).replace(File.separatorChar, (char)'/'))
     violations.add(name)
     found++
   }

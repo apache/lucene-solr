@@ -24,14 +24,13 @@ subprojects {
 
 def distDir = "dist"
 
-tasks.create("checkLicenses", LicenseCheckTask, new File(projectDir.getAbsolutePath()
-    + System.properties['file.separator'] + "licenses"))
+tasks.create("checkLicenses", LicenseCheckTask, file("licenses"))
 
-tasks.create("jarChecksums", JarChecksum, new File(project.rootProject.projectDir, "/solr"), new File(project.rootProject.projectDir, "/solr/licenses"))
+tasks.create("jarChecksums", JarChecksum, file('solr'), file('licenses'))
 
 task packageDist(type: org.apache.lucene.gradle.PackageLuceneSolrDist) {
   group = 'Dist'
-  description = "Generates the Lucene and Solr distribution."
+  description = 'Generates the Lucene and Solr distribution.'
 }
 
 subprojects {
@@ -42,6 +41,6 @@ subprojects {
   unusedDeps.dependsOn jdepsReport
   
   unusedDeps.doLast {
-    deleteDirectory(target)
+    delete(target)
   }
 }
