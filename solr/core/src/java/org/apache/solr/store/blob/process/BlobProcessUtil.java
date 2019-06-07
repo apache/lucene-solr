@@ -16,8 +16,10 @@ public class BlobProcessUtil {
     public static void init(CoreContainer cores) {
         // Start the Blob store sync core push, async core pull, and blob file delete machinery
         CorePusher.init(cores);
-        CorePullerFeeder.init(cores);
-        BlobDeleteManager.init();
+        // Commented out for now since these cause assertion errors at runtime that will be addressed
+        // in future stories.
+        //CorePullerFeeder.init(cores);
+        //BlobDeleteManager.init();
     }
 
     /**
@@ -25,9 +27,9 @@ public class BlobProcessUtil {
      */
     public static void shutdown() {
         // Stop the threads pulling cores from the Blob store
-        CorePullerFeeder.shutdown();
+        //CorePullerFeeder.shutdown();
 
         // And stop the threads managing blob physical delete for deleted blobs
-        BlobDeleteManager.shutdown();
+        //BlobDeleteManager.shutdown();
     }
 }

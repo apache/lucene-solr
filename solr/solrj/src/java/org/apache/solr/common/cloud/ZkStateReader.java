@@ -103,6 +103,8 @@ public class ZkStateReader implements SolrCloseable {
   public static final String MAX_AT_ONCE_PROP = "maxAtOnce";
   public static final String MAX_WAIT_SECONDS_PROP = "maxWaitSeconds";
   public static final String STATE_TIMESTAMP_PROP = "stateTimestamp";
+  /* The name of shard index, used by multiple replicas, on a shared (blob) store when using shared store-based collections */
+  public static final String SHARED_SHARD_NAME = "sharedShardName";
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
   public static final String ALIASES = "/aliases.json";

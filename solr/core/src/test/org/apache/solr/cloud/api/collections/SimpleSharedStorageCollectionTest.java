@@ -16,51 +16,61 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.NamedList;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests related to shared storage based collections, i.e. collectiong having only replicas of type {@link Replica.Type#SHARED}.
+ * Tests related to shared storage based collections, i.e. collections having only replicas of type {@link Replica.Type#SHARED}.
  */
-public class SimpleSharedStorageCollectionTest extends AbstractFullDistribZkTestBase {
-
-  public SimpleSharedStorageCollectionTest() {
-    sliceCount = 1;
+public class SimpleSharedStorageCollectionTest extends SolrCloudTestCase {
+  
+  @BeforeClass
+  public static void setupCluster() throws Exception {    
+    configureCluster(3)
+      .addConfig("conf", configset("cloud-minimal"))
+      .configure();
   }
 
   @Test
-  @ShardsFixed(num = 1)
   public void testCreateCollection() throws Exception {
     String collectionName = "BlobBasedCollectionName1";
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,1,0).setSharedIndex(true).setSharedReplicas(1);
-
-    NamedList<Object> request = create.process(cloudClient).getResponse();
-
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, 1, 0).setSharedIndex(true).setSharedReplicas(1);
+    create.process(cloudClient).getResponse();
+    
+    waitForState("Timed-out wait for collection to be created", collectionName, clusterShape(1, 1));
     assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
   }
 
   @Test
-  @ShardsFixed(num = 1)
   public void testAddReplica() throws Exception {
     String collectionName = "BlobBasedCollectionName2";
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,1,0).setSharedIndex(true).setSharedReplicas(1);
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, 1, 0).setSharedIndex(true).setSharedReplicas(1);
 
-    NamedList<Object> request = create.process(cloudClient).getResponse();
-
+    // Create the collection
+    create.process(cloudClient).getResponse();
+    waitForState("Timed-out wait for collection to be created", collectionName, clusterShape(1, 1));
     assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
 
     try {
       // Let the request fail cleanly just in case, but in reality it fails with an exception since we throw a Runtime from down below
-      assertFalse(CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.NRT).process(cloudClient).isSuccess());
+      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.NRT)
+          .process(cloudClient);
+      fail();
     } catch (Exception e) {
-      assert e.getMessage().contains("Can't add a NRT replica to a collection backed by shared storage");
+      assertTrue(e.getMessage().contains("Can't add a NRT replica to a collection backed by shared storage"));
     }
 
     // Adding a SHARED replica is expected to work ok
-    assertTrue(CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.SHARED).process(cloudClient).isSuccess());
+    assertTrue(CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.SHARED)
+        .process(cloudClient).isSuccess());
   }
 }

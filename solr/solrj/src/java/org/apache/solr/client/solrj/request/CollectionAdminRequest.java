@@ -1315,6 +1315,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     protected String nodeSet;
     protected Properties properties;
+    
+    protected Boolean sharedIndex;
+    protected Integer sharedReplicas;
 
     public CreateShard setNodeSet(String nodeSet) {
       this.nodeSet = nodeSet;
@@ -1333,6 +1336,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.properties = properties;
       return this;
     }
+    
+    public CreateShard setSharedIndex(boolean sharedIndex) { 
+      this.sharedIndex = sharedIndex; 
+      return this; 
+    }
+    
+    public CreateShard setSharedReplicas(Integer sharedReplicas) { 
+      this.sharedReplicas = sharedReplicas;
+      return this;
+    }
 
     private CreateShard(String collection, String shard) {
       super(CollectionAction.CREATESHARD, collection, SolrIdentifierValidator.validateShardName(shard));
@@ -1347,6 +1360,17 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (properties != null) {
         addProperties(params, properties);
       }
+      
+      boolean isSharedIndex = Boolean.TRUE.equals(sharedIndex);
+      
+      if (isSharedIndex) {
+        params.set(ZkStateReader.SHARED_INDEX, isSharedIndex);
+      }
+      
+      if (sharedReplicas != null) {
+        params.set(ZkStateReader.SHARED_REPLICAS, sharedReplicas);
+      }
+      
       return params;
     }
 

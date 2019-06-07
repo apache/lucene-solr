@@ -64,8 +64,8 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
     DocCollection collection = clusterState.getCollection(collectionName);
 
-    boolean isSharedIndex = message.getBool(SHARED_INDEX, false);
-
+    boolean isSharedIndex = collection.getSharedIndex();
+    
     // We evaluate all the default values each time, even when they're not needed (performance impact?).
     int numNrtReplicas = message.getInt(NRT_REPLICAS, isSharedIndex ? 0 : message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
     int numPullReplicas = message.getInt(PULL_REPLICAS, collection.getInt(PULL_REPLICAS, 0));
@@ -79,6 +79,12 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     if (numSharedReplicas > 0 && numNrtReplicas + numTlogReplicas > 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't have both non 0 " + SHARED_REPLICAS + " (" + numSharedReplicas
           + ") and non 0 " + NRT_REPLICAS + "+" + TLOG_REPLICAS + " (" + numNrtReplicas + "+" + numTlogReplicas + ")");
+    }
+    
+    if (isSharedIndex) {
+      String sharedShardName = Assign.buildSharedShardName(collectionName, sliceName);
+      // this is a bit inefficient since we do a full copy of the properties
+      message = message.plus(ZkStateReader.SHARED_SHARD_NAME, sharedShardName);
     }
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;

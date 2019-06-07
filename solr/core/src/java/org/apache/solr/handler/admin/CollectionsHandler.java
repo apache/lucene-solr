@@ -782,6 +782,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           NRT_REPLICAS,
           TLOG_REPLICAS,
           PULL_REPLICAS,
+          SHARED_REPLICAS,
+          SHARED_INDEX,
           CREATE_NODE_SET,
           WAIT_FOR_FINAL_STATE);
       return copyPropertiesWithPrefix(req.getParams(), map, COLL_PROP_PREFIX);

@@ -33,6 +33,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -46,6 +48,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Utils;
 import org.junit.After;
@@ -152,6 +155,31 @@ public class AssignTest extends SolrTestCaseJ4 {
       DocCollection docCollection = new DocCollection("collection1", slices, null, DocRouter.DEFAULT);
       assertEquals("Core name pattern changed", "collection1_shard1_replica_n1", Assign.buildSolrCoreName(stateManager, docCollection, "shard1", Replica.Type.NRT));
       assertEquals("Core name pattern changed", "collection1_shard2_replica_p2", Assign.buildSolrCoreName(stateManager, docCollection, "shard2", Replica.Type.PULL));
+    } finally {
+      server.shutdown();
+    }
+  }
+  
+  @Test
+  public void testBuildShardSharedShardName() throws Exception {
+    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    ZkTestServer server = new ZkTestServer(zkDir);
+    server.run();
+    try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
+      // TODO: fix this to be independent of ZK
+      ZkDistribStateManager stateManager = new ZkDistribStateManager(zkClient);
+      Map<String, Slice> slices = new HashMap<>();
+      slices.put("shard1", new Slice("shard1", new HashMap<>(), null));
+      slices.put("shard2", new Slice("shard2", new HashMap<>(), null));
+
+      Map<String, Object> props = ImmutableMap.<String, Object>builder()
+          .put(ZkStateReader.SHARED_INDEX, "true")
+          .build();
+      DocCollection docCollection = new DocCollection("collection1", slices, props, DocRouter.DEFAULT);
+      assertEquals("Shard shared store pattern changed", "collection1_shard1", 
+          Assign.buildSharedShardName(docCollection.getName(), "shard1"));
+      assertEquals("Shard shared store name pattern changed", "collection1_shard2", 
+          Assign.buildSharedShardName(docCollection.getName(), "shard2"));
     } finally {
       server.shutdown();
     }

@@ -59,6 +59,14 @@ public class CollectionMutator {
     String shardId = message.getStr(ZkStateReader.SHARD_ID_PROP);
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
+    
+    String sharedShardName = message.getStr(ZkStateReader.SHARED_SHARD_NAME);
+    if (collection.getSharedIndex() && sharedShardName == null) {
+      log.error("Programmer Error: Unable to create Shard: " + shardId + " because createShard is missing "
+          + "a sharedShardName param for collection: " + collectionName);
+      return ZkStateWriter.NO_OP;
+    }
+    
     if (slice == null) {
       Map<String, Replica> replicas = Collections.EMPTY_MAP;
       Map<String, Object> sliceProps = new HashMap<>();
@@ -78,6 +86,10 @@ public class CollectionMutator {
       if (shardParentNode != null)  {
         sliceProps.put("shard_parent_node", shardParentNode);
       }
+      if (sharedShardName != null) {
+        sliceProps.put(ZkStateReader.SHARED_SHARD_NAME, sharedShardName);
+      }
+      
       collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps));
       return new ZkWriteCommand(collectionName, collection);
     } else {

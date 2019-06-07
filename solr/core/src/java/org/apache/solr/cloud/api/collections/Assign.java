@@ -181,6 +181,14 @@ public class Assign {
     // TODO: Adding the suffix is great for debugging, but may be an issue if at some point we want to support a way to change replica type
     return String.format(Locale.ROOT, "%s_%s_replica_%s%s", collectionName, shard, type.name().substring(0,1).toLowerCase(Locale.ROOT), replicaNum);
   }
+  
+  /*
+   * Build an identifier for the shard index data located on a shared store. This is currently used
+   * exclusively for shared store-based collections.
+   */
+  public static String buildSharedShardName(String collectionName, String shard) {
+    return collectionName + "_" + shard;
+  }
 
   private static int defaultCounterValue(DocCollection collection, boolean newCollection, String shard) {
     if (newCollection) return 0;

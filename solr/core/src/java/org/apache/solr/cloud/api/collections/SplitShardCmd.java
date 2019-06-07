@@ -265,6 +265,10 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(ZkStateReader.SHARD_PARENT_PROP, parentSlice.getName());
         propMap.put("shard_parent_node", nodeName);
         propMap.put("shard_parent_zk_session", leaderZnodeStat.getEphemeralOwner());
+        
+        if (collection.getSharedIndex()) {
+          propMap.put(ZkStateReader.SHARED_SHARD_NAME, Assign.buildSharedShardName(collectionName, subSlice));
+        }
 
         ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
 
