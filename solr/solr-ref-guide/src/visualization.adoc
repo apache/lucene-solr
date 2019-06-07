@@ -48,7 +48,11 @@ image::images/math-expressions/vector.png[]
 
 === Aggregations
 
-=== Matrices
+image::images/math-expressions/aggs.png[]
+
+=== Matrices and Heat Maps
+
+image::images/math-expressions/heat.png[]
 
 === Linear Regression
 
