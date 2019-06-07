@@ -1233,11 +1233,11 @@ def main():
     lucene_news_file = os.path.join(website_folder, 'content', 'core', 'corenews.mdtext')
     solr_news_file = os.path.join(website_folder, 'content', 'solr', 'news.mdtext')
 
-    main_menu = ConsoleMenu(title="Lucene/Solr ReleaseWizard (script-ver=v%s ALPHA)" % getScriptVersion(),
+    main_menu = ConsoleMenu(title="Lucene/Solr ReleaseWizard",
                             subtitle=get_releasing_text,
                             prologue_text="Welcome to the release wizard. From here you can manage the process including creating new RCs. "
                                           "All changes are persisted, so you can exit any time and continue later. Make sure to read the Help section.",
-                            epilogue_text="® 2019 The Lucene/Solr project. Licensed under the Apache License 2.0",
+                            epilogue_text="® 2019 The Lucene/Solr project. Licensed under the Apache License 2.0\nScript version v%s ALPHA)" % getScriptVersion(),
                             screen=MyScreen())
 
     todo_menu = ConsoleMenu(title=get_releasing_text,
@@ -1249,9 +1249,11 @@ def main():
 
     for todo_group in state.todo_groups:
         if todo_group.num_applies() >= 0:
-            todo_menu.append_item(todo_group.get_menu_item())
+            menu_item = todo_group.get_menu_item()
+            menu_item.set_menu(todo_menu)
+            todo_menu.append_item(menu_item)
 
-    main_menu.append_item(SubmenuItem(get_todo_menuitem_title, todo_menu))
+    main_menu.append_item(SubmenuItem(get_todo_menuitem_title, todo_menu, menu=main_menu))
     main_menu.append_item(FunctionItem(get_start_new_rc_menu_title, start_new_rc))
     main_menu.append_item(FunctionItem('Clear and restart current RC', state.clear_rc))
     main_menu.append_item(FunctionItem("Clear all state, restart the %s release" % state.release_version, reset_state))
