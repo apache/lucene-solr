@@ -206,7 +206,7 @@ See the <<create,CREATE action>> section above for details on these attributes.
 [[readonlymode]]
 ==== Read-Only Mode
 Setting the `readOnly` attribute to `true` puts the collection in read-only mode,
-in which any index update requests are rejected. Other collection-level actions (eg. adding /
+in which any index update requests are rejected. Other collection-level actions (e.g., adding /
 removing / moving replicas) are still available in this mode.
 
 The transition from the (default) read-write to read-only mode consists of the following steps:
@@ -316,7 +316,7 @@ http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=newCo
 ----
 This request specifies a different schema for the target collection, copies only some of the fields, selects only the documents
 matching a query, and also potentially re-shapes the collection by explicitly specifying 3 shards. Since the target collection
-hasn't been specified in the parameters a collection with a unique name eg. `.rx_newCollection_2` will be created and on success
+hasn't been specified in the parameters, a collection with a unique name, e.g., `.rx_newCollection_2`, will be created and on success
 an alias pointing from `newCollection` to `.rx_newCollection_2` will be created, effectively replacing the source collection
 for the purpose of indexing and searching. The source collection is assumed to be small so a synchronous request was made.
 
