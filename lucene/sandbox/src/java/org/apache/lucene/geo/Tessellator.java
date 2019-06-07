@@ -199,7 +199,7 @@ final public class Tessellator {
 
   /** Finds a bridge between vertices that connects a hole with an outer ring, and links it */
   private static final void eliminateHole(final Node holeNode, Node outerNode, Polygon hole) {
-    // Attempt to find a common point the HoleNode and OuterNode.
+    // Attempt to find a common point between the HoleNode and OuterNode.
     Node next = outerNode;
     do {
       if (Rectangle.containsPoint(next.getLat(), next.getLon(), hole.minLat, hole.maxLat, hole.minLon, hole.maxLon)) {
