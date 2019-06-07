@@ -59,11 +59,11 @@ def ipadicFilename = "mecab-ipadic-${ipadicVersion}"
 
 task downloadDict(type: org.apache.lucene.gradle.Download) {
   sourceUrl = "https://jaist.dl.sourceforge.net/project/mecab/mecab-ipadic/${ipadicVersion}/${ipadicFilename}.tar.gz"
-  target = new File("${buildDir}/${ipadicFilename}.tar.gz")
+  target = mfile("${buildDir}", "${ipadicFilename}.tar.gz")
   
   doLast {
-    ant.gunzip(src: "${buildDir}/${ipadicFilename}.tar.gz")
-    ant.untar(src: "${buildDir}/${ipadicFilename}.tar", dest: "${buildDir}")
+    ant.gunzip(src: filePath("${buildDir}/${ipadicFilename}.tar.gz"))
+    ant.untar(src: filePath("${buildDir}/${ipadicFilename}.tar"), dest: "${buildDir}")
   }
 }
 
@@ -92,8 +92,8 @@ task buildKuromojiDict(type: JavaExec) {
   jvmArgs '-Xmx1G'
   
   args 'ipadic'
-  args "${buildDir}/${ipadicFilename}"
-  args "${projectDir}/src/resources"
+  args filePath("${buildDir}/${ipadicFilename}")
+  args filePath('src/resources')
   args 'euc-jp'
   args 'false'
   

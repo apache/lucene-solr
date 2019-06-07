@@ -23,12 +23,12 @@ archivesBaseName = 'lucene-test-framework'
 
 dependencies {
   
-	api project(':lucene:lucene-core')
-	implementation project(':lucene:lucene-codecs')
+  api project(':lucene:lucene-core')
+  implementation project(':lucene:lucene-codecs')
   
-	api ("junit:junit")
+  api ("junit:junit")
   api ('org.hamcrest:hamcrest-core')
-	api ("com.carrotsearch.randomizedtesting:randomizedtesting-runner")
+  api ("com.carrotsearch.randomizedtesting:randomizedtesting-runner")
   api ('commons-codec:commons-codec')
   
 }
