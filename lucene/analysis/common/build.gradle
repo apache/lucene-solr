@@ -21,9 +21,9 @@ apply plugin: org.apache.lucene.gradle.PartOfDist
 
 archivesBaseName = 'lucene-analyzers-common'
 
-def unicodePropsJavaFile = "/src/java/org/apache/lucene/analysis/util/UnicodeProps.java"
+def unicodePropsJavaFile = file("src/java/org/apache/lucene/analysis/util/UnicodeProps.java")
 
-def snowballProgramsDir = "${projectDir}/src/java/org/tartarus/snowball/ext"
+def snowballProgramsDir = file("src/java/org/tartarus/snowball/ext")
 
 task jarTest (type: Jar) {
   from sourceSets.test.output
@@ -50,7 +50,7 @@ ratSources {
 }
 
 task fixCRLFUnicodeData(type: org.apache.lucene.gradle.FixCRLF) {
-  file = new File("${projectDir}" + unicodePropsJavaFile)
+  file = unicodePropsJavaFile
   encoding = "UTF-8"
 }
 
@@ -58,57 +58,57 @@ task unicodeData(type: org.apache.lucene.gradle.GenerateUnicodeData) {
   group = 'Build Regenerate'
   description = "Regenerates Unicode data src files."
   
-  unicodePropsFile = new File("${projectDir}" + unicodePropsJavaFile)
+  unicodePropsFile = unicodePropsJavaFile
   
   finalizedBy fixCRLFUnicodeData
 }
 
 task generateJflexHtmlCharEntities() {
   doLast {
-    ant.exec(dir: "src/java/org/apache/lucene/analysis/charfilter",
-             output: "src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex",
+    ant.exec(dir: filePath("src/java/org/apache/lucene/analysis/charfilter"),
+             output: filePath("src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex"),
              executable: "${python_exe}", failonerror:"true", logerror:"true") {
              ant.arg(value: "-B")
              ant.arg(value: "htmlentity.py")
     }
-    ant.fixcrlf(file: "src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex", encoding: "UTF-8")
+    ant.fixcrlf(file: filePath("src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex"), encoding: "UTF-8")
   }
 }
 
 task jflexHTMLStripCharFilter(type: org.apache.lucene.gradle.JFlex) {
-  inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/charfilter")
+  inputDir = file("src/java/org/apache/lucene/analysis/charfilter")
   fileName = "HTMLStripCharFilter"
   disableBufferExpansion = false
-  target = new File("${projectDir}/src/java/org/apache/lucene/analysis/charfilter")
+  target = file("src/java/org/apache/lucene/analysis/charfilter")
   dependsOn generateJflexHtmlCharEntities
 }
 
 task jflexWikiTokenizer(type: org.apache.lucene.gradle.JFlex) {
-  inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/wikipedia")
+  inputDir = file("src/java/org/apache/lucene/analysis/wikipedia")
   fileName = "WikipediaTokenizerImpl"
   disableBufferExpansion = false
-  target = new File("${projectDir}/src/java/org/apache/lucene/analysis/wikipedia")
+  target = file("src/java/org/apache/lucene/analysis/wikipedia")
   
   mustRunAfter project.rootProject.project(":lucene:lucene-core").runJflex
 }
 
 task jflexClassicAnalyzer(type: org.apache.lucene.gradle.JFlex) {
-  inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+  inputDir = file("src/java/org/apache/lucene/analysis/standard")
   fileName = "ClassicTokenizerImpl"
   disableBufferExpansion = false
-  target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+  target = file("src/java/org/apache/lucene/analysis/standard")
 
-  mustRunAfter project.rootProject.project(":lucene:lucene-core").runJflex
+  mustRunAfter project(":lucene:lucene-core").runJflex
 }
 
 task jflexUAX29URLEmailTokenizer(type: org.apache.lucene.gradle.JFlex) {
   group = 'Build Regenerate'
   description = "Generates UAX29URLEmailTokenizer using jflex."
   
-  inputDir = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+  inputDir = file("/src/java/org/apache/lucene/analysis/standard")
   fileName = "UAX29URLEmailTokenizerImpl"
   disableBufferExpansion = true
-  target = new File("${projectDir}/src/java/org/apache/lucene/analysis/standard")
+  target = file("src/java/org/apache/lucene/analysis/standard")
 }
 
 task runJflex {
@@ -172,7 +172,7 @@ task patchSnowball {
     ant.replaceregexp(match: "private final static \\w+Stemmer methodObject\\b.*\$", replace: "/* patched */ private static final java.lang.invoke.MethodHandles.Lookup methodObject = java.lang.invoke.MethodHandles.lookup();", flags: "m", encoding: "UTF-8") {
       ant.fileset(refid:"snowball.programs")
     }
-    ant.fixcrlf(srcdir:"${snowballProgramsDir}", includes:"*Stemmer.java", tab:"remove", tablength:"2", encoding: "UTF-8", javafiles: "yes", fixlast: "yes")
+    ant.fixcrlf(srcdir: snowballProgramsDir, includes:"*Stemmer.java", tab:"remove", tablength:"2", encoding: "UTF-8", javafiles: "yes", fixlast: "yes")
   }
 }
 

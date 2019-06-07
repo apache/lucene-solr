@@ -3,13 +3,13 @@
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
+ * (the 'License'); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -22,26 +22,25 @@ subprojects {
   group = 'org.apache.lucene'
 }
 
-def distDir = "dist"
+def distDir = 'dist'
 
-tasks.create("checkLicenses", LicenseCheckTask, new File(projectDir.getAbsolutePath()
-    + System.properties['file.separator'] + "licenses"))
+tasks.create('checkLicenses', LicenseCheckTask, file('licenses'))
 
-tasks.create("jarChecksums", JarChecksum, new File(project.rootProject.projectDir, "/lucene"), new File(project.rootProject.projectDir, "/lucene/licenses"))
+tasks.create('jarChecksums', JarChecksum, file('.'), file('licenses'))
 
 task packageDist(type: org.apache.lucene.gradle.PackageLuceneSolrDist) {
   group = 'Dist'
-  description = "Generates the Lucene and Solr distribution."
+  description = 'Generates the Lucene and Solr distribution.'
 }
 
 task runJflex() {
   group = 'Build Regenerate'
-  description = "Runs all jflex targets to regenerate src files."
+  description = 'Runs all jflex targets to regenerate src files.'
 }
 
 subprojects {
   File target = File.createTempDir()
-  tasks.create("jdepsReport", org.apache.lucene.gradle.JdepsReport, target)
-  tasks.create("unusedDeps", org.apache.lucene.gradle.UnusedDeps, target)
+  tasks.create('jdepsReport', org.apache.lucene.gradle.JdepsReport, target)
+  tasks.create('unusedDeps', org.apache.lucene.gradle.UnusedDeps, target)
   unusedDeps.dependsOn jdepsReport
 }
