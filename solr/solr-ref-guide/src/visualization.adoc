@@ -40,6 +40,10 @@ image::images/math-expressions/monte-carlo.png[]
 
 image::images/math-expressions/timeseries.png[]
 
+=== Mapping
+
+image::images/math-expressions/map.png[]
+
 === XY Scatter Plots
 
 image::images/math-expressions/xyscatter.png[]
@@ -80,9 +84,6 @@ image::images/math-expressions/sined.png[]
 
 image::images/math-expressions/fft.png[]
 
-=== Convolution
-
-=== Mapping
 
 
 == Apache Zeppelin / Zeppelin-Solr Interpreter
