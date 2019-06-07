@@ -36,6 +36,10 @@ image::images/math-expressions/dist.png[]
 
 image::images/math-expressions/monte-carlo.png[]
 
+=== Quantile Plot
+
+image::images/math-expressions/quantiles.png[]
+
 === Time Series
 
 image::images/math-expressions/timeseries.png[]
