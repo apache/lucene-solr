@@ -649,8 +649,6 @@ final public class Tessellator {
       return true;
     }
     return a.next.idx != b.idx && a.previous.idx != b.idx
-        && a.idx != b.previous.idx && a.idx != b.next.idx
-        && isVertexEquals(a, b) == false
         && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
         && isLocallyInside(a, b) && isLocallyInside(b, a)
         && middleInsert(a, a.getX(), a.getY(), b.getX(), b.getY());
