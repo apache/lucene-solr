@@ -21,7 +21,7 @@
 
 === Numbers
 
-
+image::images/math-expressions/number.png[]
 
 === Tables
 
@@ -68,7 +68,9 @@ image::images/math-expressions/linear.png[]
 
 image::images/math-expressions/sined.png[]
 
-=== Fourier Transforms
+=== Fourier Transform
+
+image::images/math-expressions/fft.png[]
 
 === Convolution
 
