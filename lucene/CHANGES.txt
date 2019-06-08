@@ -27,12 +27,6 @@ Bug fixes
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
 
-Improvements
-
-* LUCENE-8781: FST lookup performance has been improved in many cases by
-  encoding Arcs using full-sized arrays with gaps. The new encoding is
-  enabled for postings in the default codec and for suggesters. (Mike Sokolov)
-
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
@@ -87,6 +81,13 @@ Test Framework
 
 ======================= Lucene 8.1.1 =======================
 (No Changes)
+
+Improvements
+
+* LUCENE-8781: FST lookup performance has been improved in many cases by
+  encoding Arcs using full-sized arrays with gaps. The new encoding is
+  enabled for postings in the default codec and for suggesters. (Mike Sokolov)
+
 
 ======================= Lucene 8.1.0 =======================
 
