@@ -51,12 +51,6 @@ Upgrade Notes
 * SOLR-13323: The unused package org.apache.solr.internal.csv.writer and associated classes/tests that were easily
   confused with but not used by org.apache.solr.response.CSVWriter (or any other code) have been removed (Gus Heck)
 
-New Features
-----------------------
-* SOLR-13131: Category Routed Aliases are now available for data driven assignment of documents to collections based on
-  values of a field. The Ref Guide now has a page dedicated to explaining the different types of aliases. (Gus Heck,
-  Moshe Bla)
-
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -230,6 +224,9 @@ Upgrade Notes
 
 New Features
 ----------------------
+* SOLR-13131: Category Routed Aliases are now available for data driven assignment of documents to collections based on
+  values of a field. The Ref Guide now has a page dedicated to explaining the different types of aliases. (Gus Heck,
+  Moshe Bla)
 
 * SOLR-13171 : A true streaming parser for javabin payload/stream without creating any objects (noble)
 
@@ -736,7 +733,7 @@ Upgrade Notes
 
 * SOLR-12708: When requesting the status of an async request via REQUESTSTATUS collections API, the response will
   include the list of internal async requests (if any) in the "success" or "failed" keys (in addition
-  to them being included outside those keys for backwards compatibility). See SOLR-12708 for more 
+  to them being included outside those keys for backwards compatibility). See SOLR-12708 for more
   details
 
 Bug fixes
