@@ -1205,6 +1205,8 @@ groups:
         stdout: true
     post_description: |
       You will review and commit all changes later
+    links:
+    - https://www.apache.org/dev/release-download-pages.html
   - !Todo
     id: update_other
     title: Update rest of webpage
