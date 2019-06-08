@@ -76,6 +76,10 @@ image::images/math-expressions/linear.png[]
 
 image::images/math-expressions/knnRegress.png[]
 
+=== Residuals Plot
+
+image::images/math-expressions/residuals.png[]
+
 === Curve Fitting
 
 image::images/math-expressions/hfit.png[]
