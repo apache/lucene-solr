@@ -36,11 +36,11 @@ image::images/math-expressions/dist.png[]
 
 image::images/math-expressions/monte-carlo.png[]
 
-=== Time Series With Zoom
+=== Time Series With Zoom Bar
 
 image::images/math-expressions/timeseries.png[]
 
-=== Time Series With Linear Trend
+=== Time Series With Linear Trend Line
 
 image::images/math-expressions/trend.png[]
 
