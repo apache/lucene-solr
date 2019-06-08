@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -131,7 +132,7 @@ final class DefaultIndexingChain extends DocConsumer {
     if (docState.infoStream.isEnabled("IW")) {
       docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write norms");
     }
-    SegmentReadState readState = new SegmentReadState(state.directory, state.segmentInfo, state.fieldInfos, true, IOContext.READ, state.segmentSuffix);
+    SegmentReadState readState = new SegmentReadState(state.directory, state.segmentInfo, state.fieldInfos, true, IOContext.READ, state.segmentSuffix, Collections.emptyMap());
     
     t0 = System.nanoTime();
     writeDocValues(state, sortMap);

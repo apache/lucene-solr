@@ -23,6 +23,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -46,6 +47,11 @@ public class BufferStoreTest extends SolrTestCase {
     store = BufferStore.instance(blockSize);
   }
 
+  @After
+  public void clearBufferStores() {
+    BufferStore.clearBufferStores();
+  }
+  
   @Test
   public void testBufferTakePut() {
     byte[] b1 = store.takeBuffer(blockSize);

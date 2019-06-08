@@ -24,9 +24,9 @@
   <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
 
   <property name="Name" value="Solr" />
-
-  <!-- solr uses Java 8 -->
-  <property name="javac.release" value="8"/>
+  
+  <!-- solr uses Java 11 -->
+  <property name="javac.release" value="11"/>
   <property name="javac.args" value="-Xlint:-deprecation"/>
   <property name="javac.profile.args" value=""/>
 
@@ -345,7 +345,7 @@
         if (!(url =~ /\/$/)) url += '/';
       } else {
         version = version.replace('.', '_');
-        url = 'http://lucene.apache.org/core/' + version + '/';
+        url = 'https://lucene.apache.org/core/' + version + '/';
       }
       task.log('Using the following URL to refer to Lucene Javadocs: ' + url);
       properties['lucene.javadoc.url'] = url;
@@ -360,7 +360,7 @@
         task.log('Disabled Solr Javadocs online URL for packaging (custom build / SNAPSHOT version).');
       } else {
         version = version.replace('.', '_');
-        url = 'http://lucene.apache.org/solr/' + version + '/';
+        url = 'https://lucene.apache.org/solr/' + version + '/';
         task.log('Using the following URL to refer to Solr Javadocs: ' + url);
       }
       properties['solr.javadoc.url'] = url;
@@ -556,7 +556,4 @@
   <target name="test" unless="tests.disable-solr">
     <antcall target="common.test" inheritrefs="true" inheritall="true"/>
   </target>
-
-  <!-- In Solr we do not generate MR-JARs yet; disable completely so we do not accidentally patch -->
-  <target name="patch-mrjar-classes"/>
 </project>

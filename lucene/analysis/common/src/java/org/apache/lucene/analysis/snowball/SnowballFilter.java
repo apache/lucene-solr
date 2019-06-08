@@ -78,7 +78,7 @@ public final class SnowballFilter extends TokenFilter {
     try {
       Class<? extends SnowballProgram> stemClass =
         Class.forName("org.tartarus.snowball.ext." + name + "Stemmer").asSubclass(SnowballProgram.class);
-      stemmer = stemClass.newInstance();
+      stemmer = stemClass.getConstructor().newInstance();
     } catch (Exception e) {
       throw new IllegalArgumentException("Invalid stemmer class specified: " + name, e);
     }

@@ -179,11 +179,11 @@ public abstract class TimeSource {
   public static TimeSource get(String type) {
     if (type == null) {
       return NANO_TIME;
-    } else if (type.equals("currentTime")) {
+    } else if (type.equals("currentTime") || type.equals(CurrentTimeSource.class.getSimpleName())) {
       return CURRENT_TIME;
-    } else if (type.equals("nanoTime")) {
+    } else if (type.equals("nanoTime") || type.equals(NanoTimeSource.class.getSimpleName())) {
       return NANO_TIME;
-    } else if (type.startsWith("simTime")) {
+    } else if (type.startsWith("simTime") || type.startsWith(SimTimeSource.class.getSimpleName())) {
       return simTimeSources.computeIfAbsent(type, t -> {
         String[] parts = t.split(":");
         double mul = 1.0;

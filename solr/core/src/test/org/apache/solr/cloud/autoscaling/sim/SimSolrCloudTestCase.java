@@ -19,14 +19,23 @@ package org.apache.solr.cloud.autoscaling.sim;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -165,5 +174,80 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
    */
   public void assertAutoScalingRequest(final String json) throws IOException {
     CloudTestUtils.assertAutoScalingRequest(cluster, json);
+  }
+
+  /**
+   * Compare two ClusterState-s, filtering out simulation framework artifacts.
+   */
+  public static void assertClusterStateEquals(ClusterState one, ClusterState two) {
+    assertEquals(one.getLiveNodes(), two.getLiveNodes());
+    assertEquals(one.getCollectionsMap().keySet(), two.getCollectionsMap().keySet());
+    one.forEachCollection(oneColl -> {
+      DocCollection twoColl = two.getCollection(oneColl.getName());
+      Map<String, Slice> oneSlices = oneColl.getSlicesMap();
+      Map<String, Slice> twoSlices = twoColl.getSlicesMap();
+      assertEquals(oneSlices.keySet(), twoSlices.keySet());
+      oneSlices.forEach((s, slice) -> {
+        Slice sTwo = twoSlices.get(s);
+        for (Replica oneReplica : slice.getReplicas()) {
+          Replica twoReplica = sTwo.getReplica(oneReplica.getName());
+          assertNotNull(twoReplica);
+          assertReplicaEquals(oneReplica, twoReplica);
+        }
+      });
+    });
+  }
+
+  // ignore these because SimCloudManager always modifies them
+  private static final Set<Pattern> IGNORE_REPLICA_PATTERNS = new HashSet<>(Arrays.asList(
+      Pattern.compile("QUERY\\..*"),
+      Pattern.compile("INDEX\\..*"),
+      Pattern.compile("UPDATE\\..*"),
+      Pattern.compile("SEARCHER\\..*")
+  ));
+
+  private static final Predicate<Map.Entry<String, Object>> REPLICA_FILTER_FUN = p -> {
+    for (Pattern pattern : IGNORE_REPLICA_PATTERNS) {
+      if (pattern.matcher(p.getKey()).matches()) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  public static void assertReplicaEquals(Replica one, Replica two) {
+    assertEquals(one.getName(), two.getName());
+    assertEquals(one.getNodeName(), two.getNodeName());
+    assertEquals(one.getState(), two.getState());
+    assertEquals(one.getType(), two.getType());
+    assertReplicaPropsEquals(one.getProperties(), two.getProperties());
+  }
+
+  public static void assertReplicaInfoEquals(ReplicaInfo one, ReplicaInfo two) {
+    assertEquals(one.getName(), two.getName());
+    assertEquals(one.getNode(), two.getNode());
+    assertEquals(one.getState(), two.getState());
+    assertEquals(one.getType(), two.getType());
+    assertEquals(one.getCore(), two.getCore());
+    assertEquals(one.getCollection(), two.getCollection());
+    assertEquals(one.getShard(), two.getShard());
+    assertEquals(one.isLeader, two.isLeader);
+    Map<String, Object> oneMap = new HashMap<>();
+    Map<String, Object> twoMap = new HashMap<>();
+    one.toMap(oneMap);
+    two.toMap(twoMap);
+    assertReplicaPropsEquals(
+        (Map<String, Object>)oneMap.get(one.getName()),
+        (Map<String, Object>)twoMap.get(two.getName()));
+  }
+
+  public static void assertReplicaPropsEquals(Map<String, Object> propsOne, Map<String, Object> propsTwo) {
+    Map<String, Object> filteredPropsOne = propsOne.entrySet().stream()
+        .filter(REPLICA_FILTER_FUN)
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    Map<String, Object> filteredPropsTwo = propsTwo.entrySet().stream()
+        .filter(REPLICA_FILTER_FUN)
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    assertEquals(filteredPropsOne, filteredPropsTwo);
   }
 }

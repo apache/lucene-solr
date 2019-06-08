@@ -196,6 +196,11 @@ public class V2HttpCall extends HttpSolrCall {
 
     Supplier<DocCollection> logic = () -> {
       this.collectionsList = resolveCollectionListOrAlias(collectionStr); // side-effect
+      if (collectionsList.size() > 1) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Request must be sent to a single collection " +
+            "or an alias that points to a single collection," +
+            " but '" + collectionStr + "' resolves to " + this.collectionsList);
+      }
       String collectionName = collectionsList.get(0); // first
       //TODO an option to choose another collection in the list if can't find a local replica of the first?
 

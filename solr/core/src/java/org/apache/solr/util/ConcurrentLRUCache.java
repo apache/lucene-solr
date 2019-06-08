@@ -20,8 +20,6 @@ import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.util.Cache;
 import org.apache.solr.search.LRUCache;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
-import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 
 /**
@@ -52,7 +49,6 @@ import java.lang.ref.WeakReference;
  * @since solr 1.4
  */
 public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(ConcurrentLRUCache.class);
 
@@ -727,18 +723,6 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
         stop=true;
         this.notify();
       }
-    }
-  }
-
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if(!isDestroyed && (cleanupThread != null)){
-        log.error("ConcurrentLRUCache created with a thread and was not destroyed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
-        destroy();
-      }
-    } finally {
-      super.finalize();
     }
   }
 

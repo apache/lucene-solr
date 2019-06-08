@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -112,6 +113,10 @@ public class LiveIndexWriterConfig {
 
   /** soft deletes field */
   protected String softDeletesField = null;
+
+  /** the attributes for the NRT readers */
+  protected Map<String, String> readerAttributes = Collections.emptyMap();
+
 
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
@@ -499,6 +504,14 @@ public class LiveIndexWriterConfig {
     sb.append("indexSort=").append(getIndexSort()).append("\n");
     sb.append("checkPendingFlushOnUpdate=").append(isCheckPendingFlushOnUpdate()).append("\n");
     sb.append("softDeletesField=").append(getSoftDeletesField()).append("\n");
+    sb.append("readerAttributes=").append(getReaderAttributes()).append("\n");
     return sb.toString();
+  }
+
+  /**
+   * Returns the reader attributes passed to all published readers opened on or within the IndexWriter
+   */
+  public Map<String, String> getReaderAttributes() {
+    return this.readerAttributes;
   }
 }

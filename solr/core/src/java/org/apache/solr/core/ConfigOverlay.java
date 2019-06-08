@@ -27,8 +27,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.noggit.CharArr;
-import org.noggit.JSONWriter;
+
+import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
  * This class encapsulates the config overlay json file. It is immutable
@@ -147,13 +147,7 @@ public class ConfigOverlay implements MapSerializable {
 
   @Override
   public String toString() {
-    CharArr out = new CharArr();
-    try {
-      new JSONWriter(out, 2).write(data);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-    return out.toString();
+    return toJSONString(data);
   }
 
 

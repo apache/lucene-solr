@@ -23,11 +23,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermFrequencyAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -41,6 +47,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 
 import static org.hamcrest.core.Is.is;
@@ -427,5 +434,69 @@ public class TestMoreLikeThis extends LuceneTestCase {
       analyzer.close();
     }
   }
+
+  public void testCustomFrequecy() throws IOException {
+    // define an analyzer with delimited term frequency, e.g. "foo|2 bar|3"
+    Analyzer analyzer = new Analyzer() {
+
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false, 100);
+        MockTokenFilter filt = new MockTokenFilter(tokenizer, MockTokenFilter.EMPTY_STOPSET);
+        return new TokenStreamComponents(tokenizer, addCustomTokenFilter(filt));
+      }
+
+      TokenStream addCustomTokenFilter(TokenStream input) {
+        return new TokenFilter(input) {
+          final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+          final TermFrequencyAttribute tfAtt = addAttribute(TermFrequencyAttribute.class);
+
+          @Override
+          public boolean incrementToken() throws IOException {
+            if (input.incrementToken()) {
+              final char[] buffer = termAtt.buffer();
+              final int length = termAtt.length();
+              for (int i = 0; i < length; i++) {
+                if (buffer[i] == '|') {
+                  termAtt.setLength(i);
+                  i++;
+                  tfAtt.setTermFrequency(ArrayUtil.parseInt(buffer, i, length - i));
+                  return true;
+                }
+              }
+              return true;
+            }
+            return false;
+          }
+        };
+      }
+    };
+
+    mlt.setAnalyzer(analyzer);
+    mlt.setFieldNames(new String[] {"text"});
+    mlt.setBoost(true);
+
+    final double boost10 = ((BooleanQuery) mlt.like("text", new StringReader("lucene|10 release|1")))
+        .clauses()
+        .stream()
+        .map(BooleanClause::getQuery)
+        .map(BoostQuery.class::cast)
+        .filter(x -> ((TermQuery) x.getQuery()).getTerm().text().equals("lucene"))
+        .mapToDouble(BoostQuery::getBoost)
+        .sum();
+
+    final double boost1 = ((BooleanQuery) mlt.like("text", new StringReader("lucene|1 release|1")))
+        .clauses()
+        .stream()
+        .map(BooleanClause::getQuery)
+        .map(BoostQuery.class::cast)
+        .filter(x -> ((TermQuery) x.getQuery()).getTerm().text().equals("lucene"))
+        .mapToDouble(BoostQuery::getBoost)
+        .sum();
+
+    // mlt should use the custom frequencies provided by the analyzer so "lucene|10" should be boosted more than "lucene|1"
+    assertTrue(String.format(Locale.ROOT, "%s should be grater than %s", boost10, boost1), boost10 > boost1);
+  }
+
   // TODO: add tests for the MoreLikeThisQuery
 }

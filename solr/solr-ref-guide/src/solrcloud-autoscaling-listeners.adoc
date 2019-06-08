@@ -155,7 +155,7 @@ trigger named `foo`):
 {
  "name" : "foo.system",
  "trigger" : "solr.SystemLogListener",
- "stage" : ["WAITING", "STARTED", "ABORTED", "SUCCEEDED", "FAILED", "BEFORE_ACTION", "AFTER_ACTION"]
+ "stage" : ["STARTED", "ABORTED", "SUCCEEDED", "FAILED", "BEFORE_ACTION", "AFTER_ACTION"]
 }
 ----
 

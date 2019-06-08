@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -2281,6 +2282,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     manager.registerGauge(this, registry, () -> reader.toString(), tag, true, "reader", Category.SEARCHER.toString(), scope);
     manager.registerGauge(this, registry, () -> reader.directory().toString(), tag, true, "readerDir", Category.SEARCHER.toString(), scope);
     manager.registerGauge(this, registry, () -> reader.getVersion(), tag, true, "indexVersion", Category.SEARCHER.toString(), scope);
+    // size of the currently opened commit
+    manager.registerGauge(this, registry, () -> {
+      try {
+        Collection<String> files = reader.getIndexCommit().getFileNames();
+        long total = 0;
+        for (String file : files) {
+          total += DirectoryFactory.sizeOf(reader.directory(), file);
+        }
+        return total;
+      } catch (Exception e) {
+        return -1;
+      }
+    }, tag, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
 
   }
 

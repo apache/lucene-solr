@@ -348,17 +348,4 @@ public class SolrIndexWriter extends IndexWriter {
     }
   }
 
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if(!isClosed){
-        assert false : "SolrIndexWriter was not closed prior to finalize()";
-        log.error("SolrIndexWriter was not closed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
-        close();
-      }
-    } finally { 
-      super.finalize();
-    }
-    
-  }
 }

@@ -75,30 +75,34 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     @Override
     public void processAdd(AddUpdateCommand cmd) throws IOException {
       SolrInputDocument doc = cmd.getSolrInputDocument();
-      processDocChildren(doc, null);
+      cmd.isNested = processDocChildren(doc, null);
       super.processAdd(cmd);
     }
 
-    private void processDocChildren(SolrInputDocument doc, String fullPath) {
+    private boolean processDocChildren(SolrInputDocument doc, String fullPath) {
+      boolean isNested = false;
       for(SolrInputField field: doc.values()) {
         int childNum = 0;
         boolean isSingleVal = !(field.getValue() instanceof Collection);
         for(Object val: field) {
-          if(!(val instanceof SolrInputDocument)) {
+          if (!(val instanceof SolrInputDocument)) {
             // either all collection items are child docs or none are.
             break;
           }
           final String fieldName = field.getName();
 
-          if(fieldName.contains(PATH_SEP_CHAR)) {
+          if (fieldName.contains(PATH_SEP_CHAR)) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name: '" + fieldName
                 + "' contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP");
           }
           final String sChildNum = isSingleVal ? SINGULAR_VALUE_CHAR : String.valueOf(childNum);
           SolrInputDocument cDoc = (SolrInputDocument) val;
-          if(!cDoc.containsKey(uniqueKeyFieldName)) {
+          if (!cDoc.containsKey(uniqueKeyFieldName)) {
             String parentDocId = doc.getField(uniqueKeyFieldName).getFirstValue().toString();
             cDoc.setField(uniqueKeyFieldName, generateChildUniqueId(parentDocId, fieldName, sChildNum));
+          }
+          if (!isNested) {
+            isNested = true;
           }
           final String lastKeyPath = PATH_SEP_CHAR + fieldName + NUM_SEP_CHAR + sChildNum;
           // concat of all paths children.grandChild => /children#1/grandChild#
@@ -107,6 +111,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
           ++childNum;
         }
       }
+      return isNested;
     }
 
     private void processChildDoc(SolrInputDocument sdoc, SolrInputDocument parent, String fullPath) {

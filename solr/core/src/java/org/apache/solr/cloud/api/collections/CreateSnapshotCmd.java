@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -64,7 +65,9 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    String collectionName =  message.getStr(COLLECTION_PROP);
+    String extCollectionName =  message.getStr(COLLECTION_PROP);
+    String collectionName = ocmh.zkStateReader.getAliases().resolveSimpleAlias(extCollectionName);
+
     String commitName =  message.getStr(CoreAdminParams.COMMIT_NAME);
     String asyncId = message.getStr(ASYNC);
     SolrZkClient zkClient = ocmh.zkStateReader.getZkClient();
@@ -81,11 +84,11 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     SolrSnapshotManager.createCollectionLevelSnapshot(zkClient, collectionName, new CollectionSnapshotMetaData(commitName));
     log.info("Created a ZK path to store snapshot information for collection={} with commitName={}", collectionName, commitName);
 
-    Map<String, String> requestMap = new HashMap<>();
     NamedList shardRequestResults = new NamedList();
     Map<String, Slice> shardByCoreName = new HashMap<>();
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
 
+    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         if (replica.getState() != State.ACTIVE) {
@@ -101,7 +104,7 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
         params.set(CORE_NAME_PROP, coreName);
         params.set(CoreAdminParams.COMMIT_NAME, commitName);
 
-        ocmh.sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap);
+        shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
         log.debug("Sent createsnapshot request to core={} with commitName={}", coreName, commitName);
 
         shardByCoreName.put(coreName, slice);
@@ -113,7 +116,7 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     // This is to take care of the situation where e.g. entire shard is unavailable.
     Set<String> failedShards = new HashSet<>();
 
-    ocmh.processResponses(shardRequestResults, shardHandler, false, null, asyncId, requestMap);
+    shardRequestTracker.processResponses(shardRequestResults, shardHandler, false, null);
     NamedList success = (NamedList) shardRequestResults.get("success");
     List<CoreSnapshotMetaData> replicas = new ArrayList<>();
     if (success != null) {

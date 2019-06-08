@@ -64,6 +64,11 @@
      <untar src="${build.dir}/${ipadic.version}.tar" dest="${build.dir}"/>
   </target>
 
+  <target name="patch-dict" depends="download-dict">
+    <patch patchfile="src/tools/patches/Noun.proper.csv.patch"
+           originalfile="${dict.src.dir}/Noun.proper.csv"/>
+  </target>
+
   <path id="tools.dependencies">
     <fileset dir="../icu/lib"/>
   </path>
@@ -81,7 +86,7 @@
     <pathelement location="${build.dir}/classes/tools-test"/>
   </path>
 
-  <target name="build-dict" depends="compile-tools, download-dict">
+  <target name="build-dict" depends="compile-tools, patch-dict">
     <sequential>
       <delete verbose="true">
         <fileset dir="${resources.dir}/org/apache/lucene/analysis/ja/dict" includes="**/*"/>

@@ -41,12 +41,12 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
+import static org.apache.solr.common.util.Utils.toJSONString;
 import static org.apache.solr.handler.admin.ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME;
 
 /**
@@ -269,7 +269,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
 
   private byte[] getPropertyData(Map<String, Object> newProps) {
     if (newProps != null) {
-      String propertyDataStr = JSONUtil.toJSON(newProps);
+      String propertyDataStr = toJSONString(newProps);
       if (propertyDataStr == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid property specification");
       }

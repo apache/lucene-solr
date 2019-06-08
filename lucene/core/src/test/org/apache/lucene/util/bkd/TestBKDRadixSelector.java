@@ -23,7 +23,6 @@ import java.util.Arrays;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
@@ -195,7 +194,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       //check that left and right slices contain the correct points
       byte[] max = getMax(slices[0], bytesPerDimensions, splitDim);
       byte[] min = getMin(slices[1], bytesPerDimensions, splitDim);
-      int cmp = FutureArrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions);
+      int cmp = Arrays.compareUnsigned(max, 0, bytesPerDimensions, min, 0, bytesPerDimensions);
       assertTrue(cmp <= 0);
       if (cmp == 0) {
         int maxDocID = getMaxDocId(slices[0], bytesPerDimensions, splitDim, partitionPoint);
@@ -224,7 +223,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
   private int getRandomCommonPrefix(BKDRadixSelector.PathSlice inputSlice, int bytesPerDimension, int splitDim) throws IOException {
     byte[] pointsMax = getMax(inputSlice, bytesPerDimension, splitDim);
     byte[] pointsMin = getMin(inputSlice, bytesPerDimension, splitDim);
-    int commonPrefixLength = FutureArrays.mismatch(pointsMin, 0, bytesPerDimension, pointsMax, 0, bytesPerDimension);
+    int commonPrefixLength = Arrays.mismatch(pointsMin, 0, bytesPerDimension, pointsMax, 0, bytesPerDimension);
     if (commonPrefixLength == -1) {
       commonPrefixLength = bytesPerDimension;
     }
@@ -259,7 +258,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
         PointValue pointValue = reader.pointValue();
         BytesRef packedValue = pointValue.packedValue();
         System.arraycopy(packedValue.bytes, packedValue.offset + dimension * bytesPerDimension, value, 0, bytesPerDimension);
-        if (FutureArrays.compareUnsigned(min, 0, bytesPerDimension, value, 0, bytesPerDimension) > 0) {
+        if (Arrays.compareUnsigned(min, 0, bytesPerDimension, value, 0, bytesPerDimension) > 0) {
           System.arraycopy(value, 0, min, 0, bytesPerDimension);
         }
       }
@@ -274,7 +273,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
         PointValue pointValue = reader.pointValue();
         BytesRef packedValue = pointValue.packedValue();
         int offset = dimension * bytesPerDimension;
-        if (FutureArrays.compareUnsigned(packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + bytesPerDimension, partitionPoint, 0, bytesPerDimension) == 0) {
+        if (Arrays.compareUnsigned(packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + bytesPerDimension, partitionPoint, 0, bytesPerDimension) == 0) {
           int newDocID = pointValue.docID();
           if (newDocID < docID) {
             docID = newDocID;
@@ -294,7 +293,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
         PointValue pointValue = reader.pointValue();
         BytesRef packedValue = pointValue.packedValue();
         System.arraycopy(packedValue.bytes, packedValue.offset + dimension * bytesPerDimension, value, 0, bytesPerDimension);
-        if (FutureArrays.compareUnsigned(max, 0, bytesPerDimension, value, 0, bytesPerDimension) < 0) {
+        if (Arrays.compareUnsigned(max, 0, bytesPerDimension, value, 0, bytesPerDimension) < 0) {
           System.arraycopy(value, 0, max, 0, bytesPerDimension);
         }
       }
@@ -309,7 +308,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
         PointValue pointValue = reader.pointValue();
         BytesRef packedValue = pointValue.packedValue();
         int offset = dimension * bytesPerDimension;
-        if (FutureArrays.compareUnsigned(packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + bytesPerDimension, partitionPoint, 0, bytesPerDimension) == 0) {
+        if (Arrays.compareUnsigned(packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + bytesPerDimension, partitionPoint, 0, bytesPerDimension) == 0) {
           int newDocID = pointValue.docID();
           if (newDocID > docID) {
             docID = newDocID;

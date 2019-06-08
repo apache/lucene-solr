@@ -34,8 +34,8 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
@@ -206,8 +206,8 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
         "conf", 1, 1);
 
     create1.process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, "failed to create " + collection1, collection1,
-        CloudTestUtils.clusterShape(1, 1));
+    CloudUtil.waitForState(cloudManager, "failed to create " + collection1, collection1,
+        CloudUtil.clusterShape(1, 1));
 
     // also create a very stale lock
     Map<String, Object> lockData = new HashMap<>();
@@ -257,8 +257,8 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
     CollectionAdminRequest.SplitShard split1 = CollectionAdminRequest.splitShard(collection1)
         .setShardName("shard1");
     split1.process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, "failed to split " + collection1, collection1,
-        CloudTestUtils.clusterShape(3, 1, true, true));
+    CloudUtil.waitForState(cloudManager, "failed to split " + collection1, collection1,
+        CloudUtil.clusterShape(3, 1, true, true));
 
 
     await = triggerFired.await(90, TimeUnit.SECONDS);
@@ -309,7 +309,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
 
     ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
 
-    CloudTestUtils.clusterShape(2, 1).matches(state.getLiveNodes(), state.getCollection(collection1));
+    CloudUtil.clusterShape(2, 1).matches(state.getLiveNodes(), state.getCollection(collection1));
   }
 
   public static CountDownLatch getTriggerFired() {

@@ -52,7 +52,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.IntBlockPool.SliceReader;
 import org.apache.lucene.util.IntBlockPool.SliceWriter;
@@ -889,10 +888,10 @@ public class MemoryIndex {
               assert pointValue.bytes.length == pointValue.length : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
               for (int dim = 0; dim < numDimensions; ++dim) {
                 int offset = dim * numBytesPerDimension;
-                if (FutureArrays.compareUnsigned(pointValue.bytes, offset, offset + numBytesPerDimension, minPackedValue, offset, offset + numBytesPerDimension) < 0) {
+                if (Arrays.compareUnsigned(pointValue.bytes, offset, offset + numBytesPerDimension, minPackedValue, offset, offset + numBytesPerDimension) < 0) {
                   System.arraycopy(pointValue.bytes, offset, minPackedValue, offset, numBytesPerDimension);
                 }
-                if (FutureArrays.compareUnsigned(pointValue.bytes, offset, offset + numBytesPerDimension, maxPackedValue, offset, offset + numBytesPerDimension) > 0) {
+                if (Arrays.compareUnsigned(pointValue.bytes, offset, offset + numBytesPerDimension, maxPackedValue, offset, offset + numBytesPerDimension) > 0) {
                   System.arraycopy(pointValue.bytes, offset, maxPackedValue, offset, numBytesPerDimension);
                 }
               }

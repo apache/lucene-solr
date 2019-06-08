@@ -353,10 +353,19 @@ public class ClusterState implements JSONWriter.Writable {
   public Map<String, CollectionRef> getCollectionStates() {
     return immutableCollectionStates;
   }
+
+  /**
+   * Iterate over collections. Unlike {@link #getCollectionStates()} collections passed to the
+   * consumer are guaranteed to exist.
+   * @param consumer collection consumer.
+   */
   public void forEachCollection(Consumer<DocCollection> consumer) {
     collectionStates.forEach((s, collectionRef) -> {
       try {
-        consumer.accept(collectionRef.get());
+        DocCollection collection = collectionRef.get();
+        if (collection != null) {
+          consumer.accept(collection);
+        }
       } catch (SolrException e) {
         if (e.getCause() instanceof KeeperException.NoNodeException) {
           //don't do anything. This collection does not exist

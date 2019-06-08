@@ -16,17 +16,21 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
 import org.apache.lucene.util.Version;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -51,11 +55,6 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -67,7 +66,8 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    String collectionName = message.getStr(COLLECTION_PROP);
+    String extCollectionName = message.getStr(COLLECTION_PROP);
+    String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
 
@@ -92,7 +92,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     String strategy = message.getStr(CollectionAdminParams.INDEX_BACKUP_STRATEGY, CollectionAdminParams.COPY_FILES_STRATEGY);
     switch (strategy) {
       case CollectionAdminParams.COPY_FILES_STRATEGY: {
-        copyIndexFiles(backupPath, message, results);
+        copyIndexFiles(backupPath, collectionName, message, results);
         break;
       }
       case CollectionAdminParams.NO_INDEX_BACKUP_STRATEGY: {
@@ -115,6 +115,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
     properties.put(BackupManager.BACKUP_NAME_PROP, backupName);
     properties.put(BackupManager.COLLECTION_NAME_PROP, collectionName);
+    properties.put(BackupManager.COLLECTION_ALIAS_PROP, extCollectionName);
     properties.put(CollectionAdminParams.COLL_CONF, configName);
     properties.put(BackupManager.START_TIME_PROP, startTime.toString());
     properties.put(BackupManager.INDEX_VERSION_PROP, Version.LATEST.toString());
@@ -155,13 +156,11 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     return r.get();
   }
 
-  private void copyIndexFiles(URI backupPath, ZkNodeProps request, NamedList results) throws Exception {
-    String collectionName = request.getStr(COLLECTION_PROP);
+  private void copyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request, NamedList results) throws Exception {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
-    Map<String, String> requestMap = new HashMap<>();
 
     String commitName = request.getStr(CoreAdminParams.COMMIT_NAME);
     Optional<CollectionSnapshotMetaData> snapshotMeta = Optional.empty();
@@ -186,6 +185,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
       shardsToConsider = snapshotMeta.get().getShards();
     }
 
+    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getActiveSlices()) {
       Replica replica = null;
 
@@ -216,11 +216,11 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
         params.set(CoreAdminParams.COMMIT_NAME, snapshotMeta.get().getName());
       }
 
-      ocmh.sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap);
+      shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
       log.debug("Sent backup request to core={} for backupName={}", coreName, backupName);
     }
     log.debug("Sent backup requests to all shard leaders for backupName={}", backupName);
 
-    ocmh.processResponses(results, shardHandler, true, "Could not backup all shards", asyncId, requestMap);
+    shardRequestTracker.processResponses(results, shardHandler, true, "Could not backup all shards");
   }
 }

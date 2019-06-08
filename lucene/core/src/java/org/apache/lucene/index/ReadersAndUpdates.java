@@ -36,6 +36,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -88,18 +89,22 @@ final class ReadersAndUpdates {
 
   final AtomicLong ramBytesUsed = new AtomicLong();
 
+  private final Map<String, String> readerAttributes;
+
   ReadersAndUpdates(int indexCreatedVersionMajor, SegmentCommitInfo info,
-                    PendingDeletes pendingDeletes) {
+                    PendingDeletes pendingDeletes, Map<String, String> readerAttributes) {
     this.info = info;
     this.pendingDeletes = pendingDeletes;
     this.indexCreatedVersionMajor = indexCreatedVersionMajor;
+    this.readerAttributes = readerAttributes;
   }
 
   /** Init from a previously opened SegmentReader.
    *
    * <p>NOTE: steals incoming ref from reader. */
-  ReadersAndUpdates(int indexCreatedVersionMajor, SegmentReader reader, PendingDeletes pendingDeletes) throws IOException {
-    this(indexCreatedVersionMajor, reader.getOriginalSegmentInfo(), pendingDeletes);
+  ReadersAndUpdates(int indexCreatedVersionMajor, SegmentReader reader, PendingDeletes pendingDeletes,
+                    Map<String, String> readerAttributes) throws IOException {
+    this(indexCreatedVersionMajor, reader.getOriginalSegmentInfo(), pendingDeletes, readerAttributes);
     this.reader = reader;
     pendingDeletes.onNewReader(reader, info);
   }
@@ -169,7 +174,7 @@ final class ReadersAndUpdates {
   public synchronized SegmentReader getReader(IOContext context) throws IOException {
     if (reader == null) {
       // We steal returned ref:
-      reader = new SegmentReader(info, indexCreatedVersionMajor, true, context);
+      reader = new SegmentReader(info, indexCreatedVersionMajor, true, context, readerAttributes);
       pendingDeletes.onNewReader(reader, info);
     }
 
@@ -536,7 +541,9 @@ final class ReadersAndUpdates {
       // IndexWriter.commitMergedDeletes).
       final SegmentReader reader;
       if (this.reader == null) {
-        reader = new SegmentReader(info, indexCreatedVersionMajor, true, IOContext.READONCE);
+        reader = new SegmentReader(info, indexCreatedVersionMajor, true, IOContext.READONCE,
+            // we don't need terms - lets leave them off-heap if possible
+            Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.OFF_HEAP.name()));
         pendingDeletes.onNewReader(reader, info);
       } else {
         reader = this.reader;

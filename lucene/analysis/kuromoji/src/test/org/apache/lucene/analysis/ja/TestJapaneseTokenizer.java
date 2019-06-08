@@ -836,4 +836,16 @@ public class
     tokenizer.reset();
     while (tokenizer.incrementToken());
   }
+
+  public void testPatchedSystemDict() throws Exception {
+    assertAnalyzesTo(analyzer, "令和元年",
+        new String[]{"令和", "元年"},
+        new int[]{0, 2},
+        new int[]{2, 4});
+
+    assertAnalyzesTo(analyzerNormal, "令和元年",
+        new String[]{"令和", "元年"},
+        new int[]{0, 2},
+        new int[]{2, 4});
+  }
 }

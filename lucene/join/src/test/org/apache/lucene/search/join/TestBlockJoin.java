@@ -813,7 +813,11 @@ public class TestBlockJoin extends LuceneTestCase {
           if ("sum of:".equals(childWeightExplanation.getDescription())) {
             childWeightExplanation = childWeightExplanation.getDetails()[0];
           }
-          assertTrue("Wrong child weight description", childWeightExplanation.getDescription().startsWith("weight(child"));
+          if (agg == ScoreMode.None) {
+            assertTrue("Wrong child weight description", childWeightExplanation.getDescription().startsWith("ConstantScore("));
+          } else {
+            assertTrue("Wrong child weight description", childWeightExplanation.getDescription().startsWith("weight(child"));
+          }
         }
       }
 

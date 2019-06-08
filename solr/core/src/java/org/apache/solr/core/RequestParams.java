@@ -18,9 +18,7 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,12 +33,11 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.util.Utils.fromJSON;
 import static org.apache.solr.common.util.Utils.getDeepCopy;
 
 /**
@@ -181,9 +178,9 @@ public class RequestParams implements MapSerializable {
         log.info("conf resource {} loaded . version : {} ", name, version);
       }
       try {
-        Map m = (Map) ObjectBuilder.getVal(new JSONParser(new InputStreamReader(in, StandardCharsets.UTF_8)));
+        Map m = (Map) fromJSON (in);
         return new Object[]{m, version};
-      } catch (IOException e) {
+      } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing conf resource " + name, e);
       }
 

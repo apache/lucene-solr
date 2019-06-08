@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
@@ -112,7 +113,7 @@ final class SegmentMerger {
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, mergeState.segmentInfo,
                                                                       mergeState.mergeFieldInfos, null, context);
     final SegmentReadState segmentReadState = new SegmentReadState(directory, mergeState.segmentInfo, mergeState.mergeFieldInfos,
-        true, IOContext.READ, segmentWriteState.segmentSuffix);
+        true, IOContext.READ, segmentWriteState.segmentSuffix, Collections.emptyMap());
 
     if (mergeState.mergeFieldInfos.hasNorms()) {
       if (mergeState.infoStream.isEnabled("SM")) {

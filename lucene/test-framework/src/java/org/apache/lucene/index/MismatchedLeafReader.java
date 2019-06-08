@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -105,8 +106,8 @@ public class MismatchedLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
-      in.stringField(renumber(fieldInfo), value);
+    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+      in.stringField(renumber(fieldInfo), Objects.requireNonNull(value, "String value should not be null"));
     }
 
     @Override

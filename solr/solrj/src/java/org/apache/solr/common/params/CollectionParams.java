@@ -125,7 +125,8 @@ public interface CollectionParams {
     MERGESHARDS(true, LockLevel.SHARD),
     COLSTATUS(true, LockLevel.NONE),
     // this command implements its own locking
-    REINDEXCOLLECTION(true, LockLevel.NONE)
+    REINDEXCOLLECTION(true, LockLevel.NONE),
+    RENAME(true, LockLevel.COLLECTION)
     ;
     public final boolean isWrite;
 

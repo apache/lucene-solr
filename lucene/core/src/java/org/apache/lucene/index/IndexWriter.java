@@ -523,7 +523,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             // reader; in theory we could instead do similar retry logic,
             // just like we do when loading segments_N
             
-            r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes, writeAllDeletes);
+            r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes, writeAllDeletes, config.getReaderAttributes());
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
             }
@@ -885,7 +885,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           enableTestPoints, this::newSegmentName,
           config, directoryOrig, directory, globalFieldNumberMap);
       readerPool = new ReaderPool(directory, directoryOrig, segmentInfos, globalFieldNumberMap,
-          bufferedUpdatesStream::getCompletedDelGen, infoStream, conf.getSoftDeletesField(), reader);
+          bufferedUpdatesStream::getCompletedDelGen, infoStream, conf.getSoftDeletesField(), reader, config.getReaderAttributes());
       if (config.getReaderPooling()) {
         readerPool.enableReaderPooling();
       }
@@ -1971,7 +1971,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       for(final MergePolicy.OneMerge merge  : pendingMerges) {
         merge.maxNumSegments = maxNumSegments;
         if (merge.info != null) {
-          // TODO: explain why this is sometimes still null
+          // this can be null since we register the merge under lock before we then do the actual merge and
+          // set the merge.info in _mergeInit
           segmentsToMerge.put(merge.info, Boolean.TRUE);
         }
       }
@@ -1979,7 +1980,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       for (final MergePolicy.OneMerge merge: runningMerges) {
         merge.maxNumSegments = maxNumSegments;
         if (merge.info != null) {
-          // TODO: explain why this is sometimes still null
+          // this can be null since we put the merge on runningMerges before we do the actual merge and
+          // set the merge.info in _mergeInit
           segmentsToMerge.put(merge.info, Boolean.TRUE);
         }
       }
@@ -2973,7 +2975,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       // We set the min version to null for now, it will be set later by SegmentMerger
       SegmentInfo info = new SegmentInfo(directoryOrig, Version.LATEST, null, mergedName, -1,
-                                         false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), config.getIndexSort());
+                                         false, codec, Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), config.getIndexSort());
 
       SegmentMerger merger = new SegmentMerger(Arrays.asList(readers), info, infoStream, trackingDir,
                                                globalFieldNumberMap, 
@@ -4248,7 +4250,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // names.
     final String mergeSegmentName = newSegmentName();
     // We set the min version to null for now, it will be set later by SegmentMerger
-    SegmentInfo si = new SegmentInfo(directoryOrig, Version.LATEST, null, mergeSegmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), config.getIndexSort());
+    SegmentInfo si = new SegmentInfo(directoryOrig, Version.LATEST, null, mergeSegmentName, -1, false, codec,
+        Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), config.getIndexSort());
     Map<String,String> details = new HashMap<>();
     details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
     details.put("mergeFactor", Integer.toString(merge.segments.size()));

@@ -76,7 +76,7 @@ public class SnowballPorterFilterFactory extends TokenFilterFactory implements R
   public TokenFilter create(TokenStream input) {
     SnowballProgram program;
     try {
-      program = stemClass.newInstance();
+      program = stemClass.getConstructor().newInstance();
     } catch (Exception e) {
       throw new RuntimeException("Error instantiating stemmer for language " + language + "from class " + stemClass, e);
     }

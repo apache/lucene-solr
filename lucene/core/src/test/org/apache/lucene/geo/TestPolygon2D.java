@@ -255,18 +255,18 @@ public class TestPolygon2D extends LuceneTestCase {
   public void testEdgeInsideness() {
     Polygon2D poly = Polygon2D.create(new Polygon(new double[] { -2, -2, 2, 2, -2 }, new double[] { -2, 2, 2, -2, -2 }));
     assertTrue(poly.contains(-2, -2)); // bottom left corner: true
-    assertFalse(poly.contains(-2, 2));  // bottom right corner: false
-    assertFalse(poly.contains(2, -2));  // top left corner: false
-    assertFalse(poly.contains(2,  2));  // top right corner: false
+    assertTrue(poly.contains(-2, 2));  // bottom right corner: true
+    assertTrue(poly.contains(2, -2));  // top left corner: true
+    assertTrue(poly.contains(2,  2));  // top right corner: true
     assertTrue(poly.contains(-2, -1)); // bottom side: true
     assertTrue(poly.contains(-2, 0));  // bottom side: true
     assertTrue(poly.contains(-2, 1));  // bottom side: true
-    assertFalse(poly.contains(2, -1));  // top side: false
-    assertFalse(poly.contains(2, 0));   // top side: false
-    assertFalse(poly.contains(2, 1));   // top side: false
-    assertFalse(poly.contains(-1, 2));  // right side: false
-    assertFalse(poly.contains(0, 2));   // right side: false
-    assertFalse(poly.contains(1, 2));   // right side: false
+    assertTrue(poly.contains(2, -1));  // top side: true
+    assertTrue(poly.contains(2, 0));   // top side: true
+    assertTrue(poly.contains(2, 1));   // top side: true
+    assertTrue(poly.contains(-1, 2));  // right side: true
+    assertTrue(poly.contains(0, 2));   // right side: true
+    assertTrue(poly.contains(1, 2));   // right side: true
     assertTrue(poly.contains(-1, -2)); // left side: true
     assertTrue(poly.contains(0, -2));  // left side: true
     assertTrue(poly.contains(1, -2));  // left side: true

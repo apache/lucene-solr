@@ -67,6 +67,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
+import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 /**
@@ -433,6 +434,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     protected Properties properties;
     protected Boolean autoAddReplicas;
+    protected String alias;
     protected Integer stateFormat;
     protected String[] rule , snitch;
     protected String withCollection;
@@ -475,6 +477,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setStateFormat(Integer stateFormat) { this.stateFormat = stateFormat; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
     public Create setSnitch(String... s){ this.snitch = s; return this; }
+
+    public Create setAlias(String alias) {
+      this.alias = alias;
+      return this;
+    }
 
     public String getConfigName()  { return configName; }
     public String getCreateNodeSet() { return createNodeSet; }
@@ -573,6 +580,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (snitch != null) params.set(DocCollection.SNITCH, snitch);
       params.setNonNull(POLICY, policy);
       params.setNonNull(WITH_COLLECTION, withCollection);
+      params.setNonNull(ALIAS, alias);
       return params;
     }
 
@@ -603,6 +611,26 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     private Reload(String collection) {
       super(CollectionAction.RELOAD, collection);
+    }
+  }
+
+  public static Rename renameCollection(String collection, String target) {
+    return new Rename(collection, target);
+  }
+
+  public static class Rename extends AsyncCollectionSpecificAdminRequest {
+    String target;
+
+    public Rename(String collection, String target) {
+      super(CollectionAction.RENAME, collection);
+      this.target = target;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set(CollectionAdminParams.TARGET, target);
+      return params;
     }
   }
 
@@ -674,6 +702,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return ((ModifiableSolrParams) super.getParams()).set(CoreAdminParams.NODE, node);
     }
 
+  }
+
+  public static MoveReplica moveReplica(String collection, String replica, String targetNode) {
+    return new MoveReplica(collection, replica, targetNode);
   }
 
   public static class MoveReplica extends AsyncCollectionAdminRequest {

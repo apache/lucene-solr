@@ -52,6 +52,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -95,7 +96,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
     String asyncId = message.getStr(ASYNC);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    Map<String, String> requestMap = new HashMap<>();
 
     CoreContainer cc = ocmh.overseer.getCoreContainer();
     BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
@@ -107,6 +107,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
     Properties properties = backupMgr.readBackupProperties(location, backupName);
     String backupCollection = properties.getProperty(BackupManager.COLLECTION_NAME_PROP);
+    String backupCollectionAlias = properties.getProperty(BackupManager.COLLECTION_ALIAS_PROP);
     DocCollection backupCollectionState = backupMgr.readCollectionState(location, backupName, backupCollection);
 
     // Get the Solr nodes to restore a collection.
@@ -317,36 +318,42 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       //refresh the location copy of collection state
       restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
 
-      //Copy data from backed up index to each replica
-      for (Slice slice : restoreCollection.getSlices()) {
-        ModifiableSolrParams params = new ModifiableSolrParams();
-        params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RESTORECORE.toString());
-        params.set(NAME, "snapshot." + slice.getName());
-        params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString());
-        params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
-        ocmh.sliceCmd(clusterState, params, null, slice, shardHandler, asyncId, requestMap);
-      }
-      ocmh.processResponses(new NamedList(), shardHandler, true, "Could not restore core", asyncId, requestMap);
-
-
-      for (Slice s: restoreCollection.getSlices()) {
-        for (Replica r : s.getReplicas()) {
-          String nodeName = r.getNodeName();
-          String coreNodeName = r.getCoreName();
-          Replica.State stateRep  = r.getState();
-
-          log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}"
-              , nodeName, coreNodeName, stateRep.name());
-
+      {
+        ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+        // Copy data from backed up index to each replica
+        for (Slice slice : restoreCollection.getSlices()) {
           ModifiableSolrParams params = new ModifiableSolrParams();
-          params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
-          params.set(CoreAdminParams.NAME, coreNodeName);
-
-          ocmh.sendShardRequest(nodeName, params, shardHandler, asyncId, requestMap);
+          params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RESTORECORE.toString());
+          params.set(NAME, "snapshot." + slice.getName());
+          params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString());
+          params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
+          shardRequestTracker.sliceCmd(clusterState, params, null, slice, shardHandler);
         }
+        shardRequestTracker.processResponses(new NamedList(), shardHandler, true, "Could not restore core");
+      }
 
-        ocmh.processResponses(new NamedList(), shardHandler, true, "REQUESTAPPLYUPDATES calls did not succeed", asyncId, requestMap);
+      {
+        ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
 
+        for (Slice s : restoreCollection.getSlices()) {
+          for (Replica r : s.getReplicas()) {
+            String nodeName = r.getNodeName();
+            String coreNodeName = r.getCoreName();
+            Replica.State stateRep = r.getState();
+
+            log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}", nodeName, coreNodeName,
+                stateRep.name());
+
+            ModifiableSolrParams params = new ModifiableSolrParams();
+            params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
+            params.set(CoreAdminParams.NAME, coreNodeName);
+
+            shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
+          }
+
+          shardRequestTracker.processResponses(new NamedList(), shardHandler, true,
+              "REQUESTAPPLYUPDATES calls did not succeed");
+        }
       }
 
       //Mark all shards in ACTIVE STATE
@@ -360,7 +367,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.overseer.offerStateUpdate((Utils.toJSON(new ZkNodeProps(propMap))));
       }
 
-        if (totalReplicasPerShard > 1) {
+      if (totalReplicasPerShard > 1) {
         log.info("Adding replicas to restored collection={}", restoreCollection.getName());
         for (Slice slice : restoreCollection.getSlices()) {
 
@@ -414,6 +421,12 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
             ocmh.addReplica(zkStateReader.getClusterState(), new ZkNodeProps(propMap), results, null);
           }
         }
+      }
+
+      if (backupCollectionAlias != null && !backupCollectionAlias.equals(backupCollection)) {
+        log.debug("Restoring alias {} -> {}", backupCollectionAlias, backupCollection);
+        ocmh.zkStateReader.aliasesManager
+            .applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(backupCollectionAlias, backupCollection));
       }
 
       log.info("Completed restoring collection={} backupName={}", restoreCollection, backupName);

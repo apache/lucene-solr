@@ -16,9 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,8 +42,8 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   private static final Charset DATA_ENCODING = Charset.forName("UTF-8");
   
   protected ZkTestServer zkServer;
-  
-  protected String zkDir;
+
+  protected Path zkDir;
   
   @BeforeClass
   public static void beforeClass() {
@@ -60,9 +60,8 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     super.setUp();
     log.info("####SETUP_START " + getTestName());
     createTempDir();
-    
-    zkDir = createTempDir() + File.separator
-        + "zookeeper/server1/data";
+
+    zkDir = createTempDir().resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:" + zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
@@ -126,11 +125,19 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     if (log.isInfoEnabled()) {
       log.info("Verifying " + path);
     }
-    assertEquals("Path " + path + " does not have OPEN_ACL_UNSAFE", ZooDefs.Ids.OPEN_ACL_UNSAFE, acls);
+    if (ZooDefs.CONFIG_NODE.equals(path)) {
+      // Treat this node specially, from the ZK docs:
+      // The dynamic configuration is stored in a special znode ZooDefs.CONFIG_NODE = /zookeeper/config.
+      // This node by default is read only for all users, except super user and
+      // users that's explicitly configured for write access.
+      assertEquals("Path " + path + " does not have READ_ACL_UNSAFE", ZooDefs.Ids.READ_ACL_UNSAFE, acls);
+    } else {
+      assertEquals("Path " + path + " does not have OPEN_ACL_UNSAFE", ZooDefs.Ids.OPEN_ACL_UNSAFE, acls);
+    }
     verifiedList.add(path);
     List<String> children = zkClient.getChildren(path, null, false);
     for (String child : children) {
-      assertOpenACLUnsafeAllover(zkClient, path + ((path.endsWith("/"))?"":"/") + child, verifiedList);
+      assertOpenACLUnsafeAllover(zkClient, path + ((path.endsWith("/")) ? "" : "/") + child, verifiedList);
     }
   }
   

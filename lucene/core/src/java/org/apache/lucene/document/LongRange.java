@@ -16,10 +16,11 @@
  */
 package org.apache.lucene.document;
 
+import java.util.Objects;
+
 import org.apache.lucene.document.RangeFieldQuery.QueryType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FutureObjects;
 import org.apache.lucene.util.NumericUtils;
 
 /**
@@ -146,7 +147,7 @@ public class LongRange extends Field {
    * @return the decoded min value
    */
   public long getMin(int dimension) {
-    FutureObjects.checkIndex(dimension, type.pointDataDimensionCount()/2);
+    Objects.checkIndex(dimension, type.pointDataDimensionCount()/2);
     return decodeMin(((BytesRef)fieldsData).bytes, dimension);
   }
 
@@ -156,7 +157,7 @@ public class LongRange extends Field {
    * @return the decoded max value
    */
   public long getMax(int dimension) {
-    FutureObjects.checkIndex(dimension, type.pointDataDimensionCount()/2);
+    Objects.checkIndex(dimension, type.pointDataDimensionCount()/2);
     return decodeMax(((BytesRef)fieldsData).bytes, dimension);
   }
 

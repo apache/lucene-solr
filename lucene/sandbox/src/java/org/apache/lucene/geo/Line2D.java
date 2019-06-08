@@ -18,6 +18,8 @@ package org.apache.lucene.geo;
 
 import org.apache.lucene.index.PointValues.Relation;
 
+import static org.apache.lucene.geo.GeoUtils.orient;
+
 /**
  * 2D line implementation represented as a balanced interval tree of edges.
  * <p>
@@ -42,22 +44,51 @@ public final class Line2D extends EdgeTree {
 
   @Override
   protected Relation componentRelate(double minLat, double maxLat, double minLon, double maxLon) {
-    if (tree.crosses(minLat, maxLat, minLon, maxLon)) {
+    if (tree.crossesBox(minLat, maxLat, minLon, maxLon, true)) {
       return Relation.CELL_CROSSES_QUERY;
     }
-
     return Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override
   protected Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-    if (tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
-      return Relation.CELL_CROSSES_QUERY;
-    }
-    //check if line is inside triangle
-    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy)) {
+    if (ax == bx && bx == cx && ay == by && by == cy) {
+      // indexed "triangle" is a point: check if point lies on any line segment
+      if (isPointOnLine(tree, ax, ay)) {
+        return Relation.CELL_INSIDE_QUERY;
+      }
+    } else if ((ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      // indexed "triangle" is a line:
+      if (tree.crossesLine(ax, ay, bx, by)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
+    } else if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true ||
+        tree.crossesTriangle(ax, ay, bx, by, cx, cy)) {
+      // indexed "triangle" is a triangle:
       return Relation.CELL_CROSSES_QUERY;
     }
     return Relation.CELL_OUTSIDE_QUERY;
+  }
+
+  /** returns true if the provided x, y point lies on the line */
+  private boolean isPointOnLine(Edge tree, double x, double y) {
+    if (y <= tree.max) {
+      double minY = StrictMath.min(tree.lat1, tree.lat2);
+      double maxY = StrictMath.max(tree.lat1, tree.lat2);
+      double minX = StrictMath.min(tree.lon1, tree.lon2);
+      double maxX = StrictMath.max(tree.lon1, tree.lon2);
+      if (Rectangle.containsPoint(y, x, minY, maxY, minX, maxX) &&
+          orient(tree.lon1, tree.lat1, tree.lon2, tree.lat2, x, y) == 0) {
+        return true;
+      }
+      if (tree.left != null && isPointOnLine(tree.left, x, y)) {
+        return true;
+      }
+      if (tree.right != null && maxY >= tree.low && isPointOnLine(tree.right, x, y)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

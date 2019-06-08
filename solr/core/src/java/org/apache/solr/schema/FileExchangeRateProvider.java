@@ -43,7 +43,7 @@ import org.xml.sax.SAXException;
 /**
  * Configuration for currency. Provides currency exchange rates.
  */
-class FileExchangeRateProvider implements ExchangeRateProvider {
+public class FileExchangeRateProvider implements ExchangeRateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static final String PARAM_CURRENCY_CONFIG       = "currencyConfig";

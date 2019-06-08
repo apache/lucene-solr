@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -83,6 +84,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher.Event;
 import org.apache.zookeeper.data.Stat;
@@ -285,7 +287,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     System.setProperty("solr.zkclienttimeout", "30000");
 
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
 
     server = new ZkTestServer(zkDir);
     server.run();
@@ -914,7 +916,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
         mockController = new MockZKController(server.getZkAddress(), "node1", overseers);
 
-        TimeOut timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             mockController.createCollection(COLLECTION, 1);
@@ -924,7 +926,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           }
         }
 
-        timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             mockController.publishState(COLLECTION, "core1", "node1", "shard1", Replica.State.ACTIVE,
@@ -955,7 +957,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
         mockController2 = new MockZKController(server.getZkAddress(), "node2", overseers);
 
-       timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+       timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             mockController.publishState(COLLECTION, "core1", "node1", "shard1", Replica.State.ACTIVE,
@@ -969,7 +971,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         verifyShardLeader(reader, COLLECTION, "shard1", "core1");
 
 
-        timeout = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           try {
             mockController2.publishState(COLLECTION, "core4", "node2", "shard1", Replica.State.ACTIVE,
@@ -992,11 +994,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
           ZkCoreNodeProps leaderProps;
           try {
-            leaderProps = zkController.getLeaderProps(COLLECTION, "shard1", 1000);
+            leaderProps = zkController.getLeaderProps(COLLECTION, "shard1", 1000, false);
           } catch (SolrException e) {
             return false;
           } catch (InterruptedException e) {
             throw new RuntimeException(e);
+          } catch (SessionExpiredException e) {
+            return false;
           }
           if (leaderProps.getCoreName().equals("core4")) {
             return true;
@@ -1428,7 +1432,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     return zkClient;
   }
 
-  private ZkController createMockZkController(String zkAddress, SolrZkClient zkClient, ZkStateReader reader) throws InterruptedException, NoSuchFieldException, SecurityException {
+  private ZkController createMockZkController(String zkAddress, SolrZkClient zkClient, ZkStateReader reader) throws InterruptedException, NoSuchFieldException, SecurityException, SessionExpiredException {
     ZkController zkController = mock(ZkController.class);
 
     if (zkClient == null) {

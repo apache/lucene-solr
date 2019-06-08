@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.util.Collections;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -63,7 +64,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, false, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, false, newIOContext(random()), Collections.emptyMap());
     assertTrue(reader != null);
     Document doc = reader.document(0);
     assertTrue(doc != null);
@@ -124,7 +125,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, false, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, false, newIOContext(random()), Collections.emptyMap());
 
     PostingsEnum termPositions = MultiTerms.getTermPostingsEnum(reader, "repeated", new BytesRef("repeated"));
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -195,7 +196,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, false, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, false, newIOContext(random()), Collections.emptyMap());
 
     PostingsEnum termPositions = MultiTerms.getTermPostingsEnum(reader, "f1", new BytesRef("a"));
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -237,7 +238,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, false, newIOContext(random()));
+    SegmentReader reader = new SegmentReader(info, Version.LATEST.major, false, newIOContext(random()), Collections.emptyMap());
 
     PostingsEnum termPositions = reader.postings(new Term("preanalyzed", "term1"), PostingsEnum.ALL);
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

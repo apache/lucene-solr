@@ -22,9 +22,12 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -38,8 +41,6 @@ public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
    * New limit is 2^31, which is not very realistic to unit-test. */
   @SuppressWarnings({"ConstantConditions", "PointlessBooleanExpression"})
   @Nightly
-  // commented 4-Sep-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testTriggerUnInvertLimit() throws IOException {
     final boolean SHOULD_TRIGGER = false; // Set this to true to use the test with the old implementation
 
@@ -48,9 +49,17 @@ public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
     final int DOCS = (1<<16)-1;                  // The number of documents within a single pass (simplified)
     final int TERMS = REF_LIMIT/DOCS;            // Each document must have this many references aka terms hit limit
 
-    Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    // disk based Directory and IWC settings to reduce risk of OOM
+    Directory dir = newFSDirectory(createTempDir("TestDocTermOrdsUninvertLimit"));
+    final IndexWriter w = new IndexWriter(dir,
+                                          new IndexWriterConfig(new MockAnalyzer(random()))
+                                          .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                                          .setRAMBufferSizeMB(256.0)
+                                          .setMergeScheduler(new ConcurrentMergeScheduler())
+                                          .setMergePolicy(newLogMergePolicy(false, 10))
+                                          .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                                          .setCodec(TestUtil.getDefaultCodec()));
+    
     Document doc = new Document();
     Field field = newTextField("field", "", Field.Store.NO);
     doc.add(field);
@@ -65,9 +74,9 @@ public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
       w.addDocument(doc);
     }
     //System.out.println("\n Finished adding " + DOCS + " documents of " + TERMS + " unique terms");
-    final IndexReader r = w.getReader();
     w.close();
-
+    
+    final IndexReader r = DirectoryReader.open(dir);
     try {
       final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
       TestUtil.checkReader(ar);

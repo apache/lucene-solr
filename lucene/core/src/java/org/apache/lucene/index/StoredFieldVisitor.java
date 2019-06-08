@@ -53,8 +53,8 @@ public abstract class StoredFieldVisitor {
   public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
   }
 
-  /** Process a string field; the provided byte[] value is a UTF-8 encoded string value. */
-  public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
+  /** Process a string field. */
+  public void stringField(FieldInfo fieldInfo, String value) throws IOException {
   }
 
   /** Process a int numeric field. */

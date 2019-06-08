@@ -25,11 +25,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
-
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.fromJSON;
 
 
 public class ConfigSetProperties {
@@ -66,8 +65,7 @@ public class ConfigSetProperties {
 
   public static NamedList readFromInputStream(InputStreamReader reader) {
     try {
-      JSONParser jsonParser = new JSONParser(reader);
-      Object object = ObjectBuilder.getVal(jsonParser);
+      Object object = fromJSON(reader);
       if (!(object instanceof Map)) {
         final String objectClass = object == null ? "null" : object.getClass().getName();
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + objectClass + ", expected Map");

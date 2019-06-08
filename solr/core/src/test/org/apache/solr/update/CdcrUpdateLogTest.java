@@ -34,7 +34,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
+
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 @Nightly
 public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
@@ -92,8 +93,7 @@ public class CdcrUpdateLogTest extends SolrTestCaseJ4 {
   }
 
   private static Long getVer(SolrQueryRequest req) throws Exception {
-    String response = JQ(req);
-    Map rsp = (Map) ObjectBuilder.fromJSON(response);
+    Map rsp = (Map) fromJSONString(JQ(req));
     Map doc = null;
     if (rsp.containsKey("doc")) {
       doc = (Map) rsp.get("doc");

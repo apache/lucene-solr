@@ -445,22 +445,31 @@ public class TermsComponent extends SearchComponent {
     rb._termsHelper = null;
   }
 
-  private static ShardRequest createShardQuery(SolrParams params) {
+  static ShardRequest createShardQuery(SolrParams params) {
     ShardRequest sreq = new ShardRequest();
     sreq.purpose = ShardRequest.PURPOSE_GET_TERMS;
 
     // base shard request on original parameters
     sreq.params = new ModifiableSolrParams(params);
 
-    // remove any limits for shards, we want them to return all possible
-    // responses
-    // we want this so we can calculate the correct counts
-    // dont sort by count to avoid that unnecessary overhead on the shards
-    sreq.params.remove(TermsParams.TERMS_MAXCOUNT);
-    sreq.params.remove(TermsParams.TERMS_MINCOUNT);
-    sreq.params.set(TermsParams.TERMS_LIMIT, -1);
-    sreq.params.set(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_INDEX);
-
+    // if using index-order, we can send all parameters to all shards
+    // since all required data are returned within the first n rows
+    String actualSort = sreq.params.get(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT);
+    
+    boolean fast = actualSort.equals(TermsParams.TERMS_SORT_INDEX) &&
+        sreq.params.getLong(TermsParams.TERMS_MINCOUNT, 0) <= 1 &&
+        sreq.params.getLong(TermsParams.TERMS_MAXCOUNT, -1) <=0;
+    
+    if (!fast) {
+      // remove any limits for shards, we want them to return all possible
+      // responses
+      // we want this so we can calculate the correct counts
+      // dont sort by count to avoid that unnecessary overhead on the shards
+      sreq.params.remove(TermsParams.TERMS_MAXCOUNT);
+      sreq.params.remove(TermsParams.TERMS_MINCOUNT);
+      sreq.params.set(TermsParams.TERMS_LIMIT, -1);
+      sreq.params.set(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_INDEX);
+    }
     return sreq;
   }
 

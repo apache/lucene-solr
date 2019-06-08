@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -99,6 +100,13 @@ public class IndexSearcher {
    * don't spend most time on computing hit counts
    */
   private static final int TOTAL_HITS_THRESHOLD = 1000;
+
+  /**
+   * Thresholds for index slice allocation logic. To change the default, extend
+   * <code> IndexSearcher</code> and use custom values
+   */
+  private static final int MAX_DOCS_PER_SLICE = 250_000;
+  private static final int MAX_SEGMENTS_PER_SLICE = 5;
 
   final IndexReader reader; // package private for testing!
   
@@ -268,17 +276,60 @@ public class IndexSearcher {
 
   /**
    * Expert: Creates an array of leaf slices each holding a subset of the given leaves.
-   * Each {@link LeafSlice} is executed in a single thread. By default there
-   * will be one {@link LeafSlice} per leaf ({@link org.apache.lucene.index.LeafReaderContext}).
+   * Each {@link LeafSlice} is executed in a single thread. By default, segments with more than
+   * MAX_DOCS_PER_SLICE will get their own thread
    */
   protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
-    LeafSlice[] slices = new LeafSlice[leaves.size()];
-    for (int i = 0; i < slices.length; i++) {
-      slices[i] = new LeafSlice(leaves.get(i));
+    return slices(leaves, MAX_DOCS_PER_SLICE, MAX_SEGMENTS_PER_SLICE);
+  }
+
+  /**
+   * Static method to segregate LeafReaderContexts amongst multiple slices
+   */
+  public static LeafSlice[] slices (List<LeafReaderContext> leaves, int maxDocsPerSlice,
+                                    int maxSegmentsPerSlice) {
+    // Make a copy so we can sort:
+    List<LeafReaderContext> sortedLeaves = new ArrayList<>(leaves);
+
+    // Sort by maxDoc, descending:
+    Collections.sort(sortedLeaves,
+        Collections.reverseOrder(Comparator.comparingInt(l -> l.reader().maxDoc())));
+
+    final List<List<LeafReaderContext>> groupedLeaves = new ArrayList<>();
+    long docSum = 0;
+    List<LeafReaderContext> group = null;
+    for (LeafReaderContext ctx : sortedLeaves) {
+      if (ctx.reader().maxDoc() > maxDocsPerSlice) {
+        assert group == null;
+        groupedLeaves.add(Collections.singletonList(ctx));
+      } else {
+        if (group == null) {
+          group = new ArrayList<>();
+          group.add(ctx);
+
+          groupedLeaves.add(group);
+        } else {
+          group.add(ctx);
+        }
+
+        docSum += ctx.reader().maxDoc();
+        if (group.size() >= maxSegmentsPerSlice || docSum > maxDocsPerSlice) {
+          group = null;
+          docSum = 0;
+        }
+      }
     }
+
+    LeafSlice[] slices = new LeafSlice[groupedLeaves.size()];
+    int upto = 0;
+    for (List<LeafReaderContext> currentLeaf : groupedLeaves) {
+      slices[upto] = new LeafSlice(currentLeaf);
+      ++upto;
+    }
+
     return slices;
   }
-  
+
   /** Return the {@link IndexReader} this searches. */
   public IndexReader getIndexReader() {
     return reader;
@@ -743,8 +794,9 @@ public class IndexSearcher {
      *  @lucene.experimental */
     public final LeafReaderContext[] leaves;
     
-    public LeafSlice(LeafReaderContext... leaves) {
-      this.leaves = leaves;
+    public LeafSlice(List<LeafReaderContext> leavesList) {
+      Collections.sort(leavesList, Comparator.comparingInt(l -> l.docBase));
+      this.leaves = leavesList.toArray(new LeafReaderContext[0]);
     }
   }
 

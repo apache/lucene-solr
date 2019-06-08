@@ -34,7 +34,20 @@ REM set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+Prin
 
 REM Various GC settings have shown to work well for a number of common Solr workloads.
 REM See solr.cmd GC_TUNE for the default list.
-REM set GC_TUNE=-XX:NewRatio=3 -XX:SurvivorRatio=4     etc.
+REM set GC_TUNE=-XX:SurvivorRatio=4
+REM set GC_TUNE=%GC_TUNE% -XX:TargetSurvivorRatio=90
+REM set GC_TUNE=%GC_TUNE% -XX:MaxTenuringThreshold=8
+REM set GC_TUNE=%GC_TUNE% -XX:+UseConcMarkSweepGC
+REM set GC_TUNE=%GC_TUNE% -XX:ConcGCThreads=4
+REM set GC_TUNE=%GC_TUNE% -XX:ParallelGCThreads=4
+REM set GC_TUNE=%GC_TUNE% -XX:+CMSScavengeBeforeRemark
+REM set GC_TUNE=%GC_TUNE% -XX:PretenureSizeThreshold=64m
+REM set GC_TUNE=%GC_TUNE% -XX:+UseCMSInitiatingOccupancyOnly
+REM set GC_TUNE=%GC_TUNE% -XX:CMSInitiatingOccupancyFraction=50
+REM set GC_TUNE=%GC_TUNE% -XX:CMSMaxAbortablePrecleanTime=6000
+REM set GC_TUNE=%GC_TUNE% -XX:+CMSParallelRemarkEnabled
+REM set GC_TUNE=%GC_TUNE% -XX:+ParallelRefProcEnabled
+REM set GC_TUNE=%GC_TUNE% -XX:-OmitStackTraceInFastThrow    etc.
 
 REM Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 REM e.g. host1:2181,host2:2181/chroot

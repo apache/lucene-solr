@@ -25,7 +25,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -96,8 +96,8 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL,
         "conf", 1, 1);
     create.process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, "failed to create " + CollectionAdminParams.SYSTEM_COLL,
-        CollectionAdminParams.SYSTEM_COLL, CloudTestUtils.clusterShape(1, 1));
+    CloudUtil.waitForState(cloudManager, "failed to create " + CollectionAdminParams.SYSTEM_COLL,
+        CollectionAdminParams.SYSTEM_COLL, CloudUtil.clusterShape(1, 1));
   }
 
   @AfterClass

@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -67,8 +68,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   public void distribSetUp() throws Exception {
     super.distribSetUp();
 
-    String zkDir = testDir.getAbsolutePath() + File.separator
-    + "zookeeper/server1/data";
+    Path zkDir = testDir.toPath().resolve("zookeeper/server1/data");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 

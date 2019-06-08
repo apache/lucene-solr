@@ -50,8 +50,9 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -76,8 +77,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   volatile static List<FieldProps> fieldsToTestGroupSortFirst = null;
   volatile static List<FieldProps> fieldsToTestGroupSortLast = null;
 
-  @Before
-  public void createCluster() throws Exception {
+  @BeforeClass
+  public static void createCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
@@ -168,16 +169,29 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   }
 
 
-  @After
-  public void after() throws Exception {
+  @AfterClass
+  public static void shutdown() throws Exception {
     shutdownCluster();
-    
-    fieldsToTestSingle = null;
-    fieldsToTestMulti = null;
-    fieldsToTestGroupSortFirst = null;
-    fieldsToTestGroupSortLast = null;
   }
 
+  @Before
+  public void clean() throws IOException, SolrServerException {
+    CloudSolrClient client = cluster.getSolrClient();
+    client.deleteByQuery("*:*");
+    client.commit();
+    Solr11035BandAid(client, COLLECTION, "id", 0, "*:*", "DocValuesNotINdexedTest.clean");
+    resetFields(fieldsToTestSingle);
+    resetFields(fieldsToTestMulti);
+    resetFields(fieldsToTestGroupSortFirst);
+    resetFields(fieldsToTestGroupSortLast);
+
+  }
+
+  void resetFields(List<FieldProps> fieldProps) {
+    for (FieldProps prop : fieldProps) {
+      prop.resetBase();
+    }
+  }
   @Test
   public void testDistribFaceting() throws IOException, SolrServerException {
     // For this test, I want to insure that there are shards that do _not_ have a doc with any of the DV_only 
@@ -220,12 +234,10 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     for (FieldProps props : fieldsToTestMulti) {
       doTestFacet(props, rsp);
     }
-
   }
 
   // We should be able to sort thing with missing first/last and that are _NOT_ present at all on one server.
   @Test
-  //@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028")
   public void testGroupingSorting() throws IOException, SolrServerException {
     CloudSolrClient client = cluster.getSolrClient();
 
@@ -243,7 +255,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     new UpdateRequest()
         .add(docs)
         .commit(client, COLLECTION);
-    
+    Solr11035BandAid(client, COLLECTION, "id", 4, "*:*", "DocValuesNotINdexedTest.testGroupSorting");
+
     checkSortOrder(client, fieldsToTestGroupSortFirst, "asc", new String[]{"4", "2", "1", "3"}, new String[]{"4", "1", "2", "3"});
     checkSortOrder(client, fieldsToTestGroupSortFirst, "desc", new String[]{"3", "1", "2", "4"}, new String[]{"2", "3", "1", "4"});
 
@@ -271,7 +284,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testGroupingDocAbsent() throws IOException, SolrServerException {
     List<SolrInputDocument> docs = new ArrayList<>(4);
     docs.add(makeGSDoc(2, fieldsToTestGroupSortFirst, null));
@@ -286,6 +298,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
         .add(docs)
         .commit(client, COLLECTION);
 
+    Solr11035BandAid(client, COLLECTION, "id", 4, "*:*", "DocValuesNotINdexedTest.testGroupingDocAbsent");
     // when grouping on any of these DV-only (not indexed) fields we expect exactly 4 groups except for Boolean.
     for (FieldProps prop : fieldsToTestGroupSortFirst) {
       // Special handling until SOLR-9802 is fixed
@@ -303,11 +316,9 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       GroupCommand fieldCommand = commands.get(0);
       int expected = 4;
       if (prop.getName().startsWith("bool")) expected = 3; //true, false and null
-      
+
       List<Group> fieldCommandGroups = fieldCommand.getValues();
-      if (!prop.getName().startsWith("intGSF")) { // TODO: can be 3 or 4
-        assertEquals("Did not find the expected number of groups for field " + prop.getName(), expected, fieldCommandGroups.size());
-      }
+      assertEquals("Did not find the expected number of groups for field " + prop.getName(), expected, fieldCommandGroups.size());
     }
   }
 
@@ -315,23 +326,29 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   // Verify that we actually form groups that are "expected". Most of the processing takes some care to 
   // make sure all the values for each field are unique. We need to have docs that have values that are _not_
   // unique.
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
-  // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-  public void testGroupingDVOnly() throws IOException, SolrServerException {
+  public void testGroupingDVOnlySortFirst() throws IOException, SolrServerException {
     doGroupingDvOnly(fieldsToTestGroupSortFirst, "boolGSF");
+  }
+
+  @Test
+  public void testGroupingDVOnlySortLast() throws IOException, SolrServerException {
     doGroupingDvOnly(fieldsToTestGroupSortLast, "boolGSL");
   }
-  private void doGroupingDvOnly(List<FieldProps> fieldProps, String boolName) throws IOException, SolrServerException {
 
+  private void doGroupingDvOnly(List<FieldProps> fieldProps, String boolName) throws IOException, SolrServerException {
     List<SolrInputDocument> docs = new ArrayList<>(50);
     for (int idx = 0; idx < 49; ++idx) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", idx);
-      boolean doInc = ((idx % 7) == 0);
+
+      // Every 7th doc we bump a counter by some random amount
       for (FieldProps prop : fieldProps) {
-        doc.addField(prop.getName(), prop.getValue(doInc));
+        doc.addField(prop.getName(), prop.getValue((idx % 7) == 0));
       }
       docs.add(doc);
+
+      // Every fifth time through we add a doc with no values in any of the "fields of interest", so there should be
+      // 10 docs with nulls
       if ((idx % 5) == 0) {
         doc = new SolrInputDocument();
         doc.addField("id", idx + 10_000);
@@ -345,6 +362,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
         .add(docs)
         .commit(client, COLLECTION);
 
+    Solr11035BandAid(client, COLLECTION,"id", 59, "*:*", "DocValuesNotINdexedTest.doGroupingDvOnly");
+
     // OK, we should have one group with 10 entries for null, a group with 1 entry and 7 groups with 7
     for (FieldProps prop : fieldProps) {
 
@@ -356,7 +375,8 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
           "rows", "100",
           "group", "true",
           "group.field", prop.getName(),
-          "group.limit", "100");
+          "group.limit", "100",
+          "group.sort", "id asc");
 
       final QueryResponse rsp = client.query(COLLECTION, solrQuery);
 
@@ -386,9 +406,9 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
               break;
             
             default:
-              if (!prop.getName().equals("intGSF")) { // TODO: this can be 6 or 8 as well
-                fail("Unexpected number of elements in the group for " + prop.getName() + ": " + grp.getResult().size() + " rsp: " + rsp);
-              }
+              fail("Unexpected number of elements in the group for '" + prop.getName() + "' size: '" + grp.getResult().size()
+                  + "' GroupValue: '" + grp.getGroupValue()
+                  + "' rsp: " + rsp);
           }
         }
       }
@@ -476,17 +496,19 @@ class FieldProps {
     this.expectedCount = expectedCount;
     resetBase();
   }
+
+  // There's a vague chance that counts will roll over, so let's insure we have some room to grow in a positive direction
   void resetBase() {
     if (name.startsWith("int")) {
-      base = Math.abs(random().nextInt());
+      base = Math.abs(random().nextInt()) / 2;
     } else if (name.startsWith("long")) {
-      base = Math.abs(random().nextLong());
+      base = Math.abs(random().nextLong()) / 2;
     } else if (name.startsWith("float")) {
-      base = Math.abs(random().nextFloat());
+      base = Math.abs(random().nextFloat()) / 2;
     } else if (name.startsWith("double")) {
-      base = Math.abs(random().nextDouble());
+      base = Math.abs(random().nextDouble()) / 2;
     } else if (name.startsWith("date")) {
-      base = Math.abs(random().nextLong());
+      base = Math.abs(random().nextLong()) / 2;
     } else if (name.startsWith("bool")) {
       base = true; // Must start with a known value since bools only have a two values....
     } else if (name.startsWith("string") || name.startsWith("sortable")) {
@@ -515,7 +537,7 @@ class FieldProps {
 
   public String getValue(boolean incrementCounter) {
     if (incrementCounter) {
-      counter += random().nextInt(10) + 10_000;
+      counter += random().nextInt(10_000) + 1; // Must add something because nextInt could return zero
     }
     if (name.startsWith("int")) {
       return Integer.toString((int) base + counter);

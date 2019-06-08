@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.hll.HLL;
 import com.google.common.hash.Hashing;
 import com.google.common.hash.HashFunction;
@@ -43,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9062")
+@LogLevel("org.eclipse.jetty.client.HttpConnection=DEBUG")
 public class TestDistributedStatsComponentCardinality extends BaseDistributedSearchTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

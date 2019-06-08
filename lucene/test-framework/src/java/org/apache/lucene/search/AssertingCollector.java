@@ -26,6 +26,7 @@ import org.apache.lucene.index.LeafReaderContext;
 class AssertingCollector extends FilterCollector {
 
   private int maxDoc = -1;
+  private int previousLeafMaxDoc = 0;
 
   /** Wrap the given collector in order to add assertions. */
   public static Collector wrap(Collector in) {
@@ -41,6 +42,9 @@ class AssertingCollector extends FilterCollector {
 
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+    assert context.docBase >= previousLeafMaxDoc;
+    previousLeafMaxDoc = context.docBase + context.reader().maxDoc();
+
     final LeafCollector in = super.getLeafCollector(context);
     final int docBase = context.docBase;
     return new AssertingLeafCollector(in, 0, DocIdSetIterator.NO_MORE_DOCS) {
@@ -50,6 +54,7 @@ class AssertingCollector extends FilterCollector {
         // not only per segment
         assert docBase + doc >= maxDoc : "collection is not in order: current doc="
             + (docBase + doc) + " while " + maxDoc + " has already been collected";
+
         super.collect(doc);
         maxDoc = docBase + doc;
       }

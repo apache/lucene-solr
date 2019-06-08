@@ -46,7 +46,7 @@ public abstract class ShardHandlerFactory {
       info = DEFAULT_SHARDHANDLER_INFO;
 
     try {
-      ShardHandlerFactory shf = loader.findClass(info.className, ShardHandlerFactory.class).newInstance();
+      ShardHandlerFactory shf = loader.findClass(info.className, ShardHandlerFactory.class).getConstructor().newInstance();
       if (PluginInfoInitialized.class.isAssignableFrom(shf.getClass()))
         PluginInfoInitialized.class.cast(shf).init(info);
       return shf;

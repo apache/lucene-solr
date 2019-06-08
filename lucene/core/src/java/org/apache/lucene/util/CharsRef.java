@@ -17,7 +17,9 @@
 package org.apache.lucene.util;
 
 
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Objects;
 
 /**
  * Represents char[], as a slice (offset + length) into an existing char[].
@@ -106,14 +108,14 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
   }
 
   public boolean charsEquals(CharsRef other) {
-    return FutureArrays.equals(this.chars, this.offset, this.offset + this.length, 
+    return Arrays.equals(this.chars, this.offset, this.offset + this.length, 
                                other.chars, other.offset, other.offset + other.length);
   }
 
   /** Signed int order comparison */
   @Override
   public int compareTo(CharsRef other) {
-    return FutureArrays.compare(this.chars, this.offset, this.offset + this.length, 
+    return Arrays.compare(this.chars, this.offset, this.offset + this.length, 
                                 other.chars, other.offset, other.offset + other.length);
   }
 
@@ -130,14 +132,14 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
   @Override
   public char charAt(int index) {
     // NOTE: must do a real check here to meet the specs of CharSequence
-    FutureObjects.checkIndex(index, length);
+    Objects.checkIndex(index, length);
     return chars[offset + index];
   }
 
   @Override
   public CharSequence subSequence(int start, int end) {
     // NOTE: must do a real check here to meet the specs of CharSequence
-    FutureObjects.checkFromToIndex(start, end, length);
+    Objects.checkFromToIndex(start, end, length);
     return new CharsRef(chars, offset + start, end - start);
   }
   
@@ -161,7 +163,7 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
     public int compare(CharsRef a, CharsRef b) {
       int aEnd = a.offset + a.length;
       int bEnd = b.offset + b.length;
-      int i = FutureArrays.mismatch(a.chars, a.offset, aEnd, 
+      int i = Arrays.mismatch(a.chars, a.offset, aEnd, 
                                     b.chars, b.offset, bEnd);
 
       if (i >= 0 && i < Math.min(a.length, b.length)) {

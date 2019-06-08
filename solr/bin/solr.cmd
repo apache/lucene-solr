@@ -1167,20 +1167,12 @@ set SOLR_OPTS=%SOLR_JAVA_STACK_SIZE% %SOLR_OPTS%
 IF "%SOLR_TIMEZONE%"=="" set SOLR_TIMEZONE=UTC
 
 IF "%GC_TUNE%"=="" (
-  set GC_TUNE=-XX:NewRatio=3 ^
-   -XX:SurvivorRatio=4 ^
-   -XX:TargetSurvivorRatio=90 ^
-   -XX:MaxTenuringThreshold=8 ^
-   -XX:+UseConcMarkSweepGC ^
-   -XX:ConcGCThreads=4 -XX:ParallelGCThreads=4 ^
-   -XX:+CMSScavengeBeforeRemark ^
-   -XX:PretenureSizeThreshold=64m ^
-   -XX:+UseCMSInitiatingOccupancyOnly ^
-   -XX:CMSInitiatingOccupancyFraction=50 ^
-   -XX:CMSMaxAbortablePrecleanTime=6000 ^
-   -XX:+CMSParallelRemarkEnabled ^
-   -XX:+ParallelRefProcEnabled ^
-   -XX:-OmitStackTraceInFastThrow
+  set GC_TUNE=-XX:+UseG1GC ^
+    -XX:+PerfDisableSharedMem ^
+    -XX:+ParallelRefProcEnabled ^
+    -XX:MaxGCPauseMillis=250 ^
+    -XX:+UseLargePages ^
+    -XX:+AlwaysPreTouch
 )
 
 if !JAVA_MAJOR_VERSION! GEQ 9  (

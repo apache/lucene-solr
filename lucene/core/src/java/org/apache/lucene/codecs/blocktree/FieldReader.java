@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Terms;
@@ -67,7 +66,7 @@ public final class FieldReader extends Terms implements Accountable {
   //private boolean DEBUG;
 
   FieldReader(BlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm, boolean openedFromWriter, Lucene50PostingsFormat.FSTLoadMode fstLoadMode) throws IOException {
+              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm, boolean openedFromWriter, BlockTreeTermsReader.FSTLoadMode fstLoadMode) throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
     //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");

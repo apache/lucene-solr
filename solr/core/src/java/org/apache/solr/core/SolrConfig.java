@@ -25,7 +25,6 @@ import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
@@ -75,8 +74,6 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DOMUtil;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -86,6 +83,7 @@ import org.xml.sax.SAXException;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.util.Utils.fromJSON;
 import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
@@ -208,6 +206,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     getRequestParams();
     initLibs();
     luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal("luceneMatchVersion", true));
+    log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
+
     String indexConfigPrefix;
 
     // Old indexDefaults and mainIndex sections are deprecated and fails fast for luceneMatchVersion=>LUCENE_4_0_0.
@@ -235,8 +235,12 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     indexConfig = new SolrIndexConfig(this, "indexConfig", null);
 
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
-    log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
-
+    if (BooleanQuery.getMaxClauseCount() < booleanQueryMaxClauseCount) {
+      log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} "+
+               "and will have no effect", booleanQueryMaxClauseCount, BooleanQuery.getMaxClauseCount());
+      log.warn("set 'maxBooleanClauses' in solr.xml to increase global limit");
+    }
+    
     // Warn about deprecated / discontinued parameters
     // boolToFilterOptimizer has had no effect since 3.1
     if (get("query/boolTofilterOptimizer", null) != null)
@@ -395,21 +399,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
 
   static {
-    // Raise the Lucene static limit so we can control this with higher granularity.  See SOLR-10921
-    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE-1);
-
     Map<String, SolrPluginInfo> map = new HashMap<>();
     for (SolrPluginInfo plugin : plugins) map.put(plugin.clazz.getName(), plugin);
     classVsSolrPluginInfo = Collections.unmodifiableMap(map);
   }
-
-  {
-    // non-static setMaxClauseCount because the test framework sometimes reverts the value on us and
-    // the static setting above is only executed once.  This re-sets the value every time a SolrConfig
-    // object is created. See SOLR-10921
-    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE-1);
-  }
-
 
   public static class SolrPluginInfo {
 
@@ -452,8 +445,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.debug("Config overlay loaded. version : {} ", version);
       }
-      isr = new InputStreamReader(in, StandardCharsets.UTF_8);
-      Map m = (Map) ObjectBuilder.getVal(new JSONParser(isr));
+      Map m = (Map) fromJSON(in);
       return new ConfigOverlay(m, version);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading config overlay", e);

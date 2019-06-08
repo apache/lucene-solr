@@ -168,8 +168,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       this.method = httpMethod;
       path = (String) req.getContext().get("path");
       if (path == null) path = getDefaultPath();
-      parts = StrUtils.splitSmart(path, '/');
-      if (parts.get(0).isEmpty()) parts.remove(0);
+      parts = StrUtils.splitSmart(path, '/', true);
     }
 
     private String getDefaultPath() {

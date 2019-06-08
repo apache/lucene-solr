@@ -511,4 +511,27 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
       assertU(commit());
     }
   }
+
+  @Test
+  public void testTermsSortIndexDistribution() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_INDEX);
+    params.set(TermsParams.TERMS_LIMIT, "any-number");
+    assertEquals(params.toString(), createShardQueryParamsString(params));
+    params.set(TermsParams.TERMS_MINCOUNT, "0");
+    assertEquals(params.toString(), createShardQueryParamsString(params));
+    params.set(TermsParams.TERMS_MINCOUNT, "1");
+    assertEquals(params.toString(), createShardQueryParamsString(params));
+    // include all (also lower mincount) since 2 shards can have one each
+    params.set(TermsParams.TERMS_MINCOUNT, "2");
+    assertNotEquals(params.toString(), createShardQueryParamsString(params));
+    // "unlimited" since 2 shards can have 30 each, and term then should not be included
+    params.remove(TermsParams.TERMS_MINCOUNT);
+    params.set(TermsParams.TERMS_MAXCOUNT, "32");
+    assertNotEquals(params.toString(), createShardQueryParamsString(params));
+  }
+
+  private static String createShardQueryParamsString(ModifiableSolrParams params) {
+    return TermsComponent.createShardQuery(params).params.toString();
+  }
 }

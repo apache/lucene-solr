@@ -16,6 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -23,21 +25,28 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
@@ -49,8 +58,6 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * @lucene.experimental
@@ -97,39 +104,36 @@ public class AtomicUpdateDocumentMerger {
         for (Entry<String,Object> entry : ((Map<String,Object>) val).entrySet()) {
           String key = entry.getKey();
           Object fieldVal = entry.getValue();
-          boolean updateField = false;
           switch (key) {
             case "add":
-              updateField = true;
               doAdd(toDoc, sif, fieldVal);
               break;
             case "set":
-              updateField = true;
               doSet(toDoc, sif, fieldVal);
               break;
             case "remove":
-              updateField = true;
               doRemove(toDoc, sif, fieldVal);
               break;
             case "removeregex":
-              updateField = true;
               doRemoveRegex(toDoc, sif, fieldVal);
               break;
             case "inc":
-              updateField = true;
               doInc(toDoc, sif, fieldVal);
               break;
             case "add-distinct":
-              updateField = true;
               doAddDistinct(toDoc, sif, fieldVal);
               break;
             default:
-              //Perhaps throw an error here instead?
-              log.warn("Unknown operation for the an atomic update, operation ignored: " + key);
-              break;
+              Object id = toDoc.containsKey(idField.getName())? toDoc.getFieldValue(idField.getName()):
+                  fromDoc.getFieldValue(idField.getName());
+              String err = "Unknown operation for the an atomic update, operation ignored: " + key;
+              if (id != null) {
+                err = err + " for id:" + id;
+              }
+              throw new SolrException(ErrorCode.BAD_REQUEST, err);
           }
           // validate that the field being modified is not the id field.
-          if (updateField && idField.getName().equals(sif.getName())) {
+          if (idField.getName().equals(sif.getName())) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid update of id field: " + sif);
           }
 
@@ -175,11 +179,13 @@ public class AtomicUpdateDocumentMerger {
       return Collections.emptySet();
     }
     
+    String routeFieldOrNull = getRouteField(cmd);
     // first pass, check the things that are virtually free,
     // and bail out early if anything is obviously not a valid in-place update
     for (String fieldName : sdoc.getFieldNames()) {
       if (fieldName.equals(uniqueKeyFieldName)
-          || fieldName.equals(CommonParams.VERSION_FIELD)) {
+          || fieldName.equals(CommonParams.VERSION_FIELD)
+          || fieldName.equals(routeFieldOrNull)) {
         continue;
       }
       Object fieldValue = sdoc.getField(fieldName).getValue();
@@ -191,6 +197,10 @@ public class AtomicUpdateDocumentMerger {
       for (String op : ((Map<String, Object>)fieldValue).keySet()) {
         if (!op.equals("set") && !op.equals("inc")) {
           // not a supported in-place update op
+          return Collections.emptySet();
+        }
+        // fail fast if child doc
+        if(isChildDoc(((Map<String, Object>) fieldValue).get(op))) {
           return Collections.emptySet();
         }
       }
@@ -240,6 +250,65 @@ public class AtomicUpdateDocumentMerger {
     
     return candidateFields;
   }
+
+  private static String getRouteField(AddUpdateCommand cmd) {
+    String result = null;
+    SolrCore core = cmd.getReq().getCore();
+    CloudDescriptor cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
+    if (cloudDescriptor != null) {
+      String collectionName = cloudDescriptor.getCollectionName();
+      ZkController zkController = core.getCoreContainer().getZkController();
+      DocCollection collection = zkController.getClusterState().getCollection(collectionName);
+      result = collection.getRouter().getRouteField(collection);
+    }
+    return result;
+  }
+  
+  /**
+   *
+   * @param fullDoc the full doc to  be compared against
+   * @param partialDoc the sub document to be tested
+   * @return whether partialDoc is derived from fullDoc
+   */
+  public static boolean isDerivedFromDoc(SolrInputDocument fullDoc, SolrInputDocument partialDoc) {
+    for(SolrInputField subSif: partialDoc) {
+      Collection<Object> fieldValues = fullDoc.getFieldValues(subSif.getName());
+      if (fieldValues == null) return false;
+      if (fieldValues.size() < subSif.getValueCount()) return false;
+      Collection<Object> partialFieldValues = subSif.getValues();
+      // filter all derived child docs from partial field values since they fail List#containsAll check (uses SolrInputDocument#equals which fails).
+      // If a child doc exists in partialDoc but not in full doc, it will not be filtered, and therefore List#containsAll will return false
+      Stream<Object> nonChildDocElements = partialFieldValues.stream().filter(x -> !(isChildDoc(x) &&
+          (fieldValues.stream().anyMatch(y ->
+              (isChildDoc(x) &&
+                  isDerivedFromDoc((SolrInputDocument) y, (SolrInputDocument) x)
+              )
+          )
+          )));
+      if (!nonChildDocElements.allMatch(fieldValues::contains)) return false;
+    }
+    return true;
+  }
+
+  /**
+   *
+   * @param completeHierarchy SolrInputDocument that represents the nested document hierarchy from its root
+   * @param fieldPath the path to fetch, seperated by a '/' e.g. /children/grandChildren
+   * @return the SolrInputField of fieldPath
+   */
+  public static SolrInputField getFieldFromHierarchy(SolrInputDocument completeHierarchy, String fieldPath) {
+    // substr to remove first '/'
+    final List<String> docPaths = StrUtils.splitSmart(fieldPath.substring(1), '/');
+    Pair<String, Integer> subPath;
+    SolrInputField sifToReplace = null;
+    SolrInputDocument currDoc = completeHierarchy;
+    for (String subPathString: docPaths) {
+      subPath = getPathAndIndexFromNestPath(subPathString);
+      sifToReplace = currDoc.getField(subPath.getLeft());
+      currDoc = (SolrInputDocument) ((List)sifToReplace.getValues()).get(subPath.getRight());
+    }
+    return sifToReplace;
+  }
   
   /**
    * Given an AddUpdateCommand containing update operations (e.g. set, inc), merge and resolve the operations into
@@ -259,9 +328,8 @@ public class AtomicUpdateDocumentMerger {
     SolrInputDocument oldDocument = RealTimeGetComponent.getInputDocument
       (cmd.getReq().getCore(), idBytes,
        null, // don't want the version to be returned
-       true, // avoid stored fields from index
        updatedFields,
-       true); // resolve the full document
+       RealTimeGetComponent.Resolution.DOC);
                                               
     if (oldDocument == RealTimeGetComponent.DELETED || oldDocument == null) {
       // This doc was deleted recently. In-place update cannot work, hence a full atomic update should be tried.
@@ -314,14 +382,57 @@ public class AtomicUpdateDocumentMerger {
     return true;
   }
 
+  /**
+   *
+   * Merges an Atomic Update inside a document hierarchy
+   * @param sdoc the doc containing update instructions
+   * @param oldDocWithChildren the doc (children included) before the update
+   * @param sdocWithChildren the updated doc prior to the update (children included)
+   * @return root doc (children included) after update
+   */
+  public SolrInputDocument mergeChildDoc(SolrInputDocument sdoc, SolrInputDocument oldDocWithChildren,
+                                         SolrInputDocument sdocWithChildren) {
+    // get path of document to be updated
+    String updatedDocPath = (String) sdocWithChildren.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
+    // get the SolrInputField containing the document which the AddUpdateCommand updates
+    SolrInputField sifToReplace = getFieldFromHierarchy(oldDocWithChildren, updatedDocPath);
+    // update SolrInputField, either appending or replacing the updated document
+    updateDocInSif(sifToReplace, sdocWithChildren, sdoc);
+    return oldDocWithChildren;
+  }
+
+  /**
+   *
+   * @param updateSif the SolrInputField to update its values
+   * @param cmdDocWChildren the doc to insert/set inside updateSif
+   * @param updateDoc the document that was sent as part of the Add Update Command
+   * @return updated SolrInputDocument
+   */
+  public SolrInputDocument updateDocInSif(SolrInputField updateSif, SolrInputDocument cmdDocWChildren, SolrInputDocument updateDoc) {
+    List sifToReplaceValues = (List) updateSif.getValues();
+    final boolean wasList = updateSif.getRawValue() instanceof Collection;
+    int index = getDocIndexFromCollection(cmdDocWChildren, sifToReplaceValues);
+    SolrInputDocument updatedDoc = merge(updateDoc, cmdDocWChildren);
+    if(index == -1) {
+      sifToReplaceValues.add(updatedDoc);
+    } else {
+      sifToReplaceValues.set(index, updatedDoc);
+    }
+    // in the case where value was a List prior to the update and post update there is no more then one value
+    // it should be kept as a List.
+    final boolean singleVal = !wasList && sifToReplaceValues.size() <= 1;
+    updateSif.setValue(singleVal? sifToReplaceValues.get(0): sifToReplaceValues);
+    return cmdDocWChildren;
+  }
+
   protected void doSet(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
-    SchemaField sf = schema.getField(sif.getName());
-    toDoc.setField(sif.getName(), sf.getType().toNativeType(fieldVal));
+    String name = sif.getName();
+    toDoc.setField(name, getNativeFieldValue(name, fieldVal));
   }
 
   protected void doAdd(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
-    SchemaField sf = schema.getField(sif.getName());
-    toDoc.addField(sif.getName(), sf.getType().toNativeType(fieldVal));
+    String name = sif.getName();
+    toDoc.addField(name, getNativeFieldValue(name, fieldVal));
   }
 
   protected void doAddDistinct(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
@@ -393,21 +504,16 @@ public class AtomicUpdateDocumentMerger {
     final String name = sif.getName();
     SolrInputField existingField = toDoc.get(name);
     if (existingField == null) return;
-    SchemaField sf = schema.getField(name);
-
-    if (sf != null) {
-      final Collection<Object> original = existingField.getValues();
-      if (fieldVal instanceof Collection) {
-        for (Object object : (Collection) fieldVal) {
-          Object o = sf.getType().toNativeType(object);
-          original.remove(o);
-        }
-      } else {
-        original.remove(sf.getType().toNativeType(fieldVal));
+    final Collection original = existingField.getValues();
+    if (fieldVal instanceof Collection) {
+      for (Object object : (Collection) fieldVal) {
+        removeObj(original, object, name);
       }
-
-      toDoc.setField(name, original);
+    } else {
+      removeObj(original, fieldVal, name);
     }
+
+    toDoc.setField(name, original);
   }
 
   protected void doRemoveRegex(SolrInputDocument toDoc, SolrInputField sif, Object valuePatterns) {
@@ -441,6 +547,65 @@ public class AtomicUpdateDocumentMerger {
       patterns.add(Pattern.compile(fieldVal.toString()));
     }
     return patterns;
+  }
+
+  private Object getNativeFieldValue(String fieldName, Object val) {
+    if(isChildDoc(val)) {
+      return val;
+    }
+    SchemaField sf = schema.getField(fieldName);
+    return sf.getType().toNativeType(val);
+  }
+
+  private static boolean isChildDoc(Object obj) {
+    if(!(obj instanceof Collection)) {
+      return obj instanceof SolrDocumentBase;
+    }
+    Collection objValues = (Collection) obj;
+    if(objValues.size() == 0) {
+      return false;
+    }
+    return objValues.iterator().next() instanceof SolrDocumentBase;
+  }
+
+  private void removeObj(Collection original, Object toRemove, String fieldName) {
+    if(isChildDoc(toRemove)) {
+      removeChildDoc(original, (SolrInputDocument) toRemove);
+    } else {
+      original.remove(getNativeFieldValue(fieldName, toRemove));
+    }
+  }
+
+  private static void removeChildDoc(Collection original, SolrInputDocument docToRemove) {
+    for(SolrInputDocument doc: (Collection<SolrInputDocument>) original) {
+      if(isDerivedFromDoc(doc, docToRemove)) {
+        original.remove(doc);
+        return;
+      }
+    }
+  }
+
+  /**
+   *
+   * @param doc document to search for
+   * @param col collection of solrInputDocument
+   * @return index of doc in col, returns -1 if not found.
+   */
+  private static int getDocIndexFromCollection(SolrInputDocument doc, List<SolrInputDocument> col) {
+    for(int i = 0; i < col.size(); ++i) {
+      if(isDerivedFromDoc(col.get(i), doc)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  private static Pair<String, Integer> getPathAndIndexFromNestPath(String nestPath) {
+    List<String> splitPath = StrUtils.splitSmart(nestPath, '#');
+    if(splitPath.size() == 1) {
+      return Pair.of(splitPath.get(0), 0);
+    }
+    return Pair.of(splitPath.get(0), Integer.parseInt(splitPath.get(1)));
   }
   
 }

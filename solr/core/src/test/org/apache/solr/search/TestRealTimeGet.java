@@ -17,16 +17,6 @@
 package org.apache.solr.search;
 
 
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.util.RefCounted;
-import org.noggit.ObjectBuilder;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.TestHarness;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +24,16 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.TestHarness;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static org.apache.solr.core.SolrCore.verbose;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
@@ -715,7 +715,7 @@ public class TestRealTimeGet extends TestRTGBase {
               }
 
               String response = h.query(sreq);
-              Map rsp = (Map)ObjectBuilder.fromJSON(response);
+              Map rsp = (Map) Utils.fromJSONString(response);
               List doclist = (List)(((Map)rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {
                 // there's no info we can get back with a delete, so not much we can check without further synchronization

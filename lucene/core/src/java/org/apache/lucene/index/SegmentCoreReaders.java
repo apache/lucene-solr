@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -89,7 +90,7 @@ final class SegmentCoreReaders {
   private final Set<IndexReader.ClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<IndexReader.ClosedListener>());
   
-  SegmentCoreReaders(Directory dir, SegmentCommitInfo si, boolean openedFromWriter, IOContext context) throws IOException {
+  SegmentCoreReaders(Directory dir, SegmentCommitInfo si, boolean openedFromWriter, IOContext context, Map<String, String> readerAttributes) throws IOException {
 
     final Codec codec = si.info.getCodec();
     final Directory cfsDir; // confusing name: if (cfs) it's the cfsdir, otherwise it's the segment's directory.
@@ -107,7 +108,7 @@ final class SegmentCoreReaders {
 
       coreFieldInfos = codec.fieldInfosFormat().read(cfsDir, si.info, "", context);
       
-      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, coreFieldInfos, openedFromWriter, context);
+      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, coreFieldInfos, openedFromWriter, context, readerAttributes);
       final PostingsFormat format = codec.postingsFormat();
       // Ask codec for its Fields
       fields = format.fieldsProducer(segmentReadState);

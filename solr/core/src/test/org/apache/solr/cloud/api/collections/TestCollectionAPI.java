@@ -25,13 +25,16 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Lists;
+import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -40,6 +43,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -969,6 +973,36 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     } catch (SolrException se) {
       assertTrue("Should have gotten a specific message back mentioning 'missing required parameter'. Got: " + se.getMessage(),
           se.getMessage().toLowerCase(Locale.ROOT).contains("missing required parameter:"));
+    }
+  }
+
+  /**
+   * After a failed attempt to create a collection (due to bad configs), assert that
+   * the collection can be created with a good collection.
+   */
+  @Test
+  @ShardsFixed(num = 2)
+  public void testRecreateCollectionAfterFailure() throws Exception {
+    // Upload a bad configset
+    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), ZkTestServer.TIMEOUT,
+        ZkTestServer.TIMEOUT, null);
+    ZkTestServer.putConfig("badconf", zkClient, "/solr", ZkTestServer.SOLRHOME, "bad-error-solrconfig.xml", "solrconfig.xml");
+    ZkTestServer.putConfig("badconf", zkClient, "/solr", ZkTestServer.SOLRHOME, "schema-minimal.xml", "schema.xml");
+    zkClient.close();
+
+    try (CloudSolrClient client = createCloudClient(null)) {
+      // first, try creating a collection with badconf
+      HttpSolrClient.RemoteSolrException rse = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+          CollectionAdminResponse rsp = CollectionAdminRequest.createCollection
+              ("testcollection", "badconf", 1, 2).process(client);
+      });
+      assertNotNull(rse.getMessage());
+      assertNotSame(0, rse.code());
+
+      CollectionAdminResponse rsp = CollectionAdminRequest.createCollection
+          ("testcollection", "conf1", 1, 2).process(client);
+      assertNull(rsp.getErrorMessages());
+      assertSame(0, rsp.getStatus());
     }
   }
 }

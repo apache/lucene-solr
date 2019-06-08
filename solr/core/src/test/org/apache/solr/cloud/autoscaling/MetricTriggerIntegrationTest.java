@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -61,11 +59,9 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
 
   private static final TimeSource timeSource = TimeSource.NANO_TIME;
   
-  static Map<String, List<CapturedEvent>> listenerEvents = new HashMap<>();
-  static CountDownLatch listenerCreated = new CountDownLatch(1);
+  static final Map<String, List<CapturedEvent>> listenerEvents = new HashMap<>();
   private static CountDownLatch triggerFiredLatch;
   private static int waitForSeconds = 1;
-  private static Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -77,6 +73,7 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
     CloudTestUtils.waitForTriggerToBeScheduled(cluster.getOpenOverseer().getSolrCloudManager(), ".scheduled_maintenance");
     CloudTestUtils.suspendTrigger(cluster.getOpenOverseer().getSolrCloudManager(), ".scheduled_maintenance");
 
+    listenerEvents.clear();
     triggerFiredLatch = new CountDownLatch(1);
   }
 
@@ -211,7 +208,6 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
     @Override
     public void process(TriggerEvent event, ActionContext context) throws Exception {
       try {
-        events.add(event);
         long currentTimeNanos = context.getCloudManager().getTimeSource().getTimeNs();
         long eventTimeNanos = event.getEventTime();
         long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
@@ -231,7 +227,6 @@ public class MetricTriggerIntegrationTest extends SolrCloudTestCase {
     @Override
     public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException {
       super.configure(loader, cloudManager, config);
-      listenerCreated.countDown();
       timeSource = cloudManager.getTimeSource();
     }
 

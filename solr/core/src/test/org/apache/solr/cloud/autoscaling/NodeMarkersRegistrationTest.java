@@ -81,6 +81,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     return triggerFiredLatch;
   }
 
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13376")
   @Test
   public void testNodeMarkersRegistration() throws Exception {
     triggerFiredLatch = new CountDownLatch(1);

@@ -28,6 +28,8 @@
 
 <solr>
 
+  <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
+  
   <solrcloud>
 
     <str name="host">${host:}</str>

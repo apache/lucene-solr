@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -60,7 +61,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   }
 
   public void testZkStateWriterBatching() throws Exception {
-    String zkDir = createTempDir("testZkStateWriterBatching").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testZkStateWriterBatching");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -110,7 +111,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   }
 
   public void testSingleLegacyCollection() throws Exception {
-    String zkDir = createTempDir("testSingleLegacyCollection").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testSingleLegacyCollection");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -150,7 +151,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   }
 
   public void testSingleExternalCollection() throws Exception {
-    String zkDir = createTempDir("testSingleExternalCollection").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testSingleExternalCollection");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -192,7 +193,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   }
 
   public void testExternalModificationToSharedClusterState() throws Exception {
-    String zkDir = createTempDir("testExternalModification").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testExternalModification");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -266,7 +267,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   }
 
   public void testExternalModificationToStateFormat2() throws Exception {
-    String zkDir = createTempDir("testExternalModificationToStateFormat2").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testExternalModificationToStateFormat2");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 

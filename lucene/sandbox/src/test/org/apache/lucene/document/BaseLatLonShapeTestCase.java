@@ -41,6 +41,7 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.store.Directory;
@@ -145,14 +146,98 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     return LatLonShape.newBoxQuery(field, queryRelation, minLat, maxLat, minLon, maxLon);
   }
 
+  public void testBoxQueryEqualsAndHashcode() {
+    Rectangle rectangle = GeoTestUtil.nextBox();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    String fieldName = "foo";
+    Query q1 = newRectQuery(fieldName, queryRelation, rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
+    Query q2 = newRectQuery(fieldName, queryRelation, rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newRectQuery("bar", queryRelation, rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
+    QueryUtils.checkUnequal(q1, q3);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    Query q4 = newRectQuery(fieldName, newQueryRelation, rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    //different shape
+    Rectangle newRectangle = GeoTestUtil.nextBox();;
+    Query q5 = newRectQuery(fieldName, queryRelation, newRectangle.minLat, newRectangle.maxLat, newRectangle.minLon, newRectangle.maxLon);
+    if (rectangle.equals(newRectangle)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
+  }
+
   /** factory method to create a new line query */
   protected Query newLineQuery(String field, QueryRelation queryRelation, Line... lines) {
     return LatLonShape.newLineQuery(field, queryRelation, lines);
   }
 
+  public void testLineQueryEqualsAndHashcode() {
+    Line line = nextLine();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), POINT_LINE_RELATIONS);
+    String fieldName = "foo";
+    Query q1 = newLineQuery(fieldName, queryRelation, line);
+    Query q2 = newLineQuery(fieldName, queryRelation, line);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newLineQuery("bar", queryRelation, line);
+    QueryUtils.checkUnequal(q1, q3);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), POINT_LINE_RELATIONS);
+    Query q4 = newLineQuery(fieldName, newQueryRelation, line);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    //different shape
+    Line newLine = nextLine();
+    Query q5 = newLineQuery(fieldName, queryRelation, newLine);
+    if (line.equals(newLine)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
+  }
+
   /** factory method to create a new polygon query */
   protected Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
     return LatLonShape.newPolygonQuery(field, queryRelation, polygons);
+  }
+
+  public void testPolygonQueryEqualsAndHashcode() {
+    Polygon polygon = GeoTestUtil.nextPolygon();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    String fieldName = "foo";
+    Query q1 = newPolygonQuery(fieldName, queryRelation, polygon);
+    Query q2 = newPolygonQuery(fieldName, queryRelation, polygon);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newPolygonQuery("bar", queryRelation, polygon);
+    QueryUtils.checkUnequal(q1, q3);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    Query q4 = newPolygonQuery(fieldName, newQueryRelation, polygon);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    //different shape
+    Polygon newPolygon = GeoTestUtil.nextPolygon();;
+    Query q5 = newPolygonQuery(fieldName, queryRelation, newPolygon);
+    if (polygon.equals(newPolygon)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
   }
 
   // A particularly tricky adversary for BKD tree:

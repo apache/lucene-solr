@@ -137,6 +137,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
@@ -481,7 +482,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           NRT_REPLICAS,
           POLICY,
           WAIT_FOR_FINAL_STATE,
-          WITH_COLLECTION);
+          WITH_COLLECTION,
+          ALIAS);
 
       props.putIfAbsent(STATE_FORMAT, "2");
 
@@ -542,6 +544,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
     RELOAD_OP(RELOAD, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
 
+    RENAME_OP(RENAME, (req, rsp, h) -> copy(req.getParams().required(), null, NAME, CollectionAdminParams.TARGET)),
+
     REINDEXCOLLECTION_OP(REINDEXCOLLECTION, (req, rsp, h) -> {
       Map<String, Object> m = copy(req.getParams().required(), null, NAME);
       copy(req.getParams(), m,
@@ -572,7 +576,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }),
 
     SYNCSHARD_OP(SYNCSHARD, (req, rsp, h) -> {
-      String collection = req.getParams().required().get("collection");
+      String extCollection = req.getParams().required().get("collection");
+      String collection = h.coreContainer.getZkController().getZkStateReader().getAliases().resolveSimpleAlias(extCollection);
       String shard = req.getParams().required().get("shard");
 
       ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
@@ -693,7 +698,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         Map<String,Map<String,String>> meta = new LinkedHashMap<>();
         for (String alias : aliases.getCollectionAliasListMap().keySet()) {
           Map<String, String> collectionAliasProperties = aliases.getCollectionAliasProperties(alias);
-          if (collectionAliasProperties != null) {
+          if (!collectionAliasProperties.isEmpty()) {
             meta.put(alias, collectionAliasProperties);
           }
         }
@@ -811,7 +816,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return null;
     }),
     COLLECTIONPROP_OP(COLLECTIONPROP, (req, rsp, h) -> {
-      String collection = req.getParams().required().get(NAME);
+      String extCollection = req.getParams().required().get(NAME);
+      String collection = h.coreContainer.getZkController().getZkStateReader().getAliases().resolveSimpleAlias(extCollection);
       String name = req.getParams().required().get(PROPERTY_NAME);
       String val = req.getParams().get(PROPERTY_VALUE);
       CollectionProperties cp = new CollectionProperties(h.coreContainer.getZkController().getZkClient());
@@ -921,6 +927,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       NamedList<Object> results = new NamedList<>();
       Map<String, DocCollection> collections = h.coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionsMap();
       List<String> collectionList = new ArrayList<>(collections.keySet());
+      // XXX should we add aliases here?
       results.add("collections", collectionList);
       SolrResponse response = new OverseerSolrResponse(results);
       rsp.getValues().addAll(response.getResponse());
@@ -1027,7 +1034,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     BACKUP_OP(BACKUP, (req, rsp, h) -> {
       req.getParams().required().check(NAME, COLLECTION_PROP);
 
-      String collectionName = req.getParams().get(COLLECTION_PROP);
+      String extCollectionName = req.getParams().get(COLLECTION_PROP);
+      String collectionName = h.coreContainer.getZkController().getZkStateReader()
+          .getAliases().resolveSimpleAlias(extCollectionName);
       ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
       if (!clusterState.hasCollection(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
@@ -1076,6 +1085,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       //We always want to restore into an collection name which doesn't  exist yet.
       if (clusterState.hasCollection(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' exists, no action taken.");
+      }
+      if (h.coreContainer.getZkController().getZkStateReader().getAliases().hasAlias(collectionName)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' is an existing alias, no action taken.");
       }
 
       CoreContainer cc = h.coreContainer;
@@ -1126,7 +1138,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CREATESNAPSHOT_OP(CREATESNAPSHOT, (req, rsp, h) -> {
       req.getParams().required().check(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
 
-      String collectionName = req.getParams().get(COLLECTION_PROP);
+      String extCollectionName = req.getParams().get(COLLECTION_PROP);
+      String collectionName = h.coreContainer.getZkController().getZkStateReader()
+          .getAliases().resolveSimpleAlias(extCollectionName);
       String commitName = req.getParams().get(CoreAdminParams.COMMIT_NAME);
       ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
       if (!clusterState.hasCollection(collectionName)) {
@@ -1146,7 +1160,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETESNAPSHOT_OP(DELETESNAPSHOT, (req, rsp, h) -> {
       req.getParams().required().check(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
 
-      String collectionName = req.getParams().get(COLLECTION_PROP);
+      String extCollectionName = req.getParams().get(COLLECTION_PROP);
+      String collectionName = h.coreContainer.getZkController().getZkStateReader()
+          .getAliases().resolveSimpleAlias(extCollectionName);
       ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
       if (!clusterState.hasCollection(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
@@ -1158,7 +1174,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     LISTSNAPSHOTS_OP(LISTSNAPSHOTS, (req, rsp, h) -> {
       req.getParams().required().check(COLLECTION_PROP);
 
-      String collectionName = req.getParams().get(COLLECTION_PROP);
+      String extCollectionName = req.getParams().get(COLLECTION_PROP);
+      String collectionName = h.coreContainer.getZkController().getZkStateReader()
+          .getAliases().resolveSimpleAlias(extCollectionName);
       ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
       if (!clusterState.hasCollection(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
@@ -1256,7 +1274,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   private static void forceLeaderElection(SolrQueryRequest req, CollectionsHandler handler) {
     ZkController zkController = handler.coreContainer.getZkController();
     ClusterState clusterState = zkController.getClusterState();
-    String collectionName = req.getParams().required().get(COLLECTION_PROP);
+    String extCollectionName = req.getParams().required().get(COLLECTION_PROP);
+    String collectionName = zkController.zkStateReader.getAliases().resolveSimpleAlias(extCollectionName);
     String sliceId = req.getParams().required().get(SHARD_ID_PROP);
 
     log.info("Force leader invoked, state: {}", clusterState);

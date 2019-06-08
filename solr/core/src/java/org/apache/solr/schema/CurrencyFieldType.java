@@ -122,7 +122,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     try {
       Class<? extends ExchangeRateProvider> c
           = schema.getResourceLoader().findClass(exchangeRateProviderClass, ExchangeRateProvider.class);
-      provider = c.newInstance();
+      provider = c.getConstructor().newInstance();
       provider.init(args);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR,

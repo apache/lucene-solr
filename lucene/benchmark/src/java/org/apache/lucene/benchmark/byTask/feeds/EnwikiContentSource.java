@@ -26,6 +26,11 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
 import org.apache.lucene.util.IOUtils;
@@ -33,9 +38,9 @@ import org.apache.lucene.util.ThreadInterruptedException;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.helpers.DefaultHandler;
-import org.xml.sax.helpers.XMLReaderFactory;
 
 /**
  * A {@link ContentSource} which reads the English Wikipedia dump. You can read
@@ -47,6 +52,15 @@ import org.xml.sax.helpers.XMLReaderFactory;
  * </ul>
  */
 public class EnwikiContentSource extends ContentSource {
+
+  private static final SAXParserFactory SAX_PARSER_FACTORY = SAXParserFactory.newDefaultInstance();
+  static {
+    try {
+      SAX_PARSER_FACTORY.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+    } catch (SAXNotRecognizedException | SAXNotSupportedException | ParserConfigurationException e) {
+      throw new Error(e);
+    }
+  }
 
   private class Parser extends DefaultHandler implements Runnable {
     private Thread t;
@@ -172,15 +186,13 @@ public class EnwikiContentSource extends ContentSource {
     public void run() {
 
       try {
-        XMLReader reader = XMLReaderFactory.createXMLReader();
-        reader.setContentHandler(this);
-        reader.setErrorHandler(this);
+        SAXParser reader = SAX_PARSER_FACTORY.newSAXParser();
         while(!stopped){
           final InputStream localFileIS = is;
           if (localFileIS != null) { // null means fileIS was closed on us 
             try {
               // To work around a bug in XERCES (XERCESJ-1257), we assume the XML is always UTF8, so we simply provide reader.
-              reader.parse(new InputSource(IOUtils.getDecodingReader(localFileIS, StandardCharsets.UTF_8)));
+              reader.parse(new InputSource(IOUtils.getDecodingReader(localFileIS, StandardCharsets.UTF_8)), this);
             } catch (IOException ioe) {
               synchronized(EnwikiContentSource.this) {
                 if (localFileIS != is) {
@@ -202,7 +214,7 @@ public class EnwikiContentSource extends ContentSource {
             }
           }
         }
-      } catch (SAXException | IOException sae) {
+      } catch (SAXException | IOException | ParserConfigurationException sae) {
         throw new RuntimeException(sae);
       } finally {
         synchronized(this) {
