@@ -15,6 +15,10 @@ New Features
   to false (defaults to true).
   (Namgyu Kim via Jim Ferenczi)
 
+* LUCENE-8812: Add new KoreanNumberFilter that can change Hangul character to number
+  and process decimal point. It is similar to the JapaneseNumberFilter.
+  (Namgyu Kim)
+
 Bug Fixes
 
 * LUCENE-8831: Fixed LatLonShapeBoundingBoxQuery .hashCode methods. (Ignacio Vera)
