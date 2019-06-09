@@ -37,10 +37,3 @@ task runJflex() {
   group = 'Build Regenerate'
   description = 'Runs all jflex targets to regenerate src files.'
 }
-
-subprojects {
-  File target = File.createTempDir()
-  tasks.create('jdepsReport', org.apache.lucene.gradle.JdepsReport, target)
-  tasks.create('unusedDeps', org.apache.lucene.gradle.UnusedDeps, target)
-  unusedDeps.dependsOn jdepsReport
-}

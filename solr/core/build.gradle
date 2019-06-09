@@ -53,6 +53,9 @@ dependencies {
   runtimeOnly ('org.apache.kerby:kerby-asn1')
   runtimeOnly ('org.apache.kerby:kerby-pkix')
   
+  // used by calicte.avatica
+  runtimeOnly ('com.google.protobuf:protobuf-java')
+  
   compileOnly ('javax.servlet:javax.servlet-api')
   
   // TODO: this is not great
@@ -114,7 +117,6 @@ dependencies {
     exclude group: '*', module: '*' // brings in a lot we don't use
   }
   implementation ('commons-collections:commons-collections')
-  implementation ('commons-beanutils:commons-beanutils')
   implementation ('com.github.ben-manes.caffeine:caffeine')
   implementation ('com.google.re2j:re2j')
   implementation ('org.apache.commons:commons-lang3')
