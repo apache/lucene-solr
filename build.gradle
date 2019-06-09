@@ -31,24 +31,29 @@ def luceneSolrSubProjects = subprojects.findAll { project -> project.name != 'bu
 
 def rootProjectDir = project.rootProject.projectDir;
 
+// setup some basics - for other allproject work see below
 allprojects {
   // make sure ant task logging shows up by default
   ant.lifecycleLogLevel = "INFO"
-  
   // sugare file path handler - to deal with path.separator on string paths
   ext.filePath = { path -> file(path).getAbsolutePath() }
-  
   // sugar multi part File
   ext.mfile = { file1, file2 -> new File(file(file1), file2.toString()) }
-  
+  File target = File.createTempDir()
+  target.deleteOnExit()
+  ext.tmp = target
+  //gradle.buildFinished {delete(target)}
 }
+
+apply from: mfile(rootProjectDir, 'buildSrc/common/build-help.gradle')
 
 // TOC
 // -> lucene-solr all project config
 // -> lucene-solr sub module config
 // -> lucene-solr root project config
 // -> all projects config
-// -> lucene-solr IDE config
+// ->   lucene-solr IDE config
+// ->   dependencies
 // -> other config
 
 // -> lucene-solr all module config - configure all lucene-solr projects, including root project
@@ -90,11 +95,7 @@ configure(luceneSolrProjects) {
   }
   
   // TODO: check.dependsOn checkMissingJavaDocs
-  
-  task listDeps(type: org.apache.lucene.gradle.ListDeps) {
-    group = 'Help'
-    description = "List deps for a module."
-  }
+
 }
 
 // -> lucene-solr sub module config - configure all lucene-solr modules (excludes the root project)
@@ -183,6 +184,38 @@ configure(allprojects) {
     modules {
       module("commons-logging:commons-logging") { replacedBy("org.slf4j:jcl-over-slf4j") }
     }
+  }
+  
+  task listDependencies(type: org.apache.lucene.gradle.ListDeps) {
+    group = 'Help'
+    description = "List sorted dependencies and counts for a module."
+  }
+  
+  File jdepsReportDir = mfile(project.tmp, 'jdepsreport')
+  
+  task unusedDependencies {
+    group = 'Help'
+    description = "Lists dependencies that may be unused for a module."
+
+    project.tasks.create("jdepsReport", org.apache.lucene.gradle.JdepsReport, jdepsReportDir, true)
+    project.tasks.create("iunusedDeps", org.apache.lucene.gradle.UnusedDeps, jdepsReportDir)
+    project.iunusedDeps.dependsOn project.jdepsReport
+    project.iunusedDeps.doLast {
+      //delete(jdepsReportDir)
+    }
+    dependsOn iunusedDeps
+  }
+  task missingDependencies {
+    group = 'Help'
+    description = "Lists classes from this module with missing runtime dependencies (we ignore scanning some root deps (ie hadoop) and some violations (ie annotations)."
+    project.tasks.create("jdepsReportR", org.apache.lucene.gradle.JdepsReport, jdepsReportDir, true)
+    // we exclude hadoop and annotations
+    project.tasks.create("imissingDeps", org.apache.lucene.gradle.MissingDeps, jdepsReportDir, ['**/*hadoop*.dot'], ['org\\.apache\\.yetus\\.audience\\.InterfaceAudience', 'javax\\.annotation\\..*', 'org\\.apache\\.yetus\\.audience', 'com\\.google\\.errorprone\\.annotations\\..*'])
+    project.imissingDeps.dependsOn project.jdepsReportR
+    project.imissingDeps.doLast {
+      delete(jdepsReportDir)
+    }
+    dependsOn imissingDeps
   }
 }
 
