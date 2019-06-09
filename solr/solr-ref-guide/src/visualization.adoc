@@ -88,6 +88,10 @@ image::images/math-expressions/spline.png[]
 
 image::images/math-expressions/sined.png[]
 
+=== Autocorrelation
+
+image::images/math-expressions/autocorr.png[]
+
 === Fourier Transform
 
 image::images/math-expressions/fft.png[]
