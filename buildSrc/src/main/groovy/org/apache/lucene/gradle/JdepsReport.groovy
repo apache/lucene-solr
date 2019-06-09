@@ -52,42 +52,61 @@ class JdepsReport extends DefaultTask {
   
   @OutputDirectory
   File target
+  
+  @Input
+  boolean recursive
 
   @Inject
-  public JdepsReport(File target) {
-    if (!project.configurations.hasProperty('runtimeClasspath')) {
-      return
-    }
-
+  public JdepsReport(File target, boolean recursive) {
     this.target = target
-    
+    this.recursive = recursive
+    if (project.hasProperty('jdepsConfig')) {
+      configuration = project.jdepsConfig
+    }
     doFirst {
       println "Writing output files to ${target}"
     }
-    
-    if (project.hasProperty('unusedDepsConfig')) {
-      configuration = project.unusedDepsConfig
+  }
+  
+  protected void makeDirs() {
+    target.mkdirs()
+    distDir = new File(target, 'distDir')
+    jdepsDir = new File(target, 'jdepsDir')
+    distDir.mkdirs()
+    jdepsDir.mkdirs()
+  }
+
+  @TaskAction
+  void execute() {
+    if (!project.configurations.hasProperty(configuration)) {
+      println 'project does not have the specified configuration, skipping execute ...'
+      return
     }
     
-    Configuration config = project.configurations[this.configuration]
+    makeDirs()
     
-    List<Project> buildProjects = new ArrayList()
-    buildProjects.add(project)
-    config.getAllDependencies().forEach({ dep ->
-      if (dep instanceof DefaultProjectDependency) {
-        Project dProject = dep.getDependencyProject()
-        buildProjects.add(dProject)
-      }
-    })
+    // make sure ant task logging shows up by default
+    ant.lifecycleLogLevel = "INFO"
     
-    project.tasks.create(name: "depsToDir", type: org.gradle.api.tasks.Copy) {
-      outputs.upToDateWhen { false }
-      into({ makeDirs(); distDir })
+    project.copy {
+      into(distDir)
+      
+      Configuration config = project.configurations[this.configuration]
+      
+      List<Project> buildProjects = new ArrayList()
+      buildProjects.add(project)
+      config.getAllDependencies().forEach({ dep ->
+        if (dep instanceof DefaultProjectDependency) {
+          Project dProject = dep.getDependencyProject()
+          buildProjects.add(dProject)
+        }
+      })
+      
       buildProjects.each {subproject ->
         project.evaluationDependsOn(subproject.path)
         def topLvlProject = getTopLvlProject(subproject)
         
-        if (subproject.getPlugins().hasPlugin(PartOfDist) && subproject.tasks.findByName('jar') && subproject.configurations.hasProperty('runtimeClasspath')) {
+        if (subproject.getPlugins().hasPlugin(PartOfDist) && subproject.tasks.findByName('jar') && subproject.configurations.hasProperty(configuration)) {
            from(subproject.jar.outputs.files) {
             include "*.jar"
             into ({topLvlProject.name + '/' + topLvlProject.relativePath(subproject.projectDir)})
@@ -103,22 +122,6 @@ class JdepsReport extends DefaultTask {
       includeEmptyDirs = false
     }
     
-    dependsOn project.tasks.depsToDir
-  }
-  
-  protected void makeDirs() {
-    target.mkdirs()
-    distDir = new File(target, 'distDir')
-    jdepsDir = new File(target, 'jdepsDir')
-    distDir.mkdirs()
-    jdepsDir.mkdirs()
-  }
-
-  @TaskAction
-  void execute() {
-    // make sure ant task logging shows up by default
-    ant.lifecycleLogLevel = "INFO"
-
     runJdeps(getTopLvlProject(project), project, distDir, jdepsDir)
     
     Configuration config = project.configurations[this.configuration]
@@ -139,6 +142,7 @@ class JdepsReport extends DefaultTask {
     ant.exec (executable: "jdeps", failonerror: true, resolveexecutable: true) {
       ant.arg(line: '--class-path ' + "${distPath}/lib/" + '*')
       ant.arg(line: '--multi-release 11')
+      if (this.recursive) ant.arg(value: '-recursive')
       ant.arg(value: '-verbose:class')
       ant.arg(line: "-dotoutput ${dotOutPath}")
       ant.arg(value: "${distPath}/${project.name}-${project.version}.jar")

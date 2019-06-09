@@ -26,6 +26,7 @@ import org.gradle.api.artifacts.Dependency
 import org.gradle.api.file.RelativePath
 import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
 import org.gradle.api.specs.Spec
+import org.gradle.api.specs.Specs
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.InputDirectory
@@ -34,8 +35,13 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
 import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+import java.util.zip.ZipFile
+import java.util.zip.ZipException
+
+import java.util.stream.Stream
 
 // dev util task to help find possible unused deps
 class UnusedDeps extends DefaultTask {
@@ -50,21 +56,17 @@ class UnusedDeps extends DefaultTask {
   
   @Inject
   public UnusedDeps(File inputDirectory) {
-    
-    group = 'Help'
-    description = "Lists dependencies that may be unused for a module."
-    
-    if (!project.configurations.hasProperty('runtimeClasspath')) {
-      return
-    }
-    
     this.inputDirectory = inputDirectory
     
     distDir = new File(inputDirectory, 'distDir')
     jdepsDir = new File(inputDirectory, 'jdepsDir')
     
-    if (project.hasProperty('unusedDepsConfig')) {
-      configuration = project.unusedDepsConfig
+    if (project.hasProperty('useConfiguration')) {
+      configuration = project.useConfiguration
+    }
+    
+    if (!project.configurations.hasProperty(configuration)) {
+      return
     }
     
     Configuration config = project.configurations[this.configuration]
@@ -81,6 +83,7 @@ class UnusedDeps extends DefaultTask {
   
   @TaskAction
   void execute() {
+    
     // make sure ant task logging shows up by default
     ant.lifecycleLogLevel = "INFO"
     
@@ -88,7 +91,7 @@ class UnusedDeps extends DefaultTask {
     
     Configuration config = project.configurations[this.configuration]
     
-    Set<String> usedDepJarNames = getDefinedDeps(topLvlProject, project, distDir, jdepsDir)
+    Set<String> usedStaticallyJarNames = getStaticallyReferencedDeps(topLvlProject, project, distDir, jdepsDir)
     
     Set<File> ourDeps = getAllDefinedDeps(project, config)
     
@@ -99,13 +102,13 @@ class UnusedDeps extends DefaultTask {
         Project dProject = dep.getDependencyProject()
         def depTopLvlDProject = getTopLvlProject(dProject)
         
-        Set<String> projectUsedDeps = getDefinedDeps(depTopLvlDProject, dProject, distDir, jdepsDir)
+        Set<String> projectUsedDeps = getStaticallyReferencedDeps(depTopLvlDProject, dProject, distDir, jdepsDir)
         
-        usedDepJarNames += projectUsedDeps
+        usedStaticallyJarNames += projectUsedDeps
       }
     })
     
-    usedDepJarNames -= [
+    usedStaticallyJarNames -= [
       "${project.name}-${project.version}.jar"
     ]
     
@@ -114,7 +117,7 @@ class UnusedDeps extends DefaultTask {
     
     Set<String> unusedJarNames = new HashSet<>()
     unusedJarNames.addAll(ourDepJarNames)
-    unusedJarNames -= usedDepJarNames
+    unusedJarNames -= usedStaticallyJarNames
     unusedJarNames = unusedJarNames.toSorted()
     
     Set<String> depsInDirectUse = new HashSet<>()
@@ -131,16 +134,24 @@ class UnusedDeps extends DefaultTask {
     
     println ''
     println 'Our classpath dependency count ' + ourDepJarNames.size()
-    println 'Our directly used dependency count ' + usedDepJarNames.size()
+    println 'Our directly used dependency count ' + usedStaticallyJarNames.size()
     println ''
-    println 'List of possibly unused jars - they may be used at runtime however (Class.forName on plugins or config text for example). This is not definitive, but helps narrow down what to investigate.'
+    println 'List of possibly unused jars - they may be used at runtime however (Class.forName on plugins or other dynamic Object instantiation for example). This is not definitive, but helps narrow down what to investigate.'
     println 'We take our classpath dependencies, substract our direct dependencies and then subtract dependencies used by our direct dependencies.'
     println ''
     
     println 'Direct deps that may be unused:'
+    
     unusedJarNames.forEach({
       if (!depsInDirectUse.contains(it) && ourImmediatelyDefinedDeps.contains(it)) {
-        println ' - ' + it
+        
+
+        if (findInSrc(it)) {
+          println ' - ' + it + ' *'
+        } else {
+          println ' - ' + it
+        }
+
       }
     })
     
@@ -148,7 +159,11 @@ class UnusedDeps extends DefaultTask {
     println 'Deps brought in by other modules that may be unused in this module:'
     unusedJarNames.forEach({
       if (!depsInDirectUse.contains(it) && !ourImmediatelyDefinedDeps.contains(it)) {
-        println ' - ' + it
+        if (findInSrc(it)) {
+          println ' - ' + it + ' *'
+        } else {
+          println ' - ' + it
+        }
       }
     })
   }
@@ -182,16 +197,16 @@ class UnusedDeps extends DefaultTask {
     return ourDeps
   }
   
-  protected Set getDefinedDeps(Project topLvlProject, Project project, File distDir, File jdepsDir) {
+  protected Set getStaticallyReferencedDeps(Project topLvlProject, Project project, File distDir, File jdepsDir) {
     
-    File dotFile = new File(jdepsDir, topLvlProject.name +  "/" + "${project.name}-${project.version}/${project.name}-${project.version}.jar.dot")
-    Set<String> usedDepJarNames = getDirectlyUsedJars(project, dotFile)
+    File dotFile = project.mfile(jdepsDir, topLvlProject.name +  "/" + "${project.name}-${project.version}/${project.name}-${project.version}.jar.dot")
+    Set<String> usedStaticallyJarNames = getDirectlyUsedJars(project, dotFile)
     
-    return usedDepJarNames
+    return usedStaticallyJarNames
   }
   
   protected Set getDirectlyUsedJars(Project project, File dotFile) {
-    Set<String> usedDepJarNames = new HashSet<>()
+    Set<String> usedStaticallyJarNames = new HashSet<>()
     
     def lines = dotFile.readLines()
     String lastName = ""
@@ -200,18 +215,50 @@ class UnusedDeps extends DefaultTask {
       if (m.find()) {
         String jarName = m.group(1)
         if (!lastName.equals(jarName)) {
-          usedDepJarNames.add(jarName)
+          usedStaticallyJarNames.add(jarName)
         }
         lastName = jarName
       }
     }
-    return usedDepJarNames
+    return usedStaticallyJarNames
   }
   
   protected void lookForDep(File dir, Set<String> depsInDirectUse) {
     dir.eachFile() {
       depsInDirectUse.addAll(getDirectlyUsedJars(project, it))
     }
+  }
+  
+  
+  protected boolean findInSrc(String jarName) {
+    AtomicBoolean foundInsrc = new AtomicBoolean(false)
+    def files = project.configurations[configuration].resolvedConfiguration.getFiles()
+
+     Stream.of(files.toArray())
+        .parallel()
+        .forEach( { file ->
+      if (!file.name.equals(jarName)) return
+        try {
+          ZipFile zip = new ZipFile(file)
+          def entries = zip.entries()
+          entries.each { entry ->
+            if (!entry.isDirectory() && entry.getName().endsWith(".class") && !entry.getName().equals('module-info.class')) {
+              String className = entry.getName().replace('/', '.')
+              className = className.substring(0, className.length() - ".class".length())
+              
+              FindInSrc findInSrc = new FindInSrc()
+              def found = (findInSrc.find(project, jarName.substring(0, jarName.length() - ".jar".length()), className))
+              if (found) {
+                foundInsrc.set(true)
+              }
+            }
+          }
+        } catch (ZipException zipEx) {
+          println "Unable to open file ${file.name}"
+        }
+    })
+    
+    return foundInsrc.get()
   }
   
   protected Project getTopLvlProject(Project proj) {
