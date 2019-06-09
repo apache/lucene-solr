@@ -36,17 +36,13 @@ image::images/math-expressions/dist.png[]
 
 image::images/math-expressions/monte-carlo.png[]
 
-=== Time Series With Zoom Bar
+=== Time Series
 
 image::images/math-expressions/timeseries.png[]
 
 === Time Series With Linear Trend Line
 
 image::images/math-expressions/trend.png[]
-
-=== Time Series Trend Removed With First Difference
-
-image::images/math-expressions/diff.png[]
 
 === Mapping
 
