@@ -108,11 +108,11 @@ public class PluginInfo implements MapSerializable {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder("{");
-    if (type != null) sb.append("type = " + type + ",");
-    if (name != null) sb.append("name = " + name + ",");
-    if (className != null) sb.append("class = " + className + ",");
-    if (attributes != null && attributes.size() > 0) sb.append("attributes = " + attributes + ",");
-    if (initArgs != null && initArgs.size() > 0) sb.append("args = " + initArgs);
+    if (type != null) sb.append("type = ").append(type).append(',');
+    if (name != null) sb.append("name = ").append(name).append(',');
+    if (className != null) sb.append("class = ").append(className).append(',');
+    if (attributes != null && attributes.size() > 0) sb.append("attributes = ").append(attributes).append(',');
+    if (initArgs != null && initArgs.size() > 0) sb.append("args = ").append(initArgs);
     sb.append("}");
     return sb.toString();
   }

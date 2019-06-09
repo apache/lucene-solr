@@ -98,18 +98,18 @@ public final class MultiBits implements Bits {
   @Override
   public String toString() {
     StringBuilder b = new StringBuilder();
-    b.append(subs.length + " subs: ");
+    b.append(subs.length).append(" subs: ");
     for(int i=0;i<subs.length;i++) {
       if (i != 0) {
         b.append("; ");
       }
       if (subs[i] == null) {
-        b.append("s=" + starts[i] + " l=null");
+        b.append("s=").append(starts[i]).append(" l=null");
       } else {
-        b.append("s=" + starts[i] + " l=" + subs[i].length() + " b=" + subs[i]);
+        b.append("s=").append(starts[i]).append(" l=").append(subs[i].length()).append(" b=").append(subs[i]);
       }
     }
-    b.append(" end=" + starts[subs.length]);
+    b.append(" end=").append(starts[subs.length]);
     return b.toString();
   }
 

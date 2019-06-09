@@ -503,7 +503,7 @@ public class SolrZkClient implements Closeable {
     StringBuilder sbPath = new StringBuilder();
     for (int i = 0; i < paths.length; i++) {
       String pathPiece = paths[i];
-      sbPath.append("/" + pathPiece);
+      sbPath.append("/").append(pathPiece);
       if (i < skipPathParts) {
         continue;
       }
@@ -597,7 +597,7 @@ public class SolrZkClient implements Closeable {
     for (int i = 0; i < indent; i++) {
       dent.append(" ");
     }
-    string.append(dent + path + " (" + children.size() + ")" + NEWL);
+    string.append(dent).append(path).append(" (").append(children.size()).append(")").append(NEWL);
     if (data != null) {
       String dataString = new String(data, StandardCharsets.UTF_8);
       if ((!path.endsWith(".txt") && !path.endsWith(".xml")) || path.endsWith(ZkStateReader.CLUSTER_STATE)) {
@@ -606,10 +606,9 @@ public class SolrZkClient implements Closeable {
           dataString = prettyPrint(dataString);
         }
 
-        string.append(dent + "DATA:\n" + dent + "    "
-            + dataString.replaceAll("\n", "\n" + dent + "    ") + NEWL);
+        string.append(dent).append("DATA:\n").append(dent).append("    ").append(dataString.replaceAll("\n", "\n" + dent + "    ")).append(NEWL);
       } else {
-        string.append(dent + "DATA: ...supressed..." + NEWL);
+        string.append(dent).append("DATA: ...supressed...").append(NEWL);
       }
     }
 
