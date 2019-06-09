@@ -67,12 +67,12 @@ exec "${cmd}" "${exec_args}" || { exit 1; }
 cmd="cd /home/lucene/project;./gradlew cleanEclipse eclipse"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
-# test unusedDeps task
-cmd="cd /home/lucene/project;./gradlew solr:solr-core:unusedDeps"
+# test unusedDependencies task
+cmd="cd /home/lucene/project;./gradlew solr:solr-core:unusedDependencies"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # try deeper structure
-cmd="cd /home/lucene/project;./gradlew solr:contrib:solr-contrib-clustering:unusedDeps"
+cmd="cd /home/lucene/project;./gradlew solr:contrib:solr-contrib-clustering:unusedDependencies"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test solr qp javacc task

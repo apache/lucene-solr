@@ -1,0 +1,49 @@
+
+
+- Dependency Managment -
+------------------------
+
+Except in buildSrc, dependencies are defined in build.gradle (the dependencies block should be one of the first) with no version. Versions are specified in the root project versions.props.
+
+  i.e.
+  com.epam:parso=2.0.9
+  com.fasterxml.jackson*:*=2.9.8
+
+This version will be the minimum version used. Gradle will choose the highest version neccessary to satisify all of our dependencies and our minimum version. Where that behavior is not ideal it can be overridden. However, we prefer not forcing version constraints unless neccessary. In a complex web of interconnected software projects with security vulnerabilites and performance bugs and overlapping dependencies, we want to favor updating our dependencies at the rate our dependencies update them.
+
+Support for this is implemented via the plugin https://github.com/palantir/gradle-consistent-versions
+This plugin provides support for placing versions in versions.props, ensures all versions for dependencies across all modules are consistent and also enforces version locking via a single root project lock file that lists all dependencies and their versions (versions.lock)
+
+If you modify dependencies - add them, remove them, or change versions - you will need to run gradlew --write-locks and commit an updated versions.lock file that will show a clear summary of the total dependency change set.
+
+You will also need to add license files (lucene/licenses, solr/licenses) for any new dependencies. Finally, you need to update the dependency jar checksums by running gradlew jarChecksums and committing the results. If you do not do these things, the check task necessary for the test task to succeed will fail and inform you of the violations.
+
+The build provides a few tasks to help in managing dependencies. We do not want to bloat the build with unnessary dependencies and licenses. At the same time, we want to avoid surprising runtime errors for users and we know not every runtime code path gets hit by automated testing and that automated testing is an artificial environement with a different classpath. As a result, we must take care to manage our dependencies carefully.
+
+  listDependencies - List sorted dependencies and counts for a module.
+
+You can use listDeps to see a simple list of the runtime and testRuntime dependency jars for the specified module. It wil also print a count of dependencies for both. This can be used to quickly see how many dependencies you are adding or subtracting with changes. You can also diff the sorted output to see exactly which dependencies changed.
+
+  unusedDependencies - Lists dependencies that may be unused for a module.
+
+You can use unusedDependencies to show you which dependencies in the module do not have a strong static java reference to them. This gives you an idea of what might be unused, but keep in mind that this cannot tell when a class is referened by a string and instantiad with Class.forName or some other dynamic instantiations. If a static dependency is not found, the task will search for class references to the jar in the src of the project.
+
+  missingDependencies- Lists classes from this module with missing runtime dependencies (we ignore scanning some root deps (ie hadoop) and some violations (ie annotations).
+
+You can use this to get a list of objects in a module that are referenced but cannot be found on the classpath. In some cases, this may not matter (like for annotations). In other cases, we simply do not need the extra dependencies and there are a lot of them (hadoop and hdfs for example).
+
+  dependencyInsight - Displays the insight into a specific dependency in root project _lucene-solr
+
+You can use this to track down where a dependency comes from. Run it at the level of the module you are searching, i.e. gradlew -q solr:solr-core:dependencyInsight
+
+  i.e.
+  gradlew -q dependencyInsight --dependency stax
+  gradlew -q dependencyInsight --configuration testRuntimeClasspath --dependency zookeeper
+
+By default it will search the UnifiedClasspath, but you can specify which configuration to look at, i.e. runtime, testRuntime, runtimeClasspath, etc
+
+  dependencies - Displays all dependencies declared in root project _lucene-solr.
+
+This will show all the dependencies in a tree view.
+
+  
