@@ -48,13 +48,9 @@ public class TestKoreanNumberFilter extends BaseTokenStreamTestCase {
     if (is == null) {
       throw new RuntimeException("Cannot find userdict.txt in test classpath!");
     }
-    try {
-      try {
-        Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
-        return UserDictionary.open(reader);
-      } finally {
-        is.close();
-      }
+    Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
+    try (reader) {
+      return UserDictionary.open(reader);
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
