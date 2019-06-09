@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-import org.apache.lucene.gradle.LicenseCheckTask
-import org.apache.lucene.gradle.JarChecksum
-
-subprojects {
-  group = 'org.apache.solr'
+task buildTestsHelp {
+  group = 'Help (Build Documentation)'
+  description = "How to run Lucene and Solr tests and the options that are available to you."
 }
 
-def distDir = "dist"
+task buildDependenciesHelp {
+  group = 'Help (Build Documentation)'
+  description = "How dependencies are managed and what you need to know to change them."
+  doLast {
+    println file(mfile(project(":buildSrc").projectDir, 'common/help-text/buildDependenciesHelp.txt')).text
+  }
+}
 
-tasks.create("checkLicenses", LicenseCheckTask, file("licenses"))
-
-tasks.create("jarChecksums", JarChecksum, file('solr'), file('licenses'))
-
-task packageDist(type: org.apache.lucene.gradle.PackageLuceneSolrDist) {
-  group = 'Dist'
-  description = 'Generates the Lucene and Solr distribution.'
+task testingTheBuildHelp {
+  group = 'Help (Build Documentation)'
+  description = "Information on using Docker to test that your build changes are not too disruptive."
 }
