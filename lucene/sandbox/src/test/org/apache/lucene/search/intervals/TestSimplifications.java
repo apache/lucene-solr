@@ -45,9 +45,14 @@ public class TestSimplifications extends LuceneTestCase {
   }
 
   public void testUnorderedOverlaps() {
-    // UNORDERED_NO_OVERLAPS(term) => term
-    IntervalsSource actual = Intervals.unordered(false, Intervals.term("term"));
-    assertEquals(Intervals.term("term"), actual);
+    // UNORDERED_NO_OVERLAPS(term, term) => ORDERED(term, term)
+    IntervalsSource actual = Intervals.unorderedNoOverlaps(Intervals.term("term"), Intervals.term("term"));
+    assertEquals(Intervals.ordered(Intervals.term("term"), Intervals.term("term")), actual);
+  }
+
+  public void testDisjunctionSingleton() {
+    IntervalsSource actual = Intervals.or(Intervals.term("a"));
+    assertEquals(Intervals.term("a"), actual);
   }
 
   public void testDisjunctionRemovesDuplicates() {

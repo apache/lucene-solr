@@ -15,19 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search.intervals;
-
-import java.util.Collection;
-import java.util.Collections;
-
-class NoRewriteDisjunctionIntervalsSource extends DisjunctionIntervalsSource {
-
-  public NoRewriteDisjunctionIntervalsSource(Collection<IntervalsSource> subSources) {
-    super(subSources);
-  }
-
-  @Override
-  public Collection<IntervalsSource> pullUpDisjunctions() {
-    return Collections.singletonList(this);
-  }
-}
+/**
+ * Jaeger Tracer Configurator.
+ */
+package org.apache.solr.jaeger;
