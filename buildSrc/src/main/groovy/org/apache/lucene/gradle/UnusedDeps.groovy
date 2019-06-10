@@ -20,6 +20,7 @@ import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.ResolvedDependency
 import javax.inject.Inject
 import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
@@ -48,18 +49,15 @@ class UnusedDeps extends DefaultTask {
   protected static Pattern pattern = Pattern.compile("\\(([^\\s]*?\\.jar)\\)")
   
   protected configuration = "runtimeClasspath"
-  protected File distDir
-  protected File jdepsDir
   
   @InputDirectory
   File inputDirectory
   
-  @Inject
-  public UnusedDeps(File inputDirectory) {
-    this.inputDirectory = inputDirectory
-    
-    distDir = new File(inputDirectory, 'distDir')
-    jdepsDir = new File(inputDirectory, 'jdepsDir')
+  @Input
+  @Optional
+  List<String> jarExcludes
+  
+  public UnusedDeps() {
     
     if (project.hasProperty('useConfiguration')) {
       configuration = project.useConfiguration
@@ -68,6 +66,13 @@ class UnusedDeps extends DefaultTask {
     if (!project.configurations.hasProperty(configuration)) {
       return
     }
+  }
+  
+  @TaskAction
+  void execute() {
+    
+    // make sure ant task logging shows up by default
+    ant.lifecycleLogLevel = "INFO"
     
     Configuration config = project.configurations[this.configuration]
     
@@ -79,17 +84,11 @@ class UnusedDeps extends DefaultTask {
         buildProjects.add(dProject)
       }
     })
-  }
-  
-  @TaskAction
-  void execute() {
     
-    // make sure ant task logging shows up by default
-    ant.lifecycleLogLevel = "INFO"
+    File distDir = new File(inputDirectory, 'distDir')
+    File jdepsDir = new File(inputDirectory, 'jdepsDir')
     
     def topLvlProject = getTopLvlProject(project)
-    
-    Configuration config = project.configurations[this.configuration]
     
     Set<String> usedStaticallyJarNames = getStaticallyReferencedDeps(topLvlProject, project, distDir, jdepsDir)
     
@@ -142,6 +141,8 @@ class UnusedDeps extends DefaultTask {
     
     println 'Direct deps that may be unused:'
     
+    boolean failTask = false;
+    
     unusedJarNames.forEach({
       if (!depsInDirectUse.contains(it) && ourImmediatelyDefinedDeps.contains(it)) {
         
@@ -149,6 +150,7 @@ class UnusedDeps extends DefaultTask {
         if (findInSrc(it)) {
           println ' - ' + it + ' *'
         } else {
+          failTask = true
           println ' - ' + it
         }
 
@@ -159,13 +161,13 @@ class UnusedDeps extends DefaultTask {
     println 'Deps brought in by other modules that may be unused in this module:'
     unusedJarNames.forEach({
       if (!depsInDirectUse.contains(it) && !ourImmediatelyDefinedDeps.contains(it)) {
-        if (findInSrc(it)) {
-          println ' - ' + it + ' *'
-        } else {
-          println ' - ' + it
-        }
+        println ' - ' + it
       }
     })
+    
+    if (failTask) {
+      throw new GradleException("Unused dependencies found! Remove them or add an exclusion if they are actually necessary.")
+    }
   }
   
   static class NonProjectSpec implements Spec<Dependency> {
@@ -228,8 +230,7 @@ class UnusedDeps extends DefaultTask {
       depsInDirectUse.addAll(getDirectlyUsedJars(project, it))
     }
   }
-  
-  
+
   protected boolean findInSrc(String jarName) {
     AtomicBoolean foundInsrc = new AtomicBoolean(false)
     def files = project.configurations[configuration].resolvedConfiguration.getFiles()
