@@ -721,11 +721,28 @@ public class TestPolicy extends SolrTestCaseJ4 {
     clause = Clause.create("{'replica': '#ALL', 'nodeset': {'freedisk': '>700'}, 'strict': false}");
     assertEquals(clause.put, Clause.Put.ON_ALL);
     assertEquals(Operand.GREATER_THAN , clause.tag.op);
-    clause = Clause.create("{'replica': '#ALL', put: on-each,  'nodeset': {sysprop.zone : east}}");
+    clause = Clause.create("{'replica': '#ALL', put: on-each-node,  'nodeset': {sysprop.zone : east}}");
     assertEquals(clause.put, Clause.Put.ON_EACH);
     exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{'replica': '#ALL', put: on-Each,  'nodeset': {sysprop.zone : east}}"));
     assertTrue(exp.getMessage().contains("invalid value for put : on-Each"));
 
+    clause = Clause.create("{replica : '#EQUAL', nodeset : [{sysprop.zone : east}, {sysprop.zone : west}]}");
+    assertTrue(((List)clause.tag.val).get(0) instanceof Condition);
+    assertTrue( Utils.fromJSONString(Utils.toJSONString(clause)) instanceof Map);
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{replica : '#EQUAL', nodeset : [{sysprop.zone : east}, {port : '8983'}]}"));
+    assertTrue(exp.getMessage().contains("all element must have same key"));
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{replica : '#EQUAL', nodeset : [{sysprop.zone : east}, {sysprop.zone : '#EACH'}]}"));
+    assertTrue(exp.getMessage().contains("computed  value #EACH not allowed in nodeset"));
+    exp = expectThrows(IllegalArgumentException.class, ()->  Clause.create("{replica : '#EQUAL', nodeset : {sysprop.zone : east}}"));
+    assertTrue(exp.getMessage().contains("'nodeset' must have an array value when 'replica': '#EQUAL` is used"));
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{replica : '#ALL', nodeset : [{sysprop.zone : east}, {sysprop.zone : west}]}"));
+    assertTrue(exp.getMessage().contains("cannot use array value for nodeset if replica : '#EQUAL' is not used"));
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{replica : '50%', nodeset : [{sysprop.zone : east}, {sysprop.zone : west}]}"));
+    assertTrue(exp.getMessage().contains("cannot use array value for nodeset if replica : '#EQUAL' is not used"));
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{replica : 3, nodeset : [{sysprop.zone : east}, {sysprop.zone : west}]}"));
+    assertTrue(exp.getMessage().contains("cannot use array value for nodeset if replica : '#EQUAL' is not used"));
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{replica : '#EQUAL', put: on-each-node, nodeset : [{sysprop.zone : east}, {sysprop.zone : west}]}"));
+    assertTrue(exp.getMessage().contains("cannot use put: 'on-each-node'  with an array value in nodeset "));
   }
 
 
@@ -1246,7 +1263,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "    { 'replica': 0, nodeset : {'nodeRole': 'overseer'}}" +
           "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
           "    { 'replica': 0, 'shard': '#EACH',  nodeset : { sysprop.fs : '!ssd'},  type : TLOG }" +
-          "    { 'replica': 0, 'shard': '#EACH', put:'on-each' nodeset : {sysprop.fs : '!slowdisk'} ,  type : PULL }" +
+          "    { 'replica': 0, 'shard': '#EACH', put:'on-each-node' nodeset : {sysprop.fs : '!slowdisk'} ,  type : PULL }" +
           "  ]" +
           "}");
 
@@ -1371,8 +1388,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
           "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl'}," +
           "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl2', type : PULL}," +
           "    { 'replica': '<3', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl2'}," +
-          "    { 'replica': 0, 'shard': '#EACH', put: on-each , nodeset:{ sysprop.fs : '!ssd'},  type : TLOG }" +
-          "    { 'replica': 0, 'shard': '#EACH', put: on-each ,nodeset : {sysprop.fs : '!slowdisk'} ,  type : PULL }" +
+          "    { 'replica': 0, 'shard': '#EACH', put: on-each-node , nodeset:{ sysprop.fs : '!ssd'},  type : TLOG }" +
+          "    { 'replica': 0, 'shard': '#EACH', put: on-each-node ,nodeset : {sysprop.fs : '!slowdisk'} ,  type : PULL }" +
           "  ]" +
           "}");
 
@@ -2394,8 +2411,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "  cluster-preferences :[{ minimize : cores, precision : 2 }]}";
     if(useNodeset){
       autoScalingjson = "  { cluster-policy:[" +
-          "    { replica :'0', put:on-each ,   nodeset:{ freedisk:'<1000'}}," +
-          "    { replica :0, put : on-each , nodeset : {nodeRole : overseer}}]," +
+          "    { replica :'0', put:on-each-node ,   nodeset:{ freedisk:'<1000'}}," +
+          "    { replica :0, put : on-each-node , nodeset : {nodeRole : overseer}}]," +
           "  cluster-preferences :[{ minimize : cores, precision : 2 }]}";
     }
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
@@ -2427,7 +2444,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     if(useNodeset){
       autoScalingjson =  "  { cluster-policy:[" +
           "    { replica :'#ALL', nodeset:{ freedisk:'>1000'}}," +
-          "    { replica :0 , put: on-each , nodeset : {nodeRole : overseer}}]," +
+          "    { replica :0 , put: on-each-node , nodeset : {nodeRole : overseer}}]," +
           "  cluster-preferences :[{ minimize : cores, precision : 2 }]}";
     }
     cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));

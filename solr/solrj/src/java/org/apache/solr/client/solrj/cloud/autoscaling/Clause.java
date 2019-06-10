@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -150,14 +151,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
     if (!m.containsKey(NODESET)) return false;
     Object o = m.get(NODESET);
     if (o instanceof Map) {
-      Map map = (Map) o;
-      if (map.size() != 1) {
-        throwExp(m, "nodeset must only have one and only one key");
-      }
-      String key = (String) map.keySet().iterator().next();
+      String key = validateObjectInNodeset(m, (Map) o);
       parseCondition(key, o, m);
     } else if (o instanceof List) {
       List l = (List) o;
+      if(l.size()<2) throwExp(m, "nodeset [] must have atleast 2 items");
+      if( checkMapArray(l, m)) return true;
       for (Object it : l) {
         if (it instanceof String) continue;
         else throwExp(m, "nodeset :[]must have only string values");
@@ -167,6 +166,46 @@ public class Clause implements MapWriter, Comparable<Clause> {
       throwExp(m, "invalid value for nodeset, must be an object or a list of String");
     }
     return true;
+  }
+
+  private String validateObjectInNodeset(Map<String, Object> m, Map map) {
+    if (map.size() != 1) {
+      throwExp(m, "nodeset must only have one and only one key");
+    }
+    String key = (String) map.keySet().iterator().next();
+    Object val = map.get(key);
+    if(val instanceof String && ((String )val).trim().charAt(0) == '#'){
+      throwExp(m, formatString("computed  value {0} not allowed in nodeset", val));
+    }
+    return key;
+  }
+
+  private boolean checkMapArray(List l, Map<String, Object> m) {
+    List<Map> maps = null;
+    for (Object o : l) {
+      if (o instanceof Map) {
+        if (maps == null) maps = new ArrayList<>();
+        maps.add((Map) o);
+      }
+    }
+    String key = null;
+    if (maps != null) {
+      if (maps.size() != l.size()) throwExp(m, "all elements of nodeset must be Objects");
+      List<Condition> tags = new ArrayList<>(maps.size());
+      for (Map map : maps) {
+        String s = validateObjectInNodeset(m, map);
+        if(key == null) key = s;
+        if(!Objects.equals(key, s)){
+          throwExp(m, "all element must have same key");
+        }
+        tags.add(parse(s, m));
+      }
+      if(this.put == Put.ON_EACH) throwExp(m, "cannot use put: ''on-each-node''  with an array value in nodeset ");
+      this.tag = new Condition(key, tags,Operand.IN, null,this);
+      return true;
+    }
+    return false;
+
   }
 
   public Condition getThirdTag() {
@@ -468,6 +507,15 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   private Set getUniqueTags(Policy.Session session, ComputedValueEvaluator eval) {
     Set tags =  new HashSet();
+
+    if(nodeSetPresent){
+      if(tag.val instanceof List && ((List)tag.val).get(0) instanceof Condition){
+        tags.addAll((List)tag.val);
+      } else {
+        tags.add(tag);
+      }
+      return tags;
+    }
     if(tag.op == WILDCARD){
       for (Row row : session.matrix) {
         eval.node = row.node;
@@ -751,7 +799,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
   public static final String METRICS_PREFIX = "metrics:";
 
   enum Put {
-    ON_ALL("on-all"), ON_EACH("on-each");
+    ON_ALL(""), ON_EACH("on-each-node");
 
     public final String val;
 
