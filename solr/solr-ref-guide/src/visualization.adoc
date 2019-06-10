@@ -44,6 +44,10 @@ image::images/math-expressions/timeseries.png[]
 
 image::images/math-expressions/trend.png[]
 
+=== Multiple Time Lines
+
+image::images/math-expressions/multitime1.png[]
+
 === Mapping
 
 image::images/math-expressions/map.png[]

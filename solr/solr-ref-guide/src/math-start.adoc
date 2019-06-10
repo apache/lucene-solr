@@ -17,7 +17,7 @@
 // under the License.
 
 
-== Language Notes
+== Language
 
 *Streaming Expressions* and *Math Expressions* are expression languages that run
 inside Solr Cloud. The languages consist of function expressions that are designed
@@ -34,8 +34,7 @@ arrays and matrices. Many of the Math Expressions are designed to work on arrays
 to perform *statistical* and mathematical operations.
 
 
-
-== Executing Streaming Expressions and Math Expressions
+== Execution
 
 Solr's /stream handler excutes Streaming Expressions and Math Expressions. The easiest way
 to run Streaming Expressions and Math expressions is through the *stream* panel on the Solr admin
@@ -47,7 +46,7 @@ A sample *search* Streaming Expression is shown in the screenshot below:
 image::images/math-expressions/search.png[]
 
 
-A sample *add* Streaming Expression is shown in the screenshot below:
+A sample *add* Math Expression is shown in the screenshot below:
 
 
 image::images/math-expressions/add.png[]
@@ -61,10 +60,6 @@ image::images/math-expressions/add.png[]
 https://github.com/lucidworks/zeppelin-solr
 
 image::images/math-expressions/zepconf.png[]
-
-
-
-
 
 
 
