@@ -21,6 +21,8 @@ New Features
   and a simple way to find which subqueries have matched on a given document
   (Alan Woodward, Jim Ferenczi)
 
+* LUCENE-8769: Introduce Range Query For Multiple Connected Ranges (Atri Sharma)
+
 Improvements
 
 * LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
