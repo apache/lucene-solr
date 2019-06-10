@@ -1,5 +1,5 @@
 = Math Expressions
-:page-children: visualization, scalar-math, vector-math, variables, matrix-math, vectorization, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning, computational-geometry
+:page-children: visualization, math-start, scalar-math, vector-math, variables, matrix-math, vectorization, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning, computational-geometry
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -25,7 +25,9 @@ image::images/math-expressions/curve-fitting.png[]
 
 == Table of Contents
 
-*<<visualization.adoc#visualization,Visualization>>*: Gallery and introduction to visualizing Streaming Expressions and Math Expressions.
+*<<visualization.adoc#visualization,Visualization Gallery>>*: Gallery Streaming Expressions and Math Expressions visualizations.
+
+*<<math-start.adoc#getting-started,Getting Started>>*: Getting started with Streaming Expressions, Math Expressions and Visualization.
 
 *<<scalar-math.adoc#scalar-math,Scalar Math>>*: The functions that apply to scalar numbers.
 

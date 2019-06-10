@@ -1,0 +1,78 @@
+= Getting Started
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+
+== Language Notes
+
+*Streaming Expressions* and *Math Expressions* are an expression language that runs
+inside Solr Cloud. The language consists of function expressions that are designed
+to be nested or *composed*. Streaming Expressions are purely functional in that they don't
+have any constructs but functions. Math Expressions does have variables, so it's not
+purely functional. But Math Expression variables are really just a special kind of
+named parameter of the *let* expression.
+
+*Streaming Expressions* all return streams of data. This allows Streaming Expressions to be
+composed in ways that form a pipeline. A *Stream Source*, such as *search*, initiates
+a stream of Tuples. A Stream Decorator, such as *select*, wraps the Stream Source and transforms
+the stream of Tuples.
+
+*Math Expressions* do not return streams of data. Math Expressions return primatives and in-memory
+arrays and matrices. Many of the Math Expression are designed to work on arrays and matrices
+to perform *statistical* and mathematical operations.
+
+Streaming Expressions and Math Expressions can be combined to *search, sort,
+sample, aggregate, transform, analyse* and *visualize* data in Solr Cloud collections.
+
+== Executing Streaming Expressions and Math Expressions
+
+Solr's /stream handler excuted Streaming Expressions and Math Expressions. The easiest way
+run Streaming Expression and Math expressions is through *stream* panel on the Solr admin
+UI.
+
+A sample *search* Streaming Expression is shown is screensheet below:
+
+
+image::images/math-expressions/search.png[]
+
+
+A sample *add* Streaming Expression is shown is screensheet below:
+
+
+image::images/math-expressions/add.png[]
+
+
+== Curl
+
+
+== Visualization
+
+https://github.com/lucidworks/zeppelin-solr
+
+image::images/math-expressions/zepconf.png[]
+
+
+
+
+
+
+
+
+
+
+
+
