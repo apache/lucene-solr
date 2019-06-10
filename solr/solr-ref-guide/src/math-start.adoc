@@ -19,7 +19,7 @@
 
 == Language Notes
 
-*Streaming Expressions* and *Math Expressions* are expression languages that runs
+*Streaming Expressions* and *Math Expressions* are expression languages that run
 inside Solr Cloud. The languages consists of function expressions that are designed
 to be nested or *composed*.  Streaming Expressions and Math Expressions can be combined to *search, sort,
 sample, aggregate, transform, analyse* and *visualize* data in Solr Cloud collections.
