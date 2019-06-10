@@ -590,10 +590,10 @@ public class GeoTestUtil {
       if (o instanceof double[]) {
         double point[] = (double[]) o;
         sb.append("<!-- point: ");
-        sb.append(point[0] + "," + point[1]);
+        sb.append(point[0]).append(',').append(point[1]);
         sb.append(" -->\n");
       } else {
-        sb.append("<!-- " + o.getClass().getSimpleName() + ": \n");
+        sb.append("<!-- ").append(o.getClass().getSimpleName()).append(": \n");
         sb.append(o.toString());
         sb.append("\n-->\n");
       }
@@ -620,7 +620,7 @@ public class GeoTestUtil {
       // polygon
       double polyLats[] = gon.getPolyLats();
       double polyLons[] = gon.getPolyLons();
-      sb.append("<polygon fill-opacity=\"" + opacity + "\" points=\"");
+      sb.append("<polygon fill-opacity=\"").append(opacity).append("\" points=\"");
       for (int i = 0; i < polyLats.length; i++) {
         if (i > 0) {
           sb.append(" ");
@@ -629,7 +629,7 @@ public class GeoTestUtil {
         .append(",")
         .append(90 - polyLats[i]);
       }
-      sb.append("\" style=\"" + style + "\"/>\n");
+      sb.append("\" style=\"").append(style).append("\"/>\n");
       for (Polygon hole : gon.getHoles()) {
         double holeLats[] = hole.getPolyLats();
         double holeLons[] = hole.getPolyLons();

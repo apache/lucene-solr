@@ -350,8 +350,8 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     flags.append( (fi.isSoftDeletesField() ? "s" : "-"));
     if (fi.getPointDataDimensionCount() > 0 || fi.getPointIndexDimensionCount() > 0) {
       flags.append(":");
-      flags.append(fi.getPointDataDimensionCount() + ":");
-      flags.append(fi.getPointIndexDimensionCount() + ":");
+      flags.append(fi.getPointDataDimensionCount()).append(':');
+      flags.append(fi.getPointIndexDimensionCount()).append(':');
       flags.append(fi.getPointNumBytes());
     }
 

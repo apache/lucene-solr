@@ -214,11 +214,11 @@ public class ClusterState implements JSONWriter.Writable {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("znodeVersion: " + znodeVersion);
+    sb.append("znodeVersion: ").append(znodeVersion);
     sb.append("\n");
-    sb.append("live nodes:" + liveNodes);
+    sb.append("live nodes:").append(liveNodes);
     sb.append("\n");
-    sb.append("collections:" + collectionStates);
+    sb.append("collections:").append(collectionStates);
     return sb.toString();
   }
 
