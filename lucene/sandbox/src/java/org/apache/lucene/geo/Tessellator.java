@@ -221,7 +221,7 @@ final public class Tessellator {
     // Determine whether a hole bridge could be fetched.
     if(outerNode != null) {
       // compute if the bridge overlaps with a polygon edge.
-      boolean fromPolygon = edgeFromPolygon(outerNode, holeNode) || edgeFromPolygon(holeNode, outerNode);
+      boolean fromPolygon = pointInLine(outerNode, outerNode.next, holeNode) || pointInLine(holeNode, holeNode.next, outerNode);
       // Split the resulting polygon.
       Node node = splitPolygon(outerNode, holeNode, fromPolygon);
       // Filter the split nodes.
@@ -342,7 +342,7 @@ final public class Tessellator {
           // Compute if edges belong to the polygon
           boolean abFromPolygon = prevNode.nextEdgeFromPolygon;
           boolean bcFromPolygon = currEar.nextEdgeFromPolygon;
-          boolean caFromPolygon =  edgeFromPolygon(prevNode, nextNode);
+          boolean caFromPolygon =  edgeFromPolygon(prevNode, nextNode, mortonOptimized);
           // Return the triangulated data
           tessellation.add(new Triangle(prevNode, abFromPolygon, currEar, bcFromPolygon, nextNode, caFromPolygon));
           // Remove the ear node.
@@ -471,9 +471,9 @@ final public class Tessellator {
           && linesIntersect(a.getX(), a.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY(), b.getX(), b.getY())
           && isLocallyInside(a, b) && isLocallyInside(b, a)) {
         // Return the triangulated vertices to the tessellation
-        boolean abFromPolygon = (a.next == node) ? a.nextEdgeFromPolygon : edgeFromPolygon(a, node);
-        boolean bcFromPolygon = (node.next == b) ? node.nextEdgeFromPolygon : edgeFromPolygon(node, b);
-        boolean caFromPolygon = (b.next == a) ? b.nextEdgeFromPolygon : edgeFromPolygon(a, b);
+        boolean abFromPolygon = (a.next == node) ? a.nextEdgeFromPolygon : edgeFromPolygon(a, node, mortonOptimized);
+        boolean bcFromPolygon = (node.next == b) ? node.nextEdgeFromPolygon : edgeFromPolygon(node, b, mortonOptimized);
+        boolean caFromPolygon = (b.next == a) ? b.nextEdgeFromPolygon : edgeFromPolygon(a, b, mortonOptimized);
         tessellation.add(new Triangle(a, abFromPolygon, node, bcFromPolygon,  b, caFromPolygon));
 
         // remove two nodes involved
@@ -488,7 +488,7 @@ final public class Tessellator {
   }
 
   /** Attempt to split a polygon and independently triangulate each side. Return true if the polygon was splitted **/
-  private static final boolean splitEarcut(final Polygon polygon, final Node start, final List<Triangle> tessellation, final boolean mortonIndexed) {
+  private static final boolean splitEarcut(final Polygon polygon, final Node start, final List<Triangle> tessellation, final boolean mortonOptimized) {
     // Search for a valid diagonal that divides the polygon into two.
     Node searchNode = start;
     Node nextNode;
@@ -498,17 +498,17 @@ final public class Tessellator {
       while (diagonal != searchNode.previous) {
         if(searchNode.idx != diagonal.idx && isValidDiagonal(searchNode, diagonal)) {
           // Split the polygon into two at the point of the diagonal
-          Node splitNode = splitPolygon(searchNode, diagonal, edgeFromPolygon(searchNode, diagonal));
+          Node splitNode = splitPolygon(searchNode, diagonal, edgeFromPolygon(searchNode, diagonal, mortonOptimized));
           // Filter the resulting polygon.
           searchNode = filterPoints(searchNode, searchNode.next);
           splitNode  = filterPoints(splitNode, splitNode.next);
           // Attempt to earcut both of the resulting polygons
-          if (mortonIndexed) {
+          if (mortonOptimized) {
             sortByMortonWithReset(searchNode);
             sortByMortonWithReset(splitNode);
           }
-          earcutLinkedList(polygon, searchNode, tessellation, State.INIT, mortonIndexed);
-          earcutLinkedList(polygon, splitNode,  tessellation, State.INIT, mortonIndexed);
+          earcutLinkedList(polygon, searchNode, tessellation, State.INIT, mortonOptimized);
+          earcutLinkedList(polygon, splitNode,  tessellation, State.INIT, mortonOptimized);
           // Finish the iterative search
           return true;
         }
@@ -520,12 +520,81 @@ final public class Tessellator {
   }
 
   /** Computes if edge defined by a and b overlaps with a polygon edge **/
-  private static boolean edgeFromPolygon(Node prevNode, Node nextNode) {
-    if (isVertexEquals(prevNode, nextNode.next) || pointInLine(nextNode, nextNode.next, prevNode)) {
-      return nextNode.nextEdgeFromPolygon;
+  private static boolean edgeFromPolygon(Node a, Node b, boolean isMorton) {
+    if (isMorton) {
+      return mortonEdgeFromPolygon(a, b);
     }
-    if (isVertexEquals(nextNode, prevNode.previous) || pointInLine(prevNode, prevNode.previous, nextNode)) {
-      return prevNode.previous.nextEdgeFromPolygon;
+    Node next = a;
+    do {
+      if (pointInLine(next, next.next, a) && pointInLine(next, next.next, b)) {
+        return next.nextEdgeFromPolygon;
+      }
+      if (pointInLine(next, next.previous, a) && pointInLine(next, next.previous, b)) {
+        return next.previous.nextEdgeFromPolygon;
+      }
+      next = next.next;
+    } while(next != a);
+    return false;
+  }
+
+  /** Uses morton code for speed to determine whether or not and edge defined by a and b overlaps with a polygon edge */
+  private static final boolean mortonEdgeFromPolygon(final Node a, final Node b) {
+    // edge bbox (flip the bits so negative encoded values are < positive encoded values)
+    int minTX = StrictMath.min(a.x, b.x) ^ 0x80000000;
+    int minTY = StrictMath.min(a.y, b.y) ^ 0x80000000;
+    int maxTX = StrictMath.max(a.x, b.x) ^ 0x80000000;
+    int maxTY = StrictMath.max(a.y, b.y) ^ 0x80000000;
+
+    // z-order range for the current edge;
+    long minZ = BitUtil.interleave(minTX, minTY);
+    long maxZ = BitUtil.interleave(maxTX, maxTY);
+
+    // now make sure we don't have other points inside the potential ear;
+
+    // look for points inside edge in both directions
+    Node p = a.previousZ;
+    Node n = a.nextZ;
+    while (p != null && Long.compareUnsigned(p.morton, minZ) >= 0
+        && n != null && Long.compareUnsigned(n.morton, maxZ) <= 0) {
+      if (pointInLine(p, p.next, a) && pointInLine(p, p.next, b)) {
+        return p.nextEdgeFromPolygon;
+      }
+      if (pointInLine(p, p.previous, a) && pointInLine(p, p.previous, b)) {
+        return p.previous.nextEdgeFromPolygon;
+      }
+
+      p = p.previousZ;
+
+      if (pointInLine(n, n.next, a) && pointInLine(n, n.next, b)) {
+        return n.nextEdgeFromPolygon;
+      }
+      if (pointInLine(n, n.previous, a) && pointInLine(n, n.previous, b)) {
+        return n.previous.nextEdgeFromPolygon;
+      }
+
+      n = n.nextZ;
+    }
+
+    // first look for points inside the edge in decreasing z-order
+    while (p != null && Long.compareUnsigned(p.morton, minZ) >= 0) {
+      if (pointInLine(p, p.next, a) && pointInLine(p, p.next, b)) {
+        return p.nextEdgeFromPolygon;
+      }
+      if (pointInLine(p, p.previous, a) && pointInLine(p, p.previous, b)) {
+        return p.previous.nextEdgeFromPolygon;
+      }
+      p = p.previousZ;
+    }
+    // then look for points in increasing z-order
+    while (n != null &&
+        Long.compareUnsigned(n.morton, maxZ) <= 0) {
+      if (pointInLine(n, n.next, a) && pointInLine(n, n.next, b)) {
+        return n.nextEdgeFromPolygon;
+      }
+      if (pointInLine(n, n.previous, a) && pointInLine(n, n.previous, b)) {
+        return n.previous.nextEdgeFromPolygon;
+      }
+      n = n.nextZ;
     }
     return false;
   }
