@@ -199,8 +199,24 @@ final public class Tessellator {
 
   /** Finds a bridge between vertices that connects a hole with an outer ring, and links it */
   private static final void eliminateHole(final Node holeNode, Node outerNode, Polygon hole) {
+    // Attempt to find a common point between the HoleNode and OuterNode.
+    Node next = outerNode;
+    do {
+      if (Rectangle.containsPoint(next.getLat(), next.getLon(), hole.minLat, hole.maxLat, hole.minLon, hole.maxLon)) {
+        Node sharedVertex = getSharedVertex(holeNode, next);
+        if (sharedVertex != null) {
+          // Split the resulting polygon.
+          Node node = splitPolygon(next, sharedVertex);
+          // Filter the split nodes.
+          filterPoints(node, node.next);
+          return;
+        }
+      }
+      next = next.next;
+    } while (next != outerNode);
+
     // Attempt to find a logical bridge between the HoleNode and OuterNode.
-    outerNode = fetchHoleBridge(holeNode, outerNode, hole);
+    outerNode = fetchHoleBridge(holeNode, outerNode);
 
     // Determine whether a hole bridge could be fetched.
     if(outerNode != null) {
@@ -216,7 +232,7 @@ final public class Tessellator {
    *
    * see: http://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
    **/
-  private static final Node fetchHoleBridge(final Node holeNode, final Node outerNode, Polygon hole) {
+  private static final Node fetchHoleBridge(final Node holeNode, final Node outerNode) {
     Node p = outerNode;
     double qx = Double.NEGATIVE_INFINITY;
     final double hx = holeNode.getX();
@@ -226,13 +242,6 @@ final public class Tessellator {
     // segment's endpoint with lesser x will be potential connection point
     {
       do {
-        //if vertex of the polygon is a vertex of the hole, just use that point.
-        if (Rectangle.containsPoint(p.getLat(), p.getLon(), hole.minLat, hole.maxLat, hole.minLon, hole.maxLon)) {
-          Node sharedVertex = getSharedVertex(holeNode, p);
-          if (sharedVertex != null) {
-            return sharedVertex;
-          }
-        }
         if (hy <= p.getY() && hy >= p.next.getY() && p.next.getY() != p.getY()) {
           final double x = p.getX() + (hy - p.getY()) * (p.next.getX() - p.getX()) / (p.next.getY() - p.getY());
           if (x <= hx && x > qx) {
