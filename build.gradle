@@ -198,24 +198,30 @@ configure(allprojects) {
     description = "Lists dependencies that may be unused for a module."
 
     project.tasks.create("jdepsReport", org.apache.lucene.gradle.JdepsReport, jdepsReportDir, true)
-    project.tasks.create("iunusedDeps", org.apache.lucene.gradle.UnusedDeps, jdepsReportDir)
-    project.iunusedDeps.dependsOn project.jdepsReport
-    project.iunusedDeps.doLast {
-      //delete(jdepsReportDir)
+    task unusedDeps(type: org.apache.lucene.gradle.UnusedDeps) {
+      inputDirectory jdepsReportDir
     }
-    dependsOn iunusedDeps
+    project.unusedDeps.dependsOn project.jdepsReport
+    project.unusedDeps.doLast {
+      delete(jdepsReportDir)
+    }
+    dependsOn unusedDeps
   }
+  
   task missingDependencies {
     group = 'Help'
     description = "Lists classes from this module with missing runtime dependencies (we ignore scanning some root deps (ie hadoop) and some violations (ie annotations)."
     project.tasks.create("jdepsReportR", org.apache.lucene.gradle.JdepsReport, jdepsReportDir, true)
     // we exclude hadoop and annotations
-    project.tasks.create("imissingDeps", org.apache.lucene.gradle.MissingDeps, jdepsReportDir, ['**/*hadoop*.dot'], ['org\\.apache\\.yetus\\.audience\\.InterfaceAudience', 'javax\\.annotation\\..*', 'org\\.apache\\.yetus\\.audience', 'com\\.google\\.errorprone\\.annotations\\..*'])
-    project.imissingDeps.dependsOn project.jdepsReportR
-    project.imissingDeps.doLast {
+    task missingDeps(type: org.apache.lucene.gradle.MissingDeps) {
+      inputDirectory jdepsReportDir
+    }
+    
+    project.missingDeps.dependsOn project.jdepsReportR
+    project.missingDeps.doLast {
       delete(jdepsReportDir)
     }
-    dependsOn imissingDeps
+    dependsOn missingDeps
   }
 }
 
