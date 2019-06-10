@@ -147,8 +147,23 @@ public final class Intervals {
    * @throws IllegalStateException if the prefix expands to more than 128 terms
    */
   public static IntervalsSource prefix(String prefix) {
+    return prefix(prefix, 128);
+  }
+
+  /**
+   * Expert: Return an {@link IntervalsSource} over the disjunction of all terms that begin with a prefix
+   *
+   * WARNING: Setting {@code maxExpansions} to higher than the default value of 128
+   * can be both slow and memory-intensive
+   *
+   * @param prefix        the prefix to expand
+   * @param maxExpansions the maximum number of terms to expand to
+   *
+   * @throws IllegalStateException if the prefix expands to more than {@code maxExpansions} terms
+   */
+  public static IntervalsSource prefix(String prefix, int maxExpansions) {
     CompiledAutomaton ca = new CompiledAutomaton(PrefixQuery.toAutomaton(new BytesRef(prefix)));
-    return new MultiTermIntervalsSource(ca, 128, prefix);
+    return new MultiTermIntervalsSource(ca, maxExpansions, prefix + "*");
   }
 
   /**
@@ -159,8 +174,25 @@ public final class Intervals {
    * @see WildcardQuery for glob format
    */
   public static IntervalsSource wildcard(String wildcard) {
+    return wildcard(wildcard, 128);
+  }
+
+  /**
+   * Expert: Return an {@link IntervalsSource} over the disjunction of all terms that match a wildcard glob
+   *
+   * WARNING: Setting {@code maxExpansions} to higher than the default value of 128
+   * can be both slow and memory-intensive
+   *
+   * @param wildcard the glob to expand
+   * @param maxExpansions the maximum number of terms to expand to
+   *
+   * @throws IllegalStateException if the wildcard glob expands to more than {@code maxExpansions} terms
+   *
+   * @see WildcardQuery for glob format
+   */
+  public static IntervalsSource wildcard(String wildcard, int maxExpansions) {
     CompiledAutomaton ca = new CompiledAutomaton(WildcardQuery.toAutomaton(new Term("", wildcard)));
-    return new MultiTermIntervalsSource(ca, 128, wildcard);
+    return new MultiTermIntervalsSource(ca, maxExpansions, wildcard);
   }
 
   /**

@@ -753,6 +753,14 @@ public class TestIntervals extends LuceneTestCase {
 
     IntervalsSource noSuch = Intervals.prefix("qqq");
     checkIntervals(noSuch, "field1", 0, new int[][]{});
+
+    IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
+      IntervalsSource s = Intervals.prefix("p", 1);
+      for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
+        s.intervals("field1", ctx);
+      }
+    });
+    assertEquals("Automaton [p*] expanded to too many terms (limit 1)", e.getMessage());
   }
 
   public void testWildcard() throws IOException {
@@ -770,6 +778,14 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 2, 2, 15, 18);
     assertMatch(mi, 10, 10, 63, 66);
     assertMatch(mi, 17, 17, 97, 100);
+
+    IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
+      IntervalsSource s = Intervals.wildcard("?ot", 1);
+      for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
+        s.intervals("field1", ctx);
+      }
+    });
+    assertEquals("Automaton [?ot] expanded to too many terms (limit 1)", e.getMessage());
   }
 
   public void testWrappedFilters() throws IOException {
