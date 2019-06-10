@@ -97,6 +97,7 @@ If you are using <<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distr
 
 You can use the authentication and authorization APIs, but if you are using the legacy scaling model, you will need to make the same API requests on each node separately. You can also edit `security.json` by hand if you prefer.
 
+[#configuring-authentication]
 == Authentication
 
 Authentication plugins help in securing the endpoints of Solr by authenticating incoming requests. A custom plugin can be implemented by extending the AuthenticationPlugin class.
@@ -125,6 +126,7 @@ Currently available authentication plugins are:
 
 include::securing-solr.adoc[tag=list-of-authentication-plugins]
 
+[#configuring-authorization]
 == Authorization
 
 An authorization plugin can be written for Solr by extending the {solr-javadocs}/solr-core/org/apache/solr/security/AuthorizationPlugin.html[AuthorizationPlugin] interface.
@@ -158,8 +160,6 @@ include::securing-solr.adoc[tag=list-of-authorization-plugins]
 == Audit Logging
 
 <<audit-logging.adoc#audit-logging,Audit logging>> plugins helps you keep an audit trail of events happening in your Solr cluster. Audit logging may e.g. ship data to an external audit service. A custom plugin can be implemented by extending the `AuditLoggerPlugin` class.
-
-See <<securing-solr.adoc#securing-solr,Securing Solr>> for a list of available audit logger plugins.
 
 == Authenticating in the Admin UI
 
