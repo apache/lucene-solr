@@ -143,6 +143,8 @@ Other Changes
 * SOLR-13467: Include the S2 Geometry lib to make it simpler to use prefixTree="s2" on a Geo3D spatial field.
   Improved documentation on Geo3D too.  (David Smiley)
 
+* SOLR-13371: Re-structure and clarify Security chapters in Ref Guide (janhoy)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -448,8 +450,6 @@ Other Changes
 * SOLR-13112: Upgrade jackson to 2.9.8 (Kevin Risden)
 
 * SOLR-13353: Add SolrCli AuthTool test (Kevin Risden)
-
-* SOLR-13371: Re-structure and clarify Security chapters in Ref Guide (janhoy)
 
 * SOLR-13363: Upgrade to ZooKeeper 3.4.14 (Erick Erickson)
 
