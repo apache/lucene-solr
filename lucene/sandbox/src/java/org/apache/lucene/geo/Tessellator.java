@@ -537,9 +537,9 @@ final public class Tessellator {
 
   /** Determines whether a diagonal between two polygon nodes lies within a polygon interior. (This determines the validity of the ray.) **/
   private static final boolean isValidDiagonal(final Node a, final Node b) {
-    //If points are equal then use it
-    if (isVertexEquals(a, b) && isCWPolygon(a, b)) {
-      return true;
+    if (isVertexEquals(a, b)) {
+      //If points are equal then use it if they are valid polygons
+      return isCWPolygon(a, b);
     }
     return a.next.idx != b.idx && a.previous.idx != b.idx
         && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
