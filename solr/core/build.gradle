@@ -44,6 +44,9 @@ dependencies {
   implementation project(':lucene:lucene-join')
   implementation project(':solr:solr-solrj')
   
+  // used for log4j2 async support
+  runtimeOnly ('com.lmax:disruptor')
+  
   // kerb, kerby, and curator deps used for security and auth with zk/hdfs/kerberos
   runtimeOnly ('org.apache.curator:curator-recipes') {
     exclude group: '*', module: '*' // brings in a lot we don't use
@@ -53,16 +56,15 @@ dependencies {
   runtimeOnly ('org.apache.kerby:kerby-asn1')
   runtimeOnly ('org.apache.kerby:kerby-pkix')
   
-  // used by calicte.avatica
-  runtimeOnly ('com.google.protobuf:protobuf-java')
+  runtimeOnly ('com.google.protobuf:protobuf-java') // used by calicte.avatica
+  runtimeOnly ('org.slf4j:jcl-over-slf4j') // bridge java common logging to slf4j
   
   compileOnly ('javax.servlet:javax.servlet-api')
   
-  // TODO: this is not great
+  // TODO: this is not great, still have to work out logging dist strat
   implementation ('org.apache.logging.log4j:log4j-slf4j-impl')
 
   implementation ('org.slf4j:slf4j-api')
-  implementation ('org.slf4j:jcl-over-slf4j')
   implementation ('org.apache.zookeeper:zookeeper') {
     exclude group: '*', module: '*' // zk has many deps we don't need
   }
@@ -78,13 +80,13 @@ dependencies {
   }
   implementation ('io.dropwizard.metrics:metrics-jvm')
   implementation ('io.dropwizard.metrics:metrics-jmx')
-  api ('commons-codec:commons-codec') // api because of forbidden apis :(
+  implementation ('commons-codec:commons-codec')
   implementation ('commons-io:commons-io')
   implementation ('org.apache.commons:commons-exec')
   implementation ('commons-fileupload:commons-fileupload')
   implementation ('commons-cli:commons-cli')
   implementation ('org.apache.commons:commons-text')
-  api ('com.google.guava:guava') {  // api because of forbidden apis :(
+  implementation ('com.google.guava:guava') {
     exclude group: '*', module: '*' // many annotation deps we don't need
   }
   implementation ('org.locationtech.spatial4j:spatial4j')
@@ -92,13 +94,11 @@ dependencies {
   implementation ('org.ow2.asm:asm')
   
   implementation ('org.restlet.jee:org.restlet')
-  implementation ('org.restlet.jee:org.restlet.ext.servlet')
   implementation ('com.carrotsearch:hppc')
   
   implementation ('org.apache.logging.log4j:log4j-api')
   implementation ('org.apache.logging.log4j:log4j-core')
   implementation ('org.apache.logging.log4j:log4j-1.2-api')
-  implementation ('org.slf4j:jcl-over-slf4j')
   
   implementation ('com.fasterxml.jackson.core:jackson-core')
   implementation ('com.fasterxml.jackson.core:jackson-databind')
@@ -153,7 +153,7 @@ dependencies {
   implementation ('org.eclipse.jetty:jetty-servlet')
   implementation ('org.eclipse.jetty:jetty-server')
   
-  testRuntimeOnly ('com.lmax:disruptor')
+  testImplementation ('org.restlet.jee:org.restlet.ext.servlet')
   
   // kerby
   testRuntimeOnly ('org.apache.kerby:kerb-core')
@@ -209,6 +209,17 @@ ratSources {
 forbiddenApisTest {
   exclude 'org/apache/solr/internal/**'
   exclude 'org/apache/hadoop/**'
+}
+
+missingDeps() {
+  depExcludes = ['**/*hadoop*.dot'] // we exclude examining hadoop jars because we don't need lots of these deps
+  
+  classExcludes = [
+        'org\\.apache\\.yetus\\.audience\\.InterfaceAudience', // annotations jar
+        'javax\\.annotation\\..*', // annotations jar
+        'org\\.apache\\.yetus\\.audience', // annotations jar
+        'com\\.google\\.errorprone\\.annotations\\..*' // annotations jar
+      ]
 }
 
 task javacc(type: org.apache.lucene.gradle.SolrQPJavaCC) {

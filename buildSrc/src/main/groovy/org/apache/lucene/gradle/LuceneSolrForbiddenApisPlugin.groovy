@@ -32,6 +32,7 @@ class LuceneSolrForbiddenApisPlugin implements Plugin<Project> {
     }
 
     project.tasks.withType(CheckForbiddenApis) { task ->
+      task.failOnUnresolvableSignatures = false
       task.bundledSignatures = ['jdk-unsafe', 'jdk-deprecated', 'jdk-non-portable', 'jdk-reflection']
       task.signaturesURLs = [ getClass().getResource('/forbidden/base.txt') ]
       

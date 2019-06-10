@@ -61,13 +61,6 @@ class MissingDeps extends DefaultTask {
   
   protected configuration = "runtimeClasspath"
   
-  @Inject
-  public MissingDeps(File inputDirectory, List<String> depExcludes, List<String> classExcludes) {
-    this.inputDirectory = inputDirectory
-    this.depExcludes = depExcludes
-    this.classExcludes = classExcludes
-  }
-  
   @TaskAction
   void execute() {
     

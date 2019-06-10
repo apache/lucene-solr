@@ -46,9 +46,7 @@ class FindInSrc {
   protected static Pattern pattern = Pattern.compile("->\\s\\\"([^\\s]*?)\\s")
   protected static Pattern srcJar = Pattern.compile("(.*?)-sources.jar")
   protected static Pattern dotFilePattern = Pattern.compile("(.*?).jar.dot")
-  
-  
-  
+
   public FindInSrc() {
   }
   
@@ -71,7 +69,8 @@ class FindInSrc {
     Stream.of(listSrcFiles.toArray())
         .parallel()
         .forEach( { file ->
-          if (!file.name.endsWith('-sources.jar')) return
+          // if (!file.name.endsWith('-sources.jar')) return
+         // if (foundInsrc.get()) return // stop after we find first occurence(s)
           Matcher nameMatcher = srcJar.matcher(file.name)
           if (nameMatcher.matches()) {
             String artifactName = nameMatcher.group(1)
@@ -122,9 +121,4 @@ class FindInSrc {
     return foundInsrc.get()
   }
 }
-
-
-
-
-
 
