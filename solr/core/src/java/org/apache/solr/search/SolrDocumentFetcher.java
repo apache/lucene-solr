@@ -554,8 +554,9 @@ public class SolrDocumentFetcher {
       case SORTED_NUMERIC:
         final SortedNumericDocValues numericDv = leafReader.getSortedNumericDocValues(fieldName);
         if (numericDv != null && numericDv.advance(localId) == localId) {
-          final List<Object> outValues = new ArrayList<>(numericDv.docValueCount());
-          for (int i = 0; i < numericDv.docValueCount(); i++) {
+          final int docValueCount = numericDv.docValueCount();
+          final List<Object> outValues = new ArrayList<>(docValueCount);
+          for (int i = 0; i < docValueCount; i++) {
             long number = numericDv.nextValue();
             Object value = decodeNumberFromDV(schemaField, number, true);
             // return immediately if the number is not decodable, hence won't return an empty list.
