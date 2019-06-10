@@ -1,4 +1,4 @@
-= Authentication and Authorization Plugins
+= Configuring Authentication, Authorization and Audit Logging
 :page-children: basic-authentication-plugin, hadoop-authentication-plugin, kerberos-authentication-plugin, rule-based-authorization-plugin, jwt-authentication-plugin
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -17,17 +17,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr has security frameworks for supporting authentication and authorization of users. This allows for verifying a user's identity and for restricting access to resources in a Solr cluster.
+Solr has security frameworks for supporting authentication, authorization and auditing of users. This allows for verifying a user's identity and for restricting access to resources in a Solr cluster.
 
-Solr includes some plugins out of the box, and additional plugins can be developed using the authentication and authorization frameworks described below.
+Solr includes some plugins out of the box, and additional plugins can be developed using the authentication, authorization and audit logging frameworks described below.
 
-All authentication and authorization plugins can work with Solr whether they are running in SolrCloud mode or standalone mode. All authentication and authorization configuration, including users and permission rules, are stored in a file named `security.json`. When using Solr in standalone mode, this file must be in the `$SOLR_HOME` directory (usually `server/solr`). When using SolrCloud, this file must be located in ZooKeeper.
+All authentication, authorization and audit logging plugins can work with Solr whether they are running in SolrCloud mode or standalone mode. All related configuration, including users and permission rules, are stored in a file named `security.json`. When using Solr in standalone mode, this file must be in the `$SOLR_HOME` directory (usually `server/solr`). When using SolrCloud, this file must be located in ZooKeeper.
 
 The following section describes how to enable plugins with `security.json` and place them in the proper locations for your mode of operation.
 
 == Enable Plugins with security.json
 
-All of the information required to initialize either type of security plugin is stored in a `security.json` file. This file contains 2 sections, one each for authentication and authorization.
+All of the information required to initialize either type of security plugin is stored in a `security.json` file. This file contains 3 sections, one each for authentication, authorization, and audit logging.
 
 .Sample security.json
 [source,json]
@@ -38,6 +38,9 @@ All of the information required to initialize either type of security plugin is 
   },
   "authorization": {
     "class": "class.that.implements.authorization"
+  },
+  "auditlogging": {
+    "class": "class.that.implements.auditlogging"
   }
 }
 ----
@@ -81,7 +84,7 @@ This example also defines `security.json` on the command line, but you can also 
 
 [WARNING]
 ====
-Depending on the authentication and authorization plugin that you use, you may have user information stored in `security.json`. If so, we highly recommend that you implement access control in your ZooKeeper nodes. Information about how to enable this is available in the section <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.
+Whenever you use any security plugins and store `security.json` in ZooKeeper, we highly recommend that you implement access control in your ZooKeeper nodes. Information about how to enable this is available in the section <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.
 ====
 
 Once `security.json` has been uploaded to ZooKeeper, you should use the appropriate APIs for the plugins you're using to update it. You can edit it manually, but you must take care to remove any version data so it will be properly updated across all ZooKeeper nodes. The version data is found at the end of the `security.json` file, and will appear as the letter "v" followed by a number, such as `{"v":138}`.
@@ -94,7 +97,8 @@ If you are using <<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distr
 
 You can use the authentication and authorization APIs, but if you are using the legacy scaling model, you will need to make the same API requests on each node separately. You can also edit `security.json` by hand if you prefer.
 
-== Authentication Plugins
+[#configuring-authentication]
+== Authentication
 
 Authentication plugins help in securing the endpoints of Solr by authenticating incoming requests. A custom plugin can be implemented by extending the AuthenticationPlugin class.
 
@@ -103,7 +107,7 @@ An authentication plugin consists of two parts:
 . Server-side component, which intercepts and authenticates incoming requests to Solr using a mechanism defined in the plugin, such as Kerberos, Basic Auth or others.
 . Client-side component, i.e., an extension of `HttpClientConfigurer`, which enables a SolrJ client to make requests to a secure Solr instance using the authentication mechanism which the server understands.
 
-=== Enabling a Plugin
+=== Enabling an Authentication Plugin
 
 * Specify the authentication plugin in `/security.json` as in this example:
 +
@@ -118,20 +122,16 @@ An authentication plugin consists of two parts:
 * All of the content in the authentication block of `security.json` would be passed on as a map to the plugin during initialization.
 * An authentication plugin can also be used with a standalone Solr instance by passing in `-DauthenticationPlugin=<plugin class name>` during startup.
 
-=== Available Authentication Plugins
+Currently available authentication plugins are:
 
-Solr has the following implementations of authentication plugins:
+include::securing-solr.adoc[tag=list-of-authentication-plugins]
 
-* <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication Plugin>>
-* <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
-* <<hadoop-authentication-plugin.adoc#hadoop-authentication-plugin,Hadoop Authentication Plugin>>
-* <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>>
-
+[#configuring-authorization]
 == Authorization
 
 An authorization plugin can be written for Solr by extending the {solr-javadocs}/solr-core/org/apache/solr/security/AuthorizationPlugin.html[AuthorizationPlugin] interface.
 
-=== Loading a Custom Plugin
+=== Enabling an Authorization Plugin
 
 * Make sure that the plugin implementation is in the classpath.
 * The plugin can then be initialized by specifying the same in `security.json` in the following manner:
@@ -152,11 +152,14 @@ All of the content in the `authorization` block of `security.json` would be pass
 The authorization plugin is only supported in SolrCloud mode. Also, reloading the plugin isn't yet supported and requires a restart of the Solr installation (meaning, the JVM should be restarted, not simply a core reload).
 ====
 
-=== Available Authorization Plugins
+Currently available authorization plugins are:
 
-Solr has one implementation of an authorization plugin:
+include::securing-solr.adoc[tag=list-of-authorization-plugins]
 
-* <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>
+[#configuring-audit-logging]
+== Audit Logging
+
+<<audit-logging.adoc#audit-logging,Audit logging>> plugins helps you keep an audit trail of events happening in your Solr cluster. Audit logging may e.g. ship data to an external audit service. A custom plugin can be implemented by extending the `AuditLoggerPlugin` class.
 
 == Authenticating in the Admin UI
 

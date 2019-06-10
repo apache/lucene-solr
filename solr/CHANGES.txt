@@ -106,6 +106,8 @@ Other Changes
 * SOLR-13467: Include the S2 Geometry lib to make it simpler to use prefixTree="s2" on a Geo3D spatial field.
   Improved documentation on Geo3D too.  (David Smiley)
 
+* SOLR-13371: Re-structure and clarify Security chapters in Ref Guide (janhoy)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
