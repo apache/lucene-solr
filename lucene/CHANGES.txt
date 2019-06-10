@@ -85,6 +85,9 @@ Improvements
 
 * LUCENE-8818: Fix smokeTestRelease.py encoding bug (janhoy)
 
+* LUCENE-8845: Allow Intervals.prefix() and Intervals.wildcard() to specify
+  their maximum allowed expansions (Alan Woodward)
+
 Test Framework
 
 * LUCENE-8825: CheckHits now display the shard index in case of mismatch
