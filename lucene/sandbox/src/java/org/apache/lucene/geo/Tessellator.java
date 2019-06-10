@@ -220,7 +220,7 @@ final public class Tessellator {
 
     // Determine whether a hole bridge could be fetched.
     if(outerNode != null) {
-      // compute if the bridge overlaps with a polygon edge. This can be tru if the hole touches a polygon edge.
+      // compute if the bridge overlaps with a polygon edge.
       boolean fromPolygon = edgeFromPolygon(outerNode, holeNode) || edgeFromPolygon(holeNode, outerNode);
       // Split the resulting polygon.
       Node node = splitPolygon(outerNode, holeNode, fromPolygon);
@@ -244,7 +244,6 @@ final public class Tessellator {
     // segment's endpoint with lesser x will be potential connection point
     {
       do {
-        //if vertex of the polygon is a vertex of the hole, just use that point.
         if (hy <= p.getY() && hy >= p.next.getY() && p.next.getY() != p.getY()) {
           final double x = p.getX() + (hy - p.getY()) * (p.next.getX() - p.getX()) / (p.next.getY() - p.getY());
           if (x <= hx && x > qx) {
@@ -471,13 +470,15 @@ final public class Tessellator {
           && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
           && linesIntersect(a.getX(), a.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY(), b.getX(), b.getY())
           && isLocallyInside(a, b) && isLocallyInside(b, a)) {
-        // Compute if edges belong to the polygon
-        boolean returnFromPolygon = edgeFromPolygon(a, b);
         // Return the triangulated vertices to the tessellation
-        tessellation.add(new Triangle(a, node.previous.nextEdgeFromPolygon, node, false,  b, returnFromPolygon));
+        boolean abFromPolygon = (a.next == node) ? a.nextEdgeFromPolygon : edgeFromPolygon(a, node);
+        boolean bcFromPolygon = (node.next == b) ? node.nextEdgeFromPolygon : edgeFromPolygon(node, b);
+        boolean caFromPolygon = (b.next == a) ? b.nextEdgeFromPolygon : edgeFromPolygon(a, b);
+        tessellation.add(new Triangle(a, abFromPolygon, node, bcFromPolygon,  b, caFromPolygon));
+
         // remove two nodes involved
-        removeNode(node, returnFromPolygon);
-        removeNode(node.next, returnFromPolygon);
+        removeNode(node, caFromPolygon);
+        removeNode(node.next, caFromPolygon);
         node = startNode = b;
       }
       node = node.next;
@@ -497,7 +498,7 @@ final public class Tessellator {
       while (diagonal != searchNode.previous) {
         if(searchNode.idx != diagonal.idx && isValidDiagonal(searchNode, diagonal)) {
           // Split the polygon into two at the point of the diagonal
-          Node splitNode = splitPolygon(searchNode, diagonal, edgeFromPolygon(searchNode, diagonal) || edgeFromPolygon(diagonal, searchNode));
+          Node splitNode = splitPolygon(searchNode, diagonal, edgeFromPolygon(searchNode, diagonal));
           // Filter the resulting polygon.
           searchNode = filterPoints(searchNode, searchNode.next);
           splitNode  = filterPoints(splitNode, splitNode.next);
@@ -529,12 +530,10 @@ final public class Tessellator {
     return false;
   }
 
-  /** Computes if edge defined by a and b contains the point **/
   private static boolean pointInLine(Node a, Node b, Node point) {
     return pointInLine(a, b, point.getLon(), point.getLat());
   }
 
-  /** Computes if edge defined by a and b contains the point **/
   private static boolean pointInLine(Node a, Node b, double lon, double lat) {
     double dxc = lon - a.getLon();
     double dyc = lat - a.getLat();
@@ -555,6 +554,7 @@ final public class Tessellator {
     }
     return false;
   }
+
 
   /** Links two polygon vertices using a bridge. **/
   private static final Node splitPolygon(final Node a, final Node b,boolean edgeFromPolygon) {
@@ -751,11 +751,12 @@ final public class Tessellator {
       continueIteration = false;
       nextNode = node.next;
       prevNode = node.previous;
+
       //We can filter points when they are the same, if not and they are co-linear we can only
       //remove it if both edges have the same value in .nextEdgeFromPolygon
       if (isVertexEquals(node, nextNode)  ||
           (prevNode.nextEdgeFromPolygon == node.nextEdgeFromPolygon &&
-           area(prevNode.getX(), prevNode.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY()) == 0)) {
+              area(prevNode.getX(), prevNode.getY(), node.getX(), node.getY(), nextNode.getX(), nextNode.getY()) == 0)) {
 
         //Remove the node
         removeNode(node, prevNode.nextEdgeFromPolygon);

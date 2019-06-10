@@ -545,10 +545,33 @@ public class TestTessellator extends LuceneTestCase {
   private void checkPolygon(String wkt) throws Exception {
     Polygon polygon = (Polygon) SimpleWKTShapeParser.parse(wkt);
     List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
-    assertTrue(tessellation.size() > 0);
+    assertEquals(area(polygon), area(tessellation), 0.0);
     for (Tessellator.Triangle t : tessellation) {
       checkTriangleEdgesFromPolygon(polygon, t);
     }
+  }
+
+  private double area(Polygon p) {
+    double val = 0;
+    for (int i = 0; i < p.numPoints() - 1; i++) {
+      val += p.getPolyLon(i) * p.getPolyLat(i + 1)
+          - p.getPolyLat(i) * p.getPolyLon(i + 1);
+    }
+    double area = Math.abs(val / 2.);
+    for (Polygon hole : p.getHoles()) {
+      area -= area(hole);
+    }
+    return area;
+  }
+
+  private double area(List<Tessellator.Triangle> triangles) {
+    double area = 0;
+    for (Tessellator.Triangle t : triangles) {
+      double[] lats = new double[] {t.getLat(0), t.getLat(1), t.getLat(2), t.getLat(0)};
+      double[] lons = new double[] {t.getLon(0), t.getLon(1), t.getLon(2), t.getLon(0)};
+      area += area(new Polygon(lats, lons));
+    }
+    return area;
   }
 
   private void checkTriangleEdgesFromPolygon(Polygon p, Tessellator.Triangle t) {
