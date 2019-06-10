@@ -19,12 +19,10 @@
 
 == Language Notes
 
-*Streaming Expressions* and *Math Expressions* are an expression language that runs
-inside Solr Cloud. The language consists of function expressions that are designed
-to be nested or *composed*. Streaming Expressions are purely functional in that they don't
-have any constructs but functions. Math Expressions does have variables, so it's not
-purely functional. But Math Expression variables are really just a special kind of
-named parameter of the *let* expression.
+*Streaming Expressions* and *Math Expressions* are expression languages that runs
+inside Solr Cloud. The languages consists of function expressions that are designed
+to be nested or *composed*.  Streaming Expressions and Math Expressions can be combined to *search, sort,
+sample, aggregate, transform, analyse* and *visualize* data in Solr Cloud collections.
 
 *Streaming Expressions* all return streams of data. This allows Streaming Expressions to be
 composed in ways that form a pipeline. A *Stream Source*, such as *search*, initiates
@@ -35,8 +33,8 @@ the stream of Tuples.
 arrays and matrices. Many of the Math Expression are designed to work on arrays and matrices
 to perform *statistical* and mathematical operations.
 
-Streaming Expressions and Math Expressions can be combined to *search, sort,
-sample, aggregate, transform, analyse* and *visualize* data in Solr Cloud collections.
+
+
 
 == Executing Streaming Expressions and Math Expressions
 
