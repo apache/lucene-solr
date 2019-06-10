@@ -873,12 +873,12 @@ final public class Tessellator {
       if (this.previous == null)
         builder.append("||-");
       else
-        builder.append(this.previous.idx + " <- ");
+        builder.append(this.previous.idx).append(" <- ");
       builder.append(this.idx);
       if (this.next == null)
         builder.append(" -||");
       else
-        builder.append(" -> " + this.next.idx);
+        builder.append(" -> ").append(this.next.idx);
       return builder.toString();
     }
   }

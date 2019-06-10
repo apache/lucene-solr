@@ -172,7 +172,7 @@ public class ExecutorUtil {
         Collection<String> values = submitterContext.values();
 
         for (String value : values) {
-          contextString.append(value + " ");
+          contextString.append(value).append(' ');
         }
         if (contextString.length() > 1) {
           contextString.setLength(contextString.length() - 1);

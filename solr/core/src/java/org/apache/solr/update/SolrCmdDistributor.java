@@ -122,7 +122,7 @@ public class SolrCmdDistributor implements Closeable {
       int maxErrorsToShow = 10;
       for (Error e:errors) {
         if (maxErrorsToShow-- <= 0) break;
-        builder.append("\n" + e);
+        builder.append("\n").append(e);
       }
       if (errors.size() > 10) {
         builder.append("\n... and ");

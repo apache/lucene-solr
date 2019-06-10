@@ -69,6 +69,10 @@ Test Framework
 * LUCENE-8825: CheckHits now display the shard index in case of mismatch
   between top hits. (Atri Sharma via Adrien Grand)
 
+Other
+
+* LUCENE-8847: Code Cleanup: Remove StringBuilder.append with concatted strings
+
 ======================= Lucene 8.1.1 =======================
 (No Changes)
 

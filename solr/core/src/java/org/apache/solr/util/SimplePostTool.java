@@ -1043,7 +1043,7 @@ public class SimplePostTool {
     StringBuilder sb = new StringBuilder();
     if (nodes.getLength() > 0) {
       for(int i = 0; i < nodes.getLength() ; i++) {
-        sb.append(nodes.item(i).getNodeValue() + " ");
+        sb.append(nodes.item(i).getNodeValue()).append(' ');
         if(!concatAll) break;
       }
       return sb.toString().trim();

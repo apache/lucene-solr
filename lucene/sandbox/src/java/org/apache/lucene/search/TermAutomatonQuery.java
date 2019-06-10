@@ -285,9 +285,9 @@ public class TermAutomatonQuery extends Query {
       b.append("  ");
       b.append(state);
       if (det.isAccept(state)) {
-        b.append(" [shape=doublecircle,label=\"" + state + "\"]\n");
+        b.append(" [shape=doublecircle,label=\"").append(state).append("\"]\n");
       } else {
-        b.append(" [shape=circle,label=\"" + state + "\"]\n");
+        b.append(" [shape=circle,label=\"").append(state).append("\"]\n");
       }
       int numTransitions = det.initTransition(state, t);
       for(int i=0;i<numTransitions;i++) {

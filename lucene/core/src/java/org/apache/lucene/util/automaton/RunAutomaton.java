@@ -103,7 +103,7 @@ public abstract class RunAutomaton {
     StringBuilder b = new StringBuilder();
     b.append("initial state: 0\n");
     for (int i = 0; i < size; i++) {
-      b.append("state " + i);
+      b.append("state ").append(i);
       if (accept[i]) b.append(" [accept]:\n");
       else b.append(" [reject]:\n");
       for (int j = 0; j < points.length; j++) {

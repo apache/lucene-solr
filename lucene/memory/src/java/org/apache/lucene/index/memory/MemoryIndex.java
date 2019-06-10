@@ -728,7 +728,7 @@ public class MemoryIndex {
       String fieldName = entry.getKey();
       Info info = entry.getValue();
       info.sortTerms();
-      result.append(fieldName + ":\n");
+      result.append(fieldName).append(":\n");
       SliceByteStartArray sliceArray = info.sliceArray;
       int numPositions = 0;
       SliceReader postingsReader = new SliceReader(intBlockPool);
@@ -736,7 +736,7 @@ public class MemoryIndex {
         int ord = info.sortedTerms[j];
         info.terms.get(ord, spare);
         int freq = sliceArray.freq[ord];
-        result.append("\t'" + spare + "':" + freq + ":");
+        result.append("\t'").append(spare).append("':").append(freq).append(':');
         postingsReader.reset(sliceArray.start[ord], sliceArray.end[ord]);
         result.append(" [");
         final int iters = storeOffsets ? 3 : 1;
@@ -752,7 +752,7 @@ public class MemoryIndex {
           if (storePayloads) {
             int payloadIndex = postingsReader.readInt();
             if (payloadIndex != -1) {
-                result.append(", " + payloadsBytesRefs.get(payloadBuilder, payloadIndex));
+                result.append(", ").append(payloadsBytesRefs.get(payloadBuilder, payloadIndex));
             }
           }
           result.append(")");
@@ -767,16 +767,16 @@ public class MemoryIndex {
         numPositions += freq;
       }
 
-      result.append("\tterms=" + info.terms.size());
-      result.append(", positions=" + numPositions);
+      result.append("\tterms=").append(info.terms.size());
+      result.append(", positions=").append(numPositions);
       result.append("\n");
       sumPositions += numPositions;
       sumTerms += info.terms.size();
     }
     
-    result.append("\nfields=" + fields.size());
-    result.append(", terms=" + sumTerms);
-    result.append(", positions=" + sumPositions);
+    result.append("\nfields=").append(fields.size());
+    result.append(", terms=").append(sumTerms);
+    result.append(", positions=").append(sumPositions);
     return result.toString();
   }
   
