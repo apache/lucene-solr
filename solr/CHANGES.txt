@@ -110,6 +110,8 @@ New Features
 
 * SOLR-13434: OpenTracing support for Solr (Cao Manh Dat)
 
+* SOLR-13512: Raw index data analysis tool (extension of COLSTATUS collection command). (ab)
+
 Bug Fixes
 ----------------------
 
