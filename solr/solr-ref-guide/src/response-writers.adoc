@@ -40,10 +40,10 @@ The `wt` parameter selects the Response Writer to be used. The list below descri
 == JSON Response Writer
 
 The default Solr Response Writer is the `JsonResponseWriter`, which formats output in JavaScript Object Notation (JSON), a lightweight data interchange format specified in specified in RFC 4627.
-The default response writer is used when,
+The default response writer is used when:
 
-* `wt` parameter is not specified in the request
-* non-existent response writer is specified
+* the `wt` parameter is not specified in the request, or
+* a non-existent response writer is specified.
 
 Here is a sample response for a simple query like `q=id:VS1GB400C3`:
 

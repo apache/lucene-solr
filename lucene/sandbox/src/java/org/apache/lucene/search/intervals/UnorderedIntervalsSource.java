@@ -29,17 +29,17 @@ import org.apache.lucene.util.PriorityQueue;
 
 class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
 
-  static IntervalsSource build(List<IntervalsSource> sources, boolean allowOverlaps) {
+  static IntervalsSource build(List<IntervalsSource> sources) {
     if (sources.size() == 1) {
       return sources.get(0);
     }
-    return new UnorderedIntervalsSource(flatten(sources, allowOverlaps), allowOverlaps);
+    return new UnorderedIntervalsSource(flatten(sources));
   }
 
-  private static List<IntervalsSource> flatten(List<IntervalsSource> sources, boolean allowOverlaps) {
+  private static List<IntervalsSource> flatten(List<IntervalsSource> sources) {
     List<IntervalsSource> flattened = new ArrayList<>();
     for (IntervalsSource s : sources) {
-      if (s instanceof UnorderedIntervalsSource && ((UnorderedIntervalsSource)s).allowOverlaps == allowOverlaps) {
+      if (s instanceof UnorderedIntervalsSource) {
         flattened.addAll(((UnorderedIntervalsSource)s).subSources);
       }
       else {
@@ -49,16 +49,13 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
     return flattened;
   }
 
-  private final boolean allowOverlaps;
-
-  private UnorderedIntervalsSource(List<IntervalsSource> sources, boolean allowOverlaps) {
+  private UnorderedIntervalsSource(List<IntervalsSource> sources) {
     super(sources, true);
-    this.allowOverlaps = allowOverlaps;
   }
 
   @Override
   protected IntervalIterator combine(List<IntervalIterator> iterators) {
-    return new UnorderedIntervalIterator(iterators, allowOverlaps);
+    return new UnorderedIntervalIterator(iterators);
   }
 
   @Override
@@ -72,25 +69,24 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
 
   @Override
   public Collection<IntervalsSource> pullUpDisjunctions() {
-    return Disjunctions.pullUp(subSources, ss -> new UnorderedIntervalsSource(ss, allowOverlaps));
+    return Disjunctions.pullUp(subSources, UnorderedIntervalsSource::new);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.subSources, this.allowOverlaps);
+    return Objects.hash(this.subSources);
   }
 
   @Override
   public boolean equals(Object other) {
     if (other instanceof UnorderedIntervalsSource == false) return false;
     UnorderedIntervalsSource o = (UnorderedIntervalsSource) other;
-    return Objects.equals(this.subSources, o.subSources) &&
-        Objects.equals(this.allowOverlaps, o.allowOverlaps);
+    return Objects.equals(this.subSources, o.subSources);
   }
 
   @Override
   public String toString() {
-    return (allowOverlaps ? "UNORDERED(" : "UNORDERED_NO_OVERLAPS(") +
+    return "UNORDERED(" +
         subSources.stream().map(IntervalsSource::toString).collect(Collectors.joining(",")) + ")";
   }
 
@@ -99,11 +95,10 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
     private final PriorityQueue<IntervalIterator> queue;
     private final IntervalIterator[] subIterators;
     private final int[] innerPositions;
-    private final boolean allowOverlaps;
 
     int start = -1, end = -1, firstEnd, queueEnd;
 
-    UnorderedIntervalIterator(List<IntervalIterator> subIterators, boolean allowOverlaps) {
+    UnorderedIntervalIterator(List<IntervalIterator> subIterators) {
       super(subIterators);
       this.queue = new PriorityQueue<IntervalIterator>(subIterators.size()) {
         @Override
@@ -113,7 +108,6 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
       };
       this.subIterators = new IntervalIterator[subIterators.size()];
       this.innerPositions = new int[subIterators.size() * 2];
-      this.allowOverlaps = allowOverlaps;
 
       for (int i = 0; i < subIterators.size(); i++) {
         this.subIterators[i] = subIterators.get(i);
@@ -143,12 +137,6 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
       while (this.queue.size() == subIterators.length && queue.top().start() == start) {
         IntervalIterator it = queue.pop();
         if (it != null && it.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
-          if (allowOverlaps == false) {
-            while (hasOverlaps(it)) {
-              if (it.nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
-                return start = end = IntervalIterator.NO_MORE_INTERVALS;
-            }
-          }
           queue.add(it);
           updateRightExtreme(it);
         }
@@ -164,13 +152,6 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
           return start;
         IntervalIterator it = queue.pop();
         if (it != null && it.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
-          if (allowOverlaps == false) {
-            while (hasOverlaps(it)) {
-              if (it.nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
-                return start;
-              }
-            }
-          }
           queue.add(it);
           updateRightExtreme(it);
         }
@@ -202,38 +183,13 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
     protected void reset() throws IOException {
       queueEnd = start = end = -1;
       this.queue.clear();
-      loop: for (IntervalIterator it : subIterators) {
+      for (IntervalIterator it : subIterators) {
         if (it.nextInterval() == NO_MORE_INTERVALS) {
           break;
-        }
-        if (allowOverlaps == false) {
-          while (hasOverlaps(it)) {
-            if (it.nextInterval() == NO_MORE_INTERVALS) {
-              break loop;
-            }
-          }
         }
         queue.add(it);
         updateRightExtreme(it);
       }
-    }
-
-    private boolean hasOverlaps(IntervalIterator candidate) {
-      for (IntervalIterator it : queue) {
-        if (it.start() < candidate.start()) {
-          if (it.end() >= candidate.start()) {
-            return true;
-          }
-          continue;
-        }
-        if (it.start() == candidate.start()) {
-          return true;
-        }
-        if (it.start() <= candidate.end()) {
-          return true;
-        }
-      }
-      return false;
     }
 
   }

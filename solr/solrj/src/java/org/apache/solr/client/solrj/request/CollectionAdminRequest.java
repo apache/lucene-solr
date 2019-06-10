@@ -911,6 +911,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Boolean withFieldInfo = null;
     protected Boolean withCoreInfo = null;
     protected Boolean withSizeInfo = null;
+    protected Boolean withRawSizeInfo = null;
+    protected Boolean withRawSizeSummary = null;
+    protected Boolean withRawSizeDetails = null;
+    protected Float rawSizeSamplingPercent = null;
 
     private ColStatus(String collection) {
       super(CollectionAction.COLSTATUS, collection);
@@ -936,6 +940,26 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public ColStatus setWithRawSizeInfo(boolean withRawSizeInfo) {
+      this.withRawSizeInfo = withRawSizeInfo;
+      return this;
+    }
+
+    public ColStatus setWithRawSizeSummary(boolean withRawSizeSummary) {
+      this.withRawSizeSummary = withRawSizeSummary;
+      return this;
+    }
+
+    public ColStatus setWithRawSizeDetails(boolean withRawSizeDetails) {
+      this.withRawSizeDetails = withRawSizeDetails;
+      return this;
+    }
+
+    public ColStatus setRawSizeSamplingPercent(float rawSizeSamplingPercent) {
+      this.rawSizeSamplingPercent = rawSizeSamplingPercent;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams)super.getParams();
@@ -943,6 +967,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.setNonNull("fieldInfo", withFieldInfo);
       params.setNonNull("coreInfo", withCoreInfo);
       params.setNonNull("sizeInfo", withSizeInfo);
+      params.setNonNull("rawSizeInfo", withRawSizeInfo);
+      params.setNonNull("rawSizeSummary", withRawSizeSummary);
+      params.setNonNull("rawSizeDetails", withRawSizeDetails);
+      params.setNonNull("rawSizeSamplingPercent", rawSizeSamplingPercent);
       return params;
     }
   }

@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.search.intervals;
+package org.apache.lucene.document;
 
-import java.util.Collection;
-import java.util.Collections;
+import org.apache.lucene.util.BytesRef;
 
-class NoRewriteDisjunctionIntervalsSource extends DisjunctionIntervalsSource {
+abstract class BinaryRangeDocValuesField extends BinaryDocValuesField {
+  
+  final String field;
+  final byte[] packedValue;
+  final int numDims;
+  final int numBytesPerDimension;
 
-  public NoRewriteDisjunctionIntervalsSource(Collection<IntervalsSource> subSources) {
-    super(subSources);
-  }
-
-  @Override
-  public Collection<IntervalsSource> pullUpDisjunctions() {
-    return Collections.singletonList(this);
+  BinaryRangeDocValuesField(String field, byte[] packedValue, int numDims, int numBytesPerDimension) {
+    super(field, new BytesRef(packedValue));
+    this.field = field;
+    this.packedValue = packedValue;
+    this.numDims = numDims;
+    this.numBytesPerDimension = numBytesPerDimension;
   }
 }

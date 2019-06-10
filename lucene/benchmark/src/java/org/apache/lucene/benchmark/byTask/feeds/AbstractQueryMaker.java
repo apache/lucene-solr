@@ -50,7 +50,7 @@ public abstract class AbstractQueryMaker implements QueryMaker {
     StringBuilder sb = new StringBuilder();
     if (queries != null) {
       for (int i = 0; i < queries.length; i++) {
-        sb.append(i+". "+ queries[i].getClass().getSimpleName()+" - "+queries[i].toString());
+        sb.append(i).append(". ").append(queries[i].getClass().getSimpleName()).append(" - ").append(queries[i].toString());
         sb.append(newline);
       }
     }
