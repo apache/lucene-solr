@@ -56,7 +56,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.SuppressForbidden;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -625,13 +624,16 @@ public class IndexSizeEstimator {
     }
 
     /** Process a string field. */
-    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+    public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
       // trim the value if needed
-      int len = value != null ? UnicodeUtil.calcUTF16toUTF8Length(value, 0, value.length()) : 0;
-      if (value.length() > maxLength) {
-        value = value.substring(0, maxLength);
+      int len = value != null ? value.length : 0;
+      if (len > maxLength) {
+        byte[] newValue = new byte[maxLength];
+        System.arraycopy(value, 0, newValue, 0, maxLength);
+        value = newValue;
       }
-      countItem(fieldInfo.name, value, len);
+      String strValue = new String(value, "UTF-8");
+      countItem(fieldInfo.name, strValue, len);
     }
 
     /** Process a int numeric field. */
