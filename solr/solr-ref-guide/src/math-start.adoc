@@ -37,17 +37,17 @@ to perform *statistical* and mathematical operations.
 
 == Executing Streaming Expressions and Math Expressions
 
-Solr's /stream handler excuted Streaming Expressions and Math Expressions. The easiest way
-run Streaming Expression and Math expressions is through *stream* panel on the Solr admin
+Solr's /stream handler excutes Streaming Expressions and Math Expressions. The easiest way
+to run Streaming Expressions and Math expressions is through the *stream* panel on the Solr admin
 UI.
 
-A sample *search* Streaming Expression is shown is screensheet below:
+A sample *search* Streaming Expression is shown in the screenshot below:
 
 
 image::images/math-expressions/search.png[]
 
 
-A sample *add* Streaming Expression is shown is screensheet below:
+A sample *add* Streaming Expression is shown in the screenshot below:
 
 
 image::images/math-expressions/add.png[]
