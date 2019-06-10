@@ -30,9 +30,8 @@ a stream of Tuples. A Stream Decorator, such as *select*, wraps the Stream Sourc
 the stream of Tuples.
 
 *Math Expressions* do not return streams of data. Math Expressions return primatives and in-memory
-arrays and matrices. Many of the Math Expression are designed to work on arrays and matrices
+arrays and matrices. Many of the Math Expressions are designed to work on arrays and matrices
 to perform *statistical* and mathematical operations.
-
 
 
 
