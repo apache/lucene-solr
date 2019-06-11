@@ -164,7 +164,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13526") // 2019-06-07
   public void createCollectionUpdateAndQueryDistributed() throws Exception {
     // Admin request will use PKI inter-node auth from Overseer, and succeed
     createCollection(COLLECTION);
