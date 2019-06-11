@@ -1950,6 +1950,7 @@ public class ZkStateReader implements SolrCloseable {
      * Update the internal aliases reference with a new one, provided that its ZK version has increased.
      *
      * @param newAliases the potentially newer version of Aliases
+     * @return true if aliases have been updated to a new version, false otherwise
      */
     private boolean setIfNewer(Aliases newAliases) {
       assert newAliases.getZNodeVersion() >= 0;
