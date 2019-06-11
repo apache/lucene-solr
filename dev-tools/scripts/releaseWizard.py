@@ -282,6 +282,9 @@ class ReleaseState:
         else:
             self.release_type = 'bugfix'
 
+    def is_released(self):
+        return self.get_todo_by_id('announce_lucene').is_done()
+
     def get_release_date(self):
         publish_task = self.get_todo_by_id('publish_maven')
         if publish_task.is_done():
@@ -989,7 +992,8 @@ def store_rc(release_root, release_version=None):
 
 
 def release_other_version():
-    maybe_remove_rc_from_svn()
+    if not state.is_released():
+        maybe_remove_rc_from_svn()
     store_rc(state.config_path, None)
     print("Please restart the wizard")
     sys.exit(0)
@@ -1256,8 +1260,6 @@ class MyScreen(Screen):
 
 class CustomExitItem(ExitItem):
     def show(self, index):
-        if self.menu and self.menu.parent and self.text == 'Exit':
-            self.text = "Return to %s" % self.menu.parent.get_title()
         return super(ExitItem, self).show(index)
 
     def get_return(self):
