@@ -126,6 +126,8 @@ of the other tools in this folder.
 
 ### gitignore-gen.sh
 
+TBD
+
 ### releasedJirasRegex.py
 
 Pulls out all JIRAs mentioned at the beginning of bullet items
@@ -186,7 +188,11 @@ and prints a regular expression that will match all of them
 
 ### publish-solr-ref-guide.sh
 
+TBD
+
 ### prep-solr-ref-guide-rc.sh
+
+TBD
 
 ## Tools to be removed
 
