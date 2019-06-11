@@ -18,7 +18,6 @@ package org.apache.lucene.util;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
