@@ -21,6 +21,7 @@ import os
 import sys
 import subprocess
 from subprocess import TimeoutExpired
+from scriptutil import check_ant
 import textwrap
 import urllib.request, urllib.error, urllib.parse
 import xml.etree.ElementTree as ET
@@ -286,16 +287,6 @@ def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
     raise RuntimeError('"git --version" returned a non-zero exit code.')
   check_ant()
 
-def check_ant():
-  antVersion = os.popen('ant -version').read().strip()
-  if (antVersion.startswith('Apache Ant(TM) version 1.8')):
-    return
-  if (antVersion.startswith('Apache Ant(TM) version 1.9')):
-    return
-  if (antVersion.startswith('Apache Ant(TM) version 1.10')):
-    return
-  raise RuntimeError('Unsupported ant version (must be 1.8 - 1.10): "%s"' % antVersion)
-  
 def check_key_in_keys(gpgKeyID, local_keys):
   if gpgKeyID is not None:
     print('  Verify your gpg key is in the main KEYS file')
