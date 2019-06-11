@@ -262,7 +262,7 @@ public class ZkStateReader implements SolrCloseable {
    *
    * @param collection to return config set name for
    */
-  public String readConfigName(String collection) throws KeeperException {
+  public String readConfigName(String collection) {
 
     String configName = null;
 
@@ -281,14 +281,14 @@ public class ZkStateReader implements SolrCloseable {
         String configPath = CONFIGS_ZKNODE + "/" + configName;
         if (!zkClient.exists(configPath, true)) {
           log.error("Specified config=[{}] does not exist in ZooKeeper at location=[{}]", configName, configPath);
-          throw new KeeperException.NoNodeException(configPath);
+          throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "Specified config does not exist in ZooKeeper: " + configName);
         } else {
           log.debug("path=[{}] [{}]=[{}] specified config exists in ZooKeeper", configPath, CONFIGNAME_PROP, configName);
         }
       } else {
         throw new ZooKeeperException(ErrorCode.INVALID_STATE, "No config data found at path: " + path);
       }
-    } catch (InterruptedException e) {
+    } catch (KeeperException| InterruptedException e) {
       SolrZkClient.checkInterrupted(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading config name for collection " + collection, e);
     }

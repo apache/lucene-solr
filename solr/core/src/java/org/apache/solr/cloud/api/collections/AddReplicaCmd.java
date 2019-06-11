@@ -68,7 +68,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +92,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
-      throws IOException, InterruptedException, KeeperException {
+      throws IOException, InterruptedException {
     log.debug("addReplica() : {}", Utils.toJSONString(message));
 
     String extCollectionName = message.getStr(COLLECTION_PROP);
@@ -205,7 +204,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         .collect(Collectors.toList());
   }
 
-  private ModifiableSolrParams getReplicaParams(ClusterState clusterState, ZkNodeProps message, NamedList results, String collectionName, DocCollection coll, boolean skipCreateReplicaInClusterState, String asyncId, ShardHandler shardHandler, CreateReplica createReplica) throws IOException, InterruptedException, KeeperException {
+  private ModifiableSolrParams getReplicaParams(ClusterState clusterState, ZkNodeProps message, NamedList results, String collectionName, DocCollection coll, boolean skipCreateReplicaInClusterState, String asyncId, ShardHandler shardHandler, CreateReplica createReplica) throws IOException, InterruptedException {
     if (coll.getStr(WITH_COLLECTION) != null) {
       String withCollectionName = coll.getStr(WITH_COLLECTION);
       DocCollection withCollection = clusterState.getCollection(withCollectionName);
