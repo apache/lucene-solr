@@ -464,7 +464,7 @@ public class PluginBag<T> implements AutoCloseable {
    * This represents a Runtime Jar. A jar requires two details , name and version
    */
   public static class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
-    private String name, version, sig;
+    private String name, version, sig, sha512, url;
     private BlobRepository.BlobContentRef<ByteBuffer> jarContent;
     private final CoreContainer coreContainer;
     private boolean verified = false;
@@ -472,24 +472,49 @@ public class PluginBag<T> implements AutoCloseable {
     @Override
     public void init(PluginInfo info) {
       name = info.attributes.get(NAME);
-      Object v = info.attributes.get("version");
-      if (name == null || v == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "runtimeLib must have name and version");
+      url = info.attributes.get("url");
+      if(url == null) {
+        Object v = info.attributes.get("version");
+        if (name == null || v == null) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "runtimeLib must have name and version");
+        }
+        version = String.valueOf(v);
+        sig = info.attributes.get("sig");
+      } else {
+        sha512 = info.attributes.get("sha512");
+        if(sha512 == null){
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "runtimeLib with url must have a 'sha512' attribute");
+        }
+        ByteBuffer buf = null;
+        buf = coreContainer.getBlobRepository().fetchFromUrl(name, url);
+
+        String digest = BlobRepository.sha512Digest(buf);
+        if(!sha512.equals(digest))  {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, StrUtils.formatString(BlobRepository.INVALID_JAR_MSG, url, sha512, digest)  );
+        }
+        log.info("dynamic library verified {}, sha512: {}", url, sha512);
+
       }
-      version = String.valueOf(v);
-      sig = info.attributes.get("sig");
+
     }
 
     public RuntimeLib(SolrCore core) {
       coreContainer = core.getCoreContainer();
     }
 
+    public String getUrl(){
+      return url;
+    }
 
     void loadJar() {
       if (jarContent != null) return;
       synchronized (this) {
         if (jarContent != null) return;
-        jarContent = coreContainer.getBlobRepository().getBlobIncRef(name + "/" + version);
+
+        jarContent = url == null?
+            coreContainer.getBlobRepository().getBlobIncRef(name + "/" + version):
+            coreContainer.getBlobRepository().getBlobIncRef(name, null,url,sha512);
+
       }
     }
 
@@ -508,7 +533,7 @@ public class PluginBag<T> implements AutoCloseable {
 
     public ByteBuffer getFileContent(String entryName) throws IOException {
       if (jarContent == null)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jar not available: " + name + "/" + version);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jar not available: " + name  );
       return getFileContent(jarContent.blob, entryName);
 
     }
@@ -547,7 +572,11 @@ public class PluginBag<T> implements AutoCloseable {
       List<RuntimeLib> l = new ArrayList<>(libs.size());
       for (PluginInfo lib : libs) {
         RuntimeLib rtl = new RuntimeLib(core);
-        rtl.init(lib);
+        try {
+          rtl.init(lib);
+        } catch (Exception e) {
+          log.error("error loading runtime library", e);
+        }
         l.add(rtl);
       }
       return l;

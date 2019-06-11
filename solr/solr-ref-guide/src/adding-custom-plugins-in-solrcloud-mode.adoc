@@ -30,7 +30,9 @@ Before enabling this feature, users should carefully consider the issues discuss
 
 == Uploading Jar Files
 
-The first step is to use the <<blob-store-api.adoc#blob-store-api,Blob Store API>> to upload your jar files. This will to put your jars in the `.system` collection and distribute them across your SolrCloud nodes. These jars are added to a separate classloader and only accessible to components that are configured with the property `runtimeLib=true`. These components are loaded lazily because the `.system` collection may not be loaded when a particular core is loaded.
+Use your own service to host the jars or you can use Solr itself to host the jars.
+
+Use the <<blob-store-api.adoc#blob-store-api,Blob Store API>> to upload your jar files to Solr. This will to put your jars in the `.system` collection and distribute them across your SolrCloud nodes. These jars are added to a separate classloader and only accessible to components that are configured with the property `runtimeLib=true`. These components are loaded lazily because the `.system` collection may not be loaded when a particular core is loaded.
 
 == Config API Commands to use Jars as Runtime Libraries
 
@@ -115,6 +117,79 @@ curl http://localhost:8983/api/collections/techproducts/config -H 'Content-type:
 ----
 ====
 --
+
+== Using external service to host your jars
+
+Step 1: download a jar from github
+
+[source,bash]
+----
+ curl -o runtimelibs.jar   -LO https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
+
+----
+Step 2 get the `sha512` hash of the jar
+
+[source,bash]
+----
+ openssl dgst -sha512 runtimelibs.jar
+----
+
+Step 3 :  start solr with runtime lib enabled
+
+[source,bash]
+----
+ bin/solr start -e cloud -a "-Denable.runtime.lib=true" -noprompt
+----
+
+Step 4: run a local server. skip this step if you have another place to host your jars
+
+[source,bash]
+----
+ python -m SimpleHTTPServer 8000 &
+----
+
+Step 5: add the jar to your collection `gettingstarted`
+[source,bash]
+----
+ #add the jar to your collection 'gettingstarted'
+ curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
+    "add-runtimelib": { "name" : "testjar",
+    "url":"http://localhost:8000/runtimelibs.jar" ,
+    "sha512" : "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"}
+    }'
+----
+
+Step  6 : create a new request handler '/test' for the collection 'gettingstarted' from the jar we just added
+[source,bash]
+----
+curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
+    "create-requesthandler": { "name" : "/test",
+    'class': 'org.apache.solr.core.RuntimeLibReqHandler', 'runtimeLib' : true}
+    }'
+----
+
+Step 7:  test your request handler
+[source,bash]
+----
+curl  http://localhost:8983/solr/gettingstarted/test
+----
+
+output:
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":0},
+  "params":{},
+  "context":{
+    "webapp":"/solr",
+    "path":"/test",
+    "httpMethod":"GET"},
+  "class":"org.apache.solr.core.RuntimeLibReqHandler",
+  "loader":"org.apache.solr.core.MemClassLoader"}
+----
+
 
 == Securing Runtime Libraries
 
