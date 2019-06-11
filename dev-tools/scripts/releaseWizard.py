@@ -312,7 +312,18 @@ class ReleaseState:
 
     def get_mirrored_versions_to_delete(self):
         versions = self.get_mirrored_versions()
-        to_keep = [self.get_latest_version(), self.get_latest_lts_version()]
+        to_keep = versions
+        if state.release_type == 'major':
+          to_keep = [self.release_version, self.get_latest_version()]
+        if state.release_type == 'minor':
+          to_keep = [self.release_version, self.get_latest_lts_version()]
+        if state.release_type == 'bugfix':
+          if Version.parse(state.release_version).major == Version.parse(state.get_latest_version()).major:
+            to_keep = [self.release_version, self.get_latest_lts_version()]
+          elif Version.parse(state.release_version).major == Version.parse(state.get_latest_lts_version()).major:
+            to_keep = [self.get_latest_version(), self.release_version()]
+          else:
+            raise Exception("Release version %s must have same major version as current minor or lts release")
         return [ver for ver in versions if ver not in to_keep]
 
     def get_master_version(self):
@@ -1952,7 +1963,6 @@ def update_news(todo):
         print("News files not changed, already patched earlier. Please edit by hand")
 
     return True
-
 
 
 def set_java_home(version):

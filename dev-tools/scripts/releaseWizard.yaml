@@ -1637,23 +1637,39 @@ groups:
       *Lucene*
 
       . Open https://issues.apache.org/jira/issues/?jql=project+=+LUCENE+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
-      . Start a bulk change - operation="Edit issues"
+      . In the `Tools` menu, start a bulk change - operation="Edit issues"
       . Identify issues that *are included* in the release, but are unresolved e.g. due to being REOPENED. These shall *not* be bulk changed!
-      . Check the box next to `Change Fix Version/s` and int the dropdown `Find and remove these`, selecting v {{ release_version }}
+      . Check the box next to `Change Fix Version/s` and in the dropdown `Find and remove these`, selecting v {{ release_version }}
       . On the bottom of the form, uncheck the box that says `Send mail for this update`
       . Click `Next`, review the changes and click `Confirm`
 
       *Solr*
 
       . Open https://issues.apache.org/jira/issues/?jql=project+=+LUCENE+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
-      . Start a bulk change - operation="Edit issues"
+      . In the `Tools` menu, start a bulk change - operation="Edit issues"
       . Identify issues that *are included* in the release, but are unresolved e.g. due to being REOPENED. These shall *not* be bulk changed!
-      . Check the box next to `Change Fix Version/s` and int the dropdown `Find and remove these`, selecting v {{ release_version }}
+      . Check the box next to `Change Fix Version/s` and in the dropdown `Find and remove these`, selecting v {{ release_version }}
       . On the bottom of the form, uncheck the box that says `Send mail for this update`
       . Click `Next`, review the changes and click `Confirm`
     links:
     - https://issues.apache.org/jira/issues/?jql=project+=+LUCENE+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
     - https://issues.apache.org/jira/issues/?jql=project+=+LUCENE+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
+  - !Todo
+    id: jira_clear_security
+    title: Clear Security Level of Public Solr JIRA Issues
+    description: |-
+      ASF JIRA has a deficiency in which issues that have a security level of "Public" are nonetheless not searchable. 
+      As a maintenance task, we'll clear the security flag for all public Solr JIRAs, even if it is not a task directly
+      related to the release:
+
+      . Open in browser: https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+level+=+%22Public%22
+      . In the `Tools` menu, start a bulk change, select all issues and click `Next`
+      . Select operation="Edit issues" and click `Next`
+      . Click the checkbox next to `Change security level` and choose `None` in the dropdown.
+      . On the bottom of the form, uncheck the box that says `Send mail for this update`
+      . Click `Next`, review the changes and click `Confirm`
+    links:
+    - https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+level+=+%22Public%22
   - !Todo
     id: new_jira_versions_bugfix
     title: Add a new version in JIRA for the next release
@@ -1683,10 +1699,10 @@ groups:
 
       The commands below will remove old versions automatically. If this suggestion is wrong,
       please do *not* execute the commands automatically, but edit the command and run manually.
-      Versions that will be kept are *{{ latest_version }}, {{ latest_lts_version }}* and those
-      to be deleted from the mirrors are:
+      Versions to be deleted from the mirrors are:
 
       *{{ mirrored_versions_to_delete|join(', ') }}*
+
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: |
@@ -1696,11 +1712,11 @@ groups:
       commands:
       - !Command
         cmd: |
-          {% for ver in mirrored_versions_to_delete %}svn rm -m "Stop mirroring Lucene {{ ver }}"  https://dist.apache.org/repos/dist/release/lucene/java/{{ ver }}  && {% endfor %}echo Done Lucene
+          svn rm -m "Stop mirroring old Lucene releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/java/{{ ver }}{% endfor %}
         logfile: svn-rm-lucene.log
       - !Command
         cmd: |
-          {% for ver in mirrored_versions_to_delete %}svn rm -m "Stop mirroring Solr {{ ver }}"  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}  && {% endfor %}echo Done Solr
+          svn rm -m "Stop mirroring old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
         logfile: svn-rm-lucene.log
   - !Todo
     id: update_wiki
