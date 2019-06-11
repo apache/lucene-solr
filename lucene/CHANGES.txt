@@ -71,6 +71,9 @@ Bug Fixes
 * LUCENE-8828: Removes the buggy 'disallow overlaps' boolean from Intervals.unordered(),
   and replaces it with a new Intervals.unorderedNoOverlaps() method (Alan Woodward)
 
+* LUCENE-8843: Don't ignore exceptions that are thrown when trying to open a
+  file in IOUtils#fsync. (Jason Tedor via Adrien Grand)
+
 Improvements
 
 * LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
