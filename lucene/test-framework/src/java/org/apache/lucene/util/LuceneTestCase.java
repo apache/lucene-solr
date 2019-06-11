@@ -1416,11 +1416,11 @@ public abstract class LuceneTestCase extends Assert {
 
       Directory fsdir = newFSDirectoryImpl(clazz, f, lf);
       if (rarely()) {
-        List<String> fileExtensoions =
+        List<String> fileExtensions =
             Arrays.asList("fdt", "fdx", "tim", "tip", "si", "fnm", "pos", "dii", "dim", "nvm", "nvd", "dvm", "dvd");
-        Collections.shuffle(fileExtensoions, random());
-        fileExtensoions = fileExtensoions.subList(0, 1 + random().nextInt(fileExtensoions.size()));
-        fsdir = new FileSwitchDirectory(new HashSet<>(fileExtensoions), fsdir, newFSDirectoryImpl(clazz, f, lf), true);
+        Collections.shuffle(fileExtensions, random());
+        fileExtensions = fileExtensions.subList(0, 1 + random().nextInt(fileExtensions.size()));
+        fsdir = new FileSwitchDirectory(new HashSet<>(fileExtensions), fsdir, newFSDirectoryImpl(clazz, f, lf), true);
       }
       BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare);
       return wrapped;
