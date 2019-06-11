@@ -118,40 +118,39 @@ curl http://localhost:8983/api/collections/techproducts/config -H 'Content-type:
 ====
 --
 
-== Using external service to host your jars
+== Example: Using external service to host your jars
 
-Step 1: download a jar from github
+Step 1: Download a jar from github to the current directory
 
 [source,bash]
 ----
  curl -o runtimelibs.jar   -LO https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
-
 ----
-Step 2 get the `sha512` hash of the jar
+Step 2 Get the `sha512` hash of the jar
 
 [source,bash]
 ----
  openssl dgst -sha512 runtimelibs.jar
 ----
 
-Step 3 :  start solr with runtime lib enabled
+Step 3 :  Start solr with runtime lib enabled
 
 [source,bash]
 ----
  bin/solr start -e cloud -a "-Denable.runtime.lib=true" -noprompt
 ----
 
-Step 4: run a local server. skip this step if you have another place to host your jars
+Step 4: Run a local server. Skip this step if you have another place to host your jars. Ensure that the url is set appropriately
 
 [source,bash]
 ----
  python -m SimpleHTTPServer 8000 &
 ----
 
-Step 5: add the jar to your collection `gettingstarted`
+Step 5: Add the jar to your collection `gettingstarted`
+
 [source,bash]
 ----
- #add the jar to your collection 'gettingstarted'
  curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
     "add-runtimelib": { "name" : "testjar",
     "url":"http://localhost:8000/runtimelibs.jar" ,
@@ -159,7 +158,8 @@ Step 5: add the jar to your collection `gettingstarted`
     }'
 ----
 
-Step  6 : create a new request handler '/test' for the collection 'gettingstarted' from the jar we just added
+Step  6 : Create a new request handler '/test' for the collection 'gettingstarted' from the jar we just added
+
 [source,bash]
 ----
 curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
@@ -168,7 +168,8 @@ curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:applicati
     }'
 ----
 
-Step 7:  test your request handler
+Step 7:  Test your request handler
+
 [source,bash]
 ----
 curl  http://localhost:8983/solr/gettingstarted/test
