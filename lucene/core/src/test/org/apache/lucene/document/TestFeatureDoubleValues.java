@@ -27,21 +27,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-/*
- * Test for retrieving values from a feature using a FeatureDoubleValuesSource.
- *
- * THE RULES:
- * 1. keywords like 'abstract' and 'static' should not appear in this file.
- * 2. each test method should be self-contained and understandable.
- * 3. no test methods should share code with other test methods.
- * 4. no testing of things unrelated to sorting.
- * 5. no tracers.
- * 6. keyword 'class' should appear only once in this file, here ----
- *                                                                  |
- *        -----------------------------------------------------------
- *        |
- *       \./
- */
 public class TestFeatureDoubleValues extends LuceneTestCase {
 
   public void testFeature() throws IOException {
@@ -56,6 +41,7 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
     doc = new Document();
     doc.add(new FeatureField("field", "name", 4F));
     writer.addDocument(doc);
+    writer.forceMerge(1);
     IndexReader ir = writer.getReader();
     writer.close();
 
@@ -87,6 +73,7 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
     doc = new Document();
     doc.add(new FeatureField("field", "name", 4F));
     writer.addDocument(doc);
+    writer.forceMerge(1);
     IndexReader ir = writer.getReader();
     writer.close();
 
@@ -168,6 +155,7 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
     doc = new Document();
     doc.add(new FeatureField("field", "name", 4F));
     writer.addDocument(doc);
+    writer.forceMerge(1);
     IndexReader ir = writer.getReader();
     writer.close();
 
