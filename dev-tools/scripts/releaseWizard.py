@@ -1160,8 +1160,9 @@ def pause(fun=None):
     input("\nPress ENTER to continue...")
 
 
-# ConsoleMenu subclasses to make menu texts dynamic
-
+# Custom classes for ConsoleMenu, to make menu texts dynamic
+# Needed until https://github.com/aegirhall/console-menu/pull/25 is released
+# See https://pypi.org/project/console-menu/ for other docs
 
 class UpdatableConsoleMenu(ConsoleMenu):
 
