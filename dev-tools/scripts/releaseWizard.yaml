@@ -409,6 +409,7 @@ groups:
       - !Command
         cmd: git clean -df && git checkout -- .
         comment: Make sure checkout is clean and up to date
+        logfile: git_clean.log
         tee: true
       - !Command
         cmd: git pull
@@ -446,7 +447,7 @@ groups:
   - !Todo
     id: create_minor_branch
     title: Create a new minor branch off the stable branch
-    description: In our case we'll create {{ minor_branch }}
+    description: In our case we'll create {{ release_branch }}
     types:
     - major
     - minor
@@ -462,15 +463,15 @@ groups:
         cmd: git update
         tee: true
       - !Command
-        cmd: git ls-remote --exit-code --heads origin {{ minor_branch }}
+        cmd: git ls-remote --exit-code --heads origin {{ release_branch }}
         stdout: true
         should_fail: true
-        comment: This command should fail with exit code 2 to verify branch {{ minor_branch }} does not already exist
+        comment: This command should fail with exit code 2 to verify branch {{ release_branch }} does not already exist
       - !Command
-        cmd: git checkout -b {{ minor_branch }}
+        cmd: git checkout -b {{ release_branch }}
         tee: true
       - !Command
-        cmd: git push origin {{ minor_branch }}
+        cmd: git push origin {{ release_branch }}
         tee: true
   - !Todo
     id: add_version_major
@@ -1522,7 +1523,7 @@ groups:
       - !Command
         cmd: ant clean
       - !Command
-        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --no-cleanup  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
+        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/
         logfile: add-bakccompat.log
       - !Command
         cmd: git diff

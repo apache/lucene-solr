@@ -531,8 +531,8 @@ class ReleaseState:
     def get_minor_branch_name(self):
         latest = state.get_latest_version()
         if latest is not None:
-            v = Version.parse(latest)
-            return "branch_%s_%s" % (v.major, v.minor)
+          v = Version.parse(latest)
+          return "branch_%s_%s" % (v.major, v.minor)
         else:
             raise Exception("Cannot find latest version")
 
