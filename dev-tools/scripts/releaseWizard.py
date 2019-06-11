@@ -96,7 +96,7 @@ def expand_jinja(text, vars=None):
         'get_next_version': state.get_next_version(),
         'current_git_rev': state.get_current_git_rev(),
         'keys_downloaded': keys_downloaded(),
-        'editor': os.environ['EDITOR'] if 'EDITOR' in os.environ else 'notepad.exe' if is_windows() else 'vi',
+        'editor': get_editor(),
         'rename_cmd': 'ren' if is_windows() else 'mv',
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
         'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date()),
@@ -126,6 +126,8 @@ def expand_jinja(text, vars=None):
     try:
         env = Environment(lstrip_blocks=True, keep_trailing_newline=False, trim_blocks=True)
         env.filters['path_join'] = lambda paths: os.path.join(*paths)
+        env.filters['expanduser'] = lambda path: os.path.expanduser(path)
+        env.filters['formatdate'] = lambda date: (datetime.strftime(date, "%-d %B %Y") if date else "<date>" )
         template = env.from_string(str(filled), globals=global_vars)
         filled = template.render()
     except Exception as e:
@@ -151,6 +153,10 @@ def getScriptVersion():
     return reBaseVersion.search(open('%s/lucene/version.properties' % topLevelDir).read()).group(1)
 
 
+def get_editor():
+    return os.environ['EDITOR'] if 'EDITOR' in os.environ else 'notepad.exe' if is_windows() else 'vi'
+
+
 def check_prerequisites(todo=None):
     if sys.version_info < (3, 4):
         sys.exit("Script requires Python v3.4 or later")
@@ -171,6 +177,8 @@ def check_prerequisites(todo=None):
         git_ver = run("git --version").splitlines()[0]
     except:
         sys.exit("You will need git installed")
+    if not 'EDITOR' in os.environ:
+        print("WARNING: Environment variable $EDITOR not set, using %s" % get_editor())
 
     if todo:
         print("%s\n%s\n%s\n" % (gpg_ver, asciidoc_ver, git_ver))
@@ -958,7 +966,7 @@ def generate_asciidoc():
                             fh.write("SET %s=%s\n" % (key, val))
                         else:
                             fh.write("export %s=%s\n" % (key, val))
-                fh.write("cd %s\n" % cmds.get_root_folder())
+                fh.write(abbreviate_homedir("cd %s\n" % cmds.get_root_folder()))
                 cmds2 = ensure_list(cmds.commands)
                 for c in cmds2:
                     for line in c.display_cmd():
@@ -1586,7 +1594,7 @@ class Commands(SecretYamlObject):
                     print("\n  SET %s=%s" % (key, val))
                 else:
                     print("\n  export %s=%s" % (key, val))
-        print("\n  cd %s" % root)
+        print(abbreviate_homedir("\n  cd %s" % root))
         commands = ensure_list(self.commands)
         for cmd in commands:
             for line in cmd.display_cmd():
@@ -1730,6 +1738,16 @@ class Commands(SecretYamlObject):
             return expand_jinja(data, v)
 
 
+def abbreviate_homedir(line):
+    if is_windows():
+        if 'HOME' in os.environ:
+            return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1%HOME%", line)
+        elif 'USERPROFILE' in os.environ:
+            return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1%USERPROFILE%", line)
+    else:
+        return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1~", line)
+
+
 class Command(SecretYamlObject):
     yaml_tag = u'!Command'
     hidden_fields = ['todo_id']
@@ -1815,7 +1833,10 @@ class Command(SecretYamlObject):
         if self.cwd:
             lines.append("pushd %s" % self.cwd)
         redir = "" if self.redirect is None else " %s %s" % (">" if self.redirect_append is None else ">>" , self.get_redirect())
-        lines.append("%s%s" % (expand_multiline(self.get_cmd(), indent=2), redir))
+        line = "%s%s" % (expand_multiline(self.get_cmd(), indent=2), redir)
+        # Print ~ or %HOME% rather than the full expanded homedir path
+        line = abbreviate_homedir(line)
+        lines.append(line)
         if self.cwd:
             lines.append("popd")
         return lines

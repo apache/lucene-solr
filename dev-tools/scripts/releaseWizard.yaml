@@ -86,7 +86,7 @@ templates:
     ----
     {%- endmacro %}
   announce_tlp: |
-    ## {{ release_date.strftime("%-d %B %Y") | default('<date>') }}, Apache Lucene {{ release_version }} and Apache Solr {{ release_version }} available
+    ## {{ release_date | formatdate | default('<date>') }}, Apache Lucene {{ release_version }} and Apache Solr {{ release_version }} available
 
     The Lucene PMC is pleased to announce the release of Apache® Lucene™ {{ release_version }} and Apache® Solr™ {{ release_version }}.
 
@@ -106,7 +106,7 @@ templates:
       {{ line }}
     {%- endfor %}
   announce_lucene: |
-    ## {{ release_date.strftime("%-d %B %Y") | default('<date>') }}, Apache Lucene™ {{ release_version }} available
+    ## {{ release_date | formatdate | default('<date>') }}, Apache Lucene™ {{ release_version }} available
 
     The Lucene PMC is pleased to announce the release of Apache Lucene {{ release_version }}.
 
@@ -126,7 +126,7 @@ templates:
     Please read CHANGES.txt for a full list of {% if is_feature_release %}new features and {% endif %}changes:
       <https://lucene.apache.org/core/{{ release_version_underscore }}/changes/Changes.html>
   announce_solr: |
-    ## {{ release_date.strftime("%-d %B %Y") | default('<date>') }}, Apache Solr™ {{ release_version }} available
+    ## {{ release_date | formatdate | default('<date>') }}, Apache Solr™ {{ release_version }} available
 
     The Lucene PMC is pleased to announce the release of Apache Solr {{ release_version }}.
 
@@ -744,7 +744,7 @@ groups:
       - '{{ tmp_dir }}'
       commands:
       - !Command
-        cmd: python3 -u dev-tools/scripts/smokeTestRelease.py {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  file://{{ dist_path }}
+        cmd: python3 -u dev-tools/scripts/smokeTestRelease.py {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  file://{{ dist_path | expanduser }}
         logfile: smoketest.log
   - !Todo
     id: import_svn
@@ -778,12 +778,12 @@ groups:
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Here we'll verify that the staged artifacts are downloadable and hash/signatures match -- --download-only  
+      commands_text: Here we'll verify that the staged artifacts are downloadable and hash/signatures match.
       remove_files:
       - '{{ tmp_dir }}'
       commands:
       - !Command
-        cmd: python3 -u dev-tools/scripts/smokeTestRelease.py {{ local_keys }}  --tmp-dir "{{ tmp_dir }}"  {{ dist_url }}
+        cmd: python3 -u dev-tools/scripts/smokeTestRelease.py {{ local_keys }}  --download-only  --tmp-dir "{{ tmp_dir }}"  {{ dist_url }}
         logfile: smoketest_staged.log
 - !TodoGroup
   id: voting
@@ -928,7 +928,7 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       confirm_each_command: false
-      commands_text: This will remove only maven artifacts
+      commands_text: This will remove maven artifacts so they do not end up in the mirrors
       commands:
       - !Command
         cmd: svn rm -m "Delete the lucene maven artifacts"  {{ dist_stage_url }}/lucene/maven
@@ -1494,17 +1494,17 @@ groups:
     title: Generate Backcompat Indexes for release branch
     description: |
       After each version of Lucene is released, compressed CFS, non-CFS, and sorted indexes created with 
-      the newly released version are added to lucene/backwards-codecs/src/test/org/apache/lucene/index/, 
+      the newly released version are added to `lucene/backwards-codecs/src/test/org/apache/lucene/index/`, 
       for use in testing backward index compatibility via org.apache.lucene.index.TestBackwardsCompatibility, 
-      which is also located under the backwards-codecs/ module. There are also three indexes created only 
+      which is also located under the `backwards-codecs/` module. There are also three indexes created only 
       with major Lucene versions: moreterms, empty, and dvupdates. These indexes are created via methods 
-      on TestBackwardsCompatibility itself - see comments in the source for more information.
+      on `TestBackwardsCompatibility` itself - see comments in the source for more information.
 
-      There is a script (dev-tools/scripts/addBackcompatIndexes.py) that automates most of the process.
+      There is a script (`dev-tools/scripts/addBackcompatIndexes.py`) that automates most of the process.
       It downloads the source for the specified release; generates indexes for the current release using 
-      TestBackwardsCompatibility; compresses the indexes and places them in the correct place in the source 
+      `TestBackwardsCompatibility`; compresses the indexes and places them in the correct place in the source 
       tree; modifies TestBackwardsCompatibility.java to include the generated indexes in the list of indexes 
-      to test; and then runs TestBackwardsCompatibility.
+      to test; and then runs `TestBackwardsCompatibility`.
       
       In this and the next two steps we'll guide you through using this tool on each of the branches.
     depends: 
@@ -1604,7 +1604,7 @@ groups:
       Go to the JIRA "Manage Versions" Administration pages.
 
       . Next to version {{ release_version }}, click the gear pop-up menu icon and choose "Release"
-      . Fill in the release date ({{ release_date.strftime("%-d %B %Y") }})
+      . Fill in the release date ({{ release_date | formatdate }})
       . It will give the option of transitioning issues marked fix-for the released version to the 
         next version, but do not do this as it will send an email for each issue :)
 
