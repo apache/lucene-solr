@@ -120,6 +120,8 @@ curl http://localhost:8983/api/collections/techproducts/config -H 'Content-type:
 
 == Example: Using external service to host your jars
 
+Hosting your jars externally is more convenient if you have a reliable server to host your jars. There is no need to create and manage a `.system` collection.
+
 Step 1: Download a jar from github to the current directory
 
 [source,bash]
@@ -191,6 +193,23 @@ output:
   "loader":"org.apache.solr.core.MemClassLoader"}
 ----
 
+=== Updating remote jars
+
+Example:
+
+* Host the new jar to a new url. eg:  http://localhost:8000/runtimelibs_v2.jar
+* get the `sha512` hash of the new jar
+* run the update-runtime lib command
+
+[source,bash]
+----
+ curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
+    "update-runtimelib": { "name" : "testjar",
+    "url":"http://localhost:8000/runtimelibs_v2.jar" ,
+    "sha512" : "<replace-the-new-sha512-digest-here>"}
+    }'
+----
+NOTE: Always upload your jar to a new url as the Solr cluster is still referring to the old jar. If the existing jar is modified it can cause errors as the hash may not match
 
 == Securing Runtime Libraries
 
