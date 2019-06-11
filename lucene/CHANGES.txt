@@ -97,6 +97,8 @@ Other
 
 * LUCENE-8847: Code Cleanup: Remove StringBuilder.append with concatted strings
 
+* LUCENE-8852: ReleaseWizard tool for release managers (janhoy)
+
 ======================= Lucene 8.1.1 =======================
 (No Changes)
 
