@@ -300,4 +300,19 @@ public class TestPolygon extends LuceneTestCase {
     Exception e = expectThrows(ParseException.class, () -> Polygon.fromGeoJSON(b.toString()));
     assertTrue(e.getMessage().contains("can only handle type FeatureCollection (if it has a single polygon geometry), Feature, Polygon or MutiPolygon, but got Point"));
   }
+
+  public void testPolygonNoArea() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      new Polygon(new double[] { 0, 1, 2, 3, 0}, new double[] { 0, 0, 0, 0, 0 });
+    });
+    assertTrue(expected.getMessage().contains("Polygon or hole has no area."));
+  }
+
+  public void testPolygonInvalidArea() {
+    final Polygon hole = new Polygon(new double[] { 0, 1, 1, 0, 0}, new double[] { 0, 0, 1, 1, 0 });
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      new Polygon(new double[] { 0, 0, 1, 1, 0}, new double[] { 0, 1, 1, 0, 0 }, hole);
+    });
+    assertTrue(expected.getMessage().contains("Polygon has an invalid area"));
+  }
 }
