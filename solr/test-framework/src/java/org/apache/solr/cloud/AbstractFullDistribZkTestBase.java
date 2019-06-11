@@ -899,7 +899,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       StringBuilder sb = new StringBuilder();
       for (int i = 0; i < sliceCount; i++) {
         if (i > 0) sb.append(',');
-        sb.append("shard" + (i + 1));
+        sb.append("shard").append(i + 1);
       }
       params.set("shards", sb.toString());
     }

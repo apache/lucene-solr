@@ -654,14 +654,27 @@ final public class Tessellator {
 
   /** Determines whether a diagonal between two polygon nodes lies within a polygon interior. (This determines the validity of the ray.) **/
   private static final boolean isValidDiagonal(final Node a, final Node b) {
-    //If points are equal then use it
     if (isVertexEquals(a, b)) {
-      return true;
+      //If points are equal then use it if they are valid polygons
+      return isCWPolygon(a, b);
     }
     return a.next.idx != b.idx && a.previous.idx != b.idx
         && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
         && isLocallyInside(a, b) && isLocallyInside(b, a)
         && middleInsert(a, a.getX(), a.getY(), b.getX(), b.getY());
+  }
+
+  /** Determine whether the polygon defined between node start and node end is CW */
+  private static boolean isCWPolygon(Node start, Node end) {
+    Node next = start;
+    double windingSum = 0;
+    do {
+      // compute signed area
+      windingSum += area(next.getLon(), next.getLat(), next.next.getLon(), next.next.getLat(), end.getLon(), end.getLat());
+      next = next.next;
+    } while (next.next != end);
+    //The polygon must be CW
+    return (windingSum < 0) ? true : false;
   }
 
   private static final boolean isLocallyInside(final Node a, final Node b) {

@@ -20,6 +20,7 @@ package org.apache.lucene.search.intervals;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -38,9 +39,19 @@ import org.apache.lucene.util.PriorityQueue;
 class DisjunctionIntervalsSource extends IntervalsSource {
 
   final Collection<IntervalsSource> subSources;
+  final boolean pullUpDisjunctions;
 
-  public DisjunctionIntervalsSource(Collection<IntervalsSource> subSources) {
+  static IntervalsSource create(Collection<IntervalsSource> subSources, boolean pullUpDisjunctions) {
+    subSources = simplify(subSources);
+    if (subSources.size() == 1) {
+      return subSources.iterator().next();
+    }
+    return new DisjunctionIntervalsSource(subSources, pullUpDisjunctions);
+  }
+
+  private DisjunctionIntervalsSource(Collection<IntervalsSource> subSources, boolean pullUpDisjunctions) {
     this.subSources = simplify(subSources);
+    this.pullUpDisjunctions = pullUpDisjunctions;
   }
 
   private static Collection<IntervalsSource> simplify(Collection<IntervalsSource> sources) {
@@ -120,7 +131,10 @@ class DisjunctionIntervalsSource extends IntervalsSource {
 
   @Override
   public Collection<IntervalsSource> pullUpDisjunctions() {
-    return subSources;
+    if (pullUpDisjunctions) {
+      return subSources;
+    }
+    return Collections.singletonList(this);
   }
 
   static class DisjunctionIntervalIterator extends IntervalIterator {

@@ -412,14 +412,14 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
       try {
         FacetLabel category = this.getPath(i);
         if (category == null) {
-          sb.append(i + ": NULL!! \n");
+          sb.append(i).append(": NULL!! \n");
           continue;
         } 
         if (category.length == 0) {
-          sb.append(i + ": EMPTY STRING!! \n");
+          sb.append(i).append(": EMPTY STRING!! \n");
           continue;
         }
-        sb.append(i +": "+category.toString()+"\n");
+        sb.append(i).append(": ").append(category.toString()).append("\n");
       } catch (IOException e) {
         if (log.isLoggable(Level.FINEST)) {
           log.log(Level.FINEST, e.getMessage(), e);

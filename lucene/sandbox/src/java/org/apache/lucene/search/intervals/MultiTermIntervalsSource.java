@@ -57,8 +57,8 @@ class MultiTermIntervalsSource extends IntervalsSource {
     int count = 0;
     while ((term = te.next()) != null) {
       subSources.add(TermIntervalsSource.intervals(term, te));
-      if (count++ > maxExpansions) {
-        throw new IllegalStateException("Automaton " + this.pattern + " expanded to too many terms (limit " + maxExpansions + ")");
+      if (++count > maxExpansions) {
+        throw new IllegalStateException("Automaton [" + this.pattern + "] expanded to too many terms (limit " + maxExpansions + ")");
       }
     }
     if (subSources.size() == 0) {

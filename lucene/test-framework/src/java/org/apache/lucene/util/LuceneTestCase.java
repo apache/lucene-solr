@@ -1284,8 +1284,8 @@ public abstract class LuceneTestCase extends Assert {
       if (previousLines.length == currentLines.length) {
         for (int i = 0; i < previousLines.length; i++) {
           if (!previousLines[i].equals(currentLines[i])) {
-            diff.append("- " + previousLines[i] + "\n");
-            diff.append("+ " + currentLines[i] + "\n");
+            diff.append("- ").append(previousLines[i]).append("\n");
+            diff.append("+ ").append(currentLines[i]).append("\n");
           }
         }
       } else {

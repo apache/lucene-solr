@@ -29,6 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Query;
@@ -537,5 +538,18 @@ public final class FeatureField extends Field {
    */
   public static SortField newFeatureSort(String field, String featureName) {
     return new FeatureSortField(field, featureName);
+  }
+  
+  /**
+   * Creates a {@link DoubleValuesSource} instance which can be used to read the values of a feature from the a 
+   * {@link FeatureField} for documents.
+   * 
+   * @param field field name. Must not be null.
+   * @param featureName feature name. Must not be null.
+   * @return a {@link DoubleValuesSource} which can be used to access the values of the feature for documents
+   * @throws NullPointerException if {@code field} or {@code featureName} is null.
+   */
+  public static DoubleValuesSource newDoubleValues(String field, String featureName) {
+    return new FeatureDoubleValuesSource(field, featureName);
   }
 }

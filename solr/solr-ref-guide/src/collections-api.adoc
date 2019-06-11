@@ -206,7 +206,7 @@ See the <<create,CREATE action>> section above for details on these attributes.
 [[readonlymode]]
 ==== Read-Only Mode
 Setting the `readOnly` attribute to `true` puts the collection in read-only mode,
-in which any index update requests are rejected. Other collection-level actions (eg. adding /
+in which any index update requests are rejected. Other collection-level actions (e.g., adding /
 removing / moving replicas) are still available in this mode.
 
 The transition from the (default) read-write to read-only mode consists of the following steps:
@@ -316,7 +316,7 @@ http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=newCo
 ----
 This request specifies a different schema for the target collection, copies only some of the fields, selects only the documents
 matching a query, and also potentially re-shapes the collection by explicitly specifying 3 shards. Since the target collection
-hasn't been specified in the parameters a collection with a unique name eg. `.rx_newCollection_2` will be created and on success
+hasn't been specified in the parameters, a collection with a unique name, e.g., `.rx_newCollection_2`, will be created and on success
 an alias pointing from `newCollection` to `.rx_newCollection_2` will be created, effectively replacing the source collection
 for the purpose of indexing and searching. The source collection is assumed to be small so a synchronous request was made.
 
@@ -1533,12 +1533,13 @@ http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&pro
 ----
 
 [[colstatus]]
-== COLSTATUS: Detailed low-level status of collection's indexes
+== COLSTATUS: Detailed Status of a Collection's Indexes
+
 The COLSTATUS command provides a detailed description of the collection status, including low-level index
 information about segments and field data.
 
 This command also checks the compliance of Lucene index field types with the current Solr collection
-schema and indicates the names of non-compliant fields, ie. Lucene fields with field types incompatible
+schema and indicates the names of non-compliant fields, i.e., Lucene fields with field types incompatible
 (or different) from the corresponding Solr field types declared in the current schema. Such incompatibilities may
 result from incompatible schema changes or after migration of
 data to a different major Solr release.
@@ -1565,9 +1566,81 @@ and their corresponding Solr schema types.
 Optional boolean. If true then additional information about the index files
 size and their RAM usage will be provided.
 
+==== Index Size Analysis Tool
+The `COLSTATUS` command also provides a tool for analyzing and estimating the composition of raw index data. Please note that
+this tool should be used with care because it generates a significant IO load on all shard leaders of the
+analyzed collections. A sampling threshold and a sampling percent parameters can be adjusted to reduce this
+load to some degree.
+
+Size estimates produced by this tool are only approximate and represent the aggregated size of uncompressed
+index data. In reality these values would never occur, because Lucene (and Solr) always stores data in a
+compressed format - still, these values help to understand what occupies most of the space and the relative size
+of each type of data and each field in the index.
+
+In the following sections whenever "size" is mentioned it means an estimated aggregated size of
+uncompressed (raw) data.
+
+The following parameters are specific to this tool:
+
+`rawSize`::
+Optional boolean. If true then run the raw index data analysis tool (other boolean options below imply
+this option if any of them are true). Command response will include sections that show estimated breakdown of
+data size per field and per data type.
+
+`rawSizeSummary`::
+Optional boolean. If true then include also a more detailed breakdown of data size per field and per type.
+
+`rawSizeDetails`::
+Optional boolean. If true then provide exhaustive details that include statistical distribution of items per
+field and per type as well as top 20 largest items per field.
+
+`rawSizeSamplingPercent`::
+Optional float. When the index is larger than a certain threshold (100k documents per shard) only a part of
+data is actually retrieved and analyzed in order to reduce the IO load, and then the final results are extrapolated.
+Values must be greater than 0 and less or equal to 100.0. Default value is 5.0. Very small values (between 0.0 and 1.0)
+may introduce significant estimation errors. Also, values that would result in less than 10 documents being sampled
+are rejected with an exception.
+
+Response for this command always contains two sections:
+
+* `fieldsBySize` is a map where field names are keys and values are estimated sizes of raw (uncompressed) data
+that belongs to the field. The map is sorted by size so that it's easy to see what field occupies most space.
+
+* `typesBySize` is a map where data types are the keys and values are estimates sizes of raw (uncompressed) data
+of particular type. This map is also sorted by size.
+
+Optional sections include:
+
+* `summary` section containing a breakdown of data sizes for each field by data type.
+
+* `details` section containing detailed statistical summary of size distribution within each field, per data type.
+This section also shows `topN` values by size from each field.
+
+Data types shown in the response can be roughly divided into the following groups:
+
+* `storedFields` - represents the raw uncompressed data in stored fields. Eg. for UTF-8 strings this represents
+the aggregated sum of the number of bytes in the strings' UTF-8 representation, for long numbers this is 8 bytes per value, etc.
+
+* `terms_terms` - represents the aggregated size of the term dictionary. The size of this data is affected by the
+the number and length of unique terms, which in turn depends on the field size and the analysis chain.
+
+* `terms_postings` - represents the aggregated size of all term position and offset information, if present.
+This information may be absent if position-based searching, such as phrase queries, is not needed.
+
+* `terms_payloads` - represents the aggregated size of all per-term payload data, if present.
+
+* `norms` - represents the aggregated size of field norm information. This information may be omitted if a field
+has an `omitNorms` flag in the schema, which is common for fields that don't need weighting or scoring by field length.
+
+* `termVectors` - represents the aggregated size of term vectors.
+
+* `docValues_*` - represents aggregated size of doc values, by type (eg. `docValues_numeric`, `docValues_binary`, etc).
+
+* `points` - represents aggregated size of point values.
+
 === COLSTATUS Response
 The response will include an overview of the collection status, the number of
-active / inactive shards and replicas, and additional index information
+active or inactive shards and replicas, and additional index information
 of shard leaders.
 
 === Examples using COLSTATUS
@@ -1715,6 +1788,201 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
                                     }
                                   }}}}}}}}}}}
 ----
+
+Example of using the raw index data analysis tool:
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=gettingstarted&rawSize=true&rawSizeSamplingPercent=0.1
+----
+
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 26812
+    },
+    "gettingstarted": {
+        "stateFormat": 2,
+        "znodeVersion": 33,
+        "properties": {
+            "autoAddReplicas": "false",
+            "maxShardsPerNode": "-1",
+            "nrtReplicas": "2",
+            "pullReplicas": "0",
+            "replicationFactor": "2",
+            "router": {
+                "name": "compositeId"
+            },
+            "tlogReplicas": "0"
+        },
+        "activeShards": 2,
+        "inactiveShards": 0,
+        "schemaNonCompliant": [
+            "(NONE)"
+        ],
+        "shards": {
+            "shard1": {
+                "state": "active",
+                "range": "80000000-ffffffff",
+                "replicas": {
+                    "total": 2,
+                    "active": 2,
+                    "down": 0,
+                    "recovering": 0,
+                    "recovery_failed": 0
+                },
+                "leader": {
+                    "coreNode": "core_node5",
+                    "core": "gettingstarted_shard1_replica_n2",
+                    "base_url": "http://192.168.0.80:8983/solr",
+                    "node_name": "192.168.0.80:8983_solr",
+                    "state": "active",
+                    "type": "NRT",
+                    "force_set_state": "false",
+                    "leader": "true",
+                    "segInfos": {
+                        "info": {
+                            "minSegmentLuceneVersion": "9.0.0",
+                            "commitLuceneVersion": "9.0.0",
+                            "numSegments": 46,
+                            "segmentsFileName": "segments_4h",
+                            "totalMaxDoc": 3283741,
+                            "userData": {
+                                "commitCommandVer": "1635676266902323200",
+                                "commitTimeMSec": "1559902446318"
+                            }
+                        },
+                        "rawSize": {
+                            "fieldsBySize": {
+                                "revision.text": "7.9 GB",
+                                "revision.text_str": "734.7 MB",
+                                "revision.comment_str": "259.1 MB",
+                                "revision": "239.2 MB",
+                                "revision.sha1": "211.9 MB",
+                                "revision.comment": "201.3 MB",
+                                "title": "114.9 MB",
+                                "revision.contributor": "103.5 MB",
+                                "revision.sha1_str": "96.4 MB",
+                                "revision.id": "75.2 MB",
+                                "ns": "75.2 MB",
+                                "revision.timestamp": "75.2 MB",
+                                "revision.contributor.id": "74.7 MB",
+                                "revision.format": "69 MB",
+                                "id": "65 MB",
+                                "title_str": "26.8 MB",
+                                "revision.model_str": "25.4 MB",
+                                "_version_": "24.9 MB",
+                                "_root_": "24.7 MB",
+                                "revision.contributor.ip_str": "22 MB",
+                                "revision.contributor_str": "21.8 MB",
+                                "revision_str": "15.5 MB",
+                                "revision.contributor.ip": "13.5 MB",
+                                "restrictions_str": "428.7 KB",
+                                "restrictions": "164.2 KB",
+                                "name_str": "84 KB",
+                                "includes_str": "8.8 KB"
+                            },
+                            "typesBySize": {
+                                "storedFields": "7.8 GB",
+                                "docValues_sortedSet": "1.2 GB",
+                                "terms_postings": "788.8 MB",
+                                "terms_terms": "342.2 MB",
+                                "norms": "237 MB",
+                                "docValues_sortedNumeric": "124.3 MB",
+                                "points": "115.7 MB",
+                                "docValues_numeric": "24.9 MB",
+                                "docValues_sorted": "18.5 MB"
+                            }
+                        }
+                    }
+                }
+            },
+            "shard2": {
+                "state": "active",
+                "range": "0-7fffffff",
+                "replicas": {
+                    "total": 2,
+                    "active": 2,
+                    "down": 0,
+                    "recovering": 0,
+                    "recovery_failed": 0
+                },
+                "leader": {
+                    "coreNode": "core_node8",
+                    "core": "gettingstarted_shard2_replica_n6",
+                    "base_url": "http://192.168.0.80:8983/solr",
+                    "node_name": "192.168.0.80:8983_solr",
+                    "state": "active",
+                    "type": "NRT",
+                    "force_set_state": "false",
+                    "leader": "true",
+                    "segInfos": {
+                        "info": {
+                            "minSegmentLuceneVersion": "9.0.0",
+                            "commitLuceneVersion": "9.0.0",
+                            "numSegments": 55,
+                            "segmentsFileName": "segments_4d",
+                            "totalMaxDoc": 3284863,
+                            "userData": {
+                                "commitCommandVer": "1635676259742646272",
+                                "commitTimeMSec": "1559902445005"
+                            }
+                        },
+                        "rawSize": {
+                            "fieldsBySize": {
+                                "revision.text": "8.3 GB",
+                                "revision.text_str": "687.5 MB",
+                                "revision": "238.9 MB",
+                                "revision.sha1": "212 MB",
+                                "revision.comment_str": "211.5 MB",
+                                "revision.comment": "201.7 MB",
+                                "title": "115.9 MB",
+                                "revision.contributor": "103.4 MB",
+                                "revision.sha1_str": "96.3 MB",
+                                "ns": "75.2 MB",
+                                "revision.id": "75.2 MB",
+                                "revision.timestamp": "75.2 MB",
+                                "revision.contributor.id": "74.6 MB",
+                                "revision.format": "69 MB",
+                                "id": "67 MB",
+                                "title_str": "29.5 MB",
+                                "_version_": "24.8 MB",
+                                "revision.model_str": "24 MB",
+                                "revision.contributor_str": "21.7 MB",
+                                "revision.contributor.ip_str": "20.9 MB",
+                                "revision_str": "15.5 MB",
+                                "revision.contributor.ip": "13.8 MB",
+                                "restrictions_str": "411.1 KB",
+                                "restrictions": "132.9 KB",
+                                "name_str": "42 KB",
+                                "includes_str": "41 KB"
+                            },
+                            "typesBySize": {
+                                "storedFields": "8.2 GB",
+                                "docValues_sortedSet": "1.1 GB",
+                                "terms_postings": "787.4 MB",
+                                "terms_terms": "337.5 MB",
+                                "norms": "236.6 MB",
+                                "docValues_sortedNumeric": "124.1 MB",
+                                "points": "115.7 MB",
+                                "docValues_numeric": "24.9 MB",
+                                "docValues_sorted": "20.5 MB"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+----
+
 
 [[migrate]]
 == MIGRATE: Migrate Documents to Another Collection
