@@ -46,6 +46,10 @@ Bug Fixes
 * LUCENE-8843: Don't ignore exceptions that are thrown when trying to open a
   file in IOUtils#fsync. (Jason Tedor via Adrien Grand)
 
+* LUCENE-8835: FileSwitchDirectory now respects the file extension when listing directory
+  contents to ensure we don't expose pending deletes if both directory point to the same
+  underlying filesystem directory. (Simon Willnauer)
+
 Improvements
 
 * LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
