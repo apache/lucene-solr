@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.MockDirectoryFactory;
+import org.apache.solr.util.SolrCLI;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
@@ -324,4 +325,26 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
     zkServer.run(false);
   }
+
+
+  // Copy a configset up from some path on the local  machine to ZK.
+  // Example usage:
+  //
+  // copyConfigUp(TEST_PATH().resolve("configsets"), "cloud-minimal", "configset-name", zk_address);
+
+  static protected void copyConfigUp(Path configSetDir, String srcConfigSet, String dstConfigName, String zkAddr) throws Exception {
+    String[] args = new String[]{
+        "-confname", dstConfigName,
+        "-confdir", srcConfigSet,
+        "-zkHost", zkAddr,
+        "-configsetsDir", configSetDir.toAbsolutePath().toString(),
+    };
+
+    SolrCLI.ConfigSetUploadTool tool = new SolrCLI.ConfigSetUploadTool();
+
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+    assertEquals("Tool should have returned 0 for success, returned: " + res, res, 0);
+
+  }
+
 }

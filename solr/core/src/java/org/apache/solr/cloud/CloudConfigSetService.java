@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
@@ -52,7 +53,12 @@ public class CloudConfigSetService extends ConfigSetService {
       SolrException.log(log, null, e);
     }
 
-    String configName = zkController.getZkStateReader().readConfigName(cd.getCollectionName());
+    String configName;
+    try {
+      configName = zkController.getZkStateReader().readConfigName(cd.getCollectionName());
+    } catch (KeeperException ex) {
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Specified config does not exist in ZooKeeper: " + cd.getCollectionName());
+    }
     return new ZkSolrResourceLoader(cd.getInstanceDir(), configName, parentLoader.getClassLoader(),
         cd.getSubstitutableProperties(), zkController);
   }
