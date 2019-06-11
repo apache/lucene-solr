@@ -19,6 +19,8 @@ package org.apache.solr.search.grouping.distributed.responseprocessor;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,7 @@ import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.AbstractReRankQuery;
 import org.apache.solr.search.Grouping;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
@@ -65,7 +68,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     } else {
       groupOffsetDefault = rb.getGroupingSpec().getWithinGroupOffset();
     }
-    int docsPerGroupDefault = rb.getGroupingSpec().getWithinGroupLimit();
+    final int docsPerGroupDefault = rb.getGroupingSpec().getWithinGroupLimit();
 
     Map<String, List<TopGroups<BytesRef>>> commandTopGroups = new HashMap<>();
     for (String field : fields) {
@@ -159,8 +162,45 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
           docsPerGroup += subTopGroups.totalGroupedHitCount;
         }
       }
-      rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, withinGroupSort, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
+
+      if (rb.getRankQuery() != null){
+        docsPerGroup = Math.max(docsPerGroupDefault, ((AbstractReRankQuery)rb.getRankQuery()).getReRankDocs());
+        rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, withinGroupSort, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
+
+        TopGroups<BytesRef> group = rb.mergedTopGroups.get(groupField);
+        for (int i = 0; i < group.groups.length; i++){
+          GroupDocs currentGroup = group.groups[i];
+          Arrays.sort(currentGroup.scoreDocs, new Comparator<ScoreDoc>() {
+            @Override
+            public int compare(ScoreDoc o1, ScoreDoc o2) {
+              if (o1.score > o2.score) return -1;
+              if (o2.score < o1.score) return 1;
+              return 0;
+            }
+          });
+          ScoreDoc[] scoreDocs = currentGroup.scoreDocs;
+          if (scoreDocs.length > docsPerGroupDefault) {
+            scoreDocs = Arrays.copyOf(currentGroup.scoreDocs, docsPerGroupDefault);
+          }
+          group.groups[i] = new GroupDocs(Float.NaN, currentGroup.maxScore, currentGroup.totalHits, scoreDocs, currentGroup.groupValue, currentGroup.groupSortValues);
+        }
+        Arrays.sort(group.groups, new Comparator<GroupDocs<BytesRef>>() {
+          @Override
+          public int compare(GroupDocs<BytesRef> o1, GroupDocs<BytesRef> o2) {
+            if (o1.maxScore > o2.maxScore) return -1;
+            if (o2.maxScore < o1.maxScore) return 1;
+            return 0;
+          }
+        });
+        int topN = Math.min(group.groups.length, rb.getSortSpec().getCount());
+        group = new TopGroups<BytesRef>(group.groupSort, group.withinGroupSort, group.totalHitCount, group.totalGroupedHitCount, Arrays.copyOfRange(group.groups, 0, topN), group.maxScore);
+        rb.mergedTopGroups.put(groupField, group);
+      }
+      else {
+        rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, withinGroupSort, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
+      }
     }
+
 
     for (String query : commandTopDocs.keySet()) {
       List<QueryCommandResult> queryCommandResults = commandTopDocs.get(query);

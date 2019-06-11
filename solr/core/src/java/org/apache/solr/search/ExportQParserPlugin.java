@@ -29,6 +29,7 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TotalHits;
@@ -95,8 +96,17 @@ public class ExportQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Deprecated
     public TopDocsCollector getTopDocsCollector(int len,
                                                 QueryCommand cmd,
+                                                IndexSearcher searcher) throws IOException {
+
+      return getTopDocsCollector(len, cmd.getSort(), searcher);
+    }
+
+    @Override
+    public TopDocsCollector getTopDocsCollector(int len,
+                                                Sort sort,
                                                 IndexSearcher searcher) throws IOException {
       int leafCount = searcher.getTopReaderContext().leaves().size();
       FixedBitSet[] sets = new FixedBitSet[leafCount];

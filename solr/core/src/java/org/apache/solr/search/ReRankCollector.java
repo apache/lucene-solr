@@ -51,21 +51,29 @@ public class ReRankCollector extends TopDocsCollector {
   final private Set<BytesRef> boostedPriority; // order is the "priority"
   final private Rescorer reRankQueryRescorer;
   final private Sort sort;
-  final private Query query;
+  final private Query mainQuery;
 
-
+  @Deprecated
   public ReRankCollector(int reRankDocs,
       int length,
       Rescorer reRankQueryRescorer,
       QueryCommand cmd,
       IndexSearcher searcher,
       Set<BytesRef> boostedPriority) throws IOException {
+    this(reRankDocs, length, cmd.getSort(), cmd.getQuery(), reRankQueryRescorer, searcher, boostedPriority);
+  }
+
+  public ReRankCollector(int reRankDocs,
+    int length,
+    Sort sort,
+    Query mainQuery,
+    Rescorer reRankQueryRescorer,
+    IndexSearcher searcher,
+    Set<BytesRef> boostedPriority) throws IOException {
     super(null);
     this.reRankDocs = reRankDocs;
     this.length = length;
     this.boostedPriority = boostedPriority;
-    this.query = cmd.getQuery();
-    Sort sort = cmd.getSort();
     if(sort == null) {
       this.sort = null;
       this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length), Integer.MAX_VALUE);
@@ -73,9 +81,11 @@ public class ReRankCollector extends TopDocsCollector {
       this.sort = sort = sort.rewrite(searcher);
       //scores are needed for Rescorer (regardless of whether sort needs it)
       this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), Integer.MAX_VALUE);
+
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
+    this.mainQuery = mainQuery;
   }
 
   public int getTotalHits() {
@@ -103,7 +113,7 @@ public class ReRankCollector extends TopDocsCollector {
       }
 
       if (sort != null) {
-        TopFieldCollector.populateScores(mainDocs.scoreDocs, searcher, query);
+        TopFieldCollector.populateScores(mainDocs.scoreDocs, searcher, mainQuery);
       }
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
@@ -138,6 +148,7 @@ public class ReRankCollector extends TopDocsCollector {
         ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
         System.arraycopy(mainScoreDocs, 0, scoreDocs, 0, scoreDocs.length); //lay down the initial docs
         System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, rescoredDocs.scoreDocs.length);//overlay the re-ranked docs.
+
         rescoredDocs.scoreDocs = scoreDocs;
         return rescoredDocs;
       } else {

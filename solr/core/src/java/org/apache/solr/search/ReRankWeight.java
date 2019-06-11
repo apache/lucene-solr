@@ -40,9 +40,9 @@ public class ReRankWeight extends FilterWeight {
     this.reRankQueryRescorer = reRankQueryRescorer;
   }
 
+  @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
     final Explanation mainExplain = in.explain(context, doc);
     return reRankQueryRescorer.explain(searcher, mainExplain, context.docBase+doc);
   }
-
 }

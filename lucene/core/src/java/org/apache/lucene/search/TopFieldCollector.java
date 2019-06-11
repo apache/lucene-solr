@@ -384,7 +384,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    */
   public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
       int totalHitsThreshold) {
-
+    assert sort != null : "Sort can't be null";
+    assert sort.fields != null : "Sort fields can't be null";
     if (sort.fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
     }
@@ -451,6 +452,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
       scoreDoc.score = currentScorer.score();
     }
+
+
   }
 
   final void add(int slot, int doc) {
