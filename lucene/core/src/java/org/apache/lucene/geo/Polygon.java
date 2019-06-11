@@ -33,6 +33,7 @@ import org.apache.lucene.geo.GeoUtils.WindingOrder;
  *   <li>The polygon must not be self-crossing, otherwise may result in unexpected behavior.
  *   <li>All latitude/longitude values must be in decimal degrees.
  *   <li>Polygons cannot cross the 180th meridian. Instead, use two polygons: one on each side.
+ *   <li>The polygon area must be bigger than 0.
  *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
  * </ol>
  * @lucene.experimental
