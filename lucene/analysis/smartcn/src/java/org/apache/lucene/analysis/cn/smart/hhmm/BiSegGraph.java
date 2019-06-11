@@ -222,7 +222,7 @@ class BiSegGraph {
     Collection<ArrayList<SegTokenPair>>  values = tokenPairListTable.values();
     for (ArrayList<SegTokenPair> segList : values) {
       for (SegTokenPair pair : segList) {
-        sb.append(pair + "\n");
+        sb.append(pair).append("\n");
       }
     }
     return sb.toString();

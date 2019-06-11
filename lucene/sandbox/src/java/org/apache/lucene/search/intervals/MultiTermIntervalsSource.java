@@ -27,6 +27,7 @@ import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.QueryVisitor;
@@ -41,6 +42,10 @@ class MultiTermIntervalsSource extends IntervalsSource {
 
   MultiTermIntervalsSource(CompiledAutomaton automaton, int maxExpansions, String pattern) {
     this.automaton = automaton;
+    if (maxExpansions > BooleanQuery.getMaxClauseCount()) {
+      throw new IllegalArgumentException("maxExpansions [" + maxExpansions
+          + "] cannot be greater than BooleanQuery.getMaxClauseCount [" + BooleanQuery.getMaxClauseCount() + "]");
+    }
     this.maxExpansions = maxExpansions;
     this.pattern = pattern;
   }
@@ -57,8 +62,8 @@ class MultiTermIntervalsSource extends IntervalsSource {
     int count = 0;
     while ((term = te.next()) != null) {
       subSources.add(TermIntervalsSource.intervals(term, te));
-      if (count++ > maxExpansions) {
-        throw new IllegalStateException("Automaton " + this.pattern + " expanded to too many terms (limit " + maxExpansions + ")");
+      if (++count > maxExpansions) {
+        throw new IllegalStateException("Automaton [" + this.pattern + "] expanded to too many terms (limit " + maxExpansions + ")");
       }
     }
     if (subSources.size() == 0) {

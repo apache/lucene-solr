@@ -118,9 +118,9 @@ class SortDoc {
 
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    builder.append("docId: " + docId + "; ");
+    builder.append("docId: ").append(docId).append("; ");
     for (int i=0; i < sortValues.length; i++) {
-      builder.append("value" + i + ": " + sortValues[i] + ", ");
+      builder.append("value").append(i).append(": ").append(sortValues[i]).append(", ");
     }
     return builder.toString();
   }

@@ -530,6 +530,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           ColStatus.CORE_INFO_PROP,
           ColStatus.SEGMENTS_PROP,
           ColStatus.FIELD_INFO_PROP,
+          ColStatus.RAW_SIZE_PROP,
+          ColStatus.RAW_SIZE_SUMMARY_PROP,
+          ColStatus.RAW_SIZE_DETAILS_PROP,
+          ColStatus.RAW_SIZE_SAMPLING_PERCENT_PROP,
           ColStatus.SIZE_INFO_PROP);
       // make sure we can get the name if there's "name" but not "collection"
       if (props.containsKey(CoreAdminParams.NAME) && !props.containsKey(COLLECTION_PROP)) {

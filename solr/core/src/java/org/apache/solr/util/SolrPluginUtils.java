@@ -1064,7 +1064,7 @@ public class SolrPluginUtils {
           StringBuilder builder = new StringBuilder();
           for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
               if ((reqPurpose & entry.getKey()) != 0) {
-                  builder.append(entry.getValue() + ",");
+                  builder.append(entry.getValue()).append(',');
               }
           }
           if (builder.length() == 0) {

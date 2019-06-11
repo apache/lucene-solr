@@ -19,12 +19,18 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileStoreAttributeView;
 import java.util.ArrayList;
@@ -34,7 +40,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.lucene.mockfile.FilterFileSystem;
@@ -473,6 +481,43 @@ public class TestIOUtils extends LuceneTestCase {
     Files.createDirectories(devdir);
     IOUtils.fsync(devdir, true);
     // no exception
+  }
+
+  private static final class AccessDeniedWhileOpeningDirectoryFileSystem extends FilterFileSystemProvider {
+
+    AccessDeniedWhileOpeningDirectoryFileSystem(final FileSystem delegate) {
+      super("access_denied://", Objects.requireNonNull(delegate));
+    }
+
+    @Override
+    public FileChannel newFileChannel(
+        final Path path,
+        final Set<? extends OpenOption> options,
+        final FileAttribute<?>... attrs) throws IOException {
+      if (Files.isDirectory(path)) {
+        throw new AccessDeniedException(path.toString());
+      }
+      return delegate.newFileChannel(path, options, attrs);
+    }
+
+  }
+
+  public void testFsyncAccessDeniedOpeningDirectory() throws Exception {
+    final Path path = createTempDir().toRealPath();
+    final FileSystem fs = new AccessDeniedWhileOpeningDirectoryFileSystem(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    final Path wrapped = new FilterPath(path, fs);
+    if (Constants.WINDOWS) {
+      // no exception, we early return and do not even try to open the directory
+      IOUtils.fsync(wrapped, true);
+    } else {
+      expectThrows(AccessDeniedException.class, () -> IOUtils.fsync(wrapped, true));
+    }
+  }
+
+  public void testFsyncNonExistentDirectory() throws Exception {
+    final Path dir = FilterPath.unwrap(createTempDir()).toRealPath();
+    final Path nonExistentDir = dir.resolve("non-existent");
+    expectThrows(NoSuchFileException.class, () -> IOUtils.fsync(nonExistentDir, true));
   }
 
   public void testFsyncFile() throws Exception {

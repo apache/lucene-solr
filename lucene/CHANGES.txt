@@ -27,12 +27,6 @@ Bug fixes
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
 
-Improvements
-
-* LUCENE-8781: FST lookup performance has been improved in many cases by
-  encoding Arcs using full-sized arrays with gaps. The new encoding is
-  enabled for postings in the default codec and for suggesters. (Mike Sokolov)
-
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
@@ -41,7 +35,12 @@ Other
 
 New Features
 
-* LUCENE-8803: Provide a FeatureSortfield to allow sorting search hits by descending value of a 
+* LUCENE-8815: Provide a DoubleValues implementation for retrieving the value of features without
+  requiring a separate numeric field. Note that as feature values are stored with only 8 bits of 
+  mantissa the values returned may have a delta from the original values indexed.
+  (Colin Goodheart-Smithe via Adrien Grand)
+
+* LUCENE-8803: Provide a FeatureSortfield to allow sorting search hits by descending value of a
   feature. This is exposed via the factory method FeatureField#newFeatureSort.
   (Colin Goodheart-Smithe via Adrien Grand)
 
@@ -49,9 +48,18 @@ New Features
   to false (defaults to true).
   (Namgyu Kim via Jim Ferenczi)
 
+* LUCENE-8812: Add new KoreanNumberFilter that can change Hangul character to number
+  and process decimal point. It is similar to the JapaneseNumberFilter.
+  (Namgyu Kim)
+
+* LUCENE-8362: Add doc-value support to range fields. (Atri Sharma via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-8831: Fixed LatLonShapeBoundingBoxQuery .hashCode methods. (Ignacio Vera)
+
+* LUCENE-8775: Improve tessellator to handle better cases where a hole share a vertex
+  with the polygon. (Ignacio Vera)
 
 * LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
   This causes assertion errors and potentially broken field attributes in the IndexWriter when
@@ -59,6 +67,12 @@ Bug Fixes
 
 * LUCENE-8804: Forbid calls to putAttribute on frozen FieldType instances.
   (Vamshi Vijay Nakkirtha via Adrien Grand)
+
+* LUCENE-8828: Removes the buggy 'disallow overlaps' boolean from Intervals.unordered(),
+  and replaces it with a new Intervals.unorderedNoOverlaps() method (Alan Woodward)
+
+* LUCENE-8843: Don't ignore exceptions that are thrown when trying to open a
+  file in IOUtils#fsync. (Jason Tedor via Adrien Grand)
 
 Improvements
 
@@ -72,8 +86,29 @@ Improvements
   multiple threads, IndexSearcher now groups small segments together, up to
   250k docs per slice. (Atri Sharma via Adrien Grand)
 
+* LUCENE-8818: Fix smokeTestRelease.py encoding bug (janhoy)
+
+* LUCENE-8845: Allow Intervals.prefix() and Intervals.wildcard() to specify
+  their maximum allowed expansions (Alan Woodward)
+
+Test Framework
+
+* LUCENE-8825: CheckHits now display the shard index in case of mismatch
+  between top hits. (Atri Sharma via Adrien Grand)
+
+Other
+
+* LUCENE-8847: Code Cleanup: Remove StringBuilder.append with concatted strings
+
 ======================= Lucene 8.1.1 =======================
 (No Changes)
+
+Improvements
+
+* LUCENE-8781: FST lookup performance has been improved in many cases by
+  encoding Arcs using full-sized arrays with gaps. The new encoding is
+  enabled for postings in the default codec and for suggesters. (Mike Sokolov)
+
 
 ======================= Lucene 8.1.0 =======================
 
@@ -508,7 +543,7 @@ Bug fixes
 
 * LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
   This causes assertion errors and potentially broken field attributes in the IndexWriter when
-  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer) 
+  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer)
 
 * LUCENE-8720: NameIntCacheLRU (in the facets module) had an int
   overflow bug that disabled cleaning of the cache (Russell A Brown)

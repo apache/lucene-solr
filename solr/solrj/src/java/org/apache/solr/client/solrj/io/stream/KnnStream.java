@@ -195,7 +195,7 @@ public class KnnStream extends TupleStream implements Expressible  {
 
     for(String key : mltParams) {
       if(params.get(key) != null) {
-        builder.append(" " + key + "=" + params.get(key));
+        builder.append(' ').append(key).append('=').append(params.get(key));
         params.remove(key);
       }
     }
