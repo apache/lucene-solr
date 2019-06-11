@@ -1416,13 +1416,14 @@ public abstract class LuceneTestCase extends Assert {
       }
 
       Directory fsdir = newFSDirectoryImpl(clazz, f, lf);
-      if (rarely()) {
-        List<String> fileExtensions =
-            Arrays.asList("fdt", "fdx", "tim", "tip", "si", "fnm", "pos", "dii", "dim", "nvm", "nvd", "dvm", "dvd");
-        Collections.shuffle(fileExtensions, random());
-        fileExtensions = fileExtensions.subList(0, 1 + random().nextInt(fileExtensions.size()));
-        fsdir = new FileSwitchDirectory(new HashSet<>(fileExtensions), fsdir, newFSDirectoryImpl(clazz, f, lf), true);
-      }
+// LUCENE-8853: FileSwitchDirectory is broken for tmp outputs.
+//      if (rarely()) {
+//        List<String> fileExtensions =
+//            Arrays.asList("fdt", "fdx", "tim", "tip", "si", "fnm", "pos", "dii", "dim", "nvm", "nvd", "dvm", "dvd");
+//        Collections.shuffle(fileExtensions, random());
+//        fileExtensions = fileExtensions.subList(0, 1 + random().nextInt(fileExtensions.size()));
+//        fsdir = new FileSwitchDirectory(new HashSet<>(fileExtensions), fsdir, newFSDirectoryImpl(clazz, f, lf), true);
+//      }
       BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare);
       return wrapped;
     } catch (Exception e) {
