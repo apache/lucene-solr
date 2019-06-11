@@ -96,6 +96,8 @@ Bug Fixes
 
 * SOLR-13496: Fix distributed grouping related NullPointerException in JSONWriter.writeSolrDocument (Christine Poerschke)
 
+* SOLR-12013: collections API CUSTERSTATUS command fails when configset missing (Erick Erickson)
+
 Other Changes
 ----------------------
 
