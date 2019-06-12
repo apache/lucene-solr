@@ -1913,7 +1913,7 @@ def website_javadoc_redirect(todo):
     if Version.parse(state.release_version).gt(Version.parse(latest)):
         print("We are releasing the latest version ")
         htaccess = file_to_string(htfile)
-        # print("Got htaccess file %s with conent:\n%s" % (htfile, htaccess))
+        print("NOT YET IMPLEMENTED")
         return False
     else:
         print("Task not necessary since %s is not the latest release version" % state.release_version)

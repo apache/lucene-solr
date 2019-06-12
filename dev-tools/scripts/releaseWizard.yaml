@@ -124,6 +124,7 @@ templates:
 
 
     Please read CHANGES.txt for a full list of {% if is_feature_release %}new features and {% endif %}changes:
+
       <https://lucene.apache.org/core/{{ release_version_underscore }}/changes/Changes.html>
   announce_solr: |
     ## {{ release_date | formatdate | default('<date>') }}, Apache Solr™ {{ release_version }} available
@@ -1099,6 +1100,8 @@ groups:
       http://lucene.apache.org/solr/api/solr-core/ which will auto redirect to whatever 
       is the latest released version, i.e. http://lucene.apache.org/solr/{{ version }}/solr-core/<version>.
       This is handled in `.htaccess`
+
+      *NOT YET IMPLEMENTED*
     function: website_javadoc_redirect
     asciidoc: |
       We make it possible to link to latest javadoc by providing redirect links for e.g. 
@@ -1517,7 +1520,7 @@ groups:
       commands_text: Run these commands to add back-compat indices to release branch
       commands:
       - !Command
-        cmd: git checkout {{ release_branch }}  && git pull && git clean -df && git checkout -- .
+        cmd: git checkout {{ release_branch }} && git pull && git clean -df && git checkout -- .
         tee: true
         logfile: checkout.log
       - !Command
@@ -1546,13 +1549,13 @@ groups:
       commands_text: Run these commands to add back-compat indices to {{ stable_branch }}
       commands:
       - !Command
-        cmd: git checkout {{ stable_branch }}  && git pull && git clean -df && git checkout -- .
+        cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
         tee: true
         logfile: checkout.log
       - !Command
         cmd: ant clean
       - !Command
-        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --no-cleanup  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
+        cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
         logfile: add-bakccompat.log
       - !Command
         cmd: git diff
