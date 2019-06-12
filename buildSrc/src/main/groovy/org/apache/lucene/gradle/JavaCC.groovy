@@ -23,7 +23,7 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
-class SolrQPJavaCC extends DefaultTask {
+class JavaCC extends DefaultTask {
   
   @InputFile
   File inputFile
@@ -36,21 +36,23 @@ class SolrQPJavaCC extends DefaultTask {
     
     String javaCCHome
     String javaCCJarName
+    String javaCCJarHome
+    
+    javaCCHome = project.mfile(project.buildDir, 'javacc')
+    project.mkdir(javaCCHome)
     
     project.project(':buildSrc').configurations.javacc.files.each {
       if (it.getName().startsWith('javacc') && it.getName().endsWith('.jar')) {
-        javaCCHome = it.getParentFile().getAbsolutePath()
+        javaCCJarHome = it.getParentFile().getAbsolutePath()
         javaCCJarName = it.getName()
       }
     }
-    
-    if (!project.file(javaCCHome + '/javacc.jar').exists()) {
-      project.copy {
-        from (javaCCHome + '/' + javaCCJarName)
-        into (javaCCHome)
-        rename { String fileName ->
-          fileName = 'javacc.jar'
-        }
+
+    project.copy {
+      from (javaCCJarHome + '/' + javaCCJarName)
+      into (javaCCHome)
+      rename { String fileName ->
+        fileName = 'javacc.jar'
       }
     }
     
@@ -58,7 +60,7 @@ class SolrQPJavaCC extends DefaultTask {
     name: 'javacc',
     classpath: project.project(':buildSrc').configurations.javacc.asPath)
 
-    project.mkdir('src/java/org/apache/solr/parser')
+    project.mkdir(target)
     
     ant.delete() {
       ant.fileset(dir: target.getAbsolutePath(), includes: '*.java') {
@@ -68,31 +70,19 @@ class SolrQPJavaCC extends DefaultTask {
     
     ant.javacc(target: inputFile.getAbsolutePath(), outputDirectory: target.getAbsolutePath(), javacchome: javaCCHome)
     
-    
-    // Change the incorrect public ctors for QueryParser to be protected instead
-    ant.replaceregexp(file: project.filePath('src/java/org/apache/solr/parser/QueryParser.java'),
-    byline:  'true',
-    match:   'public QueryParser\\(CharStream ',
-    replace: 'protected QueryParser(CharStream ')
-    
-    ant.replaceregexp(file: project.filePath('src/java/org/apache/solr/parser/QueryParser.java'),
-    byline: 'true',
-    match:  'public QueryParser\\(QueryParserTokenManager ',
-    replace:'protected QueryParser(QueryParserTokenManager ')
-    
-    // change an exception used for signaling to be static
-    ant.replaceregexp(file: project.filePath("src/java/org/apache/solr/parser/QueryParser.java"),
-                   byline: "true",
-                   match: "final private LookaheadSuccess jj_ls =",
-                   replace: "static final private LookaheadSuccess jj_ls =")
+    // Remove debug stream (violates forbidden-apis)
+    ant.replaceregexp(match: "/\\*\\* Debug output.*?Set debug output.*?ds; }", replace: '', flags: 's', encoding: 'UTF-8') {
+      ant.fileset(dir: target.getAbsolutePath(), includes: "*TokenManager.java")
+    }
+    // Add warnings supression
+    ant.replaceregexp(match:"^\\Qpublic class\\E", replace: "@SuppressWarnings(\"cast\")${System.getProperty('line.separator')}\\0", flags:"m", encoding: "UTF-8") {
+      ant.fileset(dir: target.getAbsolutePath(), includes:"*TokenManager.java")
+    }
+    // StringBuffer -> StringBuilder 
     ant.replace(token: "StringBuffer", value: "StringBuilder", encoding: "UTF-8") {
-       ant.fileset(dir: project.filePath("src/java/org/apache/solr/parser"), includes: "ParseException.java TokenMgrError.java")
+       ant.fileset(dir: target.getAbsolutePath(), includes: "ParseException.java TokenMgrError.java")
     }
 
-    ant.replace(token: 'StringBuffer', value: 'StringBuilder', encoding: 'UTF-8') {
-      ant.fileset(dir: project.filePath('src/java/org/apache/solr/parser'), includes: 'ParseException.java TokenMgrError.java')
-    }
-    
     ant.fixcrlf(srcdir: target.getAbsolutePath(), includes: '*.java', encoding: 'UTF-8') {
       ant.containsregexp(expression: 'Generated.*By.*JavaCC')
     }
