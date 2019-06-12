@@ -188,33 +188,36 @@ configure(allprojects) {
   
   File jdepsReportDir = mfile(project.buildDir, 'jdepsreport')
   
-  task jdepsReport(type: org.apache.lucene.gradle.JdepsReport) {
-    target = jdepsReportDir
-  }
-  
-  task listDependencies(type: org.apache.lucene.gradle.ListDeps) {
-    group = 'Help'
-    description = "List sorted dependencies and counts for a module."
-  }
-  
-  task unusedDependencies {
-    group = 'Help'
-    description = "Lists dependencies that may be unused for a module."
-    task unusedDeps(type: org.apache.lucene.gradle.UnusedDeps) {
-      inputDirectory jdepsReportDir
+  plugins.withType(JavaPlugin) {
+    task jdepsReport(type: org.apache.lucene.gradle.JdepsReport) {
+      target = jdepsReportDir
+      dependsOn jar
     }
-    unusedDeps.dependsOn jdepsReport
-    dependsOn unusedDeps
-  }
-  
-  task missingDependencies {
-    group = 'Help'
-    description = "Lists classes from this module with missing runtime dependencies (we ignore scanning some root deps (ie hadoop) and some violations (ie annotations)."
-    task missingDeps(type: org.apache.lucene.gradle.MissingDeps) {
-      inputDirectory jdepsReportDir
+    
+    task listDependencies(type: org.apache.lucene.gradle.ListDeps) {
+      group = 'Help'
+      description = "List sorted dependencies and counts for a module."
     }
-    missingDeps.dependsOn jdepsReport
-    dependsOn missingDeps
+    
+    task unusedDependencies {
+      group = 'Help'
+      description = "Lists dependencies that may be unused for a module."
+      task unusedDeps(type: org.apache.lucene.gradle.UnusedDeps) {
+        inputDirectory jdepsReportDir
+      }
+      unusedDeps.dependsOn jdepsReport
+      dependsOn unusedDeps
+    }
+    
+    task missingDependencies {
+      group = 'Help'
+      description = "Lists classes from this module with missing runtime dependencies (we ignore scanning some root deps (ie hadoop) and some violations (ie annotations)."
+      task missingDeps(type: org.apache.lucene.gradle.MissingDeps) {
+        inputDirectory jdepsReportDir
+      }
+      missingDeps.dependsOn jdepsReport
+      dependsOn missingDeps
+    }
   }
 }
 
