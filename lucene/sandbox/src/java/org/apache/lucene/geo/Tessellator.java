@@ -291,7 +291,7 @@ final public class Tessellator {
   }
 
   /** Check if the provided vertex is in the polygon and return it **/
-  private static Node getSharedVertex(Node polygon, Node vertex) {
+  private static Node getSharedVertex(final Node polygon, final Node vertex) {
     Node next = polygon;
     do {
       if (isVertexEquals(next, vertex)) {
@@ -457,7 +457,7 @@ final public class Tessellator {
   }
 
   /** Iterate through all polygon nodes and remove small local self-intersections **/
-  private static final Node cureLocalIntersections(Node startNode, final List<Triangle> tessellation, boolean mortonOptimized) {
+  private static final Node cureLocalIntersections(Node startNode, final List<Triangle> tessellation, final boolean mortonOptimized) {
     Node node = startNode;
     Node nextNode;
     do {
@@ -520,7 +520,7 @@ final public class Tessellator {
   }
 
   /** Computes if edge defined by a and b overlaps with a polygon edge **/
-  private static boolean edgeFromPolygon(Node a, Node b, boolean isMorton) {
+  private static boolean edgeFromPolygon(final Node a, final Node b, final boolean isMorton) {
     if (isMorton) {
       return mortonEdgeFromPolygon(a, b);
     }
@@ -540,14 +540,14 @@ final public class Tessellator {
   /** Uses morton code for speed to determine whether or not and edge defined by a and b overlaps with a polygon edge */
   private static final boolean mortonEdgeFromPolygon(final Node a, final Node b) {
     // edge bbox (flip the bits so negative encoded values are < positive encoded values)
-    int minTX = StrictMath.min(a.x, b.x) ^ 0x80000000;
-    int minTY = StrictMath.min(a.y, b.y) ^ 0x80000000;
-    int maxTX = StrictMath.max(a.x, b.x) ^ 0x80000000;
-    int maxTY = StrictMath.max(a.y, b.y) ^ 0x80000000;
+    final int minTX = StrictMath.min(a.x, b.x) ^ 0x80000000;
+    final int minTY = StrictMath.min(a.y, b.y) ^ 0x80000000;
+    final int maxTX = StrictMath.max(a.x, b.x) ^ 0x80000000;
+    final int maxTY = StrictMath.max(a.y, b.y) ^ 0x80000000;
 
     // z-order range for the current edge;
-    long minZ = BitUtil.interleave(minTX, minTY);
-    long maxZ = BitUtil.interleave(maxTX, maxTY);
+    final long minZ = BitUtil.interleave(minTX, minTY);
+    final long maxZ = BitUtil.interleave(maxTX, maxTY);
 
     // now make sure we don't have other points inside the potential ear;
 
@@ -599,16 +599,16 @@ final public class Tessellator {
     return false;
   }
 
-  private static boolean pointInLine(Node a, Node b, Node point) {
+  private static boolean pointInLine(final Node a, final Node b, final Node point) {
     return pointInLine(a, b, point.getLon(), point.getLat());
   }
 
-  private static boolean pointInLine(Node a, Node b, double lon, double lat) {
-    double dxc = lon - a.getLon();
-    double dyc = lat - a.getLat();
+  private static boolean pointInLine(final Node a, final Node b, final double lon, final double lat) {
+    final double dxc = lon - a.getLon();
+    final double dyc = lat - a.getLat();
 
-    double dxl = b.getLon() - a.getLon();
-    double dyl = b.getLat() - a.getLat();
+    final double dxl = b.getLon() - a.getLon();
+    final double dyl = b.getLat() - a.getLat();
 
     if (dxc * dyl - dyc * dxl == 0) {
       if (Math.abs(dxl) >= Math.abs(dyl)) {
@@ -665,7 +665,7 @@ final public class Tessellator {
   }
 
   /** Determine whether the polygon defined between node start and node end is CW */
-  private static boolean isCWPolygon(Node start, Node end) {
+  private static boolean isCWPolygon(final Node start, final Node end) {
     Node next = start;
     double windingSum = 0;
     do {
