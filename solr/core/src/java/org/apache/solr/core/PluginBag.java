@@ -127,7 +127,7 @@ public class PluginBag<T> implements AutoCloseable {
   public PluginHolder<T> createPlugin(PluginInfo info) {
     if ("true".equals(String.valueOf(info.attributes.get("runtimeLib")))) {
       log.debug(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
-      LazyPluginHolder<T> holder = new LazyPluginHolder<>(meta, info, core, "true".equals(System.getProperty("enable.runtime.lib")) ?
+      LazyPluginHolder<T> holder = new LazyPluginHolder<>(meta, info, core, RuntimeLib.isEnabled() ?
           core.getMemClassLoader() :
           core.getResourceLoader(), true);
 
@@ -393,7 +393,7 @@ public class PluginBag<T> implements AutoCloseable {
       this.core = core;
       this.resourceLoader = loader;
       if (loader instanceof MemClassLoader) {
-        if (!"true".equals(System.getProperty("enable.runtime.lib"))) {
+        if (!RuntimeLib.isEnabled()) {
           String s = "runtime library loading is not enabled, start Solr with -Denable.runtime.lib=true";
           log.warn(s);
           solrException = new SolrException(SolrException.ErrorCode.SERVER_ERROR, s);
@@ -516,6 +516,10 @@ public class PluginBag<T> implements AutoCloseable {
             coreContainer.getBlobRepository().getBlobIncRef(name, null,url,sha512);
 
       }
+    }
+
+    public static boolean isEnabled() {
+      return "true".equals(System.getProperty("enable.runtime.lib"));
     }
 
     public String getName() {

@@ -60,6 +60,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
  * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the Jar in a single node.
  */
 public class BlobRepository {
+  private static final long MAX_JAR_SIZE = Long.parseLong(System.getProperty("runtme.lib.size", String.valueOf(5* 1024*1024)));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final Random RANDOM;
   static final Pattern BLOB_KEY_PATTERN_CHECKER = Pattern.compile(".*/\\d+");
@@ -215,7 +216,7 @@ public class BlobRepository {
       }
 
       try (InputStream is = entity.getContent()) {
-        b = SimplePostTool.inputStreamToByteArray(is);
+        b = SimplePostTool.inputStreamToByteArray(is, MAX_JAR_SIZE);
       }
     } catch (Exception e) {
       if (e instanceof SolrException) {

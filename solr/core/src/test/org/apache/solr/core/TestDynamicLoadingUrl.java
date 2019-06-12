@@ -125,29 +125,3 @@ public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
   }
 }
 
- /*
- curl -o runtimelibs.jar   -LO https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
- openssl dgst -sha512 runtimelibs.jar
- bin/solr start -e cloud -a "-Denable.runtime.lib=true" -noprompt
-
- curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
-    "add-runtimelib": { "name" : "testjar",
-    "url":"http://localhost:8000/runtimelibs.jar" ,
-    "sha512" : "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"}
-    }'
-
-
-    curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
-    "delete-runtimelib":  "testjar"}'
-
-    curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
-    "add-runtimelib": { "name" : "testjar",
-    "url":"https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin" ,
-    "sha512" : "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"}
-    }'
-
-curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
-    "create-requesthandler": { "name" : "/test",
-    'class': 'org.apache.solr.core.RuntimeLibReqHandler', 'runtimeLib' : true}
-    }'
-*/
