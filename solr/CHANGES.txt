@@ -112,6 +112,8 @@ Other Changes
 
 * SOLR-13371: Re-structure and clarify Security chapters in Ref Guide (janhoy)
 
+* SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
