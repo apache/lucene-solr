@@ -38,7 +38,7 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-
+import org.gradle.api.tasks.WorkResult
 import java.nio.file.Files
 import java.util.regex.Matcher
 import java.util.regex.Pattern
@@ -53,15 +53,13 @@ class JdepsReport extends DefaultTask {
   @OutputDirectory
   File target
   
+  @Optional
   @Input
-  boolean recursive
+  boolean recursive = true
 
-  @Inject
-  public JdepsReport(File target, boolean recursive) {
-    this.target = target
-    this.recursive = recursive
-    if (project.hasProperty('jdepsConfig')) {
-      configuration = project.jdepsConfig
+  public JdepsReport() {
+    if (project.hasProperty('useConfiguration')) {
+      configuration = project.useConfiguration
     }
     doFirst {
       println "Writing output files to ${target}"
@@ -88,7 +86,7 @@ class JdepsReport extends DefaultTask {
     // make sure ant task logging shows up by default
     ant.lifecycleLogLevel = "INFO"
     
-    project.copy {
+    WorkResult result = project.copy {
       into(distDir)
       
       Configuration config = project.configurations[this.configuration]
@@ -122,30 +120,33 @@ class JdepsReport extends DefaultTask {
       includeEmptyDirs = false
     }
     
-    runJdeps(getTopLvlProject(project), project, distDir, jdepsDir)
-    
-    Configuration config = project.configurations[this.configuration]
-    config.getAllDependencies().forEach({ dep ->
-      if (dep instanceof DefaultProjectDependency) {
-        Project dProject = dep.getDependencyProject()
-        def depTopLvlProject = getTopLvlProject(dProject)
-        
-        runJdeps(depTopLvlProject, dProject, distDir, jdepsDir)
-      }
-    })
+    if (result.getDidWork()) {
+      runJdeps(getTopLvlProject(project), project, project, distDir, jdepsDir)
+      
+      Configuration config = project.configurations[this.configuration]
+      config.getAllDependencies().forEach({ dep ->
+        if (dep instanceof DefaultProjectDependency) {
+          Project dProject = dep.getDependencyProject()
+          def depTopLvlProject = getTopLvlProject(dProject)
+          
+          runJdeps(depTopLvlProject, dProject, project, distDir, jdepsDir)
+        }
+      })
+    }
   }
   
-  protected void runJdeps(Project topLvlProject, Project project, File distDir, File jdepsDir) {
-    def distPath = "${distDir}/" + topLvlProject.name + "/" + topLvlProject.relativePath(project.projectDir)
+  protected void runJdeps(Project topLvlProject, Project project, Project libProject, File distDir, File jdepsDir) {
+    def distPath1 = "${distDir}/" + topLvlProject.name + "/" + topLvlProject.relativePath(libProject.projectDir)
+    def distPath2 = "${distDir}/" + topLvlProject.name + "/" + topLvlProject.relativePath(project.projectDir)
     def dotOutPath = jdepsDir.getAbsolutePath() + "/" + topLvlProject.name +  "/" + "${project.name}-${project.version}"
     
     ant.exec (executable: "jdeps", failonerror: true, resolveexecutable: true) {
-      ant.arg(line: '--class-path ' + "${distPath}/lib/" + '*')
+      ant.arg(line: '--class-path ' + "${distPath1}/lib/" + '*')
       ant.arg(line: '--multi-release 11')
       if (this.recursive) ant.arg(value: '-recursive')
       ant.arg(value: '-verbose:class')
       ant.arg(line: "-dotoutput ${dotOutPath}")
-      ant.arg(value: "${distPath}/${project.name}-${project.version}.jar")
+      ant.arg(value: "${distPath2}/${project.name}-${project.version}.jar")
     }
   }
   

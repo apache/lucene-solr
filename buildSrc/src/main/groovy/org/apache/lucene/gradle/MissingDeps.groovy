@@ -34,7 +34,7 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-
+import org.gradle.api.tasks.util.PatternSet
 import java.nio.file.Files
 import java.util.stream.Stream
 import java.util.concurrent.atomic.AtomicBoolean
@@ -51,13 +51,8 @@ class MissingDeps extends DefaultTask {
   @InputDirectory
   File inputDirectory
   
-  @Input
-  @Optional
-  List<String> depExcludes
-  
-  @Input
-  @Optional
-  List<String> classExcludes
+  private List<String> depExcludes = new ArrayList<>()
+  private List<String> classExcludes = new ArrayList<>()
   
   protected configuration = "runtimeClasspath"
   
@@ -81,7 +76,7 @@ class MissingDeps extends DefaultTask {
     File dotFile = project.mfile(inputDirectory, 'jdepsDir/' + topLvlProject.name +  "/" + "${project.name}-${project.version}/${project.name}-${project.version}.jar.dot")
     
     println ''
-    println 'Possibly missing deps:'
+    println 'Possibly missing deps (if the dot file is listed with no violations, it has violations that were excluded):'
     println ''
     
     boolean nothingFound = true
@@ -97,7 +92,7 @@ class MissingDeps extends DefaultTask {
     }.each {
       if (it.text.contains("(not found)")) {
         println ''
-        println it.name + ':'
+        println it.getParentFile().name + '/' + it.name + ':'
         
         String ourArtifactNameAndVersion = ''
         Matcher dotFileNameMatcher = dotFilePattern.matcher(it.name)
@@ -117,8 +112,10 @@ class MissingDeps extends DefaultTask {
               className = m.group(1)
               for (String classExclude : classExcludes) {
                 Matcher m2 = Pattern.compile(classExclude).matcher(className)
-                if (m2.find()) {
+                //println "${className} against ${classExclude}"
+                if (m2.matches()) {
                   excluded = true
+                  //println 'excluded'
                   break
                 }
               }
@@ -136,7 +133,33 @@ class MissingDeps extends DefaultTask {
     if (nothingFound) {
       println ''
       println 'No potential missing deps found!'
+    } else {
+      throw new GradleException("Missing dependencies found! Add them or add an exclusion if they are actually not necessary.")
     }
+  }
+  
+  @Input
+  public Set<String> getClassExcludes() {
+    return classExcludes
+  }
+  
+  public MissingDeps classExclude(String... arg0) {
+    for (String pattern : arg0) {
+      classExcludes.add(pattern);
+    }
+    return this;
+  }
+  
+  @Input
+  public Set<String> getDepExcludes() {
+    return depExcludes
+  }
+  
+  public MissingDeps depExclude(String... arg0) {
+    for (String pattern : arg0) {
+      depExcludes.add(pattern);
+    }
+    return this;
   }
   
   protected Project getTopLvlProject(Project proj) {
