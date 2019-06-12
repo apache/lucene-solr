@@ -27,6 +27,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.util.IOUtils;
 
@@ -53,8 +55,12 @@ public class FileSwitchDirectory extends Directory {
   private final Directory primaryDir;
   private final Set<String> primaryExtensions;
   private boolean doClose;
+  private static final Pattern EXT_PATTERN = Pattern.compile("\\.([a-zA-Z]+)");
 
   public FileSwitchDirectory(Set<String> primaryExtensions, Directory primaryDir, Directory secondaryDir, boolean doClose) {
+    if (primaryExtensions.contains("tmp")) {
+      throw new IllegalArgumentException("tmp is a reserved extension");
+    }
     this.primaryExtensions = primaryExtensions;
     this.primaryDir = primaryDir;
     this.secondaryDir = secondaryDir;
@@ -141,7 +147,14 @@ public class FileSwitchDirectory extends Directory {
     if (i == -1) {
       return "";
     }
-    return name.substring(i+1, name.length());
+    String ext = name.substring(i + 1);
+    if (ext.equals("tmp")) {
+      Matcher matcher = EXT_PATTERN.matcher(name);
+      if (matcher.find()) {
+        return matcher.group(1);
+      }
+    }
+    return ext;
   }
 
   private Directory getDirectory(String name) {
