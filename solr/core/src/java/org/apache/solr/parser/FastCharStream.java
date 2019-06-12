@@ -126,4 +126,14 @@ public final class FastCharStream implements CharStream {
   public final int getBeginLine() {
     return 1;
   }
+
+  @Override
+  public int getColumn() {
+    return 1;
+  }
+
+  @Override
+  public int getLine() {
+    return 1;
+  }
 }

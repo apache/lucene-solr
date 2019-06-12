@@ -20,16 +20,16 @@ apply plugin: 'maven-publish'
 apply plugin: org.apache.lucene.gradle.PartOfDist
 
 task jarTest (type: Jar) {
-    from sourceSets.test.output
-    classifier = 'test'
+  from sourceSets.test.output
+  classifier = 'test'
 }
 
 configurations {
-    testOutput
+  testOutput
 }
 
 artifacts {
-    testOutput jarTest
+  testOutput jarTest
 }
 
 dependencies {
@@ -40,5 +40,96 @@ dependencies {
   implementation project(':lucene:lucene-sandbox')
   
   testImplementation project(':lucene:lucene-test-framework')
+}
+
+String lineSeparator = System.lineSeparator()
+
+task runJavaccQueryParser(type: org.apache.lucene.gradle.JavaCC) {
+  inputFile file('src/java/org/apache/lucene/queryparser/classic/QueryParser.jj')
+  target file('src/java/org/apache/lucene/queryparser/classic')
+  doLast {
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/classic/QueryParser.java",
+    byline: "true",
+    match: "public QueryParser\\(CharStream ",
+    replace: "protected QueryParser(CharStream ")
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/classic/QueryParser.java",
+    byline: "true",
+    match: "public QueryParser\\(QueryParserTokenManager ",
+    replace: "protected QueryParser(QueryParserTokenManager ")
+  }
+}
+
+task runJavaccSurround(type: org.apache.lucene.gradle.JavaCC) {
+  inputFile file('src/java/org/apache/lucene/queryparser/surround/parser/QueryParser.jj')
+  target file('src/java/org/apache/lucene/queryparser/surround/parser')
+}
+
+task runJavaccFlexible(type: org.apache.lucene.gradle.JavaCC) {
+  inputFile file('src/java/org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParser.jj')
+  target file('src/java/org/apache/lucene/queryparser/flexible/standard/parser')
+  doLast {
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+    match:"public class ParseException extends Exception",
+    replace:"public class ParseException extends QueryNodeParseException",
+    flags:"g",
+    byline:"false")
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+    match: "package org.apache.lucene.queryparser.flexible.standard.parser;",
+    replace: "package org.apache.lucene.queryparser.flexible.standard.parser;${lineSeparator}${lineSeparator}" +
+    "import org.apache.lucene.queryparser.flexible.messages.Message;${lineSeparator}" +
+    "import org.apache.lucene.queryparser.flexible.messages.MessageImpl;${lineSeparator}" +
+    "import org.apache.lucene.queryparser.flexible.core.*;${lineSeparator}" +
+    "import org.apache.lucene.queryparser.flexible.core.messages.*;",
+    flags:"g",
+    byline: "false")
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+    match: "^  public ParseException\\(Token currentTokenVal.*\$(\\s\\s[^}].*\\n)*  \\}",
+    replace: "  public ParseException(Token currentTokenVal,${lineSeparator}" +
+    "int[][] expectedTokenSequencesVal, String[] tokenImageVal) {${lineSeparator}" +
+    "super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, initialise(${lineSeparator}" +
+    "currentTokenVal, expectedTokenSequencesVal, tokenImageVal)));${lineSeparator}" +
+    "this.currentToken = currentTokenVal;${lineSeparator}" +
+    "this.expectedTokenSequences = expectedTokenSequencesVal;${lineSeparator}" +
+    "this.tokenImage = tokenImageVal;${lineSeparator}" +
+    "}",
+    flags:"gm",
+    byline: "false")
+    ant.replaceregexp(file:"src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+    match: "^  public ParseException\\(String message.*\$(\\s\\s[^}].*\\n)*  \\}",
+    replace: "  public ParseException(Message message) {${lineSeparator}" +
+    "super(message);${lineSeparator}" +
+    "}",
+    flags: "gm",
+    byline: "false")
+    ant.replaceregexp(file:"src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+    match: "^  public ParseException\\(\\).*\$(\\s\\s[^}].*\\n)*  \\}",
+    replace: "  public ParseException() {${lineSeparator}" +
+    "super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, \"Error\"));${lineSeparator}" +
+    "}",
+    flags: "gm",
+    byline: "false")
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+    match: "^  public String getMessage\\(\\).*\$(\\s\\s\\s\\s[^}].*\n)*    \\}",
+    replace: "  private static String initialise(Token currentToken, int[][] expectedTokenSequences, String[] tokenImage) {${lineSeparator}" +
+    "String eol = System.getProperty(&quot;lineSeparator&quot;, &quot;\n&quot;);",
+    flags: "gm",
+    byline: "false")
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+    match: "\\s*protected String add_escapes.*",
+    replace: "  static private String add_escapes(String str) {",
+    flags: "g",
+    byline: "true")
+  }
   
+  task runJavacc {
+    group = 'Build Regenerate'
+    description = "Regenerates javacc generated src files."
+    dependsOn runJavaccQueryParser, runJavaccSurround, runJavaccFlexible
+  }
+  
+  task regenerate {
+    group = 'Build Regenerate'
+    description = "Regenerates various generated src files, automoton, packedints, jflex, javacc, etc"
+    dependsOn runJavacc
+  }
 }
