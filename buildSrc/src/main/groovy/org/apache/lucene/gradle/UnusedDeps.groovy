@@ -55,7 +55,7 @@ class UnusedDeps extends DefaultTask {
   
   @Input
   @Optional
-  List<String> jarExcludes
+  List<String> jarExcludes = new ArrayList<>()
   
   public UnusedDeps() {
     
@@ -133,7 +133,7 @@ class UnusedDeps extends DefaultTask {
     
     println ''
     println 'Our classpath dependency count ' + ourDepJarNames.size()
-    println 'Our directly used dependency count ' + usedStaticallyJarNames.size()
+    println 'Our directly declared dependency count ' + usedStaticallyJarNames.size()
     println ''
     println 'List of possibly unused jars - they may be used at runtime however (Class.forName on plugins or other dynamic Object instantiation for example). This is not definitive, but helps narrow down what to investigate.'
     println 'We take our classpath dependencies, substract our direct dependencies and then subtract dependencies used by our direct dependencies.'
@@ -146,6 +146,12 @@ class UnusedDeps extends DefaultTask {
     unusedJarNames.forEach({
       if (!depsInDirectUse.contains(it) && ourImmediatelyDefinedDeps.contains(it)) {
         
+        for (String exclude : jarExcludes) {
+          if (it.matches(exclude)) {
+            println  - 'excluded violation: ' + it
+            return
+          }
+        }
 
         if (findInSrc(it)) {
           println ' - ' + it + ' *'
@@ -158,7 +164,7 @@ class UnusedDeps extends DefaultTask {
     })
     
     println ''
-    println 'Deps brought in by other modules that may be unused in this module:'
+    println 'Deps brought in by other modules that may be unused in this module (this is expected to happen and mostly informational):'
     unusedJarNames.forEach({
       if (!depsInDirectUse.contains(it) && !ourImmediatelyDefinedDeps.contains(it)) {
         println ' - ' + it
@@ -234,32 +240,39 @@ class UnusedDeps extends DefaultTask {
   protected boolean findInSrc(String jarName) {
     AtomicBoolean foundInsrc = new AtomicBoolean(false)
     def files = project.configurations[configuration].resolvedConfiguration.getFiles()
-
-     Stream.of(files.toArray())
+    
+    Stream.of(files.toArray())
         .parallel()
         .forEach( { file ->
-      if (!file.name.equals(jarName)) return
-        try {
-          ZipFile zip = new ZipFile(file)
-          def entries = zip.entries()
-          entries.each { entry ->
-            if (!entry.isDirectory() && entry.getName().endsWith(".class") && !entry.getName().equals('module-info.class')) {
-              String className = entry.getName().replace('/', '.')
-              className = className.substring(0, className.length() - ".class".length())
-              
-              FindInSrc findInSrc = new FindInSrc()
-              def found = (findInSrc.find(project, jarName.substring(0, jarName.length() - ".jar".length()), className))
-              if (found) {
-                foundInsrc.set(true)
+          if (!file.name.equals(jarName)) return
+          try {
+            ZipFile zip = new ZipFile(file)
+            def entries = zip.entries()
+            entries.each { entry ->
+              if (!entry.isDirectory() && entry.getName().endsWith(".class") && !entry.getName().equals('module-info.class')) {
+                String className = entry.getName().replace('/', '.')
+                className = className.substring(0, className.length() - ".class".length())
+                
+                FindInSrc findInSrc = new FindInSrc()
+                def found = (findInSrc.find(project, jarName.substring(0, jarName.length() - ".jar".length()), className))
+                if (found) {
+                  foundInsrc.set(true)
+                }
               }
             }
+          } catch (ZipException zipEx) {
+            println "Unable to open file ${file.name}"
           }
-        } catch (ZipException zipEx) {
-          println "Unable to open file ${file.name}"
-        }
-    })
+        })
     
     return foundInsrc.get()
+  }
+  
+  public UnusedDeps jarExclude(String... arg0) {
+    for (String pattern : arg0) {
+      jarExcludes.add(pattern);
+    }
+    return this;
   }
   
   protected Project getTopLvlProject(Project proj) {

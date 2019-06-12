@@ -21,9 +21,7 @@ apply plugin: org.apache.lucene.gradle.PartOfDist
 
 dependencies {
 
-  implementation ('org.apache.zookeeper:zookeeper') {
-    exclude group: '*', module: '*' // zk has many deps we don't need
-  }
+  implementation ('org.apache.zookeeper:zookeeper') { transitive = false } // // zk has annotation deps we don't need
   implementation ('org.apache.httpcomponents:httpclient')
   implementation ('org.apache.httpcomponents:httpmime')
   implementation ('org.apache.httpcomponents:httpcore')
@@ -44,9 +42,7 @@ dependencies {
   testImplementation ('org.eclipse.jetty:jetty-server')
   testImplementation ('org.eclipse.jetty:jetty-xml')
   testImplementation ('commons-collections:commons-collections')
-  testImplementation ('com.google.guava:guava') {
-    exclude group: '*', module: '*' // many annotation deps we don't need
-  }
+  testImplementation ('com.google.guava:guava') { transitive = false } // has many deps we don't need
   testImplementation ('org.apache.commons:commons-compress')
   testImplementation ('org.mockito:mockito-core')
   testImplementation ('net.bytebuddy:byte-buddy')
