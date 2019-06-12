@@ -75,6 +75,10 @@ exec "${cmd}" "${exec_args}" || { exit 1; }
 cmd="cd /home/lucene/project;./gradlew solr:contrib:solr-contrib-clustering:unusedDependencies"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
+# test missingDependencies task
+cmd="cd /home/lucene/project;./gradlew solr:solr-core:missingDependencies"
+exec "${cmd}" "${exec_args}" || { exit 1; }
+
 # test solr qp javacc task
 # cmd="cd /home/lucene/project;./gradlew javacc"
 # exec "${cmd}" "${exec_args}" || { exit 1; }
