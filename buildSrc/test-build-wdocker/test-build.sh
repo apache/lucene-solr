@@ -51,10 +51,6 @@ set -x
 cmd="cd /home/lucene/project;./gradlew build -x test"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
-# clean jflex for regenerate
-cmd="cd /home/lucene/project;./gradlew cleanjflex"
-exec "${cmd}" "${exec_args}" || { exit 1; }
-
 # test regenerate task
 cmd="cd /home/lucene/project;./gradlew regenerate"
 exec "${cmd}" "${exec_args}" || { exit 1; }
@@ -78,10 +74,6 @@ exec "${cmd}" "${exec_args}" || { exit 1; }
 # test missingDependencies task
 cmd="cd /home/lucene/project;./gradlew solr:solr-core:missingDependencies"
 exec "${cmd}" "${exec_args}" || { exit 1; }
-
-# test solr qp javacc task
-# cmd="cd /home/lucene/project;./gradlew javacc"
-# exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # we should still be able to build now
 cmd="cd /home/lucene/project;./gradlew build -x test"
