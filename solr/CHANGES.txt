@@ -114,6 +114,8 @@ Other Changes
 
 * SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
 
+* SOLR-13235: Split Collections API Ref Guide page into several smaller child pages (Cassandra Targett)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

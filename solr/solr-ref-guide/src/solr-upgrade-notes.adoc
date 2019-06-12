@@ -61,11 +61,11 @@ For more information about the new parameter, see the section <<format-of-solr-x
 
 * The CREATE command will now return the appropriate status code (4xx, 5xx, etc.) when the command has failed. Previously, it always returned `0`, even in failure.
 
-* The MODIFYCOLLECTION command now accepts an attribute to set a collection as read-only. This can be used to block a collection from receiving any updates while still allowing queries to be served. See the section <<collections-api.adoc#modifycollection,MODIFYCOLLECTION>> for details on how to use it.
+* The MODIFYCOLLECTION command now accepts an attribute to set a collection as read-only. This can be used to block a collection from receiving any updates while still allowing queries to be served. See the section <<collection-management.adoc#modifycollection,MODIFYCOLLECTION>> for details on how to use it.
 
-* A new command RENAME allows renaming a collection by setting up a one-to-one alias using the new name. For more information, see the section <<collections-api.adoc#rename,RENAME>>.
+* A new command RENAME allows renaming a collection by setting up a one-to-one alias using the new name. For more information, see the section <<collection-management.adoc#rename,RENAME>>.
 
-* A new command REINDEXCOLLECTION allows indexing existing stored fields from a source collection into a new collection. For more information, please see the section <<collections-api.adoc#reindexcollection,REINDEXCOLLECTION>>.
+* A new command REINDEXCOLLECTION allows indexing existing stored fields from a source collection into a new collection. For more information, please see the section <<collection-management.adoc#reindexcollection,REINDEXCOLLECTION>>.
 
 *Logging*
 
