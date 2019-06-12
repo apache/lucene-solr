@@ -148,7 +148,7 @@ class UnusedDeps extends DefaultTask {
         
         for (String exclude : jarExcludes) {
           if (it.matches(exclude)) {
-            println  - 'excluded violation: ' + it
+            println ' - excluded violation : ' + it
             return
           }
         }
