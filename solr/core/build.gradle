@@ -46,28 +46,24 @@ dependencies {
   
   // used for log4j2 async support
   runtimeOnly ('com.lmax:disruptor')
+  runtimeOnly ('org.slf4j:log4j-over-slf4j') // bridge for deps that use log4j12 directly
+  runtimeOnly ('org.slf4j:jcl-over-slf4j') // bridge java common logging to slf4j
+  // TODO: this is not great, still have to work out logging dist strat
+  runtimeOnly ('org.apache.logging.log4j:log4j-slf4j-impl')
   
   // kerb, kerby, and curator deps used for security and auth with zk/hdfs/kerberos
-  runtimeOnly ('org.apache.curator:curator-recipes') {
-    exclude group: '*', module: '*' // brings in a lot we don't use
-  }
+  runtimeOnly ('org.apache.curator:curator-recipes') { transitive = false } // brings in a lot we don't use
   runtimeOnly ('org.apache.kerby:kerb-core')
   runtimeOnly ('org.apache.kerby:kerb-util')
   runtimeOnly ('org.apache.kerby:kerby-asn1')
   runtimeOnly ('org.apache.kerby:kerby-pkix')
   
   runtimeOnly ('com.google.protobuf:protobuf-java') // used by calicte.avatica
-  runtimeOnly ('org.slf4j:jcl-over-slf4j') // bridge java common logging to slf4j
   
   compileOnly ('javax.servlet:javax.servlet-api')
-  
-  // TODO: this is not great, still have to work out logging dist strat
-  implementation ('org.apache.logging.log4j:log4j-slf4j-impl')
 
   implementation ('org.slf4j:slf4j-api')
-  implementation ('org.apache.zookeeper:zookeeper') {
-    exclude group: '*', module: '*' // zk has many deps we don't need
-  }
+  implementation ('org.apache.zookeeper:zookeeper') { transitive = false } // brings in a lot we don't use
   implementation ('org.apache.httpcomponents:httpclient')
   implementation ('org.apache.httpcomponents:httpcore')
   implementation ('org.codehaus.woodstox:stax2-api')
@@ -86,9 +82,7 @@ dependencies {
   implementation ('commons-fileupload:commons-fileupload')
   implementation ('commons-cli:commons-cli')
   implementation ('org.apache.commons:commons-text')
-  implementation ('com.google.guava:guava') {
-    exclude group: '*', module: '*' // many annotation deps we don't need
-  }
+  implementation ('com.google.guava:guava') { transitive = false } // many annotation deps we don't need
   implementation ('org.locationtech.spatial4j:spatial4j')
   implementation ('org.apache.commons:commons-math3')
   implementation ('org.ow2.asm:asm')
@@ -98,48 +92,36 @@ dependencies {
   
   implementation ('org.apache.logging.log4j:log4j-api')
   implementation ('org.apache.logging.log4j:log4j-core')
-  implementation ('org.apache.logging.log4j:log4j-1.2-api')
   
   implementation ('com.fasterxml.jackson.core:jackson-core')
   implementation ('com.fasterxml.jackson.core:jackson-databind')
   implementation ('com.fasterxml.jackson.core:jackson-annotations')
   implementation ('com.fasterxml.jackson.dataformat:jackson-dataformat-smile')
-  implementation ('org.apache.hadoop:hadoop-auth') {
-    exclude group: '*', module: '*' // brings in a lot we don't use
-  }
-  implementation ('org.apache.hadoop:hadoop-common') {
-    exclude group: '*', module: '*' // brings in a lot we don't use
-  }
-  implementation ('org.apache.hadoop:hadoop-hdfs-client') {
-    exclude group: '*', module: '*' // brings in a lot we don't use
-  }
-  implementation ('org.apache.hadoop:hadoop-annotations') {
-    exclude group: '*', module: '*' // brings in a lot we don't use
-  }
+  implementation ('com.fasterxml.jackson.dataformat:jackson-dataformat-yaml') // added for calcite sql deps
+  
   implementation ('commons-collections:commons-collections')
   implementation ('com.github.ben-manes.caffeine:caffeine')
   implementation ('com.google.re2j:re2j')
   implementation ('org.apache.commons:commons-lang3')
   implementation ('org.apache.htrace:htrace-core4')
-  implementation ('org.apache.curator:curator-framework') {
-    exclude group: '*', module: '*' // brings in a lot we don't use
-  }
-  implementation ('org.apache.curator:curator-client')  {
-    exclude group: '*', module: '*' // brings in a lot we don't use
-  }
+  implementation ('org.apache.curator:curator-framework') { transitive = false } // brings in a lot we don't use
+  implementation ('org.apache.curator:curator-client') { transitive = false } // brings in a lot we don't use
+  implementation ('com.tdunning:t-digest')  // StatsComponents percentiles 
   
-  implementation ('com.tdunning:t-digest')
-  implementation ('org.apache.calcite:calcite-core') {
-    exclude group: '*', module: '*' // brings in a lot we don't use
-  }
-  implementation ('org.apache.calcite:calcite-linq4j') {
-    exclude group: '*', module: '*' // brings in a lot we don't use
-  }
-  implementation ('org.apache.calcite.avatica:avatica-core') {
-    exclude group: '*', module: '*' // brings in a lot we don't use
-  }
-  implementation ('org.apache.commons:commons-lang3')
+  // hdfs
+  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false } // brings in a lot we don't use
+  implementation ('org.apache.hadoop:hadoop-common') { transitive = false } // brings in a lot we don't use
+  implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false } // brings in a lot we don't use
+  implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false } // brings in a lot we don't use
+  
+  // sql parser
+  implementation ('org.apache.calcite:calcite-core') { transitive = false } // brings in a lot we don't use
+  implementation ('org.apache.calcite:calcite-linq4j') { transitive = false } // brings in a lot we don't use
+  implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false } // brings in a lot we don't use
+  implementation ('org.codehaus.janino:janino')
   implementation ('org.codehaus.janino:commons-compiler')
+  implementation ('com.jayway.jsonpath:json-path')
+  implementation ('org.apache.commons:commons-lang3')
 
   implementation ('org.rrd4j:rrd4j')
   implementation ('org.bitbucket.b_c:jose4j')
@@ -155,7 +137,7 @@ dependencies {
   
   testImplementation ('org.restlet.jee:org.restlet.ext.servlet')
   
-  // kerby
+  // kerb, kerby, and curator deps used for security and auth with zk/hdfs/kerberos
   testRuntimeOnly ('org.apache.kerby:kerb-core')
   testRuntimeOnly ('org.apache.kerby:kerby-asn1')
   testRuntimeOnly ('org.apache.kerby:kerby-pkix')
@@ -167,31 +149,30 @@ dependencies {
   testRuntimeOnly ('org.apache.commons:commons-configuration2')
   
   testImplementation ('org.eclipse.jetty:jetty-xml')
-  testImplementation ('org.mockito:mockito-core') { transitive = false }
-  testImplementation ('net.bytebuddy:byte-buddy') { transitive = false }
-  testImplementation ('org.objenesis:objenesis') { transitive = false }
-  testImplementation ('commons-logging:commons-logging') { transitive = false }
-  testImplementation ('io.netty:netty-all') { transitive = false }
+  testImplementation ('org.mockito:mockito-core')
+  testImplementation ('net.bytebuddy:byte-buddy')
+  testImplementation ('org.objenesis:objenesis')
+  testImplementation ('commons-logging:commons-logging')
+  testImplementation ('io.netty:netty-all')
   testImplementation ('org.apache.commons:commons-text')
-  testImplementation ('org.eclipse.jetty:jetty-webapp') { transitive = false }
-  testImplementation ('com.sun.jersey:jersey-servlet:1.19.4') { transitive = false }
+  testImplementation ('org.eclipse.jetty:jetty-webapp')
+  testImplementation ('com.sun.jersey:jersey-servlet:1.19.4') { transitive = false } // brings in a lot we don't use
   
   // hdfs
-  testImplementation ('org.apache.hadoop:hadoop-minicluster') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
+  testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false } // brings in a lot we don't use
+  testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false } // brings in a lot we don't use
+  testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false } // brings in a lot we don't use
+  testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false } // brings in a lot we don't use
   testImplementation ('com.google.protobuf:protobuf-java')
   
   // kerby
-  testImplementation ('org.apache.kerby:kerb-client') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-common') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-identity') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-server') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-simplekdc') { transitive = false }
-  testImplementation ('org.apache.kerby:kerb-admin') { transitive = false }
-  testImplementation ('org.apache.kerby:kerby-kdc') { transitive = false }
+  testImplementation ('org.apache.kerby:kerb-client') { transitive = false } // brings in a lot we don't use
+  testImplementation ('org.apache.kerby:kerb-common') { transitive = false } // brings in a lot we don't use
+  testImplementation ('org.apache.kerby:kerb-identity') { transitive = false } // brings in a lot we don't use
+  testImplementation ('org.apache.kerby:kerb-server') { transitive = false } // brings in a lot we don't use
+  testImplementation ('org.apache.kerby:kerb-simplekdc') { transitive = false } // brings in a lot we don't use
+  testImplementation ('org.apache.kerby:kerb-admin') { transitive = false } // brings in a lot we don't use
+  testImplementation ('org.apache.kerby:kerby-kdc') { transitive = false } // brings in a lot we don't use
   
   testImplementation project(path: ':lucene:lucene-backward-codecs', configuration: 'testOutput')
   testImplementation project(path: ':lucene:lucene-queryparser', configuration: 'testOutput')
@@ -211,15 +192,25 @@ forbiddenApisTest {
   exclude 'org/apache/hadoop/**'
 }
 
-missingDeps() {
-  depExcludes = ['**/*hadoop*.dot'] // we exclude examining hadoop jars because we don't need lots of these deps
+missingDeps {
+  depExclude  '**/*hadoop*.dot' // we exclude examining hadoop jars because we don't need lots of these deps
   
-  classExcludes = [
-        'org\\.apache\\.yetus\\.audience\\.InterfaceAudience', // annotations jar
-        'javax\\.annotation\\..*', // annotations jar
-        'org\\.apache\\.yetus\\.audience', // annotations jar
-        'com\\.google\\.errorprone\\.annotations\\..*' // annotations jar
-      ]
+  classExclude 'org\\.apache\\.yetus\\.audience\\.InterfaceAudience.*' // annotations
+  classExclude 'javax\\.annotation\\..*' // annotations
+  classExclude 'com\\.google\\.errorprone\\.annotations\\..*' // annotations
+  classExclude 'org\\.fusesource\\.jansi\\..*' // log4j extra functionality we don't use
+  classExclude 'org\\.slf4j\\.ext\\.EventData' // log4j extra functionality we don't use
+  classExclude 'org\\.osgi\\.framework\\..*' // log4j osgi stuff we don't have
+  classExclude 'org\\.apache\\.log4j\\.jmx\\.HierarchyDynamicMBean' // zookeeper refs this log4j class directly
+  classExclude 'org\\.locationtech\\.jts\\..*' // spatial4j does not yet use jts
+  classExclude 'com\\.esri\\.core.geometry\\..*' // calcite sql stuff we appraently don't need
+  classExclude 'org\\.pentaho\\.aggdes\\..*'  // calcite sql stuff we apparently don't need
+  classExclude 'org\\.apache\\.commons\\.dbcp2\\.BasicDataSource' // calcite jdbc sql stuff we apparently don't need
+  classExclude 'com\\.yahoo\\.sketches\\.hll\\..*' // calcite sql stuff we apparently don't need
+}
+
+unusedDeps {
+  jarExclude 'kerby-pkix-.*?\\.jar'
 }
 
 task javacc(type: org.apache.lucene.gradle.SolrQPJavaCC) {

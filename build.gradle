@@ -39,8 +39,8 @@ allprojects {
   ext.filePath = { path -> file(path).getAbsolutePath() }
   // sugar multi part File
   ext.mfile = { file1, file2 -> new File(file(file1), file2.toString()) }
-  File target = File.createTempDir()
-  target.deleteOnExit()
+  File target = new File(System.getProperty("java.io.tmpdir") + '/lucene-solr-gradle')
+  //target.deleteOnExit()
   ext.tmp = target
   //gradle.buildFinished {delete(target)}
 }
@@ -186,41 +186,34 @@ configure(allprojects) {
     }
   }
   
+  File jdepsReportDir = mfile(project.buildDir, 'jdepsreport')
+  
+  task jdepsReport(type: org.apache.lucene.gradle.JdepsReport) {
+    target = jdepsReportDir
+  }
+  
   task listDependencies(type: org.apache.lucene.gradle.ListDeps) {
     group = 'Help'
     description = "List sorted dependencies and counts for a module."
   }
   
-  File jdepsReportDir = mfile(project.tmp, 'jdepsreport')
-  
   task unusedDependencies {
     group = 'Help'
     description = "Lists dependencies that may be unused for a module."
-
-    project.tasks.create("jdepsReport", org.apache.lucene.gradle.JdepsReport, jdepsReportDir, true)
     task unusedDeps(type: org.apache.lucene.gradle.UnusedDeps) {
       inputDirectory jdepsReportDir
     }
-    project.unusedDeps.dependsOn project.jdepsReport
-    project.unusedDeps.doLast {
-      delete(jdepsReportDir)
-    }
+    unusedDeps.dependsOn jdepsReport
     dependsOn unusedDeps
   }
   
   task missingDependencies {
     group = 'Help'
     description = "Lists classes from this module with missing runtime dependencies (we ignore scanning some root deps (ie hadoop) and some violations (ie annotations)."
-    project.tasks.create("jdepsReportR", org.apache.lucene.gradle.JdepsReport, jdepsReportDir, true)
-    // we exclude hadoop and annotations
     task missingDeps(type: org.apache.lucene.gradle.MissingDeps) {
       inputDirectory jdepsReportDir
     }
-    
-    project.missingDeps.dependsOn project.jdepsReportR
-    project.missingDeps.doLast {
-      delete(jdepsReportDir)
-    }
+    missingDeps.dependsOn jdepsReport
     dependsOn missingDeps
   }
 }
