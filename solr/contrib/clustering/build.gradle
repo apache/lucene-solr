@@ -37,3 +37,18 @@ dependencies {
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
 }
+
+missingDeps {
+  
+  classExclude 'org\\.xmlpull\\.v1\\.XmlPullParser.*' // current not brought in, wanted by simple-xml
+  
+  // solr-core's excludes
+  Set<String> depExcludes = project(':solr:solr-core').missingDeps.getDepExcludes()
+  for (String exclude : depExcludes) {
+    depExclude exclude
+  }
+  Set<String> classExcludes = project(':solr:solr-core').missingDeps.getClassExcludes()
+  for (String exclude : classExcludes) {
+    classExclude exclude
+  }
+}
