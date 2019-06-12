@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html",
+  "documentation": "https://lucene.apache.org/solr/guide/collection-aliasing.html",
   "description": "Provides list of collection aliases.",
   "methods": [
     "GET"
