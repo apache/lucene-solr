@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.math.BigInteger;
@@ -27,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -184,7 +184,10 @@ public class BlobRepository {
       throw new SolrException(SERVER_ERROR, e);
     }
     digest.update(byteBuffer);
-    return String.format("%0128x", new BigInteger(1, digest.digest()));
+    return String.format(
+        Locale.ROOT,
+        "%0128x",
+        new BigInteger(1, digest.digest()));
   }
 
 
@@ -326,19 +329,6 @@ public class BlobRepository {
 
     private BlobContentRef(BlobContent<T> blob) {
       this.blob = blob;
-    }
-  }
-
-  public static void main(String[] args) throws Exception {
-
-
-    try (InputStream in = new FileInputStream("/Users/noble/work/2-lucene-solr-github/solr/dist/solr-analysis-extras-9.0.0-SNAPSHOT.jar")) {
-      byte[] b = new byte[32 * 1024];
-      int sz = in.read(b);
-      MessageDigest digest = MessageDigest.getInstance("SHA-512");
-      digest.update(b, 0, sz);
-      String computedDigest = String.format("%0128x", new BigInteger(1, digest.digest()));
-      System.out.println(computedDigest);
     }
   }
 }
