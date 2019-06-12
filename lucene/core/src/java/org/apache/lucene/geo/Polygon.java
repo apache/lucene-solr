@@ -115,7 +115,7 @@ public final class Polygon {
       windingSum += polyLons[i] * polyLats[i + 1] - polyLats[i] * polyLons[i + 1];
     }
     if (windingSum == 0) {
-      throw new IllegalArgumentException("Polygon or hole has no area.");
+      throw new IllegalArgumentException("Cannot compute the polygon / hole orientation.");
     }
     this.minLat = minLat;
     this.maxLat = maxLat;
