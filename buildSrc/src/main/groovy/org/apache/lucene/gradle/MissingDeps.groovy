@@ -173,6 +173,17 @@ class MissingDeps extends DefaultTask {
     }
     return topLvlProject
   }
+  
+  public static void addExclusionsFrom(Project project, MissingDeps to) {
+    Set<String> depExcludes = project.missingDeps.getDepExcludes()
+    for (String exclude : depExcludes) {
+      to.depExclude exclude
+    }
+    Set<String> classExcludes = project.missingDeps.getClassExcludes()
+    for (String exclude : classExcludes) {
+      to.classExclude exclude
+    }
+  }
 }
 
 
