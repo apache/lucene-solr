@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html",
+  "documentation": "https://lucene.apache.org/solr/guide/cluster-node-management.html",
   "description": "Cluster-wide commands to assign roles to nodes, remove role assignments, or add, edit or remove a cluster-wide property.",
   "methods": [
     "POST"
@@ -12,7 +12,7 @@
   "commands": {
     "add-role":{
       "type":"object",
-      "documentation":"https://lucene.apache.org/solr/guide/collections-api.html#addrole",
+      "documentation":"https://lucene.apache.org/solr/guide/cluster-node-management.html#addrole",
       "description":"Assign a specific role to a node in the cluster.",
       "properties": {
         "role": {
@@ -33,7 +33,7 @@
     },
     "remove-role":{
       "type":"object",
-      "documentation":"https://lucene.apache.org/solr/guide/collections-api.html#removerole",
+      "documentation":"https://lucene.apache.org/solr/guide/cluster-node-management.html#removerole",
       "description":"Unassign a role from a node in the cluster.",
       "properties": {
         "role": {
@@ -53,7 +53,7 @@
     },
     "set-property": {
       "type": "object",
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#clusterprop",
+      "documentation": "https://lucene.apache.org/solr/guide/cluster-node-management.html#clusterprop",
       "description": "Add, edit, or delete a cluster-wide property.",
       "properties": {
         "name": {
@@ -72,7 +72,7 @@
     },
     "set-obj-property": {
       "type": "object",
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#clusterprop",
+      "documentation": "https://lucene.apache.org/solr/guide/cluster-node-management.html#clusterprop",
       "description": "Add, edit, or delete a cluster-wide property.",
       "properties": {
         "legacyCloud": {
@@ -150,7 +150,7 @@
     },
     "utilize-node": {
       "type": "object",
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#utilizenode",
+      "documentation": "https://lucene.apache.org/solr/guide/cluster-node-management.html#utilizenode",
       "description": "use a replica to reduce load",
       "properties": {
         "node": {
