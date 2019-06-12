@@ -317,10 +317,9 @@ public class Http2SolrClient extends SolrClient {
         .newRequest(basePath + "update"
             + requestParams.toQueryString())
         .method(HttpMethod.POST)
-        .header("User-Agent", HttpSolrClient.AGENT)
-        .header("Content-Type", contentType)
+        .header(HttpHeader.CONTENT_TYPE, contentType)
         .content(provider);
-    setListeners(updateRequest, postRequest);
+    decorateRequest(postRequest, updateRequest);
     InputStreamResponseListener responseListener = new InputStreamResponseListener();
     postRequest.send(responseListener);
 
@@ -452,16 +451,16 @@ public class Http2SolrClient extends SolrClient {
   private Request makeRequest(SolrRequest solrRequest, String collection)
       throws SolrServerException, IOException {
     Request req = createRequest(solrRequest, collection);
+    decorateRequest(req, solrRequest);
+    return req;
+  }
+
+  private void decorateRequest(Request req, SolrRequest solrRequest) {
     req.header(HttpHeader.ACCEPT_ENCODING, null);
-    setListeners(solrRequest, req);
     if (solrRequest.getUserPrincipal() != null) {
       req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
     }
 
-    return req;
-  }
-
-  private void setListeners(SolrRequest solrRequest, Request req) {
     setBasicAuthHeader(solrRequest, req);
     for (HttpListenerFactory factory : listenerFactory) {
       HttpListenerFactory.RequestResponseListener listener = factory.get();
