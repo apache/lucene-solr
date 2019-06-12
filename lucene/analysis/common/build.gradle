@@ -155,7 +155,7 @@ task cleanJflexUAX29URLEmailTokenizer() {
 }
 
 task regenerate {
-  dependsOn runJflex, unicodeData
+  dependsOn cleanJflex, runJflex, unicodeData
 }
 
 task patchSnowball {
