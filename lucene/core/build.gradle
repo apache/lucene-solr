@@ -140,7 +140,7 @@ task cleanJflex() {
 
 task regenerate {
   group = 'Build Regenerate'
-  description = "Regenerates various generated src files, automoton, packedints, jflex, etc"
-  dependsOn runJflex, createLevAutomaton, createPackedIntSources
+  description = "Regenerates various generated src files, automoton, packedints, jflex, javacc, etc"
+  dependsOn cleanJflex, runJflex, createLevAutomaton, createPackedIntSources
 }
 

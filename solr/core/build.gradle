@@ -214,7 +214,37 @@ unusedDeps {
   jarExclude 'kerby-pkix-.*?\\.jar'
 }
 
-task javacc(type: org.apache.lucene.gradle.SolrQPJavaCC) {
+task javacc(type: org.apache.lucene.gradle.JavaCC) {
   inputFile file('src/java/org/apache/solr/parser/QueryParser.jj')
   target file('src/java/org/apache/solr/parser')
+  
+  doLast {
+    // Change the incorrect public ctors for QueryParser to be protected instead
+    ant.replaceregexp(file: project.filePath('src/java/org/apache/solr/parser/QueryParser.java'),
+    byline:  'true',
+    match:   'public QueryParser\\(CharStream ',
+    replace: 'protected QueryParser(CharStream ')
+    
+    ant.replaceregexp(file: project.filePath('src/java/org/apache/solr/parser/QueryParser.java'),
+    byline: 'true',
+    match:  'public QueryParser\\(QueryParserTokenManager ',
+    replace:'protected QueryParser(QueryParserTokenManager ')
+    
+    // change an exception used for signaling to be static
+    ant.replaceregexp(file: project.filePath("src/java/org/apache/solr/parser/QueryParser.java"),
+                   byline: "true",
+                   match: "final private LookaheadSuccess jj_ls =",
+                   replace: "static final private LookaheadSuccess jj_ls =")
+    ant.replace(token: "StringBuffer", value: "StringBuilder", encoding: "UTF-8") {
+       ant.fileset(dir: project.filePath("src/java/org/apache/solr/parser"), includes: "ParseException.java TokenMgrError.java")
+    }
+  }
 }
+
+task regenerate {
+  group = 'Build Regenerate'
+  description = "Regenerates various generated src files, automoton, packedints, jflex, javacc, etc"
+  dependsOn javacc
+}
+
+
