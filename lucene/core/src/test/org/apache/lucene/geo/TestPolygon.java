@@ -301,11 +301,11 @@ public class TestPolygon extends LuceneTestCase {
     assertTrue(e.getMessage().contains("can only handle type FeatureCollection (if it has a single polygon geometry), Feature, Polygon or MutiPolygon, but got Point"));
   }
 
-  public void testPolygonNoArea() {
+  public void testPolygonNoOrientation() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new Polygon(new double[] { 0, 1, 2, 3, 0}, new double[] { 0, 0, 0, 0, 0 });
     });
-    assertTrue(expected.getMessage().contains("Polygon or hole has no area."));
+    assertTrue(expected.getMessage().contains("Cannot compute the polygon / hole orientation."));
   }
 
   public void testPolygonInvalidArea() {
