@@ -135,6 +135,8 @@ Bug Fixes
 
 * SOLR-12013: collections API CUSTERSTATUS command fails when configset missing (Erick Erickson)
 
+* SOLR-13509: NPE on omitHeader=true  is fixed by sending omitHeader=false to shard searches (Munendra S N, Mikhail Khludnev)
+
 Other Changes
 ----------------------
 

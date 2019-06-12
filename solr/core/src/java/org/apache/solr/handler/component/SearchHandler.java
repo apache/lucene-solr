@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.PATH;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -55,6 +52,9 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 
 /**
@@ -370,6 +370,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
               params.set(ShardParams.IS_SHARD, true);  // a sub (shard) request
               params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
               params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
+              params.set(CommonParams.OMIT_HEADER, false);
               if (rb.requestInfo != null) {
                 // we could try and detect when this is needed, but it could be tricky
                 params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));

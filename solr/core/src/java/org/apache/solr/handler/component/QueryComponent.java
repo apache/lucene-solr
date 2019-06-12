@@ -849,7 +849,7 @@ public class QueryComponent extends SearchComponent
           }
           else {
             responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
-            final Object rhste = (responseHeader == null ? null : responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
+            final Object rhste = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
             if (rhste != null) {
               nl.add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, rhste);
             }
@@ -879,20 +879,16 @@ public class QueryComponent extends SearchComponent
         }
 
         final boolean thisResponseIsPartial;
-        if (responseHeader != null) {
-          thisResponseIsPartial = Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-          thereArePartialResults |= thisResponseIsPartial;
-          
-          if (!Boolean.TRUE.equals(segmentTerminatedEarly)) {
-            final Object ste = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
-            if (Boolean.TRUE.equals(ste)) {
-              segmentTerminatedEarly = Boolean.TRUE;
-            } else if (Boolean.FALSE.equals(ste)) {
-              segmentTerminatedEarly = Boolean.FALSE;
-            }
+        thisResponseIsPartial = Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+        thereArePartialResults |= thisResponseIsPartial;
+        
+        if (!Boolean.TRUE.equals(segmentTerminatedEarly)) {
+          final Object ste = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
+          if (Boolean.TRUE.equals(ste)) {
+            segmentTerminatedEarly = Boolean.TRUE;
+          } else if (Boolean.FALSE.equals(ste)) {
+            segmentTerminatedEarly = Boolean.FALSE;
           }
-        } else {
-          thisResponseIsPartial = false;
         }
         
         // calculate global maxScore and numDocsFound
@@ -1185,7 +1181,7 @@ public class QueryComponent extends SearchComponent
         }
         {
           NamedList<?> responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
-          if (responseHeader!=null && Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+          if (Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
             rb.rsp.getResponseHeader().asShallowMap()
                .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
           }
