@@ -48,9 +48,7 @@ dependencies {
   runtimeOnly ('com.lmax:disruptor')
   runtimeOnly ('org.slf4j:log4j-over-slf4j') // bridge for deps that use log4j12 directly
   runtimeOnly ('org.slf4j:jcl-over-slf4j') // bridge java common logging to slf4j
-  // TODO: this is not great, still have to work out logging dist strat
-  runtimeOnly ('org.apache.logging.log4j:log4j-slf4j-impl')
-  
+
   // kerb, kerby, and curator deps used for security and auth with zk/hdfs/kerberos
   runtimeOnly ('org.apache.curator:curator-recipes') { transitive = false } // brings in a lot we don't use
   runtimeOnly ('org.apache.kerby:kerb-core')
@@ -62,7 +60,13 @@ dependencies {
   
   compileOnly ('javax.servlet:javax.servlet-api')
 
+  // logging
   implementation ('org.slf4j:slf4j-api')
+  implementation ('org.apache.logging.log4j:log4j-api')
+  implementation ('org.apache.logging.log4j:log4j-core')
+ // implementation ('org.apache.logging.log4j:log4j-1.2-api') // used by StartupLoggingUtils
+  implementation ('org.apache.logging.log4j:log4j-slf4j-impl') // still have to work out logging dist strat
+  
   implementation ('org.apache.zookeeper:zookeeper') { transitive = false } // brings in a lot we don't use
   implementation ('org.apache.httpcomponents:httpclient')
   implementation ('org.apache.httpcomponents:httpcore')
@@ -89,9 +93,6 @@ dependencies {
   
   implementation ('org.restlet.jee:org.restlet')
   implementation ('com.carrotsearch:hppc')
-  
-  implementation ('org.apache.logging.log4j:log4j-api')
-  implementation ('org.apache.logging.log4j:log4j-core')
   
   implementation ('com.fasterxml.jackson.core:jackson-core')
   implementation ('com.fasterxml.jackson.core:jackson-databind')
