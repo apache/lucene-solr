@@ -33,6 +33,7 @@
     <dependency org="io.opentracing" name="opentracing-api" rev="${/io.opentracing/opentracing-api}" conf="compile"/>
     <dependency org="io.opentracing" name="opentracing-noop" rev="${/io.opentracing/opentracing-noop}" conf="compile"/>
     <dependency org="io.opentracing" name="opentracing-util" rev="${/io.opentracing/opentracing-util}" conf="compile"/>
+    <dependency org="io.opentracing" name="opentracing-mock" rev="${/io.opentracing/opentracing-mock}" conf="test"/>
 
     <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" conf="compile"/>
     <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" conf="compile"/>
