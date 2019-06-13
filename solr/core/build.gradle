@@ -211,7 +211,7 @@ missingDeps {
 }
 
 unusedDeps {
-  jarExclude 'kerby-pkix-.*?\\.jar'
+  jarExclude 'kerby-pkix-.*?\\.jar' // used by security components dynamically
 }
 
 task runJavacc(type: org.apache.lucene.gradle.JavaCC) {
