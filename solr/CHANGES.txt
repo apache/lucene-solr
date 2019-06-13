@@ -116,6 +116,8 @@ Other Changes
 
 * SOLR-13235: Split Collections API Ref Guide page into several smaller child pages (Cassandra Targett)
 
+* SOLR-8754: Adding test cases for org.apache.solr.util.hll.NumberUtilTest (Benoit Vanalderweireldt via janhoy)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
