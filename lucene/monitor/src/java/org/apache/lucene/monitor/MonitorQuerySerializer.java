@@ -55,7 +55,7 @@ public interface MonitorQuerySerializer {
     return new MonitorQuerySerializer() {
       @Override
       public MonitorQuery deserialize(BytesRef binaryValue) {
-        ByteArrayInputStream is = new ByteArrayInputStream(binaryValue.bytes);
+        ByteArrayInputStream is = new ByteArrayInputStream(binaryValue.bytes, binaryValue.offset, binaryValue.length);
         try (InputStreamDataInput data = new InputStreamDataInput(is)) {
           String id = data.readString();
           String query = data.readString();
