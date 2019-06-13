@@ -270,27 +270,35 @@ public class ZkStateReader implements SolrCloseable {
     log.debug("Loading collection config from: [{}]", path);
 
     try {
+      if (zkClient.exists(path, true) == false) {
+        log.warn("No collection found at path {}.", path);
+        throw new KeeperException.NoNodeException("No collection found at path: " + path);
+      }
       byte[] data = zkClient.getData(path, null, null, true);
-
-      if (data != null) {
-        ZkNodeProps props = ZkNodeProps.load(data);
-        configName = props.getStr(CONFIGNAME_PROP);
+      if (data == null) {
+        log.warn("No config data found at path {}.", path);
+        throw new KeeperException.NoNodeException("No config data found at path: " + path);
       }
 
-      if (configName != null) {
-        String configPath = CONFIGS_ZKNODE + "/" + configName;
-        if (!zkClient.exists(configPath, true)) {
-          log.error("Specified config=[{}] does not exist in ZooKeeper at location=[{}]", configName, configPath);
-          throw new KeeperException.NoNodeException(configPath);
-        } else {
-          log.debug("path=[{}] [{}]=[{}] specified config exists in ZooKeeper", configPath, CONFIGNAME_PROP, configName);
-        }
+      ZkNodeProps props = ZkNodeProps.load(data);
+      configName = props.getStr(CONFIGNAME_PROP);
+
+      if (configName == null) {
+        log.warn("No config data found at path{}. ", path);
+        throw new KeeperException.NoNodeException("No config data found at path: " + path);
+      }
+
+      String configPath = CONFIGS_ZKNODE + "/" + configName;
+      if (zkClient.exists(configPath, true) == false) {
+        log.error("Specified config=[{}] does not exist in ZooKeeper at location=[{}]", configName, configPath);
+        throw new KeeperException.NoNodeException("Specified config=[" + configName + "] does not exist in ZooKeeper at location=[" + configPath + "]");
       } else {
-        throw new ZooKeeperException(ErrorCode.INVALID_STATE, "No config data found at path: " + path);
+        log.debug("path=[{}] [{}]=[{}] specified config exists in ZooKeeper", configPath, CONFIGNAME_PROP, configName);
       }
     } catch (InterruptedException e) {
       SolrZkClient.checkInterrupted(e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading config name for collection " + collection, e);
+      log.warn("Thread interrupted when loading config name for collection {}", collection);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Thread interrupted when loading config name for collection " + collection, e);
     }
 
     return configName;
