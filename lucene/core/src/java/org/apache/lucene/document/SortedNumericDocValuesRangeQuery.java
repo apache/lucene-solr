@@ -200,6 +200,11 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
    *
    * Because doc values only allow forward iteration, we need to reload the field comparator
    * every time the binary search accesses an earlier element.
+   *
+   * We must also account for missing values when performing the binary search. For this
+   * reason, we load the {@link FieldComparator} instead of checking the docvalues directly.
+   * The returned {@link DocIdSetIterator} makes sure to wrap the original docvalues to skip
+   * over documents with no value.
    */
   private DocIdSetIterator getDocIdSetIterator(SortField sortField,
                                                LeafReaderContext context,
