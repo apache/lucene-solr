@@ -26,6 +26,11 @@ New Features
 
 * LUCENE-8362: Add doc-value support to range fields. (Atri Sharma via Adrien Grand)
 
+* LUCENE-8766: Add monitor subproject (previously Luwak monitoring library). This
+  allows a stream of documents to be matched against a set of registered queries
+  in an efficient manner, for use as a monitoring or classification tool.
+  (Alan Woodward)
+
 Bug Fixes
 
 * LUCENE-8831: Fixed LatLonShapeBoundingBoxQuery .hashCode methods. (Ignacio Vera)
