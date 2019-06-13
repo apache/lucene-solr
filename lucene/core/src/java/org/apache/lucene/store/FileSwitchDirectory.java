@@ -149,7 +149,7 @@ public class FileSwitchDirectory extends Directory {
     }
     String ext = name.substring(i + 1);
     if (ext.equals("tmp")) {
-      Matcher matcher = EXT_PATTERN.matcher(name);
+      Matcher matcher = EXT_PATTERN.matcher(name.substring(0, i + 1));
       if (matcher.find()) {
         return matcher.group(1);
       }
@@ -187,7 +187,12 @@ public class FileSwitchDirectory extends Directory {
 
   @Override
   public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
-    return getDirectory("."+suffix).createTempOutput(prefix, suffix, context);
+    // this is best effort - it's ok to create a tmp file with any prefix and suffix. Yet if this file is then
+    // in-turn used to rename they must match to the same directory hence we use the full file-name to find
+    // the right directory. Here we can't make a decision but we need to ensure that all other operations
+    // map to the right directory.
+    String tmpFileName = getTempFileName(prefix, suffix, 0);
+    return getDirectory(tmpFileName).createTempOutput(prefix, suffix, context);
   }
 
   @Override
@@ -196,10 +201,11 @@ public class FileSwitchDirectory extends Directory {
     List<String> secondaryNames = new ArrayList<>();
 
     for (String name : names)
-      if (primaryExtensions.contains(getExtension(name)))
+      if (primaryExtensions.contains(getExtension(name))) {
         primaryNames.add(name);
-      else
+      } else {
         secondaryNames.add(name);
+      }
 
     primaryDir.sync(primaryNames);
     secondaryDir.sync(secondaryNames);
