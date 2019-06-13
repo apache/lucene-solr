@@ -19,13 +19,19 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -33,25 +39,52 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
+@Repeat(iterations=100)
 public class TestDocValuesQueries extends LuceneTestCase {
 
-  public void testDuelPointRangeSortedNumericRangeQuery() throws IOException {
-    doTestDuelPointRangeNumericRangeQuery(true, 1);
+  public void testDualSortedNumericRangeQuery() throws IOException {
+    doTestDualPointRangeNumericRangeQuery(true, 1, false);
   }
 
-  public void testDuelPointRangeMultivaluedSortedNumericRangeQuery() throws IOException {
-    doTestDuelPointRangeNumericRangeQuery(true, 3);
+  public void testDualMultivaluedSortedNumericRangeQuery() throws IOException {
+    doTestDualPointRangeNumericRangeQuery(true, 3, false);
   }
 
-  public void testDuelPointRangeNumericRangeQuery() throws IOException {
-    doTestDuelPointRangeNumericRangeQuery(false, 1);
+  public void testDualNumericRangeQuery() throws IOException {
+    doTestDualPointRangeNumericRangeQuery(false, 1, false);
   }
 
-  private void doTestDuelPointRangeNumericRangeQuery(boolean sortedNumeric, int maxValuesPerDoc) throws IOException {
+  public void testDualSortedNumericRangeQueryWithIndexSort() throws IOException {
+    doTestDualPointRangeNumericRangeQuery(true, 1, true);
+  }
+
+  public void testDualMultivaluedSortedNumericRangeQueryWithIndexSort() throws IOException {
+    doTestDualPointRangeNumericRangeQuery(true, 3, true);
+  }
+
+  public void testDualNumericRangeQueryWithIndexSort() throws IOException {
+    doTestDualPointRangeNumericRangeQuery(false, 1, true);
+  }
+  
+  private void doTestDualPointRangeNumericRangeQuery(boolean sortedNumeric,
+                                                     int maxValuesPerDoc,
+                                                     boolean indexSort) throws IOException {
     final int iters = atLeast(10);
     for (int iter = 0; iter < iters; ++iter) {
       Directory dir = newDirectory();
-      RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+
+      IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+      if (indexSort) {
+        boolean reverse = random().nextBoolean();
+        SortField sortField = sortedNumeric
+            ? new SortedNumericSortField("dv", SortField.Type.LONG, reverse)
+            : new SortField("dv", SortField.Type.LONG, reverse);
+        sortField.setMissingValue(random().nextLong());
+        iwc.setIndexSort(new Sort(sortField));
+      }
+
+      RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+
       final int numDocs = atLeast(100);
       for (int i = 0; i < numDocs; ++i) {
         Document doc = new Document();
@@ -92,7 +125,7 @@ public class TestDocValuesQueries extends LuceneTestCase {
     }
   }
 
-  private void doTestDuelPointRangeSortedRangeQuery(boolean sortedSet, int maxValuesPerDoc) throws IOException {
+  private void doTestDualPointRangeSortedRangeQuery(boolean sortedSet, int maxValuesPerDoc) throws IOException {
     final int iters = atLeast(10);
     for (int iter = 0; iter < iters; ++iter) {
       Directory dir = newDirectory();
@@ -159,16 +192,16 @@ public class TestDocValuesQueries extends LuceneTestCase {
     }
   }
 
-  public void testDuelPointRangeSortedSetRangeQuery() throws IOException {
-    doTestDuelPointRangeSortedRangeQuery(true, 1);
+  public void testDualSortedSetRangeQuery() throws IOException {
+    doTestDualPointRangeSortedRangeQuery(true, 1);
   }
 
-  public void testDuelPointRangeMultivaluedSortedSetRangeQuery() throws IOException {
-    doTestDuelPointRangeSortedRangeQuery(true, 3);
+  public void testDualMultivaluedSortedSetRangeQuery() throws IOException {
+    doTestDualPointRangeSortedRangeQuery(true, 3);
   }
 
-  public void testDuelPointRangeSortedRangeQuery() throws IOException {
-    doTestDuelPointRangeSortedRangeQuery(false, 1);
+  public void testDualSortedRangeQuery() throws IOException {
+    doTestDualPointRangeSortedRangeQuery(false, 1);
   }
 
   private void assertSameMatches(IndexSearcher searcher, Query q1, Query q2, boolean scores) throws IOException {
@@ -266,5 +299,271 @@ public class TestDocValuesQueries extends LuceneTestCase {
     
     reader.close();
     dir.close();
+  }
+
+  public void testIndexSortDocValuesWithEvenLength() throws Exception {
+    testIndexSortDocValuesWithEvenLength(false);
+    testIndexSortDocValuesWithEvenLength(true);
+  }
+
+  public void testIndexSortDocValuesWithEvenLength(boolean reverse) throws Exception {
+    Directory dir = newDirectory();
+
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Sort indexSort = new Sort(new SortedNumericSortField("field", SortField.Type.LONG, reverse));
+    iwc.setIndexSort(indexSort);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+
+    writer.addDocument(createDocument("field", -80));
+    writer.addDocument(createDocument("field", -5));
+    writer.addDocument(createDocument("field", 0));
+    writer.addDocument(createDocument("field", 0));
+    writer.addDocument(createDocument("field", 30));
+    writer.addDocument(createDocument("field", 35));
+
+    DirectoryReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+
+    // Test ranges consisting of one value.
+    assertEquals(1, searcher.count(createNumericDVQuery("field", -80, -80)));
+    assertEquals(1, searcher.count(createNumericDVQuery("field", -5, -5)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", 0, 0)));
+    assertEquals(1, searcher.count(createNumericDVQuery("field", 30, 30)));
+    assertEquals(1, searcher.count(createNumericDVQuery("field", 35, 35)));
+
+    assertEquals(0, searcher.count(createNumericDVQuery("field", -90, -90)));
+    assertEquals(0, searcher.count(createNumericDVQuery("field", 5, 5)));
+    assertEquals(0, searcher.count(createNumericDVQuery("field", 40, 40)));
+
+    // Test the lower end of the document value range.
+    assertEquals(2, searcher.count(createNumericDVQuery("field", -90, -4)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", -80, -4)));
+    assertEquals(1, searcher.count(createNumericDVQuery("field", -70, -4)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", -80, -5)));
+
+    // Test the upper end of the document value range.
+    assertEquals(1, searcher.count(createNumericDVQuery("field", 25, 34)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", 25, 35)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", 25, 36)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", 30, 35)));
+
+    // Test multiple occurrences of the same value.
+    assertEquals(2, searcher.count(createNumericDVQuery("field", -4, 4)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", -4, 0)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", 0, 4)));
+    assertEquals(3, searcher.count(createNumericDVQuery("field", 0, 30)));
+
+    // Test ranges that span all documents.
+    assertEquals(6, searcher.count(createNumericDVQuery("field", -80, 35)));
+    assertEquals(6, searcher.count(createNumericDVQuery("field", -90, 40)));
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
+  public void testIndexSortDocValuesWithOddLength() throws Exception {
+    testIndexSortDocValuesWithOddLength(false);
+    testIndexSortDocValuesWithOddLength(true);
+  }
+
+  public void testIndexSortDocValuesWithOddLength(boolean reverse) throws Exception {
+    Directory dir = newDirectory();
+
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Sort indexSort = new Sort(new SortedNumericSortField("field", SortField.Type.LONG, reverse));
+    iwc.setIndexSort(indexSort);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+
+    writer.addDocument(createDocument("field", -80));
+    writer.addDocument(createDocument("field", -5));
+    writer.addDocument(createDocument("field", 0));
+    writer.addDocument(createDocument("field", 0));
+    writer.addDocument(createDocument("field", 5));
+    writer.addDocument(createDocument("field", 30));
+    writer.addDocument(createDocument("field", 35));
+
+    DirectoryReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+
+    // Test ranges consisting of one value.
+    assertEquals(1, searcher.count(createNumericDVQuery("field", -80, -80)));
+    assertEquals(1, searcher.count(createNumericDVQuery("field", -5, -5)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", 0, 0)));
+    assertEquals(1, searcher.count(createNumericDVQuery("field", 5, 5)));
+    assertEquals(1, searcher.count(createNumericDVQuery("field", 30, 30)));
+    assertEquals(1, searcher.count(createNumericDVQuery("field", 35, 35)));
+
+    assertEquals(0, searcher.count(createNumericDVQuery("field", -90, -90)));
+    assertEquals(0, searcher.count(createNumericDVQuery("field", 6, 6)));
+    assertEquals(0, searcher.count(createNumericDVQuery("field", 40, 40)));
+
+    // Test the lower end of the document value range.
+    assertEquals(2, searcher.count(createNumericDVQuery("field", -90, -4)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", -80, -4)));
+    assertEquals(1, searcher.count(createNumericDVQuery("field", -70, -4)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", -80, -5)));
+
+    // Test the upper end of the document value range.
+    assertEquals(1, searcher.count(createNumericDVQuery("field", 25, 34)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", 25, 35)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", 25, 36)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", 30, 35)));
+
+    // Test multiple occurrences of the same value.
+    assertEquals(2, searcher.count(createNumericDVQuery("field", -4, 4)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", -4, 0)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", 0, 4)));
+    assertEquals(4, searcher.count(createNumericDVQuery("field", 0, 30)));
+
+    // Test ranges that span all documents.
+    assertEquals(7, searcher.count(createNumericDVQuery("field", -80, 35)));
+    assertEquals(7, searcher.count(createNumericDVQuery("field", -90, 40)));
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
+  public void testIndexSortDocValuesWithSingleValue() throws Exception {
+    testIndexSortDocValuesWithSingleValue(false);
+    testIndexSortDocValuesWithSingleValue(true);
+  }
+
+  private void testIndexSortDocValuesWithSingleValue(boolean reverse) throws IOException{
+    Directory dir = newDirectory();
+
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Sort indexSort = new Sort(new SortedNumericSortField("field", SortField.Type.LONG, reverse));
+    iwc.setIndexSort(indexSort);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+
+    writer.addDocument(createDocument("field", 42));
+
+    DirectoryReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+
+    assertEquals(1, searcher.count(createNumericDVQuery("field", 42, 43)));
+    assertEquals(1, searcher.count(createNumericDVQuery("field", 42, 42)));
+    assertEquals(0, searcher.count(createNumericDVQuery("field", 41, 41)));
+    assertEquals(0, searcher.count(createNumericDVQuery("field", 43, 43)));
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
+  public void testIndexSortMissingValues() throws Exception {
+    Directory dir = newDirectory();
+
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    SortField sortField = new SortedNumericSortField("field", SortField.Type.LONG);
+    sortField.setMissingValue(random().nextLong());
+    iwc.setIndexSort(new Sort(sortField));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+
+    writer.addDocument(createDocument("field", -80));
+    writer.addDocument(createDocument("field", -5));
+    writer.addDocument(createDocument("field", 0));
+    writer.addDocument(createDocument("field", 35));
+
+    writer.addDocument(createDocument("other-field", 0));
+    writer.addDocument(createDocument("other-field", 10));
+    writer.addDocument(createDocument("other-field", 20));
+
+    DirectoryReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+
+    assertEquals(2, searcher.count(createNumericDVQuery("field", -70, 0)));
+    assertEquals(2, searcher.count(createNumericDVQuery("field", -2, 35)));
+
+    assertEquals(4, searcher.count(createNumericDVQuery("field", -80, 35)));
+    assertEquals(4, searcher.count(createNumericDVQuery("field", Long.MIN_VALUE, Long.MAX_VALUE)));
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+  /**
+   * Test that the index sort optimization not activated if there is no index sort.
+   */
+  public void testNoIndexSort() throws Exception {
+    Directory dir = newDirectory();
+
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    writer.addDocument(createDocument("field", 0));
+
+    testIndexSortOptimizationDeactivated(writer);
+
+    writer.close();
+    dir.close();
+  }
+
+  /**
+   * Test that the index sort optimization is not activated when the sort is
+   * on the wrong field.
+   */
+  public void testIndexSortOnWrongField() throws Exception {
+    Directory dir = newDirectory();
+
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Sort indexSort = new Sort(new SortedNumericSortField("other-field", SortField.Type.LONG));
+    iwc.setIndexSort(indexSort);
+
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+    writer.addDocument(createDocument("field", 0));
+
+    testIndexSortOptimizationDeactivated(writer);
+
+    writer.close();
+    dir.close();
+  }
+
+  /**
+   * Test that the index sort optimization is not activated when some documents
+   * have multiple values.
+   */
+  public void testMultiDocValues() throws Exception {
+    Directory dir = newDirectory();
+
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Sort indexSort = new Sort(new SortedNumericSortField("field", SortField.Type.LONG));
+    iwc.setIndexSort(indexSort);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+
+    Document doc = new Document();
+    doc.add(new SortedNumericDocValuesField("field", 0));
+    doc.add(new SortedNumericDocValuesField("field", 10));
+    writer.addDocument(doc);
+
+    testIndexSortOptimizationDeactivated(writer);
+
+    writer.close();
+    dir.close();
+  }
+
+  public void testIndexSortOptimizationDeactivated(RandomIndexWriter writer) throws IOException {
+    DirectoryReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+
+    Query query = createNumericDVQuery("field", 0, 0);
+    Weight weight = query.createWeight(searcher, ScoreMode.TOP_SCORES, 1.0F);
+
+    for (LeafReaderContext context : searcher.getIndexReader().leaves()) {
+      Scorer scorer = weight.scorer(context);
+      assertNotNull(scorer.twoPhaseIterator());
+    }
+
+    reader.close();
+  }
+
+  private Document createDocument(String field, long value) {
+    Document doc = new Document();
+    doc.add(new SortedNumericDocValuesField(field, value));
+    return doc;
+  }
+
+  private Query createNumericDVQuery(String field, long lowerValue, long upperValue) {
+    return SortedNumericDocValuesField.newSlowRangeQuery(field, lowerValue, upperValue);
   }
 }
