@@ -133,6 +133,10 @@ Bug Fixes
 
 * SOLR-13496: Fix distributed grouping related NullPointerException in JSONWriter.writeSolrDocument (Christine Poerschke)
 
+* SOLR-12013: collections API CUSTERSTATUS command fails when configset missing (Erick Erickson)
+
+* SOLR-13509: NPE on omitHeader=true  is fixed by sending omitHeader=false to shard searches (Munendra S N, Mikhail Khludnev)
+
 Other Changes
 ----------------------
 
@@ -144,6 +148,12 @@ Other Changes
   Improved documentation on Geo3D too.  (David Smiley)
 
 * SOLR-13371: Re-structure and clarify Security chapters in Ref Guide (janhoy)
+
+* SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
+
+* SOLR-13235: Split Collections API Ref Guide page into several smaller child pages (Cassandra Targett)
+
+* SOLR-8754: Adding test cases for org.apache.solr.util.hll.NumberUtilTest (Benoit Vanalderweireldt via janhoy)
 
 ==================  8.1.2 ==================
 

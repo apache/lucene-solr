@@ -117,6 +117,10 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.set("distrib", "true");
     query.setFields("id", "text");
     query.set("shards", shard1 + "," + shard2);
+    
+    if (random().nextBoolean()) {
+      query.add("omitHeader", Boolean.toString(random().nextBoolean()));
+    }
     QueryResponse response = collection1.query(query);
     NamedList<Object> track = (NamedList<Object>) response.getDebugMap().get("track");
     assertNotNull(track);
@@ -137,13 +141,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
         "QTime", "ElapsedTime", "RequestPurpose", "NumFound", "Response");
     assertElementsPresent((NamedList<String>)((NamedList<Object>)track.get("GET_FIELDS")).get(shard2), 
         "QTime", "ElapsedTime", "RequestPurpose", "NumFound", "Response");
-    
-    query.add("omitHeader", "true");
-    response = collection1.query(query);
-    assertNull("QTime is not included in the response when omitHeader is set to true", 
-        ((NamedList<Object>)response.getDebugMap().get("track")).findRecursive("EXECUTE_QUERY", shard1, "QTime"));
-    assertNull("QTime is not included in the response when omitHeader is set to true", 
-        ((NamedList<Object>)response.getDebugMap().get("track")).findRecursive("GET_FIELDS", shard2, "QTime"));
     
     query.setQuery("id:1");
     response = collection1.query(query);

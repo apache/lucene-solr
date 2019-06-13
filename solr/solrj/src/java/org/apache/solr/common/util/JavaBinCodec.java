@@ -100,6 +100,7 @@ public class JavaBinCodec implements PushWriter {
           MAP_ENTRY_ITER = 17,
           ENUM_FIELD_VALUE = 18,
           MAP_ENTRY = 19,
+          UUID = 20, // This is reserved to be used only in LogCodec
           // types that combine tag + length (or other info) in a single byte
           TAG_AND_LEN = (byte) (1 << 5),
           STR = (byte) (1 << 5),

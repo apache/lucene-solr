@@ -31,7 +31,7 @@ This Reference Guide is the official Solr documentation, written and published b
 
 ifdef::backend-html5[]
 ++++
-<p><a class="btn btn-home btn-lg noCrossRef" href="https://lucene.apache.org/solr/mirrors-solr-latest-redir.html" role="button">Download Solr</a></p>
+<p><a class="btn btn-home btn-lg noCrossRef" href="https://lucene.apache.org/solr/downloads.html" role="button">Download Solr</a></p>
 ++++
 endif::[]
 --
