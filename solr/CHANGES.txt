@@ -26,7 +26,7 @@ Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
-Jetty 9.4.14.v20181114
+Jetty 9.4.19.v20190610
 
 Upgrade Notes
 ----------------------
@@ -61,7 +61,7 @@ Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
-Jetty 9.4.14.v20181114
+Jetty 9.4.19.v20190610
 
 Upgrade Notes
 ----------------------
@@ -72,6 +72,8 @@ Upgrade Notes
   You can use
   4lw.commands.whitelist=* to enable all ZooKeeper "4 letter commands".
   (Erick Erickson)
+
+* SOLR-13541: Upgrade Jetty to 9.4.19.v20190610 (Erick Erickson)
 
 New Features
 ----------------------
@@ -155,12 +157,18 @@ Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.4.14
-Jetty 9.4.14.v20181114
+Jetty 9.4.19.v20190610
+
+Upgrade Notes
+----------------------
+
+* SOLR-13541: Upgrade Jetty to 9.4.19.v20190610 (Erick Erickson)
 
 Bug Fixes
 ----------------------
 
 SOLR-13510: Intermittent 401's for internode requests with basicauth enabled (Cao Manh Dat, Colvin Cowie)
+
 
 ==================  8.1.1 ==================
 
