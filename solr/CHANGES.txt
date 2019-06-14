@@ -38,6 +38,9 @@ Upgrade Notes
   4lw.commands.whitelist=* to enable all ZooKeeper "4 letter commands".
   (Erick Erickson)
 
+* SOLR-13515: org.apache.solr.util.SolrPluginUtils.IdentityRegenerator has been removed, please use
+  the identical org.apache.solr.search.NoOpRegenerator instead. (David Smiley, Christine Poerschke)
+
 New Features
 ----------------------
 
