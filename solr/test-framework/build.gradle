@@ -33,12 +33,15 @@ dependencies {
   api project(':lucene:analysis:lucene-analyzers-common')
   
   api ('junit:junit') { transitive = false }
+  api ('io.opentracing:opentracing-mock')
+  implementation ('commons-cli:commons-cli')
   implementation ('org.apache.httpcomponents:httpclient') { transitive = false }
   implementation ('org.apache.httpcomponents:httpcore') { transitive = false }
   implementation ('org.apache.httpcomponents:httpmime') { transitive = false }
   implementation ('org.slf4j:slf4j-api') { transitive = false }
   implementation ('org.apache.logging.log4j:log4j-api') { transitive = false }
   implementation ('org.apache.zookeeper:zookeeper') { transitive = false }
+  implementation ('org.apache.zookeeper:zookeeper-jute')
   implementation ('commons-io:commons-io') { transitive = false }
   api ('org.eclipse.jetty:jetty-util') { transitive = false }
   implementation ('org.apache.logging.log4j:log4j-core') { transitive = false }

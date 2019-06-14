@@ -64,10 +64,15 @@ dependencies {
   implementation ('org.slf4j:slf4j-api')
   implementation ('org.apache.logging.log4j:log4j-api')
   implementation ('org.apache.logging.log4j:log4j-core')
- // implementation ('org.apache.logging.log4j:log4j-1.2-api') // used by StartupLoggingUtils
   implementation ('org.apache.logging.log4j:log4j-slf4j-impl') // still have to work out logging dist strat
   
+  // open tracing
+  implementation 'io.opentracing:opentracing-api'
+  implementation 'io.opentracing:opentracing-noop'
+  implementation 'io.opentracing:opentracing-util'
+  
   implementation ('org.apache.zookeeper:zookeeper') { transitive = false } // brings in a lot we don't use
+  implementation ('org.apache.zookeeper:zookeeper-jute')
   implementation ('org.apache.httpcomponents:httpclient')
   implementation ('org.apache.httpcomponents:httpcore')
   implementation ('org.codehaus.woodstox:stax2-api')
@@ -208,6 +213,9 @@ missingDeps {
   classExclude 'org\\.pentaho\\.aggdes\\..*'  // calcite sql stuff we apparently don't need
   classExclude 'org\\.apache\\.commons\\.dbcp2\\.BasicDataSource' // calcite jdbc sql stuff we apparently don't need
   classExclude 'com\\.yahoo\\.sketches\\.hll\\..*' // calcite sql stuff we apparently don't need
+  
+  classExclude 'io\\.netty\\.buffer\\..*' // zk 3.5.5 added these deps we don't have
+  classExclude 'io\\.netty\\.handler\\.ssl\\.SslHandler' // zk 3.5.5 added these deps we don't have
 }
 
 unusedDeps {
