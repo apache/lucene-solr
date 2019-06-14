@@ -21,14 +21,16 @@ apply plugin: org.apache.lucene.gradle.PartOfDist
 
 dependencies {
 
-  implementation ('org.apache.zookeeper:zookeeper') { transitive = false } // // zk has annotation deps we don't need
+  api ('org.apache.zookeeper:zookeeper') { transitive = false } // // zk has annotation deps we don't need
+  api ('org.apache.zookeeper:zookeeper-jute')
+  
+  implementation ('org.slf4j:slf4j-api')
+  implementation ('org.slf4j:jcl-over-slf4j')
   implementation ('org.apache.httpcomponents:httpclient')
   implementation ('org.apache.httpcomponents:httpmime')
   implementation ('org.apache.httpcomponents:httpcore')
-  implementation ('org.slf4j:jcl-over-slf4j')
   implementation ('commons-io:commons-io')
   implementation ('org.apache.commons:commons-math3')
-  implementation ('org.slf4j:slf4j-api')
   implementation ('org.eclipse.jetty.http2:http2-client')
   implementation ('org.eclipse.jetty.http2:http2-http-client-transport')
   implementation ('org.eclipse.jetty:jetty-util')

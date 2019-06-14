@@ -43,6 +43,7 @@ dependencies {
   testRuntimeOnly ('org.apache.httpcomponents:httpclient') { transitive = false }
   testRuntimeOnly ('org.apache.httpcomponents:httpcore') { transitive = false }
   testRuntimeOnly ('org.apache.zookeeper:zookeeper') { transitive = false }
+  testRuntimeOnly ('org.apache.zookeeper:zookeeper-jute')
   testRuntimeOnly ('org.eclipse.jetty:jetty-server') { transitive = false }
   testRuntimeOnly ('org.eclipse.jetty:jetty-util') { transitive = false }
   testRuntimeOnly ('org.eclipse.jetty:jetty-client') { transitive = false }
