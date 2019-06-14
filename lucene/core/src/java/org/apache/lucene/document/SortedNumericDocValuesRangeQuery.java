@@ -34,11 +34,11 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -126,8 +126,30 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
-      public boolean isCacheable(LeafReaderContext ctx) {
-        return DocValues.isCacheable(ctx, field);
+      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+        boolean exists = docMatches(context, doc);
+        if (exists) {
+          String explanation = getQuery().toString() + (score() == 1f ? "" : "^" + score());
+          return Explanation.match(score(), explanation);
+        } else {
+          return Explanation.noMatch(getQuery().toString() + " doesn't match id " + doc);
+        }
+      }
+
+      @Override
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        boolean matches = docMatches(context, doc);
+        return matches ? MatchesUtils.MATCH_WITH_NO_TERMS : null;
+      }
+
+      private boolean docMatches(LeafReaderContext context, int doc) throws IOException {
+        SortedNumericDocValues values = getValues(context.reader(), field);
+        if (values == null) {
+          return false;
+        } else {
+          TwoPhaseIterator iterator = getTwoPhaseIterator(values);
+          return iterator.approximation().advance(doc) == doc && iterator.matches();
+        }
       }
 
       @Override
@@ -152,6 +174,11 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
 
         TwoPhaseIterator twoPhaseIterator = getTwoPhaseIterator(values);
         return new ConstantScoreScorer(this, score(), scoreMode, twoPhaseIterator);
+      }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return DocValues.isCacheable(ctx, field);
       }
     };
   }

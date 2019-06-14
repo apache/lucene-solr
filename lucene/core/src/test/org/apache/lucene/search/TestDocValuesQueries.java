@@ -39,7 +39,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
-@Repeat(iterations=100)
 public class TestDocValuesQueries extends LuceneTestCase {
 
   public void testDualSortedNumericRangeQuery() throws IOException {
@@ -484,6 +483,47 @@ public class TestDocValuesQueries extends LuceneTestCase {
     reader.close();
     dir.close();
   }
+
+  public void testExplainAndMatch() throws Exception {
+    Directory dir = newDirectory();
+
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    SortField sortField = new SortedNumericSortField("field", SortField.Type.LONG);
+    sortField.setMissingValue(random().nextLong());
+    iwc.setIndexSort(new Sort(sortField));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+
+    Document doc = createDocument("field", 0);
+    writer.addDocument(doc);
+
+    DirectoryReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+
+    Query matchingQuery = createNumericDVQuery("field", -70, 0);
+    Weight matchingWeight = matchingQuery.createWeight(searcher, ScoreMode.TOP_SCORES, 1.0F);
+
+    Explanation explanation = searcher.explain(matchingQuery, 0);
+    assertTrue(explanation.isMatch());
+    for (LeafReaderContext context : searcher.getIndexReader().leaves()) {
+      Matches matches = matchingWeight.matches(context, 0);
+      assertNotNull(matches);
+    }
+
+    Query nonMatchingQuery = createNumericDVQuery("field", 3, 42);
+    Weight nonMatchingWeight = nonMatchingQuery.createWeight(searcher, ScoreMode.TOP_SCORES, 1.0F);
+
+    explanation = searcher.explain(nonMatchingQuery, 0);
+    assertFalse(explanation.isMatch());
+    for (LeafReaderContext context : searcher.getIndexReader().leaves()) {
+      Matches matches = nonMatchingWeight.matches(context, 0);
+      assertNull(matches);
+    }
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
   /**
    * Test that the index sort optimization not activated if there is no index sort.
    */
