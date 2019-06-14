@@ -109,6 +109,8 @@ Other
 
 * LUCENE-8847: Code Cleanup: Remove StringBuilder.append with concatted strings
 
+* LUCENE-8861: Script to find open Github PRs that needs attention (janhoy)
+
 ======================= Lucene 8.1.1 =======================
 (No Changes)
 
