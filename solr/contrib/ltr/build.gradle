@@ -39,6 +39,7 @@ dependencies {
   testImplementation ('org.objenesis:objenesis') { transitive = false }
   testImplementation ('org.restlet.jee:org.restlet.ext.servlet') { transitive = false }
   testImplementation 'org.apache.zookeeper:zookeeper'
+  testImplementation ('org.apache.zookeeper:zookeeper-jute')
   
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
