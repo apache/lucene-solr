@@ -155,6 +155,9 @@ Other Changes
 
 * SOLR-8754: Adding test cases for org.apache.solr.util.hll.NumberUtilTest (Benoit Vanalderweireldt via janhoy)
 
+* SOLR-13511: Add SearchHandler.newResponseBuilder method to facilitate custom plugins' maintenance
+  of per-request state in a custom ResponseBuilder. (Ramsey Haddad, Christine Poerschke)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

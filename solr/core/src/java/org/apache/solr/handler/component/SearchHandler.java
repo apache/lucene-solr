@@ -247,11 +247,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
     return shardHandler;
   }
   
+  /**
+   * Override this method if you require a custom {@link ResponseBuilder} e.g. for use by a custom {@link SearchComponent}.
+   */
+  protected ResponseBuilder newResponseBuilder(SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
+    return new ResponseBuilder(req, rsp, components);
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     List<SearchComponent> components  = getComponents();
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, components);
+    ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);
     }
