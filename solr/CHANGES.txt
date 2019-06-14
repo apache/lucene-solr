@@ -43,6 +43,12 @@ Upgrade Notes
 
 * SOLR-13541: Upgrade Jetty to 9.4.19.v20190610. (Erick Erickson, Cao Manh Dat)
 
+* SOLR-13420: Routed Aliases now use collection properties rather than core properties to identify collections that
+  belong to the alias by default. This should be invisible and fully backwards compatible from within solr, and
+  existing routed alias collections with core based properties will continue to work, but new collections created will
+  not add a property to core.properties anymoore so any external code that inspected core.properties will not find the
+  'routedAliasName' key in new cores belonging to routed aliases.
+
 New Features
 ----------------------
 
@@ -732,7 +738,7 @@ Upgrade Notes
 
 * SOLR-12708: When requesting the status of an async request via REQUESTSTATUS collections API, the response will
   include the list of internal async requests (if any) in the "success" or "failed" keys (in addition
-  to them being included outside those keys for backwards compatibility). See SOLR-12708 for more 
+  to them being included outside those keys for backwards compatibility). See SOLR-12708 for more
   details
 
 Bug fixes
