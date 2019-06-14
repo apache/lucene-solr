@@ -32,6 +32,8 @@ Bug Fixes
 ----------------------
 * SOLR-13510: Intermittent 401's for internode requests with basicauth enabled (Cao Manh Dat, Colvin Cowie)
 
+* SOLR-13413: IdleTimeout with Http2SolrClient (Cao Manh Dat)
+
 ==================  8.1.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
