@@ -49,6 +49,7 @@ dependencies {
   }
   implementation ('org.apache.httpcomponents:httpclient') { transitive = false }
   implementation ('org.apache.zookeeper:zookeeper') { transitive = false }
+  implementation ('org.apache.zookeeper:zookeeper-jute')
   implementation ('io.dropwizard.metrics:metrics-core') { transitive = false }
   
   testImplementation project(':lucene:lucene-test-framework')
