@@ -124,10 +124,6 @@ of the other tools in this folder.
     optional arguments:
       -h, --help  show this help message and exit
 
-### gitignore-gen.sh
-
-TBD
-
 ### releasedJirasRegex.py
 
 Pulls out all JIRAs mentioned at the beginning of bullet items
@@ -185,6 +181,21 @@ and prints a regular expression that will match all of them
                             seconds to wait before re-querying mirrors
       -details, -d          print missing mirror URLs
       -once, -o             run only once
+
+### githubPRs.py
+
+    usage: githubPRs.py [-h] [--json] [--token TOKEN]
+    
+    Find open Pull Requests that need attention
+    
+    optional arguments:
+      -h, --help     show this help message and exit
+      --json         Output as json
+      --token TOKEN  Github access token in case you query too often anonymously
+
+### gitignore-gen.sh
+
+TBD
 
 ### publish-solr-ref-guide.sh
 
