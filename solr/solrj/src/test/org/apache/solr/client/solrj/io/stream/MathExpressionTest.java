@@ -1473,6 +1473,38 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(out.getDouble("x").doubleValue(), 4.0, 0.0);
     assertEquals(out.getDouble("y").doubleValue(), 13.0, 0.0);
 
+
+    cexpr = "let(b=array(10,11,12,13),"+
+        "        zplot(y=b))";
+
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 4);
+    out = tuples.get(0);
+
+    assertEquals(out.getDouble("x").doubleValue(), 0.0, 0.0);
+    assertEquals(out.getDouble("y").doubleValue(), 10.0, 0.0);
+
+    out = tuples.get(1);
+
+    assertEquals(out.getDouble("x").doubleValue(), 1.0, 0.0);
+    assertEquals(out.getDouble("y").doubleValue(), 11.0, 0.0);
+
+    out = tuples.get(2);
+
+    assertEquals(out.getDouble("x").doubleValue(), 2.0, 0.0);
+    assertEquals(out.getDouble("y").doubleValue(), 12.0, 0.0);
+
+    out = tuples.get(3);
+
+    assertEquals(out.getDouble("x").doubleValue(), 3.0, 0.0);
+    assertEquals(out.getDouble("y").doubleValue(), 13.0, 0.0);
+
     cexpr = "zplot(dist=binomialDistribution(10, .50))";
 
     paramsLoc = new ModifiableSolrParams();
