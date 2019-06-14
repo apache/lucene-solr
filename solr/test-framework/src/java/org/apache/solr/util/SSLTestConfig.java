@@ -185,10 +185,9 @@ public class SSLTestConfig {
     return new SSLConfig(isSSLMode(), isClientAuthMode(), null, null, null, null) {
       @Override
       public SslContextFactory createContextFactory() {
-        SslContextFactory factory = new SslContextFactory(false);
+        SslContextFactory.Client factory = new SslContextFactory.Client(!checkPeerName);
         try {
           factory.setSslContext(buildClientSSLContext());
-          factory.setNeedClientAuth(checkPeerName);
         } catch (KeyManagementException | UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException e) {
           throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", e);
         }
@@ -214,7 +213,7 @@ public class SSLTestConfig {
     return new SSLConfig(isSSLMode(), isClientAuthMode(), null, null, null, null) {
       @Override
       public SslContextFactory createContextFactory() {
-        SslContextFactory factory = new SslContextFactory(false);
+        SslContextFactory.Server factory = new SslContextFactory.Server();
         try {
           SSLContextBuilder builder = SSLContexts.custom();
           builder.setSecureRandom(NotSecurePsuedoRandom.INSTANCE);
