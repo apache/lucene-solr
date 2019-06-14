@@ -86,7 +86,7 @@ public class FileSwitchDirectory extends Directory {
   
   @Override
   public String[] listAll() throws IOException {
-    Set<String> files = new HashSet<>();
+    List<String> files = new ArrayList<>();
     // LUCENE-3380: either or both of our dirs could be FSDirs,
     // but if one underlying delegate is an FSDir and mkdirs() has not
     // yet been called, because so far everything is written to the other,
@@ -94,14 +94,24 @@ public class FileSwitchDirectory extends Directory {
     NoSuchFileException exc = null;
     try {
       for(String f : primaryDir.listAll()) {
-        files.add(f);
+        String ext = getExtension(f);
+        // we should respect the extension here as well to ensure that we don't list a file that is already
+        // deleted or rather in the one of the directories pending deletions if both directories point
+        // to the same filesystem path. This is quite common for instance to use NIOFS as a primary
+        // and MMap as a secondary to only mmap files like docvalues or term dictionaries.
+        if (primaryExtensions.contains(ext)) {
+          files.add(f);
+        }
       }
     } catch (NoSuchFileException e) {
       exc = e;
     }
     try {
       for(String f : secondaryDir.listAll()) {
-        files.add(f);
+        String ext = getExtension(f);
+        if (primaryExtensions.contains(ext) == false) {
+          files.add(f);
+        }
       }
     } catch (NoSuchFileException e) {
       // we got NoSuchFileException from both dirs
