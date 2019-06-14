@@ -24,12 +24,7 @@ Apache Solr is an enterprise search platform written using Apache Lucene.
 Major features include full-text search, index replication and sharding, and
 result faceting and highlighting.
 
-## Build Statuses
-
-|   | Linux  | Windows | Solaris | MacOSX |
-|---|---|---|---|---|
-| 8.x | [![Build Status](https://jenkins.thetaphi.de/job/Lucene-Solr-8.x-Linux/badge/icon)](https://jenkins.thetaphi.de/job/Lucene-Solr-8.x-Linux/) | [![Build Status](https://jenkins.thetaphi.de/job/Lucene-Solr-8.x-Windows/badge/icon)](https://jenkins.thetaphi.de/job/Lucene-Solr-8.x-Windows/) | [![Build Status](https://jenkins.thetaphi.de/job/Lucene-Solr-8.x-Solaris/badge/icon)](https://jenkins.thetaphi.de/job/Lucene-Solr-8.x-Solaris/) | [![Build Status](https://jenkins.thetaphi.de/job/Lucene-Solr-8.x-MacOSX/badge/icon)](https://jenkins.thetaphi.de/job/Lucene-Solr-8.x-MacOSX/) |
-| Master | [![Build Status](https://jenkins.thetaphi.de/job/Lucene-Solr-master-Linux/badge/icon)](https://jenkins.thetaphi.de/job/Lucene-Solr-master-Linux/) | [![Build Status](https://jenkins.thetaphi.de/job/Lucene-Solr-8.x-Windows/badge/icon)](https://jenkins.thetaphi.de/job/Lucene-Solr-8.x-Windows/) | [![Build Status](https://jenkins.thetaphi.de/job/Lucene-Solr-master-Solaris/badge/icon)](https://jenkins.thetaphi.de/job/Lucene-Solr-master-Solaris/) | [![Build Status](https://jenkins.thetaphi.de/job/Lucene-Solr-master-MacOSX/badge/icon)](https://jenkins.thetaphi.de/job/Lucene-Solr-master-MacOSX/) |
+[![Build Status](https://builds.apache.org/view/L/view/Lucene/job/Solr-Artifacts-master/badge/icon)](https://builds.apache.org/view/L/view/Lucene/job/Solr-Artifacts-master/)
 
 ## Online Documentation
 
