@@ -86,6 +86,8 @@ New Features
 
 * SOLR-13512: Raw index data analysis tool (extension of COLSTATUS collection command). (ab)
 
+* SOLR-13550: Allow zplot to automatically create the x axis (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
