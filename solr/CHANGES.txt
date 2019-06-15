@@ -88,6 +88,8 @@ New Features
 
 * SOLR-13550: Allow zplot to automatically create the x axis (Joel Bernstein)
 
+* SOLR-13552: Add recNum Stream Evaluator (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
