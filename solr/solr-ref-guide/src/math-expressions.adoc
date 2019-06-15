@@ -41,7 +41,7 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>>*: Text analysis and TF-IDF term vectors.
 
-*<<statistics.adoc#statistics,Statistics>>*: Core statistical functions.
+*<<statistics.adoc#statistics,Statistics>>*: Descriptive statistics, histograms, percentiles, correlation and other statistical functions.
 
 *<<probability-distributions.adoc#probability-distributions,Probability>>*: Real, discrete and empirical probability distributions.
 
