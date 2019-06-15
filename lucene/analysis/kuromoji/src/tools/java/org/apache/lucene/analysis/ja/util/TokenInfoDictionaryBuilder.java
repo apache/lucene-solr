@@ -96,8 +96,7 @@ public class TokenInfoDictionaryBuilder {
         String[] entry = CSVUtil.parse(line);
 
         if(entry.length < 13) {
-          System.out.println("Entry in CSV is not valid: " + line);
-          continue;
+          throw new IllegalArgumentException("Entry in CSV is not valid (13 field values expected): " + line);
         }
         
         String[] formatted = formatEntry(entry);
