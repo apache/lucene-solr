@@ -29,9 +29,9 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<math-start.adoc#getting-started,Getting Started>>*: Getting started with Streaming Expressions, Math Expressions and Visualization.
 
-*<<scalar-math.adoc#scalar-math,Scalar Math>>*: The functions for applying math to numbers and visualizing results.
+*<<scalar-math.adoc#scalar-math,Scalar Math>>*: Math functions and visualization applied to numbers.
 
-*<<vector-math.adoc#vector-math,Vector Math>>*: Vector creation, math, manipulation and visualization.
+*<<vector-math.adoc#vector-math,Vector Math>>*: Vector math, manipulation and visualization.
 
 *<<variables.adoc#variables,Variables and Caching>>*: Assigning, visualizing and caching variables.
 
