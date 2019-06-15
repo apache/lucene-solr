@@ -37,13 +37,11 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix creation, math and manipulation.
 
-*<<vectorization.adoc#vectorization,Streams and Vectorization>>*: Retrieving streams and vectorizing numeric and lat/lon location fields.
+*<<term-vectors.adoc#term-vectors,Searching, Text Analysis and Term Vectors>>*: Searching and applying text analysis and TF-IDF term vectors.
 
-*<<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>>*: Using math expressions for text analysis and TF-IDF term vectors.
+*<<statistics.adoc#statistics,Sampling and Statistics>>*: Random sampling and applying statistics and visualization.
 
-*<<statistics.adoc#statistics,Statistics>>*: Statistical functions in math expressions.
-
-*<<probability-distributions.adoc#probability-distributions,Probability>>*: Mathematical models of probability.
+*<<probability-distributions.adoc#probability-distributions,Probability Distributions>>*: Real, Discrete and Empirical Probability Distributions.
 
 *<<simulations.adoc#simulations,Simulations and Sampling Distributions>>*:  Monte Carlo simulations and the Sampling Distribution of the Mean.
 
