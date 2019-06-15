@@ -201,21 +201,28 @@ forbiddenApisTest {
 missingDeps {
   depExclude  '**/*hadoop*.dot' // we exclude examining hadoop jars because we don't need lots of these deps
   
-  classExclude 'org\\.apache\\.yetus\\.audience\\.InterfaceAudience.*' // annotations
-  classExclude 'javax\\.annotation\\..*' // annotations
-  classExclude 'com\\.google\\.errorprone\\.annotations\\..*' // annotations
-  classExclude 'org\\.fusesource\\.jansi\\..*' // log4j extra functionality we don't use
-  classExclude 'org\\.slf4j\\.ext\\.EventData' // log4j extra functionality we don't use
-  classExclude 'org\\.osgi\\.framework\\..*' // log4j osgi stuff we don't have
-  classExclude 'org\\.apache\\.log4j\\.jmx\\.HierarchyDynamicMBean' // zookeeper refs this log4j class directly
-  classExclude 'org\\.locationtech\\.jts\\..*' // spatial4j does not yet use jts
-  classExclude 'com\\.esri\\.core.geometry\\..*' // calcite sql stuff we appraently don't need
-  classExclude 'org\\.pentaho\\.aggdes\\..*'  // calcite sql stuff we apparently don't need
-  classExclude 'org\\.apache\\.commons\\.dbcp2\\.BasicDataSource' // calcite jdbc sql stuff we apparently don't need
-  classExclude 'com\\.yahoo\\.sketches\\.hll\\..*' // calcite sql stuff we apparently don't need
+  // annotations
+  classExclude 'org\\.apache\\.yetus\\.audience\\.InterfaceAudience.*'
+  classExclude 'javax\\.annotation\\..*'
+  classExclude 'com\\.google\\.errorprone\\.annotations\\..*'
   
-  classExclude 'io\\.netty\\.buffer\\..*' // zk 3.5.5 added these deps we don't have
-  classExclude 'io\\.netty\\.handler\\.ssl\\.SslHandler' // zk 3.5.5 added these deps we don't have
+  // log4j extra functionality we don't use
+  classExclude 'org\\.fusesource\\.jansi\\..*'
+  classExclude 'org\\.slf4j\\.ext\\.EventData'
+  classExclude 'org\\.osgi\\.framework\\..*'
+  
+  classExclude 'org\\.apache\\.log4j\\.jmx\\.HierarchyDynamicMBean' // zookeeper refs this log4j class directly
+  classExclude 'org\\.locationtech\\.jts\\..*' // spatial4j does not currently use jts (6/2019)
+  
+  // calcite sql stuff we appraently don't need
+  classExclude 'com\\.esri\\.core.geometry\\..*'
+  classExclude 'org\\.pentaho\\.aggdes\\..*'
+  classExclude 'org\\.apache\\.commons\\.dbcp2\\.BasicDataSource'
+  classExclude 'com\\.yahoo\\.sketches\\.hll\\..*'
+  
+  // zk 3.5.5 added these deps we don't have
+  classExclude 'io\\.netty\\.buffer\\..*'
+  classExclude 'io\\.netty\\.handler\\.ssl\\.SslHandler'
 }
 
 unusedDeps {
