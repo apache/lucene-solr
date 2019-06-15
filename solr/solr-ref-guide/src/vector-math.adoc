@@ -277,6 +277,34 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
+== Getting Values By Index
+
+Values from a vector can be retrieved by index with the *valueAt* function.
+
+[source,text]
+----
+valueAt(array(0,1,2,3,4,5,6), 2)
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "return-value": 2
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
 == Sequences
 
 The *sequence* function can be used to generate a sequence of numbers as an array.

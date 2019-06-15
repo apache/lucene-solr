@@ -31,11 +31,11 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<scalar-math.adoc#scalar-math,Scalar Math>>*: The functions for applying math to numbers and visualizing results.
 
-*<<vector-math.adoc#vector-math,Vector Math>>*: Vector create, math, manipulation and visualization.
+*<<vector-math.adoc#vector-math,Vector Math>>*: Vector creation, math, manipulation and visualization.
 
 *<<variables.adoc#variables,Variables and Caching>>*: Assigning, visualizing and caching variables.
 
-*<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix creation, manipulation, and matrix math.
+*<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix creation, math and manipulation.
 
 *<<vectorization.adoc#vectorization,Streams and Vectorization>>*: Retrieving streams and vectorizing numeric and lat/lon location fields.
 
@@ -55,7 +55,7 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<curve-fitting.adoc#curve-fitting,Curve Fitting>>*: Polynomial, Harmonic and Gaussian curve fitting.
 
-*<<time-series.adoc#time-series,Time Series>>*: Aggregation, smoothing and differencing of time series.
+*<<time-series.adoc#time-series,Time Series>>*: Aggregation, smoothing, differencing and anomaly detection of time series.
 
 *<<machine-learning.adoc#machine-learning,Machine Learning>>*: Functions used in machine learning.
 

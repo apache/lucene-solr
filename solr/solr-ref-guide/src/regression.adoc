@@ -35,10 +35,10 @@ analysis.
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, response_d),
-    d=regress(b, c))
+let(a=random(testapp, q="*:*", rows="50000", fl="filesize_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, response_d),
+    r=regress(x, y))
 ----
 
 Note that in this regression analysis the value of `RSquared` is `.75`. This means that changes in
@@ -50,28 +50,31 @@ Note that in this regression analysis the value of `RSquared` is `.75`. This mea
   "result-set": {
     "docs": [
       {
-        "d": {
-          "significance": 0,
-          "totalSumSquares": 10564812.895147054,
-          "R": 0.8674822407146515,
-          "RSquared": 0.7525254379553127,
-          "meanSquareError": 523.1137343558588,
-          "intercept": -49.528134913099095,
-          "slopeConfidenceInterval": 0.0003171801710329995,
-          "regressionSumSquares": 7950290.450836472,
-          "slope": 0.019945557923159506,
-          "interceptStdErr": 6.489732340389941,
-          "N": 5000
-        }
+        "significance": 0,
+        "totalSumSquares": 96595678.64838874,
+        "R": 0.9052835767815126,
+        "RSquared": 0.8195383543903288,
+        "meanSquareError": 348.6502485633668,
+        "intercept": 55.64040842391729,
+        "slopeConfidenceInterval": 0.0000822026526346821,
+        "regressionSumSquares": 79163863.52071753,
+        "slope": 0.019984612363694493,
+        "interceptStdErr": 1.6792610845256566,
+        "N": 50000
       },
       {
         "EOF": true,
-        "RESPONSE_TIME": 98
+        "RESPONSE_TIME": 344
       }
     ]
   }
 }
 ----
+
+The diagnostics can be visualized in a table using Zeppelin-Solr.
+
+image::images/math-expressions/diagnostics.png[]
+
 
 === Prediction
 
@@ -84,11 +87,11 @@ the value of `response_d` for the `filesize_d` value of `40000`.
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, response_d),
-    d=regress(b, c),
-    e=predict(d, 40000))
+let(a=random(testapp, q="*:*", rows="5000", fl="filesize_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, response_d),
+    r=regress(x, y),
+    p=predict(r, 40000))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -99,7 +102,7 @@ When this expression is sent to the `/stream` handler it responds with:
   "result-set": {
     "docs": [
       {
-        "e": 748.079241022975
+        "p": 748.079241022975
       },
       {
         "EOF": true,
@@ -119,11 +122,11 @@ In this case 5000 predictions are returned.
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, response_d),
-    d=regress(b, c),
-    e=predict(d, b))
+let(a=random(testapp, q="*:*", rows="5000", fl="filesize_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, response_d),
+    r=regress(x, y),
+    p=predict(r, x))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -134,7 +137,7 @@ When this expression is sent to the `/stream` handler it responds with:
   "result-set": {
     "docs": [
       {
-        "e": [
+        "p": [
           742.2525322514165,
           709.6972488729955,
           687.8382568904871,
@@ -158,25 +161,33 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
+=== Regression Plot
+
+Using *zplot* and the Zeppelin-Solr interpreter we can visualize both the observations and the predictions in
+the same scatter plot. In the example below zplot is plotting the filesize_d observations on the
+*x* axis, the response_d observations on the *y* access and the predictions on the *y1* access.
+
+image::images/math-expressions/regression-plot.png[]
+
 === Residuals
 
 The difference between the observed value and the predicted value is known as the
 residual. There isn't a specific function to calculate the residuals but vector
 math can used to perform the calculation.
 
-In the example below the predictions are stored in variable *`e`*. The `ebeSubtract`
+In the example below the predictions are stored in variable *`p`*. The `ebeSubtract`
 function is then used to subtract the predictions
-from the actual `response_d` values stored in variable *`c`*. Variable *`f`* contains
+from the actual `response_d` values stored in variable *`y`*. Variable *`e`* contains
 the array of residuals.
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, response_d),
-    d=regress(b, c),
-    e=predict(d, b),
-    f=ebeSubtract(c, e))
+let(a=random(testapp, q="*:*", rows="500", fl="filesize_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, response_d),
+    r=regress(x, y),
+    p=predict(r, x),
+    e=ebeSubtract(y, p))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -212,6 +223,14 @@ When this expression is sent to the `/stream` handler it responds with:
   }
 }
 ----
+
+=== Residual Plot
+
+Using *zplot* and Zeppelin-Solr we can visualize the residuals with
+a residuals plot.
+
+image::images/math-expressions/residual-plot.png[]
+
 
 == Multivariate Linear Regression
 
