@@ -35,7 +35,7 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<variables.adoc#variables,Variables and Caching>>*: Assigning, visualizing and caching variables.
 
-*<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix creation, math and manipulation.
+*<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix math and manipulation.
 
 *<<term-vectors.adoc#term-vectors,Searching, Text Analysis and Term Vectors>>*: Searching and applying text analysis and TF-IDF term vectors.
 
