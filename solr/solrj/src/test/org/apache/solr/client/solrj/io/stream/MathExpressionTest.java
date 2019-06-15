@@ -1974,7 +1974,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
   public void testSelectWithSequentialEvaluators() throws Exception {
     String cexpr = "select(list(tuple(a=add(1,2)), tuple(a=add(2,2))), " +
         "                  add(1, a) as blah, " +
-        "                  add(1, blah) as blah1)";
+        "                  add(1, blah) as blah1," +
+        "                  recNum() as recNum)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -1987,10 +1988,13 @@ public class MathExpressionTest extends SolrCloudTestCase {
     Tuple tuple0 = tuples.get(0);
     assertEquals(tuple0.getLong("blah").longValue(), 4L);
     assertEquals(tuple0.getLong("blah1").longValue(), 5L);
+    assertEquals(tuple0.getLong("recNum").longValue(), 0);
 
     Tuple tuple1 = tuples.get(1);
     assertEquals(tuple1.getLong("blah").longValue(), 5L);
     assertEquals(tuple1.getLong("blah1").longValue(), 6L);
+    assertEquals(tuple1.getLong("recNum").longValue(), 1);
+
   }
 
   @Test
