@@ -29,6 +29,8 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<math-start.adoc#getting-started,Getting Started>>*: Getting started with Streaming Expressions, Math Expressions and Visualization.
 
+*<<matrix-math.adoc#search-sample,Searching, Sampling and Aggregation>>*:  Searching, random sampling, aggregation and visualization of result sets.
+
 *<<scalar-math.adoc#scalar-math,Scalar Math>>*: Math functions and visualization applied to numbers.
 
 *<<vector-math.adoc#vector-math,Vector Math>>*: Vector math, manipulation and visualization.
@@ -37,11 +39,11 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix math and manipulation.
 
-*<<term-vectors.adoc#term-vectors,Searching, Text Analysis and Term Vectors>>*: Searching and applying text analysis and TF-IDF term vectors.
+*<<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>>*: Text analysis and TF-IDF term vectors.
 
-*<<statistics.adoc#statistics,Sampling and Statistics>>*: Random sampling and applying statistics and visualization.
+*<<statistics.adoc#statistics,Statistics>>*: Core statistical functions.
 
-*<<probability-distributions.adoc#probability-distributions,Probability Distributions>>*: Real, discrete and empirical probability distributions.
+*<<probability-distributions.adoc#probability-distributions,Probability>>*: Real, discrete and empirical probability distributions.
 
 *<<simulations.adoc#simulations,Simulations and Sampling Distributions>>*:  Monte Carlo simulations and the Sampling Distribution of the Mean.
 
