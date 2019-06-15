@@ -41,7 +41,7 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<statistics.adoc#statistics,Sampling and Statistics>>*: Random sampling and applying statistics and visualization.
 
-*<<probability-distributions.adoc#probability-distributions,Probability Distributions>>*: Real, Discrete and Empirical Probability Distributions.
+*<<probability-distributions.adoc#probability-distributions,Probability Distributions>>*: Real, discrete and empirical probability distributions.
 
 *<<simulations.adoc#simulations,Simulations and Sampling Distributions>>*:  Monte Carlo simulations and the Sampling Distribution of the Mean.
 
