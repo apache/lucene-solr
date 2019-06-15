@@ -29,7 +29,7 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<math-start.adoc#getting-started,Getting Started>>*: Getting started with Streaming Expressions, Math Expressions and visualization.
 
-*<<matrix-math.adoc#search-sample,Searching, Sampling and Aggregation>>*: Searching, random sampling and aggregation Streaming Expressions and visualization.
+*<<search-sample.adoc#search-sample,Searching, Sampling and Aggregation>>*: Searching, sampling and aggregation Streaming Expressions and visualization.
 
 *<<scalar-math.adoc#scalar-math,Scalar Math>>*: Math functions and visualization applied to numbers.
 
