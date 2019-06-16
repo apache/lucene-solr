@@ -119,10 +119,8 @@ class MissingDeps extends DefaultTask {
               
               for (String foundInClassExclude : foundInClassExcludes) {
                 Matcher m2 = Pattern.compile(foundInClassExclude).matcher(classFoundInName)
-                //println "${className} against ${classExclude}"
                 if (m2.matches()) {
                   excluded = true
-                  //println 'excluded'
                   break
                 }
               }
@@ -130,10 +128,8 @@ class MissingDeps extends DefaultTask {
               className = m.group(2)
               for (String classExclude : classExcludes) {
                 Matcher m2 = Pattern.compile(classExclude).matcher(className)
-                //println "${className} against ${classExclude}"
                 if (m2.matches()) {
                   excluded = true
-                  //println 'excluded'
                   break
                 }
               }
