@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 apply plugin: org.apache.lucene.gradle.PartOfDist
@@ -31,14 +31,19 @@ dependencies {
   implementation project(':lucene:analysis:lucene-analyzers-morfologik')
   implementation project(':lucene:analysis:lucene-analyzers-opennlp')
   
-  implementation ('org.slf4j:slf4j-api') { transitive = false }
-  implementation ('commons-io:commons-io') { transitive = false }
+  implementation ('org.slf4j:slf4j-api')
+  implementation ('commons-io:commons-io')
   implementation ('com.google.guava:guava')
-  implementation ('commons-codec:commons-codec') { transitive = false }
+  implementation ('commons-codec:commons-codec')
   
   testImplementation project(path: ':lucene:analysis:lucene-analyzers-common', configuration: 'testOutput')
   testImplementation project(path: ':solr:contrib:solr-contrib-dataimporthandler', configuration: 'testOutput')
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
-  
+
+}
+
+missingDeps {
+  addExclusionsFrom(project(':solr:solr-core')) // add solr-core exclusions
+  addExclusionsFrom(project(':lucene:analysis:lucene-analyzers-opennlp'))
 }

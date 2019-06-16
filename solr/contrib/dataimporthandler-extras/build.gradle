@@ -39,3 +39,7 @@ dependencies {
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
 }
+
+missingDeps {
+  addExclusionsFrom(project(':solr:contrib:solr-contrib-extraction'))
+}

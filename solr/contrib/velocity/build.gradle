@@ -25,17 +25,22 @@ dependencies {
   implementation project(':solr:solr-core')
   implementation project(':solr:solr-solrj')
   
-  implementation ('commons-collections:commons-collections') { transitive = false }
-  implementation ("org.apache.velocity:velocity-engine-core") { transitive = false }
-  implementation ("org.apache.velocity.tools:velocity-tools-generic") { transitive = false }
-  implementation ("org.apache.velocity.tools:velocity-tools-view") { transitive = false }
-  implementation ("org.apache.velocity.tools:velocity-tools-view-jsp") { transitive = false }
-  implementation ('commons-io:commons-io') { transitive = false }
-  implementation ('com.google.guava:guava')
-  implementation ('commons-codec:commons-codec') { transitive = false }
-  implementation ('org.slf4j:slf4j-api') { transitive = false }
+  implementation 'org.slf4j:slf4j-api'
+  implementation 'commons-collections:commons-collections'
+  implementation 'org.apache.velocity:velocity-engine-core'
+  implementation 'org.apache.velocity.tools:velocity-tools-generic'
+  implementation 'org.apache.velocity.tools:velocity-tools-view'
+  implementation 'org.apache.velocity.tools:velocity-tools-view-jsp'
+  implementation 'commons-io:commons-io'
+  implementation 'com.google.guava:guava'
+  implementation 'commons-codec:commons-codec'
   
   testImplementation project(':lucene:lucene-misc')
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
+}
+
+missingDeps {
+  classExclude 'org\\.objectweb\\.asm.util\\.TraceClassVisitor' // from cglib
+  addExclusionsFrom(project(':solr:solr-core')) // add solr-core exclusions
 }

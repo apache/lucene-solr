@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import org.apache.lucene.gradle.MissingDeps
  
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
@@ -66,6 +64,6 @@ missingDeps {
   classExclude 'org\\.xmlpull\\.v1\\.XmlPullParser.*' // currently not brought in, wanted by simple-xml
   
   // add solr-core exclusions
-  MissingDeps.addExclusionsFrom(project(':solr:solr-core'), project)
+  addExclusionsFrom(project(':solr:solr-core'))
 }
 
