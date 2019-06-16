@@ -21,14 +21,14 @@ apply plugin: org.apache.lucene.gradle.PartOfDist
 
 dependencies {
 
-  api ('org.apache.zookeeper:zookeeper') { transitive = false } // // zk has annotation deps we don't need
+  api ('org.apache.zookeeper:zookeeper')
   api ('org.apache.zookeeper:zookeeper-jute')
   
   runtimeOnly ('org.slf4j:log4j-over-slf4j') // bridge for deps that use log4j12 directly
+  runtimeOnly ('org.slf4j:jcl-over-slf4j') // bridge for jcl
   runtimeOnly ('io.netty:netty-all') // used by zookeeper
   
   implementation ('org.slf4j:slf4j-api')
-  implementation ('org.slf4j:jcl-over-slf4j')
   implementation ('org.apache.httpcomponents:httpclient')
   implementation ('org.apache.httpcomponents:httpmime')
   implementation ('org.apache.httpcomponents:httpcore')
@@ -47,7 +47,7 @@ dependencies {
   testImplementation ('org.eclipse.jetty:jetty-server')
   testImplementation ('org.eclipse.jetty:jetty-xml')
   testImplementation ('commons-collections:commons-collections')
-  testImplementation ('com.google.guava:guava') { transitive = false } // has many deps we don't need
+  testImplementation ('com.google.guava:guava')
   testImplementation ('org.apache.commons:commons-compress')
   testImplementation ('org.mockito:mockito-core')
   testImplementation ('net.bytebuddy:byte-buddy')
@@ -65,9 +65,15 @@ dependencies {
 
 missingDeps {
   foundInClassExclude 'io\\.netty\\.handler\\.ssl\\..*' // zookeeper brings netty-all and ssl stuff we don't use
+  foundInClassExclude 'io\\.netty\\.util\\.internal\\.logging\\.Log4J2Logger.*' // netty dependency on log4j2
   
-  // we are a lib and don't distribute logging impl
-  classExclude 'org.slf4j.impl.StaticLoggerBinder'
-  classExclude 'org.slf4j.impl.StaticMDCBinder'
-  classExclude 'org.slf4j.impl.StaticMarkerBinder'
+  // annotations, mostly from zk
+  classExclude 'org\\.apache\\.yetus\\.audience\\.InterfaceAudience.*'
+  classExclude 'javax\\.annotation\\..*'
+  classExclude 'com\\.google\\.errorprone\\.annotations\\..*'
+  
+  // we are a lib and don't distribute logging impl - dont export these excludes to other modules
+  classExclude false, 'org.slf4j.impl.StaticLoggerBinder'
+  classExclude false, 'org.slf4j.impl.StaticMDCBinder'
+  classExclude false, 'org.slf4j.impl.StaticMarkerBinder'
 }

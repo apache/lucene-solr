@@ -27,7 +27,7 @@ dependencies {
   implementation ('com.fasterxml.jackson.core:jackson-core') { transitive = false }
   implementation ('com.fasterxml.jackson.core:jackson-databind') { transitive = false }
   implementation ('com.fasterxml.jackson.core:jackson-annotations') { transitive = false }
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation ('com.google.guava:guava')
   implementation ('commons-codec:commons-codec') { transitive = false }
   implementation ('commons-io:commons-io') { transitive = false }
   implementation ('org.apache.commons:commons-lang3') { transitive = false }
