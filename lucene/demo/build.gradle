@@ -36,3 +36,7 @@ dependencies {
 forbiddenApisMain {
   bundledSignatures -= 'jdk-system-out'
 }
+
+missingDeps {
+  depExclude  '**/*' // demo does not make a jar
+}
