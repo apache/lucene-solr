@@ -1789,6 +1789,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrClient solrClient = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "123");
+    doc.addField("cat", "first");//creates the field by side-effect
     solrClient.add(doc);
     solrClient.commit(true, true);
     QueryResponse response = solrClient.query(new SolrQuery("id:123"));
@@ -1796,23 +1797,33 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
     Map<String, List<String>> operation = new HashMap<>();
     operation.put("set", Arrays.asList("first", "second", "third"));
-    doc.addField("multi_ss", operation);
+    doc.setField("cat", operation);
     solrClient.add(doc);
     solrClient.commit(true, true);
     response = solrClient.query(new SolrQuery("id:123"));
-    assertTrue("Multi-valued field did not return a collection", response.getResults().get(0).get("multi_ss") instanceof List);
-    List<String> values = (List<String>) response.getResults().get(0).get("multi_ss");
+    assertTrue("Multi-valued field did not return a collection", response.getResults().get(0).get("cat") instanceof List);
+    List<String> values = (List<String>) response.getResults().get(0).get("cat");
     assertEquals("Field values was not updated with all values via atomic update", 3, values.size());
 
     operation.clear();
     operation.put("add", Arrays.asList("fourth", "fifth"));
-    doc.removeField("multi_ss");
-    doc.addField("multi_ss", operation);
+    doc.removeField("cat");
+    doc.addField("cat", operation);
     solrClient.add(doc);
     solrClient.commit(true, true);
     response = solrClient.query(new SolrQuery("id:123"));
-    values = (List<String>) response.getResults().get(0).get("multi_ss");
+    values = (List<String>) response.getResults().get(0).get("cat");
     assertEquals("Field values was not updated with all values via atomic update", 5, values.size());
+
+    operation.clear();
+    operation.put("remove", Arrays.asList("fifth"));
+    doc.removeField("cat");
+    doc.addField("cat", operation);
+    solrClient.add(doc);
+    solrClient.commit();
+    response = solrClient.query(new SolrQuery("id:123"));
+    values = (List<String>) response.getResults().get(0).get("cat");
+    assertEquals("Field values was not updated with all values via atomic update", 4, values.size());
   }
 
   @Test

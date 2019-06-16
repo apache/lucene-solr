@@ -522,7 +522,7 @@ public class XMLLoader extends ContentStreamLoader {
       for (Map.Entry<String, Map<String, Object>> entry : updateMap.entrySet()) {
         name = entry.getKey();
         Map<String, Object> value = entry.getValue();
-        doc.addField(name, value);
+        doc.setField(name, value);
       }
     }
 

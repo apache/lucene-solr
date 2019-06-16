@@ -1960,8 +1960,8 @@ public class IndexSchema {
   }
 
   /**
-   * Helper method that returns <code>true</code> if the {@link #ROOT_FIELD_NAME} uses the exact
-   * same 'type' as the {@link #getUniqueKeyField()} and has {@link #NEST_PATH_FIELD_NAME}
+   * Helper method that returns <code>true</code> if the {@link #ROOT_FIELD_NAME} is stored, uses the exact
+   * same 'type' as the {@link #getUniqueKeyField()}, and has {@link #NEST_PATH_FIELD_NAME}
    * defined as a {@link NestPathField}
    * @lucene.internal
    */
@@ -1970,6 +1970,14 @@ public class IndexSchema {
     if (!isUsableForChildDocs()) {
       return false;
     }
+
+    // can not be null, since IndexSchema#isUsableForChildDocs returned true
+    FieldType rootType = getFieldTypeNoEx(ROOT_FIELD_NAME);
+    if (!rootType.hasProperty(FieldProperties.STORED)) {
+      // root field is not stored, thus blocks can not be updated
+      return false;
+    }
+
     FieldType nestPathType = getFieldTypeNoEx(NEST_PATH_FIELD_NAME);
     return nestPathType instanceof NestPathField;
   }

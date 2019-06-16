@@ -26,6 +26,7 @@
   -->
 
 <schema name="test" version="1.0">
+  <field name="_nest_path_" type="_nest_path_" /><fieldType name="_nest_path_" class="solr.NestPathField" />
 
   <!-- field type definitions... note that the "name" attribute is
        just a label to be used by field definitions.  The "class"
@@ -608,7 +609,7 @@
 
   <field name="dateRange" type="dateRange" multiValued="true"/>
 
-  <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
+<!--  <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>-->
   <field name="price" type="float" indexed="true" stored="true" multiValued="false"/>
   <field name="inStock" type="boolean" indexed="true" stored="true"/>
 
