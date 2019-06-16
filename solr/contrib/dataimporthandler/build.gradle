@@ -44,9 +44,7 @@ dependencies {
   
   implementation ('org.slf4j:slf4j-api') { transitive = false }
   implementation ('commons-io:commons-io') { transitive = false }
-  implementation ('com.google.guava:guava') {
-    exclude group: '*', module: '*' // many annotation deps we don't need
-  }
+  implementation ('com.google.guava:guava')
   implementation ('org.apache.httpcomponents:httpclient') { transitive = false }
   implementation ('org.apache.zookeeper:zookeeper') { transitive = false }
   implementation ('org.apache.zookeeper:zookeeper-jute')

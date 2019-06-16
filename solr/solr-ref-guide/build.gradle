@@ -35,7 +35,7 @@
    tools ('org.slf4j:slf4j-simple') { transitive = false }
    tools ('org.apache.logging.log4j:log4j-api') { transitive = false }
    tools ('org.apache.logging.log4j:log4j-core') { transitive = false }
-   tools ('com.google.guava:guava') { transitive = false }
+   tools ('com.google.guava:guava')
    tools ('commons-codec:commons-codec') { transitive = false }
  }
  

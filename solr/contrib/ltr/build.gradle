@@ -29,7 +29,7 @@ dependencies {
   implementation ('org.slf4j:slf4j-api') { transitive = false }
   implementation ('org.restlet.jee:org.restlet') { transitive = false }
   implementation ('commons-io:commons-io') { transitive = false }
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation ('com.google.guava:guava')
   implementation ('commons-codec:commons-codec') { transitive = false }
   
   testRuntimeOnly ("org.slf4j:jcl-over-slf4j") { transitive = false }
