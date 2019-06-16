@@ -52,8 +52,11 @@ class MissingDeps extends DefaultTask {
   File inputDirectory
   
   private List<String> depExcludes = new ArrayList<>()
+  private List<String> exportedDepExcludes = new ArrayList<>()
   private List<String> classExcludes = new ArrayList<>()
+  private List<String> exportedClassExcludes = new ArrayList<>()
   private List<String> foundInClassExcludes = new ArrayList<>()
+  private List<String> exportedFoundInClassExcludes = new ArrayList<>()
   
   protected configuration = "runtimeClasspath"
   
@@ -158,11 +161,25 @@ class MissingDeps extends DefaultTask {
     return foundInClassExcludes
   }
   
-  public MissingDeps foundInClassExclude(String... arg0) {
+  @Input
+  public Set<String> getExportedFoundInClassExcludes() {
+    return exportedFoundInClassExcludes
+  }
+  
+  public MissingDeps foundInClassExclude(boolean exported, String... arg0) {
+    if (exported) {
+      for (String pattern : arg0) {
+        exportedFoundInClassExcludes.add(pattern)
+      }
+    }
     for (String pattern : arg0) {
-      foundInClassExcludes.add(pattern);
+      foundInClassExcludes.add(pattern)
     }
     return this;
+  }
+  
+  public MissingDeps foundInClassExclude(String... arg0) {
+    return foundInClassExclude(true, arg0)
   }
   
   @Input
@@ -170,7 +187,21 @@ class MissingDeps extends DefaultTask {
     return classExcludes
   }
   
+  @Input
+  public Set<String> getExportedClassExcludes() {
+    return exportedClassExcludes
+  }
+  
   public MissingDeps classExclude(String... arg0) {
+    return classExclude(true, arg0)
+  }
+  
+  public MissingDeps classExclude(boolean exclude, String... arg0) {
+    if (exclude) {
+      for (String pattern : arg0) {
+        exportedClassExcludes.add(pattern)
+      }
+    }
     for (String pattern : arg0) {
       classExcludes.add(pattern);
     }
@@ -182,7 +213,21 @@ class MissingDeps extends DefaultTask {
     return depExcludes
   }
   
+  @Input
+  public Set<String> getExportedDepExcludes() {
+    return exportedDepExcludes
+  }
+  
   public MissingDeps depExclude(String... arg0) {
+    return depExclude(true, arg0)
+  }
+  
+  public MissingDeps depExclude(boolean exported, String... arg0) {
+    if (exported) {
+      for (String pattern : arg0) {
+        exportedDepExcludes.add(pattern)
+      }
+    }
     for (String pattern : arg0) {
       depExcludes.add(pattern);
     }
@@ -206,15 +251,15 @@ class MissingDeps extends DefaultTask {
     
     MissingDeps to = toProject.missingDeps
     
-    Set<String> depExcludes = fromProject.missingDeps.getDepExcludes()
+    Set<String> depExcludes = fromProject.missingDeps.getExportedDepExcludes()
     for (String exclude : depExcludes) {
       to.depExclude exclude
     }
-    Set<String> classExcludes = fromProject.missingDeps.getClassExcludes()
+    Set<String> classExcludes = fromProject.missingDeps.getExportedClassExcludes()
     for (String exclude : classExcludes) {
       to.classExclude exclude
     }
-    Set<String> foundInClassExcludes = fromProject.missingDeps.getFoundInClassExcludes()
+    Set<String> foundInClassExcludes = fromProject.missingDeps.getExportedFoundInClassExcludes()
     for (String exclude : foundInClassExcludes) {
       to.foundInClassExclude exclude
     }
