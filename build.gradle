@@ -54,11 +54,10 @@ apply from: mfile(rootProjectDir, 'buildSrc/common/build-help.gradle')
 
 // -> lucene-solr all module config - configure all lucene-solr projects, including root project
 configure(luceneSolrProjects) {
-
+  buildDir = file("build")
+  
   // setup repositories
   apply from: mfile(rootProjectDir, 'buildSrc/common/configure-repositories.gradle')
-  
-  buildDir = file("build")
   
   apply plugin: 'idea'
   apply plugin: 'eclipse'
@@ -174,10 +173,25 @@ configure(allprojects) {
       exclude group: 'javax.xml.stream', module: 'stax-api'
       exclude group: 'stax', module: 'stax-api'
       exclude group: 'stax', module: 'stax'
+      
+      // logging jars we don't want, we use slf4j
+      exclude group: 'log4j', module: 'log4j'
+      exclude group: 'commons-logging', module: 'commons-logging'
+      
+      // exclude annotation jars that come with guave
+      exclude group: 'com.google.code.findbugs', module: 'jsr305'
+      exclude group: 'org.checkerframework', module: 'checker-qual'
+      exclude group: 'com.google.errorprone', module: 'error_prone_annotations'
+      exclude group: 'com.google.j2objc', module: 'j2objc-annotations'
+      exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
+      
+      exclude group: 'org.apache.yetus', module: 'audience-annotations' // annotations jar brought in by zk
+      exclude group: 'org.slf4j', module: 'slf4j-log4j12' // zk and perhaps others can bring in log4j12 binding
     }
     
     modules {
       module("commons-logging:commons-logging") { replacedBy("org.slf4j:jcl-over-slf4j") }
+      module("log4j:log4j") { replacedBy("org.slf4j:log4j-over-slf4j") }
     }
   }
   

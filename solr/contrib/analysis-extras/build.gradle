@@ -33,7 +33,7 @@ dependencies {
   
   implementation ('org.slf4j:slf4j-api') { transitive = false }
   implementation ('commons-io:commons-io') { transitive = false }
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation ('com.google.guava:guava')
   implementation ('commons-codec:commons-codec') { transitive = false }
   
   testImplementation project(path: ':lucene:analysis:lucene-analyzers-common', configuration: 'testOutput')

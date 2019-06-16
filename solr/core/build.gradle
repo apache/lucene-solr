@@ -73,7 +73,7 @@ dependencies {
   implementation 'io.opentracing:opentracing-noop'
   implementation 'io.opentracing:opentracing-util'
   
-  implementation ('org.apache.zookeeper:zookeeper') { transitive = false } // brings in a lot we don't use
+  implementation ('org.apache.zookeeper:zookeeper')
   implementation ('org.apache.zookeeper:zookeeper-jute')
   implementation ('org.apache.httpcomponents:httpclient')
   implementation ('org.apache.httpcomponents:httpcore')
@@ -93,7 +93,7 @@ dependencies {
   implementation ('commons-fileupload:commons-fileupload')
   implementation ('commons-cli:commons-cli')
   implementation ('org.apache.commons:commons-text')
-  implementation ('com.google.guava:guava') { transitive = false } // many annotation deps we don't need
+  implementation ('com.google.guava:guava')
   implementation ('org.locationtech.spatial4j:spatial4j')
   implementation ('org.apache.commons:commons-math3')
   implementation ('org.ow2.asm:asm')
@@ -203,11 +203,6 @@ forbiddenApisTest {
 missingDeps {
   depExclude  '**/*hadoop*.dot' // we exclude examining hadoop jars because we don't need lots of these deps
   
-  // annotations
-  classExclude 'org\\.apache\\.yetus\\.audience\\.InterfaceAudience.*'
-  classExclude 'javax\\.annotation\\..*'
-  classExclude 'com\\.google\\.errorprone\\.annotations\\..*'
-  
   // log4j extra functionality we don't use
   classExclude 'org\\.fusesource\\.jansi\\..*'
   classExclude 'org\\.slf4j\\.ext\\.EventData'
@@ -216,7 +211,7 @@ missingDeps {
   classExclude 'org\\.apache\\.log4j\\.jmx\\.HierarchyDynamicMBean' // zookeeper refs this log4j class directly
   classExclude 'org\\.locationtech\\.jts\\..*' // spatial4j does not currently use jts (6/2019)
   
-  // calcite sql stuff we appraently don't need
+  // calcite sql stuff we apparently don't need
   classExclude 'com\\.esri\\.core.geometry\\..*'
   classExclude 'org\\.pentaho\\.aggdes\\..*'
   classExclude 'org\\.apache\\.commons\\.dbcp2\\.BasicDataSource'
