@@ -23,18 +23,23 @@ dependencies {
   api project(':lucene:lucene-core')
   api project(':lucene:lucene-facet')
   
-  runtimeOnly ('org.slf4j:jcl-over-slf4j') { transitive = false }
+  runtimeOnly ('org.slf4j:jcl-over-slf4j')
   
-  implementation ('org.apache.httpcomponents:httpclient') { transitive = false }
-  implementation ('org.apache.httpcomponents:httpcore') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-server') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-servlet') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-util') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-io') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-continuation') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-http') { transitive = false }
-  implementation ('javax.servlet:javax.servlet-api') { transitive = false }
-  implementation ('org.slf4j:slf4j-api') { transitive = false }
+  implementation ('org.apache.httpcomponents:httpclient')
+  implementation ('org.apache.httpcomponents:httpcore')
+  implementation ('org.eclipse.jetty:jetty-server')
+  implementation ('org.eclipse.jetty:jetty-servlet')
+  implementation ('org.eclipse.jetty:jetty-util')
+  implementation ('org.eclipse.jetty:jetty-io')
+  implementation ('org.eclipse.jetty:jetty-continuation')
+  implementation ('org.eclipse.jetty:jetty-http')
+  implementation ('javax.servlet:javax.servlet-api')
+  implementation ('org.slf4j:slf4j-api')
   
   testImplementation project(':lucene:lucene-test-framework')
+}
+
+missingDeps {
+  classExclude 'org.slf4j.impl.StaticLoggerBinder' // we are a lib and don't distribute logging impl
+  classExclude 'org.apache.commons.codec.binary.Base64' // used by some org.apache.http.impl.auth classes we don't use
 }

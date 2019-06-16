@@ -45,5 +45,5 @@ missingDeps {
   classExclude 'org\\.xmlpull\\.v1\\.XmlPullParser.*' // currently not brought in, wanted by simple-xml
   
   // add solr-core exclusions
-  MissingDeps.addExclusionsFrom(project(':solr:solr-core'), project.missingDeps)
+  MissingDeps.addExclusionsFrom(project(':solr:solr-core'), project)
 }

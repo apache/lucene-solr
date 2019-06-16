@@ -39,10 +39,6 @@ allprojects {
   ext.filePath = { path -> file(path).getAbsolutePath() }
   // sugar multi part File
   ext.mfile = { file1, file2 -> new File(file(file1), file2.toString()) }
-  File target = new File(System.getProperty("java.io.tmpdir") + '/lucene-solr-gradle')
-  //target.deleteOnExit()
-  ext.tmp = target
-  //gradle.buildFinished {delete(target)}
 }
 
 apply from: mfile(rootProjectDir, 'buildSrc/common/build-help.gradle')
@@ -156,7 +152,6 @@ configure(rootProject) {
   }
   
   task pristineClean(type: org.apache.lucene.gradle.PristineClean) {}
-  
 }
 
 // -> all projects config
@@ -189,9 +184,9 @@ configure(allprojects) {
   File jdepsReportDir = mfile(project.buildDir, 'jdepsreport')
   
   plugins.withType(JavaPlugin) {
+    
     task jdepsReport(type: org.apache.lucene.gradle.JdepsReport) {
       target = jdepsReportDir
-      dependsOn jar
     }
     
     task listDependencies(type: org.apache.lucene.gradle.ListDeps) {
