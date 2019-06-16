@@ -29,23 +29,27 @@ dependencies {
   implementation ('io.prometheus:simpleclient') { transitive = false }
   implementation ('io.prometheus:simpleclient_common') { transitive = false }
   implementation ('io.prometheus:simpleclient_httpserver') { transitive = false }
-  implementation ('com.fasterxml.jackson.core:jackson-core') { transitive = false }
-  implementation ('com.fasterxml.jackson.core:jackson-databind') { transitive = false }
-  implementation ('com.fasterxml.jackson.core:jackson-annotations') { transitive = false }
+  implementation ('com.fasterxml.jackson.core:jackson-core')
+  implementation ('com.fasterxml.jackson.core:jackson-databind')
+  implementation ('com.fasterxml.jackson.core:jackson-annotations')
   implementation ('net.thisptr:jackson-jq') { transitive = false }
   implementation ('net.sourceforge.argparse4j:argparse4j') { transitive = false }
-  implementation ('org.slf4j:slf4j-api') { transitive = false }
+  implementation ('org.slf4j:slf4j-api')
   implementation ('com.google.guava:guava')
-  implementation ('org.apache.zookeeper:zookeeper') { transitive = false }
+  implementation ('org.apache.zookeeper:zookeeper')
   implementation ('org.apache.zookeeper:zookeeper-jute')
-  implementation ('commons-codec:commons-codec') { transitive = false }
-  implementation ('commons-io:commons-io') { transitive = false }
-  implementation ('org.apache.httpcomponents:httpclient') { transitive = false }
+  implementation ('commons-codec:commons-codec')
+  implementation ('commons-io:commons-io')
+  implementation ('org.apache.httpcomponents:httpclient')
   
-  testImplementation ('org.apache.httpcomponents:httpcore') { transitive = false }
-  testImplementation ('org.eclipse.jetty:jetty-servlet') { transitive = false }
+  testImplementation ('org.apache.httpcomponents:httpcore')
+  testImplementation ('org.eclipse.jetty:jetty-servlet')
   
   
   testImplementation project(':solr:solr-test-framework')
   testImplementation project(':lucene:lucene-test-framework')
+}
+
+missingDeps {
+  addExclusionsFrom(project(':solr:solr-core')) // add solr-core exclusions
 }
