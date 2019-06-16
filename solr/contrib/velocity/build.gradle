@@ -31,7 +31,7 @@ dependencies {
   implementation ("org.apache.velocity.tools:velocity-tools-view") { transitive = false }
   implementation ("org.apache.velocity.tools:velocity-tools-view-jsp") { transitive = false }
   implementation ('commons-io:commons-io') { transitive = false }
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation ('com.google.guava:guava')
   implementation ('commons-codec:commons-codec') { transitive = false }
   implementation ('org.slf4j:slf4j-api') { transitive = false }
   

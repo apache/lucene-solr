@@ -35,7 +35,7 @@ dependencies {
   implementation ('net.thisptr:jackson-jq') { transitive = false }
   implementation ('net.sourceforge.argparse4j:argparse4j') { transitive = false }
   implementation ('org.slf4j:slf4j-api') { transitive = false }
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation ('com.google.guava:guava')
   implementation ('org.apache.zookeeper:zookeeper') { transitive = false }
   implementation ('org.apache.zookeeper:zookeeper-jute')
   implementation ('commons-codec:commons-codec') { transitive = false }
