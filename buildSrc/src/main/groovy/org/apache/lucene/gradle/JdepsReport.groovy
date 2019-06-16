@@ -64,6 +64,14 @@ class JdepsReport extends DefaultTask {
     doFirst {
       println "Writing output files to ${target}"
     }
+    
+    // make sure all jars are built
+    project.rootProject.subprojects.each {subproject ->
+      def tasks = subproject.tasks.findByName('jar')
+      if (tasks != null) {
+        dependsOn tasks
+      }
+    }
   }
   
   protected void makeDirs() {
@@ -105,6 +113,7 @@ class JdepsReport extends DefaultTask {
         def topLvlProject = getTopLvlProject(subproject)
         
         if (subproject.getPlugins().hasPlugin(PartOfDist) && subproject.tasks.findByName('jar') && subproject.configurations.hasProperty(configuration)) {
+         //   subproject.tasks.findByName('jar')
            from(subproject.jar.outputs.files) {
             include "*.jar"
             into ({topLvlProject.name + '/' + topLvlProject.relativePath(subproject.projectDir)})
@@ -139,7 +148,7 @@ class JdepsReport extends DefaultTask {
     def distPath1 = "${distDir}/" + topLvlProject.name + "/" + topLvlProject.relativePath(libProject.projectDir)
     def distPath2 = "${distDir}/" + topLvlProject.name + "/" + topLvlProject.relativePath(project.projectDir)
     def dotOutPath = jdepsDir.getAbsolutePath() + "/" + topLvlProject.name +  "/" + "${project.name}-${project.version}"
-    
+
     ant.exec (executable: "jdeps", failonerror: true, resolveexecutable: true) {
       ant.arg(line: '--class-path ' + "${distPath1}/lib/" + '*')
       ant.arg(line: '--multi-release 11')

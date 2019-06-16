@@ -16,6 +16,7 @@
  */
 
  import org.apache.lucene.gradle.UnusedDeps
+ import org.apache.lucene.gradle.MissingDeps
  
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
@@ -57,6 +58,7 @@ dependencies {
   runtimeOnly ('org.apache.kerby:kerby-pkix')
   
   runtimeOnly ('com.google.protobuf:protobuf-java') // used by calicte.avatica
+  runtimeOnly ('io.netty:netty-all') // used by zookeeper
   
   compileOnly ('javax.servlet:javax.servlet-api')
 
@@ -220,9 +222,8 @@ missingDeps {
   classExclude 'org\\.apache\\.commons\\.dbcp2\\.BasicDataSource'
   classExclude 'com\\.yahoo\\.sketches\\.hll\\..*'
   
-  // zk 3.5.5 added these deps we don't have
-  classExclude 'io\\.netty\\.buffer\\..*'
-  classExclude 'io\\.netty\\.handler\\.ssl\\.SslHandler'
+  // add solrj exclusions
+  MissingDeps.addExclusionsFrom(project(':solr:solr-solrj'), project)
 }
 
 unusedDeps {

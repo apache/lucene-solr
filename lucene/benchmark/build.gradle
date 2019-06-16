@@ -71,7 +71,7 @@ task downloadGeoNames(type: org.apache.lucene.gradle.Download) {
   target = mfile('temp', 'allCountries.txt.bz2')
 }
 
-task installGeoNames(){
+task installGeoNames() {
   group = 'Benchmark Data'
   description = "Installs GeoNames data files."
   doLast {
@@ -110,8 +110,13 @@ task installReuters(){
   dependsOn extractReuters
 }
 
-
 forbiddenApisMain {
   bundledSignatures -= 'jdk-system-out'
+}
+
+missingDeps {
+  classExclude 'org\\.noggit\\.JSONParser' // we don't currently pull in noggit
+  
+  foundInClassExclude  'org\\.apache\\.commons\\.compress\\.compressors\\..*' // there are optional compressor deps we don't have
 }
 

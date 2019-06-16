@@ -24,6 +24,9 @@ dependencies {
   api ('org.apache.zookeeper:zookeeper') { transitive = false } // // zk has annotation deps we don't need
   api ('org.apache.zookeeper:zookeeper-jute')
   
+  runtimeOnly ('org.slf4j:log4j-over-slf4j') // bridge for deps that use log4j12 directly
+  runtimeOnly ('io.netty:netty-all') // used by zookeeper
+  
   implementation ('org.slf4j:slf4j-api')
   implementation ('org.slf4j:jcl-over-slf4j')
   implementation ('org.apache.httpcomponents:httpclient')
@@ -60,3 +63,11 @@ dependencies {
   testImplementation project(':solr:example:solr-example-DIH')
 }
 
+missingDeps {
+  foundInClassExclude 'io\\.netty\\.handler\\.ssl\\..*' // zookeeper brings netty-all and ssl stuff we don't use
+  
+  // we are a lib and don't distribute logging impl
+  classExclude 'org.slf4j.impl.StaticLoggerBinder'
+  classExclude 'org.slf4j.impl.StaticMDCBinder'
+  classExclude 'org.slf4j.impl.StaticMarkerBinder'
+}

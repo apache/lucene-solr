@@ -44,7 +44,7 @@ import java.util.zip.ZipFile
 import java.util.zip.ZipException
 
 class MissingDeps extends DefaultTask {
-  protected static Pattern pattern = Pattern.compile("->\\s\\\"([^\\s]*?)\\s")
+  protected static Pattern pattern = Pattern.compile("\\\"(.*?)\\\"\\s+->\\s\\\"([^\\s]*?)\\s")
   protected static Pattern srcJar = Pattern.compile("(.*?)-sources.jar")
   protected static Pattern dotFilePattern = Pattern.compile("(.*?).jar.dot")
   
@@ -53,6 +53,7 @@ class MissingDeps extends DefaultTask {
   
   private List<String> depExcludes = new ArrayList<>()
   private List<String> classExcludes = new ArrayList<>()
+  private List<String> foundInClassExcludes = new ArrayList<>()
   
   protected configuration = "runtimeClasspath"
   
@@ -83,6 +84,7 @@ class MissingDeps extends DefaultTask {
     project.fileTree(project.mfile(inputDirectory, 'jdepsDir')) {
       
       println 'depExcludes ' + depExcludes
+      println 'foundInClassExcludes ' + foundInClassExcludes
       println 'classExcludes ' + classExcludes
       for (String ex : depExcludes) {
         exclude ex
@@ -105,11 +107,24 @@ class MissingDeps extends DefaultTask {
         for (String line : lines) {
           if (line.contains('(not found)')) {
             String className
+            String classFoundInName
             AtomicBoolean foundInsrc = new AtomicBoolean(false)
             boolean excluded
             Matcher m = pattern.matcher(line)
             if (m.find()) {
-              className = m.group(1)
+              classFoundInName = m.group(1)
+              
+              for (String foundInClassExclude : foundInClassExcludes) {
+                Matcher m2 = Pattern.compile(foundInClassExclude).matcher(classFoundInName)
+                //println "${className} against ${classExclude}"
+                if (m2.matches()) {
+                  excluded = true
+                  //println 'excluded'
+                  break
+                }
+              }
+              
+              className = m.group(2)
               for (String classExclude : classExcludes) {
                 Matcher m2 = Pattern.compile(classExclude).matcher(className)
                 //println "${className} against ${classExclude}"
@@ -136,6 +151,18 @@ class MissingDeps extends DefaultTask {
     } else {
       throw new GradleException("Missing dependencies found! Add them or add an exclusion if they are actually not necessary.")
     }
+  }
+  
+  @Input
+  public Set<String> getFoundInClassExcludes() {
+    return foundInClassExcludes
+  }
+  
+  public MissingDeps foundInClassExclude(String... arg0) {
+    for (String pattern : arg0) {
+      foundInClassExcludes.add(pattern);
+    }
+    return this;
   }
   
   @Input
@@ -174,14 +201,22 @@ class MissingDeps extends DefaultTask {
     return topLvlProject
   }
   
-  public static void addExclusionsFrom(Project project, MissingDeps to) {
-    Set<String> depExcludes = project.missingDeps.getDepExcludes()
+  public static void addExclusionsFrom(Project fromProject, Project toProject) {
+    toProject.evaluationDependsOn(fromProject.path)
+    
+    MissingDeps to = toProject.missingDeps
+    
+    Set<String> depExcludes = fromProject.missingDeps.getDepExcludes()
     for (String exclude : depExcludes) {
       to.depExclude exclude
     }
-    Set<String> classExcludes = project.missingDeps.getClassExcludes()
+    Set<String> classExcludes = fromProject.missingDeps.getClassExcludes()
     for (String exclude : classExcludes) {
       to.classExclude exclude
+    }
+    Set<String> foundInClassExcludes = fromProject.missingDeps.getFoundInClassExcludes()
+    for (String exclude : foundInClassExcludes) {
+      to.foundInClassExclude exclude
     }
   }
 }
