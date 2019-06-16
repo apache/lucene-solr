@@ -25,12 +25,16 @@ dependencies {
   implementation project(':lucene:lucene-spatial')
   implementation project(':lucene:lucene-spatial3d')
   
-  implementation ('org.locationtech.spatial4j:spatial4j') { transitive = false }
-  implementation ('io.sgr:s2-geometry-library-java') { transitive = false }
+  implementation ('org.locationtech.spatial4j:spatial4j')
+  implementation ('io.sgr:s2-geometry-library-java')
   
-  testImplementation ('org.locationtech.jts:jts-core') { transitive = false }
-  testImplementation ('org.locationtech.spatial4j:spatial4j::tests') { transitive = false }
+  testImplementation ('org.locationtech.jts:jts-core')
+  testImplementation ('org.locationtech.spatial4j:spatial4j::tests')
   
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(path: ':lucene:lucene-spatial3d', configuration: 'testOutput')
+}
+
+missingDeps {
+  classExclude 'org\\.noggit\\.JSONParser' // we don't currently pull in noggit
 }
