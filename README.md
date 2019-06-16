@@ -24,9 +24,8 @@ Apache Solr is an enterprise search platform written using Apache Lucene.
 Major features include full-text search, index replication and sharding, and
 result faceting and highlighting.
 
-
-[![Build Status](https://builds.apache.org/view/L/view/Lucene/job/Solr-Artifacts-master/badge/icon)](https://builds.apache.org/view/L/view/Lucene/job/Solr-Artifacts-master/)
-
+Lucene: [![Build Status](https://builds.apache.org/view/L/view/Lucene/job/Lucene-Artifacts-master/badge/icon)](https://builds.apache.org/view/L/view/Lucene/job/Lucene-Artifacts-master/)
+Solr: [![Build Status](https://builds.apache.org/view/L/view/Lucene/job/Solr-Artifacts-master/badge/icon)](https://builds.apache.org/view/L/view/Lucene/job/Solr-Artifacts-master/)
 
 ## Online Documentation
 
