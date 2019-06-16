@@ -168,3 +168,8 @@ task trainTestModels {
 task regenerate {
   dependsOn trainTestModels
 }
+
+missingDeps {
+  classExclude 'org\\.osgi\\..*' // osgi stuff not on classpath
+}
+

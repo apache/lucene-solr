@@ -38,3 +38,7 @@ dependencies {
 
   testImplementation project(':lucene:lucene-test-framework')
 }
+
+missingDeps {
+  depExclude  '**/*lucene-backward-codecs-*.dot' // we expect things to be missing in our jar
+}
