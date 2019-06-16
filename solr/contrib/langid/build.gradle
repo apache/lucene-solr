@@ -32,8 +32,13 @@ dependencies {
   implementation 'commons-io:commons-io'
   implementation 'org.slf4j:slf4j-api'
   implementation 'commons-codec:commons-codec'
-  implementation'com.google.guava:guava'
+  implementation 'com.google.guava:guava'
   
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
+}
+
+missingDeps {
+  addExclusionsFrom(project(':solr:solr-core')) // add solr-core exclusions
+  addExclusionsFrom(project(':lucene:analysis:lucene-analyzers-opennlp'))
 }

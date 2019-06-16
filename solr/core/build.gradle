@@ -16,7 +16,6 @@
  */
 
  import org.apache.lucene.gradle.UnusedDeps
- import org.apache.lucene.gradle.MissingDeps
  
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
@@ -218,7 +217,7 @@ missingDeps {
   classExclude 'com\\.yahoo\\.sketches\\.hll\\..*'
   
   // add solrj exclusions
-  MissingDeps.addExclusionsFrom(project(':solr:solr-solrj'), project)
+  addExclusionsFrom(project(':solr:solr-solrj'))
 }
 
 unusedDeps {
