@@ -23,11 +23,84 @@ numeric fields.
 See the section <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>> which describes how to
 vectorize text fields.
 
-== Searching
+== Searching and Sorting
+
+The *search* function can be used to search a Solr Cloud collection and return a
+result set.
+
+Below is an example of the most basic *search* function called from the Zeppelin-Solr interpreter.
+Zeppelin-Solr sends the *seach(testapp)* call to the /stream handler and displays the results
+in *table* format.
+
+This simple example is instructive for how Zeppelin-Solr handles all Streaming Expressions,
+which by definition return a stream of tuples or name/value pair documents. Zeppelin-Solr creates a
+table from the result set with one row per tuple. Each column of the table represents a field in the tuples.
+
+Once the tuples have been loaded into a table the columns in the table can be visualized by switching
+to the various visualizations and configuring the settings.
+
+In the example the search function passed only the name of the collection being search. This returns
+a result set of 10 records showing all fields in and unspecified order. This simple function is useful
+for exploring the fields in the data and understanding how to start refining the search criteria.
+
+image::images/math-expressions/search1.png[]
+
+Once we see the format of the records we can add parameters to the *search* function to begin analyzing
+the data.
+
+In the example below a search query (q), field list (fl), rows and sort have been added to the search
+function. Now we are searching for records which contain weather in the abstract_t field and returning
+a result set of 500 sorted by a timestamp descending. We have also limited the result set to only three
+fields.
+
+image::images/math-expressions/search-sort.png[]
+
+
+Once we have a the data loaded into the table we can switch to a scatter plot of the filesize_d column
+on the *x axis* and the response_d column on the *y axis*.
+
+image::images/math-expressions/search-sort-plot.png[]
+
+This allows us to quickly visualize the relationship between two variables
+select from the a very specific slice of the index. In this example it's the
+500 most recent documents by timestamp, that match the term *weather*.
+
+=== Scoring
 
 
 == Sampling
 
+[source,text]
+----
+random(testapp)
+----
 
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "response_d": 1080.3692514541938,
+        "new_response": 10803.692514541937
+      },
+      {
+        "response_d": 1067.441598608506,
+        "new_response": 10674.41598608506
+      },
+      {
+        "response_d": 1059.8400090891566,
+        "new_response": 10598.400090891566
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 12
+      }
+    ]
+  }
+}
+----
 == Aggregations
 
