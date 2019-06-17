@@ -19,23 +19,27 @@ package org.apache.solr.common.cloud;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 /**
- * Interface to determine if a collection state matches a required state
+ * Interface to determine if a set of liveNodes and a collection's state matches some expecatations.
  *
  * @see ZkStateReader#waitForState(String, long, TimeUnit, CollectionStatePredicate)
+ * @see ZkStateReader#waitForState(String, long, TimeUnit, Predicate)
  */
 public interface CollectionStatePredicate {
 
   /**
-   * Check the collection state matches a required state
-   *
+   * Check if the set of liveNodes <em>and</em> the collection state matches a required state
+   * <p>
    * Note that both liveNodes and collectionState should be consulted to determine
    * the overall state.
+   * </p>
    *
    * @param liveNodes the current set of live nodes
    * @param collectionState the latest collection state, or null if the collection
    *                        does not exist
+   * @return true if the input matches the requirements of this predicate
    */
   boolean matches(Set<String> liveNodes, DocCollection collectionState);
 

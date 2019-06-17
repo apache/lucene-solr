@@ -17,18 +17,14 @@
 
 package org.apache.solr.common.cloud;
 
-import java.util.Set;
-
 /**
- * Callback registered with {@link ZkStateReader#registerCollectionStateWatcher(String, CollectionStateWatcher)}
- * and called whenever there is a change in the collection state <em>or</em> in the list of liveNodes.
- * 
- * @see DocCollectionWatcher
+ * Callback registered with {@link ZkStateReader#registerDocCollectionWatcher(String, DocCollectionWatcher)}
+ * and called whenever the DocCollection changes.
  */
-public interface CollectionStateWatcher {
+public interface DocCollectionWatcher {
 
   /**
-   * Called when either the collection we are registered against has a change of state <em>or</em> there is a change to the live nodes of our collection.
+   * Called when the collection we are registered against has a change of state.
    *
    * <p>
    * Note that, due to the way Zookeeper watchers are implemented, a single call may be
@@ -36,11 +32,9 @@ public interface CollectionStateWatcher {
    * with the same state, ie. without any new updates.
    * </p>
    *
-   * @param liveNodes       the set of live nodes
-   * @param collectionState the new collection state (may be null if the collection has been
-   *                        deleted)
+   * @param collection the new collection state (may be null if the collection has been deleted)
    * @return true if the watcher should be removed
    */
-  boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState);
+  boolean onStateChanged(DocCollection collection);
 
 }
