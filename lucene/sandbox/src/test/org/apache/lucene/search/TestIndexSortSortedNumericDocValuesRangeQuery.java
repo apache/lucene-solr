@@ -40,7 +40,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-@Repeat(iterations=1000)
 public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCase {
 
   public void testCompareToPointRangeQuery() throws IOException {
