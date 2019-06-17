@@ -28,7 +28,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
@@ -47,7 +46,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
   public void testWaitForStateAfterShutDown() throws Exception {
     final String col_name = "test_col";
     final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster
-      (1, createTempDir(), JettyConfig.builder().build());
+      (1, createTempDir(), buildJettyConfig("/solr"));
     try {
       log.info("Create our collection");
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).process(cluster.getSolrClient());
@@ -77,7 +76,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
     final ExecutorService executor = ExecutorUtil.newMDCAwareFixedThreadPool
       (1, new DefaultSolrThreadFactory("background_executor"));
     final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster
-      (1, createTempDir(), JettyConfig.builder().build());
+      (1, createTempDir(), buildJettyConfig("/solr"));
     try {
       log.info("Create our collection");
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).process(cluster.getSolrClient());
