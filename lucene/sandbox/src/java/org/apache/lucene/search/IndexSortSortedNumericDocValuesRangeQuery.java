@@ -49,7 +49,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
  *   String field = "field";
  *   long lowerValue = 0, long upperValue = 10;
  *   Query fallbackQuery = LongPoint.newRangeQuery(field, lowerValue, upperValue);
- *   Query rangeQuery = new IndexSortedSortedNumericDocValuesRangeQuery(
+ *   Query rangeQuery = new IndexSortSortedNumericDocValuesRangeQuery(
  *       field, lowerValue, upperValue, fallbackQuery);
  * </pre>
  *
@@ -100,6 +100,7 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
   public void visit(QueryVisitor visitor) {
     if (visitor.acceptField(field)) {
       visitor.visitLeaf(this);
+      fallbackQuery.visit(visitor);
     }
   }
 
@@ -301,5 +302,4 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
       return lastDoc - firstDoc;
     }
   }
-
 }
