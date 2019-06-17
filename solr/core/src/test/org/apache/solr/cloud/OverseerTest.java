@@ -670,26 +670,17 @@ public class OverseerTest extends SolrTestCaseJ4 {
       waitForCollections(reader, COLLECTION);
       verifyReplicaStatus(reader, COLLECTION, "shard1", "core_node1", Replica.State.RECOVERING);
 
-      int version = getClusterStateVersion(zkClient);
-
       mockController.publishState(COLLECTION, core, core_node, "shard1", Replica.State.ACTIVE,
           numShards, true, overseers.get(0));
 
-      while (version == getClusterStateVersion(zkClient));
-
       verifyReplicaStatus(reader, COLLECTION, "shard1", "core_node1", Replica.State.ACTIVE);
-      version = getClusterStateVersion(zkClient);
 
       mockController.publishState(COLLECTION, core, core_node, "shard1",
           Replica.State.RECOVERING, numShards, true, overseers.get(0));
 
       overseerClient.close();
-
-      version = getClusterStateVersion(zkClient);
-
+      
       overseerClient = electNewOverseer(server.getZkAddress());
-
-      while (version == getClusterStateVersion(zkClient));
 
       verifyReplicaStatus(reader, COLLECTION, "shard1", "core_node1", Replica.State.RECOVERING);
 
@@ -697,15 +688,15 @@ public class OverseerTest extends SolrTestCaseJ4 {
           .getClusterState().getLiveNodes().size());
       assertEquals(shard+" replica count does not match", 1, reader.getClusterState()
           .getCollection(COLLECTION).getSlice(shard).getReplicasMap().size());
-      version = getClusterStateVersion(zkClient);
       mockController.publishState(COLLECTION, core, core_node, "shard1", null, numShards, true, overseers.get(1));
-      while (version == getClusterStateVersion(zkClient));
-
-      assertTrue(COLLECTION +" should remain after removal of the last core", // as of SOLR-5209 core removal does not cascade to remove the slice and collection
-          reader.getClusterState().hasCollection(COLLECTION));
 
       reader.waitForState(COLLECTION, 5000,
             TimeUnit.MILLISECONDS, (liveNodes, collectionState) -> collectionState != null && collectionState.getReplica(core_node) == null);
+
+      reader.forceUpdateCollection(COLLECTION);
+      // as of SOLR-5209 core removal does not cascade to remove the slice and collection
+      assertTrue(COLLECTION +" should remain after removal of the last core", 
+          reader.getClusterState().hasCollection(COLLECTION));
       assertTrue(core_node+" should be gone after publishing the null state",
           null == reader.getClusterState().getCollection(COLLECTION).getReplica(core_node));
     } finally {
@@ -1055,18 +1046,11 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       mockController.close();
 
-      int version = getClusterStateVersion(zkClient);
-
       mockController = new MockZKController(server.getZkAddress(), "node1", overseers);
 
       mockController.publishState(COLLECTION, "core1", "core_node1","shard1", Replica.State.RECOVERING, 1, true, overseers.get(0));
 
-      try {
-        reader.waitForState(COLLECTION, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> version == zkController
-            .getZkStateReader().getClusterState().getZkClusterStateVersion());
-      } catch (TimeoutException e) {
-        // okay
-      }
+      reader.forceUpdateCollection(COLLECTION);
       ClusterState state = reader.getClusterState();
 
       int numFound = 0;
@@ -1396,12 +1380,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       client.close();
     }
   }
-
-  private int getClusterStateVersion(SolrZkClient controllerClient)
-      throws KeeperException, InterruptedException {
-    return controllerClient.exists(ZkStateReader.CLUSTER_STATE, null, false).getVersion();
-  }
-
 
   private SolrZkClient electNewOverseer(String address)
       throws InterruptedException, TimeoutException, IOException,
