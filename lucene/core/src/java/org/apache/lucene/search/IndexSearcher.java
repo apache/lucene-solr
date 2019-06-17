@@ -30,6 +30,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -636,16 +638,45 @@ public class IndexSearcher {
       query = rewrite(query);
       final Weight weight = createWeight(query, scoreMode, 1);
       final List<Future<C>> topDocsFutures = new ArrayList<>(leafSlices.length);
+
       for (int i = 0; i < leafSlices.length; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
         final C collector = collectors.get(i);
-        topDocsFutures.add(executor.submit(new Callable<C>() {
-          @Override
-          public C call() throws Exception {
+        if (i == leafSlices.length-1) { // execute the last on the caller thread
+          search(Arrays.asList(leaves), weight, collector);
+          topDocsFutures.add(new Future<>() {
+
+            @Override
+            public boolean cancel(boolean mayInterruptIfRunning) {
+              return false;
+            }
+
+            @Override
+            public boolean isCancelled() {
+              return false;
+            }
+
+            @Override
+            public boolean isDone() {
+              return true;
+            }
+
+            @Override
+            public C get() {
+              return collector;
+            }
+
+            @Override
+            public C get(long timeout, TimeUnit unit) {
+              return get();
+            }
+          });
+        } else {
+          topDocsFutures.add(executor.submit(() -> {
             search(Arrays.asList(leaves), weight, collector);
             return collector;
-          }
-        }));
+          }));
+        }
       }
 
       final List<C> collectedCollectors = new ArrayList<>();
