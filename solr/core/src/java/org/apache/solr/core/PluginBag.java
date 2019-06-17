@@ -473,13 +473,13 @@ public class PluginBag<T> implements AutoCloseable {
     public void init(PluginInfo info) {
       name = info.attributes.get(NAME);
       url = info.attributes.get("url");
+      sig = info.attributes.get("sig");
       if(url == null) {
         Object v = info.attributes.get("version");
         if (name == null || v == null) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "runtimeLib must have name and version");
         }
         version = String.valueOf(v);
-        sig = info.attributes.get("sig");
       } else {
         sha512 = info.attributes.get("sha512");
         if(sha512 == null){
@@ -599,7 +599,6 @@ public class PluginBag<T> implements AutoCloseable {
       if (keys.isEmpty()) {
         if (sig == null) {
           verified = true;
-          log.info("A run time lib {} is loaded  without verification ", name);
           return;
         } else {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No public keys are available in ZK to verify signature for runtime lib  " + name);

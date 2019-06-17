@@ -60,6 +60,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
       if (lib.getUrl() != null) {
         try {
           lib.loadJar();
+          lib.verify();
         } catch (Exception e) {
           log.error("Error loading runtime library", e);
         }
