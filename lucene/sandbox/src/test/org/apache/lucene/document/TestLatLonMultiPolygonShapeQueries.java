@@ -24,7 +24,7 @@ import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
 
-/** random bounding box and polygon query tests for random indexed arrays of {@link Polygon} types */
+/** random bounding box, line, and polygon query tests for random indexed arrays of {@link Polygon} types */
 public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override

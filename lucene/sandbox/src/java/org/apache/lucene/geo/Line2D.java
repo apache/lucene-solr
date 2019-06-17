@@ -21,7 +21,7 @@ import org.apache.lucene.index.PointValues.Relation;
 import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
- * 2D line implementation represented as a balanced interval tree of edges.
+ * 2D geo line implementation represented as a balanced interval tree of edges.
  * <p>
  * Line {@code Line2D} Construction takes {@code O(n log n)} time for sorting and tree construction.
  * {@link #relate relate()} are {@code O(n)}, but for most practical lines are much faster than brute force.

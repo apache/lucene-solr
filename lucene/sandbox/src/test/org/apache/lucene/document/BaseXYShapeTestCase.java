@@ -31,6 +31,7 @@ import org.apache.lucene.search.Query;
 import static org.apache.lucene.geo.XYEncodingUtils.decode;
 import static org.apache.lucene.geo.XYEncodingUtils.encode;
 
+/** Base test case for testing indexing and search functionality of cartesian geometry **/
 public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   protected abstract ShapeType getShapeType();
 

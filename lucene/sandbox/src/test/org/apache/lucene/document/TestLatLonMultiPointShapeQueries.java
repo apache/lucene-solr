@@ -22,7 +22,7 @@ import java.util.List;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Line2D;
 
-/** random bounding box and polygon query tests for random indexed arrays of {@code latitude, longitude} points */
+/** random bounding box, line, and polygon query tests for random indexed arrays of {@code latitude, longitude} points */
 public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override

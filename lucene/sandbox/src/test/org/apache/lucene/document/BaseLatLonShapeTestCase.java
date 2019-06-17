@@ -38,6 +38,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 import static org.apache.lucene.geo.GeoTestUtil.nextLatitude;
 import static org.apache.lucene.geo.GeoTestUtil.nextLongitude;
 
+/** Base test case for testing geospatial indexing and search functionality **/
 public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
 
   protected abstract ShapeType getShapeType();

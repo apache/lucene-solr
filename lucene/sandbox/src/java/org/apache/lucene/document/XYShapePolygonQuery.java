@@ -27,10 +27,10 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 /**
- * Finds all previously indexed shapes that intersect the specified arbitrary.
+ * Finds all previously indexed cartesian shapes that intersect the specified arbitrary cartesian {@link XYPolygon}.
  *
  * <p>The field must be indexed using
- * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
+ * {@link org.apache.lucene.document.XYShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
@@ -77,7 +77,7 @@ final class XYShapePolygonQuery extends ShapeQuery {
 
   @Override
   protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
-    LatLonShape.decodeTriangle(t, scratchTriangle);
+    XYShape.decodeTriangle(t, scratchTriangle);
 
     double alat = XYEncodingUtils.decode(scratchTriangle[0]);
     double alon = XYEncodingUtils.decode(scratchTriangle[1]);
@@ -103,7 +103,7 @@ final class XYShapePolygonQuery extends ShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("Polygon(" + polygons[0].toGeoJSON() + ")");
+    sb.append("XYPolygon(").append(polygons[0].toGeoJSON()).append(")");
     return sb.toString();
   }
 

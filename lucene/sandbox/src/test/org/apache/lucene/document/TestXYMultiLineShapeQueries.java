@@ -23,6 +23,7 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.XYLine;
 
+/** random cartesian bounding box, line, and polygon query tests for random indexed arrays of cartesian {@link XYLine} types */
 public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
   @Override
   protected ShapeType getShapeType() {

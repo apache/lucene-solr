@@ -17,13 +17,31 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.geo.GeoUtils;
+import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
+/**
+ * A base shape utility class used for both LatLon (spherical) and XY (cartesian) shape fields.
+ * <p>
+ * {@link Polygon}'s and {@link Line}'s are decomposed into a triangular mesh using the {@link Tessellator} utility class.
+ * Each {@link Triangle} is encoded by this base class and indexed as a seven dimension multi-value field.
+ * <p>
+ * Finding all shapes that intersect a range (e.g., bounding box), or target shape, at search time is efficient.
+ * <p>
+ * This class defines the static methods for encoding the three vertices of a tessellated triangles as a seven dimension point.
+ * The coordinates are converted from double precision values into 32 bit integers so they are sortable at index time.
+ * <p>
+ *
+ * @lucene.experimental
+ */
 public abstract class ShapeField {
+  /** vertex coordinates are encoded as 4 byte integers */
   static final int BYTES = Integer.BYTES;
 
+  /** tessellated triangles are seven dimensions; the first four are the bounding box index dimensions */
   protected static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDimensions(7, 4, BYTES);
@@ -45,8 +63,8 @@ public abstract class ShapeField {
       setTriangleValue(t.getEncodedX(0), t.getEncodedY(0), t.getEncodedX(1), t.getEncodedY(1), t.getEncodedX(2), t.getEncodedY(2));
     }
 
-
-    public void setTriangleValue(int aX, int aY, int bX, int bY, int cX, int cY) {
+    /** sets the vertices of the triangle as integer encoded values */
+    protected void setTriangleValue(int aX, int aY, int bX, int bY, int cX, int cY) {
       final byte[] bytes;
 
       if (fieldsData == null) {

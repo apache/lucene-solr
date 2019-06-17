@@ -26,7 +26,7 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 /**
- * Finds all previously indexed shapes that intersect the specified arbitrary {@code Line}.
+ * Finds all previously indexed geo shapes that intersect the specified arbitrary {@code Line}.
  * <p>
  * Note:
  * <ul>

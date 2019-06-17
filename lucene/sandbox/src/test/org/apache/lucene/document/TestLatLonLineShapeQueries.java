@@ -28,7 +28,7 @@ import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
 
-/** random bounding box and polygon query tests for random generated {@link Line} types */
+/** random bounding box, line, and polygon query tests for random generated {@link Line} types */
 @SuppressWarnings("SimpleText")
 public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
 

@@ -16,6 +16,11 @@
  */
 package org.apache.lucene.geo;
 
+/**
+ * 2D cartesian polygon implementation represented as a balanced interval tree of edges.
+ *
+ * @lucene.internal
+ */
 public class XYPolygon2D extends Polygon2D {
 
   protected XYPolygon2D(XYPolygon polygon, XYPolygon2D holes) {

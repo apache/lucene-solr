@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Line2D;
 
+/** random cartesian bounding box, line, and polygon query tests for random indexed arrays of {@code x, y} points */
 public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
   @Override
   protected ShapeType getShapeType() {

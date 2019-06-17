@@ -20,19 +20,40 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.index.PointValues; // javadoc
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.search.Query;
 
 import static org.apache.lucene.geo.XYEncodingUtils.encode;
 
+/**
+ * A cartesian shape utility class for indexing and searching geometries whose vertices are unitless x, y values.
+ * <p>
+ * This class defines six static factory methods for common indexing and search operations:
+ * <ul>
+ *   <li>{@link #createIndexableFields(String, XYPolygon)} for indexing a cartesian polygon.
+ *   <li>{@link #createIndexableFields(String, XYLine)} for indexing a cartesian linestring.
+ *   <li>{@link #createIndexableFields(String, double, double)} for indexing a x, y cartesian point.
+ *   <li>{@link #newBoxQuery newBoxQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a bounding box.
+ *   <li>{@link #newBoxQuery newLineQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a linestring.
+ *   <li>{@link #newBoxQuery newPolygonQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a polygon.
+ * </ul>
+
+ * <b>WARNING</b>: Like {@link LatLonPoint}, vertex values are indexed with some loss of precision from the
+ * original {@code double} values.
+ * @see PointValues
+ * @see LatLonDocValuesField
+ *
+ * @lucene.experimental
+ */
 public class XYShape extends ShapeField {
 
   // no instance:
   private XYShape() {
   }
 
-  /** create indexable fields for polygon geometry */
+  /** create indexable fields for cartesian polygon geometry */
   public static Field[] createIndexableFields(String fieldName, XYPolygon polygon) {
 
     List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
@@ -43,7 +64,7 @@ public class XYShape extends ShapeField {
     return fields.toArray(new Field[fields.size()]);
   }
 
-  /** create indexable fields for line geometry */
+  /** create indexable fields for cartesian line geometry */
   public static Field[] createIndexableFields(String fieldName, XYLine line) {
     int numPoints = line.numPoints();
     Field[] fields = new Field[numPoints - 1];
@@ -57,26 +78,23 @@ public class XYShape extends ShapeField {
     return fields;
   }
 
-  /** create indexable fields for point geometry */
+  /** create indexable fields for cartesian point geometry */
   public static Field[] createIndexableFields(String fieldName, double x, double y) {
     return new Field[] {new Triangle(fieldName,
         encode(x), encode(y), encode(x), encode(y), encode(x), encode(y))};
   }
 
-  /** create a query to find all polygons that intersect a defined bounding box
-   **/
+  /** create a query to find all cartesian shapes that intersect a defined bounding box **/
   public static Query newBoxQuery(String field, QueryRelation queryRelation, double minX, double maxX, double minY, double maxY) {
     return new XYShapeBoundingBoxQuery(field, queryRelation, minX, maxX, minY, maxY);
   }
 
-  /** create a query to find all polygons that intersect a provided linestring (or array of linestrings)
-   **/
+  /** create a query to find all cartesian shapes that intersect a provided linestring (or array of linestrings) **/
   public static Query newLineQuery(String field, QueryRelation queryRelation, XYLine... lines) {
     return new XYShapeLineQuery(field, queryRelation, lines);
   }
 
-  /** create a query to find all polygons that intersect a provided polygon (or array of polygons)
-   **/
+  /** create a query to find all cartesian shapes that intersect a provided polygon (or array of polygons) **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, XYPolygon... polygons) {
     return new XYShapePolygonQuery(field, queryRelation, polygons);
   }

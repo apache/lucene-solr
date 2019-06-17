@@ -19,14 +19,9 @@ package org.apache.lucene.geo;
 import java.util.Arrays;
 
 /**
- * Represents a line on the earth's surface.  You can construct the Line directly with {@code double[]}
+ * Represents a line in cartesian space. You can construct the Line directly with {@code double[]}, {@code double[]} x, y arrays
  * coordinates.
- * <p>
- * NOTES:
- * <ol>
- *   <li>All latitude/longitude values must be in decimal degrees.
- *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
- * </ol>
+ *
  * @lucene.experimental
  */
 public class XYLine {
@@ -45,7 +40,7 @@ public class XYLine {
   public final double maxY;
 
   /**
-   * Creates a new Line from the supplied latitude/longitude array.
+   * Creates a new Line from the supplied x/y array.
    */
   public XYLine(double[] x, double[] y) {
     if (x == null) {
@@ -124,7 +119,7 @@ public class XYLine {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("LINE(");
+    sb.append("XYLINE(");
     for (int i = 0; i < x.length; i++) {
       sb.append("[")
           .append(x[i])

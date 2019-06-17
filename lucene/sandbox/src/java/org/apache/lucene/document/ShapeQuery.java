@@ -40,6 +40,23 @@ import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
 
+/**
+ * Base query class for all spatial geometries: {@link LatLonShape} and {@link XYShape}.
+ *
+ * <p>The field must be indexed using either {@link LatLonShape#createIndexableFields} or
+ * {@link XYShape#createIndexableFields} and the corresponding factory method must be used:
+ * <ul>
+ *   <li>{@link LatLonShape#newBoxQuery newBoxQuery()} for matching geo shapes that have some {@link QueryRelation} with a bounding box.
+ *   <li>{@link LatLonShape#newLineQuery newLineQuery()} for matching geo shapes that have some {@link QueryRelation} with a linestring.
+ *   <li>{@link LatLonShape#newPolygonQuery newPolygonQuery()} for matching geo shapes that have some {@link QueryRelation} with a polygon.
+ *   <li>{@link XYShape#newBoxQuery newBoxQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a bounding box.
+ *   <li>{@link XYShape#newLineQuery newLineQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a linestring.
+ *   <li>{@link XYShape#newPolygonQuery newPolygonQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a polygon.
+ * </ul>
+ * <p>
+ *
+ *  @lucene.experimental
+ **/
 abstract class ShapeQuery extends Query {
   /** field name */
   final String field;

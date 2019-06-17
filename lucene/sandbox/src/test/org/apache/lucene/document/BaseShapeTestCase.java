@@ -47,6 +47,12 @@ import org.apache.lucene.util.LuceneTestCase;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
+/**
+ * Base test case for testing spherical and cartesian geometry indexing and search functionality
+ * <p>
+ * This class is implemented by {@link BaseXYShapeTestCase} for testing XY cartesian geometry
+ * and {@link BaseLatLonShapeTestCase} for testing Lat Lon geospatial geometry
+ **/
 public abstract class BaseShapeTestCase extends LuceneTestCase {
 
   /** name of the LatLonShape indexed field */

@@ -25,7 +25,7 @@ import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 
-/** random bounding box and polygon query tests for random generated {@code latitude, longitude} points */
+/** random bounding box, line, and polygon query tests for random generated {@code latitude, longitude} points */
 public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override

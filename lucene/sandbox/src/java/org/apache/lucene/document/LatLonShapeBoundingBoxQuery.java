@@ -21,7 +21,7 @@ import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
- * Finds all previously indexed shapes that intersect the specified bounding box.
+ * Finds all previously indexed geo shapes that intersect the specified bounding box.
  *
  * <p>The field must be indexed using
  * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.

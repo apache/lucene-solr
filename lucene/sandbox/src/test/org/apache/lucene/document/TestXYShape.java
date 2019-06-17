@@ -27,6 +27,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
+/** Test case for indexing cartesian shapes and search by bounding box, lines, and polygons */
 public class TestXYShape extends LuceneTestCase {
 
   protected static String FIELDNAME = "field";

@@ -27,12 +27,11 @@ import org.apache.lucene.util.NumericUtils;
 import static org.apache.lucene.geo.XYEncodingUtils.decode;
 
 /**
- * Finds all previously indexed shapes that intersect the specified arbitrary {@code Line}.
+ * Finds all previously indexed cartesian shapes that intersect the specified arbitrary {@code XYLine}.
  * <p>
  * Note:
  * <ul>
  *    <li>{@code QueryRelation.WITHIN} queries are not yet supported</li>
- *    <li>Dateline crossing is not yet supported</li>
  * </ul>
  * <p>
  * todo:
@@ -40,7 +39,7 @@ import static org.apache.lucene.geo.XYEncodingUtils.decode;
  *   <li>Add distance support for buffered queries</li>
  * </ul>
  * <p>The field must be indexed using
- * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
+ * {@link org.apache.lucene.document.XYShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
@@ -52,7 +51,7 @@ final class XYShapeLineQuery extends ShapeQuery {
     super(field, queryRelation);
     /** line queries do not support within relations, only intersects and disjoint */
     if (queryRelation == QueryRelation.WITHIN) {
-      throw new IllegalArgumentException("LatLonShapeLineQuery does not support " + QueryRelation.WITHIN + " queries");
+      throw new IllegalArgumentException("XYShapeLineQuery does not support " + QueryRelation.WITHIN + " queries");
     }
 
     if (lines == null) {
@@ -97,7 +96,7 @@ final class XYShapeLineQuery extends ShapeQuery {
     double clat = decode(scratchTriangle[4]);
     double clon = decode(scratchTriangle[5]);
 
-    if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
+    if (queryRelation == QueryRelation.WITHIN) {
       return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
     }
     // INTERSECTS
@@ -114,7 +113,7 @@ final class XYShapeLineQuery extends ShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("Line(" + lines[0].toGeoJSON() + ")");
+    sb.append("XYLine(").append(lines[0].toGeoJSON()).append(")");
     return sb.toString();
   }
 

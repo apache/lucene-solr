@@ -23,7 +23,7 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 
-/** random bounding box and polygon query tests for random indexed arrays of {@link Line} types */
+/** random bounding box, line, and polygon query tests for random indexed arrays of {@link Line} types */
 public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override

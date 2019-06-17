@@ -24,6 +24,7 @@ import com.carrotsearch.randomizedtesting.generators.BiasedNumbers;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
 
+/** generates random cartesian geometry; heavy reuse of {@link GeoTestUtil} */
 public class ShapeTestUtil {
 
   /** returns next pseudorandom polygon */
@@ -165,11 +166,11 @@ public class ShapeTestUtil {
     }
   }
 
-  /** Makes an n-gon, centered at the provided lat/lon, and each vertex approximately
+  /** Makes an n-gon, centered at the provided x/y, and each vertex approximately
    *  distanceMeters away from the center.
    *
    * Do not invoke me across the dateline or a pole!! */
-  public static XYPolygon createRegularPolygon(double centerY, double centerX, double radius, int gons) {
+  public static XYPolygon createRegularPolygon(double centerX, double centerY, double radius, int gons) {
 
     // System.out.println("MAKE POLY: centerLat=" + centerLat + " centerLon=" + centerLon + " radiusMeters=" + radiusMeters + " gons=" + gons);
 

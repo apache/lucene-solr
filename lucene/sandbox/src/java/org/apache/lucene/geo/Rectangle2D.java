@@ -32,7 +32,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
- * 2D rectangle implementation containing spatial logic.
+ * 2D rectangle implementation containing geo spatial logic.
  *
  * @lucene.internal
  */

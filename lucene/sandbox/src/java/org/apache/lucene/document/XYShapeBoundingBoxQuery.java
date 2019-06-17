@@ -21,6 +21,14 @@ import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues;
 
+/**
+ * Finds all previously indexed cartesian shapes that intersect the specified bounding box.
+ *
+ * <p>The field must be indexed using
+ * {@link org.apache.lucene.document.XYShape#createIndexableFields} added per document.
+ *
+ *  @lucene.experimental
+ **/
 public class XYShapeBoundingBoxQuery extends ShapeQuery {
   final XYRectangle2D rectangle2D;
 
@@ -40,7 +48,7 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
   @Override
   protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
     // decode indexed triangle
-    LatLonShape.decodeTriangle(t, scratchTriangle);
+    XYShape.decodeTriangle(t, scratchTriangle);
 
     int aY = scratchTriangle[0];
     int aX = scratchTriangle[1];

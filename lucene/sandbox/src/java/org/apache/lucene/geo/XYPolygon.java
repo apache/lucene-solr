@@ -18,6 +18,12 @@ package org.apache.lucene.geo;
 
 import java.util.Arrays;
 
+/**
+ * Represents a polygon in cartesian space. You can construct the Polygon directly with {@code double[]}, {@code double[]} x, y arrays
+ * coordinates.
+ *
+ * @lucene.experimental
+ */
 public class XYPolygon {
   private final double[] x;
   private final double[] y;
@@ -35,7 +41,7 @@ public class XYPolygon {
   private final GeoUtils.WindingOrder windingOrder;
 
   /**
-   * Creates a new Polygon from the supplied latitude/longitude array, and optionally any holes.
+   * Creates a new Polygon from the supplied x, y arrays, and optionally any holes.
    */
   public XYPolygon(double[] x, double[] y, XYPolygon... holes) {
     if (x == null) {

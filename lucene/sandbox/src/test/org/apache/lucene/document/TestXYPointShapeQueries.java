@@ -25,6 +25,7 @@ import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 
+/** random cartesian bounding box, line, and polygon query tests for random generated {@code x, y} points */
 public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
 
   @Override

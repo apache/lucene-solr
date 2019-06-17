@@ -22,24 +22,24 @@ import java.util.List;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
-import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.PointValues; // javadoc
 import org.apache.lucene.search.Query;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
 /**
- * An indexed shape utility class.
+ * An geo shape utility class for indexing and searching gis geometries
+ * whose vertices are latitude, longitude values (in decimal degrees).
  * <p>
- * {@link Polygon}'s are decomposed into a triangular mesh using the {@link Tessellator} utility class
- * Each {@link Triangle} is encoded and indexed as a multi-value field.
- * <p>
- * Finding all shapes that intersect a range (e.g., bounding box) at search time is efficient.
- * <p>
- * This class defines static factory methods for common operations:
+ * This class defines six static factory methods for common indexing and search operations:
  * <ul>
- *   <li>{@link #createIndexableFields(String, Polygon)} for matching polygons that intersect a bounding box.
- *   <li>{@link #newBoxQuery newBoxQuery()} for matching polygons that intersect a bounding box.
+ *   <li>{@link #createIndexableFields(String, Polygon)} for indexing a geo polygon.
+ *   <li>{@link #createIndexableFields(String, Line)} for indexing a geo linestring.
+ *   <li>{@link #createIndexableFields(String, double, double)} for indexing a lat, lon geo point.
+ *   <li>{@link #newBoxQuery newBoxQuery()} for matching geo shapes that have some {@link QueryRelation} with a bounding box.
+ *   <li>{@link #newLineQuery newLineQuery()} for matching geo shapes that have some {@link QueryRelation} with a linestring.
+ *   <li>{@link #newPolygonQuery newPolygonQuery()} for matching geo shapes that have some {@link QueryRelation} with a polygon.
  * </ul>
 
  * <b>WARNING</b>: Like {@link LatLonPoint}, vertex values are indexed with some loss of precision from the
@@ -89,20 +89,19 @@ public class LatLonShape extends ShapeField {
         encodeLongitude(lon), encodeLatitude(lat))};
   }
 
-  /** create a query to find all polygons that intersect a defined bounding box
-   **/
+  /** create a query to find all indexed geo shapes that intersect a defined bounding box **/
   public static Query newBoxQuery(String field, QueryRelation queryRelation, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
     return new LatLonShapeBoundingBoxQuery(field, queryRelation, minLatitude, maxLatitude, minLongitude, maxLongitude);
   }
 
-  /** create a query to find all polygons that intersect a provided linestring (or array of linestrings)
+  /** create a query to find all indexed geo shapes that intersect a provided linestring (or array of linestrings)
    *  note: does not support dateline crossing
    **/
   public static Query newLineQuery(String field, QueryRelation queryRelation, Line... lines) {
     return new LatLonShapeLineQuery(field, queryRelation, lines);
   }
 
-  /** create a query to find all polygons that intersect a provided polygon (or array of polygons)
+  /** create a query to find all indexed geo shapes that intersect a provided polygon (or array of polygons)
    *  note: does not support dateline crossing
    **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
