@@ -90,6 +90,8 @@ New Features
 
 * SOLR-13552: Add recNum Stream Evaluator (Joel Bernstein)
 
+* SOLR-13534 : Dynamic loading to support loading jars from a URL (noble)
+
 Bug Fixes
 ----------------------
 
