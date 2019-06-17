@@ -636,11 +636,10 @@ public class IndexSearcher {
       query = rewrite(query);
       final Weight weight = createWeight(query, scoreMode, 1);
       final List<Future<C>> topDocsFutures = new ArrayList<>(leafSlices.length);
-
       for (int i = 0; i < leafSlices.length; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
         final C collector = collectors.get(i);
-        if (i == leafSlices.length-1) { // execute the last on the caller thread
+        if (i == leafSlices.length - 1) { // execute the last on the caller thread
           search(Arrays.asList(leaves), weight, collector);
           topDocsFutures.add(new Future<>() {
 
