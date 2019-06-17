@@ -112,8 +112,6 @@ New Features
 
 * SOLR-13512: Raw index data analysis tool (extension of COLSTATUS collection command). (ab)
 
-* SOLR-13534 : Dynamic loading to support loading jars from a URL (noble)
-
 
 Bug Fixes
 ----------------------
