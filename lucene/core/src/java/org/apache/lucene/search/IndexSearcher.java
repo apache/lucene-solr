@@ -26,10 +26,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -641,33 +641,7 @@ public class IndexSearcher {
         final C collector = collectors.get(i);
         if (i == leafSlices.length - 1) { // execute the last on the caller thread
           search(Arrays.asList(leaves), weight, collector);
-          topDocsFutures.add(new Future<>() {
-
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning) {
-              return false;
-            }
-
-            @Override
-            public boolean isCancelled() {
-              return false;
-            }
-
-            @Override
-            public boolean isDone() {
-              return true;
-            }
-
-            @Override
-            public C get() {
-              return collector;
-            }
-
-            @Override
-            public C get(long timeout, TimeUnit unit) {
-              return get();
-            }
-          });
+          topDocsFutures.add(CompletableFuture.completedFuture(collector));
         } else {
           topDocsFutures.add(executor.submit(() -> {
             search(Arrays.asList(leaves), weight, collector);
