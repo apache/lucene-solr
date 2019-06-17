@@ -92,6 +92,9 @@ New Features
 
 * SOLR-13534 : Dynamic loading to support loading jars from a URL (noble)
 
+* SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
+
+
 Bug Fixes
 ----------------------
 
@@ -130,8 +133,6 @@ Other Changes
   Improved documentation on Geo3D too.  (David Smiley)
 
 * SOLR-13371: Re-structure and clarify Security chapters in Ref Guide (janhoy)
-
-* SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
 
 * SOLR-13235: Split Collections API Ref Guide page into several smaller child pages (Cassandra Targett)
 
