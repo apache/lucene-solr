@@ -553,7 +553,7 @@ public class MiniSolrCloudCluster {
       }
       
       for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
-        reader.waitForState(collection, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState == null ? true : false);
+        reader.waitForState(collection, 15, TimeUnit.SECONDS, (collectionState) -> collectionState == null ? true : false);
       }
      
     } 

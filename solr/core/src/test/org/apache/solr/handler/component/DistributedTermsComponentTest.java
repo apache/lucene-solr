@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,7 +24,17 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 /**
@@ -36,7 +47,7 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
 
   @Test
   public void test() throws Exception {
-    
+
     Random random = random();
     del("*:*");
     index(id, random.nextInt(), "b_t", "snake a,b spider shark snail slug seal", "foo_i", "1");
@@ -88,5 +99,52 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
       }
     }
     return super.query(q);
+  }
+
+  @Override
+  protected QueryResponse query(boolean setDistribParams, SolrParams p) throws Exception {
+    QueryResponse queryResponse = super.query(setDistribParams, p);
+
+    final ModifiableSolrParams params = new ModifiableSolrParams(p);
+    // TODO: look into why passing true causes fails
+    params.set("distrib", "false");
+
+    for (ResponseParser responseParser : getResponseParsers()) {
+      final NamedList<Object> controlRsp = queryClient(controlClient, params, responseParser);
+      params.remove("distrib");
+      if (setDistribParams) {
+        setDistributedParams(params);
+      }
+
+      // query a random server
+      int which = r.nextInt(clients.size());
+      SolrClient client = clients.get(which);
+      NamedList<Object> rsp = queryClient(client, params, responseParser);
+
+      // flags needs to be called here since only terms response is passed to compare
+      // other way is to pass whole response to compare
+      assertNull(compare(rsp.findRecursive("terms"),
+          controlRsp.findRecursive("terms"), flags(handle, "terms"), handle));
+    }
+    return queryResponse;
+  }
+
+  /**
+   * Returns a {@link NamedList} containing server
+   * response deserialization is based on the {@param responseParser}
+   */
+  private NamedList<Object> queryClient(SolrClient solrClient, final ModifiableSolrParams params,
+                                        ResponseParser responseParser) throws SolrServerException, IOException {
+    QueryRequest queryRequest = new QueryRequest(params);
+    queryRequest.setResponseParser(responseParser);
+    return solrClient.request(queryRequest);
+  }
+
+  private ResponseParser[] getResponseParsers() {
+    // can't use junit parameters as this would also require RunWith
+    return new ResponseParser[]{
+        new BinaryResponseParser(), new DelegationTokenResponse.JsonMapResponseParser(),
+        new XMLResponseParser()
+    };
   }
 }

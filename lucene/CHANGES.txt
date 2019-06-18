@@ -83,6 +83,9 @@ Bug Fixes
   contents to ensure we don't expose pending deletes if both directory point to the same
   underlying filesystem directory. (Simon Willnauer)
 
+* LUCENE-8853: FileSwitchDirectory now applies best effort to place tmp files in the same
+  direcotry as the target files. (Simon Willnauer)
+
 Improvements
 
 * LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
