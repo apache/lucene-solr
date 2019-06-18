@@ -24,6 +24,7 @@ import java.nio.file.NoSuchFileException;
 import java.util.Collection; // for javadocs
 import java.util.Set;
 
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -207,4 +208,13 @@ public abstract class Directory implements Closeable {
    * @lucene.internal
    */
   public abstract Set<String> getPendingDeletions() throws IOException;
+
+  /**
+   * Creates a file name for a temporary file. The name will start with
+   * {@code prefix}, end with {@code suffix} and have a reserved file extension {@code .tmp}.
+   * @see #createTempOutput(String, String, IOContext)
+   */
+  protected static String getTempFileName(String prefix, String suffix, long counter) {
+    return IndexFileNames.segmentFileName(prefix, suffix + "_" + Long.toString(counter, Character.MAX_RADIX), "tmp");
+  }
 }

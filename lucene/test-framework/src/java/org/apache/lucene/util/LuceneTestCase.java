@@ -91,6 +91,7 @@ import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FSLockFactory;
+import org.apache.lucene.store.FileSwitchDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
@@ -1415,14 +1416,13 @@ public abstract class LuceneTestCase extends Assert {
       }
 
       Directory fsdir = newFSDirectoryImpl(clazz, f, lf);
-// LUCENE-8853: FileSwitchDirectory is broken for tmp outputs.
-//      if (rarely()) {
-//        List<String> fileExtensions =
-//            Arrays.asList("fdt", "fdx", "tim", "tip", "si", "fnm", "pos", "dii", "dim", "nvm", "nvd", "dvm", "dvd");
-//        Collections.shuffle(fileExtensions, random());
-//        fileExtensions = fileExtensions.subList(0, 1 + random().nextInt(fileExtensions.size()));
-//        fsdir = new FileSwitchDirectory(new HashSet<>(fileExtensions), fsdir, newFSDirectoryImpl(clazz, f, lf), true);
-//      }
+      if (rarely()) {
+        List<String> fileExtensions =
+            Arrays.asList("fdt", "fdx", "tim", "tip", "si", "fnm", "pos", "dii", "dim", "nvm", "nvd", "dvm", "dvd");
+        Collections.shuffle(fileExtensions, random());
+        fileExtensions = fileExtensions.subList(0, 1 + random().nextInt(fileExtensions.size()));
+        fsdir = new FileSwitchDirectory(new HashSet<>(fileExtensions), fsdir, newFSDirectoryImpl(clazz, f, lf), true);
+      }
       BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare);
       return wrapped;
     } catch (Exception e) {
