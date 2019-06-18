@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import javax.net.ssl.SSLContext;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -24,8 +25,6 @@ import java.security.SecureRandom;
 import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
 import java.util.Random;
-
-import javax.net.ssl.SSLContext;
 
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -39,7 +38,6 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
-import org.apache.solr.client.solrj.util.Constants;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -101,12 +99,7 @@ public class SSLTestConfig {
    * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
    */
   public SSLTestConfig(boolean useSSL, boolean clientAuth, boolean checkPeerName) {
-    // @AwaitsFix: SOLR-12988 - ssl issues on Java 11/12
-    if (Constants.JRE_IS_MINIMUM_JAVA11) {
-      this.useSsl = false;
-    } else {
-      this.useSsl = useSSL;
-    }
+    this.useSsl = useSSL;
     this.clientAuth = clientAuth;
     this.checkPeerName = checkPeerName;
 
@@ -260,7 +253,9 @@ public class SSLTestConfig {
       if (checkPeerName == false) {
         sslConnectionFactory = new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE);
       } else {
-        sslConnectionFactory = new SSLConnectionSocketFactory(sslContext);
+        sslConnectionFactory = new SSLConnectionSocketFactory(sslContext,
+            HttpClientUtil.SUPPORTED_SSL_PROTOCOLS,
+            null, SSLConnectionSocketFactory.getDefaultHostnameVerifier());
       }
     } catch (KeyManagementException | UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException e) {
       throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", e);

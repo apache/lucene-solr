@@ -167,6 +167,8 @@ Bug Fixes
   CloudSolrClient to be triggered on liveNode changes.  Also add Predicate<DocCollection> equivilents
   for callers that don't care about liveNodes. (hossman)
 
+* SOLR-12988: Avoid using TLSv1.3 for HttpClient (Cao Manh Dat)
+
 Other Changes
 ----------------------
 
