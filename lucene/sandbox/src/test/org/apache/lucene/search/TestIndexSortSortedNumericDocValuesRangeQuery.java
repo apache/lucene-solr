@@ -17,24 +17,17 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.function.Function;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -42,7 +35,7 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCase {
 
-  public void testCompareToPointRangeQuery() throws IOException {
+  public void testSameHitsAsPointRangeQuery() throws IOException {
     final int iters = atLeast(10);
     for (int iter = 0; iter < iters; ++iter) {
       Directory dir = newDirectory();
@@ -78,7 +71,7 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
         final long max = random().nextBoolean() ? Long.MAX_VALUE : TestUtil.nextLong(random(), -100, 10000);
         final Query q1 = LongPoint.newRangeQuery("idx", min, max);
         final Query q2 = createQuery("dv", min, max);
-        assertSameMatches(searcher, q1, q2, false);
+        assertSameHits(searcher, q1, q2, false);
       }
 
       reader.close();
@@ -86,7 +79,7 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
     }
   }
 
-  private void assertSameMatches(IndexSearcher searcher, Query q1, Query q2, boolean scores) throws IOException {
+  private void assertSameHits(IndexSearcher searcher, Query q1, Query q2, boolean scores) throws IOException {
     final int maxDoc = searcher.getIndexReader().maxDoc();
     final TopDocs td1 = searcher.search(q1, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
     final TopDocs td2 = searcher.search(q2, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
