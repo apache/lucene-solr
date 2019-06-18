@@ -16,14 +16,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This section of the user guide explores techniques
-for retrieving streams of data from Solr and vectorizing the
-numeric fields.
 
-See the section <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>> which describes how to
-vectorize text fields.
 
-== Searching and Sorting
+== Searching
+
+=== Exploring
 
 The *search* function can be used to search a Solr Cloud collection and return a
 result set.
@@ -32,18 +29,14 @@ Below is an example of the most basic *search* function called from the Zeppelin
 Zeppelin-Solr sends the *seach(testapp)* call to the /stream handler and displays the results
 in *table* format.
 
-This simple example is instructive for how Zeppelin-Solr handles all Streaming Expressions,
-which by definition return a stream of tuples or name/value pair documents. Zeppelin-Solr creates a
-table from the result set with one row per tuple. Each column of the table represents a field in the tuples.
-
-Once the tuples have been loaded into a table the columns in the table can be visualized by switching
-to the various visualizations and configuring the settings.
 
 In the example the search function passed only the name of the collection being search. This returns
 a result set of 10 records showing all fields in and unspecified order. This simple function is useful
 for exploring the fields in the data and understanding how to start refining the search criteria.
 
 image::images/math-expressions/search1.png[]
+
+==== Searching and Sorting
 
 Once we see the format of the records we can add parameters to the *search* function to begin analyzing
 the data.
@@ -70,37 +63,16 @@ select from the a very specific slice of the index. In this example it's the
 
 == Sampling
 
-[source,text]
-----
-random(testapp)
-----
+=== Univariate Scatter Plots
 
-When this expression is sent to the `/stream` handler it responds with:
+=== Bivariate Scatter Plots
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "response_d": 1080.3692514541938,
-        "new_response": 10803.692514541937
-      },
-      {
-        "response_d": 1067.441598608506,
-        "new_response": 10674.41598608506
-      },
-      {
-        "response_d": 1059.8400090891566,
-        "new_response": 10598.400090891566
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 12
-      }
-    ]
-  }
-}
-----
+
+
 == Aggregations
 
+=== facet
+
+=== facet2D
+
+=== timeseries
