@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -58,6 +60,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.http.util.TextUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -74,7 +77,8 @@ import org.slf4j.LoggerFactory;
 public class HttpClientUtil {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
+  public static final String[] SUPPORTED_SSL_PROTOCOLS = {"TLSv1.2", "TLSv1.1", "TLSv1", "DTLSv1.2", "DTLSv1.0"};
   public static final int DEFAULT_CONNECT_TIMEOUT = 60000;
   public static final int DEFAULT_SO_TIMEOUT = 600000;
   public static final int DEFAULT_MAXCONNECTIONSPERHOST = 100000;
@@ -232,7 +236,9 @@ public class HttpClientUtil {
       boolean sslCheckPeerName = toBooleanDefaultIfNull(
           toBooleanObject(System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME)), true);
       if (sslCheckPeerName) {
-        sslConnectionSocketFactory = SSLConnectionSocketFactory.getSystemSocketFactory();
+        String[] cipherSuites = split(System.getProperty("https.cipherSuites"));
+        sslConnectionSocketFactory = new SSLConnectionSocketFactory(SSLContexts.createSystemDefault(),
+            getSupportedSSLProtocols(), cipherSuites, SSLConnectionSocketFactory.getDefaultHostnameVerifier());
       } else {
         sslConnectionSocketFactory = new SSLConnectionSocketFactory(SSLContexts.createSystemDefault(),
                                                                     NoopHostnameVerifier.INSTANCE);
@@ -242,6 +248,30 @@ public class HttpClientUtil {
 
       return builder.build();
     }
+  }
+
+  static String[] getSupportedSSLProtocols() {
+    String[] protocols = split(System.getProperty("https.protocols"));
+    if (protocols == null) {
+      return SUPPORTED_SSL_PROTOCOLS;
+    }
+    List<String> list = new ArrayList<>(Arrays.asList(protocols));
+    list.remove("TLSv1.3");
+    if (protocols.length == list.size())
+      return protocols;
+
+    if (list.isEmpty()) {
+      throw new IllegalArgumentException("TLSv1.3 is not supported yet!");
+    }
+
+    return list.toArray(new String[0]);
+  }
+
+  private static String[] split(final String s) {
+    if (TextUtils.isBlank(s)) {
+      return null;
+    }
+    return s.split(" *, *");
   }
   
   /**
