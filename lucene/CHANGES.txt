@@ -95,6 +95,11 @@ Improvements
 * LUCENE-8845: Allow Intervals.prefix() and Intervals.wildcard() to specify
   their maximum allowed expansions (Alan Woodward)
 
+Optimizations
+
+* LUCENE-8796: Use exponential search instead of binary search in
+  IntArrayDocIdSet#advance method (Luca Cavanna via Adrien Grand)
+
 Test Framework
 
 * LUCENE-8825: CheckHits now display the shard index in case of mismatch
