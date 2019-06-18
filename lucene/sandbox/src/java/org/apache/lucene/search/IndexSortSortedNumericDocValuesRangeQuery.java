@@ -18,13 +18,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -37,9 +33,9 @@ import org.apache.lucene.index.SortedNumericDocValues;
  *
  * This optimized execution strategy is only used if the following conditions hold:
  * <ul>
- *   <il> The index is sorted, and its primary sort is on the same field as the query.
- *   <il> The query field has either {@link SortedNumericDocValues} or {@link NumericDocValues}.
- *   <il> The segments must have at most one field value per document (otherwise we cannot easily
+ *   <li> The index is sorted, and its primary sort is on the same field as the query.
+ *   <li> The query field has either {@link SortedNumericDocValues} or {@link NumericDocValues}.
+ *   <li> The segments must have at most one field value per document (otherwise we cannot easily
  * determine the matching document IDs through a binary search).
  * </ul>
  *
