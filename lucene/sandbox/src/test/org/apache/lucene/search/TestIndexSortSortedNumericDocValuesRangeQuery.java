@@ -33,6 +33,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+
 public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCase {
 
   public void testSameHitsAsPointRangeQuery() throws IOException {
@@ -313,6 +315,43 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
     Query query = createQuery("foo", 2, 4);
     Weight w = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
     assertNull(w.scorer(searcher.getIndexReader().leaves().get(0)));
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
+  public void testRewriteExhaustiveRange() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    writer.addDocument(new Document());
+    IndexReader reader = writer.getReader();
+
+    Query query = createQuery("field", Long.MIN_VALUE, Long.MAX_VALUE);
+    Query rewrittenQuery = query.rewrite(reader);
+    assertEquals(new DocValuesFieldExistsQuery("field"), rewrittenQuery);
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
+  public void testRewriteFallbackQuery() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    writer.addDocument(new Document());
+    IndexReader reader = writer.getReader();
+
+    // Create an (unrealistic) fallback query that is sure to be rewritten.
+    Query fallbackQuery = new BooleanQuery.Builder().build();
+    Query query = new IndexSortSortedNumericDocValuesRangeQuery("field", 1, 42, fallbackQuery);
+
+    Query rewrittenQuery = query.rewrite(reader);
+    assertNotEquals(query, rewrittenQuery);
+    assertThat(rewrittenQuery, instanceOf(IndexSortSortedNumericDocValuesRangeQuery.class));
+
+    IndexSortSortedNumericDocValuesRangeQuery rangeQuery = (IndexSortSortedNumericDocValuesRangeQuery) rewrittenQuery;
+    assertEquals(new MatchNoDocsQuery(), rangeQuery.getFallbackQuery());
 
     writer.close();
     reader.close();

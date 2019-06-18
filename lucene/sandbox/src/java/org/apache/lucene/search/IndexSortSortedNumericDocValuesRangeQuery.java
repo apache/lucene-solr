@@ -83,6 +83,10 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
     this.fallbackQuery = fallbackQuery;
   }
 
+  public Query getFallbackQuery() {
+    return fallbackQuery;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
@@ -133,7 +137,7 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
       return this;
     } else {
       return new IndexSortSortedNumericDocValuesRangeQuery(
-          field, lowerValue, upperValue, fallbackQuery);
+          field, lowerValue, upperValue, rewrittenFallback);
     }
   }
 
