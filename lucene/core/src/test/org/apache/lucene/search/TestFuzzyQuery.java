@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -35,6 +36,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TestTerms;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
@@ -606,6 +608,18 @@ public class TestFuzzyQuery extends LuceneTestCase {
     }
     
     IOUtils.close(r, w, dir);
+  }
+
+  public void testRandomMixedUnicode() throws IOException {
+    int iters = atLeast(50);
+    for (int i = 0; i < iters; i++) {
+      int length = 20 + random().nextInt(40); // between 20 and 60 characters
+      String term = RandomizedTest.randomRealisticUnicodeOfCodepointLength(i);
+      // Add a different script suffix to increase the transformation space
+      term = term.concat(RandomizedTest.randomRealisticUnicodeOfCodepointLength(5));
+      // This will throw exception if the term generates too many states
+      new FuzzyQuery(new Term("field", term)).getTermsEnum(TestTerms.EMPTY_TERMS);
+    }
   }
 
   private static class TermAndScore implements Comparable<TermAndScore> {

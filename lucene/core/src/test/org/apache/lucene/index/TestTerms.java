@@ -82,4 +82,19 @@ public class TestTerms extends LuceneTestCase {
     w.close();
     dir.close();
   }
+
+  /**
+   * A complete empty Terms instance that has no terms in it and supports no optional statistics
+   */
+  public static Terms EMPTY_TERMS = new Terms() {
+    public TermsEnum iterator() { return TermsEnum.EMPTY; }
+    public long size() { return -1; }
+    public long getSumTotalTermFreq() { return 0; }
+    public long getSumDocFreq() { return 0; }
+    public int getDocCount() { return 0; }
+    public boolean hasFreqs() { return false; }
+    public boolean hasOffsets() { return false; }
+    public boolean hasPositions() { return false; }
+    public boolean hasPayloads() { return false; }
+  };
 }

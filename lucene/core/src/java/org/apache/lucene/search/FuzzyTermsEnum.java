@@ -131,7 +131,11 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
       prevAutomata = new CompiledAutomaton[maxEdits+1];
       Automaton[] automata = buildAutomata(termText, prefixLength, transpositions, maxEdits);
       for (int i = 0; i <= maxEdits; i++) {
-        prevAutomata[i] = new CompiledAutomaton(automata[i], true, false);
+        // With edits==2, observed number of states per character is on average 256, but seen as high as 310.
+        // Making this dynamic based on length will hopefully give enough allowance rather than static maximum
+        // The number of states matters when the conversion from utf32 to utf8 is non-trival
+        int maxNumStates = termLength * 512;
+        prevAutomata[i] = new CompiledAutomaton(automata[i], true, false, maxNumStates, false);
       }
       // first segment computes the automata, and we share with subsequent segments via this Attribute:
       dfaAtt.setAutomata(prevAutomata);
