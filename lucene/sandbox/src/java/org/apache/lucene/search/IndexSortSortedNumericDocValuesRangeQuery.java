@@ -32,13 +32,16 @@ import org.apache.lucene.index.SortedNumericDocValues;
 /**
  * A range query that can take advantage of the fact that the index is sorted to speed up
  * execution. If the index is sorted on the same field as the query, it performs binary
- * search on the field's {@link SortedNumericDocValues} to find the documents at the lower
- * and upper ends of the range.
- * 
+ * search on the field's numeric doc values to find the documents at the lower and upper
+ * ends of the range.
+ *
  * This optimized execution strategy is only used if the following conditions hold:
- * - The index is sorted, and its primary sort is on the same field as the query.
- * - The segments must have at most one field value per document (otherwise we cannot easily
+ * <ul>
+ *   <il> The index is sorted, and its primary sort is on the same field as the query.
+ *   <il> The query field has either {@link SortedNumericDocValues} or {@link NumericDocValues}.
+ *   <il> The segments must have at most one field value per document (otherwise we cannot easily
  * determine the matching document IDs through a binary search).
+ * </ul>
  *
  * If any of these conditions isn't met, the search is delegated to {@code fallbackQuery}.
  *
@@ -141,20 +144,17 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
     return new ConstantScoreWeight(this, boost) {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        SortedNumericDocValues values = context.reader().getSortedNumericDocValues(field);
-        if (values == null) {
-          return null;
-        }
+        SortedNumericDocValues sortedNumericValues = DocValues.getSortedNumeric(context.reader(), field);
+        NumericDocValues numericValues = DocValues.unwrapSingleton(sortedNumericValues);
 
-        final NumericDocValues singleton = DocValues.unwrapSingleton(values);
-        if (singleton != null) {
+        if (numericValues != null) {
           Sort indexSort = context.reader().getMetaData().getSort();
           if (indexSort != null
               && indexSort.getSort().length > 0
               && indexSort.getSort()[0].getField().equals(field)) {
 
             SortField sortField = indexSort.getSort()[0];
-            DocIdSetIterator disi = getDocIdSetIterator(sortField, context, singleton);
+            DocIdSetIterator disi = getDocIdSetIterator(sortField, context, numericValues);
             return new ConstantScoreScorer(this, score(), scoreMode, disi);
           }
         }
@@ -185,13 +185,9 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
   private DocIdSetIterator getDocIdSetIterator(SortField sortField,
                                                LeafReaderContext context,
                                                DocIdSetIterator delegate) throws IOException {
-    int maxDoc = context.reader().maxDoc();
-    if (maxDoc <= 0) {
-      return DocIdSetIterator.empty();
-    }
-
     long lower = sortField.getReverse() ? upperValue : lowerValue;
     long upper = sortField.getReverse() ? lowerValue : upperValue;
+    int maxDoc = context.reader().maxDoc();
 
     // Perform a binary search to find the first document with value >= lower.
     ValueComparator comparator = loadComparator(sortField, lower, context);
