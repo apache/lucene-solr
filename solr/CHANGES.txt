@@ -79,7 +79,7 @@ New Features
 * SOLR-13504: In autoscaling policies, use an explicit 'nodeset' attribute for filtering
   nodes instead of using them directly at the toplevel (noble)
 
-* SOLR-13329: In autoscaling policies, use an explicit 'put : on-each'
+* SOLR-13329: In autoscaling policies, use an explicit 'put : on-each-node'
   to specify the the rules is applied on each node  (noble)
 
 * SOLR-13434: OpenTracing support for Solr (Cao Manh Dat)
