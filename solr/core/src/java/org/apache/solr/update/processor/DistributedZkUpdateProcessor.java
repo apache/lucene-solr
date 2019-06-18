@@ -71,6 +71,11 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
+
+import org.apache.solr.store.blob.metadata.PushPullData;
+import org.apache.solr.store.blob.process.CoreUpdateTracker;
+
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
@@ -82,6 +87,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private Set<String> skippedCoreNodeNames;
   private final String collection;
   private boolean readOnlyCollection = false;
+  private CoreUpdateTracker sharedCoreTracker;
 
   // should we clone the document before sending it to replicas?
   // this is set to true in the constructor if the next processors in the chain
@@ -89,13 +95,19 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private final boolean cloneRequiredOnLeader;
 
   //used for keeping track of replicas that have processed an add/update from the leader
-  private RollupRequestReplicationTracker rollupReplicationTracker = null;
-  private LeaderRequestReplicationTracker leaderReplicationTracker = null;
+  private RollupRequestReplicationTracker rollupReplicationTracker;
+  private LeaderRequestReplicationTracker leaderReplicationTracker;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
                                       SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    this(req,rsp,next,CoreUpdateTracker.get());
+  }
+  
+  @VisibleForTesting
+  protected DistributedZkUpdateProcessor(SolrQueryRequest req,
+      SolrQueryResponse rsp, UpdateRequestProcessor next, CoreUpdateTracker sharedCoreTracker) {
     super(req, rsp, next);
     CoreContainer cc = req.getCore().getCoreContainer();
     cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
@@ -108,6 +120,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // check readOnly property in coll state
       readOnlyCollection = coll.isReadOnly();
     }
+    this.sharedCoreTracker = sharedCoreTracker;
   }
 
   private boolean isReadOnly() {
@@ -203,6 +216,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
 
         params.set(COMMIT_END_POINT, "replicas");
+        
 
         useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderReplica);
 
@@ -1046,6 +1060,15 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     doFinish();
   }
+  
+  private void trackCoreForSharedStore(String coreName, String sharedStoreName) {
+    log.info("tracking coreName={}, collection={}, shardName={} for push to shared storage sharedStoreName={}.", 
+        coreName,  collection, cloudDesc.getShardId(), sharedStoreName);
+        sharedCoreTracker.updatingCore(new PushPullData(
+            collection, cloudDesc.getShardId(), coreName, sharedStoreName));
+  }
+  
+  
 
   // TODO: optionally fail if n replicas are not reached...
   private void doFinish() {
@@ -1057,10 +1080,27 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       }
       zkController.getShardTerms(collection, cloudDesc.getShardId()).ensureHighestTermsAreNotZero();
     }
+    
+    /**
+     *  Track the updated core for push to Blob store. 
+     *  
+     *  Only, the leader node pushes the updates to blob store but the leader can be change mid update, 
+     *  so we don't stop peers from pushing updates to the blob store.    
+     */
+    if ( updateCommand != null &&
+        updateCommand.getClass() == CommitUpdateCommand.class &&
+        replicaType.equals(Replica.Type.SHARED)) {
+      String coreName = req.getCore().getCoreDescriptor().getName();
+      // TODO (a.vuong): this implementation assumes that shareStoreName is the same as core name 
+      // and needs to be changes once we have a naming strategy.
+      trackCoreForSharedStore(coreName, /*sharedStoreName*/ coreName);
+    }
+    
     // TODO: if not a forward and replication req is not specified, we could
     // send in a background thread
 
     cmdDistrib.finish();
+    
     List<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
     // TODO - we may need to tell about more than one error...
 

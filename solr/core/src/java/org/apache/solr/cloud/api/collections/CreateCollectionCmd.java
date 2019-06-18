@@ -361,7 +361,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     int numNrtReplicas = message.getInt(NRT_REPLICAS, sharedIndex ? 0 : message.getInt(REPLICATION_FACTOR, numTlogReplicas>0?0:1));
     int numPullReplicas = message.getInt(PULL_REPLICAS, 0);
     // REPLICATION_FACTOR drives SHARED_REPLICAS when collection is backed by shared storage
-    final int numSharedReplicas = message.getInt(SHARED_REPLICAS, sharedIndex ? message.getInt(REPLICATION_FACTOR, 0) : 0);
+    final int numSharedReplicas = message.getInt(SHARED_REPLICAS, sharedIndex ? message.getInt(REPLICATION_FACTOR, 1) : 0);
 
     int numSlices = shardNames.size();
     int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, 1);

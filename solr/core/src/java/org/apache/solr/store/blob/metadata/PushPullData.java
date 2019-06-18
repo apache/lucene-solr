@@ -36,7 +36,7 @@ public class PushPullData {
   public PushPullData(String collectionName, String shardName, String coreName, String sharedStoreName) {
     this.collectionName = collectionName;
     this.shardName = shardName;
-    this.coreName = collectionName;
+    this.coreName = coreName;
     this.sharedStoreName = sharedStoreName;
   }
 
