@@ -347,6 +347,27 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='ttf'][.='3']",
         "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='df'][.='1']",
         "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='ttf'][.='1']");
+
+    // terms.limit=-1 and terms.sort=count and NO terms.list
+    req = req(
+        "indent","true",
+        "qt", "/terms",
+        "terms", "true",
+        "terms.fl", "standardfilt",
+        "terms.ttf", "true",
+        "terms.limit", "-1",
+        "terms.sort", "count"
+        );
+    assertQ(req,
+        "count(//lst[@name='standardfilt']/*)>=4", // it would be at-least 4
+        "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='df'][.='4']",
+        "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='ttf'][.='4']",
+        "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='df'][.='2']",
+        "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='ttf'][.='2']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='df'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='ttf'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='ttf'][.='1']");
   }
 
   @Test
@@ -377,6 +398,33 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     assertQ(req,
         "count(//lst[@name='lowerfilt']/*)=3",
         "count(//lst[@name='standardfilt']/*)=3",
+        "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='df'][.='2']",
+        "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='ttf'][.='2']",
+        "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='df'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='ttf'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aaa']/long[@name='df'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aaa']/long[@name='ttf'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='a']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='a']/long[@name='ttf'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aa']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aa']/long[@name='ttf'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='ttf'][.='1']");
+
+    // terms.ttf=true, terms.sort=index and no terms list
+    req = req(
+        "indent","true",
+        "qt", "/terms",
+        "terms", "true",
+        "terms.fl", "lowerfilt",
+        "terms.fl", "standardfilt",
+        "terms.ttf", "true",
+        "terms.sort", "index",
+        "terms.limit", "10"
+        );
+    assertQ(req,
+        "count(//lst[@name='lowerfilt']/*)<=10",
+        "count(//lst[@name='standardfilt']/*)<=10",
         "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='df'][.='2']",
         "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='ttf'][.='2']",
         "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='df'][.='1']",

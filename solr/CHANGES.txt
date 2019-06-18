@@ -26,7 +26,7 @@ Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
-Jetty 9.4.14.v20181114
+Jetty 9.4.19.v20190610
 
 Upgrade Notes
 ----------------------
@@ -61,7 +61,7 @@ Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
-Jetty 9.4.14.v20181114
+Jetty 9.4.19.v20190610
 
 Upgrade Notes
 ----------------------
@@ -72,6 +72,17 @@ Upgrade Notes
   You can use
   4lw.commands.whitelist=* to enable all ZooKeeper "4 letter commands".
   (Erick Erickson)
+
+* SOLR-13515: org.apache.solr.util.SolrPluginUtils.IdentityRegenerator has been removed, please use
+  the identical org.apache.solr.search.NoOpRegenerator instead. (David Smiley, Christine Poerschke)
+
+* SOLR-13541: Upgrade Jetty to 9.4.19.v20190610. (Erick Erickson, Cao Manh Dat)
+
+* SOLR-13420: Routed Aliases now use collection properties rather than core properties to identify collections that
+  belong to the alias by default. This should be invisible and fully backwards compatible from within solr, and
+  existing routed alias collections with core based properties will continue to work, but new collections created will
+  not add a property to core.properties anymoore so any external code that inspected core.properties will not find the
+  'routedAliasName' key in new cores belonging to routed aliases.
 
 New Features
 ----------------------
@@ -112,6 +123,15 @@ New Features
 
 * SOLR-13512: Raw index data analysis tool (extension of COLSTATUS collection command). (ab)
 
+* SOLR-13550: Allow zplot to automatically create the x axis (Joel Bernstein)
+
+* SOLR-13552: Add recNum Stream Evaluator (Joel Bernstein)
+
+* SOLR-13534 : Dynamic loading to support loading jars from a URL (noble)
+
+* SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
+
+
 Bug Fixes
 ----------------------
 
@@ -135,7 +155,13 @@ Bug Fixes
 
 * SOLR-12013: collections API CUSTERSTATUS command fails when configset missing (Erick Erickson)
 
-* SOLR-13509: NPE on omitHeader=true  is fixed by sending omitHeader=false to shard searches (Munendra S N, Mikhail Khludnev)
+* SOLR-13509: NPE on omitHeader=true is fixed by sending omitHeader=false to shard searches (Munendra S N, Mikhail Khludnev)
+
+* SOLR-13333: unleashing terms.ttf from terms.list when distrib=false (Munendra S N via Mikhail Khludnev)
+
+* SOLR-13490: Fix CollectionStateWatcher/CollectionStatePredicate based APIs in ZkStateReader and
+  CloudSolrClient to be triggered on liveNode changes.  Also add Predicate<DocCollection> equivilents
+  for callers that don't care about liveNodes. (hossman)
 
 Other Changes
 ----------------------
@@ -149,11 +175,12 @@ Other Changes
 
 * SOLR-13371: Re-structure and clarify Security chapters in Ref Guide (janhoy)
 
-* SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
-
 * SOLR-13235: Split Collections API Ref Guide page into several smaller child pages (Cassandra Targett)
 
 * SOLR-8754: Adding test cases for org.apache.solr.util.hll.NumberUtilTest (Benoit Vanalderweireldt via janhoy)
+
+* SOLR-13511: Add SearchHandler.newResponseBuilder method to facilitate custom plugins' maintenance
+  of per-request state in a custom ResponseBuilder. (Ramsey Haddad, Christine Poerschke)
 
 ==================  8.1.2 ==================
 

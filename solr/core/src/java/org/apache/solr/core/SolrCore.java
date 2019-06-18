@@ -1000,6 +1000,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       // Initialize the RestManager
       restManager = initRestManager();
 
+      // at this point we can load jars loaded from remote urls.
+      memClassLoader.loadRemoteJars();
+
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
       resourceLoader.inform(this); // last call before the latch is released.
