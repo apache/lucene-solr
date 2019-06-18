@@ -277,7 +277,6 @@ public class TermsComponent extends SearchComponent {
         // If no lower bound was specified, use the prefix
         lowerBytes = prefixBytes;
       } else {
-        lowerBytes = new BytesRef();
         if (raw) {
           // TODO: how to handle binary? perhaps we don't for "raw"... or if the field exists
           // perhaps we detect if the FieldType is non-character and expect hex if so?
@@ -554,7 +553,7 @@ public class TermsComponent extends SearchComponent {
 
       // loop through each field we want terms from
       for (String key : fieldmap.keySet()) {
-        NamedList<Object> fieldterms = new SimpleOrderedMap<>();
+        NamedList<Object> fieldTerms = new NamedList<>();
         TermsResponse.Term[] data = null;
         if (sort) {
           data = getCountSorted(fieldmap.get(key));
@@ -567,7 +566,7 @@ public class TermsComponent extends SearchComponent {
         int cnt = 0;
         for (TermsResponse.Term tc : data) {
           if (tc.getFrequency() >= freqmin && tc.getFrequency() <= freqmax) {
-            addTermToNamedList(fieldterms, tc.getTerm(), tc.getFrequency(), tc.getTotalTermFreq(), includeTotalTermFreq);
+            addTermToNamedList(fieldTerms, tc.getTerm(), tc.getFrequency(), tc.getTotalTermFreq(), includeTotalTermFreq);
             cnt++;
           }
 
@@ -576,7 +575,7 @@ public class TermsComponent extends SearchComponent {
           }
         }
 
-        response.add(key, fieldterms);
+        response.add(key, fieldTerms);
       }
 
       return response;
@@ -621,8 +620,8 @@ public class TermsComponent extends SearchComponent {
     for (String field : fields) {
       SchemaField sf = indexSearcher.getSchema().getField(field);
       FieldType fieldType = sf.getType();
-      NamedList<Object> termsMap = new SimpleOrderedMap<>();
-      
+      NamedList<Object> termsMap = new NamedList<>();
+
       if (fieldType.isPointField()) {
         for (String term : splitTerms) {
           Query q = fieldType.getFieldQuery(null, sf, term);
@@ -636,10 +635,10 @@ public class TermsComponent extends SearchComponent {
         for (int i = 0; i < splitTerms.length; i++) {
           terms[i] = new Term(field, fieldType.readableToIndexed(splitTerms[i]));
         }
-  
+
         TermStates[] termStates = new TermStates[terms.length];
         collectTermStates(topReaderContext, termStates, terms);
-  
+
         for (int i = 0; i < terms.length; i++) {
           if (termStates[i] != null) {
             String outTerm = fieldType.indexedToReadable(terms[i].bytes().utf8ToString());

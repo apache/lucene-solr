@@ -329,6 +329,36 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testTermsWithJSON() throws Exception {
+    ModifiableSolrParams params = params(
+        "qt", "/terms", "terms", "true", "terms.fl", "standardfilt", "terms.lower", "a",
+        "terms.sort", "index", "wt", "json"
+    );
+
+    assertJQ(req(params), "/terms/standardfilt/[0]==a", "/terms/standardfilt/[1]==1");
+
+    // enable terms.ttf
+    params.set("terms.ttf", "true");
+    assertJQ(req(params), "/terms/standardfilt/[0]==a", "/terms/standardfilt/[1]/df==1",
+        "/terms/standardfilt/[1]/ttf==1");
+
+    // test the response with terms.list and terms.ttf=false
+    params.set("terms.list", "spider,snake,shark");
+    params.remove("terms.ttf");
+    assertJQ(req(params), "/terms/standardfilt/[0]==shark", "/terms/standardfilt/[1]==2",
+        "/terms/standardfilt/[2]==snake", "/terms/standardfilt/[3]==3",
+        "/terms/standardfilt/[4]==spider", "/terms/standardfilt/[5]==1"
+    );
+    // with terms.list and terms.ttf=true
+    params.set("terms.ttf", "true");
+    assertJQ(req(params),
+        "/terms/standardfilt/[0]==shark", "/terms/standardfilt/[1]/df==2", "/terms/standardfilt/[1]/ttf==2",
+        "/terms/standardfilt/[2]==snake", "/terms/standardfilt/[3]/df==3", "/terms/standardfilt/[3]/ttf==3",
+        "/terms/standardfilt/[4]==spider", "/terms/standardfilt/[5]/df==1", "/terms/standardfilt/[5]/ttf==1"
+    );
+  }
+
+  @Test
   public void testDocFreqAndTotalTermFreq() throws Exception {
     SolrQueryRequest req = req(
         "indent","true",
