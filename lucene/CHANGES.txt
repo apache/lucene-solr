@@ -84,6 +84,10 @@ Optimizations
 * LUCENE-8796: Use exponential search instead of binary search in
   IntArrayDocIdSet#advance method (Luca Cavanna via Adrien Grand)
 
+* LUCENE-8865: Use incoming thread for execution if IndexSearcher has an executor.
+  Now caller threads execute at least one search on an index even if there is
+  an executor provided to minimize thread context switching. (Simon Willnauer)
+
 Test Framework
 
 * LUCENE-8825: CheckHits now display the shard index in case of mismatch
