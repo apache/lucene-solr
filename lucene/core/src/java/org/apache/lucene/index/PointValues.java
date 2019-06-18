@@ -208,6 +208,10 @@ public abstract class PointValues {
      *  docID order. */
     void visit(int docID, byte[] packedValue) throws IOException;
 
+    /** Called for all documents in a leaf cell that crosses the query.  The consumer
+     *  should scrutinize the packedValue to decide whether to accept it.  In the 1D case,
+     *  values are visited in increasing order, and in the case of ties, in increasing
+     *  docID order. */
     default void visit(int[] docID, int offset, int length, byte[] packedValue) throws IOException {
       for ( int i =offset; i < offset + length; i++) {
         visit(docID[i], packedValue);

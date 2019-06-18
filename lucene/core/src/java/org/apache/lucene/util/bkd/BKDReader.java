@@ -441,7 +441,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
   void visitDocValues(int[] commonPrefixLengths, byte[] scratchDataPackedValue, byte[] scratchMinIndexPackedValue, byte[] scratchMaxIndexPackedValue,
                       IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
-    if (version >= BKDWriter.VERSION_LEAF_LOW_CARDINALITY) {
+    if (version >= BKDWriter.VERSION_LOW_CARDINALITY_LEAVES) {
       visitDocValuesWithCardinality(commonPrefixLengths, scratchDataPackedValue, scratchMinIndexPackedValue, scratchMaxIndexPackedValue, in, docIDs, count, visitor);
     } else {
       visitDocValuesNoCardinality(commonPrefixLengths, scratchDataPackedValue, scratchMinIndexPackedValue, scratchMaxIndexPackedValue, in, docIDs, count, visitor);
