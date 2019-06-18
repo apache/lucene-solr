@@ -112,8 +112,16 @@
       {
         "minimize":"sysLoadAvg",
         "precision":10}],
-    "cluster-policy":[{
+    "cluster-policy":[
+      {
       "replica":"<3",
       "shard":"#EACH",
-      "sysprop.zone":["east",
-        "west"]}]}}}
+      "sysprop.zone":"east"},
+     {
+      "replica":"<3",
+      "shard":"#EACH",
+      "sysprop.zone":"west"}
+
+
+
+    ]}}}
