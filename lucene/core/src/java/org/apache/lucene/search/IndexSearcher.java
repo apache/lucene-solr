@@ -613,7 +613,7 @@ public class IndexSearcher {
   * @lucene.experimental
   */
   public <C extends Collector, T> T search(Query query, CollectorManager<C, T> collectorManager) throws IOException {
-    if (executor == null) {
+    if (executor == null || leafSlices.length <= 1) {
       final C collector = collectorManager.newCollector();
       search(query, collector);
       return collectorManager.reduce(Collections.singletonList(collector));
