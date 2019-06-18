@@ -208,6 +208,12 @@ public abstract class PointValues {
      *  docID order. */
     void visit(int docID, byte[] packedValue) throws IOException;
 
+    default void visit(int[] docID, int offset, int length, byte[] packedValue) throws IOException {
+      for ( int i =offset; i < offset + length; i++) {
+        visit(docID[i], packedValue);
+      }
+    }
+
     /** Called for non-leaf cells to test how the cell relates to the query, to
      *  determine how to further recurse down the tree. */
     Relation compare(byte[] minPackedValue, byte[] maxPackedValue);

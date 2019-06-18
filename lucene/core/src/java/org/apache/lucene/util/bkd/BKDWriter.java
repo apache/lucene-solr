@@ -80,7 +80,8 @@ public class BKDWriter implements Closeable {
   //public static final int VERSION_CURRENT = VERSION_START;
   public static final int VERSION_LEAF_STORES_BOUNDS = 5;
   public static final int VERSION_SELECTIVE_INDEXING = 6;
-  public static final int VERSION_CURRENT = VERSION_SELECTIVE_INDEXING;
+  public static final int VERSION_LOW_CARDINALITY_LEAVES= 7;
+  public static final int VERSION_CURRENT = VERSION_LOW_CARDINALITY_LEAVES;
 
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
@@ -612,8 +613,10 @@ public class BKDWriter implements Closeable {
       // Find per-dim common prefix:
       int offset = (leafCount - 1) * packedBytesLength;
       int prefix = Arrays.mismatch(leafValues, 0, bytesPerDim, leafValues, offset, offset + bytesPerDim);
+      int leafCardinality = leafCount;
       if (prefix == -1) {
           prefix = bytesPerDim;
+          leafCardinality = 1;
       }
 
       commonPrefixLengths[0] = prefix;
@@ -635,7 +638,7 @@ public class BKDWriter implements Closeable {
       assert valuesInOrderAndBounds(leafCount, 0, ArrayUtil.copyOfSubArray(leafValues, 0, packedBytesLength),
           ArrayUtil.copyOfSubArray(leafValues, (leafCount - 1) * packedBytesLength, leafCount * packedBytesLength),
           packedValues, leafDocs, 0);
-      writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, leafCount, 0, packedValues);
+      writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, leafCount, 0, packedValues, leafCardinality);
       scratchOut.copyTo(out);
       scratchOut.reset();
     }
@@ -1028,17 +1031,43 @@ public class BKDWriter implements Closeable {
     DocIdsWriter.writeDocIds(docIDs, start, count, out);
   }
 
-  private void writeLeafBlockPackedValues(DataOutput out, int[] commonPrefixLengths, int count, int sortedDim, IntFunction<BytesRef> packedValues) throws IOException {
+  private void writeLeafBlockPackedValues(DataOutput out, int[] commonPrefixLengths, int count, int sortedDim, IntFunction<BytesRef> packedValues, int leafCardinality) throws IOException {
     int prefixLenSum = Arrays.stream(commonPrefixLengths).sum();
     if (prefixLenSum == packedBytesLength) {
       // all values in this block are equal
       out.writeByte((byte) -1);
-    } else {
+    } else if (leafCardinality * (prefixLenSum + 2)  <= count * prefixLenSum) {
+      //estimate if storing the values with cardinality is cheaper than storing all values
+      out.writeByte((byte) -2);
       if (numIndexDims != 1) {
         writeActualBounds(out, commonPrefixLengths, count, packedValues);
       }
+      BytesRef value = packedValues.apply(0);
+      System.arraycopy(value.bytes, value.offset, scratch1, 0, packedBytesLength);
+      int cardinality = 1;
+      for (int i = 1; i < count; i++) {
+        value = packedValues.apply(i);
+        if (Arrays.mismatch(value.bytes, value.offset, value.offset + value.length, scratch1, 0, packedBytesLength) != -1) {
+          out.writeVInt(cardinality);
+          for(int j = 0; j < numDataDims; j++) {
+            out.writeBytes(scratch1, j * bytesPerDim + commonPrefixLengths[j], bytesPerDim - commonPrefixLengths[j]);
+          }
+          System.arraycopy(value.bytes, value.offset, scratch1, 0, packedBytesLength);
+          cardinality = 1;
+        } else {
+          cardinality++;
+        }
+      }
+      out.writeVInt(cardinality);
+      for(int i = 0; i < numDataDims; i++) {
+        out.writeBytes(scratch1, i * bytesPerDim + commonPrefixLengths[i], bytesPerDim - commonPrefixLengths[i]);
+      }
+    } else {
       assert commonPrefixLengths[sortedDim] < bytesPerDim;
       out.writeByte((byte) sortedDim);
+      if (numIndexDims != 1) {
+        writeActualBounds(out, commonPrefixLengths, count, packedValues);
+      }
       int compressedByteOffset = sortedDim * bytesPerDim + commonPrefixLengths[sortedDim];
       commonPrefixLengths[sortedDim]++;
       for (int i = 0; i < count; ) {
@@ -1246,11 +1275,17 @@ public class BKDWriter implements Closeable {
       final int count = to - from;
       assert count <= maxPointsInLeafNode;
 
-      // Compute common prefixes
+      // Compute common prefixes and cardinality
       Arrays.fill(commonPrefixLengths, bytesPerDim);
       reader.getValue(from, scratchBytesRef1);
+      int leafCardinality = 1;
+      System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset, scratch1, 0, packedBytesLength);
       for (int i = from + 1; i < to; ++i) {
         reader.getValue(i, scratchBytesRef2);
+        if (Arrays.mismatch(scratch1, 0, packedBytesLength, scratchBytesRef2.bytes, scratchBytesRef2.offset, scratchBytesRef2.offset + packedBytesLength) != -1) {
+          leafCardinality++;
+          System.arraycopy(scratchBytesRef2.bytes, scratchBytesRef2.offset, scratch1, 0, packedBytesLength);
+        }
         for (int dim=0;dim<numDataDims;dim++) {
           final int offset = dim * bytesPerDim;
           int dimensionPrefixLength = commonPrefixLengths[dim];
@@ -1323,7 +1358,7 @@ public class BKDWriter implements Closeable {
       };
       assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
           docIDs, 0);
-      writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, count, sortedDim, packedValues);
+      writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality);
       scratchOut.copyTo(out);
       scratchOut.reset();
     } else {
@@ -1395,7 +1430,7 @@ public class BKDWriter implements Closeable {
       int from = Math.toIntExact(points.start);
       int to = Math.toIntExact(points.start + points.count);
       //we store common prefix on scratch1
-      computeCommonPrefixLength(heapSource, scratch1, from, to);
+      int leafCardinality = computeCommonPrefixLength(heapSource, scratch1, from, to);
 
       int sortedDim = 0;
       int sortedDimCardinality = Integer.MAX_VALUE;
@@ -1459,7 +1494,7 @@ public class BKDWriter implements Closeable {
       };
       assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
           heapSource.docIDs, from);
-      writeLeafBlockPackedValues(out, commonPrefixLengths, count, sortedDim, packedValues);
+      writeLeafBlockPackedValues(out, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality);
 
     } else {
       // Inner node: partition/recurse
@@ -1516,16 +1551,22 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  private void computeCommonPrefixLength(HeapPointWriter heapPointWriter, byte[] commonPrefix, int from, int to) {
+  private int computeCommonPrefixLength(HeapPointWriter heapPointWriter, byte[] commonPrefix, int from, int to) {
     Arrays.fill(commonPrefixLengths, bytesPerDim);
     PointValue value = heapPointWriter.getPackedValueSlice(from);
     BytesRef packedValue = value.packedValue();
     for (int dim = 0; dim < numDataDims; dim++) {
       System.arraycopy(packedValue.bytes, packedValue.offset + dim * bytesPerDim, commonPrefix, dim * bytesPerDim, bytesPerDim);
     }
+    System.arraycopy(packedValue.bytes, packedValue.offset, scratch2, 0, packedBytesLength);
+    int leafCardinality = 1;
     for (int i = from + 1; i < to; i++) {
       value =  heapPointWriter.getPackedValueSlice(i);
       packedValue = value.packedValue();
+      if (Arrays.mismatch(scratch2, 0, packedBytesLength, packedValue.bytes, packedValue.offset, packedValue.offset + packedBytesLength) != -1) {
+        leafCardinality++;
+        System.arraycopy(packedValue.bytes, packedValue.offset, scratch2, 0, packedBytesLength);
+      }
       for (int dim = 0; dim < numDataDims; dim++) {
         if (commonPrefixLengths[dim] != 0) {
           int j = Arrays.mismatch(commonPrefix, dim * bytesPerDim, dim * bytesPerDim + commonPrefixLengths[dim], packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + commonPrefixLengths[dim]);
@@ -1535,6 +1576,7 @@ public class BKDWriter implements Closeable {
         }
       }
     }
+    return leafCardinality;
   }
 
   // only called from assert
