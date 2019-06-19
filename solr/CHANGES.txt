@@ -94,6 +94,8 @@ New Features
 
 * SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
 
+* SOLR-13560: Add isNull and notNull Stream Evaluators (Joel Bernstein)
+
 
 Bug Fixes
 ----------------------
