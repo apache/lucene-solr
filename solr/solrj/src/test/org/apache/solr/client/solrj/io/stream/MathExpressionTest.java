@@ -1999,6 +1999,36 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
 
   @Test
+  public void testMatches() throws Exception {
+    String cexpr = "having(list(tuple(a=\"Hello World\"), tuple(a=\"Good bye\")), matches(a, Hello))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 1);
+    Tuple tuple0 = tuples.get(0);
+    assertEquals(tuple0.getString("a"), "Hello World");
+
+    cexpr = "having(list(tuple(a=\"Hello World\"), tuple(a=\"Good bye\")), matches(a, \"(?i)good\"))";
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 1);
+    tuple0 = tuples.get(0);
+    assertEquals(tuple0.getString("a"), "Good bye");
+  }
+
+
+  @Test
   public void testNotNullHaving() throws Exception {
     String cexpr = "having(list(tuple(a=add(1, 1)), tuple(b=add(1, 2))), notNull(b))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
