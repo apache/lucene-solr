@@ -95,7 +95,8 @@ Test Framework
 
 Other
 
-* LUCENE-8847: Code Cleanup: Remove StringBuilder.append with concatted strings
+* LUCENE-8847: Code Cleanup: Remove StringBuilder.append with concatenated
+  strings. (Koen De Groote via Uwe Schindler)
 
 * LUCENE-8861: Script to find open Github PRs that needs attention (janhoy)
 
