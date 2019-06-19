@@ -345,11 +345,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
         res.put("inserts", inserts);
         res.put("evictions", evictions);
         res.put("size", map.size());
-        if (maxRamBytes != Long.MAX_VALUE)  {
-          res.put("maxRamMB", maxRamBytes / 1024L / 1024L);
-          res.put("ramBytesUsed", ramBytesUsed());
-          res.put("evictionsRamUsage", evictionsRamUsage);
-        }
+        res.put("maxRamMB", maxRamBytes / 1024L / 1024L);
+        res.put("ramBytesUsed", ramBytesUsed());
+        res.put("evictionsRamUsage", evictionsRamUsage);
       }
       res.put("warmupTime", warmupTime);
 

@@ -16,20 +16,20 @@ public interface ResourceManager extends SolrCloseable, PluginInfoInitialized {
 
   PluginInfo getPluginInfo();
 
-  void createPool(String name, Limits limits, Map<String, Object> params) throws Exception;
+  void createPool(String name, String type, Map<String, Float> limits, Map<String, Object> params) throws Exception;
 
-  void modifyPoolLimits(String name, Limits limits) throws Exception;
+  void modifyPoolLimits(String name, Map<String, Float> limits) throws Exception;
 
   void removePool(String name) throws Exception;
 
-  default void addResources(String pool, Collection<ResourceManaged> resourceManaged) {
+  default void addResources(String pool, Collection<ManagedResource> managedResource) {
     ensureNotClosed();
-    for (ResourceManaged resource : resourceManaged) {
+    for (ManagedResource resource : managedResource) {
       addResource(pool, resource);
     }
   }
 
-  void addResource(String pool, ResourceManaged resourceManaged);
+  void addResource(String pool, ManagedResource managedResource);
 
   default void ensureNotClosed() {
     if (isClosed()) {
