@@ -287,6 +287,8 @@ public class Lang {
         .withFunctionName("natural", NaturalEvaluator.class)
         .withFunctionName("movingMAD", MovingMADEvaluator.class)
         .withFunctionName("recNum", RecNumEvaluator.class)
+        .withFunctionName("notNull", NotNullEvaluator.class)
+        .withFunctionName("isNull", IsNullEvaluator.class)
 
         // Boolean Stream Evaluators
 
