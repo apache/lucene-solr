@@ -1040,7 +1040,7 @@ public class BKDWriter implements Closeable {
     if (prefixLenSum == packedBytesLength) {
       // all values in this block are equal
       out.writeByte((byte) -1);
-    } else if (leafCardinality * (prefixLenSum + 2)  <= count * prefixLenSum) {
+    } else if (leafCardinality * (packedBytesLength - prefixLenSum + 2)  <= count * (packedBytesLength - prefixLenSum)) {
       //estimate if storing the values with cardinality is cheaper than storing all values
       out.writeByte((byte) -2);
       if (numIndexDims != 1) {
