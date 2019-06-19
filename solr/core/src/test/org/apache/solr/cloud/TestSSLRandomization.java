@@ -44,8 +44,7 @@ public class TestSSLRandomization extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
-    assumeFalse("SOLR-12988: TLSv1.3 in Java 11.0.2 or lower versions does not working correctly with HttpClient",
-        Constants.JRE_IS_MINIMUM_JAVA11 && Runtime.version().compareTo(Runtime.Version.parse("11.0.3")) < 0);
+    assumeFalse("@AwaitsFix: SOLR-12988 - ssl issues on Java 11/12", Constants.JRE_IS_MINIMUM_JAVA11);
     configureCluster(TestMiniSolrCloudClusterSSL.NUM_SERVERS).configure();
   }
   
