@@ -85,6 +85,9 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   
   @Before
   public void before() {
+    assumeFalse("SOLR-12988: TLSv1.3 in Java 11.0.2 or lower versions does not working correctly with HttpClient",
+        Constants.JRE_IS_MINIMUM_JAVA11 && Runtime.version().compareTo(Runtime.Version.parse("11.0.3")) < 0);
+
     // undo the randomization of our super class
     log.info("NOTE: This Test ignores the randomized SSL & clientAuth settings selected by base class");
     HttpClientUtil.resetHttpClientBuilder(); // also resets SchemaRegistryProvider
