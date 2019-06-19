@@ -67,17 +67,6 @@ public class HttpClientUtilTest extends SolrTestCase {
     assertSSLHostnameVerifier(NoopHostnameVerifier.class, HttpClientUtil.getSchemaRegisteryProvider());
   }
 
-  public void testSSLConfig() {
-    assertArrayEquals(HttpClientUtil.SUPPORTED_SSL_PROTOCOLS, HttpClientUtil.getSupportedSSLProtocols());
-    System.setProperty("https.protocols", "TLSv1.1,TLSv1.2");
-    assertArrayEquals(new String[]{"TLSv1.1","TLSv1.2"}, HttpClientUtil.getSupportedSSLProtocols());
-    System.setProperty("https.protocols", "TLSv1.1,TLSv1.2,TLSv1.3");
-    assertArrayEquals(new String[]{"TLSv1.1","TLSv1.2"}, HttpClientUtil.getSupportedSSLProtocols());
-    System.setProperty("https.protocols", "TLSv1.3");
-    expectThrows(IllegalArgumentException.class, HttpClientUtil::getSupportedSSLProtocols);
-    System.clearProperty("https.protocols");
-  }
-
   private void assertSSLHostnameVerifier(Class<? extends HostnameVerifier> expected,
                                          SchemaRegistryProvider provider) {
     ConnectionSocketFactory socketFactory = provider.getSchemaRegistry().lookup("https");
