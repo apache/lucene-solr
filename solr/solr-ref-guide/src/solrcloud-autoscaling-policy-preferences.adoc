@@ -346,7 +346,7 @@ Place exactly 1 replica of <<each-function,each>> shard of collection `xyz` on a
 Place <<all-function,all>> replicas on nodes with system property `availability_zone=us-east-1a`.
 
 [source,json]
-{"replica": "#ALL", "nodeset": "sysprop.availability_zone": "us-east-1a"}}
+{"replica": "#ALL", "nodeset": {"sysprop.availability_zone": "us-east-1a"}}
 
 ==== Use Percentage
 
