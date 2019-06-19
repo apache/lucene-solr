@@ -115,7 +115,7 @@ Per-collection rules have five parts:
 * <<Replica Selector and Rule Evaluation Context>>
 * <<Replica Count Constraint>> (`"replica": "..."`)
 * <<Rule Strictness>> (optional)
-* `put` (optional) specifies how to place these replicas on the selected nodes. All the selected nodes are considered as one bucket by default. `"put" : "on-each"` treats each selected node as a bucket
+* `put` (optional) specifies how to place these replicas on the selected nodes. All the selected nodes are considered as one bucket by default. `"put" : "on-each-node"` treats each selected node as a bucket
 
 ==== Node Selector
 
@@ -140,11 +140,11 @@ when using the `nodeset` attribute, an optional attribute `put` can be used to s
 
 example:  _put one replica on each node with a system property zone=east_
 [source,json]
-{ "replica":1, "put" :"on-each", "nodeset":{"sysprop.zone":"east"}}
+{ "replica":1, "put" :"on-each-node", "nodeset":{"sysprop.zone":"east"}}
 
 example: _put a total of  2 replicas on the set of nodes with property zone=east_
 [source,json]
-{ "replica":2, "put" :"on-each" "nodeset":{"sysprop.zone":"east"}}
+{ "replica":2, "put" :"on-each-node" "nodeset":{"sysprop.zone":"east"}}
 
 
 
@@ -392,7 +392,7 @@ For <<each-function,each>> shard of each collection, distribute replicas equally
 Do not place any replica on any node that has the overseer role. Note that the role is added by the `addRole` collection API. It is *not* automatically the node which is currently the overseer.
 
 [source,json]
-{"replica": 0, "put" :"on-each", "nodeset":{ "nodeRole": "overseer"}}
+{"replica": 0, "put" :"on-each-node", "nodeset":{ "nodeRole": "overseer"}}
 
 ==== Place Replicas Based on Free Disk
 

@@ -42,6 +42,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.solr.client.solrj.ResponseParser;
@@ -62,6 +63,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollectionWatcher;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -362,11 +364,21 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   /**
-   * Block until a collection state matches a predicate, or a timeout
+   * Block until a CollectionStatePredicate returns true, or the wait times out
    *
+   * <p>
    * Note that the predicate may be called again even after it has returned true, so
    * implementors should avoid changing state within the predicate call itself.
+   * </p>
    *
+   * <p>
+   * This implementation utilizes {@link CollectionStateWatcher} internally. 
+   * Callers that don't care about liveNodes are encouraged to use a {@link DocCollection} {@link Predicate} 
+   * instead
+   * </p>
+   *
+   * @see #waitForState(String, long, TimeUnit, Predicate)
+   * @see #registerCollectionStateWatcher
    * @param collection the collection to watch
    * @param wait       how long to wait
    * @param unit       the units of the wait parameter
@@ -379,20 +391,68 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     getClusterStateProvider().connect();
     assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, predicate);
   }
+  /**
+   * Block until a Predicate returns true, or the wait times out
+   *
+   * <p>
+   * Note that the predicate may be called again even after it has returned true, so
+   * implementors should avoid changing state within the predicate call itself.
+   * </p>
+   *
+   * @see #registerDocCollectionWatcher
+   * @param collection the collection to watch
+   * @param wait       how long to wait
+   * @param unit       the units of the wait parameter
+   * @param predicate  a {@link Predicate} to test against the {@link DocCollection}
+   * @throws InterruptedException on interrupt
+   * @throws TimeoutException     on timeout
+   */
+  public void waitForState(String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
+      throws InterruptedException, TimeoutException {
+    getClusterStateProvider().connect();
+    assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, predicate);
+  }
 
   /**
    * Register a CollectionStateWatcher to be called when the cluster state for a collection changes
+   * <em>or</em> the set of live nodes changes.
    *
-   * Note that the watcher is unregistered after it has been called once.  To make a watcher persistent,
-   * it should re-register itself in its {@link CollectionStateWatcher#onStateChanged(Set, DocCollection)}
-   * call
+   * <p>
+   * The Watcher will automatically be removed when it's 
+   * <code>onStateChanged</code> returns <code>true</code>
+   * </p>
    *
+   * <p>
+   * This implementation utilizes {@link ZkStateReader#registerCollectionStateWatcher} internally.
+   * Callers that don't care about liveNodes are encouraged to use a {@link DocCollectionWatcher} 
+   * instead
+   * </p>
+   *
+   * @see #registerDocCollectionWatcher(String, DocCollectionWatcher)
+   * @see ZkStateReader#registerCollectionStateWatcher
    * @param collection the collection to watch
    * @param watcher    a watcher that will be called when the state changes
    */
   public void registerCollectionStateWatcher(String collection, CollectionStateWatcher watcher) {
     getClusterStateProvider().connect();
     assertZKStateProvider().zkStateReader.registerCollectionStateWatcher(collection, watcher);
+  }
+  
+  /**
+   * Register a DocCollectionWatcher to be called when the cluster state for a collection changes.
+   *
+   * <p>
+   * The Watcher will automatically be removed when it's 
+   * <code>onStateChanged</code> returns <code>true</code>
+   * </p>
+   *
+   * @see ZkStateReader#registerDocCollectionWatcher
+   * @param collection the collection to watch
+   * @param watcher    a watcher that will be called when the state changes
+   */
+  public void registerDocCollectionWatcher(String collection, DocCollectionWatcher watcher) {
+    getClusterStateProvider().connect();
+    assertZKStateProvider().zkStateReader.registerDocCollectionWatcher(collection, watcher);
   }
 
   private NamedList<Object> directUpdate(AbstractUpdateRequest request, String collection) throws SolrServerException {

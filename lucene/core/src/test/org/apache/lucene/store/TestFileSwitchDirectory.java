@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -112,6 +113,32 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
     });
 
     dir.close();
+  }
+
+  public void testRenameTmpFile() throws IOException {
+    try (Directory directory = getDirectory(createTempDir())) {
+      final String name;
+      try (IndexOutput out = directory.createTempOutput("foo.cfs", "", IOContext.DEFAULT)) {
+        out.writeInt(1);
+        name = out.getName();
+      }
+      assertEquals(1, Arrays.stream(directory.listAll()).filter(f -> f.equals(name)).count());
+      assertEquals(0, Arrays.stream(directory.listAll()).filter(f -> f.equals("foo.cfs")).count());
+      directory.rename(name, "foo.cfs");
+      assertEquals(1, Arrays.stream(directory.listAll()).filter(f -> f.equals("foo.cfs")).count());
+      assertEquals(0, Arrays.stream(directory.listAll()).filter(f -> f.equals(name)).count());
+    }
+
+    try (Directory directory= newFSSwitchDirectory(Collections.singleton("bar"))) {
+      String brokenName;
+      try (IndexOutput out = directory.createTempOutput("foo", "bar", IOContext.DEFAULT)) {
+        out.writeInt(1);
+        brokenName = out.getName();
+      }
+      AtomicMoveNotSupportedException exception = expectThrows(AtomicMoveNotSupportedException.class,
+          () -> directory.rename(brokenName, "foo.bar"));
+      assertEquals("foo_bar_0.tmp -> foo.bar: source and dest are in different directories", exception.getMessage());
+    }
   }
 
   @Override

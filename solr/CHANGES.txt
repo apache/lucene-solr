@@ -51,6 +51,10 @@ Upgrade Notes
 * SOLR-13323: The unused package org.apache.solr.internal.csv.writer and associated classes/tests that were easily
   confused with but not used by org.apache.solr.response.CSVWriter (or any other code) have been removed (Gus Heck)
 
+* SOLR-7530: TermsComponent's JSON response format was changed so that "terms" property carries per field arrays by default
+  regardless of distrib, terms.list, terms.ttf parameters. This affects JSON based response format but not others 
+  (Munendra S N, Mikhail Khludnev)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -116,7 +120,7 @@ New Features
 * SOLR-13504: In autoscaling policies, use an explicit 'nodeset' attribute for filtering
   nodes instead of using them directly at the toplevel (noble)
 
-* SOLR-13329: In autoscaling policies, use an explicit 'put : on-each'
+* SOLR-13329: In autoscaling policies, use an explicit 'put : on-each-node'
   to specify the the rules is applied on each node  (noble)
 
 * SOLR-13434: OpenTracing support for Solr (Cao Manh Dat)
@@ -158,6 +162,12 @@ Bug Fixes
 * SOLR-13509: NPE on omitHeader=true is fixed by sending omitHeader=false to shard searches (Munendra S N, Mikhail Khludnev)
 
 * SOLR-13333: unleashing terms.ttf from terms.list when distrib=false (Munendra S N via Mikhail Khludnev)
+
+* SOLR-13490: Fix CollectionStateWatcher/CollectionStatePredicate based APIs in ZkStateReader and
+  CloudSolrClient to be triggered on liveNode changes.  Also add Predicate<DocCollection> equivilents
+  for callers that don't care about liveNodes. (hossman)
+
+* SOLR-12988: Avoid using TLSv1.3 for HttpClient (Cao Manh Dat)
 
 Other Changes
 ----------------------

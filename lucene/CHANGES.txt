@@ -83,6 +83,9 @@ Bug Fixes
   contents to ensure we don't expose pending deletes if both directory point to the same
   underlying filesystem directory. (Simon Willnauer)
 
+* LUCENE-8853: FileSwitchDirectory now applies best effort to place tmp files in the same
+  direcotry as the target files. (Simon Willnauer)
+
 Improvements
 
 * LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
@@ -99,6 +102,15 @@ Improvements
 
 * LUCENE-8845: Allow Intervals.prefix() and Intervals.wildcard() to specify
   their maximum allowed expansions (Alan Woodward)
+
+Optimizations
+
+* LUCENE-8796: Use exponential search instead of binary search in
+  IntArrayDocIdSet#advance method (Luca Cavanna via Adrien Grand)
+
+* LUCENE-8865: Use incoming thread for execution if IndexSearcher has an executor.
+  Now caller threads execute at least one search on an index even if there is
+  an executor provided to minimize thread context switching. (Simon Willnauer)
 
 Test Framework
 
