@@ -384,7 +384,7 @@ For the above rules to work, all nodes must the started with a system property c
 For <<each-function,each>> shard of each collection, distribute replicas equally across the `east` and `west` zones.
 
 [source,json]
-{"replica": "#EQUAL", "shard": "#EACH", "nodeset":{"sysprop.zone": ["east", "west"]}}
+{"replica": "#EQUAL", "shard": "#EACH", "nodeset":[{"sysprop.zone": "east"},{"sysprop.zone":  "west"}]}}
 
 
 ==== Place Replicas Based on Node Role
