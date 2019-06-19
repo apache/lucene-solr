@@ -262,7 +262,7 @@ public class TestIndexSearcher extends LuceneTestCase {
     if (leaves.size() <= 1) {
       assertEquals(0, numExecutions.get());
     } else {
-      assertEquals(leaves.size()-1, numExecutions.get());
+      assertEquals(leaves.size() - 1, numExecutions.get());
     }
   }
 }
