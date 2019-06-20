@@ -27,6 +27,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.junit.BeforeClass;
@@ -231,9 +232,10 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
           cmd.solrDoc.addField("int_i", index);
 
           try {
+            SolrQueryResponse rsp = new SolrQueryResponse();
             factory.getInstance(cmd.getReq(), new SolrQueryResponse(),
-                createDistributedUpdateProcessor(cmd.getReq(), new SolrQueryResponse(),
-                    new RunUpdateProcessor(cmd.getReq(), null))).processAdd(cmd);
+                createDistributedUpdateProcessor(cmd.getReq(), rsp,
+                    createRunUpdateProcessor(cmd.getReq(), rsp, null))).processAdd(cmd);
           } catch (IOException e) {
           }
         }
@@ -264,6 +266,10 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
         req("q", "int_i:" + finalCount)
         , "//result[@numFound=1]");
 
+  }
+
+  private UpdateRequestProcessor createRunUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    return new RunUpdateProcessorFactory().getInstance(req, rsp, next);
   }
 
   private String generateRandomString() {
