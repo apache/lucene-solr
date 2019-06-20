@@ -56,7 +56,7 @@ By default only 0.1% of requests are sampled, this ensure that tracing activitie
 The rate can be changed on the fly (without restarting Solr nodes) by setting new sample rate in cluster property. For example,
 below call set sample rate to 100%
 ```
-/admin/collections?action=CLUSTERPROP&name=propertyName&samplePercentage=100
+/admin/collections?action=CLUSTERPROP&name=samplePercentage&val=100
 ```
 
 == Jaeger Tracer Configurator

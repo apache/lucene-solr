@@ -719,7 +719,7 @@ public class AutoScalingHandlerTest extends SolrCloudTestCase {
         " 'set-cluster-policy': [" +
         "      {'cores':'<10', 'node':'#ANY'}," +
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
-        "      {'replica':0, put : on-each, nodeset:{'nodeRole':'overseer'} }" +
+        "      {'replica':0, put : on-each-node, nodeset:{'nodeRole':'overseer'} }" +
         "    ]" +
         "}";
     req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);

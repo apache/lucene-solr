@@ -334,7 +334,7 @@ If there is no autoscaling policy configured or if you wish to use a configurati
 ----
 curl -X POST -H 'Content-type:application/json'  -d '{
  "cluster-policy": [
-    {"replica": 0, "put" : "on-each", "nodeset": {"port" : "7574"}}
+    {"replica": 0, "put" : "on-each-node", "nodeset": {"port" : "7574"}}
    ]
 }' http://localhost:8983/solr/admin/autoscaling/suggestions?omitHeader=true
 ----

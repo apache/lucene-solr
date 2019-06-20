@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -185,7 +186,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private final Runnable securityNodeListener;
 
-  private ConcurrentHashMap<String, CollectionWatch<CollectionStateWatcher>> collectionWatches = new ConcurrentHashMap<>();
+  private ConcurrentHashMap<String, CollectionWatch<DocCollectionWatcher>> collectionWatches = new ConcurrentHashMap<>();
 
   // named this observers so there's less confusion between CollectionPropsWatcher map and the PropsWatcher map.
   private ConcurrentHashMap<String, CollectionWatch<CollectionPropsWatcher>> collectionPropsObservers = new ConcurrentHashMap<>();
@@ -590,7 +591,7 @@ public class ZkStateReader implements SolrCloseable {
     notifyCloudCollectionsListeners();
 
     for (String collection : changedCollections) {
-      notifyStateWatchers(liveNodes, collection, clusterState.getCollectionOrNull(collection));
+      notifyStateWatchers(collection, clusterState.getCollectionOrNull(collection));
     }
 
   }
@@ -1598,9 +1599,46 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   /**
-   * Register a CollectionStateWatcher to be called when the state of a collection changes
+   * Register a CollectionStateWatcher to be called when the state of a collection changes 
+   * <em>or</em> the set of live nodes changes.
+   *
+   * <p>
+   * The Watcher will automatically be removed when it's 
+   * <code>onStateChanged</code> returns <code>true</code>
+   * </p>
+   *
+   * <p>
+   * This is method is just syntactic sugar for registering both a {@link DocCollectionWatcher} and 
+   * a {@link LiveNodesListener}.  Callers that only care about one or the other (but not both) are 
+   * encouraged to use the more specific methods register methods as it may reduce the number of 
+   * ZooKeeper watchers needed, and reduce the amount of network/cpu used.
+   * </p>
+   *
+   * @see #registerDocCollectionWatcher
+   * @see #registerLiveNodesListener
    */
   public void registerCollectionStateWatcher(String collection, CollectionStateWatcher stateWatcher) {
+    final DocCollectionAndLiveNodesWatcherWrapper wrapper
+      = new DocCollectionAndLiveNodesWatcherWrapper(collection, stateWatcher);
+    
+    registerDocCollectionWatcher(collection, wrapper);
+    registerLiveNodesListener(wrapper);
+
+    DocCollection state = clusterState.getCollectionOrNull(collection);
+    if (stateWatcher.onStateChanged(liveNodes, state) == true) {
+      removeCollectionStateWatcher(collection, stateWatcher);
+    }
+  }
+
+  /**
+   * Register a DocCollectionWatcher to be called when the state of a collection changes
+   *
+   * <p>
+   * The Watcher will automatically be removed when it's 
+   * <code>onStateChanged</code> returns <code>true</code>
+   * </p>
+   */
+  public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
     AtomicBoolean watchSet = new AtomicBoolean(false);
     collectionWatches.compute(collection, (k, v) -> {
       if (v == null) {
@@ -1616,17 +1654,27 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     DocCollection state = clusterState.getCollectionOrNull(collection);
-    if (stateWatcher.onStateChanged(liveNodes, state) == true) {
-      removeCollectionStateWatcher(collection, stateWatcher);
+    if (stateWatcher.onStateChanged(state) == true) {
+      removeDocCollectionWatcher(collection, stateWatcher);
     }
   }
 
   /**
    * Block until a CollectionStatePredicate returns true, or the wait times out
    *
+   * <p>
    * Note that the predicate may be called again even after it has returned true, so
    * implementors should avoid changing state within the predicate call itself.
+   * </p>
    *
+   * <p>
+   * This implementation utilizes {@link CollectionStateWatcher} internally. 
+   * Callers that don't care about liveNodes are encouraged to use a {@link DocCollection} {@link Predicate} 
+   * instead
+   * </p>
+   * 
+   * @see #waitForState(String, long, TimeUnit, Predicate)
+   * @see #registerCollectionStateWatcher
    * @param collection the collection to watch
    * @param wait       how long to wait
    * @param unit       the units of the wait parameter
@@ -1665,13 +1713,60 @@ public class ZkStateReader implements SolrCloseable {
       waitLatches.remove(latch);
     }
   }
+  
+  /**
+   * Block until a Predicate returns true, or the wait times out
+   *
+   * <p>
+   * Note that the predicate may be called again even after it has returned true, so
+   * implementors should avoid changing state within the predicate call itself.
+   * </p>
+   *
+   * @param collection the collection to watch
+   * @param wait       how long to wait
+   * @param unit       the units of the wait parameter
+   * @param predicate  the predicate to call on state changes
+   * @throws InterruptedException on interrupt
+   * @throws TimeoutException on timeout
+   */
+  public void waitForState(final String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
+      throws InterruptedException, TimeoutException {
+
+    if (closed) {
+      throw new AlreadyClosedException();
+    }
+
+    final CountDownLatch latch = new CountDownLatch(1);
+    waitLatches.add(latch);
+    AtomicReference<DocCollection> docCollection = new AtomicReference<>();
+    DocCollectionWatcher watcher = (c) -> {
+      docCollection.set(c);
+      boolean matches = predicate.test(c);
+      if (matches)
+        latch.countDown();
+
+      return matches;
+    };
+    registerDocCollectionWatcher(collection, watcher);
+
+    try {
+      // wait for the watcher predicate to return true, or time out
+      if (!latch.await(wait, unit))
+        throw new TimeoutException("Timeout waiting to see state for collection=" + collection + " :" + docCollection.get());
+
+    }
+    finally {
+      removeDocCollectionWatcher(collection, watcher);
+      waitLatches.remove(latch);
+    }
+  }
 
   /**
    * Block until a LiveNodesStatePredicate returns true, or the wait times out
-   *
+   * <p>
    * Note that the predicate may be called again even after it has returned true, so
    * implementors should avoid changing state within the predicate call itself.
-   *
+   * </p>
    * @param wait       how long to wait
    * @param unit       the units of the wait parameter
    * @param predicate  the predicate to call on state changes
@@ -1713,14 +1808,35 @@ public class ZkStateReader implements SolrCloseable {
 
   /**
    * Remove a watcher from a collection's watch list.
-   *
+   * <p>
    * This allows Zookeeper watches to be removed if there is no interest in the
    * collection.
+   * </p>
    *
+   * @see #registerCollectionStateWatcher
    * @param collection the collection
    * @param watcher    the watcher
    */
   public void removeCollectionStateWatcher(String collection, CollectionStateWatcher watcher) {
+    final DocCollectionAndLiveNodesWatcherWrapper wrapper
+      = new DocCollectionAndLiveNodesWatcherWrapper(collection, watcher);
+
+    removeDocCollectionWatcher(collection, wrapper);
+    removeLiveNodesListener(wrapper);
+  }
+  
+  /**
+   * Remove a watcher from a collection's watch list.
+   * <p>
+   * This allows Zookeeper watches to be removed if there is no interest in the
+   * collection.
+   * </p>
+   *
+   * @see #registerDocCollectionWatcher
+   * @param collection the collection
+   * @param watcher    the watcher
+   */
+  public void removeDocCollectionWatcher(String collection, DocCollectionWatcher watcher) {
     AtomicBoolean reconstructState = new AtomicBoolean(false);
     collectionWatches.compute(collection, (k, v) -> {
       if (v == null)
@@ -1742,8 +1858,8 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   /* package-private for testing */
-  Set<CollectionStateWatcher> getStateWatchers(String collection) {
-    final Set<CollectionStateWatcher> watchers = new HashSet<>();
+  Set<DocCollectionWatcher> getStateWatchers(String collection) {
+    final Set<DocCollectionWatcher> watchers = new HashSet<>();
     collectionWatches.compute(collection, (k, v) -> {
       if (v != null) {
         watchers.addAll(v.stateWatchers);
@@ -1845,12 +1961,12 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  private void notifyStateWatchers(Set<String> liveNodes, String collection, DocCollection collectionState) {
+  private void notifyStateWatchers(String collection, DocCollection collectionState) {
     if (this.closed) {
       return;
     }
     try {
-      notifications.submit(new Notification(liveNodes, collection, collectionState));
+      notifications.submit(new Notification(collection, collectionState));
     }
     catch (RejectedExecutionException e) {
       if (closed == false) {
@@ -1861,29 +1977,27 @@ public class ZkStateReader implements SolrCloseable {
 
   private class Notification implements Runnable {
 
-    final Set<String> liveNodes;
     final String collection;
     final DocCollection collectionState;
 
-    private Notification(Set<String> liveNodes, String collection, DocCollection collectionState) {
-      this.liveNodes = liveNodes;
+    private Notification(String collection, DocCollection collectionState) {
       this.collection = collection;
       this.collectionState = collectionState;
     }
 
     @Override
     public void run() {
-      List<CollectionStateWatcher> watchers = new ArrayList<>();
+      List<DocCollectionWatcher> watchers = new ArrayList<>();
       collectionWatches.compute(collection, (k, v) -> {
         if (v == null)
           return null;
         watchers.addAll(v.stateWatchers);
         return v;
       });
-      for (CollectionStateWatcher watcher : watchers) {
+      for (DocCollectionWatcher watcher : watchers) {
         try {
-          if (watcher.onStateChanged(liveNodes, collectionState)) {
-            removeCollectionStateWatcher(collection, watcher);
+          if (watcher.onStateChanged(collectionState)) {
+            removeDocCollectionWatcher(collection, watcher);
           }
         } catch (Exception exception) {
           log.warn("Error on calling watcher", exception);
@@ -2118,4 +2232,54 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
+  /** 
+   * Helper class that acts as both a {@link DocCollectionWatcher} and a {@link LiveNodesListener} 
+   * while wraping and delegating to a {@link CollectionStateWatcher}
+   */
+  private final class DocCollectionAndLiveNodesWatcherWrapper implements DocCollectionWatcher, LiveNodesListener {
+    private final String collectionName;
+    private final CollectionStateWatcher delegate;
+
+    public int hashCode() {
+      return collectionName.hashCode() * delegate.hashCode();
+    }
+    
+    public boolean equals(Object other) {
+      if (other instanceof DocCollectionAndLiveNodesWatcherWrapper) {
+        DocCollectionAndLiveNodesWatcherWrapper that
+          = (DocCollectionAndLiveNodesWatcherWrapper) other;
+        return this.collectionName.equals(that.collectionName)
+          && this.delegate.equals(that.delegate);
+      }
+      return false;
+    }
+    
+    public DocCollectionAndLiveNodesWatcherWrapper(final String collectionName,
+                                                   final CollectionStateWatcher delegate) {
+      this.collectionName = collectionName;
+      this.delegate = delegate;
+    }
+    
+    @Override
+    public boolean onStateChanged(DocCollection collectionState) {
+      final boolean result = delegate.onStateChanged(ZkStateReader.this.liveNodes,
+                                                     collectionState);
+      if (result) {
+        // it might be a while before live nodes changes, so proactively remove ourselves
+        removeLiveNodesListener(this);
+      }
+      return result;
+    }
+    
+    @Override
+    public boolean onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
+      final DocCollection collection = ZkStateReader.this.clusterState.getCollectionOrNull(collectionName);
+      final boolean result = delegate.onStateChanged(newLiveNodes, collection);
+      if (result) {
+        // it might be a while before collection changes, so proactively remove ourselves
+        removeDocCollectionWatcher(collectionName, this);
+      }
+      return result;
+    }
+  }
 }

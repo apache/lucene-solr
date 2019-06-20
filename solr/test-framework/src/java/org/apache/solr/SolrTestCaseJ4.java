@@ -1349,7 +1349,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *  For example, this method changed single quoted strings into double quoted strings before
    *  the parser could natively handle them.
    *
-   * This transformation is automatically applied to JSON test srings (like assertJQ).
+   * This transformation is automatically applied to JSON test strings (like assertJQ).
    */
   public static String json(String testJSON) {
     return testJSON;
