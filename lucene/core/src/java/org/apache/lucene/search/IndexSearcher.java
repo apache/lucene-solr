@@ -636,7 +636,7 @@ public class IndexSearcher {
       for (int i = 0; i < leafSlices.length - 1; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
         final C collector = collectors.get(i);
-        FutureTask task = new FutureTask(() -> {
+        FutureTask<C> task = new FutureTask<>(() -> {
           search(Arrays.asList(leaves), weight, collector);
           return collector;
         });
