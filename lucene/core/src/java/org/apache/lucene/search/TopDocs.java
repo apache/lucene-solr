@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.search;
 
+import java.util.Comparator;
+
 import org.apache.lucene.util.PriorityQueue;
 
 /** Represents hits returned by {@link
@@ -28,6 +30,25 @@ public class TopDocs {
   /** The top hits for the query. */
   public ScoreDoc[] scoreDocs;
 
+  /** Internal comparator with shardIndex */
+  private static final Comparator<ScoreDoc> shardIndexTieBreaker = Comparator.comparingInt(d -> d.shardIndex);
+
+  /** Internal comparator with docID */
+  private static final Comparator<ScoreDoc> docIDTieBreaker = Comparator.comparingInt(d -> d.doc);
+
+  /** Default comparator */
+  private static final Comparator<ScoreDoc> defaultTieBreaker = new Comparator<ScoreDoc>() {
+    @Override
+    public int compare(ScoreDoc o1, ScoreDoc o2) {
+      int shardResultVal = shardIndexTieBreaker.compare(o1, o2);
+      if (shardResultVal != 0) {
+        return shardResultVal;
+      }
+
+      return docIDTieBreaker.compare(o1, o2);
+    }
+  };
+
   /** Constructs a TopDocs. */
   public TopDocs(TotalHits totalHits, ScoreDoc[] scoreDocs) {
     this.totalHits = totalHits;
@@ -39,66 +60,52 @@ public class TopDocs {
     // Which shard (index into shardHits[]):
     final int shardIndex;
 
-    // True if we should use the incoming ScoreDoc.shardIndex for sort order
-    final boolean useScoreDocIndex;
-
     // Which hit within the shard:
     int hitIndex;
 
-    ShardRef(int shardIndex, boolean useScoreDocIndex) {
+    ShardRef(int shardIndex) {
       this.shardIndex = shardIndex;
-      this.useScoreDocIndex = useScoreDocIndex;
     }
 
     @Override
     public String toString() {
       return "ShardRef(shardIndex=" + shardIndex + " hitIndex=" + hitIndex + ")";
     }
-
-    int getShardIndex(ScoreDoc scoreDoc) {
-      if (useScoreDocIndex) {
-        if (scoreDoc.shardIndex == -1) {
-          throw new IllegalArgumentException("setShardIndex is false but TopDocs[" + shardIndex + "].scoreDocs[" + hitIndex + "] is not set");
-        }
-        return scoreDoc.shardIndex;
-      } else {
-        // NOTE: we don't assert that shardIndex is -1 here, because caller could in fact have set it but asked us to ignore it now
-        return shardIndex;
-      }
-    }
   }
 
   /**
-   * if we need to tie-break since score / sort value are the same we first compare shard index (lower shard wins)
-   * and then iff shard index is the same we use the hit index.
+   * Use the tie breaker if provided. If tie breaker returns 0 signifying equal values, we use shard indices
+   * to tie break intra shard ties
    */
-  static boolean tieBreakLessThan(ShardRef first, ScoreDoc firstDoc, ShardRef second, ScoreDoc secondDoc) {
-    final int firstShardIndex = first.getShardIndex(firstDoc);
-    final int secondShardIndex = second.getShardIndex(secondDoc);
-    // Tie break: earlier shard wins
-    if (firstShardIndex< secondShardIndex) {
-      return true;
-    } else if (firstShardIndex > secondShardIndex) {
-      return false;
-    } else {
+  static boolean tieBreakLessThan(ShardRef first, ScoreDoc firstDoc, ShardRef second, ScoreDoc secondDoc,
+                                  Comparator<ScoreDoc> tieBreaker) {
+    assert tieBreaker != null;
+    int value = tieBreaker.compare(firstDoc, secondDoc);
+
+    if (value == 0) {
+      // Equal Values
       // Tie break in same shard: resolve however the
       // shard had resolved it:
       assert first.hitIndex != second.hitIndex;
       return first.hitIndex < second.hitIndex;
     }
+
+    return value < 0 ? true : false;
   }
 
   // Specialized MergeSortQueue that just merges by
   // relevance score, descending:
   private static class ScoreMergeSortQueue extends PriorityQueue<ShardRef> {
     final ScoreDoc[][] shardHits;
+    final Comparator<ScoreDoc> tieBreakerComparator;
 
-    public ScoreMergeSortQueue(TopDocs[] shardHits) {
+    public ScoreMergeSortQueue(TopDocs[] shardHits, Comparator<ScoreDoc> tieBreakerComparator) {
       super(shardHits.length);
       this.shardHits = new ScoreDoc[shardHits.length][];
       for(int shardIDX=0;shardIDX<shardHits.length;shardIDX++) {
         this.shardHits[shardIDX] = shardHits[shardIDX].scoreDocs;
       }
+      this.tieBreakerComparator = tieBreakerComparator;
     }
 
     // Returns true if first is < second
@@ -112,7 +119,7 @@ public class TopDocs {
       } else if (firstScoreDoc.score > secondScoreDoc.score) {
         return true;
       } else {
-        return tieBreakLessThan(first, firstScoreDoc, second, secondScoreDoc);
+        return tieBreakLessThan(first, firstScoreDoc, second, secondScoreDoc, tieBreakerComparator);
       }
     }
   }
@@ -123,10 +130,12 @@ public class TopDocs {
     final ScoreDoc[][] shardHits;
     final FieldComparator<?>[] comparators;
     final int[] reverseMul;
+    final Comparator<ScoreDoc> tieBreaker;
 
-    public MergeSortQueue(Sort sort, TopDocs[] shardHits) {
+    public MergeSortQueue(Sort sort, TopDocs[] shardHits, Comparator<ScoreDoc> tieBreaker) {
       super(shardHits.length);
       this.shardHits = new ScoreDoc[shardHits.length][];
+      this.tieBreaker = tieBreaker;
       for(int shardIDX=0;shardIDX<shardHits.length;shardIDX++) {
         final ScoreDoc[] shard = shardHits[shardIDX].scoreDocs;
         //System.out.println("  init shardIdx=" + shardIDX + " hits=" + shard);
@@ -175,7 +184,7 @@ public class TopDocs {
           return cmp < 0;
         }
       }
-      return tieBreakLessThan(first, firstFD, second, secondFD);
+      return tieBreakLessThan(first, firstFD, second, secondFD, tieBreaker);
     }
   }
 
@@ -183,25 +192,35 @@ public class TopDocs {
    *  the provided TopDocs, sorting by score. Each {@link TopDocs}
    *  instance must be sorted.
    *
-   *  @see #merge(int, int, TopDocs[], boolean)
+   *  @see #merge(int, int, TopDocs[])
    *  @lucene.experimental */
   public static TopDocs merge(int topN, TopDocs[] shardHits) {
-    return merge(0, topN, shardHits, true);
+    return merge(0, topN, shardHits);
   }
 
   /**
    * Same as {@link #merge(int, TopDocs[])} but also ignores the top
    * {@code start} top docs. This is typically useful for pagination.
    *
-   * Note: If {@code setShardIndex} is true, this method will assume the incoming order of {@code shardHits} reflects
-   * each shard's index and will fill the {@link ScoreDoc#shardIndex}, otherwise
-   * it must already be set for all incoming {@code ScoreDoc}s, which can be useful when doing multiple reductions
-   * (merges) of TopDocs.
+   * docIDs are expected to be in consistent pattern i.e. either all ScoreDocs have their shardIndex set,
+   * or all have them as -1 (signifying that all hits belong to same searcher)
    *
    * @lucene.experimental
    */
-  public static TopDocs merge(int start, int topN, TopDocs[] shardHits, boolean setShardIndex) {
-    return mergeAux(null, start, topN, shardHits, setShardIndex);
+  public static TopDocs merge(int start, int topN, TopDocs[] shardHits) {
+    return mergeAux(null, start, topN, shardHits, defaultTieBreaker);
+  }
+
+  /**
+   * Same as above, but accepts the passed in tie breaker
+   *
+   * docIDs are expected to be in consistent pattern i.e. either all ScoreDocs have their shardIndex set,
+   * or all have them as -1 (signifying that all hits belong to same searcher)
+   *
+   * @lucene.experimental
+   */
+  public static TopDocs merge(int start, int topN, TopDocs[] shardHits, Comparator<ScoreDoc> tieBreaker) {
+    return mergeAux(null, start, topN, shardHits, tieBreaker);
   }
 
   /** Returns a new TopFieldDocs, containing topN results across
@@ -210,39 +229,51 @@ public class TopDocs {
    *  the same Sort, and sort field values must have been
    *  filled (ie, <code>fillFields=true</code> must be
    *  passed to {@link TopFieldCollector#create}).
-   *  @see #merge(Sort, int, int, TopFieldDocs[], boolean)
+   *  @see #merge(Sort, int, int, TopFieldDocs[])
    * @lucene.experimental */
   public static TopFieldDocs merge(Sort sort, int topN, TopFieldDocs[] shardHits) {
-    return merge(sort, 0, topN, shardHits, true);
+    return merge(sort, 0, topN, shardHits);
   }
 
   /**
    * Same as {@link #merge(Sort, int, TopFieldDocs[])} but also ignores the top
    * {@code start} top docs. This is typically useful for pagination.
    *
-   * Note: If {@code setShardIndex} is true, this method will assume the incoming order of {@code shardHits} reflects
-   * each shard's index and will fill the {@link ScoreDoc#shardIndex}, otherwise
-   * it must already be set for all incoming {@code ScoreDoc}s, which can be useful when doing multiple reductions
-   * (merges) of TopDocs.
+   * docIDs are expected to be in consistent pattern i.e. either all ScoreDocs have their shardIndex set,
+   * or all have them as -1 (signifying that all hits belong to same searcher)
    *
    * @lucene.experimental
    */
-  public static TopFieldDocs merge(Sort sort, int start, int topN, TopFieldDocs[] shardHits, boolean setShardIndex) {
+  public static TopFieldDocs merge(Sort sort, int start, int topN, TopFieldDocs[] shardHits) {
     if (sort == null) {
       throw new IllegalArgumentException("sort must be non-null when merging field-docs");
     }
-    return (TopFieldDocs) mergeAux(sort, start, topN, shardHits, setShardIndex);
+    return (TopFieldDocs) mergeAux(sort, start, topN, shardHits, defaultTieBreaker);
+  }
+
+  /**
+   * Pass in a custom tie breaker for ordering results
+   *
+   * @lucene.experimental
+   */
+  public static TopFieldDocs merge(Sort sort, int start, int topN, TopFieldDocs[] shardHits,
+                                   Comparator<ScoreDoc> tieBreaker) {
+    if (sort == null) {
+      throw new IllegalArgumentException("sort must be non-null when merging field-docs");
+    }
+    return (TopFieldDocs) mergeAux(sort, start, topN, shardHits, tieBreaker);
   }
 
   /** Auxiliary method used by the {@link #merge} impls. A sort value of null
    *  is used to indicate that docs should be sorted by score. */
-  private static TopDocs mergeAux(Sort sort, int start, int size, TopDocs[] shardHits, boolean setShardIndex) {
+  private static TopDocs mergeAux(Sort sort, int start, int size, TopDocs[] shardHits,
+                                  Comparator<ScoreDoc> tieBreaker) {
 
     final PriorityQueue<ShardRef> queue;
     if (sort == null) {
-      queue = new ScoreMergeSortQueue(shardHits);
+      queue = new ScoreMergeSortQueue(shardHits, tieBreaker);
     } else {
-      queue = new MergeSortQueue(sort, shardHits);
+      queue = new MergeSortQueue(sort, shardHits, tieBreaker);
     }
 
     long totalHitCount = 0;
@@ -260,11 +291,12 @@ public class TopDocs {
       }
       if (shard.scoreDocs != null && shard.scoreDocs.length > 0) {
         availHitCount += shard.scoreDocs.length;
-        queue.add(new ShardRef(shardIDX, setShardIndex == false));
+        queue.add(new ShardRef(shardIDX));
       }
     }
 
     final ScoreDoc[] hits;
+    final boolean unsetShardIndex = shardHits[0].scoreDocs[0].shardIndex == -1;
     if (availHitCount <= start) {
       hits = new ScoreDoc[0];
     } else {
@@ -276,11 +308,12 @@ public class TopDocs {
         assert queue.size() > 0;
         ShardRef ref = queue.top();
         final ScoreDoc hit = shardHits[ref.shardIndex].scoreDocs[ref.hitIndex++];
-        if (setShardIndex) {
-          // caller asked us to record shardIndex (index of the TopDocs array) this hit is coming from:
-          hit.shardIndex = ref.shardIndex;
-        } else if (hit.shardIndex == -1) {
-          throw new IllegalArgumentException("setShardIndex is false but TopDocs[" + ref.shardIndex + "].scoreDocs[" + (ref.hitIndex-1) + "] is not set");
+
+        //Irrespective of whether we use shard indices for tie breaking or not, we check for consistent
+        // order in shard indices to defend against potential bugs
+        if ((unsetShardIndex && hit.shardIndex != -1) ||
+            (unsetShardIndex == false && hit.shardIndex == -1)) {
+          throw new IllegalArgumentException("Inconsistent order of shard indices");
         }
           
         if (hitUpto >= start) {
