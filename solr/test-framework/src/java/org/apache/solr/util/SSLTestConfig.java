@@ -105,7 +105,6 @@ public class SSLTestConfig {
     } else {
       this.useSsl = useSSL;
     }
-    this.useSsl = useSSL;
     this.clientAuth = clientAuth;
     this.checkPeerName = checkPeerName;
 
