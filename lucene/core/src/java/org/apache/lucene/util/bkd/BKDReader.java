@@ -602,7 +602,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
   private int readCompressedDim(IndexInput in) throws IOException {
     int compressedDim = in.readByte();
-    if (compressedDim < -2 || compressedDim >= numDataDims) {
+    if (compressedDim < -2 || compressedDim >= numDataDims || (version < BKDWriter.VERSION_LOW_CARDINALITY_LEAVES && compressedDim == -2)) {
       throw new CorruptIndexException("Got compressedDim="+compressedDim, in);
     }
     return compressedDim;
