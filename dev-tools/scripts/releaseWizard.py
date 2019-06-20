@@ -50,10 +50,15 @@ from collections import OrderedDict
 from datetime import datetime
 from datetime import timedelta
 
-import holidays
-import yaml
-from ics import Calendar, Event
-from jinja2 import Environment
+try:
+    import holidays
+    import yaml
+    from ics import Calendar, Event
+    from jinja2 import Environment
+except:
+    print("You lack some of the module dependencies to run this script.")
+    print("Please run 'pip3 install -r requirements.txt' and try again.")
+    sys.exit(1)
 
 import scriptutil
 from consolemenu import ConsoleMenu
