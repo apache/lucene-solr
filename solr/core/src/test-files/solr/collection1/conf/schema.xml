@@ -500,7 +500,8 @@
   <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
   <field name="id" type="string" indexed="true" stored="${solr.tests.id.stored:true}" multiValued="false" required="false" docValues="${solr.tests.id.docValues:false}"/>
-  <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="_root_" type="string" indexed="true" stored="false"/>
+  <field name="_nest_path_" type="_nest_path_" /><fieldType name="_nest_path_" class="solr.NestPathField"/>
 
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <field name="uuid" type="uuid" stored="true"/>
