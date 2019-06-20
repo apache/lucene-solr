@@ -5,6 +5,12 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 8.2.0 =======================
 
+API Changes
+
+* LUCENE-8865: IndexSearcher now uses Executor instead of ExecutorSerivce.
+  This change is fully backwards compatible since ExecutorService directly
+  implements Executor. (Simon Willnauer)
+
 New Features
 
 * LUCENE-8815: Provide a DoubleValues implementation for retrieving the value of features without
