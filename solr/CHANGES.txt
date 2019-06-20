@@ -163,7 +163,11 @@ Jetty 9.4.14.v20181114
 Bug Fixes
 ----------------------
 
-SOLR-13510: Intermittent 401's for internode requests with basicauth enabled (Cao Manh Dat, Colvin Cowie)
+* SOLR-13510: Intermittent 401's for internode requests with basicauth enabled (Cao Manh Dat, Colvin Cowie)
+
+* SOLR-13523: In 8.1, Atomic Updates were broken (NPE) when the schema declared the new _nest_path_ field even if you
+  weren't using nested docs.  In-place updates were not affected (worked).
+  Reminder: if you don't need nested docs then remove both _root_ and _nest_path_ !  (David Smiley)
 
 ==================  8.1.1 ==================
 
