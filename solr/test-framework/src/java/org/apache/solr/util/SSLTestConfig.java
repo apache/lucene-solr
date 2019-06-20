@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util;
 
-import java.lang.invoke.MethodHandles;
+import javax.net.ssl.SSLContext;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -25,8 +25,6 @@ import java.security.SecureRandom;
 import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
 import java.util.Random;
-
-import javax.net.ssl.SSLContext;
 
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -44,8 +42,6 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * An SSLConfig that provides {@link SSLConfig} and {@link SchemaRegistryProvider} for both clients and servers
@@ -53,7 +49,6 @@ import org.slf4j.LoggerFactory;
  * Solr test-framework classes
  */
 public class SSLTestConfig {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String TEST_KEYSTORE_BOGUSHOST_RESOURCE = "SSLTestConfig.hostname-and-ip-missmatch.keystore";
   private static final String TEST_KEYSTORE_LOCALHOST_RESOURCE = "SSLTestConfig.testing.keystore";
   private static final String TEST_PASSWORD = "secret";
@@ -104,11 +99,11 @@ public class SSLTestConfig {
    * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
    */
   public SSLTestConfig(boolean useSSL, boolean clientAuth, boolean checkPeerName) {
-    if (useSSL) {
-      if (Constants.JRE_IS_MINIMUM_JAVA11 && Runtime.version().compareTo(Runtime.Version.parse("11.0.3")) < 0) {
-        log.warn("SOLR-12988: TLSv1.3 in Java 11.0.2 or lower versions does not working correctly with HttpClient, disabling SSL for tests");
-        useSSL = false;
-      }
+    // @AwaitsFix: SOLR-12988 - ssl issues on Java 11/12
+    if (Constants.JRE_IS_MINIMUM_JAVA11) {
+      this.useSsl = false;
+    } else {
+      this.useSsl = useSSL;
     }
     this.useSsl = useSSL;
     this.clientAuth = clientAuth;

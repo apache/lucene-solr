@@ -289,6 +289,7 @@ public class Lang {
         .withFunctionName("recNum", RecNumEvaluator.class)
         .withFunctionName("notNull", NotNullEvaluator.class)
         .withFunctionName("isNull", IsNullEvaluator.class)
+        .withFunctionName("matches", MatchesEvaluator.class)
 
         // Boolean Stream Evaluators
 
