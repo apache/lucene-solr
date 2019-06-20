@@ -39,7 +39,10 @@ import org.apache.lucene.util.IOUtils;
  */
 public abstract class BinaryDictionary implements Dictionary {
   
-  enum ResourceScheme {
+  /**
+   * Used to specify where (dictionary) resources get loaded from.
+   */
+  public enum ResourceScheme {
     CLASSPATH, FILE
   }
 
