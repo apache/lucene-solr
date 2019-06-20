@@ -87,10 +87,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     /*
      * The stream factory will always contain the zkUrl for the given collection Adds default streams with their
      * corresponding function names. These defaults can be overridden or added to in the solrConfig in the stream
-     * RequestHandler def. Example config override 
-     * <lst name="streamFunctions"> 
-     *  <str name="group">org.apache.solr.client.solrj.io.stream.ReducerStream</str> 
-     *  <str name="count">org.apache.solr.client.solrj.io.stream.RecordCountStream</str> 
+     * RequestHandler def. Example config override
+     * <lst name="streamFunctions">
+     *  <str name="group">org.apache.solr.client.solrj.io.stream.ReducerStream</str>
+     *  <str name="count">org.apache.solr.client.solrj.io.stream.RecordCountStream</str>
      * </lst>
      */
 
@@ -162,6 +162,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     int worker = params.getInt("workerID", 0);
     int numWorkers = params.getInt("numWorkers", 1);
+    boolean local = params.getBool("streamLocalOnly", false);
     StreamContext context = new StreamContext();
     context.put("shards", getCollectionShards(params));
     context.workerID = worker;
@@ -171,6 +172,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     context.setObjectCache(objectCache);
     context.put("core", this.coreName);
     context.put("solr-core", req.getCore());
+    context.setLocal(local);
     tupleStream.setStreamContext(context);
 
     // if asking for explanation then go get it

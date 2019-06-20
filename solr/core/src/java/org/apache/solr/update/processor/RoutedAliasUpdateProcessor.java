@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.common.SolrException;
@@ -33,10 +35,12 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
@@ -67,6 +71,11 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   private static final String ALIAS_DISTRIB_UPDATE_PARAM = "alias." + DISTRIB_UPDATE_PARAM; // param
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  // make sure we don't request collection properties any more frequently than once a minute during
+  // slow continuous indexing, and even less frequently during bulk indexing. (cache is updated by zk
+  // watch instead of re-requested until indexing has been stopped for the duration specified here)
+  public static final int CACHE_FOR_MILLIS = 60000;
+
   // refs to std infrastructure
   private final SolrQueryRequest req;
   private final SolrCmdDistributor cmdDistrib;
@@ -79,9 +88,24 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
 
   public static UpdateRequestProcessor wrap(SolrQueryRequest req, UpdateRequestProcessor next) {
-    //TODO get from "Collection property"
-    final String aliasName = req.getCore().getCoreDescriptor()
-        .getCoreProperty(RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP, null);
+    String aliasName = null;
+    // Demeter please don't arrest us... hide your eyes :(
+    // todo: a core should have a more direct way of finding a collection name, and the collection properties
+    SolrCore core = req.getCore();
+    CoreDescriptor coreDescriptor = core.getCoreDescriptor();
+    CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
+    if (cloudDescriptor != null) {
+      String collectionName = cloudDescriptor.getCollectionName();
+      CoreContainer coreContainer = core.getCoreContainer();
+      ZkController zkController = coreContainer.getZkController();
+      ZkStateReader zkStateReader = zkController.getZkStateReader();
+      Map<String, String> collectionProperties = zkStateReader.getCollectionProperties(collectionName, CACHE_FOR_MILLIS);
+      aliasName = collectionProperties.get(RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP);
+    }
+    // fall back on core properties (legacy)
+    if (StringUtils.isBlank(aliasName)) {
+      aliasName = coreDescriptor.getCoreProperty(RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP, null);
+    }
     final DistribPhase shardDistribPhase =
         DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
     final DistribPhase aliasDistribPhase =
@@ -105,7 +129,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   private static Map<String, String> getAliasProps(SolrQueryRequest req, String aliasName) {
     ZkController zkController = req.getCore().getCoreContainer().getZkController();
     final Map<String, String> aliasProperties = zkController.getZkStateReader().getAliases().getCollectionAliasProperties(aliasName);
-    if (aliasProperties == null) {
+    if (aliasProperties.isEmpty()) {
       throw RoutedAlias.newAliasMustExistException(aliasName); // if it did exist, we'd have a non-null map
     }
     return aliasProperties;

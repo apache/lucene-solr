@@ -246,7 +246,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   @Override
   public Map<String, String> getAliasProperties(String alias) {
     getAliases(false);
-    return Collections.unmodifiableMap(aliasProperties.get(alias));
+    return Collections.unmodifiableMap(aliasProperties.getOrDefault(alias, Collections.emptyMap()));
   }
 
   @Override

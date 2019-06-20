@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema.analysis;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.noggit.JSONUtil;
 import org.restlet.ext.servlet.ServerServlet;
 
 /**
@@ -98,8 +99,8 @@ public class TestManagedStopFilterFactory extends RestTestBase {
              "/wordSet/managedList==[]");
           
     // add some stopwords and verify they were added
-    assertJPut(endpoint, 
-               JSONUtil.toJSON(Arrays.asList("a", "an", "the")),
+    assertJPut(endpoint,
+        Utils.toJSONString(Arrays.asList("a", "an", "the")),
                "/responseHeader/status==0");
           
     // test requesting a specific stop word that exists / does not exist
@@ -202,7 +203,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
 
     //now we put a stopword with an umlaut
     assertJPut(endpoint,
-        JSONUtil.toJSON(Arrays.asList("schön")),
+        Utils.toJSONString(Arrays.asList("schön")),
         "/responseHeader/status==0");
 
     //let's check if it exists

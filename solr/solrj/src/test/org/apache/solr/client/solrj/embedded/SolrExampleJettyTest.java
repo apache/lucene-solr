@@ -43,7 +43,8 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
+
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /**
  * TODO? perhaps use:
@@ -94,13 +95,13 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
     SolrDocument doc = rsp.getResults().get(0);
     String src = (String) doc.getFieldValue("_src_");
-    Map m = (Map) ObjectBuilder.fromJSON(src);
+    Map m = (Map) fromJSONString(src);
     assertEquals("abc1",m.get("id"));
     assertEquals("name1",m.get("name"));
 
     doc = rsp.getResults().get(1);
     src = (String) doc.getFieldValue("_src_");
-    m = (Map) ObjectBuilder.fromJSON(src);
+    m = (Map) fromJSONString(src);
     assertEquals("name2",m.get("name"));
 
   }

@@ -31,6 +31,11 @@ import org.apache.solr.common.util.Pair;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 public class Suggestion {
+
+  public enum Type {
+    violation, repair, improvement, unresolved_violation;
+  }
+
   static class Ctx {
     long endTime = -1;
     int max = Integer.MAX_VALUE;
@@ -38,10 +43,10 @@ public class Suggestion {
     public Violation violation;
     List<Suggester.SuggestionInfo> suggestions = new ArrayList<>();
     SolrRequest addSuggestion(Suggester suggester) {
-      return addSuggestion(suggester, "violation");
+      return addSuggestion(suggester, Type.violation);
     }
 
-    SolrRequest addSuggestion(Suggester suggester, String type) {
+    SolrRequest addSuggestion(Suggester suggester, Type type) {
       SolrRequest op = suggester.getSuggestion();
       if (op != null) {
         session = suggester.getSession();

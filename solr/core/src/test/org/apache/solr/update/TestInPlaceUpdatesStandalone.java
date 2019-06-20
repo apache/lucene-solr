@@ -41,6 +41,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -1086,7 +1087,30 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
       assertEquals(version1, cmd.prevVersion);
     }
   }
-  
+
+  public void testFailOnVersionConflicts() throws Exception {
+
+    assertU(add(doc("id", "1", "title_s", "first")));
+    assertU(commit());
+    assertQ(req("q", "title_s:first"), "//*[@numFound='1']");
+    assertU(add(doc("id", "1", "title_s", "first1")));
+    assertU(commit());
+    assertQ(req("q", "title_s:first1"), "//*[@numFound='1']");
+    assertFailedU(add(doc("id", "1", "title_s", "first2", "_version_", "-1")));
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("_version_", "-1");
+    SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "first2");
+    SolrInputDocument doc2 = new SolrInputDocument("id", "2", "title_s", "second");
+    SolrException ex = expectThrows(SolrException.class, "This should have failed", () -> updateJ(jsonAdd(doc, doc2), params));
+
+    assertTrue(ex.getMessage().contains("version conflict for"));
+    params.add(CommonParams.FAIL_ON_VERSION_CONFLICTS, "false");
+    updateJ(jsonAdd(doc, doc2), params);//this should not throw any error
+    assertU(commit());
+    assertQ(req("q", "title_s:second"), "//*[@numFound='1']");
+    assertQ(req("q", "title_s:first1"), "//*[@numFound='1']");// but the old value exists
+    assertQ(req("q", "title_s:first2"), "//*[@numFound='0']");// and the new value does not reflect
+  }
   /** 
    * Helper method that sets up a req/cmd to run {@link AtomicUpdateDocumentMerger#computeInPlaceUpdatableFields} 
    * on the specified solr input document.

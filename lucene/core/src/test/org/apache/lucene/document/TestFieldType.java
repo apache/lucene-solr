@@ -72,6 +72,27 @@ public class TestFieldType extends LuceneTestCase {
     assertEquals("pointDataDimensionCount=1,pointIndexDimensionCount=1,pointNumBytes=4", ft.toString());
   }
 
+  /**
+   * FieldType's attribute map should not be modifiable/add after freeze
+   */
+  public void testAttributeMapFrozen() {
+    FieldType ft = new FieldType();
+    ft.putAttribute("dummy", "d");
+    ft.freeze();
+    expectThrows(IllegalStateException.class, () -> ft.putAttribute("dummy", "a"));
+  }
+
+  /**
+   * FieldType's attribute map can be changed if not frozen
+   */
+  public void testAttributeMapNotFrozen() {
+    FieldType ft = new FieldType();
+    ft.putAttribute("dummy", "d");
+    ft.putAttribute("dummy", "a");
+    assertEquals(ft.getAttributes().size(), 1);
+    assertEquals(ft.getAttributes().get("dummy"), "a");
+  }
+
   private static Object randomValue(Class<?> clazz) {
     if (clazz.isEnum()) {
       return RandomPicks.randomFrom(random(), clazz.getEnumConstants());

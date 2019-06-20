@@ -72,6 +72,7 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     simulated = random().nextBoolean();
+    simulated = true;
     log.info("####### Using simulated components? " + simulated);
 
     configureCluster(NODE_COUNT)
@@ -105,20 +106,19 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
 
     if (simulated) {
       // initialize simulated provider
-      SimCloudManager simCloudManager = new SimCloudManager(TimeSource.get("simTime:10"));
-      simCloudManager.getSimClusterStateProvider().simSetClusterProperties(clusterProperties);
-      simCloudManager.getSimDistribStateManager().simSetAutoScalingConfig(autoScalingConfig);
-      nodeValues.forEach((n, values) -> {
-        try {
-          simCloudManager.getSimNodeStateProvider().simSetNodeValues(n, values);
-        } catch (InterruptedException e) {
-          fail("Interrupted:" + e);
-        }
-      });
-      simCloudManager.getSimClusterStateProvider().simSetClusterState(realState);
-      ClusterState simState = simCloudManager.getClusterStateProvider().getClusterState();
+      cloudManager = SimCloudManager.createCluster(realManager, null, TimeSource.get("simTime:10"));
+//      simCloudManager.getSimClusterStateProvider().simSetClusterProperties(clusterProperties);
+//      simCloudManager.getSimDistribStateManager().simSetAutoScalingConfig(autoScalingConfig);
+//      nodeValues.forEach((n, values) -> {
+//        try {
+//          simCloudManager.getSimNodeStateProvider().simSetNodeValues(n, values);
+//        } catch (InterruptedException e) {
+//          fail("Interrupted:" + e);
+//        }
+//      });
+//      simCloudManager.getSimClusterStateProvider().simSetClusterState(realState);
+      ClusterState simState = cloudManager.getClusterStateProvider().getClusterState();
       assertClusterStateEquals(realState, simState);
-      cloudManager = simCloudManager;
     } else {
       cloudManager = realManager;
     }
@@ -137,7 +137,7 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
         for (Replica oneReplica : slice.getReplicas()) {
           Replica twoReplica = sTwo.getReplica(oneReplica.getName());
           assertNotNull(twoReplica);
-          assertEquals(oneReplica, twoReplica);
+          SimSolrCloudTestCase.assertReplicaEquals(oneReplica, twoReplica);
         }
       });
     });

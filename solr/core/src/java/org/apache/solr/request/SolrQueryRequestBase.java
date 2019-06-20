@@ -119,10 +119,6 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     // should the core populate one in a factory method to create requests?
     // or there could be a setSearcher() method that Solr calls
 
-    if(!core.isSearchEnabled()){
-      throw new SolrException( SolrException.ErrorCode.FORBIDDEN,"Search is temporarily disabled");
-    }
-
     if (searcherHolder==null) {
       searcherHolder = core.getSearcher();
     }

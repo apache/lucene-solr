@@ -162,16 +162,25 @@ public class LookupBenchmarkTest extends LuceneTestCase {
    */
   private Lookup buildLookup(Class<? extends Lookup> cls, Input[] input) throws Exception {
     Lookup lookup = null;
-    try {
-      lookup = cls.getConstructor().newInstance();
-    } catch (InstantiationException e) {
-      Analyzer a = new MockAnalyzer(random, MockTokenizer.KEYWORD, false);
-      if (cls == AnalyzingInfixSuggester.class || cls == BlendedInfixSuggester.class) {
-        Constructor<? extends Lookup> ctor = cls.getConstructor(Directory.class, Analyzer.class);
-        lookup = ctor.newInstance(FSDirectory.open(createTempDir("LookupBenchmarkTest")), a);
-      } else {
-        Constructor<? extends Lookup> ctor = cls.getConstructor(Analyzer.class);
-        lookup = ctor.newInstance(a);
+    if (cls == TSTLookup.class || cls == FSTCompletionLookup.class || cls == WFSTCompletionLookup.class)  {
+        Constructor<? extends Lookup> ctor = cls.getConstructor(Directory.class, String.class);
+        lookup = ctor.newInstance(FSDirectory.open(createTempDir("LookupBenchmarkTest")), "test");
+    } else {
+      try {
+        lookup = cls.getConstructor().newInstance();
+      } catch (InstantiationException | NoSuchMethodException e) {
+        Analyzer a = new MockAnalyzer(random, MockTokenizer.KEYWORD, false);
+        if (cls == AnalyzingInfixSuggester.class || cls == BlendedInfixSuggester.class) {
+          Constructor<? extends Lookup> ctor = cls.getConstructor(Directory.class, Analyzer.class);
+          lookup = ctor.newInstance(FSDirectory.open(createTempDir("LookupBenchmarkTest")), a);
+        } else if (cls == AnalyzingSuggester.class) {
+          lookup = new AnalyzingSuggester(FSDirectory.open(createTempDir("LookupBenchmarkTest")), "test", a);
+        } else if (cls == FuzzySuggester.class) {
+          lookup = new FuzzySuggester(FSDirectory.open(createTempDir("LookupBenchmarkTest")), "test", a);
+        } else {
+          Constructor<? extends Lookup> ctor = cls.getConstructor(Analyzer.class);
+          lookup = ctor.newInstance(a);
+        }
       }
     }
     lookup.build(new InputArrayIterator(input));

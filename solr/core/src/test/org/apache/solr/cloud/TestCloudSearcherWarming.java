@@ -114,9 +114,12 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
     JettySolrRunner runner = cluster.getJettySolrRunner(0);
     runner.stop();
-    waitForState("jetty count:" + cluster.getJettySolrRunners().size(), collectionName, clusterShape(1, 0));
     
     cluster.waitForJettyToStop(runner);
+    // check waitForState only after we are sure the node has shutdown and have forced an update to liveNodes
+    // ie: workaround SOLR-13490
+    cluster.getSolrClient().getZkStateReader().updateLiveNodes();
+    waitForState("jetty count:" + cluster.getJettySolrRunners().size(), collectionName, clusterShape(1, 0));
     
     // restart
     sleepTime.set(1000);
@@ -302,8 +305,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
   public static class SleepingSolrEventListener implements SolrEventListener {
     @Override
     public void init(NamedList args) {
-      new RuntimeException().printStackTrace();
-      System.out.println(args);
+      // No-Op
     }
 
     @Override
@@ -325,7 +327,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         try {
           Thread.sleep(sleepTime.get());
         } catch (InterruptedException e) {
-          e.printStackTrace();
+          log.warn("newSearcher was interupdated", e);
         }
         log.info("Finished sleeping for {} on newSearcher: {}, currentSearcher: {} belonging to (newest) core: {}, id: {}", sleepTime.get(), newSearcher, currentSearcher, newSearcher.getCore().getName(), newSearcher.getCore());
       }

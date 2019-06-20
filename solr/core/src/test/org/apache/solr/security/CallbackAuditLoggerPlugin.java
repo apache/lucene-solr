@@ -48,6 +48,7 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
       try {
         Thread.sleep(delay);
       } catch (InterruptedException e) {
+        log.warn("audit() interrupted while waiting to send callback, should not happen");
       }
     }
     out.write(formatter.formatEvent(event) + "\n");

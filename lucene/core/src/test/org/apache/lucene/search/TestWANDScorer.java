@@ -225,7 +225,7 @@ public class TestWANDScorer extends LuceneTestCase {
 
     for (int iter = 0; iter < 100; ++iter) {
       int start = random().nextInt(10);
-      int numClauses = 2;//random().nextInt(1 << random().nextInt(5));
+      int numClauses = random().nextInt(1 << random().nextInt(5));
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       for (int i = 0; i < numClauses; ++i) {
         builder.add(maybeWrap(new TermQuery(new Term("foo", Integer.toString(start + i)))), Occur.SHOULD);

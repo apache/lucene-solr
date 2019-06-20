@@ -25,6 +25,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,16 +39,24 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     initCore("solrconfig-minimal.xml", "schema.xml");
     h.getCoreContainer().waitForLoadingCoresToFinish(30000);
 
-    // manually register some metrics in solr.jvm and solr.jetty - TestHarness doesn't init them
-    Counter c = h.getCoreContainer().getMetricManager().counter(null, "solr.jvm", "foo");
+    // manually register & seed some metrics in solr.jvm and solr.jetty for testing via handler
+    // (use "solrtest_" prefix just in case the jvm or jetty ads a "foo" metric at some point)
+    Counter c = h.getCoreContainer().getMetricManager().counter(null, "solr.jvm", "solrtest_foo");
     c.inc();
-    c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "foo");
+    c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "solrtest_foo");
     c.inc(2);
     // test escapes
-    c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "foo:bar");
+    c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "solrtest_foo:bar");
     c.inc(3);
   }
 
+  @AfterClass
+  public static void cleanupMetrics() throws Exception {
+    h.getCoreContainer().getMetricManager().registry("solr.jvm"  ).remove("solrtest_foo");
+    h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo");
+    h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo:bar");
+  }
+  
   @Test
   public void test() throws Exception {
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
@@ -257,7 +266,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(val);
     assertTrue(val instanceof Number);
 
-    String key3 = "solr.jetty:foo\\:bar";
+    String key3 = "solr.jetty:solrtest_foo\\:bar";
     resp = new SolrQueryResponse();
     handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json",
         MetricsHandler.KEY_PARAM, key3), resp);

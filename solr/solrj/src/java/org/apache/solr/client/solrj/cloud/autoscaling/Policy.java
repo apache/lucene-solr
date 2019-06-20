@@ -466,6 +466,10 @@ public class Policy implements MapWriter {
     return params.stream().map(Pair::first).collect(toList());
   }
 
+  public List<String> getPerReplicaAttributes() {
+    return Collections.unmodifiableList(perReplicaAttributes);
+  }
+
   /**
    * Compares two {@link Row} loads according to a policy.
    *
@@ -553,7 +557,7 @@ public class Policy implements MapWriter {
           if (!withCollMap.isEmpty()) {
             Clause withCollClause = new Clause((Map<String,Object>)Utils.fromJSONString("{withCollection:'*' , node: '#ANY'}") ,
                 new Condition(NODE.tagName, "#ANY", Operand.EQUAL, null, null),
-                new Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true
+                new Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true, null, false
             );
             expandedClauses.add(withCollClause);
           }

@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 
@@ -36,13 +37,13 @@ import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.update.UpdateCommand;
@@ -54,6 +55,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROPS_ZKNODE;
 
 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13059")
 public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcessorTest {
@@ -98,7 +102,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     final String col23rd = alias + "_2017-10-23";
     CollectionAdminRequest.createCollection(col23rd, configName, 2, 2)
         .setMaxShardsPerNode(2)
-        .withProperty(RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP, alias)
+        .withProperty(ROUTED_ALIAS_NAME_CORE_PROP, alias)
         .process(solrClient);
 
     cluster.waitForActiveCollection(col23rd, 2, 4);
@@ -132,7 +136,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     //   destined for this collection, Solr will see it already exists and add it to the alias.
     final String col24th = alias + "_2017-10-24";
     CollectionAdminRequest.createCollection(col24th, configName,  1, 1) // more shards and replicas now
-        .withProperty(RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP, alias)
+        .withProperty(ROUTED_ALIAS_NAME_CORE_PROP, alias)
         .process(solrClient);
 
     // index 3 documents in a random fashion
@@ -175,6 +179,17 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     );
     assertInvariants(alias + "_2017-10-26", alias + "_2017-10-25", col24th);
 
+    // verify that collection properties are set when the collections are created. Note: first 2 collections in
+    // this test have a core property instead, of a collection property but that MUST continue to work as well
+    // for back compatibility's reasons.
+    Thread.sleep(1000);
+    byte[] data = cluster.getZkClient()
+        .getData(COLLECTIONS_ZKNODE + "/" + alias + "_2017-10-26" + "/" + COLLECTION_PROPS_ZKNODE,null, null, true);
+    assertNotNull(data);
+    assertTrue(data.length > 0);
+    Map<String,String> props = (Map<String, String>) Utils.fromJSON(data);
+    assertTrue(props.containsKey(ROUTED_ALIAS_NAME_CORE_PROP));
+    assertEquals(alias,props.get(ROUTED_ALIAS_NAME_CORE_PROP));
 
     // update metadata to auto-delete oldest collections
     CollectionAdminRequest.setAliasProperty(alias)

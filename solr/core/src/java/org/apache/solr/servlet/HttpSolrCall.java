@@ -38,6 +38,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import io.opentracing.Span;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
@@ -106,6 +107,7 @@ import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TimeOut;
+import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -467,6 +469,11 @@ public class HttpSolrCall {
    */
   public Action call() throws IOException {
     MDCLoggingContext.reset();
+    Span activeSpan = GlobalTracer.getTracer().activeSpan();
+    if (activeSpan != null) {
+      MDCLoggingContext.setTracerId(activeSpan.context().toTraceId());
+    }
+
     MDCLoggingContext.setNode(cores);
 
     if (cores == null) {

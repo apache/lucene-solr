@@ -160,11 +160,10 @@ public class Aliases {
   }
 
   /**
-   * Returns an unmodifiable Map of properties for a given alias. If an alias by the given name
-   * exists, this method will never return null.
+   * Returns an unmodifiable Map of properties for a given alias. This method will never return null.
    *
    * @param alias the name of an alias also found as a key in {@link #getCollectionAliasListMap()}
-   * @return The properties for the alias (possibly empty) or null if the alias does not exist.
+   * @return The properties for the alias (possibly empty).
    */
   public Map<String,String> getCollectionAliasProperties(String alias) {
     // Note: map is already unmodifiable; it can be shared safely
@@ -249,11 +248,15 @@ public class Aliases {
     for (int i = 0; i < level1.size(); i++) {
       String level1Alias = level1.get(i);
       List<String> level2 = collectionAliasListMap.get(level1Alias);
-      if (level2 == null && uniqueResult != null) {
-        uniqueResult.add(level1Alias);
+      if (level2 == null) {
+        // will copy all level1alias-es so far on lazy init
+        if (uniqueResult != null) {
+          uniqueResult.add(level1Alias);
+        }
       } else {
         if (uniqueResult == null) { // lazy init
           uniqueResult = new LinkedHashSet<>(level1.size());
+          // add all level1Alias-es so far
           uniqueResult.addAll(level1.subList(0, i));
         }
         uniqueResult.addAll(level2);
@@ -295,6 +298,7 @@ public class Aliases {
           entry.setValue(Collections.unmodifiableList(list));
         }
       }
+      newColAliases.entrySet().removeIf(entry -> entry.getValue().isEmpty());
     } else {
       newColProperties = this.collectionAliasProperties;// no changes
       // java representation is a list, so split before adding to maintain consistency

@@ -25,6 +25,7 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
@@ -64,7 +65,6 @@ abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
           "We require an explicit " + COLL_CONF);
     }
     createReqParams.set(NAME, createCollName);
-    createReqParams.set("property." + ROUTED_ALIAS_NAME_CORE_PROP, aliasName);
     // a CollectionOperation reads params and produces a message (Map) that is supposed to be sent to the Overseer.
     //   Although we could create the Map without it, there are a fair amount of rules we don't want to reproduce.
     final Map<String, Object> createMsgMap = CollectionsHandler.CollectionOperation.CREATE_OP.execute(
@@ -88,6 +88,11 @@ abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
 
     CollectionsHandler.waitForActiveCollection(createCollName, ocmh.overseer.getCoreContainer(),
         new OverseerSolrResponse(results));
+    CollectionProperties collectionProperties = new CollectionProperties(ocmh.zkStateReader.getZkClient());
+    collectionProperties.setCollectionProperty(createCollName,ROUTED_ALIAS_NAME_CORE_PROP,aliasName);
+    while (!ocmh.zkStateReader.getCollectionProperties(createCollName,1000).containsKey(ROUTED_ALIAS_NAME_CORE_PROP)) {
+      Thread.sleep(50);
+    }
     return results;
   }
 

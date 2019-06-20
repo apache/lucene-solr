@@ -30,6 +30,11 @@
   </configurations>
 
   <dependencies>
+    <dependency org="io.opentracing" name="opentracing-api" rev="${/io.opentracing/opentracing-api}" conf="compile"/>
+    <dependency org="io.opentracing" name="opentracing-noop" rev="${/io.opentracing/opentracing-noop}" conf="compile"/>
+    <dependency org="io.opentracing" name="opentracing-util" rev="${/io.opentracing/opentracing-util}" conf="compile"/>
+    <dependency org="io.opentracing" name="opentracing-mock" rev="${/io.opentracing/opentracing-mock}" conf="test"/>
+
     <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" conf="compile"/>
     <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" conf="compile"/>
     <dependency org="org.apache.commons" name="commons-exec" rev="${/org.apache.commons/commons-exec}" conf="compile"/>
@@ -45,6 +50,7 @@
     <dependency org="org.restlet.jee" name="org.restlet" rev="${/org.restlet.jee/org.restlet}" conf="compile"/>
     <dependency org="org.restlet.jee" name="org.restlet.ext.servlet" rev="${/org.restlet.jee/org.restlet.ext.servlet}" conf="compile"/>
     <dependency org="com.carrotsearch" name="hppc" rev="${/com.carrotsearch/hppc}" conf="compile"/>
+    <dependency org="io.sgr" name="s2-geometry-library-java" rev="${/io.sgr/s2-geometry-library-java}" conf="compile"/>
 
     <dependency org="org.apache.logging.log4j" name="log4j-api" rev="${/org.apache.logging.log4j/log4j-api}" conf="compile"/>
     <dependency org="org.apache.logging.log4j" name="log4j-core" rev="${/org.apache.logging.log4j/log4j-core}" conf="compile"/>

@@ -103,9 +103,9 @@ public class MaintainTimeRoutedAliasCmd extends AliasCmd {
     final ZkStateReader.AliasesManager aliasesManager = ocmh.zkStateReader.aliasesManager;
     final Aliases aliases = aliasesManager.getAliases();
     final Map<String, String> aliasMetadata = aliases.getCollectionAliasProperties(aliasName);
-    if (aliasMetadata == null) {
+    if (aliasMetadata.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Alias " + aliasName + " does not exist."); // if it did exist, we'd have a non-null map
+          "Alias " + aliasName + " does not exist or is not a routed alias."); // if it did exist, we'd have a non-null map
     }
     final TimeRoutedAlias timeRoutedAlias = new TimeRoutedAlias(aliasName, aliasMetadata);
 

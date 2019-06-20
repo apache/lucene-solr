@@ -23,11 +23,11 @@ Queries and filters provided in JSON requests can be specified using a rich, pow
 == Query DSL Structure
 The JSON Request API accepts query values in three different formats:
 
-* A valid <<the-standard-query-parser.adoc#the-standard-query-parser,query string>> that uses the default `deftype` (`lucene`, in most cases). e.g. `title:solr`.
+* A valid <<the-standard-query-parser.adoc#the-standard-query-parser,query string>> that uses the default `deftype` (`lucene`, in most cases). e.g., `title:solr`.
 
-* A valid <<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameters query string>> that specifies its `deftype` explicitly. e.g. `{!dismax qf=title}solr`.
+* A valid <<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameters query string>> that specifies its `deftype` explicitly. e.g., `{!dismax qf=title}solr`.
 
-* A valid JSON object with the name of the query parser and any relevant parameters. e.g. `{ "lucene": {"df":"title", "query":"solr"}}`.
+* A valid JSON object with the name of the query parser and any relevant parameters. e.g., `{ "lucene": {"df":"title", "query":"solr"}}`.
 ** The top level "query" JSON block generally only has a single property representing the name of the query parser to use.  The value for the query parser property is a child block containing any relevant parameters as JSON properties.  The whole structure is analogous to a "local-params" query string.  The query itself (often represented in local params using the name `v`) is specified with the key `query` instead.
 
 All of these syntaxes can be used to specify queries for either the JSON Request API's `query` or `filter` properties.
