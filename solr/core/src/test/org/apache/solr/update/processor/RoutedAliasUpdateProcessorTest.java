@@ -97,7 +97,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     return getSaferTestName();
   }
 
-  void createConfigSet(String configName) throws SolrServerException, IOException {
+  void createConfigSet(String configName) throws SolrServerException, IOException, InterruptedException {
     // First create a configSet
     // Then we create a collection with the name of the eventual config.
     // We configure it, and ultimately delete the collection, leaving a modified config-set behind.
@@ -109,8 +109,9 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(configName, configName, 1, 1).process(getSolrClient());
 
-    // TODO: fix SOLR-13059, a where this wait isn't working ~0.3% of the time.
+    // TODO: fix SOLR-13059, a where this wait isn't working ~0.3% of the time without the sleep.
     waitCol(1,configName);
+    Thread.sleep(500); // because YUCK but works (beasts 2500x20 ok vs failing in ~500x20 every time)
     // manipulate the config...
     checkNoError(getSolrClient().request(new V2Request.Builder("/collections/" + configName + "/config")
         .withMethod(SolrRequest.METHOD.POST)
