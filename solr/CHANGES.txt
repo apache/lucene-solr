@@ -96,6 +96,7 @@ New Features
 
 * SOLR-13560: Add isNull and notNull Stream Evaluators (Joel Bernstein)
 
+* SOLR-10291: Add matches Stream Evaluator to support regex matching (Joel Bernstein)
 
 Bug Fixes
 ----------------------
