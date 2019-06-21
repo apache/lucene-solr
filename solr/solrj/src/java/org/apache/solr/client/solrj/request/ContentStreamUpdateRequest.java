@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,7 +62,7 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
     return new RequestWriter.ContentWriter() {
       @Override
       public void write(OutputStream os) throws IOException {
-        try(var inStream = stream.getStream()) {
+        try(InputStream inStream = stream.getStream()) {
           IOUtils.copy(inStream, os);
         }
       }

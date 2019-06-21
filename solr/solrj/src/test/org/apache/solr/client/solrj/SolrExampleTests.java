@@ -22,6 +22,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,6 +73,7 @@ import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
@@ -714,15 +716,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    var file = getFile("solrj/books.csv");
+    File file = getFile("solrj/books.csv");
     final int opened[] =  new int[] {0};
     final int closed[] =  new int[] {0};
 
-    var assertClosed = random().nextBoolean();
+    boolean assertClosed = random().nextBoolean();
     if (assertClosed) {
-      var allBytes = Files.readAllBytes(file.toPath());
+      byte[] allBytes = Files.readAllBytes(file.toPath());
       
-      var contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
+      ContentStream contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
         @Override
         public InputStream getStream() throws IOException {
           opened [0]++;
