@@ -131,8 +131,10 @@ Bug Fixes
 * SOLR-13333: unleashing terms.ttf from terms.list when distrib=false (Munendra S N via Mikhail Khludnev)
 
 * SOLR-13490: Fix CollectionStateWatcher/CollectionStatePredicate based APIs in ZkStateReader and
-  CloudSolrClient to be triggered on liveNode changes.  Also add Predicate<DocCollection> equivilents
+  CloudSolrClient to be triggered on liveNode changes.  Also add Predicate<DocCollection> equivalents
   for callers that don't care about liveNodes. (hossman)
+
+* SOLR-13545: ContentStreamUpdateRequest refused to close file (Colvin Cowie, Mikhail Khludnev)
 
 Other Changes
 ----------------------
