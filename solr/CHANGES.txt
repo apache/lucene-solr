@@ -144,6 +144,8 @@ New Features
 
 * SOLR-10291: Add matches Stream Evaluator to support regex matching (Joel Bernstein)
 
+* SOLR-13569: AdminUI visual indication of prod/test/dev environment (janhoy)
+
 Bug Fixes
 ----------------------
 

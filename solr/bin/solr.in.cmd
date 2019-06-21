@@ -168,3 +168,8 @@ REM list of hosts needs to be whitelisted or Solr will forbid the request. The w
 REM or if you are using the OOTB solr.xml, can be specified using the system property "solr.shardsWhitelist". Alternatively
 REM host checking can be disabled by using the system property "solr.disable.shardsWhitelist"
 REM set SOLR_OPTS="%SOLR_OPTS% -Dsolr.shardsWhitelist=http://localhost:8983,http://localhost:8984"
+
+REM For a visual indication in the Admin UI of what type of environment this cluster is, configure
+REM a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
+REM label or color, e.g. -Dsolr.environment=test;label=Functional_test;color=brown
+REM SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"
