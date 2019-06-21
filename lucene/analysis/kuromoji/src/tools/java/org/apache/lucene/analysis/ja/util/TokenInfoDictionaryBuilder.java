@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,8 +39,6 @@ import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
-import com.ibm.icu.text.Normalizer2;
-
 /**
  */
 public class TokenInfoDictionaryBuilder {
@@ -49,16 +48,14 @@ public class TokenInfoDictionaryBuilder {
   
   private String encoding = "euc-jp";
   
-  private boolean normalizeEntries = false;
-  private Normalizer2 normalizer;
+  private Normalizer.Form normalForm;
   
   private DictionaryFormat format = DictionaryFormat.IPADIC;
   
   public TokenInfoDictionaryBuilder(DictionaryFormat format, String encoding, boolean normalizeEntries) {
     this.format = format;
     this.encoding = encoding;
-    this.normalizeEntries = normalizeEntries;
-    this.normalizer = normalizeEntries ? Normalizer2.getInstance(null, "nfkc", Normalizer2.Mode.COMPOSE) : null;
+    this.normalForm = normalizeEntries ? Normalizer.Form.NFKC : null;
   }
   
   public TokenInfoDictionaryWriter build(String dirname) throws IOException {
@@ -103,13 +100,13 @@ public class TokenInfoDictionaryBuilder {
         lines.add(formatted);
         
         // NFKC normalize dictionary entry
-        if (normalizeEntries) {
-          if (normalizer.isNormalized(entry[0])){
+        if (normalForm != null) {
+          if (Normalizer.isNormalized(entry[0], normalForm)){
             continue;
           }
           String[] normalizedEntry = new String[entry.length];
           for (int i = 0; i < entry.length; i++) {
-            normalizedEntry[i] = normalizer.normalize(entry[i]);
+            normalizedEntry[i] = Normalizer.normalize(entry[i], normalForm);
           }
           
           formatted = formatEntry(normalizedEntry);
