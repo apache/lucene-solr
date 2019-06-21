@@ -25,9 +25,7 @@ Major features include full-text search, index replication and sharding, and
 result faceting and highlighting.
 
 
-[![Build Status](https://builds.apache.org/view/L/view/Lucene/job/Lucene-Artifacts-master/badge/icon?subject=Lucene)](https://builds.apache.org/view/L/view/Lucene/job/Lucene-Artifacts-master/)
-
-[![Build Status](https://builds.apache.org/view/L/view/Lucene/job/Solr-Artifacts-master/badge/icon?subject=Solr)](https://builds.apache.org/view/L/view/Lucene/job/Solr-Artifacts-master/)
+[![Build Status](https://builds.apache.org/view/L/view/Lucene/job/Lucene-Artifacts-master/badge/icon?subject=Lucene)](https://builds.apache.org/view/L/view/Lucene/job/Lucene-Artifacts-master/) [![Build Status](https://builds.apache.org/view/L/view/Lucene/job/Solr-Artifacts-master/badge/icon?subject=Solr)](https://builds.apache.org/view/L/view/Lucene/job/Solr-Artifacts-master/)
 
 
 ## Online Documentation
