@@ -55,4 +55,19 @@ public class SolrEnvironmentTest {
     assertEquals("my Label", SolrEnvironment.parse("prod;label=my+Label").getLabel());
     assertEquals("blue", SolrEnvironment.parse("prod;color=blue").getColor());
   }
+
+  @Test(expected = SolrException.class)
+  public void tryingToHackLabel() {
+    SolrEnvironment.parse("prod;label=alert('hacked')");
+  }
+
+  @Test(expected = SolrException.class)
+  public void tryingToHackColor() {
+    SolrEnvironment.parse("prod;color=alert('hacked')");
+  }
+
+  @Test(expected = SolrException.class)
+  public void illegalParam() {
+    SolrEnvironment.parse("prod;foo=hello");
+  }
 }
