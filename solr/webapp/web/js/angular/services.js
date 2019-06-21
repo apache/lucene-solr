@@ -31,6 +31,7 @@ solrAdminServices.factory('System',
     {'wt':'json', '_':Date.now()}, {
     "list": {params:{action: "LIST"}},
     "status": {params:{action: "CLUSTERSTATUS"}},
+    "requestStatus": {params:{action: "REQUESTSTATUS"}},
     "add": {params:{action: "CREATE"}},
     "delete": {params:{action: "DELETE"}},
     "rename": {params:{action: "RENAME"}},
@@ -38,6 +39,7 @@ solrAdminServices.factory('System',
     "deleteAlias": {params:{action: "DELETEALIAS"}},
     "deleteReplica": {params:{action: "DELETEREPLICA"}},
     "addReplica": {params:{action: "ADDREPLICA"}},
+    "moveReplica": {params:{action: "MOVEREPLICA"}},
     "deleteShard": {params:{action: "DELETESHARD"}},
     "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}}
     });

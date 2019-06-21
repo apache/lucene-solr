@@ -22,7 +22,8 @@ var solrAdminApp = angular.module("solrAdminApp", [
   "ngtimeago",
   "solrAdminServices",
   "localytics.directives",
-  "ab-base64"
+  "ab-base64",
+  "dndLists"
 ]);
 
 solrAdminApp.config([

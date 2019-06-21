@@ -1,0 +1,15 @@
+{
+  "name": "web-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jeremy Branham <jdbranham@hotmail.com>",
+  "license": "APACHE 2.0",
+  "dependencies": {
+    "express": "^4.16.4",
+    "express-http-proxy": "^1.5.1"
+  }
+}
