@@ -52,6 +52,10 @@ image::images/math-expressions/multitime1.png[]
 
 image::images/math-expressions/map.png[]
 
+=== Text Analytics
+
+image::images/math-expressions/text-analytics.png[]
+
 === XY Scatter Plots
 
 image::images/math-expressions/xyscatter.png[]
