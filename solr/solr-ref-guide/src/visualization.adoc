@@ -52,7 +52,11 @@ image::images/math-expressions/multitime1.png[]
 
 image::images/math-expressions/map.png[]
 
-=== Text Analytics
+=== Significant Terms
+
+image::images/math-expressions/sterms.png[]
+
+=== Phrase Aggregation
 
 image::images/math-expressions/text-analytics.png[]
 
@@ -66,7 +70,7 @@ image::images/math-expressions/vector.png[]
 
 === SQL Aggregations
 
-image::images/math-expressions/aggs.png[]
+image::images/math-expressions/sqlagg.png[]
 
 === Matrices and Heat Maps
 
