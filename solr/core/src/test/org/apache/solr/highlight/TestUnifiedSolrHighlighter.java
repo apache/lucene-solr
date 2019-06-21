@@ -302,4 +302,16 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>alpha</em> <em>bravo</em> charlie'");
   }
 
+  // LUCENE-8492
+  public void testSurroundQParser() {
+    assertQ(req("q", "{!surround df=text}2w(second, document)", "hl", "true", "hl.fl", "text"),
+        "count(//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/*)=1");
+  }
+
+  // LUCENE-7757
+  public void testComplexPhraseQParser() {
+    assertQ(req("q", "{!complexphrase df=text}(\"sec* doc*\")", "hl", "true", "hl.fl", "text"),
+        "count(//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/*)=1");
+  }
+
 }
