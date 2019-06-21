@@ -787,18 +787,18 @@ public class RecoveryStrategy implements Runnable, Closeable {
       }
 
       try (HttpSolrClient httpSolrClient = new HttpSolrClient.Builder(leaderReplica.getCoreUrl())
-          .withSocketTimeout(1000)
-          .withConnectionTimeout(1000)
+          .withSocketTimeout(15000)
+          .withConnectionTimeout(15000)
           .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient())
           .build()) {
         SolrPingResponse resp = httpSolrClient.ping();
         return leaderReplica;
       } catch (IOException e) {
-        log.info("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
+        log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
         Thread.sleep(500);
       } catch (Exception e) {
         if (e.getCause() instanceof IOException) {
-          log.info("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
+          log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
           Thread.sleep(500);
         } else {
           return leaderReplica;
