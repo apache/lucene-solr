@@ -1040,8 +1040,9 @@ public class BKDWriter implements Closeable {
     if (prefixLenSum == packedBytesLength) {
       // all values in this block are equal
       out.writeByte((byte) -1);
-    } else if (leafCardinality * (packedBytesLength - prefixLenSum + 1)  <= count * (packedBytesLength - prefixLenSum)) {
-      //estimate if storing the values with cardinality is cheaper than storing all values
+    } else if (leafCardinality * (packedBytesLength - prefixLenSum + 1)  <= count * (packedBytesLength - prefixLenSum - 1)) {
+      //estimate if storing the values with cardinality is cheaper than storing all values.
+      //+1 is the byte needed for storing the cardinality and -1 is the runLen compression.
       out.writeByte((byte) -2);
       if (numIndexDims != 1) {
         writeActualBounds(out, commonPrefixLengths, count, packedValues);
