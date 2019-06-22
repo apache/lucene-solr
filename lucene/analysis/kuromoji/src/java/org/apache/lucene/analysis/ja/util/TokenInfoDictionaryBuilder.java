@@ -16,22 +16,18 @@
  */
 package org.apache.lucene.analysis.ja.util;
 
-
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CodingErrorAction;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.ja.util.DictionaryBuilder.DictionaryFormat;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -42,89 +38,63 @@ import org.apache.lucene.util.fst.PositiveIntOutputs;
 /**
  */
 public class TokenInfoDictionaryBuilder {
-  
+
+  private final String encoding;
+  private final Normalizer.Form normalForm;
+  private final DictionaryFormat format;
+
   /** Internal word id - incrementally assigned as entries are read and added. This will be byte offset of dictionary file */
   private int offset = 0;
-  
-  private String encoding = "euc-jp";
-  
-  private Normalizer.Form normalForm;
-  
-  private DictionaryFormat format = DictionaryFormat.IPADIC;
-  
+
   public TokenInfoDictionaryBuilder(DictionaryFormat format, String encoding, boolean normalizeEntries) {
     this.format = format;
     this.encoding = encoding;
-    this.normalForm = normalizeEntries ? Normalizer.Form.NFKC : null;
+    normalForm = normalizeEntries ? Normalizer.Form.NFKC : null;
   }
   
-  public TokenInfoDictionaryWriter build(String dirname) throws IOException {
-    FilenameFilter filter = new FilenameFilter() {
-      @Override
-      public boolean accept(File dir, String name) {
-        return name.endsWith(".csv");
-      }
-    };
-    ArrayList<File> csvFiles = new ArrayList<>();
-    for (File file : new File(dirname).listFiles(filter)) {
-      csvFiles.add(file);
+  public TokenInfoDictionaryWriter build(Path dir) throws IOException {
+    try (Stream<Path> files = Files.list(dir)) {
+      List<Path> csvFiles = files
+          .filter(path -> path.getFileName().toString().endsWith(".csv"))
+          .sorted()
+          .collect(Collectors.toList());
+      return buildDictionary(csvFiles);
     }
-    Collections.sort(csvFiles);
-    return buildDictionary(csvFiles);
   }
 
-  public TokenInfoDictionaryWriter buildDictionary(List<File> csvFiles) throws IOException {
+  private TokenInfoDictionaryWriter buildDictionary(List<Path> csvFiles) throws IOException {
     TokenInfoDictionaryWriter dictionary = new TokenInfoDictionaryWriter(10 * 1024 * 1024);
-    
+    Charset cs = Charset.forName(encoding);
     // all lines in the file
-    System.out.println("  parse...");
     List<String[]> lines = new ArrayList<>(400000);
-    for (File file : csvFiles){
-      FileInputStream inputStream = new FileInputStream(file);
-      Charset cs = Charset.forName(encoding);
-      CharsetDecoder decoder = cs.newDecoder()
-          .onMalformedInput(CodingErrorAction.REPORT)
-          .onUnmappableCharacter(CodingErrorAction.REPORT);
-      InputStreamReader streamReader = new InputStreamReader(inputStream, decoder);
-      BufferedReader reader = new BufferedReader(streamReader);
-      
-      String line = null;
-      while ((line = reader.readLine()) != null) {
-        String[] entry = CSVUtil.parse(line);
+    for (Path path : csvFiles) {
+      try (BufferedReader reader = Files.newBufferedReader(path, cs)) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+          String[] entry = CSVUtil.parse(line);
 
-        if(entry.length < 13) {
-          throw new IllegalArgumentException("Entry in CSV is not valid (13 field values expected): " + line);
-        }
-        
-        String[] formatted = formatEntry(entry);
-        lines.add(formatted);
-        
-        // NFKC normalize dictionary entry
-        if (normalForm != null) {
-          if (Normalizer.isNormalized(entry[0], normalForm)){
-            continue;
+          if (entry.length < 13) {
+            throw new IllegalArgumentException("Entry in CSV is not valid (13 field values expected): " + line);
           }
-          String[] normalizedEntry = new String[entry.length];
-          for (int i = 0; i < entry.length; i++) {
-            normalizedEntry[i] = Normalizer.normalize(entry[i], normalForm);
+
+          lines.add(formatEntry(entry));
+
+          if (normalForm != null) {
+            if (Normalizer.isNormalized(entry[0], normalForm)) {
+              continue;
+            }
+            String[] normalizedEntry = new String[entry.length];
+            for (int i = 0; i < entry.length; i++) {
+              normalizedEntry[i] = Normalizer.normalize(entry[i], normalForm);
+            }
+            lines.add(formatEntry(normalizedEntry));
           }
-          
-          formatted = formatEntry(normalizedEntry);
-          lines.add(formatted);
         }
       }
     }
     
-    System.out.println("  sort...");
-
     // sort by term: we sorted the files already and use a stable sort.
-    Collections.sort(lines, new Comparator<String[]>() {
-      public int compare(String[] left, String[] right) {
-        return left[0].compareTo(right[0]);
-      }
-    });
-    
-    System.out.println("  encode...");
+    lines.sort(Comparator.comparing(entry -> entry[0]));
 
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
     Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, true, 15, false);
@@ -132,13 +102,12 @@ public class TokenInfoDictionaryBuilder {
     long ord = -1; // first ord will be 0
     String lastValue = null;
 
-    // build tokeninfo dictionary
+    // build token info dictionary
     for (String[] entry : lines) {
       int next = dictionary.put(entry);
         
       if(next == offset){
-        System.out.println("Failed to process line: " + Arrays.toString(entry));
-        continue;
+        throw new IllegalStateException("Failed to process line: " + Arrays.toString(entry));
       }
       
       String token = entry[0];
@@ -153,16 +122,10 @@ public class TokenInfoDictionaryBuilder {
         }
         fstBuilder.add(scratch.get(), ord);
       }
-      dictionary.addMapping((int)ord, offset);
+      dictionary.addMapping((int) ord, offset);
       offset = next;
     }
-    
-    final FST<Long> fst = fstBuilder.finish();
-    
-    System.out.print("  " + fstBuilder.getNodeCount() + " nodes, " + fstBuilder.getArcCount() + " arcs, " + fst.ramBytesUsed() + " bytes...  ");
-    dictionary.setFST(fst);
-    System.out.println(" done");
-    
+    dictionary.setFST(fstBuilder.finish());
     return dictionary;
   }
   
@@ -191,7 +154,7 @@ public class TokenInfoDictionaryBuilder {
    * 13  - surface reading
    */
   
-  public String[] formatEntry(String[] features) {
+  private String[] formatEntry(String[] features) {
     if (this.format == DictionaryFormat.IPADIC) {
       return features;
     } else {
