@@ -30,6 +30,8 @@ Bug fixes
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
+* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
+  (Tomoko Uchida, Uwe Schindler)
 
 ======================= Lucene 8.2.0 =======================
 
