@@ -126,8 +126,8 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       throw new ServiceConfigurationError("Service lookup key set is inconsistent with original name set!");
     }
 
-    this.services = Map.copyOf(services);
-    this.originalNames = Set.copyOf(originalNames);
+    this.services = Collections.unmodifiableMap(services);
+    this.originalNames = Collections.unmodifiableSet(originalNames);
   }
 
   private boolean isValidName(String name) {
