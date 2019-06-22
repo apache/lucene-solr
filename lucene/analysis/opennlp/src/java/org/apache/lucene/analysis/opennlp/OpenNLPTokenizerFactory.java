@@ -38,8 +38,13 @@ import org.apache.lucene.util.AttributeFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 7.3.0
+ * @lucene.spi {@value #NAME}
  */
 public class OpenNLPTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "openNlp";
+
   public static final String SENTENCE_MODEL = "sentenceModel";
   public static final String TOKENIZER_MODEL = "tokenizerModel";
 
