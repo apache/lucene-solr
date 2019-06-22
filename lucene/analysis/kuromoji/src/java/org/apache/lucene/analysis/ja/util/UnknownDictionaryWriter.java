@@ -18,11 +18,12 @@ package org.apache.lucene.analysis.ja.util;
 
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.apache.lucene.analysis.ja.dict.CharacterDefinition;
 import org.apache.lucene.analysis.ja.dict.UnknownDictionary;
 
-public class UnknownDictionaryWriter extends BinaryDictionaryWriter {
+class UnknownDictionaryWriter extends BinaryDictionaryWriter {
   private final CharacterDefinitionWriter characterDefinition = new CharacterDefinitionWriter();
   
   public UnknownDictionaryWriter(int size) {
@@ -58,7 +59,7 @@ public class UnknownDictionaryWriter extends BinaryDictionaryWriter {
   }
   
   @Override
-  public void write(String baseDir) throws IOException {
+  public void write(Path baseDir) throws IOException {
     super.write(baseDir);
     characterDefinition.write(baseDir);
   }
