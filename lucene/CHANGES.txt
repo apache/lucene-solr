@@ -90,6 +90,8 @@ Improvements
   best for WEIGHT_MATCHES mode.  Consequently queries produced by ComplexPhraseQueryParser and the surround QueryParser
   will now highlight correctly. (David Smiley)
 
+* LUCENE-8793: Luke enhanced UI for CustomAnalyzer: show detailed analysis steps. (Jun Ohtani via Tomoko Uchida)
+
 Optimizations
 
 * LUCENE-8796: Use exponential search instead of binary search in
