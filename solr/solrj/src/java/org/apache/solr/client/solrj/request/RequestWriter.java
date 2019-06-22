@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
@@ -25,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.util.ContentStream;
@@ -126,6 +128,32 @@ public class RequestWriter {
     @Override
     public String getContentType() {
       return type;
+    }
+  }
+
+  public static class StreamCopyContentWriter implements ContentWriter {
+    public final InputStreamSupplier payload;
+    public final String type;
+
+    public StreamCopyContentWriter(InputStreamSupplier payload, String type) {
+      this.payload = payload;
+      this.type = type;
+    }
+
+    @Override
+    public void write(OutputStream os) throws IOException {
+      try (InputStream is = payload.get()) {
+        IOUtils.copy(is, os);
+      }
+    }
+
+    @Override
+    public String getContentType() {
+      return type;
+    }
+
+    public interface InputStreamSupplier {
+      InputStream get() throws IOException;
     }
   }
 

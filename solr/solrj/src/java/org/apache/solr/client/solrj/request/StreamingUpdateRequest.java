@@ -20,11 +20,8 @@ package org.apache.solr.client.solrj.request;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-
-import org.apache.commons.io.IOUtils;
 
 /** A simple update request which streams content to the server
  */
@@ -53,19 +50,7 @@ public class StreamingUpdateRequest extends AbstractUpdateRequest {
   }
 
   public StreamingUpdateRequest(String path, File f, String contentType) {
-    this(path, new RequestWriter.ContentWriter() {
-      @Override
-      public void write(OutputStream os) throws IOException {
-        try (InputStream is = new FileInputStream(f)) {
-          IOUtils.copy(is, os);
-        }
-      }
-
-      @Override
-      public String getContentType() {
-        return contentType;
-      }
-    });
+    this(path, new RequestWriter.StreamCopyContentWriter(() -> new FileInputStream(f), contentType));
   }
 
   @Override

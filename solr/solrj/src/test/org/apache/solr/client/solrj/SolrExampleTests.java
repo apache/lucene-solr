@@ -25,6 +25,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -53,6 +54,9 @@ import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.MultiContentWriterRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
+import org.apache.solr.client.solrj.request.RequestWriter.StreamCopyContentWriter;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.FacetField;
@@ -78,6 +82,7 @@ import org.apache.solr.common.util.Pair;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -740,6 +745,10 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       up.addFile(file, "application/csv");
     }
     
+    ContentWriter contentWriter = up.getContentWriter("application/csv");
+    Assert.assertEquals("contentWriter should be StreamCopyContentWriter which gaurantees the InputStream is closed",
+        StreamCopyContentWriter.class, contentWriter.getClass());
+    
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = client.request(up);
     assertNotNull("Couldn't upload books.csv", result);
@@ -760,12 +769,42 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     client.commit();
     QueryResponse rsp = client.query( new SolrQuery( "*:*") );
     Assert.assertEquals(0, rsp.getResults().getNumFound());
-    NamedList<Object> result = client.request(new StreamingUpdateRequest("/update",
-        getFile("solrj/books.csv"), "application/csv")
+    StreamingUpdateRequest streamingUpdateRequest = new StreamingUpdateRequest("/update",
+        getFile("solrj/books.csv"), "application/csv");
+    ContentWriter contentWriter = streamingUpdateRequest.getContentWriter("application/csv");
+    Assert.assertEquals("contentWriter should be StreamCopyContentWriter which gaurantees the InputStream is closed",
+        StreamCopyContentWriter.class, contentWriter.getClass());
+    NamedList<Object> result = client.request(streamingUpdateRequest
         .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
     assertNotNull("Couldn't upload books.csv", result);
     rsp = client.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 10, rsp.getResults().getNumFound() );
+  }
+
+  @Test
+  public void testStreamCopyContentWriterClosesStream() throws Exception {
+    assumeWorkingMockito();
+    InputStream mockInputStream = Mockito.spy(new InputStream() {
+      @Override
+      public int read() throws IOException {
+        if (random().nextBoolean()) {
+          throw new IOException("Stream will still be closed on random failure");
+        }
+        return -1;
+      }
+    });
+    ContentWriter streamCopyContentWriter = new RequestWriter.StreamCopyContentWriter(
+        () -> mockInputStream, "contentType");
+    OutputStream mockOutputStream = Mockito.mock(OutputStream.class);
+    try {
+      streamCopyContentWriter.write(mockOutputStream);
+    } catch (IOException ex) {
+      // expected random exception
+    }
+    // Stream is only read once (since it either throws or returns EOS)
+    Mockito.verify(mockInputStream, Mockito.times(1)).read();
+    // Stream should always be closed
+    Mockito.verify(mockInputStream).close();
   }
 
   @Test
