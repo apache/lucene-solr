@@ -31,9 +31,6 @@ Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
-* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
-  (Tomoko Uchida, Uwe Schindler)
-
 ======================= Lucene 8.2.0 =======================
 
 API Changes
@@ -141,6 +138,9 @@ Other
 * LUCENE-8861: Script to find open Github PRs that needs attention (janhoy)
 
 * LUCENE-8852: ReleaseWizard tool for release managers (janhoy)
+
+* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
+  (Tomoko Uchida, Uwe Schindler)
 
 ======================= Lucene 8.1.1 =======================
 (No Changes)
