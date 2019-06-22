@@ -48,15 +48,9 @@ public class VersionInfo {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS = "bucketVersionLockTimeoutMs";
 
-  /**
-   * same as default client read timeout: 10 mins
-   */
-  private static final int DEFAULT_VERSION_BUCKET_LOCK_TIMEOUT_MS = 600000;
-
   private final UpdateLog ulog;
   private final VersionBucket[] buckets;
   private SchemaField versionField;
-  private SchemaField idField;
   final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
   private int versionBucketLockTimeoutMs;
@@ -100,13 +94,20 @@ public class VersionInfo {
     this.ulog = ulog;
     IndexSchema schema = ulog.uhandler.core.getLatestSchema(); 
     versionField = getAndCheckVersionField(schema);
-    idField = schema.getUniqueKeyField();
     versionBucketLockTimeoutMs = ulog.uhandler.core.getSolrConfig().getInt("updateHandler/versionBucketLockTimeoutMs",
-        Integer.parseInt(System.getProperty(SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS, "" + DEFAULT_VERSION_BUCKET_LOCK_TIMEOUT_MS)));
+        Integer.parseInt(System.getProperty(SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS, "0")));
     buckets = new VersionBucket[ BitUtil.nextHighestPowerOfTwo(nBuckets) ];
     for (int i=0; i<buckets.length; i++) {
-      buckets[i] = new VersionBucket(versionBucketLockTimeoutMs);
+      if (versionBucketLockTimeoutMs > 0) {
+        buckets[i] = new TimedVersionBucket();
+      } else {
+        buckets[i] = new VersionBucket();
+      }
     }
+  }
+  
+  public int getVersionBucketLockTimeoutMs() {
+    return versionBucketLockTimeoutMs;
   }
 
   public void reload() {

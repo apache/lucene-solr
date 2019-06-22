@@ -21,6 +21,7 @@ import java.io.OutputStream;
 
 import org.noggit.CharArr;
 
+
 public class ByteUtils {
 
   /** Maximum number of UTF8 bytes per UTF16 character. */

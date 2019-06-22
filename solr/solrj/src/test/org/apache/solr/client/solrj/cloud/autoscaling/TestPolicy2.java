@@ -53,13 +53,26 @@ import static org.apache.solr.common.util.Utils.MAPOBJBUILDER;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 public class TestPolicy2 extends SolrTestCaseJ4 {
+  boolean useNodeset ;
+  public TestPolicy2(){
+    useNodeset = true;
+  }
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void testEqualOnNonNode() {
     List<Map> l = (List<Map>) loadFromResource("testEqualOnNonNode.json");
     String autoScalingjson = "{cluster-policy:[" +
-        "    { replica : '<3' , shard : '#EACH', sysprop.zone: [east,west] } ]," +
+        "    { replica : '<3' , shard : '#EACH', sysprop.zone: east}," +
+        "{ replica : '<3' , shard : '#EACH', sysprop.zone: west} ]," +
         "  'cluster-preferences':[{ minimize : cores},{maximize : freedisk, precision : 50}]}";
+    if(useNodeset){
+      autoScalingjson = "{cluster-policy:[" +
+          "{ replica : '<3' , shard : '#EACH', nodeset:{ sysprop.zone: east}}," +
+          "{ replica : '<3' , shard : '#EACH', nodeset:{ sysprop.zone: west}} ]," +
+          "  'cluster-preferences':[{ minimize : cores},{maximize : freedisk, precision : 50}]}";
+      
+    }
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     Policy.Session session = policy.createSession(createCloudManager(l.get(0), l.get(1)));
     List<Violation> violations = session.getViolations();
@@ -74,6 +87,12 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     autoScalingjson = "{cluster-policy:[" +
         "    { replica : '<3' , shard : '#EACH', sysprop.zone: '#EACH' } ]," +
         "  'cluster-preferences':[{ minimize : cores},{maximize : freedisk, precision : 50}]}";
+    if(useNodeset){
+      autoScalingjson = "{cluster-policy:[" +
+          "{ replica : '<3' , shard : '#EACH', nodeset:{sysprop.zone: east}} , " +
+          "{ replica : '<3' , shard : '#EACH', nodeset:{sysprop.zone: west}}  ]," +
+          "  'cluster-preferences':[{ minimize : cores},{maximize : freedisk, precision : 50}]}";
+    }
     policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     session = policy.createSession(createCloudManager(l.get(0), l.get(1)));
     violations = session.getViolations();
@@ -335,6 +354,26 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     Map<String, Object> m = (Map<String, Object>) loadFromResource("testSysPropSuggestions.json");
 
     Map<String, Object> conf = (Map<String, Object>) getObjectByPath(m, false, "diagnostics/config");
+    if(useNodeset){
+      conf = (Map<String, Object>) Utils.fromJSONString("{" +
+          "    'cluster-preferences':[{" +
+          "      'minimize':'cores'," +
+          "      'precision':1}," +
+          "      {" +
+          "        'maximize':'freedisk'," +
+          "        'precision':100}," +
+          "      {" +
+          "        'minimize':'sysLoadAvg'," +
+          "        'precision':10}]," +
+          "    'cluster-policy':[" +
+          "{'replica':'<3'," +
+          "      'shard':'#EACH'," +
+          "      nodeset: {'sysprop.zone':'east'}}, " +
+          "{'replica':'<3'," +
+          "      'shard':'#EACH'," +
+          "      nodeset: {'sysprop.zone':'west'}} " +
+          " ]}");
+    }
     Policy policy = new Policy(conf);
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
     Policy.Session session = policy.createSession(cloudManagerFromDiagnostics);
@@ -361,6 +400,17 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
         "      {'minimize':'sysLoadAvg','precision':10}]," +
         "    'cluster-policy':[" +
         "{'replica':'<5','shard':'#EACH','sysprop.zone':['east','west']}]}";
+    if(useNodeset){
+      conf = " {" +
+          "    'cluster-preferences':[{" +
+          "      'minimize':'cores'," +
+          "      'precision':1}," +
+          "      {'maximize':'freedisk','precision':100}," +
+          "      {'minimize':'sysLoadAvg','precision':10}]," +
+          "    'cluster-policy':[" +
+          "{'replica':'<5','shard':'#EACH', nodeset:{'sysprop.zone':['east','west']}}]}";
+
+    }
     Map<String, Object> m = (Map<String, Object>) loadFromResource("testSuggestionsRebalanceOnly.json");
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
     AutoScalingConfig autoScalingConfig = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(conf));
@@ -426,20 +476,20 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"))
         , cloudManagerFromDiagnostics);
     for (Suggester.SuggestionInfo suggestion : suggestions) {
-      assertEquals("unresolved-violation", suggestion._get("type", null));
+      assertEquals("unresolved_violation", suggestion._get("type", null));
       assertEquals("1.0", suggestion._getStr("violation/violation/delta", null));
     }
   }
 
 
-  @Ignore
+  @Ignore("This takes too long to run. enable it for perf testing")
   public void testInfiniteLoop() {
     Row.cacheStats.clear();
     Map<String, Object> m = (Map<String, Object>) loadFromResource("testInfiniteLoop.json");
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);
     List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(
         new AutoScalingConfig((Map<String, Object>) getObjectByPath(m, false, "diagnostics/config"))
-        , cloudManagerFromDiagnostics, 200, 1200);
+        , cloudManagerFromDiagnostics, 200, 1200, null);
 
     System.out.println(suggestions);
   }

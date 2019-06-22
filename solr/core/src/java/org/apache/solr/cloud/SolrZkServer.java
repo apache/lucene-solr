@@ -41,7 +41,9 @@ import java.util.regex.Pattern;
 
 public class SolrZkServer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
+  public static final String ZK_WHITELIST_PROPERTY = "zookeeper.4lw.commands.whitelist";
+
   String zkRun;
   String zkHost;
 
@@ -51,10 +53,10 @@ public class SolrZkServer {
 
   private Thread zkThread;  // the thread running a zookeeper server, only if zkRun is set
 
-  private String dataHome;
+  private File dataHome;
   private String confHome;
 
-  public SolrZkServer(String zkRun, String zkHost, String dataHome, String confHome, int solrPort) {
+  public SolrZkServer(String zkRun, String zkHost, File dataHome, String confHome, int solrPort) {
     this.zkRun = zkRun;
     this.zkHost = zkHost;
     this.dataHome = dataHome;
@@ -102,6 +104,9 @@ public class SolrZkServer {
   public void start() {
     if (zkRun == null) return;
 
+    if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
+      System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
+    }
     zkThread = new Thread() {
       @Override
       public void run() {
@@ -293,7 +298,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
 
 
 
-  public void setDataDir(String dataDir) {
+  public void setDataDir(File dataDir) {
     this.dataDir = dataDir;
   }
 

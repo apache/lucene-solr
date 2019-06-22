@@ -28,6 +28,7 @@ import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -134,7 +135,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     SolrQueryRequest req = req();
     try {
       int nShards = responsesAndTests.length / 2;
-      Object jsonFacet = ObjectBuilder.fromJSON(facet);
+      Object jsonFacet = Utils.fromJSONString(facet);
       FacetParser parser = new FacetTopParser(req);
       FacetRequest facetRequest = parser.parse(jsonFacet);
 

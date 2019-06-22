@@ -61,6 +61,7 @@ public abstract class Feature extends Query {
   final protected String name;
   private int index = -1;
   private float defaultValue = 0.0f;
+  private Object defaultValueObject = null;
 
   final private Map<String,Object> params;
 
@@ -113,8 +114,21 @@ public abstract class Feature extends Query {
     return defaultValue;
   }
 
-  public void setDefaultValue(String value){
-    defaultValue = Float.parseFloat(value);
+  public void setDefaultValue(Object obj){
+    this.defaultValueObject = obj;
+    if (obj instanceof String) {
+      defaultValue = Float.parseFloat((String)obj);
+    } else if (obj instanceof Double) {
+      defaultValue = ((Double) obj).floatValue();
+    } else if (obj instanceof Float) {
+      defaultValue = ((Float) obj).floatValue();
+    } else if (obj instanceof Integer) {
+      defaultValue = ((Integer) obj).floatValue();
+    } else if (obj instanceof Long) {
+      defaultValue = ((Long) obj).floatValue();
+    } else {
+      throw new FeatureException("Invalid type for 'defaultValue' in params for " + this);
+    }
   }
 
 
@@ -184,6 +198,15 @@ public abstract class Feature extends Query {
   }
 
   public abstract LinkedHashMap<String,Object> paramsToMap();
+
+  protected LinkedHashMap<String,Object> defaultParamsToMap() {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<>();
+    if (defaultValueObject != null) {
+      params.put("defaultValue", defaultValueObject);
+    }
+    return params;
+  }
+
   /**
    * Weight for a feature
    **/

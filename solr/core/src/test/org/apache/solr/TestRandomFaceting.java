@@ -35,12 +35,11 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.JSONUtil;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -440,14 +439,14 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   }
   
   private String transformFacetFields(String expected, Consumer<Map.Entry<Object,Object>> consumer) throws IOException {
-    Object json = ObjectBuilder.fromJSON(expected);
+    Object json = Utils.fromJSONString(expected);
     Map facet_fields = getFacetFieldMap(json);
     Set entries = facet_fields.entrySet();
     for (Object facetTuples : entries) { //despite there should be only one field
       Entry entry = (Entry)facetTuples;
       consumer.accept(entry);
     }
-    return JSONUtil.toJSON(json);
+    return Utils.toJSONString(json);
   }
 
   private Map getFacetFieldMap(Object json) {

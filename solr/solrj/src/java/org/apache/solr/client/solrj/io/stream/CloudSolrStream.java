@@ -85,7 +85,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
   // Used by parallel stream
   protected CloudSolrStream(){
-    
+
   }
 
   /**
@@ -98,7 +98,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     init(collectionName, zkHost, params);
   }
 
-  public CloudSolrStream(StreamExpression expression, StreamFactory factory) throws IOException{   
+  public CloudSolrStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -114,12 +114,12 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     if(expression.getParameters().size() != 1 + namedParams.size()){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found",expression));
     }
-    
+
     // Named parameters - passed directly to solr as solrparams
     if(0 == namedParams.size()){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
     }
-    
+
     ModifiableSolrParams mParams = new ModifiableSolrParams();
     for(StreamExpressionNamedParameter namedParam : namedParams){
       if(!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("aliases")){
@@ -157,25 +157,25 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
     }
     */
-    
+
     // We've got all the required items
     init(collectionName, zkHost, mParams);
   }
-  
+
   @Override
   public StreamExpression toExpression(StreamFactory factory) throws IOException {
     // functionName(collectionName, param1, param2, ..., paramN, sort="comp", [aliases="field=alias,..."])
-    
+
     // function name
     StreamExpression expression = new StreamExpression("search");
-    
+
     // collection
     if(collection.indexOf(',') > -1) {
       expression.addParameter("\""+collection+"\"");
     } else {
       expression.addParameter(collection);
     }
-    
+
     for (Entry<String, String[]> param : params.getMap().entrySet()) {
       for (String val : param.getValue()) {
         // SOLR-8409: Escaping the " is a special case.
@@ -185,10 +185,10 @@ public class CloudSolrStream extends TupleStream implements Expressible {
             val.replace("\"", "\\\"")));
       }
     }
-    
+
     // zkHost
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
-    
+
     // aliases
     if(null != fieldMappings && 0 != fieldMappings.size()){
       StringBuilder sb = new StringBuilder();
@@ -198,35 +198,35 @@ public class CloudSolrStream extends TupleStream implements Expressible {
         sb.append("=");
         sb.append(mapping.getValue());
       }
-      
+
       expression.addParameter(new StreamExpressionNamedParameter("aliases", sb.toString()));
     }
-        
-    return expression;   
+
+    return expression;
   }
-  
+
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
     StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
-    
+
     explanation.setFunctionName("search");
     explanation.setImplementingClass(this.getClass().getName());
     explanation.setExpressionType(ExpressionType.STREAM_SOURCE);
     explanation.setExpression(toExpression(factory).toString());
-    
+
     // child is a datastore so add it at this point
     StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
     child.setFunctionName(String.format(Locale.ROOT, "solr (%s)", collection));
     child.setImplementingClass("Solr/Lucene");
     child.setExpressionType(ExpressionType.DATASTORE);
-    
+
     if(null != params){
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       child.setExpression(mParams.getMap().entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));
     }
     explanation.addChild(child);
-    
+
     return explanation;
   }
 
@@ -254,7 +254,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     String sorts = String.join(",", params.getParams(SORT));
     this.comp = parseComp(sorts, fls);
   }
-  
+
   public void setFieldMappings(Map<String, String> fieldMappings) {
     this.fieldMappings = fieldMappings;
   }
@@ -302,23 +302,23 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       String s = sorts[i];
 
       String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
-      
+
       if (spec.length != 2) {
         throw new IOException("Invalid sort spec:" + s);
       }
 
       String fieldName = spec[0].trim();
       String order = spec[1].trim();
-      
+
       if(!fieldSet.contains(spec[0])) {
         throw new IOException("Fields in the sort spec must be included in the field list:"+spec[0]);
       }
-      
+
       // if there's an alias for the field then use the alias
       if(null != fieldMappings && fieldMappings.containsKey(fieldName)){
         fieldName = fieldMappings.get(fieldName);
       }
-      
+
       comps[i] = new FieldComparator(fieldName, order.equalsIgnoreCase("asc") ? ComparatorOrder.ASCENDING : ComparatorOrder.DESCENDING);
     }
 
@@ -381,6 +381,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
         SolrStream solrStream = new SolrStream(shardUrl, mParams);
         if(streamContext != null) {
           solrStream.setStreamContext(streamContext);
+          if (streamContext.isLocal()) {
+            solrStream.setDistrib(false);
+          }
         }
         solrStream.setFieldMappings(this.fieldMappings);
         solrStreams.add(solrStream);
@@ -425,7 +428,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       }
     }
   }
-  
+
   /** Return the stream sort - ie, the order in which records are returned */
   public StreamComparator getStreamSort(){
     return comp;

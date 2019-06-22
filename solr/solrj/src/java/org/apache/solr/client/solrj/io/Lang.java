@@ -38,11 +38,12 @@ public class Lang {
         // source streams
         .withFunctionName("search", SearchFacadeStream.class)
         .withFunctionName("facet", FacetStream.class)
+        .withFunctionName("facet2D", Facet2DStream.class)
         .withFunctionName("update", UpdateStream.class)
         .withFunctionName("jdbc", JDBCStream.class)
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("commit", CommitStream.class)
-        .withFunctionName("random", RandomStream.class)
+        .withFunctionName("random", RandomFacadeStream.class)
         .withFunctionName("knnSearch", KnnStream.class)
 
             // decorator streams
@@ -285,6 +286,10 @@ public class Lang {
         .withFunctionName("repeat", RepeatEvaluator.class)
         .withFunctionName("natural", NaturalEvaluator.class)
         .withFunctionName("movingMAD", MovingMADEvaluator.class)
+        .withFunctionName("recNum", RecNumEvaluator.class)
+        .withFunctionName("notNull", NotNullEvaluator.class)
+        .withFunctionName("isNull", IsNullEvaluator.class)
+        .withFunctionName("matches", MatchesEvaluator.class)
 
         // Boolean Stream Evaluators
 

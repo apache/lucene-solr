@@ -23,11 +23,12 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -48,12 +49,15 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.impl.PreferenceRule;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.cloud.NodesSysPropsCacher;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -342,31 +346,26 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
    * to one bad node.
    */
   static class NodePreferenceRulesComparator implements Comparator<Object> {
-    private static class PreferenceRule {
-      public final String name;
-      public final String value;
-
-      public PreferenceRule(String name, String value) {
-        this.name = name;
-        this.value = value;
-      }
-    }
 
     private final SolrQueryRequest request;
+    private final NodesSysPropsCacher sysPropsCache;
+    private final String nodeName;
     private List<PreferenceRule> preferenceRules;
     private String localHostAddress = null;
 
-    public NodePreferenceRulesComparator(final List<String> sortRules, final SolrQueryRequest request) {
+    public NodePreferenceRulesComparator(final List<PreferenceRule> sortRules, final SolrQueryRequest request) {
       this.request = request;
-      this.preferenceRules = new ArrayList<PreferenceRule>(sortRules.size());
-      sortRules.forEach(rule -> {
-        String[] parts = rule.split(":", 2);
-        if (parts.length != 2) {
-          throw new IllegalArgumentException("Invalid " + ShardParams.SHARDS_PREFERENCE + " rule: " + rule);
-        }
-        this.preferenceRules.add(new PreferenceRule(parts[0], parts[1])); 
-      });
+      if (request != null && request.getCore().getCoreContainer().getZkController() != null) {
+        ZkController zkController = request.getCore().getCoreContainer().getZkController();
+        sysPropsCache = zkController.getSysPropsCacher();
+        nodeName = zkController.getNodeName();
+      } else {
+        sysPropsCache = null;
+        nodeName = null;
+      }
+      this.preferenceRules = sortRules;
     }
+
     @Override
     public int compare(Object left, Object right) {
       for (PreferenceRule preferenceRule: this.preferenceRules) {
@@ -381,6 +380,14 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
             lhs = hasCoreUrlPrefix(left, preferenceRule.value);
             rhs = hasCoreUrlPrefix(right, preferenceRule.value);
             break;
+          case ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP:
+            if (sysPropsCache == null) {
+              throw new IllegalArgumentException("Unable to get the NodesSysPropsCacher" +
+                  " on sorting replicas by preference:"+ preferenceRule.value);
+            }
+            lhs = hasSameMetric(left, preferenceRule.value);
+            rhs = hasSameMetric(right, preferenceRule.value);
+            break;
           default:
             throw new IllegalArgumentException("Invalid " + ShardParams.SHARDS_PREFERENCE + " type: " + preferenceRule.name);
         }
@@ -390,6 +397,19 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       }
       return 0;
     }
+
+    private boolean hasSameMetric(Object o, String metricTag) {
+      if (!(o instanceof Replica)) {
+        return false;
+      }
+
+      Collection<String> tags = Collections.singletonList(metricTag);
+      String otherNodeName = ((Replica) o).getNodeName();
+      Map<String, Object> currentNodeMetric = sysPropsCache.getSysProps(nodeName, tags);
+      Map<String, Object> otherNodeMetric = sysPropsCache.getSysProps(otherNodeName, tags);
+      return currentNodeMetric.equals(otherNodeMetric);
+    }
+
     private boolean hasCoreUrlPrefix(Object o, String prefix) {
       final String s;
       if (o instanceof String) {
@@ -431,9 +451,18 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req) {
     final SolrParams params = req.getParams();
+    ZkController zkController = req.getCore().getCoreContainer().getZkController();
+    String defaultShardPreference = "";
+    if (zkController != null) {
+      defaultShardPreference = zkController.getZkStateReader().getClusterProperties()
+          .getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "")
+          .toString();
+    }
+
+
     @SuppressWarnings("deprecation")
     final boolean preferLocalShards = params.getBool(CommonParams.PREFER_LOCAL_SHARDS, false);
-    final String shardsPreferenceSpec = params.get(ShardParams.SHARDS_PREFERENCE, "");
+    final String shardsPreferenceSpec = params.get(ShardParams.SHARDS_PREFERENCE, defaultShardPreference);
 
     if (preferLocalShards || !shardsPreferenceSpec.isEmpty()) {
       if (preferLocalShards && !shardsPreferenceSpec.isEmpty()) {
@@ -442,9 +471,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
           "preferLocalShards is deprecated and must not be used with shards.preference" 
         );
       }
-      List<String> preferenceRules = StrUtils.splitSmart(shardsPreferenceSpec, ',');
+      List<PreferenceRule> preferenceRules = PreferenceRule.from(shardsPreferenceSpec);
       if (preferLocalShards) {
-        preferenceRules.add(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":" + ShardParams.REPLICA_LOCAL);
+        preferenceRules.add(new PreferenceRule(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION, ShardParams.REPLICA_LOCAL));
       }
 
       return new ShufflingReplicaListTransformer(r) {

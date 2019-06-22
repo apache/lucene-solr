@@ -17,7 +17,6 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -47,11 +46,11 @@ import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SimplePostTool;
 import org.junit.Test;
 import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -170,7 +169,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       entity = cloudClient.getLbClient().getHttpClient().execute(httpPost).getEntity();
       try {
         response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-        Map m = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+        Map m = (Map) fromJSONString(response);
         assertFalse("Error in posting blob " + m.toString(), m.containsKey("error"));
       } catch (JSONParser.ParseException e) {
         log.error("$ERROR$", response, e);

@@ -72,7 +72,7 @@ public class ReplicaInfo implements MapWriter {
     this.node = node;
   }
 
-  ReplicaInfo(Map<String, Object> map) {
+  public ReplicaInfo(Map<String, Object> map) {
     this.name = map.keySet().iterator().next();
     Map details = (Map) map.get(name);
     details = Utils.getDeepCopy(details, 4);
@@ -168,6 +168,30 @@ public class ReplicaInfo implements MapWriter {
       return (Boolean)o;
     } else {
       return Boolean.parseBoolean(String.valueOf(o));
+    }
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null) {
+      return false;
+    }
+    if (!(o instanceof ReplicaInfo)) {
+      return false;
+    }
+    ReplicaInfo other = (ReplicaInfo)o;
+    if (
+        name.equals(other.name) &&
+        collection.equals(other.collection) &&
+        core.equals(other.core) &&
+        isLeader == other.isLeader &&
+        node.equals(other.node) &&
+        shard.equals(other.shard) &&
+        type == other.type &&
+        variables.equals(other.variables)) {
+      return true;
+    } else {
+      return false;
     }
   }
 

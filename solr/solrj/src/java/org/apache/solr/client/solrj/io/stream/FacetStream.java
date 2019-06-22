@@ -644,20 +644,20 @@ public class FacetStream extends TupleStream implements Expressible  {
     buf.append('"');
     buf.append(":{");
     buf.append("\"type\":\"terms\"");
-    buf.append(",\"field\":\""+_buckets[level].toString()+"\"");
-    buf.append(",\"limit\":"+_limit);
+    buf.append(",\"field\":\"").append(_buckets[level].toString()).append('"');
+    buf.append(",\"limit\":").append(_limit);
 
     if(refine) {
       buf.append(",\"refine\":true");
     }
 
     if(method != null) {
-      buf.append(",\"method\":\""+method+"\"");
+      buf.append(",\"method\":\"").append(method).append('"');
     }
 
     String fsort = getFacetSort(_sorts[level].getLeftFieldName(), _metrics);
 
-    buf.append(",\"sort\":{\""+fsort+"\":\""+_sorts[level].getOrder()+"\"}");
+    buf.append(",\"sort\":{\"").append(fsort).append("\":\"").append(_sorts[level].getOrder()).append("\"}");
 
     buf.append(",\"facet\":{");
     int metricCount = 0;
@@ -673,7 +673,7 @@ public class FacetStream extends TupleStream implements Expressible  {
           if (metricCount > 0) {
             buf.append(",");
           }
-          buf.append("\""+ facetKey + "\":\"" + identifier + "\"");
+          buf.append('"').append(facetKey).append("\":\"").append(identifier).append('"');
           ++metricCount;
         }
       }

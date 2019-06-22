@@ -1,5 +1,5 @@
 = Securing Solr
-:page-children: authentication-and-authorization-plugins, enabling-ssl, audit-logging
+:page-children: authentication-and-authorization-plugins, enabling-ssl, audit-logging, zookeeper-access-control
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -17,18 +17,48 @@
 // specific language governing permissions and limitations
 // under the License.
 
-When planning how to secure Solr, you should consider which of the available features or approaches are right for you.
-
-* Authentication or authorization of users using:
-** <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication Plugin>>
-** <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
-** <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>
-** <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,Custom authentication or authorization plugin>>
-* <<enabling-ssl.adoc#enabling-ssl,Enabling SSL>>
-* If using SolrCloud, <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>
-* <<audit-logging.adoc#audit-logging,Audit logging>> for recording an audit trail
-
 [WARNING]
 ====
 No Solr API, including the Admin UI, is designed to be exposed to non-trusted parties. Tune your firewall so that only trusted computers and people are allowed access. Because of this, the project will not regard e.g., Admin UI XSS issues as security vulnerabilities. However, we still ask you to report such issues in JIRA.
 ====
+
+When planning how to secure Solr, you should consider which of the available features or approaches are right for you:
+
+== Encryption with TLS (SSL) Certificates
+
+Ecrypting traffic to/from Solr and between Solr nodes prevents sensitive data to be leaked out on the network. TLS is also normally a requirement to prevent credential sniffing when using Authentication.
+
+See the page <<enabling-ssl.adoc#enabling-ssl,Enabling TLS (SSL)>> for details.
+
+== Authentication, Authorization and Audit Logging
+
+See chapter <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,Configuring Authentication, Authorization and Audit Logging plugins>> to learn how to work with the `security.json` file.
+
+[#securing-solr-auth-plugins]
+=== Authentication Plugins
+
+Authentication makes sure you know the identity of your users. The authentication plugins shipping with Solr are:
+
+// tag::list-of-authentication-plugins[]
+* <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication Plugin>>
+* <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
+* <<hadoop-authentication-plugin.adoc#hadoop-authentication-plugin,Hadoop Authentication Plugin>>
+* <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>>
+// end::list-of-authentication-plugins[]
+
+=== Authorization Plugins
+
+Authorization makes sure that only users with the necessary roles/permissions can access any given resource. The authorization plugins shipping with Solr are:
+
+// tag::list-of-authorization-plugins[]
+* <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>
+// end::list-of-authorization-plugins[]
+
+=== Audit Logging Plugins
+
+Audit logging will record an audit trail of incoming reqests to your cluster, such as users being denied access to admin APIs. Learn more about audit logging and how to implement an audit logger plugin here in the <<audit-logging.adoc#audit-logging,Audit Logging>> chapter.
+
+== Securing Zookeeper Traffic
+
+Zookeeper is a central and important part of a SolrCloud cluster and understanding how to secure
+its content is covered in the <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>> page.

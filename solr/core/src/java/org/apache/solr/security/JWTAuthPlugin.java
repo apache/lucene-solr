@@ -73,7 +73,6 @@ import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.JwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.JoseException;
-import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -560,7 +559,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     data.put("client_id", clientId);
     data.put("scope", adminUiScope);
     data.put("redirect_uris", redirectUris);
-    String headerJson = JSONUtil.toJSON(data);
+    String headerJson = Utils.toJSONString(data);
     return Base64.byteArrayToBase64(headerJson.getBytes(StandardCharsets.UTF_8));
   }
 

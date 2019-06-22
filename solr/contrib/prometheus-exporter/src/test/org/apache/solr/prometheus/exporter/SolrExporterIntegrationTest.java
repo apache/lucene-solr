@@ -67,9 +67,10 @@ public class SolrExporterIntegrationTest extends SolrExporterTestBase {
     Map<String, Double> jvmMetrics = metricsWithName(
         getAllMetrics(), "solr_metrics_jvm_threads");
 
-    // Include all thread states + plus overall count + number of daemon threads + number of deadlocked threads
-    assertEquals(NUM_NODES * (Thread.State.values().length + 3),
-        jvmMetrics.size());
+    // exact set of metrics can vary based on JVM impl (ie: windows)
+    // but there should always be at least one per known thread state per node...
+    assertTrue(jvmMetrics.toString(),
+               (NUM_NODES * Thread.State.values().length) < jvmMetrics.size());
   }
 
   @Test

@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import static org.hamcrest.CoreMatchers.not;
@@ -58,7 +59,7 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
       // NOTE: we don't bother trying to test 'min(foo_i)' because of SOLR-12559
       // ...once that bug is fixed, several assertions below will need to change
       final FacetRequest fr = FacetRequest.parse
-        (req, (Map<String,Object>) ObjectBuilder.fromJSON
+        (req, (Map<String,Object>) Utils.fromJSONString
          ("{ " +
           "  s1:'min(field(\"foo_i\"))', " +
           "  s2:'min($custom_req_param)', " +

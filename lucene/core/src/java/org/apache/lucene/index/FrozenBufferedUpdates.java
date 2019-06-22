@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -345,21 +344,23 @@ final class FrozenBufferedUpdates {
   public static BufferedUpdatesStream.ApplyDeletesResult closeSegmentStates(IndexWriter writer, BufferedUpdatesStream.SegmentState[] segStates, boolean success) throws IOException {
     List<SegmentCommitInfo> allDeleted = null;
     long totDelCount = 0;
-    final List<BufferedUpdatesStream.SegmentState> segmentStates = Arrays.asList(segStates);
-    for (BufferedUpdatesStream.SegmentState segState : segmentStates) {
-      if (success) {
-        totDelCount += segState.rld.getDelCount() - segState.startDelCount;
-        int fullDelCount = segState.rld.getDelCount();
-        assert fullDelCount <= segState.rld.info.info.maxDoc() : fullDelCount + " > " + segState.rld.info.info.maxDoc();
-        if (segState.rld.isFullyDeleted() && writer.getConfig().getMergePolicy().keepFullyDeletedSegment(() -> segState.reader) == false) {
-          if (allDeleted == null) {
-            allDeleted = new ArrayList<>();
+    try {
+      for (BufferedUpdatesStream.SegmentState segState : segStates) {
+        if (success) {
+          totDelCount += segState.rld.getDelCount() - segState.startDelCount;
+          int fullDelCount = segState.rld.getDelCount();
+          assert fullDelCount <= segState.rld.info.info.maxDoc() : fullDelCount + " > " + segState.rld.info.info.maxDoc();
+          if (segState.rld.isFullyDeleted() && writer.getConfig().getMergePolicy().keepFullyDeletedSegment(() -> segState.reader) == false) {
+            if (allDeleted == null) {
+              allDeleted = new ArrayList<>();
+            }
+            allDeleted.add(segState.reader.getOriginalSegmentInfo());
           }
-          allDeleted.add(segState.reader.getOriginalSegmentInfo());
         }
       }
+    } finally {
+      IOUtils.close(segStates);
     }
-    IOUtils.close(segmentStates);
     if (writer.infoStream.isEnabled("BD")) {
       writer.infoStream.message("BD", "closeSegmentStates: " + totDelCount + " new deleted documents; pool " + writer.getPendingUpdatesCount()+ " packets; bytesUsed=" + writer.getReaderPoolRamBytesUsed());
     }

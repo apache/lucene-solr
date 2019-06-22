@@ -192,6 +192,15 @@ public class ZplotStream extends TupleStream implements Expressible {
 
         outTuples.add(tuple);
       }
+
+      //Generate the x axis if the tuples contain y and not x
+      if(outTuples.get(0).fields.containsKey("y") && !outTuples.get(0).fields.containsKey("x")) {
+        int x = 0;
+        for(Tuple tuple : outTuples) {
+          tuple.put("x", x++);
+        }
+      }
+
     } else if(distribution) {
       Object o = evaluated.get("dist");
       if(o instanceof RealDistribution) {

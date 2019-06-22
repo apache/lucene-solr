@@ -35,6 +35,7 @@
     <dependency org="org.hamcrest" name="hamcrest-core" rev="${/org.hamcrest/hamcrest-core}" conf="compile;junit4-stdalone" />
     <dependency org="com.carrotsearch.randomizedtesting" name="junit4-ant" rev="${/com.carrotsearch.randomizedtesting/junit4-ant}" conf="compile;junit4-stdalone" />
     <dependency org="com.carrotsearch.randomizedtesting" name="randomizedtesting-runner" rev="${/com.carrotsearch.randomizedtesting/randomizedtesting-runner}" conf="compile;junit4-stdalone" />
+    <dependency org="io.opentracing" name="opentracing-mock" rev="${/io.opentracing/opentracing-mock}" conf="compile;junit4-stdalone"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>

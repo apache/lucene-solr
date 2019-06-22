@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.AutoScaling;
 import org.apache.solr.cloud.autoscaling.CapturedEvent;
@@ -1343,8 +1344,8 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLL1,
         "conf", 1, 2);
     create.process(solrClient);
-    CloudTestUtils.waitForState(cluster, "searchRate testing collection creating",
-                                COLL1, CloudTestUtils.clusterShape(1, 2, false, true));
+    CloudUtil.waitForState(cluster, "searchRate testing collection creating",
+                                COLL1, CloudUtil.clusterShape(1, 2, false, true));
 
     listenerEventLatch = new CountDownLatch(4);
     

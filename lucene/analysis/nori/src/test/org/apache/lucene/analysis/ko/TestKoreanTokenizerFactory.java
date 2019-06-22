@@ -101,6 +101,36 @@ public class TestKoreanTokenizerFactory extends BaseTokenStreamTestCase {
     );
   }
 
+  /**
+   * Test discardPunctuation True
+   */
+  public void testDiscardPunctuation_true() throws IOException {
+    Map<String,String> args = new HashMap<>();
+    args.put("discardPunctuation", "true");
+    KoreanTokenizerFactory factory = new KoreanTokenizerFactory(args);
+    factory.inform(new StringMockResourceLoader(""));
+    TokenStream ts = factory.create(newAttributeFactory());
+    ((Tokenizer)ts).setReader(new StringReader("10.1 인치 모니터"));
+    assertTokenStreamContents(ts,
+        new String[] { "10", "1", "인치", "모니터" }
+    );
+  }
+
+  /**
+   * Test discardPunctuation False
+   */
+  public void testDiscardPunctuation_false() throws IOException {
+    Map<String,String> args = new HashMap<>();
+    args.put("discardPunctuation", "false");
+    KoreanTokenizerFactory factory = new KoreanTokenizerFactory(args);
+    factory.inform(new StringMockResourceLoader(""));
+    TokenStream ts = factory.create(newAttributeFactory());
+    ((Tokenizer)ts).setReader(new StringReader("10.1 인치 모니터"));
+    assertTokenStreamContents(ts,
+        new String[] { "10", ".", "1", " ", "인치", " ", "모니터" }
+    );
+  }
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {

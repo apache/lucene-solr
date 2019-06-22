@@ -90,7 +90,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startZkServer() throws Exception {
-    zkServer = new ZkTestServer(createTempDir().toString());
+    zkServer = new ZkTestServer(createTempDir());
     zkServer.run();
     loaderPath = createTempDir();
   }

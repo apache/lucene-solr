@@ -69,6 +69,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.SortableTextField;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -280,6 +281,18 @@ public class QueryComponent extends SearchComponent
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "Illegal %s parameter", GroupParams.GROUP_FORMAT));
     }
     groupingSpec.setResponseFormat(responseFormat);
+
+    // See SOLR-12249. Disallow grouping on text fields that are not SortableText in cloud mode
+    if (req.getCore().getCoreContainer().isZooKeeperAware()) {
+      IndexSchema schema = rb.req.getSchema();
+      String[] fields = params.getParams(GroupParams.GROUP_FIELD);
+      for (String field : fields) {
+        SchemaField schemaField = schema.getField(field);
+        if (schemaField.getType().isTokenized() && (schemaField.getType() instanceof SortableTextField) == false) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "Sorting on a tokenized field that is not a SortableTextField is not supported in cloud mode."));
+        }
+      }
+    }
 
     groupingSpec.setFields(params.getParams(GroupParams.GROUP_FIELD));
     groupingSpec.setQueries(params.getParams(GroupParams.GROUP_QUERY));
@@ -836,7 +849,7 @@ public class QueryComponent extends SearchComponent
           }
           else {
             responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
-            final Object rhste = (responseHeader == null ? null : responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
+            final Object rhste = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
             if (rhste != null) {
               nl.add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, rhste);
             }
@@ -866,20 +879,16 @@ public class QueryComponent extends SearchComponent
         }
 
         final boolean thisResponseIsPartial;
-        if (responseHeader != null) {
-          thisResponseIsPartial = Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-          thereArePartialResults |= thisResponseIsPartial;
-          
-          if (!Boolean.TRUE.equals(segmentTerminatedEarly)) {
-            final Object ste = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
-            if (Boolean.TRUE.equals(ste)) {
-              segmentTerminatedEarly = Boolean.TRUE;
-            } else if (Boolean.FALSE.equals(ste)) {
-              segmentTerminatedEarly = Boolean.FALSE;
-            }
+        thisResponseIsPartial = Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+        thereArePartialResults |= thisResponseIsPartial;
+        
+        if (!Boolean.TRUE.equals(segmentTerminatedEarly)) {
+          final Object ste = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
+          if (Boolean.TRUE.equals(ste)) {
+            segmentTerminatedEarly = Boolean.TRUE;
+          } else if (Boolean.FALSE.equals(ste)) {
+            segmentTerminatedEarly = Boolean.FALSE;
           }
-        } else {
-          thisResponseIsPartial = false;
         }
         
         // calculate global maxScore and numDocsFound
@@ -1172,7 +1181,7 @@ public class QueryComponent extends SearchComponent
         }
         {
           NamedList<?> responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
-          if (responseHeader!=null && Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+          if (Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
             rb.rsp.getResponseHeader().asShallowMap()
                .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
           }

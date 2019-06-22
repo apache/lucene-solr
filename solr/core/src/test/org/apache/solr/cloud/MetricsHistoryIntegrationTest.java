@@ -75,8 +75,8 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
     // create .system
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
         .process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL,
-        30, TimeUnit.SECONDS, CloudTestUtils.clusterShape(1, 1));
+    CloudUtil.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL,
+        30, TimeUnit.SECONDS, CloudUtil.clusterShape(1, 1));
     solrClient.query(CollectionAdminParams.SYSTEM_COLL, params(CommonParams.Q, "*:*"));
     // sleep a little to allow the handler to collect some metrics
     if (simulated) {

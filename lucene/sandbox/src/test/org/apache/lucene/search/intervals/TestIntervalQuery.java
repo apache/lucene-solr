@@ -71,7 +71,8 @@ public class TestIntervalQuery extends LuceneTestCase {
       "w2 w1 w3 w2 w4",
       "coordinate genome mapping research",
       "coordinate genome research",
-      "greater new york"
+      "greater new york",
+      "x x x x x intend x x x message x x x message x x x addressed x x"
   };
 
   private void checkHits(Query query, int[] results) throws IOException {
@@ -218,6 +219,19 @@ public class TestIntervalQuery extends LuceneTestCase {
         )
     );
     checkHits(q, new int[]{3});
+  }
+
+  public void testUnorderedNoOverlaps() throws IOException {
+    Query q = new IntervalQuery(field,
+        Intervals.maxgaps(3, Intervals.unorderedNoOverlaps(Intervals.term("addressed"),
+          Intervals.maxgaps(5, Intervals.unorderedNoOverlaps(Intervals.term("message"),
+            Intervals.maxgaps(3, Intervals.unordered(Intervals.term("intend"), Intervals.term("message"))))))));
+    checkHits(q, new int[]{ 9 });
+
+    q = new IntervalQuery(field, Intervals.unorderedNoOverlaps(
+        Intervals.term("w2"),
+        Intervals.or(Intervals.term("w2"), Intervals.term("w3"))));
+    checkHits(q, new int[]{ 0, 1, 2, 3, 5 });
   }
 
   public void testNestedOrInUnorderedMaxGaps() throws IOException {

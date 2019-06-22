@@ -16,16 +16,17 @@
  */
 package org.apache.solr.core;
 
-import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -44,16 +45,22 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+
 /**
  * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the Jar in a single node.
  */
 public class BlobRepository {
+  private static final long MAX_JAR_SIZE = Long.parseLong(System.getProperty("runtme.lib.size", String.valueOf(5* 1024*1024)));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final Random RANDOM;
   static final Pattern BLOB_KEY_PATTERN_CHECKER = Pattern.compile(".*/\\d+");
@@ -108,6 +115,14 @@ public class BlobRepository {
     return getBlobIncRef(key.concat(decoder.getName()), () -> addBlob(key,decoder));
   }
 
+  BlobContentRef getBlobIncRef(String key, Decoder decoder, String url, String sha512) {
+    StringBuffer keyBuilder = new StringBuffer(key);
+    if (decoder != null) keyBuilder .append( decoder.getName());
+    keyBuilder.append("/").append( sha512);
+
+    return getBlobIncRef(keyBuilder.toString(), () -> new BlobContent<>(key, fetchBlobAndVerify(key, url, sha512), decoder));
+  }
+
   // do the actual work returning the appropriate type...
   private <T> BlobContentRef<T> getBlobIncRef(String key, Callable<BlobContent<T>> blobCreator) {
     BlobContent<T> aBlob;
@@ -149,14 +164,44 @@ public class BlobRepository {
     blobs.put(keyPlusName, aBlob);
     return aBlob;
   }
-  
+  static String INVALID_JAR_MSG = "Invalid jar from {0} , expected sha512 hash : {1} , actual : {2}";
+
+  private ByteBuffer fetchBlobAndVerify(String key, String url, String sha512) {
+    ByteBuffer byteBuffer = fetchFromUrl(key, url);
+    String computedDigest = sha512Digest(byteBuffer);
+    if (!computedDigest.equals(sha512)) {
+      throw new SolrException(SERVER_ERROR, StrUtils.formatString(INVALID_JAR_MSG, url, sha512, computedDigest));
+
+    }
+    return byteBuffer;
+  }
+
+  public static String sha512Digest(ByteBuffer byteBuffer) {
+    MessageDigest digest = null;
+    try {
+      digest = MessageDigest.getInstance("SHA-512");
+    } catch (NoSuchAlgorithmException e) {
+      //unlikely
+      throw new SolrException(SERVER_ERROR, e);
+    }
+    digest.update(byteBuffer);
+    return String.format(
+        Locale.ROOT,
+        "%0128x",
+        new BigInteger(1, digest.digest()));
+  }
+
+
   /**
    *  Package local for unit tests only please do not use elsewhere
    */
   ByteBuffer fetchBlob(String key) {
     Replica replica = getSystemCollReplica();
     String url = replica.getStr(BASE_URL_PROP) + "/" + CollectionAdminParams.SYSTEM_COLL + "/blob/" + key + "?wt=filestream";
+    return fetchFromUrl(key, url);
+  }
 
+  ByteBuffer fetchFromUrl(String key, String url) {
     HttpClient httpClient = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
     HttpGet httpGet = new HttpGet(url);
     ByteBuffer b;
@@ -171,7 +216,7 @@ public class BlobRepository {
       }
 
       try (InputStream is = entity.getContent()) {
-        b = SimplePostTool.inputStreamToByteArray(is);
+        b = SimplePostTool.inputStreamToByteArray(is, MAX_JAR_SIZE);
       }
     } catch (Exception e) {
       if (e instanceof SolrException) {
@@ -240,7 +285,7 @@ public class BlobRepository {
 
     public BlobContent(String key, ByteBuffer buffer, Decoder<T> decoder) {
       this.key = key;
-      this.content = decoder.decode(new ByteBufferInputStream(buffer));
+      this.content = decoder == null ? (T) buffer : decoder.decode(new ByteBufferInputStream(buffer));
     }
 
     @SuppressWarnings("unchecked")
@@ -287,5 +332,4 @@ public class BlobRepository {
       this.blob = blob;
     }
   }
-
 }

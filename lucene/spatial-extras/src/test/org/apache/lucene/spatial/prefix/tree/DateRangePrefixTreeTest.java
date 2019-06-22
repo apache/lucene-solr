@@ -17,8 +17,11 @@
 package org.apache.lucene.spatial.prefix.tree;
 
 import java.text.ParseException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoField;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -29,6 +32,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.SpatialRelation;
+
+import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 
 public class DateRangePrefixTreeTest extends LuceneTestCase {
 
@@ -111,6 +116,29 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     String resultToString = tree.toString(cal) + 'Z';
     assertEquals(expectedISO8601, resultToString);
     assertEquals(cal, tree.parseCalendar(expectedISO8601));
+  }
+
+  public void testParseCalendar() throws ParseException {
+    Instant expected = OffsetDateTime.of(1984, 12, 18, 12, 34, 56, 100000000, ZoneOffset.UTC).toInstant();
+
+    assertEquals(expected, tree.parseCalendar("1984-12-18T12:34:56.1Z").toInstant());
+    assertEquals(expected.with(ChronoField.MILLI_OF_SECOND, 10), tree.parseCalendar("1984-12-18T12:34:56.01Z").toInstant());
+    assertEquals(expected.with(ChronoField.MILLI_OF_SECOND, 1), tree.parseCalendar("1984-12-18T12:34:56.001Z").toInstant());
+    assertEquals(expected, tree.parseCalendar("1984-12-18T12:34:56.1000Z").toInstant());
+    assertEquals(expected, tree.parseCalendar("1984-12-18T12:34:56.100000000Z").toInstant());
+    assertEquals(expected.with(ChronoField.NANO_OF_SECOND, 0), tree.parseCalendar("1984-12-18T12:34:56Z").toInstant());
+    // decimal places are simply cut off as rounding may affect the "seconds" part of the calender which was set before
+    assertEquals(expected.with(ChronoField.MILLI_OF_SECOND, 999), tree.parseCalendar("1984-12-18T12:34:56.9999Z").toInstant());
+
+    assertEquals(expected, tree.parseCalendar("1984-12-18T12:34:56.1").toInstant());
+    assertEquals(expected.with(ChronoField.MILLI_OF_SECOND, 10), tree.parseCalendar("1984-12-18T12:34:56.01").toInstant());
+    assertEquals(expected.with(ChronoField.MILLI_OF_SECOND, 1), tree.parseCalendar("1984-12-18T12:34:56.001").toInstant());
+    assertEquals(expected, tree.parseCalendar("1984-12-18T12:34:56.1000").toInstant());
+    assertEquals(expected, tree.parseCalendar("1984-12-18T12:34:56.100000000").toInstant());
+    assertEquals(expected.with(ChronoField.NANO_OF_SECOND, 0), tree.parseCalendar("1984-12-18T12:34:56").toInstant());
+    assertEquals(expected.with(ChronoField.MILLI_OF_SECOND, 999), tree.parseCalendar("1984-12-18T12:34:56.9999").toInstant());
+    
+    assertEquals(OffsetDateTime.parse("1984-12-18T12:34:56.01Z", ISO_DATE_TIME).get(ChronoField.MILLI_OF_SECOND), 10);
   }
 
   //copies from DateRangePrefixTree

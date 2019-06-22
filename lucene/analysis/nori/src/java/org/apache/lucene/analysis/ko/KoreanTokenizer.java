@@ -126,6 +126,7 @@ public final class KoreanTokenizer extends Tokenizer {
   private final FST.BytesReader userFSTReader;
   private final TokenInfoFST userFST;
 
+  private final boolean discardPunctuation;
   private final DecompoundMode mode;
   private final boolean outputUnknownUnigrams;
 
@@ -159,7 +160,7 @@ public final class KoreanTokenizer extends Tokenizer {
    * Uses the default AttributeFactory.
    */
   public KoreanTokenizer() {
-    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, null, DEFAULT_DECOMPOUND, false);
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, null, DEFAULT_DECOMPOUND, false, true);
   }
 
   /**
@@ -171,8 +172,22 @@ public final class KoreanTokenizer extends Tokenizer {
    * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
    */
   public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams) {
+    this(factory, userDictionary, mode, outputUnknownUnigrams, true);
+  }
+
+  /**
+   * Create a new KoreanTokenizer.
+   *
+   * @param factory the AttributeFactory to use
+   * @param userDictionary Optional: if non-null, user dictionary.
+   * @param mode Decompound mode.
+   * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
+   * @param discardPunctuation true if punctuation tokens should be dropped from the output.
+   */
+  public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams, boolean discardPunctuation) {
     super(factory);
     this.mode = mode;
+    this.discardPunctuation = discardPunctuation;
     this.outputUnknownUnigrams = outputUnknownUnigrams;
     dictionary = TokenInfoDictionary.getInstance();
     fst = dictionary.getFST();
@@ -874,11 +889,9 @@ public final class KoreanTokenizer extends Tokenizer {
               backWordPos+i,
               backWordPos+i+charLen
           );
-          if (shouldFilterToken(token) == false) {
-            pending.add(token);
-            if (VERBOSE) {
-              System.out.println("    add token=" + pending.get(pending.size() - 1));
-            }
+          pending.add(token);
+          if (VERBOSE) {
+            System.out.println("    add token=" + pending.get(pending.size() - 1));
           }
         }
       } else {
@@ -939,6 +952,16 @@ public final class KoreanTokenizer extends Tokenizer {
           }
         }
       }
+      if (discardPunctuation == false && backWordPos != backPos) {
+        // Add a token for whitespaces between terms
+        int offset = backPos - lastBackTracePos;
+        int len = backWordPos - backPos;
+        //System.out.println(offset + " " + fragmentOffset + " " + len + " " + backWordPos + " " + backPos);
+        unkDictionary.lookupWordIds(characterDefinition.getCharacterClass(' '), wordIdRef);
+        DictionaryToken spaceToken = new DictionaryToken(Type.UNKNOWN, unkDictionary,
+            wordIdRef.ints[wordIdRef.offset], fragment, offset, len, backPos, backPos+len);
+        pending.add(spaceToken);
+      }
 
       pos = backPos;
       bestIDX = nextBestIDX;
@@ -960,7 +983,7 @@ public final class KoreanTokenizer extends Tokenizer {
   }
 
   private boolean shouldFilterToken(Token token) {
-    return isPunctuation(token.getSurfaceForm()[token.getOffset()]);
+    return discardPunctuation && isPunctuation(token.getSurfaceForm()[token.getOffset()]);
   }
 
   private static boolean isPunctuation(char ch) {

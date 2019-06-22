@@ -303,7 +303,7 @@ public abstract class MergePolicy {
         b.append(" into ").append(info.info.name);
       }
       if (maxNumSegments != -1) {
-        b.append(" [maxNumSegments=" + maxNumSegments + "]");
+        b.append(" [maxNumSegments=").append(maxNumSegments).append(']');
       }
       if (isAborted()) {
         b.append(" [ABORTED]");

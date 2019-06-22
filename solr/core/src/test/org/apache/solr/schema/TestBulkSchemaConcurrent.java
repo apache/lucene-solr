@@ -16,10 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getSourceCopyFields;
-import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
-
-import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -37,10 +33,11 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
+import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getSourceCopyFields;
 
 public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -133,7 +130,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
 
     RestTestHarness publisher = randomRestTestHarness(r);
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
-    Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    Map map = (Map) Utils.fromJSONString(response);
     Object errors = map.get("errors");
     if (errors != null) {
       errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));
@@ -203,7 +200,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
 
     RestTestHarness publisher = randomRestTestHarness(r);
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
-    Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    Map map = (Map) Utils.fromJSONString(response);
     Object errors = map.get("errors");
     if (errors != null) {
       errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));
@@ -265,7 +262,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
 
     RestTestHarness publisher = randomRestTestHarness(r);
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
-    Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    Map map = (Map) Utils.fromJSONString(response);
     Object errors = map.get("errors");
     if (errors != null) {
       errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));

@@ -86,8 +86,12 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 public class TestPolicy extends SolrTestCaseJ4 {
+  boolean useNodeset ;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public TestPolicy(){
+    useNodeset = true;
+  }
   static Suggester createSuggester(SolrCloudManager cloudManager, Map jsonObj, Suggester seed) throws IOException, InterruptedException {
     Policy.Session session = null;
     if (seed != null) session = seed.session;
@@ -696,7 +700,49 @@ public class TestPolicy extends SolrTestCaseJ4 {
 
     expectThrows(IllegalArgumentException.class,
         () -> Clause.create("{cores: '>14%' , node:'#ANY'}"));
+     clause  = Clause.create("{replica:1, nodeset : {sysprop.zone : east}}");
+     assertEquals(Variable.Type.SYSPROP, clause.tag.varType);
+     clause  =Clause.create("{replica:1, nodeset : [node1, node2, node3]}");
+     assertEquals(Variable.Type.NODE, clause.tag.varType);
+     assertEquals(Operand.IN, clause.tag.op);
 
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{replica:1, nodeset : {sysprop.zone : '#EACH'}}"));
+
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{replica:1, nodeset : {host : '#EACH'}}"));
+
+    expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{replica:1, node: n1, nodeset : {sysprop.zone : east}}"));
+
+    IllegalArgumentException exp = expectThrows(IllegalArgumentException.class,
+        () -> Clause.create("{replica:1, nodeset : {sysprop.zone : east  , port: 8983 }}"));
+    assertTrue(exp.getMessage().contains("nodeset must only have one and only one key"));
+    clause = Clause.create("{'replica': '#ALL', 'nodeset': {'freedisk': '>700'}, 'strict': false}");
+    assertEquals(clause.put, Clause.Put.ON_ALL);
+    assertEquals(Operand.GREATER_THAN , clause.tag.op);
+    clause = Clause.create("{'replica': '#ALL', put: on-each-node,  'nodeset': {sysprop.zone : east}}");
+    assertEquals(clause.put, Clause.Put.ON_EACH);
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{'replica': '#ALL', put: on-Each,  'nodeset': {sysprop.zone : east}}"));
+    assertTrue(exp.getMessage().contains("invalid value for put : on-Each"));
+
+    clause = Clause.create("{replica : '#EQUAL', nodeset : [{sysprop.zone : east}, {sysprop.zone : west}]}");
+    assertTrue(((List)clause.tag.val).get(0) instanceof Condition);
+    assertTrue( Utils.fromJSONString(Utils.toJSONString(clause)) instanceof Map);
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{replica : '#EQUAL', nodeset : [{sysprop.zone : east}, {port : '8983'}]}"));
+    assertTrue(exp.getMessage().contains("all element must have same key"));
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{replica : '#EQUAL', nodeset : [{sysprop.zone : east}, {sysprop.zone : '#EACH'}]}"));
+    assertTrue(exp.getMessage().contains("computed  value #EACH not allowed in nodeset"));
+    exp = expectThrows(IllegalArgumentException.class, ()->  Clause.create("{replica : '#EQUAL', nodeset : {sysprop.zone : east}}"));
+    assertTrue(exp.getMessage().contains("'nodeset' must have an array value when 'replica': '#EQUAL` is used"));
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{replica : '#ALL', nodeset : [{sysprop.zone : east}, {sysprop.zone : west}]}"));
+    assertTrue(exp.getMessage().contains("cannot use array value for nodeset if replica : '#EQUAL' is not used"));
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{replica : '50%', nodeset : [{sysprop.zone : east}, {sysprop.zone : west}]}"));
+    assertTrue(exp.getMessage().contains("cannot use array value for nodeset if replica : '#EQUAL' is not used"));
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{replica : 3, nodeset : [{sysprop.zone : east}, {sysprop.zone : west}]}"));
+    assertTrue(exp.getMessage().contains("cannot use array value for nodeset if replica : '#EQUAL' is not used"));
+    exp = expectThrows(IllegalArgumentException.class, ()-> Clause.create("{replica : '#EQUAL', put: on-each-node, nodeset : [{sysprop.zone : east}, {sysprop.zone : west}]}"));
+    assertTrue(exp.getMessage().contains("cannot use put: 'on-each-node'  with an array value in nodeset "));
   }
 
 
@@ -976,6 +1022,19 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
         "  ]" +
         "}");
+
+    if(useNodeset) {
+      policies = (Map) Utils.fromJSONString("{" +
+          "  'cluster-preferences': [" +
+          "    { 'maximize': 'freedisk', 'precision': 50}," +
+          "    { 'minimize': 'cores', 'precision': 50}" +
+          "  ]," +
+          "  'cluster-policy': [" +
+          "    { 'replica': 0, nodeset:{'nodeRole': 'overseer'}}" +
+          "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
+          "  ]" +
+          "}");
+    }
     AutoScalingConfig config = new AutoScalingConfig(policies);
     Policy policy = config.getPolicy();
     Policy.Session session = policy.createSession(provider);
@@ -1011,6 +1070,19 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { 'replica': '<3', 'shard': '#EACH', 'node': '#ANY'}," +
         "  ]" +
         "}");
+    if(useNodeset){
+      policies = (Map) Utils.fromJSONString("{" +
+          "  'cluster-preferences': [" +
+          "    { 'maximize': 'freedisk', 'precision': 50}," +
+          "    { 'minimize': 'cores', 'precision': 50}" +
+          "  ]," +
+          "  'cluster-policy': [" +
+          "    { 'replica': 0, nodeset: {'nodeRole': 'overseer'}}" +
+          "    { 'replica': '<3', 'shard': '#EACH', 'node': '#ANY'}," +
+          "  ]" +
+          "}");
+
+    }
     config = new AutoScalingConfig(policies);
     policy = config.getPolicy();
     session = policy.createSession(provider);
@@ -1055,6 +1127,20 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { 'replica': '<3', 'shard': 'shard2', 'node': '#ANY'}," +
         "  ]" +
         "}");
+    if(useNodeset){
+      policies = (Map) Utils.fromJSONString("{" +
+          "  'cluster-preferences': [" +
+          "    { 'maximize': 'freedisk', 'precision': 50}," +
+          "    { 'minimize': 'cores', 'precision': 50}" +
+          "  ]," +
+          "  'cluster-policy': [" +
+          "    { 'replica': 0, nodeset:{'nodeRole': 'overseer'}}" +
+          "    { 'replica': '<2', 'shard': 'shard1', 'node': '#ANY'}," +
+          "    { 'replica': '<3', 'shard': 'shard2', 'node': '#ANY'}," +
+          "  ]" +
+          "}");
+
+    }
     config = new AutoScalingConfig(policies);
     policy = config.getPolicy();
     session = policy.createSession(provider);
@@ -1167,6 +1253,21 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { 'replica': 0, 'shard': '#EACH', sysprop.fs : '!slowdisk' ,  type : PULL }" +
         "  ]" +
         "}");
+    if(useNodeset){
+      policies = (Map) Utils.fromJSONString("{" +
+          "  'cluster-preferences': [" +
+          "    { 'maximize': 'freedisk', 'precision': 50}," +
+          "    { 'minimize': 'cores', 'precision': 50}" +
+          "  ]," +
+          "  'cluster-policy': [" +
+          "    { 'replica': 0, nodeset : {'nodeRole': 'overseer'}}" +
+          "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}," +
+          "    { 'replica': 0, 'shard': '#EACH',  nodeset : { sysprop.fs : '!ssd'},  type : TLOG }" +
+          "    { 'replica': 0, 'shard': '#EACH', put:'on-each-node' nodeset : {sysprop.fs : '!slowdisk'} ,  type : PULL }" +
+          "  ]" +
+          "}");
+
+    }
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4, sysprop.fs: slowdisk}," +
         "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3, sysprop.fs: unknown }," +
@@ -1276,6 +1377,23 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { 'replica': 0, 'shard': '#EACH', sysprop.fs : '!slowdisk' ,  type : PULL }" +
         "  ]" +
         "}");
+    if(useNodeset){
+      policies = (Map) Utils.fromJSONString("{" +
+          "  'cluster-preferences': [" +
+          "    { 'maximize': 'freedisk', 'precision': 50}," +
+          "    { 'minimize': 'cores', 'precision': 1}" +
+          "  ]," +
+          "  'cluster-policy': [" +
+          "    { 'replica': 0, nodeset : {'nodeRole': 'overseer'}}" +
+          "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl'}," +
+          "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl2', type : PULL}," +
+          "    { 'replica': '<3', 'shard': '#EACH', 'node': '#ANY', 'collection':'newColl2'}," +
+          "    { 'replica': 0, 'shard': '#EACH', put: on-each-node , nodeset:{ sysprop.fs : '!ssd'},  type : TLOG }" +
+          "    { 'replica': 0, 'shard': '#EACH', put: on-each-node ,nodeset : {sysprop.fs : '!slowdisk'} ,  type : PULL }" +
+          "  ]" +
+          "}");
+
+    }
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4, sysprop.fs: slowdisk}," +
         "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3, sysprop.fs: unknown}," +
@@ -1400,6 +1518,26 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    ]" +
         "  }" +
         "}");
+    if(useNodeset){
+      map = (Map) Utils.fromJSONString("{" +
+          "  'cluster-preferences': [" +
+          "    { 'maximize': 'freedisk', 'precision': 50}," +
+          "    { 'minimize': 'cores', 'precision': 50}" +
+          "  ]," +
+          "  'cluster-policy': [" +
+          "    { 'replica': 0, nodeset: {'nodeRole': 'overseer'}}," +
+          "    { 'replica': '<2', 'shard': '#EACH', 'node': '#ANY'}" +
+          "  ]," +
+          "  'policies': {" +
+          "    'policy1': [" +
+          "      { 'replica': '1', nodeset:{ 'sysprop.fs': 'ssd'}, 'shard': '#EACH'}," +
+          "      { 'replica': '<2', 'shard': '#ANY', 'node': '#ANY'}," +
+          "      { 'replica': '<2', 'shard': '#EACH',nodeset:{ 'sysprop.rack': 'rack1'}}" +
+          "    ]" +
+          "  }" +
+          "}");
+
+    }
     Policy policy = new Policy(map);
     List<Clause> clauses = Policy.mergePolicies("mycoll", policy.getPolicies().get("policy1"), policy.getClusterPolicy());
     Collections.sort(clauses);
@@ -1407,8 +1545,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals("1", String.valueOf(clauses.get(0).original.get("replica")));
     assertEquals("0", String.valueOf(clauses.get(1).original.get("replica")));
     assertEquals("#ANY", clauses.get(3).original.get("shard"));
-    assertEquals("rack1", clauses.get(2).original.get("sysprop.rack"));
-    assertEquals("overseer", clauses.get(1).original.get("nodeRole"));
+    assertEquals("rack1", clauses.get(2).tag.val);
+    assertEquals("overseer",clauses.get(1).tag.val);
   }
 
   public void testConditionsSort() {
@@ -1419,6 +1557,16 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      { 'replica':'<2', 'node':'#ANY', 'shard':'#EACH'}," +
         "      { 'replica':1, 'sysprop.rack':'rack1'}]" +
         "  }";
+    if(useNodeset){
+      rules = "{" +
+          "    'cluster-policy':[" +
+          "      { 'nodeRole':'overseer', replica: 0,  'strict':false}," +
+          "      { 'replica':'<1', 'node':'node3', 'shard':'#EACH'}," +
+          "      { 'replica':'<2', 'node':'#ANY', 'shard':'#EACH'}," +
+          "      { 'replica':1, nodeset: {'sysprop.rack':'rack1'}}]" +
+          "  }";
+
+    }
     Policy p = new Policy((Map<String, Object>) Utils.fromJSONString(rules));
     List<Clause> clauses = new ArrayList<>(p.getClusterPolicy());
     Collections.sort(clauses);
@@ -1436,6 +1584,17 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "{minimize:cores , precision:2}," +
         "{maximize:freedisk, precision:50}, " +
         "{minimize:heapUsage, precision:1000}]}";
+    if(useNodeset){
+      rules = "{" +
+          "cluster-policy:[" +
+          "{nodeset:{nodeRole:'overseer'},replica : 0 , strict:false}," +
+          "{replica:'<1',node:node3}," +
+          "{replica:'<2',node:'#ANY', shard:'#EACH'}]," +
+          " cluster-preferences:[" +
+          "{minimize:cores , precision:2}," +
+          "{maximize:freedisk, precision:50}, " +
+          "{minimize:heapUsage, precision:1000}]}";
+    }
 
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heapUsage:10480}," +
@@ -1624,6 +1783,18 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      'cluster-preferences':[" +
         "      {'minimize':'cores', 'precision':3}," +
         "      {'maximize':'freedisk','precision':100}]}";
+    if(useNodeset){
+      autoscaleJson = "{" +
+          "      'cluster-policy':[" +
+          "      {'cores':'<10','node':'#ANY'}," +
+          "      {'replica':'<3','shard':'#EACH','node':'#ANY'}," +
+          "      { 'replica': 2, nodeset: {'sysprop.fs': 'ssd'}, 'shard': '#EACH'}," +//greedy condition
+          "      {nodeset:{'nodeRole':'overseer'},'replica':'0'}]," +
+          "      'cluster-preferences':[" +
+          "      {'minimize':'cores', 'precision':3}," +
+          "      {'maximize':'freedisk','precision':100}]}";
+
+    }
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4}," +
         "node2:{cores:4, freedisk: 749, heapUsage:6873, rack: rack3}," +
@@ -1667,6 +1838,17 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "      {'minimize':'cores', 'precision':3}," +
         "      {'maximize':'freedisk','precision':100}]}";
 
+    if(useNodeset){
+      autoscaleJson = "{" +
+          "      'cluster-policy':[" +
+          "      {'cores':'<10','node':'#ANY'}," +
+          "      {'replica':'<3','shard':'#EACH','node':'#ANY'}," +
+          "      {nodeset: {'nodeRole':'overseer'},'replica':'0'}]," +
+          "      'cluster-preferences':[" +
+          "      {'minimize':'cores', 'precision':3}," +
+          "      {'maximize':'freedisk','precision':100}]}";
+
+    }
 
     Map replicaInfoMap = (Map) Utils.fromJSONString("{ '127.0.0.1:60099_solr':{}," +
         " '127.0.0.1:60089_solr':{'compute_plan_action_test':{'shard1':[" +
@@ -1740,6 +1922,31 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "]" +
         "}" +
         "}";
+
+    if(useNodeset){
+      rules = "{" +
+          "'cluster-preferences':[" +
+          "{'minimize':'cores','precision':2}," +
+          "{'maximize':'freedisk','precision':50}," +
+          "{'minimize':'heapUsage','precision':1000}" +
+          "]," +
+          "'cluster-policy':[" +
+          "{replica:0, nodeset:{'nodeRole':'overseer'},'strict':false}," +
+          "{'replica':'<1','node':'node3'}," +
+          "{'replica':'<2','node':'#ANY','shard':'#EACH'}" +
+          "]," +
+          "'policies':{" +
+          "'p1':[" +
+          "{replica:0, nodeset:{'nodeRole':'overseer'},'strict':false}," +
+          "{'replica':'<1','node':'node3'}," +
+          "{'replica':'<2','node':'#ANY','shard':'#EACH'}," +
+          "{'replica':'<3','shard':'#EACH', nodeset : { 'sysprop.rack':[rack1, rack2, rack3, rack4]}}" +
+          "]" +
+          "}" +
+          "}";
+
+
+    }
 
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
         "node1:{cores:12, freedisk: 334, heapUsage:10480, rack: rack4}," +
@@ -1928,6 +2135,26 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    ]" +
         "  }" +
         "}";
+    if(useNodeset){
+      autoScaleJson = "{" +
+          "  cluster-preferences: [" +
+          "    { maximize : freedisk , precision: 50}," +
+          "    { minimize : cores, precision: 2}" +
+          "  ]," +
+          "  cluster-policy: [" +
+          "    { replica : '0' , nodeset: {nodeRole: overseer}}," +
+          "    { replica: '<2', shard: '#ANY', node: '#ANY'" +
+          "    }" +
+          "  ]," +
+          "  policies: {" +
+          "    policy1: [" +
+          "      { replica: '<2', shard: '#EACH', node: '#ANY'}," +
+          "      { replica: '<2', shard: '#EACH', nodeset:{ sysprop.rack: rack1}}" +
+          "    ]" +
+          "  }" +
+          "}";
+
+    }
 
 
     Map<String, Map> nodeValues = (Map<String, Map>) Utils.fromJSONString("{" +
@@ -2003,6 +2230,15 @@ public class TestPolicy extends SolrTestCaseJ4 {
         " cluster-policy:[{cores:'<10',node:'#ANY'}," +
         "       {replica:'<2', shard:'#EACH',node:'#ANY'}," +
         "       { nodeRole:overseer,replica:0}]}";
+    if(useNodeset){
+      autoScalingjson = "cluster-preferences:[" +
+          "       {minimize : cores}," +
+          "       {'maximize':freedisk , precision:100}],    " +
+          " cluster-policy:[{cores:'<10',node:'#ANY'}," +
+          "       {replica:'<2', shard:'#EACH',node:'#ANY'}," +
+          "       {nodeset:{ nodeRole:overseer},replica:0}]}";
+
+    }
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     Policy.Session session = policy.createSession(cloudManagerWithData((Map) loadFromResource("testComputePlanAfterNodeAdded.json")));
     Suggester suggester = session.getSuggester(CollectionParams.CollectionAction.MOVEREPLICA)
@@ -2018,6 +2254,14 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { replica :'<2',  node:'#ANY'}," +
         "    { nodeRole : overseer, replica :0}]," +
         "  cluster-preferences :[{ minimize : cores }]}";
+    if(useNodeset){
+      autoScalingjson = "  { cluster-policy:[" +
+          "    { cores :'<10', node :'#ANY'}," +
+          "    { replica :'<2',  node:'#ANY'}," +
+          "    { nodeset:{nodeRole : overseer}, replica :0}]," +
+          "  cluster-preferences :[{ minimize : cores }]}";
+
+    }
     List<Suggester.SuggestionInfo> l = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson)),
         cloudManagerWithData((Map) loadFromResource("testReplicaCountSuggestions.json")));
     assertFalse(l.isEmpty());
@@ -2123,6 +2367,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
   public void testFreeDiskDeviation() {
     Map map = (Map) loadFromResource("testFreeDiskDeviation.json");
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) map.get("config"));
+    if(useNodeset){
+      cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString("{" +
+          "    'cluster-policy': [{'replica':'<2', 'shard':'#EACH', 'node':'#ANY'}," +
+          "      {'replica': '#ALL', 'nodeset': {'freedisk': '>700'}, 'strict': false}]" +
+          "  }"));
+    }
     SolrCloudManager scm = cloudManagerWithData(map);
     Suggester suggester = cfg.getPolicy()
         .createSession(scm)
@@ -2159,6 +2409,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { replica :'0', freedisk:'<1000'}," +
         "    { nodeRole : overseer, replica :0}]," +
         "  cluster-preferences :[{ minimize : cores, precision : 2 }]}";
+    if(useNodeset){
+      autoScalingjson = "  { cluster-policy:[" +
+          "    { replica :'0', put:on-each-node ,   nodeset:{ freedisk:'<1000'}}," +
+          "    { replica :0, put : on-each-node , nodeset : {nodeRole : overseer}}]," +
+          "  cluster-preferences :[{ minimize : cores, precision : 2 }]}";
+    }
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData((Map) loadFromResource("testFreeDiskSuggestions.json"))).getViolations();
     assertEquals(1, violations.size());
@@ -2185,6 +2441,12 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { replica :'#ALL', freedisk:'>1000'}," +
         "    { nodeRole : overseer, replica :0}]," +
         "  cluster-preferences :[{ minimize : cores, precision : 2 }]}";
+    if(useNodeset){
+      autoScalingjson =  "  { cluster-policy:[" +
+          "    { replica :'#ALL', nodeset:{ freedisk:'>1000'}}," +
+          "    { replica :0 , put: on-each-node , nodeset : {nodeRole : overseer}}]," +
+          "  cluster-preferences :[{ minimize : cores, precision : 2 }]}";
+    }
     cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     violations = cfg.getPolicy().createSession(cloudManagerWithData((Map) loadFromResource("testFreeDiskSuggestions.json"))).getViolations();
     assertEquals(1, violations.size());
@@ -2237,6 +2499,17 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "    { 'replica': '1', shard:'#EACH', sysprop.fs : 'ssd'}" +
         "  ]" +
         "}";
+    if(useNodeset){
+      autoScalingjson = "{" +
+          "  'cluster-preferences': [" +
+          "    { 'maximize': 'freedisk', 'precision': 50}," +
+          "    { 'minimize': 'cores', 'precision': 3}" +
+          "  ]," +
+          "  'cluster-policy': [" +
+          "    { 'replica': '1', shard:'#EACH', nodeset:{ sysprop.fs : 'ssd'}}" +
+          "  ]" +
+          "}";
+    }
 
 
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
@@ -2260,6 +2533,18 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "  ]" +
         "}";
 
+    if(useNodeset){
+      autoScalingjson = "{" +
+          "  'cluster-preferences': [" +
+          "    { 'maximize': 'freedisk', 'precision': 50}," +
+          "    { 'minimize': 'cores', 'precision': 3}" +
+          "  ]," +
+          "  'cluster-policy': [" +
+          "    { 'replica': 0, shard:'#EACH', nodeset :{ port : '8983'}}" +
+          "  ]" +
+          "}";
+
+    }
     AutoScalingConfig cfg = new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
     List<Violation> violations = cfg.getPolicy().createSession(cloudManagerWithData((Map) loadFromResource("testPortSuggestions.json"))).getViolations();
     assertEquals(2, violations.size());

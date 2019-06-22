@@ -398,6 +398,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
       params.add("minTermLength", Integer.toString(minTermLength));
       params.add("field", field);
       params.add("numTerms", String.valueOf(numTerms*5));
+      if (streamContext.isLocal()) {
+        params.add("distrib", "false");
+      }
 
       QueryRequest request= new QueryRequest(params, SolrRequest.METHOD.POST);
       QueryResponse response = request.process(solrClient);

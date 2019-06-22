@@ -504,16 +504,16 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
       checkDelimeter(str, offset-1, '.');
       //ms:
 
-      cal.set(Calendar.MILLISECOND, Integer.parseInt(str.substring(offset, offset+3)));
-      offset += 3;//last one, move to next char
-      if (lastOffset == offset)
-        return cal;
+      int maxOffset = lastOffset - offset; // assume remaining is all digits to compute milliseconds
+      // we truncate off > millisecond precision (3 digits only)
+      int millis = (int) (Integer.parseInt(str.substring(offset, offset + maxOffset)) / Math.pow(10, maxOffset - 3));
+      cal.set(Calendar.MILLISECOND, millis);
+      return cal;
     } catch (Exception e) {
       ParseException pe = new ParseException("Improperly formatted datetime: "+str, offset);
       pe.initCause(e);
       throw pe;
     }
-    throw new ParseException("Improperly formatted datetime: "+str, offset);
   }
 
   private  void checkDelimeter(String str, int offset, char delim) {

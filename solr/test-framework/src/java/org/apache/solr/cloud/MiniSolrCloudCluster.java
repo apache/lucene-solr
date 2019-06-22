@@ -269,7 +269,7 @@ public class MiniSolrCloudCluster {
 
     this.externalZkServer = zkTestServer != null;
     if (!externalZkServer) {
-      String zkDir = baseDir.resolve("zookeeper/server1/data").toString();
+      Path zkDir = baseDir.resolve("zookeeper/server1/data");
       zkTestServer = new ZkTestServer(zkDir);
       try {
         zkTestServer.run();
@@ -553,7 +553,7 @@ public class MiniSolrCloudCluster {
       }
       
       for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
-        reader.waitForState(collection, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState == null ? true : false);
+        reader.waitForState(collection, 15, TimeUnit.SECONDS, (collectionState) -> collectionState == null ? true : false);
       }
      
     } 

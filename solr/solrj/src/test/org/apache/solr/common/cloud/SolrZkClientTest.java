@@ -16,17 +16,25 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractZkTestCase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
@@ -35,31 +43,36 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SolrZkClientTest extends SolrTestCaseJ4 {
+public class SolrZkClientTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private static final String ROOT = "/";
   private static final String PATH = "/collections/collection1";
-  
+
   protected ZkTestServer zkServer;
 
   SolrZkClient aclClient;
   SolrZkClient credentialsClient;
   SolrZkClient defaultClient;
-  
+  private CloudSolrClient solrClient;
+
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    
+    configureCluster(1)
+        .addConfig("_default", new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
+        .configure();
+    solrClient = getCloudSolrClient(cluster.getZkServer().getZkAddress());
+
     final String SCHEME = "digest";
     final String AUTH = "user:pass";
 
-    String zkDir = createTempDir().toString();
+    Path zkDir = createTempDir();
     log.info("ZooKeeper dataDir:" + zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
-    
+
     try (SolrZkClient client = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
       // Set up chroot
       client.makePath("/solr", false, true);
@@ -67,7 +80,7 @@ public class SolrZkClientTest extends SolrTestCaseJ4 {
 
     defaultClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     defaultClient.makePath(PATH, true);
-    
+
     aclClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
       @Override
       protected ZkACLProvider createZkACLProvider() {
@@ -84,7 +97,7 @@ public class SolrZkClientTest extends SolrTestCaseJ4 {
         };
       }
     };
-    
+
     credentialsClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
       @Override
       protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
@@ -97,17 +110,19 @@ public class SolrZkClientTest extends SolrTestCaseJ4 {
       }
     };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     aclClient.close();
     credentialsClient.close();
     defaultClient.close();
     zkServer.shutdown();
+    solrClient.close();
+    cluster.shutdown();
     super.tearDown();
   }
 
-  
+
   @Test
   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testSimpleUpdateACLs() throws KeeperException, InterruptedException {
@@ -131,7 +146,59 @@ public class SolrZkClientTest extends SolrTestCaseJ4 {
     assertTrue("Default client should read unaffected paths", canRead(defaultClient, ROOT));
     assertFalse("Default client should not read secure children", canRead(defaultClient, PATH));
   }
-  
+
+  @Test
+  // SOLR-13491
+  public void testWrappingWatches() throws Exception {
+    AtomicInteger calls = new AtomicInteger(0);
+    Watcher watcherA = new Watcher() {
+      @Override
+      public void process(WatchedEvent event) {
+        calls.getAndIncrement();
+      }
+    };
+    Watcher watcherB = new Watcher() {
+      @Override
+      public void process(WatchedEvent event) {
+        calls.getAndDecrement();
+      }
+    };
+    Watcher wrapped1A = defaultClient.wrapWatcher(watcherA);
+    Watcher wrapped2A = defaultClient.wrapWatcher(watcherA);
+    Watcher wrappedB = defaultClient.wrapWatcher(watcherB);
+    assertTrue(wrapped1A.equals(wrapped2A));
+    assertTrue(wrapped2A.equals(wrapped1A));
+    assertFalse(wrapped1A.equals(wrappedB));
+    assertEquals(wrapped1A.hashCode(), wrapped2A.hashCode());
+
+    CollectionAdminRequest.createCollection(getSaferTestName(), "_default", 1, 1)
+        .setMaxShardsPerNode(2)
+        .process(solrClient);
+
+    CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"foo", "bar")
+        .process(solrClient);
+
+    //Thread.sleep(600000);
+
+    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null,true);
+    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped2A, null,true);
+
+    CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bam")
+        .process(solrClient);
+
+    Thread.sleep(1000); // make sure zk client watch has time to be notified.
+    assertEquals(1, calls.get()); // same wrapped watch set twice, only invoked once
+
+    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null,true);
+    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrappedB, null,true);
+
+    CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bang")
+        .process(solrClient);
+
+    Thread.sleep(1000); // make sure zk client watch has time to be notified.
+    assertEquals(1, calls.get()); // offsetting watches, no change
+  }
+
   private static boolean canRead(SolrZkClient zkClient, String path) throws KeeperException, InterruptedException {
     try {
       zkClient.getData(path, null, null, true);
@@ -140,7 +207,7 @@ public class SolrZkClientTest extends SolrTestCaseJ4 {
       return false;
     }
   }
-  
+
   @Test
   public void testCheckInterrupted() {
     assertFalse(Thread.currentThread().isInterrupted());
@@ -149,6 +216,6 @@ public class SolrZkClientTest extends SolrTestCaseJ4 {
     SolrZkClient.checkInterrupted(new InterruptedException());
     assertTrue(Thread.currentThread().isInterrupted());
   }
-  
-  
+
+
 }

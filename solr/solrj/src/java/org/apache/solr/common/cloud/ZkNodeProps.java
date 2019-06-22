@@ -24,8 +24,9 @@ import java.util.Set;
 
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
-import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
+
+import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
  * ZkNodeProps contains generic immutable properties.
@@ -139,7 +140,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
 
   @Override
   public String toString() {
-    return JSONUtil.toJSON(this);
+    return toJSONString(this);
     /***
     StringBuilder sb = new StringBuilder();
     Set<Entry<String,Object>> entries = propMap.entrySet();

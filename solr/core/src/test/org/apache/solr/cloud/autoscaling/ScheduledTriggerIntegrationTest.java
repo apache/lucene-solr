@@ -52,8 +52,8 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static CountDownLatch triggerFiredLatch;
-  private static Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
-  private static AtomicReference<Map<String, Object>> actionContextPropertiesRef = new AtomicReference<>();
+  private static final Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
+  private static final AtomicReference<Map<String, Object>> actionContextPropertiesRef = new AtomicReference<>();
 
   @Before
   public void setupCluster() throws Exception {
@@ -71,6 +71,8 @@ public class ScheduledTriggerIntegrationTest extends SolrCloudTestCase {
   @After
   public void afterTest() throws Exception {
     shutdownCluster();
+    events.clear();
+    actionContextPropertiesRef.set(null);
   }
 
   @Test
