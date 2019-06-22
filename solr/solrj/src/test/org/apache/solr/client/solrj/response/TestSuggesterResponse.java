@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.response;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -32,13 +33,14 @@ import org.junit.Test;
  * Test for SuggesterComponent's response in Solrj
  *
  */
-public class TestSuggesterResponse extends SolrJettyTestBase {
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    initCore();
-  }
+public class TestSuggesterResponse extends EmbeddedSolrServerTestBase {
 
   static String field = "cat";
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore();
+  }
 
   @Test
   public void testSuggesterResponseObject() throws Exception {
@@ -53,7 +55,7 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
     QueryRequest request = new QueryRequest(query);
     QueryResponse queryResponse = request.process(client);
     SuggesterResponse response = queryResponse.getSuggesterResponse();
-    Map<String, List<Suggestion>> dictionary2suggestions = response.getSuggestions();
+    Map<String,List<Suggestion>> dictionary2suggestions = response.getSuggestions();
     assertTrue(dictionary2suggestions.keySet().contains("mySuggester"));
 
     List<Suggestion> mySuggester = dictionary2suggestions.get("mySuggester");
@@ -78,7 +80,7 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
     QueryRequest request = new QueryRequest(query);
     QueryResponse queryResponse = request.process(client);
     SuggesterResponse response = queryResponse.getSuggesterResponse();
-    Map<String, List<String>> dictionary2suggestions = response.getSuggestedTerms();
+    Map<String,List<String>> dictionary2suggestions = response.getSuggestedTerms();
     assertTrue(dictionary2suggestions.keySet().contains("mySuggester"));
 
     List<String> mySuggester = dictionary2suggestions.get("mySuggester");
@@ -99,7 +101,7 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
     QueryRequest request = new QueryRequest(query);
     QueryResponse queryResponse = request.process(client);
     SuggesterResponse response = queryResponse.getSuggesterResponse();
-    Map<String, List<String>> dictionary2suggestions = response.getSuggestedTerms();
+    Map<String,List<String>> dictionary2suggestions = response.getSuggestedTerms();
     assertTrue(dictionary2suggestions.keySet().contains("mySuggester"));
 
     List<String> mySuggester = dictionary2suggestions.get("mySuggester");

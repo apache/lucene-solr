@@ -17,7 +17,7 @@
 
 package org.apache.solr.update;
 
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrDocument;
@@ -32,7 +32,7 @@ import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.CoreMatchers.is;
 
-public class RootFieldTest extends SolrJettyTestBase {
+public class RootFieldTest extends EmbeddedSolrServerTestBase {
   private static boolean useRootSchema;
   private static final String MESSAGE = "Update handler should create and process _root_ field " +
       "unless there is no such a field in schema";
@@ -53,47 +53,46 @@ public class RootFieldTest extends SolrJettyTestBase {
   }
 
   @Test
-  public void testLegacyBlockProcessing() throws Exception
-  {
+  public void testLegacyBlockProcessing() throws Exception {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");// delete everything!
 
     // Add child free doc
     SolrInputDocument docToUpdate = new SolrInputDocument();
     String docId = "11";
-    docToUpdate.addField( "id", docId);
-    docToUpdate.addField( "name", "child free doc" );
+    docToUpdate.addField("id", docId);
+    docToUpdate.addField("name", "child free doc");
     client.add(docToUpdate);
     client.commit();
 
     SolrQuery query = new SolrQuery();
-    query.setQuery( "*:*" );
-    query.set( CommonParams.FL, "id,name,_root_" );
+    query.setQuery("*:*");
+    query.set(CommonParams.FL, "id,name,_root_");
 
     SolrDocumentList results = client.query(query).getResults();
     assertThat(results.getNumFound(), is(1L));
-    SolrDocument foundDoc = results.get( 0 );
+    SolrDocument foundDoc = results.get(0);
 
     // Check retrieved field values
-    assertThat(foundDoc.getFieldValue( "id" ), is(docId));
-    assertThat(foundDoc.getFieldValue( "name" ), is("child free doc"));
+    assertThat(foundDoc.getFieldValue("id"), is(docId));
+    assertThat(foundDoc.getFieldValue("name"), is("child free doc"));
 
     String expectedRootValue = expectRoot() ? docId : null;
-    assertThat(MESSAGE, foundDoc.getFieldValue( "_root_" ), is(expectedRootValue));
+    assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
 
     // Update the doc
-    docToUpdate.setField( "name", "updated doc" );
+    docToUpdate.setField("name", "updated doc");
     client.add(docToUpdate);
     client.commit();
 
     results = client.query(query).getResults();
-    assertEquals( 1, results.getNumFound() );
-    foundDoc = results.get( 0 );
+    assertEquals(1, results.getNumFound());
+    foundDoc = results.get(0);
 
     // Check updated field values
-    assertThat(foundDoc.getFieldValue( "id" ), is(docId));
-    assertThat(foundDoc.getFieldValue( "name" ), is("updated doc"));
-    assertThat(MESSAGE, foundDoc.getFieldValue( "_root_" ), is(expectedRootValue));
+    assertThat(foundDoc.getFieldValue("id"), is(docId));
+    assertThat(foundDoc.getFieldValue("name"), is("updated doc"));
+    assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
   }
 
   @Test
@@ -104,8 +103,8 @@ public class RootFieldTest extends SolrJettyTestBase {
     // Add child free doc
     SolrInputDocument docToUpdate = new SolrInputDocument();
     String docId = "11";
-    docToUpdate.addField( "id", docId);
-    docToUpdate.addField( "name", "parent doc with a child" );
+    docToUpdate.addField("id", docId);
+    docToUpdate.addField("name", "parent doc with a child");
     SolrInputDocument child = new SolrInputDocument();
     child.addField("id", "111");
     child.addField("name", "child doc");
