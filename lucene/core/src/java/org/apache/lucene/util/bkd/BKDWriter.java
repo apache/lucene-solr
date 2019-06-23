@@ -1040,53 +1040,81 @@ public class BKDWriter implements Closeable {
     if (prefixLenSum == packedBytesLength) {
       // all values in this block are equal
       out.writeByte((byte) -1);
-    } else if (leafCardinality * (packedBytesLength - prefixLenSum + 1)  <= count * (packedBytesLength - prefixLenSum - 1)) {
-      //estimate if storing the values with cardinality is cheaper than storing all values.
-      //+1 is the byte needed for storing the cardinality and -1 is the runLen compression.
-      out.writeByte((byte) -2);
-      if (numIndexDims != 1) {
-        writeActualBounds(out, commonPrefixLengths, count, packedValues);
-      }
-      BytesRef value = packedValues.apply(0);
-      System.arraycopy(value.bytes, value.offset, scratch1, 0, packedBytesLength);
-      int cardinality = 1;
-      for (int i = 1; i < count; i++) {
-        value = packedValues.apply(i);
-        if (Arrays.mismatch(value.bytes, value.offset, value.offset + value.length, scratch1, 0, packedBytesLength) != -1) {
-          out.writeVInt(cardinality);
-          for(int j = 0; j < numDataDims; j++) {
-            out.writeBytes(scratch1, j * bytesPerDim + commonPrefixLengths[j], bytesPerDim - commonPrefixLengths[j]);
-          }
-          System.arraycopy(value.bytes, value.offset, scratch1, 0, packedBytesLength);
-          cardinality = 1;
-        } else {
-          cardinality++;
-        }
-      }
-      out.writeVInt(cardinality);
-      for(int i = 0; i < numDataDims; i++) {
-        out.writeBytes(scratch1, i * bytesPerDim + commonPrefixLengths[i], bytesPerDim - commonPrefixLengths[i]);
-      }
     } else {
       assert commonPrefixLengths[sortedDim] < bytesPerDim;
-      out.writeByte((byte) sortedDim);
-      if (numIndexDims != 1) {
-        writeActualBounds(out, commonPrefixLengths, count, packedValues);
-      }
+      //estimate if storing the values with cardinality is cheaper than storing all values.
+      //+1 is the byte needed for storing the cardinality
+      int lowCardinalityCost = leafCardinality * (packedBytesLength - prefixLenSum + 1);
       int compressedByteOffset = sortedDim * bytesPerDim + commonPrefixLengths[sortedDim];
-      commonPrefixLengths[sortedDim]++;
-      for (int i = 0; i < count; ) {
-        // do run-length compression on the byte at compressedByteOffset
-        int runLen = runLen(packedValues, i, Math.min(i + 0xff, count), compressedByteOffset);
-        assert runLen <= 0xff;
-        BytesRef first = packedValues.apply(i);
-        byte prefixByte = first.bytes[first.offset + compressedByteOffset];
-        out.writeByte(prefixByte);
-        out.writeByte((byte) runLen);
-        writeLeafBlockPackedValuesRange(out, commonPrefixLengths, i, i + runLen, packedValues);
-        i += runLen;
-        assert i <= count;
+      int highCardinalityCost;
+      if (count == leafCardinality) {
+        //all values in this block are different
+        highCardinalityCost = 0;
+      } else {
+        //compute cost of runLen compression
+        int numRunLens = 0;
+        for (int i = 0; i < count; ) {
+          // do run-length compression on the byte at compressedByteOffset
+          int runLen = runLen(packedValues, i, Math.min(i + 0xff, count), compressedByteOffset);
+          assert runLen <= 0xff;
+          numRunLens++;
+          i += runLen;
+        }
+        //Add cost of runLen compression
+        highCardinalityCost = count * (packedBytesLength - prefixLenSum - 1) + 2 * numRunLens;
       }
+      if (lowCardinalityCost <= highCardinalityCost) {
+        out.writeByte((byte) -2);
+        writeLowCardinalityLeafBlockPackedValues(out, commonPrefixLengths, count, packedValues);
+      } else {
+        out.writeByte((byte) sortedDim);
+        writeHighCardinalityLeafBlockPackedValues(out, commonPrefixLengths, count, sortedDim, packedValues, compressedByteOffset);
+      }
+    }
+  }
+
+  private void writeLowCardinalityLeafBlockPackedValues(DataOutput out, int[] commonPrefixLengths, int count, IntFunction<BytesRef> packedValues) throws IOException {
+    if (numIndexDims != 1) {
+      writeActualBounds(out, commonPrefixLengths, count, packedValues);
+    }
+    BytesRef value = packedValues.apply(0);
+    System.arraycopy(value.bytes, value.offset, scratch1, 0, packedBytesLength);
+    int cardinality = 1;
+    for (int i = 1; i < count; i++) {
+      value = packedValues.apply(i);
+      if (Arrays.mismatch(value.bytes, value.offset, value.offset + value.length, scratch1, 0, packedBytesLength) != -1) {
+        out.writeVInt(cardinality);
+        for (int j = 0; j < numDataDims; j++) {
+          out.writeBytes(scratch1, j * bytesPerDim + commonPrefixLengths[j], bytesPerDim - commonPrefixLengths[j]);
+        }
+        System.arraycopy(value.bytes, value.offset, scratch1, 0, packedBytesLength);
+        cardinality = 1;
+      } else {
+        cardinality++;
+      }
+    }
+    out.writeVInt(cardinality);
+    for (int i = 0; i < numDataDims; i++) {
+      out.writeBytes(scratch1, i * bytesPerDim + commonPrefixLengths[i], bytesPerDim - commonPrefixLengths[i]);
+    }
+  }
+
+  private void writeHighCardinalityLeafBlockPackedValues(DataOutput out, int[] commonPrefixLengths, int count, int sortedDim, IntFunction<BytesRef> packedValues, int compressedByteOffset) throws IOException {
+    if (numIndexDims != 1) {
+      writeActualBounds(out, commonPrefixLengths, count, packedValues);
+    }
+    commonPrefixLengths[sortedDim]++;
+    for (int i = 0; i < count; ) {
+      // do run-length compression on the byte at compressedByteOffset
+      int runLen = runLen(packedValues, i, Math.min(i + 0xff, count), compressedByteOffset);
+      assert runLen <= 0xff;
+      BytesRef first = packedValues.apply(i);
+      byte prefixByte = first.bytes[first.offset + compressedByteOffset];
+      out.writeByte(prefixByte);
+      out.writeByte((byte) runLen);
+      writeLeafBlockPackedValuesRange(out, commonPrefixLengths, i, i + runLen, packedValues);
+      i += runLen;
+      assert i <= count;
     }
   }
 
