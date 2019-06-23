@@ -1308,18 +1308,11 @@ public class BKDWriter implements Closeable {
       final int count = to - from;
       assert count <= maxPointsInLeafNode;
 
-      // Compute common prefixes and cardinality
+      // Compute common prefixes
       Arrays.fill(commonPrefixLengths, bytesPerDim);
       reader.getValue(from, scratchBytesRef1);
-      int leafCardinality = 1;
-      System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset, scratch1, 0, packedBytesLength);
       for (int i = from + 1; i < to; ++i) {
         reader.getValue(i, scratchBytesRef2);
-        if (Arrays.mismatch(scratch1, 0, packedBytesLength, scratchBytesRef2.bytes, scratchBytesRef2.offset, scratchBytesRef2.offset + packedBytesLength) != -1) {
-          //TODO: Can we avoid this copy of the array?
-          leafCardinality++;
-          System.arraycopy(scratchBytesRef2.bytes, scratchBytesRef2.offset, scratch1, 0, packedBytesLength);
-        }
         for (int dim=0;dim<numDataDims;dim++) {
           final int offset = dim * bytesPerDim;
           int dimensionPrefixLength = commonPrefixLengths[dim];
@@ -1364,6 +1357,20 @@ public class BKDWriter implements Closeable {
       MutablePointsReaderUtils.sortByDim(sortedDim, bytesPerDim, commonPrefixLengths,
           reader, from, to, scratchBytesRef1, scratchBytesRef2);
 
+      BytesRef comparator = scratchBytesRef1;
+      BytesRef collector = scratchBytesRef2;
+      reader.getValue(from, comparator);
+      int leafCardinality = 1;
+      for (int i = from + 1; i < to; ++i) {
+        reader.getValue(i, collector);
+        if (Arrays.mismatch(collector.bytes, collector.offset, collector.offset + packedBytesLength,
+            comparator.bytes, comparator.offset, comparator.offset + packedBytesLength) != -1) {
+          leafCardinality++;
+          BytesRef scratch = collector;
+          collector = comparator;
+          comparator = scratch;
+        }
+      }
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
 
@@ -1464,7 +1471,7 @@ public class BKDWriter implements Closeable {
       int from = Math.toIntExact(points.start);
       int to = Math.toIntExact(points.start + points.count);
       //we store common prefix on scratch1
-      int leafCardinality = computeCommonPrefixLength(heapSource, scratch1, from, to);
+      computeCommonPrefixLength(heapSource, scratch1, from, to);
 
       int sortedDim = 0;
       int sortedDimCardinality = Integer.MAX_VALUE;
@@ -1495,6 +1502,8 @@ public class BKDWriter implements Closeable {
 
       // sort the chosen dimension
       radixSelector.heapRadixSort(heapSource, from, to, sortedDim, commonPrefixLengths[sortedDim]);
+      // compute cardinality
+      int leafCardinality = heapSource.computeCardinality(from ,to);
 
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
@@ -1585,23 +1594,16 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  private int computeCommonPrefixLength(HeapPointWriter heapPointWriter, byte[] commonPrefix, int from, int to) {
+  private void computeCommonPrefixLength(HeapPointWriter heapPointWriter, byte[] commonPrefix, int from, int to) {
     Arrays.fill(commonPrefixLengths, bytesPerDim);
     PointValue value = heapPointWriter.getPackedValueSlice(from);
     BytesRef packedValue = value.packedValue();
     for (int dim = 0; dim < numDataDims; dim++) {
       System.arraycopy(packedValue.bytes, packedValue.offset + dim * bytesPerDim, commonPrefix, dim * bytesPerDim, bytesPerDim);
     }
-    System.arraycopy(packedValue.bytes, packedValue.offset, scratch2, 0, packedBytesLength);
-    int leafCardinality = 1;
     for (int i = from + 1; i < to; i++) {
       value =  heapPointWriter.getPackedValueSlice(i);
       packedValue = value.packedValue();
-      if (Arrays.mismatch(scratch2, 0, packedBytesLength, packedValue.bytes, packedValue.offset, packedValue.offset + packedBytesLength) != -1) {
-        //TODO: Can we avoid this copy of the array?
-        leafCardinality++;
-        System.arraycopy(packedValue.bytes, packedValue.offset, scratch2, 0, packedBytesLength);
-      }
       for (int dim = 0; dim < numDataDims; dim++) {
         if (commonPrefixLengths[dim] != 0) {
           int j = Arrays.mismatch(commonPrefix, dim * bytesPerDim, dim * bytesPerDim + commonPrefixLengths[dim], packedValue.bytes, packedValue.offset + dim * bytesPerDim, packedValue.offset + dim * bytesPerDim + commonPrefixLengths[dim]);
@@ -1611,7 +1613,6 @@ public class BKDWriter implements Closeable {
         }
       }
     }
-    return leafCardinality;
   }
 
   // only called from assert

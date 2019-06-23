@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.util.bkd;
 
+import java.util.Arrays;
+
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -91,6 +93,17 @@ public final class HeapPointWriter implements PointWriter {
     System.arraycopy(block, indexJ, block, indexI, packedBytesLength);
     // values[j] = scratch1
     System.arraycopy(scratch, 0, block, indexJ, packedBytesLength);
+  }
+
+  public int computeCardinality(int from, int to) {
+    int leafCardinality = 1;
+    for (int i = from + 1; i < to; i++) {
+      if (Arrays.mismatch(block, i * packedBytesLength, (i + 1) * packedBytesLength,
+          block, (i -1) * packedBytesLength, i * packedBytesLength) != -1) {
+        leafCardinality++;
+      }
+    }
+    return leafCardinality;
   }
 
   @Override
