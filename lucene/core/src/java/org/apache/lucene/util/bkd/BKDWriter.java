@@ -1043,13 +1043,13 @@ public class BKDWriter implements Closeable {
     } else {
       assert commonPrefixLengths[sortedDim] < bytesPerDim;
       //estimate if storing the values with cardinality is cheaper than storing all values.
-      //+1 is the byte needed for storing the cardinality
-      int lowCardinalityCost = leafCardinality * (packedBytesLength - prefixLenSum + 1);
       int compressedByteOffset = sortedDim * bytesPerDim + commonPrefixLengths[sortedDim];
       int highCardinalityCost;
+      int lowCardinalityCost;
       if (count == leafCardinality) {
         //all values in this block are different
         highCardinalityCost = 0;
+        lowCardinalityCost = 1;
       } else {
         //compute cost of runLen compression
         int numRunLens = 0;
@@ -1062,6 +1062,8 @@ public class BKDWriter implements Closeable {
         }
         //Add cost of runLen compression
         highCardinalityCost = count * (packedBytesLength - prefixLenSum - 1) + 2 * numRunLens;
+        //+1 is the byte needed for storing the cardinality
+        lowCardinalityCost = leafCardinality * (packedBytesLength - prefixLenSum + 1);
       }
       if (lowCardinalityCost <= highCardinalityCost) {
         out.writeByte((byte) -2);
