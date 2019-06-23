@@ -1316,6 +1316,7 @@ public class BKDWriter implements Closeable {
       for (int i = from + 1; i < to; ++i) {
         reader.getValue(i, scratchBytesRef2);
         if (Arrays.mismatch(scratch1, 0, packedBytesLength, scratchBytesRef2.bytes, scratchBytesRef2.offset, scratchBytesRef2.offset + packedBytesLength) != -1) {
+          //TODO: Can we avoid this copy of the array?
           leafCardinality++;
           System.arraycopy(scratchBytesRef2.bytes, scratchBytesRef2.offset, scratch1, 0, packedBytesLength);
         }
@@ -1597,6 +1598,7 @@ public class BKDWriter implements Closeable {
       value =  heapPointWriter.getPackedValueSlice(i);
       packedValue = value.packedValue();
       if (Arrays.mismatch(scratch2, 0, packedBytesLength, packedValue.bytes, packedValue.offset, packedValue.offset + packedBytesLength) != -1) {
+        //TODO: Can we avoid this copy of the array?
         leafCardinality++;
         System.arraycopy(packedValue.bytes, packedValue.offset, scratch2, 0, packedBytesLength);
       }
