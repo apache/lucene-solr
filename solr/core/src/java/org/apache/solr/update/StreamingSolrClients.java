@@ -74,6 +74,7 @@ public class StreamingSolrClients {
       // the queue is more than half full.
       client = new ErrorReportingConcurrentUpdateSolrClient.Builder(url, req, errors)
           .withHttpClient(httpClient)
+          .withSocketTimeout(getSocketTimeout(req))
           .withQueueSize(100)
           .withThreadCount(runnerCount)
           .withExecutorService(updateExecutor)
@@ -92,6 +93,16 @@ public class StreamingSolrClients {
     return client;
   }
 
+  private int getSocketTimeout(SolrCmdDistributor.Req req) {
+    try {
+      return req.cmd.req.getCore().getCoreContainer().getConfig().getUpdateShardHandlerConfig().getDistributedSocketTimeout();
+    }catch(Exception e) {
+      //this should not happen
+      log.warn("Unable to get distributed socket time out from config. Using default value of {} milliseconds",UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT);
+      return UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
+    }
+  }
+    
   public synchronized void blockUntilFinished() {
     for (ConcurrentUpdateSolrClient client : solrClients.values()) {
       client.blockUntilFinished();
