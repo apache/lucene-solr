@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import java.net.URL;
 import java.util.Arrays;
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.util.RandomizeSSL;
 import org.junit.BeforeClass;
 
@@ -29,6 +30,8 @@ public class HttpSolrClientSSLAuthConPoolTest extends HttpSolrClientConPoolTest 
 
     @BeforeClass
     public static void checkUrls() throws Exception {
+      assumeFalse("@AwaitsFix: SOLR-12988 - ssl issues on Java 11/12", Constants.JRE_IS_MINIMUM_JAVA11);
+      
       URL[] urls = new URL[] {
           jetty.getBaseUrl(), yetty.getBaseUrl() 
       };

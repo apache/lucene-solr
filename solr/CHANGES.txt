@@ -202,9 +202,6 @@ Other Changes
 * SOLR-13511: Add SearchHandler.newResponseBuilder method to facilitate custom plugins' maintenance
   of per-request state in a custom ResponseBuilder. (Ramsey Haddad, Christine Poerschke)
 
-* SOLR-12988: SSLTestConfig has been changed to throw AssumptionViolatedException when tests/seeds
-  request SSL but the JVM appears to be an OpenJDK version known to have SSL bugs (hossman, Cao Manh Dat)
-
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

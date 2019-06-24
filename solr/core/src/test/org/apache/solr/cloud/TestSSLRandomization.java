@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.RandomizeSSL;
@@ -43,6 +44,7 @@ public class TestSSLRandomization extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
+    assumeFalse("@AwaitsFix: SOLR-12988 - ssl issues on Java 11/12", Constants.JRE_IS_MINIMUM_JAVA11);
     configureCluster(TestMiniSolrCloudClusterSSL.NUM_SERVERS).configure();
   }
   
