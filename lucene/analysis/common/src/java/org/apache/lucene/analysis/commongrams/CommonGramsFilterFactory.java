@@ -39,9 +39,14 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class CommonGramsFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
-  // TODO: shared base class for Stop/Keep/CommonGrams? 
+
+  /** SPI name */
+  public static final String NAME = "commonGrams";
+
+  // TODO: shared base class for Stop/Keep/CommonGrams?
   private CharArraySet commonWords;
   private final String commonWordFiles;
   private final String format;

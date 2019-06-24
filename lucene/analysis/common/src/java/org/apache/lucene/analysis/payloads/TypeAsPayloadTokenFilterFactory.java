@@ -33,8 +33,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class TypeAsPayloadTokenFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "typeAsPayload";
   
   /** Creates a new TypeAsPayloadTokenFilterFactory */
   public TypeAsPayloadTokenFilterFactory(Map<String,String> args) {

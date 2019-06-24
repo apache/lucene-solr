@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<schema name="root" version="1.6">
+  <field name="id" type="string" indexed="true" stored="true"/>
+
+  <!-- points to the root document of a block of nested documents -->
+  <field name="_root_" type="string" indexed="true" stored="false"/>
+
+  <field name="intDefault" type="int" indexed="true" stored="true" default="42" multiValued="false"/>
+  <field name="intDvoDefault" type="int" indexed="false" stored="false" multiValued="false"
+         useDocValuesAsStored="true" docValues="true" default="42" />
+
+  <dynamicField name="*" type="string" indexed="true" stored="true"/>
+
+  <fieldType name="string" class="solr.StrField"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+
+  <uniqueKey>id</uniqueKey>
+</schema>

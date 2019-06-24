@@ -49,8 +49,13 @@ import org.apache.lucene.util.IOUtils;
  * See <a href="http://wiki.apache.org/solr/Hunspell">http://wiki.apache.org/solr/Hunspell</a>
  * @lucene.experimental
  * @since 3.5.0
+ * @lucene.spi {@value #NAME}
  */
 public class HunspellStemFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "hunspellStem";
+
   private static final String PARAM_DICTIONARY    = "dictionary";
   private static final String PARAM_AFFIX         = "affix";
   // NOTE: this one is currently unused?:

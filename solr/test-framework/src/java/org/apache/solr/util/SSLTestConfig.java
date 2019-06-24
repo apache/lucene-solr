@@ -35,6 +35,7 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
@@ -48,7 +49,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * Solr test-framework classes
  */
 public class SSLTestConfig {
-
   private static final String TEST_KEYSTORE_BOGUSHOST_RESOURCE = "SSLTestConfig.hostname-and-ip-missmatch.keystore";
   private static final String TEST_KEYSTORE_LOCALHOST_RESOURCE = "SSLTestConfig.testing.keystore";
   private static final String TEST_PASSWORD = "secret";
@@ -99,7 +99,12 @@ public class SSLTestConfig {
    * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
    */
   public SSLTestConfig(boolean useSSL, boolean clientAuth, boolean checkPeerName) {
-    this.useSsl = useSSL;
+    // @AwaitsFix: SOLR-12988 - ssl issues on Java 11/12
+    if (Constants.JRE_IS_MINIMUM_JAVA11) {
+      this.useSsl = false;
+    } else {
+      this.useSsl = useSSL;
+    }
     this.clientAuth = clientAuth;
     this.checkPeerName = checkPeerName;
 
@@ -253,9 +258,7 @@ public class SSLTestConfig {
       if (checkPeerName == false) {
         sslConnectionFactory = new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE);
       } else {
-        sslConnectionFactory = new SSLConnectionSocketFactory(sslContext,
-            HttpClientUtil.SUPPORTED_SSL_PROTOCOLS,
-            null, SSLConnectionSocketFactory.getDefaultHostnameVerifier());
+        sslConnectionFactory = new SSLConnectionSocketFactory(sslContext);
       }
     } catch (KeyManagementException | UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException e) {
       throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", e);

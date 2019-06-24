@@ -18,7 +18,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -30,9 +30,9 @@ import org.apache.lucene.util.Bits;
 public class ScorerIndexSearcher extends IndexSearcher {
 
   /** Creates a searcher searching the provided index. Search on individual
-   *  segments will be run in the provided {@link ExecutorService}.
-   * @see IndexSearcher#IndexSearcher(IndexReader, ExecutorService) */
-  public ScorerIndexSearcher(IndexReader r, ExecutorService executor) {
+   *  segments will be run in the provided {@link Executor}.
+   * @see IndexSearcher#IndexSearcher(IndexReader, Executor) */
+  public ScorerIndexSearcher(IndexReader r, Executor executor) {
     super(r, executor);
   }
 

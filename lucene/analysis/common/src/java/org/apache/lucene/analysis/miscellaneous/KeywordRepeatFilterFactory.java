@@ -29,8 +29,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * later in the analysis chain will be in the document twice. Therefore, consider adding
  * {@link RemoveDuplicatesTokenFilterFactory} later in the analysis chain.
  * @since 4.3.0
+ * @lucene.spi {@value #NAME}
  */
 public final class KeywordRepeatFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "keywordRepeat";
   
   /** Creates a new KeywordRepeatFilterFactory */
   public KeywordRepeatFilterFactory(Map<String,String> args) {

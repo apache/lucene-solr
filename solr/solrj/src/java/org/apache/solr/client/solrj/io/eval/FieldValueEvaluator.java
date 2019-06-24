@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -84,7 +85,12 @@ public class FieldValueEvaluator extends SourceEvaluator {
       }
     }
 
+    StreamContext sc = getStreamContext();
+
+    if(sc != null) {sc.getTupleContext().remove("null");}
+
     if(value == null) {
+      if(sc != null) {sc.getTupleContext().put("null", fieldName);}
       return fieldName;
     }
 

@@ -34,8 +34,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class EdgeNGramFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "edgeNGram";
+
   private final int maxGramSize;
   private final int minGramSize;
   private final boolean preserveOriginal;

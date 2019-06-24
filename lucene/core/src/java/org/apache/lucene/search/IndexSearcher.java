@@ -28,8 +28,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -118,7 +119,7 @@ public class IndexSearcher {
   private final LeafSlice[] leafSlices;
 
   // These are only used for multi-threaded search
-  private final ExecutorService executor;
+  private final Executor executor;
 
   // the default Similarity
   private static final Similarity defaultSimilarity = new BM25Similarity();
@@ -178,9 +179,7 @@ public class IndexSearcher {
   }
 
   /** Runs searches for each segment separately, using the
-   *  provided ExecutorService.  IndexSearcher will not
-   *  close/awaitTermination this ExecutorService on
-   *  close; you must do so, eventually, on your own.  NOTE:
+   *  provided Executor. NOTE:
    *  if you are using {@link NIOFSDirectory}, do not use
    *  the shutdownNow method of ExecutorService as this uses
    *  Thread.interrupt under-the-hood which can silently
@@ -188,18 +187,16 @@ public class IndexSearcher {
    *  href="https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
    * 
    * @lucene.experimental */
-  public IndexSearcher(IndexReader r, ExecutorService executor) {
+  public IndexSearcher(IndexReader r, Executor executor) {
     this(r.getContext(), executor);
   }
 
   /**
    * Creates a searcher searching the provided top-level {@link IndexReaderContext}.
    * <p>
-   * Given a non-<code>null</code> {@link ExecutorService} this method runs
-   * searches for each segment separately, using the provided ExecutorService.
-   * IndexSearcher will not close/awaitTermination this ExecutorService on
-   * close; you must do so, eventually, on your own. NOTE: if you are using
-   * {@link NIOFSDirectory}, do not use the shutdownNow method of
+   * Given a non-<code>null</code> {@link Executor} this method runs
+   * searches for each segment separately, using the provided Executor.
+   * NOTE: if you are using {@link NIOFSDirectory}, do not use the shutdownNow method of
    * ExecutorService as this uses Thread.interrupt under-the-hood which can
    * silently close file descriptors (see <a
    * href="https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
@@ -208,7 +205,7 @@ public class IndexSearcher {
    * @see IndexReader#getContext()
    * @lucene.experimental
    */
-  public IndexSearcher(IndexReaderContext context, ExecutorService executor) {
+  public IndexSearcher(IndexReaderContext context, Executor executor) {
     assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
     reader = context.reader();
     this.executor = executor;
@@ -420,7 +417,7 @@ public class IndexSearcher {
     return search(query, collectorManager);
   }
 
-  /** Returns the leaf slices used for concurrent searching, or null if no {@code ExecutorService} was
+  /** Returns the leaf slices used for concurrent searching, or null if no {@code Executor} was
    *  passed to the constructor.
    *
    * @lucene.experimental */
@@ -607,7 +604,7 @@ public class IndexSearcher {
   * Lower-level search API.
   * Search all leaves using the given {@link CollectorManager}. In contrast
   * to {@link #search(Query, Collector)}, this method will use the searcher's
-  * {@link ExecutorService} in order to parallelize execution of the collection
+  * {@link Executor} in order to parallelize execution of the collection
   * on the configured {@link #leafSlices}.
   * @see CollectorManager
   * @lucene.experimental
@@ -639,10 +636,12 @@ public class IndexSearcher {
       for (int i = 0; i < leafSlices.length - 1; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
         final C collector = collectors.get(i);
-        topDocsFutures.add(executor.submit(() -> {
+        FutureTask<C> task = new FutureTask<>(() -> {
           search(Arrays.asList(leaves), weight, collector);
           return collector;
-        }));
+        });
+        executor.execute(task);
+        topDocsFutures.add(task);
       }
       final LeafReaderContext[] leaves = leafSlices[leafSlices.length - 1].leaves;
       final C collector = collectors.get(leafSlices.length - 1);
@@ -847,5 +846,12 @@ public class IndexSearcher {
       return null;
     }
     return new CollectionStatistics(field, reader.maxDoc(), docCount, sumTotalTermFreq, sumDocFreq);
+  }
+
+  /**
+   * Returns this searchers executor or <code>null</code> if no executor was provided
+   */
+  public Executor getExecutor() {
+    return executor;
   }
 }

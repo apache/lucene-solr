@@ -32,8 +32,12 @@ import java.util.Map;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 7.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class BengaliStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "bengaliStem";
 
   public BengaliStemFilterFactory(Map<String,String> args) {
     super(args);

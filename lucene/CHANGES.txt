@@ -33,6 +33,12 @@ Other
 
 ======================= Lucene 8.2.0 =======================
 
+API Changes
+
+* LUCENE-8865: IndexSearcher now uses Executor instead of ExecutorSerivce.
+  This change is fully backwards compatible since ExecutorService directly
+  implements Executor. (Simon Willnauer)
+
 New Features
 
 * LUCENE-8815: Provide a DoubleValues implementation for retrieving the value of features without
@@ -103,6 +109,13 @@ Improvements
 * LUCENE-8845: Allow Intervals.prefix() and Intervals.wildcard() to specify
   their maximum allowed expansions (Alan Woodward)
 
+* LUCENE-8848 LUCENE-7757 LUCENE-8492: The UnifiedHighlighter now detects that parts of the query are not understood by
+  it, and thus it should not make optimizations that result in no highlights or slow highlighting.  This generally works
+  best for WEIGHT_MATCHES mode.  Consequently queries produced by ComplexPhraseQueryParser and the surround QueryParser
+  will now highlight correctly. (David Smiley)
+
+* LUCENE-8793: Luke enhanced UI for CustomAnalyzer: show detailed analysis steps. (Jun Ohtani via Tomoko Uchida)
+
 Optimizations
 
 * LUCENE-8796: Use exponential search instead of binary search in
@@ -119,9 +132,17 @@ Test Framework
 
 Other
 
-* LUCENE-8847: Code Cleanup: Remove StringBuilder.append with concatted strings
+* LUCENE-8847: Code Cleanup: Remove StringBuilder.append with concatenated
+  strings. (Koen De Groote via Uwe Schindler)
 
 * LUCENE-8861: Script to find open Github PRs that needs attention (janhoy)
+
+* LUCENE-8852: ReleaseWizard tool for release managers (janhoy)
+
+* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
+  (Tomoko Uchida, Uwe Schindler)
+
+* LUCENE-8838: Remove support for Steiner points on Tessellator.  (Ignacio Vera)
 
 ======================= Lucene 8.1.1 =======================
 (No Changes)
