@@ -1085,8 +1085,9 @@ public class BKDWriter implements Closeable {
     for (int i = 1; i < count; i++) {
       value = packedValues.apply(i);
       for(int dim =0; dim < numDataDims; dim++) {
-        if (Arrays.mismatch(value.bytes, value.offset + dim * bytesPerDim + commonPrefixLengths[dim], value.offset + dim * bytesPerDim + bytesPerDim,
-            scratch1, dim * bytesPerDim + commonPrefixLengths[dim], + dim * bytesPerDim + bytesPerDim) != -1) {
+        final int start = dim * bytesPerDim + commonPrefixLengths[dim];
+        final int end = dim * bytesPerDim + bytesPerDim;
+        if (Arrays.mismatch(value.bytes, value.offset + start, value.offset + end, scratch1, start, end) != -1) {
           out.writeVInt(cardinality);
           for (int j = 0; j < numDataDims; j++) {
             out.writeBytes(scratch1, j * bytesPerDim + commonPrefixLengths[j], bytesPerDim - commonPrefixLengths[j]);
@@ -1370,8 +1371,10 @@ public class BKDWriter implements Closeable {
       for (int i = from + 1; i < to; ++i) {
         reader.getValue(i, collector);
         for (int dim =0; dim < numDataDims; dim++) {
-          if (Arrays.mismatch(collector.bytes, collector.offset + dim * bytesPerDim + commonPrefixLengths[dim], collector.offset +  dim * bytesPerDim + bytesPerDim,
-              comparator.bytes, comparator.offset + dim * bytesPerDim + commonPrefixLengths[dim], comparator.offset + +  dim * bytesPerDim + bytesPerDim) != -1) {
+          final int start = dim * bytesPerDim + commonPrefixLengths[dim];
+          final int end = dim * bytesPerDim + bytesPerDim;
+          if (Arrays.mismatch(collector.bytes, collector.offset + start, collector.offset + end,
+              comparator.bytes, comparator.offset + start, comparator.offset + end) != -1) {
             leafCardinality++;
             BytesRef scratch = collector;
             collector = comparator;

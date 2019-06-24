@@ -100,8 +100,10 @@ public final class HeapPointWriter implements PointWriter {
     int leafCardinality = 1;
     for (int i = from + 1; i < to; i++) {
       for (int dim =0; dim < numDataDims; dim++) {
-        if (Arrays.mismatch(block, i * packedBytesLength + dim * bytesPerDim + commonPrefixLengths[dim], i * packedBytesLength + dim * bytesPerDim + bytesPerDim,
-            block, (i - 1) * packedBytesLength  + dim * bytesPerDim + commonPrefixLengths[dim], (i -1) * packedBytesLength + dim * bytesPerDim + bytesPerDim) != -1) {
+        final int start = dim * bytesPerDim + commonPrefixLengths[dim];
+        final int end = dim * bytesPerDim + bytesPerDim;
+        if (Arrays.mismatch(block, i * packedBytesLength + start, i * packedBytesLength + end,
+            block, (i - 1) * packedBytesLength  + start, (i -1) * packedBytesLength + end) != -1) {
           leafCardinality++;
           break;
         }
