@@ -118,6 +118,8 @@ Other
 * LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
   (Tomoko Uchida, Uwe Schindler)
 
+* LUCENE-8838: Remove support for Steiner points on Tessellator.  (Ignacio Vera)
+
 ======================= Lucene 8.1.1 =======================
 (No Changes)
 
