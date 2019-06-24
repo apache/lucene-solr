@@ -109,8 +109,7 @@ public class AnyQueryNode extends AndQueryNode {
       return "<any field='" + this.field + "'  matchelements="
           + this.minimumMatchingmElements + "/>";
     StringBuilder sb = new StringBuilder();
-    sb.append("<any field='" + this.field + "'  matchelements="
-        + this.minimumMatchingmElements + ">");
+    sb.append("<any field='").append(this.field).append("'  matchelements=").append(this.minimumMatchingmElements).append('>');
     for (QueryNode clause : getChildren()) {
       sb.append("\n");
       sb.append(clause.toString());

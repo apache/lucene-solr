@@ -136,7 +136,7 @@ class SegGraph {
     List<SegToken> tokenList = this.toTokenList();
     StringBuilder sb = new StringBuilder();
     for (SegToken t : tokenList) {
-      sb.append(t + "\n");
+      sb.append(t).append("\n");
     }
     return sb.toString();
   }

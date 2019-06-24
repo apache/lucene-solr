@@ -73,6 +73,7 @@ import static org.apache.solr.common.params.CommonParams.TZ;
  */
 public class TimeRoutedAlias implements RoutedAlias {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final SupportedRouterTypes TYPE = SupportedRouterTypes.TIME;
 
   // This class is created once per request and the overseer methods prevent duplicate create requests
   // from creating extra copies. All we need to track here is that we don't spam preemptive creates to
@@ -149,7 +150,7 @@ public class TimeRoutedAlias implements RoutedAlias {
     final MapSolrParams params = new MapSolrParams(this.aliasMetadata); // for convenience
     final RequiredSolrParams required = params.required();
     if (!"time".equals(required.get(ROUTER_TYPE_NAME))) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Only 'time' routed aliases is supported right now.");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Only 'time' routed aliases is supported by TimeRoutedAlias.");
     }
     routeField = required.get(ROUTER_FIELD);
     intervalMath = required.get(ROUTER_INTERVAL);
@@ -204,7 +205,13 @@ public class TimeRoutedAlias implements RoutedAlias {
   }
 
   public static Instant parseInstantFromCollectionName(String aliasName, String collection) {
-    final String dateTimePart = collection.substring(aliasName.length() + 1);
+    String separatorPrefix = TYPE.getSeparatorPrefix();
+    final String dateTimePart;
+    if (collection.contains(separatorPrefix)) {
+      dateTimePart = collection.substring(collection.lastIndexOf(separatorPrefix) + separatorPrefix.length());
+    } else {
+      dateTimePart = collection.substring(aliasName.length() + 1);
+    }
     return DATE_TIME_FORMATTER.parse(dateTimePart, Instant::from);
   }
 
@@ -216,7 +223,7 @@ public class TimeRoutedAlias implements RoutedAlias {
       }
     }
     assert DATE_TIME_FORMATTER.parse(nextCollName, Instant::from).equals(timestamp);
-    return aliasName + "_" + nextCollName;
+    return aliasName + TYPE.getSeparatorPrefix() + nextCollName;
   }
 
   Instant parseStringAsInstant(String str, TimeZone zone) {
@@ -363,6 +370,7 @@ public class TimeRoutedAlias implements RoutedAlias {
             // parsedCollectionsDesc since candidateCollectionDesc was chosen, we could create collection n+2
             // instead of collection n+1.
             String mostRecentCollName = this.parsedCollectionsDesc.get(0).getValue();
+            log.debug("Most recent at preemptive: {}", mostRecentCollName);
 
             // This line does not block and the document can be added immediately
             preemptiveAsync(() -> createNextCollection(mostRecentCollName, collectionsHandler), core);

@@ -186,7 +186,7 @@ Once the indexes have been cleared, you can start reindexing by re-running the o
 
 === Index to Another Collection
 
-In cases where you cannot take a production collection offline to delete all the documents, one option is to use Solr's <<collections-api.adoc#createalias,collection alias>> feature.
+In cases where you cannot take a production collection offline to delete all the documents, one option is to use Solr's <<collection-aliasing.adoc#createalias,collection alias>> feature.
 
 This option is only available for Solr installations running in SolrCloud mode.
 
@@ -199,7 +199,7 @@ Here is an example of creating an alias that points to a single collection:
 [source,bash]
 http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=myData&collections=newCollection
 
-Once the alias is in place and you are satisfied you no longer need the old data, you can delete the old collection with the <<collections-api.adoc#delete,DELETE command>> of the Collections API:
+Once the alias is in place and you are satisfied you no longer need the old data, you can delete the old collection with the <<collection-management.adoc#delete,DELETE command>> of the Collections API:
 
 [source,bash]
 http://localhost:8983/solr/admin/collections?action=DELETE&name=oldCollection

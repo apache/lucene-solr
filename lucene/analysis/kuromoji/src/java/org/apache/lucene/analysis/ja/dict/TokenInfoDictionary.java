@@ -36,10 +36,15 @@ public final class TokenInfoDictionary extends BinaryDictionary {
 
   private final TokenInfoFST fst;
   
-  private TokenInfoDictionary() throws IOException {
-    super();
+  /**
+   * @param resourceScheme - scheme for loading resources (FILE or CLASSPATH).
+   * @param resourcePath - where to load resources (dictionaries) from. If null, with CLASSPATH scheme only, use
+   * this class's name as the path.
+   */
+  TokenInfoDictionary(ResourceScheme resourceScheme, String resourcePath) throws IOException {
+    super(resourceScheme, resourcePath);
     InputStream is = null;
-    FST<Long> fst = null;
+    FST<Long> fst;
     boolean success = false;
     try {
       is = getResource(FST_FILENAME_SUFFIX);
@@ -55,6 +60,10 @@ public final class TokenInfoDictionary extends BinaryDictionary {
     }
     // TODO: some way to configure?
     this.fst = new TokenInfoFST(fst, true);
+  }
+
+  private TokenInfoDictionary() throws IOException {
+    this(ResourceScheme.CLASSPATH, null);
   }
   
   public TokenInfoFST getFST() {

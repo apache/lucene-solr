@@ -19,7 +19,7 @@
     },
     "move-replica": {
       "type": "object",
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#movereplica",
+      "documentation": "https://lucene.apache.org/solr/guide/replica-management.html#movereplica",
       "description": "This command moves a replica from one node to a new node. In case of shared filesystems the `dataDir` and `ulogDir` may be reused.",
       "properties": {
         "replica": {
@@ -57,7 +57,7 @@
     },
     "migrate-docs":{
       "type":"object",
-      "documentation":"https://lucene.apache.org/solr/guide/collections-api.html#migrate",
+      "documentation":"https://lucene.apache.org/solr/guide/collection-management.html#migrate",
       "description": "Moves documents with a given routing key to another collection. The source collection will continue to have the same documents, but will start re-routing write requests to the new collection. This command only works on collections using the 'compositeId' type of document routing.",
       "properties":{
         "target":{
@@ -82,7 +82,7 @@
     },
     "balance-shard-unique":{
       "type":"object",
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#balanceshardunique",
+      "documentation": "https://lucene.apache.org/solr/guide/cluster-node-management.html#balanceshardunique",
       "description": "Ensures a property is distributed equally across all physical nodes of a collection. If the property already exists on a replica, effort is made to leave it there. However, if it does not exist on any repica, a shard will be chosen and the property added.",
       "properties":{
         "property":{
@@ -103,7 +103,7 @@
     },
     "rebalance-leaders" :{
       "type":"object",
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#rebalanceleaders",
+      "documentation": "https://lucene.apache.org/solr/guide/replica-management.html#rebalanceleaders",
       "description": "Reassign leaders in a collection according to the preferredLeader property across active nodes. This command should be run after the preferredLeader property has been set with the balance-shards or add-replica-property commands.",
       "properties":{
         "maxAtOnce":{
@@ -118,7 +118,7 @@
       }
     },
     "add-replica-property": {
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#addreplicaprop",
+      "documentation": "https://lucene.apache.org/solr/guide/replica-management.html#addreplicaprop",
       "description": "Assign an arbitrary property to a particular replica and give it the value specified. If the property already exists, it will be overwritten with the new value.",
       "type": "object",
       "properties": {
@@ -153,7 +153,7 @@
     },
     "delete-replica-property": {
       "description": "Deletes an arbitrary property from a particular replica",
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#deletereplicaprop",
+      "documentation": "https://lucene.apache.org/solr/guide/replica-management.html#deletereplicaprop",
       "type": "object",
       "properties": {
         "shard": {
@@ -172,7 +172,7 @@
       "required":["shard","replica","property"]
     },
     "set-collection-property": {
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#collectionprop",
+      "documentation": "https://lucene.apache.org/solr/guide/collection-management.html#collectionprop",
       "description": "Sets a property for the collection",
       "type": "object",
       "properties": {

@@ -856,17 +856,17 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
         if (hits.get(docID) != expected) {
           StringBuilder b = new StringBuilder();
-          b.append("docID=(" + docID + ")\n");
+          b.append("docID=(").append(docID).append(")\n");
 
           if (expected) {
-            b.append("FAIL: id=" + id + " should match but did not\n");
+            b.append("FAIL: id=").append(id).append(" should match but did not\n");
           } else {
-            b.append("FAIL: id=" + id + " should not match but did\n");
+            b.append("FAIL: id=").append(id).append(" should not match but did\n");
           }
-          b.append("  box=" + rect + "\n");
-          b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  lat=" + lats[id] + " lon=" + lons[id] + "\n");
-          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("  box=").append(rect).append("\n");
+          b.append("  query=").append(query).append(" docID=").append(docID).append("\n");
+          b.append("  lat=").append(lats[id]).append(" lon=").append(lons[id]).append("\n");
+          b.append("  deleted?=").append(liveDocs != null && liveDocs.get(docID) == false);
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {
@@ -997,16 +997,16 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           StringBuilder b = new StringBuilder();
 
           if (expected) {
-            b.append("FAIL: id=" + id + " should match but did not\n");
+            b.append("FAIL: id=").append(id).append(" should match but did not\n");
           } else {
-            b.append("FAIL: id=" + id + " should not match but did\n");
+            b.append("FAIL: id=").append(id).append(" should not match but did\n");
           }
-          b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  lat=" + lats[id] + " lon=" + lons[id] + "\n");
-          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("  query=").append(query).append(" docID=").append(docID).append("\n");
+          b.append("  lat=").append(lats[id]).append(" lon=").append(lons[id]).append("\n");
+          b.append("  deleted?=").append(liveDocs != null && liveDocs.get(docID) == false);
           if (Double.isNaN(lats[id]) == false) {
             double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, lats[id], lons[id]);
-            b.append("  centerLat=" + centerLat + " centerLon=" + centerLon + " distanceMeters=" + distanceMeters + " vs radiusMeters=" + radiusMeters);
+            b.append("  centerLat=").append(centerLat).append(" centerLon=").append(centerLon).append(" distanceMeters=").append(distanceMeters).append(" vs radiusMeters=").append(radiusMeters);
           }
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
@@ -1129,14 +1129,14 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           StringBuilder b = new StringBuilder();
 
           if (expected) {
-            b.append("FAIL: id=" + id + " should match but did not\n");
+            b.append("FAIL: id=").append(id).append(" should match but did not\n");
           } else {
-            b.append("FAIL: id=" + id + " should not match but did\n");
+            b.append("FAIL: id=").append(id).append(" should not match but did\n");
           }
-          b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  lat=" + lats[id] + " lon=" + lons[id] + "\n");
-          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  polygon=" + polygon);
+          b.append("  query=").append(query).append(" docID=").append(docID).append("\n");
+          b.append("  lat=").append(lats[id]).append(" lon=").append(lons[id]).append("\n");
+          b.append("  deleted?=").append(liveDocs != null && liveDocs.get(docID) == false);
+          b.append("  polygon=").append(polygon);
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {

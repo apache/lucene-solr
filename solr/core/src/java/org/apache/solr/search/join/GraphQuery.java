@@ -118,14 +118,14 @@ public class GraphQuery extends Query {
   @Override
   public String toString(String field) {
     StringBuilder sb = new StringBuilder();
-    sb.append("[[" + q.toString() + "]," + fromField + "=" + toField + "]");
+    sb.append("[[").append(q.toString()).append("],").append(fromField).append('=').append(toField).append(']');
     if (traversalFilter != null) {
-      sb.append(" [TraversalFilter: " + traversalFilter.toString() + "]");
+      sb.append(" [TraversalFilter: ").append(traversalFilter.toString()).append(']');
     }
-    sb.append("[maxDepth=" + maxDepth + "]");
-    sb.append("[returnRoot=" + returnRoot + "]");
-    sb.append("[onlyLeafNodes=" + onlyLeafNodes + "]");
-    sb.append("[useAutn=" + useAutn + "]");
+    sb.append("[maxDepth=").append(maxDepth).append(']');
+    sb.append("[returnRoot=").append(returnRoot).append(']');
+    sb.append("[onlyLeafNodes=").append(onlyLeafNodes).append(']');
+    sb.append("[useAutn=").append(useAutn).append(']');
     return sb.toString();
   }
   

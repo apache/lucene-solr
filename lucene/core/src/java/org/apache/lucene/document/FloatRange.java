@@ -109,7 +109,7 @@ public class FloatRange extends Field {
   /**
    * Encodes the min, max ranges into a byte array
    */
-  private static byte[] encode(float[] min, float[] max) {
+  static byte[] encode(float[] min, float[] max) {
     checkArgs(min, max);
     byte[] b = new byte[BYTES*2*min.length];
     verifyAndEncode(min, max, b);

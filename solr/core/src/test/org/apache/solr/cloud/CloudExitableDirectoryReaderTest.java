@@ -21,13 +21,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.codahale.metrics.Metered;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster.JettySolrRunnerWithMetrics;
-import static org.apache.solr.cloud.TrollingIndexReaderFactory.*;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -40,9 +42,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.codahale.metrics.Metered;
-import com.codahale.metrics.MetricRegistry;
+import static org.apache.solr.cloud.TrollingIndexReaderFactory.CheckMethodName;
+import static org.apache.solr.cloud.TrollingIndexReaderFactory.Trap;
+import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchClass;
+import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchCount;
+import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchTrace;
 
 /**
 * Distributed test for {@link org.apache.lucene.index.ExitableDirectoryReader} 
@@ -193,7 +197,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
         params( "sort","query($q,1) asc"),
         params("rows","0", "facet","true", "facet.method", "enum", "facet.field", "name"),
         params("rows","0", "json.facet","{ ids: { type: range, field : num, start : 1, end : 99, gap : 9 }}")
-        }; //add more cases here 
+    }; // add more cases here
 
     params.add(cases[random().nextInt(cases.length)]);
     for (; ; creep*=1.5) {
@@ -218,13 +222,20 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     int numBites = atLeast(100);
     for(int bite=0; bite<numBites; bite++) {
       int boundary = random().nextInt(creep);
+      boolean omitHeader = random().nextBoolean();
       try(Trap catchCount = catchCount(boundary)){
+        params.set("omitHeader", "" + omitHeader);
         params.set("boundary", boundary);
         QueryResponse rsp = cluster.getSolrClient().query(COLLECTION, 
             params);
         assertEquals(""+rsp, rsp.getStatus(), 0);
         assertNo500s(""+rsp);
-        assertEquals(""+creep+" ticks were sucessful; trying "+boundary+" yields "+rsp, 
+        // without responseHeader, whether the response is partial or not can't be known
+        // omitHeader=true used in request to ensure that no NPE exceptions are thrown
+        if (omitHeader) {
+          continue;
+        }
+        assertEquals("" + creep + " ticks were successful; trying " + boundary + " yields " + rsp,
             catchCount.hasCaught(), isPartial(rsp));
       }catch(AssertionError ae) {
         Trap.dumpLastStackTraces(log);

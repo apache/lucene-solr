@@ -224,7 +224,7 @@ The following changes impact query behavior.
 
 * Authentication plugins can now intercept internode requests on a per-request basis.
 
-* The Basic Authentication plugin now has an option `forwardCredentials` to prevent Basic Auth headers from being sent for inter-node requests.
+* The Basic Authentication plugin now has an option `forwardCredentials` to let Basic Auth headers be forwarded on inter-node requests in case of distributed search, instead of falling back to PKI.
 
 * Metrics are now reported for authentication requests.
 
@@ -278,7 +278,9 @@ When upgrading to Solr 7.7.x, users should be aware of the following major chang
 
 *Admin UI*
 
-* The Admin UI now presents a login screen for any users with authentication enabled on their cluster.  Clusters with <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication>> will prompt users to enter a username and password.  On clusters configured to use <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication>>, users will be directed to configure their browser to provide an appropriate Kerberos ticket.
+* The Admin UI now presents a login screen for any users with authentication enabled on their cluster.
+Clusters with <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication>> will prompt users to enter a username and password.
+On clusters configured to use <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication>>, authentication is handled transparently by the browser as before, but if authentication fails, users will be directed to configure their browser to provide an appropriate Kerberos ticket.
 +
 The login screen's purpose is cosmetic only - Admin UI-triggered Solr requests were subject to authentication prior to 7.7 and still are today.  The login screen changes only the user experience of providing this authentication.
 
@@ -298,7 +300,7 @@ When upgrading to Solr 7.6, users should be aware of the following major changes
 
 *Collections*
 
-* The JSON parameter to set cluster-wide default cluster properties with the <<collections-api.adoc#clusterprop,CLUSTERPROP>> command has changed.
+* The JSON parameter to set cluster-wide default cluster properties with the <<cluster-node-management.adoc#clusterprop,CLUSTERPROP>> command has changed.
 +
 The old syntax nested the defaults into a property named `clusterDefaults`. The new syntax uses only `defaults`. The command to use is still `set-obj-property`.
 +
@@ -427,7 +429,7 @@ When upgrading to Solr 7.3, users should be aware of the following major changes
 +
 This means to upgrade to Solr 8 in the future, you will need to be on Solr 7.3 or higher.
 
-* Replicas which are not up-to-date are no longer allowed to become leader. Use the <<collections-api.adoc#forceleader,FORCELEADER command>> of the Collections API to allow these replicas become leader.
+* Replicas which are not up-to-date are no longer allowed to become leader. Use the <<shard-management.adoc#forceleader,FORCELEADER command>> of the Collections API to allow these replicas become leader.
 
 *Spatial*
 
@@ -477,7 +479,7 @@ When upgrading to Solr 7.1, users should be aware of the following major changes
 +
 Existing users of this feature should not have to change anything. However, they should note these changes:
 
-** Behavior: Changing the `autoAddReplicas` property from disabled (`false`) to enabled (`true`) using <<collections-api.adoc#modifycollection,MODIFYCOLLECTION API>> no longer replaces down replicas for the collection immediately. Instead, replicas are only added if a node containing them went down while `autoAddReplicas` was enabled. The parameters `autoReplicaFailoverBadNodeExpiration` and `autoReplicaFailoverWorkLoopDelay` are no longer used.
+** Behavior: Changing the `autoAddReplicas` property from disabled (`false`) to enabled (`true`) using <<collection-management.adoc#modifycollection,MODIFYCOLLECTION API>> no longer replaces down replicas for the collection immediately. Instead, replicas are only added if a node containing them went down while `autoAddReplicas` was enabled. The parameters `autoReplicaFailoverBadNodeExpiration` and `autoReplicaFailoverWorkLoopDelay` are no longer used.
 ** Deprecations: Enabling/disabling autoAddReplicas cluster-wide with the API will be deprecated; use suspend/resume trigger APIs with `name=".auto_add_replicas"` instead.
 +
 More information about the changes to this feature can be found in the section <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,SolrCloud Automatically Adding Replicas>>.

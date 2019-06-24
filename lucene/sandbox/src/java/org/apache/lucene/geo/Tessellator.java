@@ -199,8 +199,24 @@ final public class Tessellator {
 
   /** Finds a bridge between vertices that connects a hole with an outer ring, and links it */
   private static final void eliminateHole(final Node holeNode, Node outerNode, Polygon hole) {
+    // Attempt to find a common point between the HoleNode and OuterNode.
+    Node next = outerNode;
+    do {
+      if (Rectangle.containsPoint(next.getLat(), next.getLon(), hole.minLat, hole.maxLat, hole.minLon, hole.maxLon)) {
+        Node sharedVertex = getSharedVertex(holeNode, next);
+        if (sharedVertex != null) {
+          // Split the resulting polygon.
+          Node node = splitPolygon(next, sharedVertex);
+          // Filter the split nodes.
+          filterPoints(node, node.next);
+          return;
+        }
+      }
+      next = next.next;
+    } while (next != outerNode);
+
     // Attempt to find a logical bridge between the HoleNode and OuterNode.
-    outerNode = fetchHoleBridge(holeNode, outerNode, hole);
+    outerNode = fetchHoleBridge(holeNode, outerNode);
 
     // Determine whether a hole bridge could be fetched.
     if(outerNode != null) {
@@ -216,7 +232,7 @@ final public class Tessellator {
    *
    * see: http://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
    **/
-  private static final Node fetchHoleBridge(final Node holeNode, final Node outerNode, Polygon hole) {
+  private static final Node fetchHoleBridge(final Node holeNode, final Node outerNode) {
     Node p = outerNode;
     double qx = Double.NEGATIVE_INFINITY;
     final double hx = holeNode.getX();
@@ -226,13 +242,6 @@ final public class Tessellator {
     // segment's endpoint with lesser x will be potential connection point
     {
       do {
-        //if vertex of the polygon is a vertex of the hole, just use that point.
-        if (Rectangle.containsPoint(p.getLat(), p.getLon(), hole.minLat, hole.maxLat, hole.minLon, hole.maxLon)) {
-          Node sharedVertex = getSharedVertex(holeNode, p);
-          if (sharedVertex != null) {
-            return sharedVertex;
-          }
-        }
         if (hy <= p.getY() && hy >= p.next.getY() && p.next.getY() != p.getY()) {
           final double x = p.getX() + (hy - p.getY()) * (p.next.getX() - p.getX()) / (p.next.getY() - p.getY());
           if (x <= hx && x > qx) {
@@ -528,14 +537,27 @@ final public class Tessellator {
 
   /** Determines whether a diagonal between two polygon nodes lies within a polygon interior. (This determines the validity of the ray.) **/
   private static final boolean isValidDiagonal(final Node a, final Node b) {
-    //If points are equal then use it
     if (isVertexEquals(a, b)) {
-      return true;
+      //If points are equal then use it if they are valid polygons
+      return isCWPolygon(a, b);
     }
     return a.next.idx != b.idx && a.previous.idx != b.idx
         && isIntersectingPolygon(a, a.getX(), a.getY(), b.getX(), b.getY()) == false
         && isLocallyInside(a, b) && isLocallyInside(b, a)
         && middleInsert(a, a.getX(), a.getY(), b.getX(), b.getY());
+  }
+
+  /** Determine whether the polygon defined between node start and node end is CW */
+  private static boolean isCWPolygon(Node start, Node end) {
+    Node next = start;
+    double windingSum = 0;
+    do {
+      // compute signed area
+      windingSum += area(next.getLon(), next.getLat(), next.next.getLon(), next.next.getLat(), end.getLon(), end.getLat());
+      next = next.next;
+    } while (next.next != end);
+    //The polygon must be CW
+    return (windingSum < 0) ? true : false;
   }
 
   private static final boolean isLocallyInside(final Node a, final Node b) {
@@ -870,12 +892,12 @@ final public class Tessellator {
       if (this.previous == null)
         builder.append("||-");
       else
-        builder.append(this.previous.idx + " <- ");
+        builder.append(this.previous.idx).append(" <- ");
       builder.append(this.idx);
       if (this.next == null)
         builder.append(" -||");
       else
-        builder.append(" -> " + this.next.idx);
+        builder.append(" -> ").append(this.next.idx);
       return builder.toString();
     }
   }
