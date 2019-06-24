@@ -29,19 +29,9 @@ public class UnknownDictionaryTest extends LuceneTestCase {
   public void testPutCharacterCategory() {
     UnknownDictionaryWriter unkDic = new UnknownDictionaryWriter(10 * 1024 * 1024);
     
-    try{
-      unkDic.putCharacterCategory(0, "DUMMY_NAME");
-      fail();
-    } catch(Exception e) {
-      
-    }
+    expectThrows(Exception.class, () -> unkDic.putCharacterCategory(0, "DUMMY_NAME"));
     
-    try{
-      unkDic.putCharacterCategory(-1, "KATAKANA");
-      fail();
-    } catch(Exception e) {
-      
-    }
+    expectThrows(Exception.class, () -> unkDic.putCharacterCategory(-1, "KATAKANA"));
     
     unkDic.putCharacterCategory(0, "DEFAULT");
     unkDic.putCharacterCategory(1, "GREEK");
@@ -53,12 +43,8 @@ public class UnknownDictionaryTest extends LuceneTestCase {
   @Test
   public void testPut() {
     UnknownDictionaryWriter unkDic = new UnknownDictionaryWriter(10 * 1024 * 1024);
-    try{
-      unkDic.put(CSVUtil.parse("KANJI,1285,11426,名詞,一般,*,*,*,*,*,*,*"));
-      fail();
-    } catch(Exception e){
-      
-    }
+    expectThrows(NumberFormatException.class, () ->
+                 unkDic.put(CSVUtil.parse("KANJI,1285,11426,名詞,一般,*,*,*,*,*,*,*")));
 
     String entry1 = "ALPHA,1285,1285,13398,名詞,一般,*,*,*,*,*,*,*";
     String entry2 = "HIRAGANA,1285,1285,13069,名詞,一般,*,*,*,*,*,*,*";

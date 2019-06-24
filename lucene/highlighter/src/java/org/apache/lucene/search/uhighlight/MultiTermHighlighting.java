@@ -53,6 +53,14 @@ final class MultiTermHighlighting {
     return collector.runAutomata.toArray(new CharacterRunAutomaton[0]);
   }
 
+  /**
+   * Indicates if the the leaf query (from {@link QueryVisitor#visitLeaf(Query)}) is a type of query that
+   * we can extract automata from.
+   */
+  public static boolean canExtractAutomataFromLeafQuery(Query query) {
+    return query instanceof AutomatonQuery || query instanceof FuzzyQuery;
+  }
+
   private static class AutomataCollector extends QueryVisitor {
 
     List<CharacterRunAutomaton> runAutomata = new ArrayList<>();

@@ -358,7 +358,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static Create createCollection(String collection, String config, Integer numShards, Integer numNrtReplicas, Integer numTlogReplicas, Integer numPullReplicas) {
     return new Create(collection, config, numShards, numNrtReplicas, numTlogReplicas, numPullReplicas);
   }
-  
+
   /**
    * Returns a SolrRequest for creating a collection
    * @param collection the collection name
@@ -394,7 +394,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static Create createCollectionWithImplicitRouter(String collection, String config, String shards, int numReplicas) {
     return new Create(collection, config, shards, numReplicas);
   }
-  
+
   /**
    * Returns a SolrRequest for creating a collection with the implicit router and specific types of replicas
    * @param collection  the collection name
@@ -448,7 +448,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Create(String collection, String config, String shards, int numNrtReplicas) {
       this(collection, config, ImplicitDocRouter.NAME, null, checkNotNull("shards",shards), numNrtReplicas, null, null);
     }
-    
+
     private Create(String collection, String config, String routerName, Integer numShards, String shards, Integer numNrtReplicas, Integer  numTlogReplicas, Integer numPullReplicas) {
       super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
       // NOTE: there's very little we can assert about the args because nothing but "collection" is required by the server
@@ -489,7 +489,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public String getShards() { return  shards; }
     public Integer getNumShards() { return numShards; }
     public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
-    
+
     public Integer getReplicationFactor() { return getNumNrtReplicas(); }
     public Integer getNumNrtReplicas() { return nrtReplicas; }
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
@@ -497,12 +497,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Integer getNumPullReplicas() {return pullReplicas;}
 
     public Integer getStateFormat() { return stateFormat; }
-    
+
     /**
      * Provide the name of the shards to be created, separated by commas
-     * 
+     *
      * Shard names must consist entirely of periods, underscores, hyphens, and alphanumerics.  Other characters are not allowed.
-     * 
+     *
      * @throws IllegalArgumentException if any of the shard names contain invalid characters.
      */
     public Create setShards(String shards) {
@@ -514,7 +514,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.shards = shards;
       return this;
     }
-    
+
     public Properties getProperties() {
       return properties;
     }
@@ -1604,7 +1604,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         throw new IllegalArgumentException("Either requestid or flush parameter must be specified.");
       if (requestId != null && flush != null)
         throw new IllegalArgumentException("Both requestid and flush parameters can not be specified together.");
-      
+
       this.requestId = requestId;
       this.flush = flush;
     }
@@ -1737,6 +1737,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public static final String ROUTER_INTERVAL = "router.interval";
     public static final String ROUTER_MAX_FUTURE = "router.maxFutureMs";
     public static final String ROUTER_PREEMPTIVE_CREATE_WINDOW = "router.preemptiveCreateMath";
+    public static final String ROUTER_AUTO_DELETE_AGE = "router.autoDeleteAge";
 
     private final String aliasName;
     private final String routerField;
@@ -1746,6 +1747,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     private TimeZone tz;
     private Integer maxFutureMs;
     private String preemptiveCreateMath;
+    private String autoDeleteAge;
 
     private final Create createCollTemplate;
 
@@ -1775,6 +1777,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public CreateTimeRoutedAlias setAutoDeleteAge(String autoDeleteAge) {
+      this.autoDeleteAge = autoDeleteAge;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1791,6 +1798,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (preemptiveCreateMath != null) {
         params.add(ROUTER_PREEMPTIVE_CREATE_WINDOW, preemptiveCreateMath);
+      }
+      if (autoDeleteAge != null) {
+        params.add(ROUTER_AUTO_DELETE_AGE, autoDeleteAge);
       }
 
       // merge the above with collectionParams.  Above takes precedence.
@@ -1903,7 +1913,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
   }
-  
+
   /**
    * Returns a SolrRequest to add a replica of type {@link org.apache.solr.common.cloud.Replica.Type#NRT} to a shard in a collection
    *
@@ -1913,7 +1923,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
-   * Returns a SolrRequest to add a replica of the specified type to a shard in a collection.  
+   * Returns a SolrRequest to add a replica of the specified type to a shard in a collection.
    * If the replica type is null, the server default will be used.
    *
    */

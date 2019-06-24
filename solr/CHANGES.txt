@@ -52,7 +52,7 @@ Upgrade Notes
   confused with but not used by org.apache.solr.response.CSVWriter (or any other code) have been removed (Gus Heck)
 
 * SOLR-7530: TermsComponent's JSON response format was changed so that "terms" property carries per field arrays by default
-  regardless of distrib, terms.list, terms.ttf parameters. This affects JSON based response format but not others 
+  regardless of distrib, terms.list, terms.ttf parameters. This affects JSON based response format but not others
   (Munendra S N, Mikhail Khludnev)
 
 ==================  8.2.0 ==================
@@ -88,6 +88,11 @@ Upgrade Notes
   not add a property to core.properties anymoore so any external code that inspected core.properties will not find the
   'routedAliasName' key in new cores belonging to routed aliases.
 
+* SOLR-13419: Time Routed Aliases now have a '__TRA__' infix preceding the timestamp portion of the collection names.
+  collections with the old format will not be altered and will continue to work, but any new TRA's or new collections
+  for existing TRA's will use the new format. Solr will handle this invisibly, but any external code that attempted to
+  predict collection names in TRA's will probably need adjustment.
+
 New Features
 ----------------------
 
@@ -120,7 +125,7 @@ New Features
 * SOLR-13504: In autoscaling policies, use an explicit 'nodeset' attribute for filtering
   nodes instead of using them directly at the toplevel (noble)
 
-* SOLR-13329: In autoscaling policies, use an explicit 'put : on-each'
+* SOLR-13329: In autoscaling policies, use an explicit 'put : on-each-node'
   to specify the the rules is applied on each node  (noble)
 
 * SOLR-13434: OpenTracing support for Solr (Cao Manh Dat)
@@ -135,6 +140,9 @@ New Features
 
 * SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
 
+* SOLR-13560: Add isNull and notNull Stream Evaluators (Joel Bernstein)
+
+* SOLR-10291: Add matches Stream Evaluator to support regex matching (Joel Bernstein)
 
 Bug Fixes
 ----------------------
@@ -164,8 +172,10 @@ Bug Fixes
 * SOLR-13333: unleashing terms.ttf from terms.list when distrib=false (Munendra S N via Mikhail Khludnev)
 
 * SOLR-13490: Fix CollectionStateWatcher/CollectionStatePredicate based APIs in ZkStateReader and
-  CloudSolrClient to be triggered on liveNode changes.  Also add Predicate<DocCollection> equivilents
+  CloudSolrClient to be triggered on liveNode changes.  Also add Predicate<DocCollection> equivalents
   for callers that don't care about liveNodes. (hossman)
+
+* SOLR-13545: ContentStreamUpdateRequest refused to close file (Colvin Cowie, Mikhail Khludnev)
 
 Other Changes
 ----------------------
@@ -201,7 +211,11 @@ Jetty 9.4.14.v20181114
 Bug Fixes
 ----------------------
 
-SOLR-13510: Intermittent 401's for internode requests with basicauth enabled (Cao Manh Dat, Colvin Cowie)
+* SOLR-13510: Intermittent 401's for internode requests with basicauth enabled (Cao Manh Dat, Colvin Cowie)
+
+* SOLR-13523: In 8.1, Atomic Updates were broken (NPE) when the schema declared the new _nest_path_ field even if you
+  weren't using nested docs.  In-place updates were not affected (worked).
+  Reminder: if you don't need nested docs then remove both _root_ and _nest_path_ !  (David Smiley)
 
 ==================  8.1.1 ==================
 

@@ -75,6 +75,7 @@ def blockBoundaryPattern = ~$/----\s*/$;
 def blockTitlePattern = ~$/\..*/$;
 def unescapedSymbolPattern = ~$/(?<=[^\\]|^)([-=]>|<[-=])/$; // SOLR-10883
 def extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$;
+def validSPINameJavadocTag = ~$/(?s)\s*\*\s*@lucene\.spi\s+\{@value #NAME\}/$;
 
 def isLicense = { matcher, ratDocument ->
   licenseMatcher.reset();
@@ -175,6 +176,16 @@ ant.fileScanner{
       }
       if (!validLoggerNamePattern.matcher(text).find()) {
         reportViolation(f, 'invalid logger name [log, uses static class name, not specialized logger]')
+      }
+    }
+    // make sure that SPI names of all tokenizers/charfilters/tokenfilters are documented
+    if (!f.name.contains("Test") && !f.name.contains("Mock") && !text.contains("abstract class") &&
+        !f.name.equals("TokenizerFactory.java") && !f.name.equals("CharFilterFactory.java") && !f.name.equals("TokenFilterFactory.java") &&
+        (f.name.contains("TokenizerFactory") && text.contains("extends TokenizerFactory") ||
+            f.name.contains("CharFilterFactory") && text.contains("extends CharFilterFactory") ||
+            f.name.contains("FilterFactory") && text.contains("extends TokenFilterFactory"))) {
+      if (!validSPINameJavadocTag.matcher(text).find()) {
+        reportViolation(f, 'invalid spi name documentation')
       }
     }
     checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);

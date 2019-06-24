@@ -1416,11 +1416,7 @@ public abstract class LuceneTestCase extends Assert {
 
       Directory fsdir = newFSDirectoryImpl(clazz, f, lf);
       if (rarely()) {
-        List<String> fileExtensions =
-            Arrays.asList("fdt", "fdx", "tim", "tip", "si", "fnm", "pos", "dii", "dim", "nvm", "nvd", "dvm", "dvd");
-        Collections.shuffle(fileExtensions, random());
-        fileExtensions = fileExtensions.subList(0, 1 + random().nextInt(fileExtensions.size()));
-        fsdir = new FileSwitchDirectory(new HashSet<>(fileExtensions), fsdir, newFSDirectoryImpl(clazz, f, lf), true);
+
       }
       BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare);
       return wrapped;
@@ -1428,6 +1424,14 @@ public abstract class LuceneTestCase extends Assert {
       Rethrow.rethrow(e);
       throw null; // dummy to prevent compiler failure
     }
+  }
+
+  private static Directory newFileSwitchDirectory(Random random, Directory dir1, Directory dir2) {
+    List<String> fileExtensions =
+        Arrays.asList("fdt", "fdx", "tim", "tip", "si", "fnm", "pos", "dii", "dim", "nvm", "nvd", "dvm", "dvd");
+    Collections.shuffle(fileExtensions, random);
+    fileExtensions = fileExtensions.subList(0, 1 + random.nextInt(fileExtensions.size()));
+    return new FileSwitchDirectory(new HashSet<>(fileExtensions), dir1, dir2, true);
   }
 
   /**
@@ -1632,6 +1636,16 @@ public abstract class LuceneTestCase extends Assert {
     if (clazzName.equals("random")) {
       if (rarely(random)) {
         clazzName = RandomPicks.randomFrom(random, CORE_DIRECTORIES);
+      } else if (rarely(random)) {
+        String clazzName1 = rarely(random)
+            ? RandomPicks.randomFrom(random, CORE_DIRECTORIES)
+            : ByteBuffersDirectory.class.getName();
+        String clazzName2 = rarely(random)
+            ? RandomPicks.randomFrom(random, CORE_DIRECTORIES)
+            : ByteBuffersDirectory.class.getName();
+        return newFileSwitchDirectory(random,
+            newDirectoryImpl(random, clazzName1, lf),
+            newDirectoryImpl(random, clazzName2, lf));
       } else {
         clazzName = ByteBuffersDirectory.class.getName();
       }

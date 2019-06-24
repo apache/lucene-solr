@@ -74,8 +74,13 @@ import com.ibm.icu.text.RuleBasedBreakIterator;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "icu";
+
   static final String RULEFILES = "rulefiles";
   private final Map<Integer,String> tailored;
   private ICUTokenizerConfig config;

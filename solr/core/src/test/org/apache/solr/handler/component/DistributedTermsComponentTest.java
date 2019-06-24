@@ -131,7 +131,7 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
 
   /**
    * Returns a {@link NamedList} containing server
-   * response deserialization is based on the {@param responseParser}
+   * response deserialization is based on the {@code responseParser}
    */
   private NamedList<Object> queryClient(SolrClient solrClient, final ModifiableSolrParams params,
                                         ResponseParser responseParser) throws SolrServerException, IOException {

@@ -191,7 +191,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   @Override
   public List<String> resolveAlias(String aliasName) {
-    return Aliases.resolveAliasesGivenAliasMap(getAliases(false), aliasName);
+    return resolveAlias(aliasName, false);
+  }
+
+  public List<String> resolveAlias(String aliasName, boolean forceFetch) {
+    return Aliases.resolveAliasesGivenAliasMap(getAliases(forceFetch), aliasName);
   }
 
   @Override
