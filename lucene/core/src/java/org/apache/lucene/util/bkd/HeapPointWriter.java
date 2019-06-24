@@ -103,7 +103,7 @@ public final class HeapPointWriter implements PointWriter {
         final int start = dim * bytesPerDim + commonPrefixLengths[dim];
         final int end = dim * bytesPerDim + bytesPerDim;
         if (Arrays.mismatch(block, i * packedBytesLength + start, i * packedBytesLength + end,
-            block, (i - 1) * packedBytesLength  + start, (i -1) * packedBytesLength + end) != -1) {
+            block, (i - 1) * packedBytesLength  + start, (i - 1) * packedBytesLength + end) != -1) {
           leafCardinality++;
           break;
         }
