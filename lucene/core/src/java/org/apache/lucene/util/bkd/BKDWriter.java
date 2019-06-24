@@ -1084,7 +1084,7 @@ public class BKDWriter implements Closeable {
     int cardinality = 1;
     for (int i = 1; i < count; i++) {
       value = packedValues.apply(i);
-      if (Arrays.mismatch(value.bytes, value.offset, value.offset + value.length, scratch1, 0, packedBytesLength) != -1) {
+      if (Arrays.mismatch(value.bytes, value.offset, value.offset + packedBytesLength, scratch1, 0, packedBytesLength) != -1) {
         out.writeVInt(cardinality);
         for (int j = 0; j < numDataDims; j++) {
           out.writeBytes(scratch1, j * bytesPerDim + commonPrefixLengths[j], bytesPerDim - commonPrefixLengths[j]);
