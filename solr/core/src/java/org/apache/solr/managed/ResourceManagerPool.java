@@ -2,6 +2,7 @@ package org.apache.solr.managed;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -9,36 +10,47 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  *
  */
 public class ResourceManagerPool implements Runnable, Closeable {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private final Map<String, ManagedResource> resources = new ConcurrentHashMap<>();
   private Map<String, Float> limits;
   private final String type;
+  private final String name;
   private final ResourceManagerPlugin resourceManagerPlugin;
   private final Map<String, Object> params;
-  private Map<String, Map<String, Float>> currentValues = null;
   private Map<String, Float> totalValues = null;
   int scheduleDelaySeconds;
   ScheduledFuture<?> scheduledFuture;
 
-  public ResourceManagerPool(ResourceManagerPluginFactory factory, String type, Map<String, Float> limits, Map<String, Object> params) throws Exception {
+  public ResourceManagerPool(String name, String type, ResourceManagerPluginFactory factory, Map<String, Float> limits, Map<String, Object> params) throws Exception {
+    this.name = name;
     this.type = type;
     this.resourceManagerPlugin = factory.create(type, params);
     this.limits = new HashMap<>(limits);
     this.params = new HashMap<>(params);
   }
 
-  public synchronized void addResource(ManagedResource managedResource) {
-    if (resources.containsKey(managedResource.getName())) {
-      throw new IllegalArgumentException("Pool already has resource '" + managedResource.getName() + "'.");
-    }
+  public String getName() {
+    return name;
+  }
+
+  public void addResource(ManagedResource managedResource) {
     Collection<String> types = managedResource.getManagedResourceTypes();
     if (!types.contains(type)) {
-      throw new IllegalArgumentException("Pool type '" + type + "' is not supported by the resource " + managedResource.getName());
+      log.debug("Pool type '" + type + "' is not supported by the resource " + managedResource.getName());
+      return;
     }
-    resources.put(managedResource.getName(), managedResource);
+    ManagedResource existing = resources.putIfAbsent(managedResource.getName(), managedResource);
+    if (existing != null) {
+      throw new IllegalArgumentException("Resource '" + managedResource.getName() + "' already exists in pool '" + name + "' !");
+    }
   }
 
   public Map<String, ManagedResource> getResources() {
@@ -47,7 +59,7 @@ public class ResourceManagerPool implements Runnable, Closeable {
 
   public Map<String, Map<String, Float>> getCurrentValues() {
     // collect current values
-    currentValues = new HashMap<>();
+    Map<String, Map<String, Float>> currentValues = new HashMap<>();
     for (ManagedResource resource : resources.values()) {
       currentValues.put(resource.getName(), resource.getManagedValues(resourceManagerPlugin.getMonitoredTags()));
     }

@@ -2,7 +2,6 @@ package org.apache.solr.managed;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -15,25 +14,26 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  *
  */
-public class DefaultResourceManager implements ResourceManager {
+public class DefaultResourceManager extends ResourceManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String SCHEDULE_DELAY_SECONDS_PARAM = "scheduleDelaySeconds";
   public static final String MAX_NUM_POOLS_PARAM = "maxNumPools";
 
-  public static final int DEFAULT_MAX_POOLS = 20;
+  public static final int DEFAULT_MAX_POOLS = 100;
+  public static final int DEFAULT_SCHEDULE_DELAY_SECONDS = 60;
+
+  protected int maxNumPools = DEFAULT_MAX_POOLS;
+
+  protected Map<String, ResourceManagerPool> resourcePools = new ConcurrentHashMap<>();
 
 
-  private Map<String, ResourceManagerPool> resourcePools = new ConcurrentHashMap<>();
-  private PluginInfo pluginInfo;
-  private int maxNumPools = DEFAULT_MAX_POOLS;
   private TimeSource timeSource;
 
   /**
@@ -52,18 +52,7 @@ public class DefaultResourceManager implements ResourceManager {
     this.timeSource = timeSource;
   }
 
-  @Override
-  public void init(PluginInfo info) {
-    if (info != null) {
-      this.pluginInfo = info.copy();
-      if (pluginInfo.initArgs != null) {
-        SolrPluginUtils.invokeSetters(this, this.pluginInfo.initArgs);
-      }
-    }
-    if (!enabled) {
-      log.debug("Resource manager " + getClass().getSimpleName() + " disabled.");
-      return;
-    }
+  protected void doInit() throws Exception {
     scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(maxNumPools,
         new DefaultSolrThreadFactory(getClass().getSimpleName()));
     scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
@@ -81,13 +70,6 @@ public class DefaultResourceManager implements ResourceManager {
   }
 
   @Override
-  public void setEnabled(Boolean enabled) {
-    if (enabled != null) {
-      this.enabled = enabled;
-    }
-  }
-
-  @Override
   public PluginInfo getPluginInfo() {
     return pluginInfo;
   }
@@ -101,8 +83,8 @@ public class DefaultResourceManager implements ResourceManager {
     if (resourcePools.size() >= maxNumPools) {
       throw new IllegalArgumentException("Maximum number of pools (" + maxNumPools + ") reached.");
     }
-    ResourceManagerPool newPool = new ResourceManagerPool(resourceManagerPluginFactory, type, limits, params);
-    newPool.scheduleDelaySeconds = Integer.parseInt(String.valueOf(params.getOrDefault(SCHEDULE_DELAY_SECONDS_PARAM, 10)));
+    ResourceManagerPool newPool = new ResourceManagerPool(name, type, resourceManagerPluginFactory, limits, params);
+    newPool.scheduleDelaySeconds = Integer.parseInt(String.valueOf(params.getOrDefault(SCHEDULE_DELAY_SECONDS_PARAM, DEFAULT_SCHEDULE_DELAY_SECONDS)));
     resourcePools.putIfAbsent(name, newPool);
     newPool.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(newPool, 0,
         timeSource.convertDelay(TimeUnit.SECONDS, newPool.scheduleDelaySeconds, TimeUnit.MILLISECONDS),
@@ -126,17 +108,7 @@ public class DefaultResourceManager implements ResourceManager {
     if (pool == null) {
       throw new IllegalArgumentException("Pool '" + name + "' doesn't exist.");
     }
-    if (pool.scheduledFuture != null) {
-      pool.scheduledFuture.cancel(true);
-    }
-  }
-
-  @Override
-  public void addResources(String name, Collection<ManagedResource> managedResource) {
-    ensureNotClosed();
-    for (ManagedResource resource : managedResource) {
-      addResource(name, resource);
-    }
+    IOUtils.closeQuietly(pool);
   }
 
   @Override
@@ -166,8 +138,4 @@ public class DefaultResourceManager implements ResourceManager {
     log.debug("Closed.");
   }
 
-  @Override
-  public boolean isClosed() {
-    return isClosed;
-  }
 }
