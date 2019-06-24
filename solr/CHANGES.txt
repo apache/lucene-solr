@@ -139,6 +139,9 @@ Bug Fixes
 * SOLR-12127: Updates containing 'set' operation with value null or empty list should be considered as Atomic Update
   (Oliver Kuldmäe, Munendra S N, Ishan Chattopadhyaya)
 
+* SOLR-13187: Fix NPE when invalid query parser is specified and return 400 error code.
+  (Cesar Rodriguez, Marek, Charles Sanders, Munendra S N, Mikhail Khludnev)
+
 Other Changes
 ----------------------
 
