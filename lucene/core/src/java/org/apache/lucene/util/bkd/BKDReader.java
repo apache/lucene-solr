@@ -561,7 +561,7 @@ public final class BKDReader extends PointValues implements Accountable {
       for (int j = i; j < i + length; j++) {
         visitor.visit(docIDs[j], scratchPackedValue);
       }
-      i+= length;
+      i += length;
     }
     if (i != count) {
       throw new CorruptIndexException("Sub blocks do not add up to the expected count: " + count + " != " + i, in);
