@@ -80,7 +80,7 @@ public class BKDWriter implements Closeable {
   //public static final int VERSION_CURRENT = VERSION_START;
   public static final int VERSION_LEAF_STORES_BOUNDS = 5;
   public static final int VERSION_SELECTIVE_INDEXING = 6;
-  public static final int VERSION_LOW_CARDINALITY_LEAVES= 7;
+  public static final int VERSION_LOW_CARDINALITY_LEAVES = 7;
   public static final int VERSION_CURRENT = VERSION_LOW_CARDINALITY_LEAVES;
 
   /** How many bytes each docs takes in the fixed-width offline format */
@@ -1042,16 +1042,16 @@ public class BKDWriter implements Closeable {
       out.writeByte((byte) -1);
     } else {
       assert commonPrefixLengths[sortedDim] < bytesPerDim;
-      //estimate if storing the values with cardinality is cheaper than storing all values.
+      // estimate if storing the values with cardinality is cheaper than storing all values.
       int compressedByteOffset = sortedDim * bytesPerDim + commonPrefixLengths[sortedDim];
       int highCardinalityCost;
       int lowCardinalityCost;
       if (count == leafCardinality) {
-        //all values in this block are different
+        // all values in this block are different
         highCardinalityCost = 0;
         lowCardinalityCost = 1;
       } else {
-        //compute cost of runLen compression
+        // compute cost of runLen compression
         int numRunLens = 0;
         for (int i = 0; i < count; ) {
           // do run-length compression on the byte at compressedByteOffset
@@ -1060,9 +1060,9 @@ public class BKDWriter implements Closeable {
           numRunLens++;
           i += runLen;
         }
-        //Add cost of runLen compression
+        // Add cost of runLen compression
         highCardinalityCost = count * (packedBytesLength - prefixLenSum - 1) + 2 * numRunLens;
-        //+1 is the byte needed for storing the cardinality
+        // +1 is the byte needed for storing the cardinality
         lowCardinalityCost = leafCardinality * (packedBytesLength - prefixLenSum + 1);
       }
       if (lowCardinalityCost <= highCardinalityCost) {

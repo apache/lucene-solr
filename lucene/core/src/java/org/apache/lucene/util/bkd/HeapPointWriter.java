@@ -99,7 +99,7 @@ public final class HeapPointWriter implements PointWriter {
     assert packedBytesLength == numDataDims * bytesPerDim;
     int leafCardinality = 1;
     for (int i = from + 1; i < to; i++) {
-      for (int dim =0; dim < numDataDims; dim++) {
+      for (int dim = 0; dim < numDataDims; dim++) {
         final int start = dim * bytesPerDim + commonPrefixLengths[dim];
         final int end = dim * bytesPerDim + bytesPerDim;
         if (Arrays.mismatch(block, i * packedBytesLength + start, i * packedBytesLength + end,
