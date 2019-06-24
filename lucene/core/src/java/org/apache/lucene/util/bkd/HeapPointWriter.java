@@ -95,12 +95,16 @@ public final class HeapPointWriter implements PointWriter {
     System.arraycopy(scratch, 0, block, indexJ, packedBytesLength);
   }
 
-  public int computeCardinality(int from, int to) {
+  public int computeCardinality(int from, int to, int numDataDims, int bytesPerDim, int[] commonPrefixLengths) {
+    assert packedBytesLength == numDataDims * bytesPerDim;
     int leafCardinality = 1;
     for (int i = from + 1; i < to; i++) {
-      if (Arrays.mismatch(block, i * packedBytesLength, (i + 1) * packedBytesLength,
-          block, (i -1) * packedBytesLength, i * packedBytesLength) != -1) {
-        leafCardinality++;
+      for (int dim =0; dim < numDataDims; dim++) {
+        if (Arrays.mismatch(block, i * packedBytesLength + dim * bytesPerDim + commonPrefixLengths[dim], i * packedBytesLength + dim * bytesPerDim + bytesPerDim,
+            block, (i - 1) * packedBytesLength  + dim * bytesPerDim + commonPrefixLengths[dim], (i -1) * packedBytesLength + dim * bytesPerDim + bytesPerDim) != -1) {
+          leafCardinality++;
+          break;
+        }
       }
     }
     return leafCardinality;

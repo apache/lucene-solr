@@ -1084,15 +1084,19 @@ public class BKDWriter implements Closeable {
     int cardinality = 1;
     for (int i = 1; i < count; i++) {
       value = packedValues.apply(i);
-      if (Arrays.mismatch(value.bytes, value.offset, value.offset + packedBytesLength, scratch1, 0, packedBytesLength) != -1) {
-        out.writeVInt(cardinality);
-        for (int j = 0; j < numDataDims; j++) {
-          out.writeBytes(scratch1, j * bytesPerDim + commonPrefixLengths[j], bytesPerDim - commonPrefixLengths[j]);
+      for(int dim =0; dim < numDataDims; dim++) {
+        if (Arrays.mismatch(value.bytes, value.offset + dim * bytesPerDim + commonPrefixLengths[dim], value.offset + dim * bytesPerDim + bytesPerDim,
+            scratch1, dim * bytesPerDim + commonPrefixLengths[dim], + dim * bytesPerDim + bytesPerDim) != -1) {
+          out.writeVInt(cardinality);
+          for (int j = 0; j < numDataDims; j++) {
+            out.writeBytes(scratch1, j * bytesPerDim + commonPrefixLengths[j], bytesPerDim - commonPrefixLengths[j]);
+          }
+          System.arraycopy(value.bytes, value.offset, scratch1, 0, packedBytesLength);
+          cardinality = 1;
+          break;
+        } else if (dim == numDataDims - 1){
+          cardinality++;
         }
-        System.arraycopy(value.bytes, value.offset, scratch1, 0, packedBytesLength);
-        cardinality = 1;
-      } else {
-        cardinality++;
       }
     }
     out.writeVInt(cardinality);
@@ -1365,12 +1369,15 @@ public class BKDWriter implements Closeable {
       int leafCardinality = 1;
       for (int i = from + 1; i < to; ++i) {
         reader.getValue(i, collector);
-        if (Arrays.mismatch(collector.bytes, collector.offset, collector.offset + packedBytesLength,
-            comparator.bytes, comparator.offset, comparator.offset + packedBytesLength) != -1) {
-          leafCardinality++;
-          BytesRef scratch = collector;
-          collector = comparator;
-          comparator = scratch;
+        for (int dim =0; dim < numDataDims; dim++) {
+          if (Arrays.mismatch(collector.bytes, collector.offset + dim * bytesPerDim + commonPrefixLengths[dim], collector.offset +  dim * bytesPerDim + bytesPerDim,
+              comparator.bytes, comparator.offset + dim * bytesPerDim + commonPrefixLengths[dim], comparator.offset + +  dim * bytesPerDim + bytesPerDim) != -1) {
+            leafCardinality++;
+            BytesRef scratch = collector;
+            collector = comparator;
+            comparator = scratch;
+            break;
+          }
         }
       }
       // Save the block file pointer:
@@ -1505,7 +1512,7 @@ public class BKDWriter implements Closeable {
       // sort the chosen dimension
       radixSelector.heapRadixSort(heapSource, from, to, sortedDim, commonPrefixLengths[sortedDim]);
       // compute cardinality
-      int leafCardinality = heapSource.computeCardinality(from ,to);
+      int leafCardinality = heapSource.computeCardinality(from ,to, numDataDims, bytesPerDim, commonPrefixLengths);
 
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
