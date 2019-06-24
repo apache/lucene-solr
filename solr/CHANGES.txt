@@ -136,6 +136,9 @@ Bug Fixes
 
 * SOLR-13545: ContentStreamUpdateRequest refused to close file (Colvin Cowie, Mikhail Khludnev)
 
+* SOLR-12127: Updates containing 'set' operation with value null or empty list should be considered as Atomic Update
+  (Oliver Kuldmäe, Munendra S N, Ishan Chattopadhyaya)
+
 Other Changes
 ----------------------
 
