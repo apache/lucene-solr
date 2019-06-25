@@ -16,51 +16,126 @@
  */
 package org.apache.solr.update.processor;
 
-import java.io.IOException;
-import org.apache.solr.cloud.AbstractZkTestCase;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.store.blob.metadata.PushPullData;
+import org.apache.solr.store.blob.process.CoreUpdateTracker;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.*;
-import org.apache.solr.store.blob.process.CoreUpdateTracker;
-import org.apache.solr.store.blob.metadata.PushPullData;
-import org.apache.solr.update.CommitUpdateCommand;
 
-public class DistributedZkUpdateProcessorTest extends AbstractZkTestCase {
+/**
+ * Test for the {@link DistributedZkUpdateProcessor}.
+ */
+public class DistributedZkUpdateProcessorTest extends SolrCloudTestCase {  
+  @BeforeClass
+  public static void setupCluster() throws Exception {    
+    configureCluster(1)
+      .addConfig("conf", configset("cloud-minimal"))
+      .configure();
+  }
+  
   /**
-   * Tests commit from a NRT replica doesn't trigger sharedStoreTracking.
-   * 
-   * @throws IOException
+   * Create shared collection, create SHARED replica, index data, and confirm that
+   * CoreUpdateTracker is accessed on commit.
    */
   @Test
-  public void testNRTReplicaUpdatesZk() throws IOException {
+  public void testSharedReplicaUpdatesZk() throws Exception {
+    // Set collection name and create client
+    String collectionName = "BlobBasedCollectionName1";
+    CloudSolrClient cloudClient = cluster.getSolrClient();
 
-    SolrCore core = h.getCore();
-    boolean isZkAware = core.getCoreContainer().isZooKeeperAware();
-    assertTrue(isZkAware);
-    Replica.Type replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();
-    assertEquals(replicaType, Replica.Type.NRT);
+    // Create collection
+    CollectionAdminRequest.Create create = CollectionAdminRequest
+        .createCollectionWithImplicitRouter(collectionName, "conf", "shard1", 0)
+          .setSharedIndex(true)
+          .setSharedReplicas(1);
+    create.process(cloudClient);
+
+    // Verify that collection was created
+    waitForState("Timed-out wait for collection to be created", collectionName, clusterShape(1, 1));
+    assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
+    DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName);
     
-    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    // Get core from collection
+    Replica newReplica = collection.getReplicas().get(0);
+    SolrCore core = getCoreContainer(newReplica.getNodeName()).getCore(newReplica.getCoreName());
+    
+    // Verify that replica type corresponds with sharedIndex value
+    Replica.Type replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();
+    assertEquals(replicaType, Replica.Type.SHARED);
+        
+    // Mock out DistributedZkUpdateProcessor
     SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
     CoreUpdateTracker tracker = Mockito.mock(CoreUpdateTracker.class);
     DistributedZkUpdateProcessor processor = new DistributedZkUpdateProcessor(req, rsp, null, tracker);
     
+    // Make a commit and close processor and core
     processor.processCommit(new CommitUpdateCommand(req, false));
     processor.finish();
-    verify(tracker, never()).updatingCore(any(PushPullData.class));
-
+    processor.close();
+    core.close();
+    
+    // Verify that core tracker was updated
+    verify(tracker).updatingCore(any(PushPullData.class));
   }
-
+  
   /**
-   * TODO: add test yo check SHARED replica triggers sharedStoreTracking.
-   * 
-   * @throws IOException
+   * Create collection, create NRT replica, index data, and confirm that CoreUpdateTracker
+   * is NOT accessed on commit.
    */
+  @Test
+  public void testNRTReplicaUpdatesZk() throws Exception {
+    // Set collection name and create client
+    String collectionName = "BlobBasedCollectionName2";
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    
+    // Create collection
+    CollectionAdminRequest.Create create = CollectionAdminRequest
+        .createCollectionWithImplicitRouter(collectionName, "conf", "shard2", 0)
+          .setSharedIndex(false)
+          .setNrtReplicas(1);
+    create.process(cloudClient);
+
+    // Verify that collection was created
+    waitForState("Timed-out wait for collection to be created", collectionName, clusterShape(1, 1));
+    assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
+    DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName);
+
+    // Get core from collection
+    Replica newReplica = collection.getReplicas().get(0);
+    SolrCore core = getCoreContainer(newReplica.getNodeName()).getCore(newReplica.getCoreName());
+    
+    // Verify that replica type corresponds with sharedIndex value
+    Replica.Type replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();
+    assertEquals(replicaType, Replica.Type.NRT);
+        
+    // Mock out DistributedZkUpdateProcessor
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    CoreUpdateTracker tracker = Mockito.mock(CoreUpdateTracker.class);
+    DistributedZkUpdateProcessor processor = new DistributedZkUpdateProcessor(req, rsp, null, tracker);
+    
+    // Make a commit and close processor and core
+    processor.processCommit(new CommitUpdateCommand(req, false));
+    processor.finish();
+    processor.close();
+    core.close();
+    
+    // Verify that core tracker was not updated
+    verify(tracker, never()).updatingCore(any(PushPullData.class));
+  }
+  
 }
