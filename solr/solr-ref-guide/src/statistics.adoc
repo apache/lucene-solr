@@ -289,7 +289,7 @@ When this expression is sent to the `/stream` handler it responds with:
 === Quantile Plots
 
 A quantile plot or QQ Plot plots the percentiles from two distributions on the
-the same scatter plot. 
+the same scatter plot.
 
 image::images/math-expressions/quantiles1.png[]
 

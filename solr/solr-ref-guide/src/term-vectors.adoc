@@ -20,6 +20,12 @@ Term frequency-inverse document frequency (TF-IDF) term vectors are often used t
 represent text documents when performing text mining and machine learning operations. The math expressions
 library can be used to perform text analysis and create TF-IDF term vectors.
 
+== Significant Terms
+
+
+
+
+
 == Text Analysis
 
 The `analyze` function applies a Solr analyzer to a text field and returns the tokens
@@ -56,6 +62,11 @@ When this expression is sent to the `/stream` handler it responds with:
   }
 }
 ----
+
+=== Phrase Aggregation
+
+
+
 
 === Annotating Documents
 

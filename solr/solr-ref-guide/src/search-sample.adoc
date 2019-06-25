@@ -76,3 +76,5 @@ select from the a very specific slice of the index. In this example it's the
 === facet2D
 
 === timeseries
+
+=== significantTerms
