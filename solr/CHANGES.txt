@@ -144,6 +144,8 @@ New Features
 
 * SOLR-10291: Add matches Stream Evaluator to support regex matching (Joel Bernstein)
 
+* SOLR-13367: Highlighting: Range queries will now highlight in hl.method=unified mode. (David Smiley)
+
 Bug Fixes
 ----------------------
 
