@@ -51,9 +51,13 @@ image::images/math-expressions/trend.png[]
 
 image::images/math-expressions/multitime1.png[]
 
-=== Mapping
+=== Geospatial Search and Mapping
 
 image::images/math-expressions/map.png[]
+
+=== Cartograms
+
+image::images/math-expressions/cartogram.png[]
 
 === Significant Terms
 
