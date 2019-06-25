@@ -213,7 +213,7 @@ image::images/math-expressions/freqTable.png[]
 
 The frequency table can then be plotted by switching to a bar chart and selecting
 the *value* column for the *x-axis*. Any of the other columns can be visualized
-on the the *y-axis*. The example below visualizes the *cumPct* column which is the
+on the *y-axis*. The example below visualizes the *cumPct* column which is the
 cumulative percent at each value.
 
 image::images/math-expressions/cumPct.png[]
@@ -285,6 +285,14 @@ When this expression is sent to the `/stream` handler it responds with:
   }
 }
 ----
+
+=== Quantile Plots
+
+A quantile plot or QQ Plot plots the percentiles from two distributions on the
+the same scatter plot. 
+
+image::images/math-expressions/quantiles1.png[]
+
 
 == Covariance and Correlation
 
