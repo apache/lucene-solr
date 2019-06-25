@@ -185,6 +185,9 @@ Bug Fixes
 * SOLR-13187: Fix NPE when invalid query parser is specified and return 400 error code.
   (Cesar Rodriguez, Marek, Charles Sanders, Munendra S N, Mikhail Khludnev)
 
+* SOLR-12979: Improve error message and change error code to 400 when collapse field is non-docValued and
+  non-uninvertible (hossman, Munendra S N)
+
 Other Changes
 ----------------------
 
