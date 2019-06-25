@@ -27,7 +27,6 @@ image::images/math-expressions/number.png[]
 
 image::images/math-expressions/table.png[]
 
-
 === Probability Distributions
 
 image::images/math-expressions/dist.png[]
@@ -35,6 +34,10 @@ image::images/math-expressions/dist.png[]
 === Monte Carlo Simulations
 
 image::images/math-expressions/monte-carlo.png[]
+
+=== Quantile Plots
+
+image::images/math-expressions/quantiles.png[]
 
 === Time Series
 
