@@ -156,13 +156,16 @@ We recommend that you try this highlighter even though it isn't the default (yet
 +
 The UH highlights a query very _accurately_ and thus is true to what the underlying Lucene query actually matches.
 Other highlighters highlight terms more liberally (over-highlight).
+For esoteric/custom queries, this highlighter has a greater likelihood of supporting it than the others.
++
 A strong benefit to this highlighter is that you can opt to configure Solr to put more information in the underlying index to speed up highlighting of large documents; multiple configurations are supported, even on a per-field basis.
 There is little or no such flexibility of offset sources for the other highlighters.
 More on this below.
 +
-There are some reasons not to choose this highlighter: The `surround` query parser doesn't yet work here -- SOLR-12895.
+There are some reasons not to choose this highlighter:
 Passage scoring does not consider boosts in the query.
-Some people want more/better passage breaking flexibility.
+Some users want more/better passage breaking flexibility.
+The "alternate" fallback options are more primitive.
 
 <<The Original Highlighter,Original Highlighter>>:: (`hl.method=original`, the default)
 +
@@ -181,8 +184,8 @@ The FastVector Highlighter _requires_ full term vector options (`termVectors`, `
 This highlighter notably supports multi-colored highlighting such that different query words can be denoted in the fragment with different marking, usually expressed as an HTML tag with a unique color.
 +
 This highlighter's query-representation is less advanced than the Original or Unified Highlighters: for example it will not work well with the `surround` parser, and there are multiple reported bugs pertaining to queries with stop-words.
-+
-Note that both the FastVector and Original Highlighters can be used in conjunction in a search request to highlight some fields with one and some the other. In contrast, the other highlighters can only be chosen exclusively.
+
+Both the FastVector and Original Highlighters can be used in conjunction in a search request to highlight some fields with one and some the other. In contrast, the Unified Highlighter can only be chosen exclusively.
 
 
 The Unified Highlighter is exclusively configured via search parameters. In contrast, some settings for the Original and FastVector Highlighters are set in `solrconfig.xml`. There's a robust example of the latter in the "```techproducts```" configset.
