@@ -152,21 +152,19 @@ The cumulative probability can be plotted by switching the *y-axis* to the *cumP
 image::images/math-expressions/cumProb.png[]
 
 
-
 === Frequency Tables
 
 The `freqTable` function returns a frequency distribution for a discrete data set.
 The `freqTable` function doesn't create bins like the histogram. Instead it counts
 the occurrence of each discrete data value and returns a list of tuples with the
-frequency statistics for each value. Fields from a frequency table can be vectorized using
-using the `col` function in the same manner as a histogram.
+frequency statistics for each value.
 
 Below is a simple example of a frequency table built from a random sample of
 a discrete variable.
 
 [source,text]
 ----
-let(a=random(collection1, q="*:*", rows="15000", fl="day_i"),
+let(a=random(testapp, q="*:*", rows="15000", fl="day_i"),
      b=col(a, day_i),
      c=freqTable(b))
 ----
@@ -175,62 +173,51 @@ When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
-  "result-set": {
-    "docs": [
-      {
-        "c": [
-          {
-            "pct": 0.0318,
-            "count": 477,
-            "cumFreq": 477,
-            "cumPct": 0.0318,
-            "value": 0
-          },
-          {
-            "pct": 0.033133333333333334,
-            "count": 497,
-            "cumFreq": 974,
-            "cumPct": 0.06493333333333333,
-            "value": 1
-          },
-          {
-            "pct": 0.03426666666666667,
-            "count": 514,
-            "cumFreq": 1488,
-            "cumPct": 0.0992,
-            "value": 2
-          },
-          {
-            "pct": 0.0346,
-            "count": 519,
-            "cumFreq": 2007,
-            "cumPct": 0.1338,
-            "value": 3
-          },
-          {
-            "pct": 0.03133333333333333,
-            "count": 470,
-            "cumFreq": 2477,
-            "cumPct": 0.16513333333333333,
-            "value": 4
-          },
-          {
-            "pct": 0.03333333333333333,
-            "count": 500,
-            "cumFreq": 2977,
-            "cumPct": 0.19846666666666668,
-            "value": 5
-          }
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 281
-      }
-    ]
-  }
-}
+ {
+   "result-set": {
+     "docs": [
+       {
+         "pct": 0.0362,
+         "count": 543,
+         "cumFreq": 543,
+         "cumPct": 0.0362,
+         "value": 0
+       },
+       {
+         "pct": 0.03186666666666667,
+         "count": 478,
+         "cumFreq": 1021,
+         "cumPct": 0.06806666666666666,
+         "value": 1
+       },
+       {
+         "pct": 0.0338,
+         "count": 507,
+         "cumFreq": 1528,
+         "cumPct": 0.10186666666666666,
+         "value": 2
+       },
+       {
+         "pct": 0.03546666666666667,
+         "count": 532,
+         "cumFreq": 2060,
+         "cumPct": 0.13733333333333334,
+         "value": 3
+       },
+       ...
 ----
+
+With Zeppelin-Solr the frequency table can be first visualized in a table:
+
+image::images/math-expressions/freqTable.png[]
+
+The frequency table can then be plotted by switching to a bar chart and selecting
+the *value* column for the *x-axis*. Any of the other columns can be visualized
+on the the *y-axis*. The example below visualizes the *cumPct* column which is the
+cumulative percent at each value.
+
+image::images/math-expressions/cumPct.png[]
+
 
 == Percentiles
 
