@@ -69,6 +69,11 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
+This describe function can be visualized in a table with Zeppelin-Solr:
+
+image::images/math-expressions/describe.png[]
+
+
 == Histograms and Frequency Tables
 
 Histograms and frequency tables are are tools for understanding the distribution
@@ -80,14 +85,14 @@ The `hist` function creates a histogram designed for usage with continuous data.
 === histograms
 
 Below is an example that selects a random sample, creates a vector from the
-result set and uses the `hist` function to return a histogram with 5 bins.
+result set and uses the `hist` function to return a histogram with 15 bins.
 The `hist` function returns a list of tuples with summary statistics for each bin.
 
 [source,text]
 ----
-let(a=random(collection1, q="*:*", rows="15000", fl="price_f"),
-    b=col(a, price_f),
-    c=hist(b, 5))
+let(a=random(testapp, q="*:*", rows="15000", fl="response_d"),
+    b=col(a, response_d),
+    c=hist(b, 15))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -98,117 +103,55 @@ When this expression is sent to the `/stream` handler it responds with:
   "result-set": {
     "docs": [
       {
-        "c": [
-          {
-            "prob": 0.2057939717603699,
-            "min": 0.000010371208,
-            "max": 0.19996578,
-            "mean": 0.10010319358402578,
-            "var": 0.003366805016271609,
-            "cumProb": 0.10293732468049072,
-            "sum": 309.0185585938884,
-            "stdev": 0.058024176136086666,
-            "N": 3087
-          },
-          {
-            "prob": 0.19381868629885585,
-            "min": 0.20007741,
-            "max": 0.3999073,
-            "mean": 0.2993590803885827,
-            "var": 0.003401644034068929,
-            "cumProb": 0.3025295802728267,
-            "sum": 870.5362057700005,
-            "stdev": 0.0583236147205309,
-            "N": 2908
-          },
-          {
-            "prob": 0.20565789836690007,
-            "min": 0.39995712,
-            "max": 0.5999038,
-            "mean": 0.4993620963792545,
-            "var": 0.0033158364923609046,
-            "cumProb": 0.5023006239697967,
-            "sum": 1540.5320673300018,
-            "stdev": 0.05758330046429177,
-            "N": 3085
-          },
-          {
-            "prob": 0.19437108496008693,
-            "min": 0.6000449,
-            "max": 0.79973197,
-            "mean": 0.7001752711861512,
-            "var": 0.0033895105082360185,
-            "cumProb": 0.7026537198687285,
-            "sum": 2042.4112660500066,
-            "stdev": 0.058219502816805456,
-            "N": 2917
-          },
-          {
-            "prob": 0.20019582213899467,
-            "min": 0.7999126,
-            "max": 0.99987316,
-            "mean": 0.8985428275824184,
-            "var": 0.003312360017780078,
-            "cumProb": 0.899450457219298,
-            "sum": 2698.3241112299997,
-            "stdev": 0.05755310606544253,
-            "N": 3003
-          }
-        ]
+        "prob": 0.00021598266688541547,
+        "min": 675.8131195271407,
+        "max": 690.4491626920295,
+        "mean": 683.1150404530058,
+        "var": 62.68733114037831,
+        "cumProb": 0.00010781401860771812,
+        "sum": 2732.460161812023,
+        "stdev": 7.917533147412666,
+        "N": 4
       },
       {
-        "EOF": true,
-        "RESPONSE_TIME": 322
-      }
-    ]
-  }
-}
-----
-
-The `col` function can be used to *vectorize* a column of data from the list of tuples
-returned by the `hist` function.
-
-In the example below, the *N* field,
-which is the number of observations in the each bin, is returned as a vector.
-
-[source,text]
-----
-let(a=random(collection1, q="*:*", rows="15000", fl="price_f"),
-     b=col(a, price_f),
-     c=hist(b, 11),
-     d=col(c, N))
-----
-
-When this expression is sent to the `/stream` handler it responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "d": [
-          1387,
-          1396,
-          1391,
-          1357,
-          1384,
-          1360,
-          1367,
-          1375,
-          1307,
-          1310,
-          1366
-        ]
+        "prob": 0.0008119830346328834,
+        "min": 703.2132289932538,
+        "max": 721.1545076964856,
+        "mean": 712.8045685730215,
+        "var": 41.16456697234485,
+        "cumProb": 0.0007397051651814922,
+        "sum": 9266.459391449276,
+        "stdev": 6.415961889876283,
+        "N": 13
       },
       {
-        "EOF": true,
-        "RESPONSE_TIME": 307
-      }
-    ]
-  }
-}
+        "prob": 0.005621625404424438,
+        "min": 722.3966535859041,
+        "max": 743.8768517321993,
+        "mean": 735.0570449093976,
+        "var": 34.32748804550742,
+        "cumProb": 0.004137705733961876,
+        "sum": 62479.84881729879,
+        "stdev": 5.8589664656411395,
+        "N": 85
+      },
+      ...
 ----
+
+With Zeppelin-Solr the histogram can be first visualized in a table:
+
+image::images/math-expressions/histtable.png[]
+
+Then the histogram can be visualized with a bar chart by plotting the *mean* of
+the bins on the *x-axis* and the *prob* (probability) on the *y-axis*:
+
+image::images/math-expressions/hist.png[]
+
+The cumulative probability can be plotted by switching the *y-axis* to the *cumProb* column:
+
+image::images/math-expressions/cumProb.png[]
+
+
 
 === Frequency Tables
 
