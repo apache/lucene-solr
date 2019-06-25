@@ -228,6 +228,8 @@ Bug Fixes
   weren't using nested docs.  In-place updates were not affected (worked).
   Reminder: if you don't need nested docs then remove both _root_ and _nest_path_ !  (David Smiley)
 
+* SOLR-13566: REINDEXCOLLECTION does not work with (basic) authentication. (Colvin Cowie, ab)
+
 ==================  8.1.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
