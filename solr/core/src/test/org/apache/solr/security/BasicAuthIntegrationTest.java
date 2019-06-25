@@ -296,15 +296,22 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       assertAuthMetricsMinimums(23, 11, 9, 1, 2, 0);
       assertPkiAuthMetricsMinimums(14, 14, 0, 0, 0, 0);
 
+      // Reindex collection depends on streaming request that needs to authenticate against new collection
+      CollectionAdminRequest.ReindexCollection reindexReq = CollectionAdminRequest.reindexCollection(COLLECTION);
+      reindexReq.setBasicAuthCredentials("harry", "HarryIsUberCool");
+      cluster.getSolrClient().request(reindexReq, COLLECTION);
+      assertAuthMetricsMinimums(24, 12, 9, 1, 2, 0);
+      assertPkiAuthMetricsMinimums(15, 15, 0, 0, 0, 0);
+
       // Validate forwardCredentials
       assertEquals(1, executeQuery(params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
-      assertAuthMetricsMinimums(24, 12, 9, 1, 2, 0);
-      assertPkiAuthMetricsMinimums(18, 18, 0, 0, 0, 0);
+      assertAuthMetricsMinimums(25, 13, 9, 1, 2, 0);
+      assertPkiAuthMetricsMinimums(19, 19, 0, 0, 0, 0);
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { forwardCredentials: true}}", "harry", "HarryIsUberCool");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/forwardCredentials", "true", 20, "harry", "HarryIsUberCool");
       assertEquals(1, executeQuery(params("q", "id:5"), "harry", "HarryIsUberCool").getResults().getNumFound());
-      assertAuthMetricsMinimums(31, 19, 9, 1, 2, 0);
-      assertPkiAuthMetricsMinimums(18, 18, 0, 0, 0, 0);
+      assertAuthMetricsMinimums(32, 20, 9, 1, 2, 0);
+      assertPkiAuthMetricsMinimums(19, 19, 0, 0, 0, 0);
       
       executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", "harry", "HarryIsUberCool");
     } finally {
