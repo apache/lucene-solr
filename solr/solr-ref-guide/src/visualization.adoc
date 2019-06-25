@@ -63,7 +63,7 @@ image::images/math-expressions/sterms.png[]
 
 image::images/math-expressions/text-analytics.png[]
 
-=== XY Scatter Plots
+=== Random Sampling & Scatter Plots
 
 image::images/math-expressions/xyscatter.png[]
 
