@@ -67,10 +67,6 @@ image::images/math-expressions/text-analytics.png[]
 
 image::images/math-expressions/xyscatter.png[]
 
-=== XY Vector Plots
-
-image::images/math-expressions/vector.png[]
-
 === SQL Aggregations
 
 image::images/math-expressions/sqlagg.png[]
