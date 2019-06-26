@@ -171,5 +171,5 @@ REM set SOLR_OPTS="%SOLR_OPTS% -Dsolr.shardsWhitelist=http://localhost:8983,http
 
 REM For a visual indication in the Admin UI of what type of environment this cluster is, configure
 REM a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
-REM label or color, e.g. -Dsolr.environment=test;label=Functional_test;color=brown
+REM label or color, e.g. -Dsolr.environment=test,label=Functional+test,color=brown
 REM SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"

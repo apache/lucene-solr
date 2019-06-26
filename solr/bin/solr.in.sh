@@ -199,5 +199,5 @@ ENABLE_REMOTE_JMX_OPTS="true"
 
 # For a visual indication in the Admin UI of what type of environment this cluster is, configure
 # a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
-# label or color, e.g. -Dsolr.environment=test;label=Functional_test;color=brown
+# label or color, e.g. -Dsolr.environment=test,label=Functional+test,color=brown
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"

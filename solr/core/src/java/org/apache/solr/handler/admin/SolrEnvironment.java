@@ -33,7 +33,7 @@ public class SolrEnvironment {
   private String code = "unknown";
   private String label;
   private String color;
-  private static Pattern pattern = Pattern.compile("^(prod|stage|test|dev)(;label=([\\w\\d+ _-]+))?(;color=([#\\w\\d]+))?");
+  private static Pattern pattern = Pattern.compile("^(prod|stage|test|dev)(,label=([\\w\\d+ _-]+))?(,color=([#\\w\\d]+))?");
 
   public String getCode() {
     return code;
