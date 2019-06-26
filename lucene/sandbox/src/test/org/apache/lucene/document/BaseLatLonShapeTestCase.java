@@ -271,10 +271,10 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
 
       @Override
       int[] encodeDecodeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-        byte[] encoded = new byte[7 * LatLonShape.BYTES];
-        LatLonShape.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), encodeLatitude(by), encodeLongitude(bx), encodeLatitude(cy), encodeLongitude(cx));
+        byte[] encoded = new byte[7 * ShapeField.BYTES];
+        ShapeField.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), encodeLatitude(by), encodeLongitude(bx), encodeLatitude(cy), encodeLongitude(cx));
         int[] decoded = new int[6];
-        LatLonShape.decodeTriangle(encoded, decoded);
+        ShapeField.decodeTriangle(encoded, decoded);
         return decoded;
       }
     };

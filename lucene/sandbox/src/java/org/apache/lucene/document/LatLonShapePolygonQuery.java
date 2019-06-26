@@ -79,7 +79,7 @@ final class LatLonShapePolygonQuery extends ShapeQuery {
 
   @Override
   protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
-    LatLonShape.decodeTriangle(t, scratchTriangle);
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
     double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle[0]);
     double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle[1]);

@@ -48,7 +48,7 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
   @Override
   protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
     // decode indexed triangle
-    XYShape.decodeTriangle(t, scratchTriangle);
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
     int aY = scratchTriangle[0];
     int aX = scratchTriangle[1];

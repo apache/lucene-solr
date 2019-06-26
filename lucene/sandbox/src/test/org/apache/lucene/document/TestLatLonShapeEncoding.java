@@ -45,10 +45,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int clatEnc = GeoEncodingUtils.encodeLatitude(clat);
     int clonEnc = GeoEncodingUtils.encodeLongitude(clon);
     verifyEncodingPermutations(alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == blatEnc);
@@ -72,10 +72,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int clatEnc = GeoEncodingUtils.encodeLatitude(clat);
     int clonEnc = GeoEncodingUtils.encodeLongitude(clon);
     verifyEncodingPermutations(alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == blatEnc);
@@ -99,10 +99,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int clatEnc = GeoEncodingUtils.encodeLatitude(blat);
     int clonEnc = GeoEncodingUtils.encodeLongitude(blon);
     verifyEncodingPermutations(alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == blatEnc);
@@ -126,10 +126,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int clatEnc = GeoEncodingUtils.encodeLatitude(blat);
     int clonEnc = GeoEncodingUtils.encodeLongitude(blon);
     verifyEncodingPermutations(alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == blatEnc);
@@ -153,10 +153,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int clatEnc = GeoEncodingUtils.encodeLatitude(clat);
     int clonEnc = GeoEncodingUtils.encodeLongitude(clon);
     verifyEncodingPermutations(alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == blatEnc);
@@ -180,10 +180,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int clatEnc = GeoEncodingUtils.encodeLatitude(clat);
     int clonEnc = GeoEncodingUtils.encodeLongitude(clon);
     verifyEncodingPermutations(alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == blatEnc);
@@ -207,10 +207,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int clatEnc = GeoEncodingUtils.encodeLatitude(clat);
     int clonEnc = GeoEncodingUtils.encodeLongitude(clon);
     verifyEncodingPermutations(alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == blatEnc);
@@ -234,10 +234,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int clatEnc = GeoEncodingUtils.encodeLatitude(clat);
     int clonEnc = GeoEncodingUtils.encodeLongitude(clon);
     verifyEncodingPermutations(alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == blatEnc);
@@ -261,10 +261,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int clatEnc = GeoEncodingUtils.encodeLatitude(clat);
     int clonEnc = GeoEncodingUtils.encodeLongitude(clon);
     verifyEncodingPermutations(alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == blatEnc);
@@ -287,10 +287,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int blonEnc = GeoEncodingUtils.encodeLongitude(blon);
     int clatEnc = GeoEncodingUtils.encodeLatitude(clat);
     int clonEnc = GeoEncodingUtils.encodeLongitude(clon);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == blatEnc);
@@ -303,35 +303,35 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
   public void verifyEncodingPermutations(int alatEnc, int alonEnc, int blatEnc, int blonEnc, int clatEnc, int clonEnc) {
     //this is only valid when points are not co-planar
     assertTrue(GeoUtils.orient(alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc) != 0);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
+    byte[] b = new byte[7 * ShapeField.BYTES];
     //[a,b,c]
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
     int[] encodedABC = new int[6];
-    LatLonShape.decodeTriangle(b, encodedABC);
+    ShapeField.decodeTriangle(b, encodedABC);
     //[c,a,b]
-    LatLonShape.encodeTriangle(b, clatEnc, clonEnc, alatEnc, alonEnc, blatEnc, blonEnc);
+    ShapeField.encodeTriangle(b, clatEnc, clonEnc, alatEnc, alonEnc, blatEnc, blonEnc);
     int[] encodedCAB = new int[6];
-    LatLonShape.decodeTriangle(b, encodedCAB);
+    ShapeField.decodeTriangle(b, encodedCAB);
     assertTrue(Arrays.equals(encodedABC, encodedCAB));
     //[b,c,a]
-    LatLonShape.encodeTriangle(b, blatEnc, blonEnc, clatEnc, clonEnc, alatEnc, alonEnc);
+    ShapeField.encodeTriangle(b, blatEnc, blonEnc, clatEnc, clonEnc, alatEnc, alonEnc);
     int[] encodedBCA = new int[6];
-    LatLonShape.decodeTriangle(b, encodedBCA);
+    ShapeField.decodeTriangle(b, encodedBCA);
     assertTrue(Arrays.equals(encodedABC, encodedBCA));
     //[c,b,a]
-    LatLonShape.encodeTriangle(b, clatEnc, clonEnc, blatEnc, blonEnc, alatEnc, alonEnc);
+    ShapeField.encodeTriangle(b, clatEnc, clonEnc, blatEnc, blonEnc, alatEnc, alonEnc);
     int[] encodedCBA= new int[6];
-    LatLonShape.decodeTriangle(b, encodedCBA);
+    ShapeField.decodeTriangle(b, encodedCBA);
     assertTrue(Arrays.equals(encodedABC, encodedCBA));
     //[b,a,c]
-    LatLonShape.encodeTriangle(b, blatEnc, blonEnc, alatEnc, alonEnc, clatEnc, clonEnc);
+    ShapeField.encodeTriangle(b, blatEnc, blonEnc, alatEnc, alonEnc, clatEnc, clonEnc);
     int[] encodedBAC= new int[6];
-    LatLonShape.decodeTriangle(b, encodedBAC);
+    ShapeField.decodeTriangle(b, encodedBAC);
     assertTrue(Arrays.equals(encodedABC, encodedBAC));
     //[a,c,b]
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, clatEnc, clonEnc, blatEnc, blonEnc);
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, clatEnc, clonEnc, blatEnc, blonEnc);
     int[] encodedACB= new int[6];
-    LatLonShape.decodeTriangle(b, encodedACB);
+    ShapeField.decodeTriangle(b, encodedACB);
     assertTrue(Arrays.equals(encodedABC, encodedACB));
   }
 
@@ -340,10 +340,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     double lon = 45.0;
     int latEnc = GeoEncodingUtils.encodeLatitude(lat);
     int lonEnc = GeoEncodingUtils.encodeLongitude(lon);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, latEnc, lonEnc, latEnc, lonEnc, latEnc, lonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, latEnc, lonEnc, latEnc, lonEnc, latEnc, lonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == latEnc && encoded[2] == latEnc && encoded[4] == latEnc);
     assertTrue(encoded[1] == lonEnc && encoded[3] == lonEnc && encoded[5] == lonEnc);
   }
@@ -355,28 +355,28 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int latEnc = GeoEncodingUtils.encodeLatitude(lat);
     int alonEnc = GeoEncodingUtils.encodeLongitude(alon);
     int blonEnc = GeoEncodingUtils.encodeLongitude(blon);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, latEnc, alonEnc, latEnc, blonEnc, latEnc, alonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, latEnc, alonEnc, latEnc, blonEnc, latEnc, alonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == latEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == latEnc);
     assertTrue(encoded[3] == blonEnc);
     assertTrue(encoded[4] == latEnc);
     assertTrue(encoded[5] == alonEnc);
-    LatLonShape.encodeTriangle(b, latEnc, alonEnc, latEnc, alonEnc, latEnc, blonEnc);
+    ShapeField.encodeTriangle(b, latEnc, alonEnc, latEnc, alonEnc, latEnc, blonEnc);
     encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == latEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == latEnc);
     assertTrue(encoded[3] == alonEnc);
     assertTrue(encoded[4] == latEnc);
     assertTrue(encoded[5] == blonEnc);
-    LatLonShape.encodeTriangle(b, latEnc, blonEnc, latEnc, alonEnc, latEnc, alonEnc);
+    ShapeField.encodeTriangle(b, latEnc, blonEnc, latEnc, alonEnc, latEnc, alonEnc);
     encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == latEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == latEnc);
@@ -392,28 +392,28 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int alatEnc = GeoEncodingUtils.encodeLatitude(alat);
     int blatEnc = GeoEncodingUtils.encodeLatitude(blat);
     int lonEnc = GeoEncodingUtils.encodeLongitude(lon);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, lonEnc, blatEnc, lonEnc, alatEnc, lonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, lonEnc, blatEnc, lonEnc, alatEnc, lonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == lonEnc);
     assertTrue(encoded[2] == blatEnc);
     assertTrue(encoded[3] == lonEnc);
     assertTrue(encoded[4] == alatEnc);
     assertTrue(encoded[5] == lonEnc);
-    LatLonShape.encodeTriangle(b, alatEnc, lonEnc, alatEnc, lonEnc, blatEnc, lonEnc);
+    ShapeField.encodeTriangle(b, alatEnc, lonEnc, alatEnc, lonEnc, blatEnc, lonEnc);
     encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == lonEnc);
     assertTrue(encoded[2] == alatEnc);
     assertTrue(encoded[3] == lonEnc);
     assertTrue(encoded[4] == blatEnc);
     assertTrue(encoded[5] == lonEnc);
-    LatLonShape.encodeTriangle(b, blatEnc, lonEnc, alatEnc, lonEnc, alatEnc, lonEnc);
+    ShapeField.encodeTriangle(b, blatEnc, lonEnc, alatEnc, lonEnc, alatEnc, lonEnc);
     encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == lonEnc);
     assertTrue(encoded[2] == blatEnc);
@@ -431,28 +431,28 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int blatEnc = GeoEncodingUtils.encodeLatitude(blat);
     int alonEnc = GeoEncodingUtils.encodeLongitude(alon);
     int blonEnc = GeoEncodingUtils.encodeLongitude(blon);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, alatEnc, alonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, alatEnc, alonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == blatEnc);
     assertTrue(encoded[3] == blonEnc);
     assertTrue(encoded[4] == alatEnc);
     assertTrue(encoded[5] == alonEnc);
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, alatEnc, alonEnc, blatEnc, blonEnc);
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, alatEnc, alonEnc, blatEnc, blonEnc);
     encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == alatEnc);
     assertTrue(encoded[3] == alonEnc);
     assertTrue(encoded[4] == blatEnc);
     assertTrue(encoded[5] == blonEnc);
-    LatLonShape.encodeTriangle(b, blatEnc, blonEnc, alatEnc, alonEnc, alatEnc, alonEnc);
+    ShapeField.encodeTriangle(b, blatEnc, blonEnc, alatEnc, alonEnc, alatEnc, alonEnc);
     encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == alatEnc);
     assertTrue(encoded[1] == alonEnc);
     assertTrue(encoded[2] == blatEnc);
@@ -494,10 +494,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
         GeoEncodingUtils.encodeLongitude(clon)};
 
     //quantize the triangle
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, original[0], original[1], original[2], original[3], original[4], original[5]);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, original[0], original[1], original[2], original[3], original[4], original[5]);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     double[] encodedQuantize = new double[] {GeoEncodingUtils.decodeLatitude(encoded[0]),
         GeoEncodingUtils.decodeLongitude(encoded[1]),
         GeoEncodingUtils.decodeLatitude(encoded[2]),
@@ -547,10 +547,10 @@ public class TestLatLonShapeEncoding extends LuceneTestCase {
     int blonEnc = GeoEncodingUtils.encodeLongitude(blon);
     int clatEnc = GeoEncodingUtils.encodeLatitude(clat);
     int clonEnc = GeoEncodingUtils.encodeLongitude(clon);
-    byte[] b = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
+    byte[] b = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(b, alatEnc, alonEnc, blatEnc, blonEnc, clatEnc, clonEnc);
     int[] encoded = new int[6];
-    LatLonShape.decodeTriangle(b, encoded);
+    ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded[0] == blatEnc);
     assertTrue(encoded[1] == blonEnc);
     assertTrue(encoded[2] == clatEnc);

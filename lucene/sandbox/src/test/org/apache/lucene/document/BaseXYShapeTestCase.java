@@ -150,9 +150,9 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
       @Override
       int[] encodeDecodeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
         byte[] encoded = new byte[7 * ShapeField.BYTES];
-        XYShape.encodeTriangle(encoded, encode(ay), encode(ax), encode(by), encode(bx), encode(cy), encode(cx));
+        ShapeField.encodeTriangle(encoded, encode(ay), encode(ax), encode(by), encode(bx), encode(cy), encode(cx));
         int[] decoded = new int[6];
-        XYShape.decodeTriangle(encoded, decoded);
+        ShapeField.decodeTriangle(encoded, decoded);
         return decoded;
       }
     };

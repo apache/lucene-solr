@@ -19,6 +19,8 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
+import org.apache.lucene.document.ShapeField.Triangle;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
@@ -50,7 +52,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
  *
  * @lucene.experimental
  */
-public class LatLonShape extends ShapeField {
+public class LatLonShape {
 
   // no instance:
   private LatLonShape() {

@@ -87,7 +87,7 @@ final class XYShapeLineQuery extends ShapeQuery {
 
   @Override
   protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
-    XYShape.decodeTriangle(t, scratchTriangle);
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
     double alat = decode(scratchTriangle[0]);
     double alon = decode(scratchTriangle[1]);

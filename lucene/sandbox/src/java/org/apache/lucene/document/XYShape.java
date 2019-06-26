@@ -19,6 +19,8 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
+import org.apache.lucene.document.ShapeField.Triangle;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues; // javadoc
 import org.apache.lucene.geo.XYLine;
@@ -47,7 +49,7 @@ import static org.apache.lucene.geo.XYEncodingUtils.encode;
  *
  * @lucene.experimental
  */
-public class XYShape extends ShapeField {
+public class XYShape {
 
   // no instance:
   private XYShape() {
