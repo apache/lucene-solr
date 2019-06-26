@@ -550,7 +550,7 @@ public class BKDWriter implements Closeable {
       assert valueInOrder(valueCount + leafCount,
           0, lastPackedValue, packedValue, 0, docID, lastDocID);
 
-      if (leafCount == 0 || Arrays.mismatch(leafValues, (leafCount - 1) * bytesPerDim, leafCount * bytesPerDim, packedValue, 0, bytesPerDim) != -1) {
+      if (leafCount == 0 || FutureArrays.mismatch(leafValues, (leafCount - 1) * bytesPerDim, leafCount * bytesPerDim, packedValue, 0, bytesPerDim) != -1) {
         leafCardinality++;
       }
       System.arraycopy(packedValue, 0, leafValues, leafCount * packedBytesLength, packedBytesLength);
@@ -1378,7 +1378,7 @@ public class BKDWriter implements Closeable {
         for (int dim =0; dim < numDataDims; dim++) {
           final int start = dim * bytesPerDim + commonPrefixLengths[dim];
           final int end = dim * bytesPerDim + bytesPerDim;
-          if (Arrays.mismatch(collector.bytes, collector.offset + start, collector.offset + end,
+          if (FutureArrays.mismatch(collector.bytes, collector.offset + start, collector.offset + end,
               comparator.bytes, comparator.offset + start, comparator.offset + end) != -1) {
             leafCardinality++;
             BytesRef scratch = collector;
@@ -1417,6 +1417,7 @@ public class BKDWriter implements Closeable {
       assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
           docIDs, 0);
       writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality);
+
       out.writeBytes(scratchOut.getBytes(), 0, scratchOut.getPosition());
       scratchOut.reset();
 

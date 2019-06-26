@@ -16,9 +16,8 @@
  */
 package org.apache.lucene.util.bkd;
 
-import java.util.Arrays;
-
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FutureArrays;
 
 /**
  * Utility class to write new points into in-heap arrays.
@@ -102,7 +101,7 @@ public final class HeapPointWriter implements PointWriter {
       for (int dim = 0; dim < numDataDims; dim++) {
         final int start = dim * bytesPerDim + commonPrefixLengths[dim];
         final int end = dim * bytesPerDim + bytesPerDim;
-        if (Arrays.mismatch(block, i * packedBytesLength + start, i * packedBytesLength + end,
+        if (FutureArrays.mismatch(block, i * packedBytesLength + start, i * packedBytesLength + end,
             block, (i - 1) * packedBytesLength  + start, (i - 1) * packedBytesLength + end) != -1) {
           leafCardinality++;
           break;
