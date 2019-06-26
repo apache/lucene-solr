@@ -20,15 +20,13 @@ limitations under the License.
 
   <div id="frame">
 
-    <div id="actions" class="actions clearfix">
+    <div id="actions" class="actions clearfix" ng-show="collection">
 
-      <button id="add" class="action" ng-click="showAddCollection()"><span>Add Collection</span></button>
 
-      <button id="delete" class="warn requires-core" ng-click="showDeleteCollection()" ng-show="collection"><span>Delete</span></button>
-      <button id="reload" class="requires-core" ng-click="reloadCollection()" ng-show="collection"
+      <button id="delete-collection" class="warn requires-core" ng-click="showDeleteCollection()" ng-show="collection && collection.type === 'collection'"><span>Delete collection</span></button>
+      <button id="delete-alias" class="action requires-core" ng-click="toggleDeleteAlias()" ng-show="collection && collection.type === 'alias'"><span>Delete alias</span></button>
+      <button id="reload" class="requires-core" ng-click="reloadCollection()" ng-show="collection && collection.type === 'collection'"
          ng-class="{success: reloadSuccess, warn: reloadFailure}"><span>Reload</span></button>
-      <button id="create-alias" class="action requires-core" ng-click="toggleCreateAlias()"><span>Create Alias</span></button>
-      <button id="delete-alias" class="action requires-core" ng-click="toggleDeleteAlias()"><span>Delete Alias</span></button>
 
       <div class="action add" data-rel="add" ng-show="showAdd" style="left:0px">
 
@@ -139,27 +137,12 @@ limitations under the License.
       <div class="action delete-alias" ng-show="showDeleteAlias">
 
         <form>
-          <span ng-show="zkAliases">
-          <p class="clearfix"><label for="deleteAlias">Alias:</label>
-          <select id="deleteAlias" ng-model="aliasToDelete" ng-options="alias as alias for (alias, collections) in zkAliases" class="other">
-          </select></p>
-
-          <p class="clearfix note error" ng-show="swapMessage">
-            <span>{{swapMessage}}</span>
-          </p>
+          <p>Are you sure you want to delete alias {{ collection.name }}?</p>
 
           <p class="clearfix buttons">
             <button type="submit" class="submit" ng-click="deleteAlias()"><span>Delete Alias</span></button>
             <button type="reset" class="reset" ng-click="cancelDeleteAlias()"><span>Cancel</span></button>
           </p>
-          </span>
-          <span ng-hide="zkAliases">
-              <p>No aliases to delete.</p>
-          <p class="clearfix buttons">
-            <button type="reset" class="reset" ng-click="cancelDeleteAlias()"><span>Cancel</span></button>
-          </p>
-          </span>
-
         </form>
 
       </div>
@@ -380,12 +363,16 @@ limitations under the License.
   </div>
 
   <div id="navigation" class="requires-core clearfix">
+    <button id="add" class="action" ng-click="showAddCollection()"><span>Add Collection</span></button>
     <ul>
       <li ng-repeat="c in collections" ng-class="{current: collection.name == c.name}"><a href="#~collections/{{c.name}}">{{c.name}}</a></li>
-      <li class="ng-scope" ng-show="aliases.length > 0">&nbsp;</li>
-      <li class="ng-scope" ng-show="aliases.length > 0">Aliases:</li>
+    </ul>
+    <hr/>
+    <button id="create-alias" class="action requires-core" ng-click="toggleCreateAlias()"><span>Create Alias</span></button>
+    <ul>
       <li ng-repeat="c in aliases" ng-class="{current: collection.name == c.name}"><a href="#~collections/{{c.name}}">{{c.name}}</a></li>
     </ul>
+
   </div>
 
 </div>

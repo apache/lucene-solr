@@ -106,14 +106,6 @@ solrAdminApp.controller('CollectionsController',
       $scope.toggleDeleteAlias = function() {
         $scope.hideAll();
         $scope.showDeleteAlias = true;
-        Zookeeper.aliases({}, function(data){
-          if (Object.keys(data.aliases).length == 0) {
-            delete $scope.zkAliases;
-          } else {
-            $scope.zkAliases = data.aliases;
-          }
-        });
-
       }
 
       $scope.cancelCreateAlias = $scope.cancelDeleteAlias = function() {
@@ -132,7 +124,7 @@ solrAdminApp.controller('CollectionsController',
         });
       }
       $scope.deleteAlias = function() {
-        Collections.deleteAlias({name: $scope.aliasToDelete}, function(data) {
+        Collections.deleteAlias({name: $scope.collection.name}, function(data) {
           $scope.hideAll();
           $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
           $location.path("/~collections/");
