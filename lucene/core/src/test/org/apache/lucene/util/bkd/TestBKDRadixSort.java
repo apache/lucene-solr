@@ -31,30 +31,30 @@ public class TestBKDRadixSort extends LuceneTestCase {
     int numPoints = TestUtil.nextInt(random(), 1, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
     int indexDimensions = TestUtil.nextInt(random(), 1, 8);
     int dataDimensions = TestUtil.nextInt(random(), indexDimensions, 8);
-    int bytesPerDime = TestUtil.nextInt(random(), 2, 30);
-    int packedBytesLength = dataDimensions * bytesPerDime;
+    int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
+    int packedBytesLength = dataDimensions * bytesPerDim;
     HeapPointWriter points = new HeapPointWriter(numPoints, packedBytesLength);
     byte[] value = new byte[packedBytesLength];
     for (int i = 0; i < numPoints; i++) {
       random().nextBytes(value);
       points.append(value, i);
     }
-    verifySort(points, dataDimensions, indexDimensions, 0, numPoints, bytesPerDime);
+    verifySort(points, dataDimensions, indexDimensions, 0, numPoints, bytesPerDim);
   }
 
   public void testRandomAllEquals() throws IOException {
     int numPoints = TestUtil.nextInt(random(), 1, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
     int indexDimensions = TestUtil.nextInt(random(), 1, 8);
     int dataDimensions = TestUtil.nextInt(random(), indexDimensions, 8);
-    int bytesPerDime = TestUtil.nextInt(random(), 2, 30);
-    int packedBytesLength = dataDimensions * bytesPerDime;
+    int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
+    int packedBytesLength = dataDimensions * bytesPerDim;
     HeapPointWriter points = new HeapPointWriter(numPoints, packedBytesLength);
     byte[] value = new byte[packedBytesLength];
     random().nextBytes(value);
     for (int i = 0; i < numPoints; i++) {
       points.append(value, random().nextInt(numPoints));
     }
-    verifySort(points, dataDimensions, indexDimensions, 0, numPoints, bytesPerDime);
+    verifySort(points, dataDimensions, indexDimensions, 0, numPoints, bytesPerDim);
   }
 
   public void testRandomLastByteTwoValues() throws IOException {
@@ -117,7 +117,7 @@ public class TestBKDRadixSort extends LuceneTestCase {
     int packedBytesLength = dataDimensions * bytesPerDim;
     Directory dir = newDirectory();
     BKDRadixSelector radixSelector = new BKDRadixSelector(dataDimensions, bytesPerDim, 1000, dir, "test");
-    //we check for each dimension
+    // we check for each dimension
     for (int splitDim = 0; splitDim < dataDimensions; splitDim++) {
       radixSelector.heapRadixSort(points, start, end, splitDim, getRandomCommonPrefix(points, start, end, bytesPerDim, splitDim));
       byte[] previous = new byte[bytesPerDim * dataDimensions];
