@@ -98,8 +98,6 @@ limitations under the License.
 
       <a href="#/" id="solr"><span>Apache SOLR</span></a>
 
-      <p id="environment">&nbsp;</p>
-
     </div>
 
     <div id="main" class="clearfix">
@@ -143,6 +141,8 @@ limitations under the License.
         <div>
 
           <ul id="menu">
+            <li id="environment" ng-class="environment" ng-show="showEnvironment" ng-style="environment_color !== undefined ? {'background-color': environment_color} : ''">{{ environment_label }}</li>
+
             <li id="login" class="global" ng-class="{active:page=='login'}" ng-show="http401 || currentUser"><p><a href="#/login">{{http401 ? "Login" : "Logout " + currentUser}}</a></p></li>
             
             <li id="index" class="global" ng-class="{active:page=='index'}"><p><a href="#/">Dashboard</a></p></li>

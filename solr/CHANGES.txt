@@ -105,6 +105,8 @@ New Features
 
 * SOLR-13367: Highlighting: Range queries will now highlight in hl.method=unified mode. (David Smiley)
 
+* SOLR-13569: AdminUI visual indication of prod/test/dev environment (janhoy)
+
 Bug Fixes
 ----------------------
 
