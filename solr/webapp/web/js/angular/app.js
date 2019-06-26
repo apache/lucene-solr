@@ -88,6 +88,10 @@ solrAdminApp.config([
         templateUrl: 'partials/core_overview.html',
         controller: 'CoreOverviewController'
       }).
+      when('/:core/alias-overview', {
+        templateUrl: 'partials/alias_overview.html',
+        controller: 'AliasOverviewController'
+      }).
       when('/:core/collection-overview', {
         templateUrl: 'partials/collection_overview.html',
         controller: 'CollectionOverviewController'
@@ -444,6 +448,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   $scope.refresh = function() {
       $scope.cores = [];
       $scope.collections = [];
+      $scope.aliases = [];
   }
 
   $scope.refresh();
@@ -466,19 +471,35 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     System.get(function(data) {
       $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
 
+      var currentCollectionName = $route.current.params.core;
+      delete $scope.currentCollection;
       if ($scope.isCloudEnabled) {
-        Collections.list(function (data) {
-          $scope.collections = [];
-          var currentCollectionName = $route.current.params.core;
-          delete $scope.currentCollection;
-          for (key in data.collections) {
-            var collection = {name: data.collections[key]};
-            $scope.collections.push(collection);
-            if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
-              $scope.currentCollection = collection;
+        Collections.list(function (cdata) {
+          Collections.listaliases(function (adata) {
+            $scope.aliases = [];
+            for (key in adata.aliases) {
+              var alias = {name: key, collections: adata.aliases[key], type: 'alias'};
+              $scope.aliases.push(alias);
+              if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
+                $scope.currentCollection = alias;
+              }
             }
-          }
-        })
+            $scope.collections = [];
+            for (key in cdata.collections) {
+              var collection = {name: cdata.collections[key], type: 'collection'};
+              $scope.collections.push(collection);
+              if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
+                $scope.currentCollection = collection;
+              }
+            }
+
+            $scope.aliases_and_collections = $scope.aliases;
+            if ($scope.aliases.length > 0) {
+              $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
+            }
+            $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+          });
+        });
       }
 
       $scope.showEnvironment = data.environment !== undefined;
@@ -502,6 +523,10 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.http401 = sessionStorage.getItem("http401");
   };
 
+  $scope.isMultiDestAlias = function(selectedColl) {
+    return selectedColl && selectedColl.type === 'alias' && selectedColl.collections.includes(',');
+  };
+
   $scope.ping = function() {
     Ping.ping({core: $scope.currentCore.name}, function(data) {
       $scope.showPing = true;
@@ -519,8 +544,12 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   }
 
   $scope.showCollection = function(collection) {
-    $location.url("/" + collection.name + "/collection-overview")
-  }
+    if (collection.type === 'collection') {
+      $location.url("/" + collection.name + "/collection-overview")
+    } else {
+      $location.url("/" + collection.name + "/alias-overview")
+    }
+  };
 
   $scope.$on('$routeChangeStart', function() {
       $rootScope.exceptions = {};

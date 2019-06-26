@@ -148,6 +148,8 @@ New Features
 
 * SOLR-13569: AdminUI visual indication of prod/test/dev environment (janhoy)
 
+* SOLR-13122: Ability to query aliases in Solr Admin UI (janhoy)
+
 Bug Fixes
 ----------------------
 

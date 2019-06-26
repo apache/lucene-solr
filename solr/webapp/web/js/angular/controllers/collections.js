@@ -24,10 +24,12 @@ solrAdminApp.controller('CollectionsController',
           $scope.rootUrl = Constants.ROOT_URL + "#/~collections/" + $routeParams.collection;
 
           Collections.status(function (data) {
+              $scope.aliases = [];
               $scope.collections = [];
               for (var name in data.cluster.collections) {
                   var collection = data.cluster.collections[name];
                   collection.name = name;
+                  collection.type = 'collection';
                   var shards = collection.shards;
                   collection.shards = [];
                   for (var shardName in shards) {
@@ -50,8 +52,16 @@ solrAdminApp.controller('CollectionsController',
                       $scope.collection = collection;
                   }
               }
-              if ($routeParams.collection && !$scope.collection) {
-                  alert("No collection called " + $routeParams.collection)
+              for (var name in data.cluster.aliases) {
+                alias = {name: name, collections: data.cluster.aliases[name], type: 'alias'};
+                $scope.aliases.push(alias);
+                if ($routeParams.collection == name) {
+                  $scope.collection = alias;
+                }
+              }
+
+            if ($routeParams.collection && !$scope.collection) {
+                  alert("No collection or alias called " + $routeParams.collection);
                   $location.path("/~collections");
               }
               $scope.liveNodes = data.cluster.liveNodes;
@@ -98,9 +108,9 @@ solrAdminApp.controller('CollectionsController',
         $scope.showDeleteAlias = true;
         Zookeeper.aliases({}, function(data){
           if (Object.keys(data.aliases).length == 0) {
-            delete $scope.aliases;
+            delete $scope.zkAliases;
           } else {
-            $scope.aliases = data.aliases;
+            $scope.zkAliases = data.aliases;
           }
         });
 
@@ -116,12 +126,16 @@ solrAdminApp.controller('CollectionsController',
           collections.push($scope.aliasCollections[i].name);
         }
         Collections.createAlias({name: $scope.aliasToCreate, collections: collections.join(",")}, function(data) {
-          $scope.hideAll();
+          $scope.cancelCreateAlias();
+          $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
+          $location.path("/~collections/" + $scope.aliasToCreate);
         });
       }
       $scope.deleteAlias = function() {
         Collections.deleteAlias({name: $scope.aliasToDelete}, function(data) {
           $scope.hideAll();
+          $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
+          $location.path("/~collections/");
         });
 
       };

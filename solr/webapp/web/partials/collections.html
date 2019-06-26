@@ -139,9 +139,9 @@ limitations under the License.
       <div class="action delete-alias" ng-show="showDeleteAlias">
 
         <form>
-          <span ng-show="aliases">
+          <span ng-show="zkAliases">
           <p class="clearfix"><label for="deleteAlias">Alias:</label>
-          <select id="deleteAlias" ng-model="aliasToDelete" ng-options="alias as alias for (alias, collections) in aliases" class="other">
+          <select id="deleteAlias" ng-model="aliasToDelete" ng-options="alias as alias for (alias, collections) in zkAliases" class="other">
           </select></p>
 
           <p class="clearfix note error" ng-show="swapMessage">
@@ -153,7 +153,7 @@ limitations under the License.
             <button type="reset" class="reset" ng-click="cancelDeleteAlias()"><span>Cancel</span></button>
           </p>
           </span>
-          <span ng-hide="aliases">
+          <span ng-hide="zkAliases">
               <p>No aliases to delete.</p>
           <p class="clearfix buttons">
             <button type="reset" class="reset" ng-click="cancelDeleteAlias()"><span>Cancel</span></button>
@@ -168,12 +168,34 @@ limitations under the License.
 
 
     <div class="requires-core" ng-hide="collection">
-      <h2>Please select a collection</h2>
+      <h2>Please select a collection or alias</h2>
     </div>
 
     <div id="data" class="requires-core clearfix" ng-show="collection">
 
-      <div class="block" id="collection-data">
+      <div class="block" id="alias-data" ng-show="collection.type === 'alias'">
+
+        <h2>Alias: {{collection.name}}</h2>
+
+        <div class="message-container">
+          <div class="message"></div>
+        </div>
+
+        <div class="content">
+
+          <ul>
+
+            <li>
+              <dl class="clearfix">
+                <dt><span>Collections:</span></dt>
+                <dd>{{collection.collections}}</dd>
+              </dl>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="block" id="collection-data" ng-show="collection.type === 'collection'">
 
           <h2>Collection: {{collection.name}}</h2>
 
@@ -220,7 +242,7 @@ limitations under the License.
         </div>
       </div>
 
-      <div class="block" id="shard-data">
+      <div class="block" id="shard-data" ng-show="collection.type === 'collection'">
         <div class="content shard" ng-repeat="shard in collection.shards">
           <a ng-click="toggleShard(shard)">
             <h2>
@@ -360,6 +382,9 @@ limitations under the License.
   <div id="navigation" class="requires-core clearfix">
     <ul>
       <li ng-repeat="c in collections" ng-class="{current: collection.name == c.name}"><a href="#~collections/{{c.name}}">{{c.name}}</a></li>
+      <li class="ng-scope" ng-show="aliases.length > 0">&nbsp;</li>
+      <li class="ng-scope" ng-show="aliases.length > 0">Aliases:</li>
+      <li ng-repeat="c in aliases" ng-class="{current: collection.name == c.name}"><a href="#~collections/{{c.name}}">{{c.name}}</a></li>
     </ul>
   </div>
 

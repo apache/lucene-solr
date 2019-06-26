@@ -215,6 +215,7 @@ limitations under the License.
   background-position: 0% 50%;
 }
 
+#content #collections #data #alias-data h2 { background-image: url( ../../img/ico/box.png ); }
 #content #collections #data #collection-data h2 { background-image: url( ../../img/ico/box.png ); }
 #content #collections #data #shard-data h2 { background-image: url( ../../img/ico/sitemap.png ); }
 #content #collections #data #shard-data .replica h2 { background-image: url( ../../img/ico/node-slave.png ); }
@@ -353,6 +354,11 @@ limitations under the License.
 #content #collections #node-name .chosen-container
 {
     width: 100% !important;
+}
+
+#content #collections #alias-data {
+  float: left;
+  width: 35%;
 }
 
 #content #collections #collection-data {

@@ -30,6 +30,7 @@ solrAdminServices.factory('System',
     return $resource('admin/collections',
     {'wt':'json', '_':Date.now()}, {
     "list": {params:{action: "LIST"}},
+    "listaliases": {params:{action: "LISTALIASES"}},
     "status": {params:{action: "CLUSTERSTATUS"}},
     "add": {params:{action: "CREATE"}},
     "delete": {params:{action: "DELETE"}},
