@@ -514,7 +514,7 @@ The `/stream` handler supports a small set commands for listing and controlling 
 http://localhost:8983/collection/stream?action=list
 ----
 
-This command will provide a listing of the current daemon's running on the specific node along with there current state.
+This command will provide a listing of the current daemons running on the specific node along with their current state.
 
 [source,text]
 ----

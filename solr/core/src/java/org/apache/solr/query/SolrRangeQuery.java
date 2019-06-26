@@ -39,6 +39,8 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
@@ -347,6 +349,19 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       this.scoreMode = scoreMode;
     }
 
+    // See MultiTermQueryConstantScoreWrapper matches()
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      SolrRangeQuery query = SolrRangeQuery.this;
+      final Terms terms = context.reader().terms(query.field);
+      if (terms == null) {
+        return null;
+      }
+      if (terms.hasPositions() == false) {
+        return super.matches(context, doc);
+      }
+      return MatchesUtils.forField(query.field, () -> MatchesUtils.disjunction(context, doc, query, query.field, query.getTermsEnum(context)));
+    }
 
     /** Try to collect terms from the given terms enum and return count=sum(df) for terms visited so far
      *  or (-count - 1) if this should be rewritten into a boolean query.
