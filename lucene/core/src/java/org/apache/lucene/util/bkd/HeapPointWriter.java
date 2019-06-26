@@ -17,6 +17,7 @@
 package org.apache.lucene.util.bkd;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FutureArrays;
 
 /**
  * Utility class to write new points into in-heap arrays.
@@ -91,6 +92,23 @@ public final class HeapPointWriter implements PointWriter {
     System.arraycopy(block, indexJ, block, indexI, packedBytesLength);
     // values[j] = scratch1
     System.arraycopy(scratch, 0, block, indexJ, packedBytesLength);
+  }
+
+  public int computeCardinality(int from, int to, int numDataDims, int bytesPerDim, int[] commonPrefixLengths) {
+    assert packedBytesLength == numDataDims * bytesPerDim;
+    int leafCardinality = 1;
+    for (int i = from + 1; i < to; i++) {
+      for (int dim = 0; dim < numDataDims; dim++) {
+        final int start = dim * bytesPerDim + commonPrefixLengths[dim];
+        final int end = dim * bytesPerDim + bytesPerDim;
+        if (FutureArrays.mismatch(block, i * packedBytesLength + start, i * packedBytesLength + end,
+            block, (i - 1) * packedBytesLength  + start, (i - 1) * packedBytesLength + end) != -1) {
+          leafCardinality++;
+          break;
+        }
+      }
+    }
+    return leafCardinality;
   }
 
   @Override

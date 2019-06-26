@@ -441,16 +441,22 @@ public final class BKDReader extends PointValues implements Accountable {
 
   void visitDocValues(int[] commonPrefixLengths, byte[] scratchDataPackedValue, byte[] scratchMinIndexPackedValue, byte[] scratchMaxIndexPackedValue,
                       IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
+    if (version >= BKDWriter.VERSION_LOW_CARDINALITY_LEAVES) {
+      visitDocValuesWithCardinality(commonPrefixLengths, scratchDataPackedValue, scratchMinIndexPackedValue, scratchMaxIndexPackedValue, in, docIDs, count, visitor);
+    } else {
+      visitDocValuesNoCardinality(commonPrefixLengths, scratchDataPackedValue, scratchMinIndexPackedValue, scratchMaxIndexPackedValue, in, docIDs, count, visitor);
+    }
+  }
 
-
+  void visitDocValuesNoCardinality(int[] commonPrefixLengths, byte[] scratchDataPackedValue, byte[] scratchMinIndexPackedValue, byte[] scratchMaxIndexPackedValue,
+                      IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
     readCommonPrefixes(commonPrefixLengths, scratchDataPackedValue, in);
 
     if (numIndexDims != 1 && version >= BKDWriter.VERSION_LEAF_STORES_BOUNDS) {
       byte[] minPackedValue = scratchMinIndexPackedValue;
       System.arraycopy(scratchDataPackedValue, 0, minPackedValue, 0, packedIndexBytesLength);
       byte[] maxPackedValue = scratchMaxIndexPackedValue;
-      //Copy common prefixes before reading adjusted
-      // box
+      // Copy common prefixes before reading adjusted box
       System.arraycopy(minPackedValue, 0, maxPackedValue, 0, packedIndexBytesLength);
       readMinMax(commonPrefixLengths, minPackedValue, maxPackedValue, in);
 
@@ -480,9 +486,58 @@ public final class BKDReader extends PointValues implements Accountable {
     int compressedDim = readCompressedDim(in);
 
     if (compressedDim == -1) {
-      visitRawDocValues(commonPrefixLengths, scratchDataPackedValue, in, docIDs, count, visitor);
+      visitUniqueRawDocValues(scratchDataPackedValue, docIDs, count, visitor);
     } else {
       visitCompressedDocValues(commonPrefixLengths, scratchDataPackedValue, in, docIDs, count, visitor, compressedDim);
+    }
+  }
+
+  void visitDocValuesWithCardinality(int[] commonPrefixLengths, byte[] scratchDataPackedValue, byte[] scratchMinIndexPackedValue, byte[] scratchMaxIndexPackedValue,
+                                     IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
+
+    readCommonPrefixes(commonPrefixLengths, scratchDataPackedValue, in);
+    int compressedDim = readCompressedDim(in);
+    if (compressedDim == -1) {
+      // all values are the same
+      visitor.grow(count);
+      visitUniqueRawDocValues(scratchDataPackedValue, docIDs, count, visitor);
+    } else {
+      if (numIndexDims != 1) {
+        byte[] minPackedValue = scratchMinIndexPackedValue;
+        System.arraycopy(scratchDataPackedValue, 0, minPackedValue, 0, packedIndexBytesLength);
+        byte[] maxPackedValue = scratchMaxIndexPackedValue;
+        // Copy common prefixes before reading adjusted box
+        System.arraycopy(minPackedValue, 0, maxPackedValue, 0, packedIndexBytesLength);
+        readMinMax(commonPrefixLengths, minPackedValue, maxPackedValue, in);
+
+        // The index gives us range of values for each dimension, but the actual range of values
+        // might be much more narrow than what the index told us, so we double check the relation
+        // here, which is cheap yet might help figure out that the block either entirely matches
+        // or does not match at all. This is especially more likely in the case that there are
+        // multiple dimensions that have correlation, ie. splitting on one dimension also
+        // significantly changes the range of values in another dimension.
+        Relation r = visitor.compare(minPackedValue, maxPackedValue);
+        if (r == Relation.CELL_OUTSIDE_QUERY) {
+          return;
+        }
+        visitor.grow(count);
+
+        if (r == Relation.CELL_INSIDE_QUERY) {
+          for (int i = 0; i < count; ++i) {
+            visitor.visit(docIDs[i]);
+          }
+          return;
+        }
+      } else {
+        visitor.grow(count);
+      }
+      if (compressedDim == -2) {
+        // low cardinality values
+        visitSparseRawDocValues(commonPrefixLengths, scratchDataPackedValue, in, docIDs, count, visitor);
+      } else {
+        // high cardinality
+        visitCompressedDocValues(commonPrefixLengths, scratchDataPackedValue, in, docIDs, count, visitor, compressedDim);
+      }
     }
   }
 
@@ -494,13 +549,28 @@ public final class BKDReader extends PointValues implements Accountable {
     }
   }
 
-  // Just read suffixes for every dimension
-  private void visitRawDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count; ++i) {
-      for(int dim=0;dim<numDataDims;dim++) {
+  // read cardinality and point
+  private void visitSparseRawDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
+    int i;
+    for (i = 0; i < count;) {
+      int length = in.readVInt();
+      for(int dim = 0; dim < numDataDims; dim++) {
         int prefix = commonPrefixLengths[dim];
         in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
       }
+      for (int j = i; j < i + length; j++) {
+        visitor.visit(docIDs[j], scratchPackedValue);
+      }
+      i += length;
+    }
+    if (i != count) {
+      throw new CorruptIndexException("Sub blocks do not add up to the expected count: " + count + " != " + i, in);
+    }
+  }
+
+  // point is under commonPrefix
+  private void visitUniqueRawDocValues(byte[] scratchPackedValue, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
+    for (int i = 0; i < count; i++) {
       visitor.visit(docIDs[i], scratchPackedValue);
     }
   }
@@ -515,7 +585,7 @@ public final class BKDReader extends PointValues implements Accountable {
       scratchPackedValue[compressedByteOffset] = in.readByte();
       final int runLen = Byte.toUnsignedInt(in.readByte());
       for (int j = 0; j < runLen; ++j) {
-        for(int dim=0;dim<numDataDims;dim++) {
+        for(int dim = 0; dim < numDataDims; dim++) {
           int prefix = commonPrefixLengths[dim];
           in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
         }
@@ -530,7 +600,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
   private int readCompressedDim(IndexInput in) throws IOException {
     int compressedDim = in.readByte();
-    if (compressedDim < -1 || compressedDim >= numDataDims) {
+    if (compressedDim < -2 || compressedDim >= numDataDims || (version < BKDWriter.VERSION_LOW_CARDINALITY_LEAVES && compressedDim == -2)) {
       throw new CorruptIndexException("Got compressedDim="+compressedDim, in);
     }
     return compressedDim;
