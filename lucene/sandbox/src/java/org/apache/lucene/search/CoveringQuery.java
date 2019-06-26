@@ -48,8 +48,8 @@ public final class CoveringQuery extends Query {
    *                           do not match.
    */
   public CoveringQuery(Collection<Query> queries, LongValuesSource minimumNumberMatch) {
-    if (queries.size() > BooleanQuery.getMaxClauseCount()) {
-      throw new BooleanQuery.TooManyClauses();
+    if (queries.size() > IndexSearcher.getMaxClauseCount()) {
+      throw new IndexSearcher.TooManyClauses();
     }
     if (minimumNumberMatch.needsScores()) {
       throw new IllegalArgumentException("The minimum number of matches may not depend on the score.");

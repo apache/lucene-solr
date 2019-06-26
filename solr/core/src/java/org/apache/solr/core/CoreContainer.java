@@ -45,7 +45,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -326,7 +326,7 @@ public class CoreContainer {
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler());
     this.cfg = requireNonNull(config);
     if (null != this.cfg.getBooleanQueryMaxClauseCount()) {
-      BooleanQuery.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
+      IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
     }
     this.coresLocator = locator;
     this.containerProperties = new Properties(properties);

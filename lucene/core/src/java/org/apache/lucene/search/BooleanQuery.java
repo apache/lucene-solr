@@ -41,35 +41,32 @@ import org.apache.lucene.search.BooleanClause.Occur;
   */
 public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
-  private static int maxClauseCount = 1024;
-
   /** Thrown when an attempt is made to add more than {@link
    * #getMaxClauseCount()} clauses. This typically happens if
    * a PrefixQuery, FuzzyQuery, WildcardQuery, or TermRangeQuery 
-   * is expanded to many terms during search. 
+   * is expanded to many terms during search.
+   * @deprecated use {@link IndexSearcher.TooManyClauses}
    */
-  public static class TooManyClauses extends RuntimeException {
-    public TooManyClauses() {
-      super("maxClauseCount is set to " + maxClauseCount);
-    }
-  }
+  @Deprecated
+  public static class TooManyClauses extends IndexSearcher.TooManyClauses { }
 
   /** Return the maximum number of clauses permitted, 1024 by default.
    * Attempts to add more than the permitted number of clauses cause {@link
    * TooManyClauses} to be thrown.
-   * @see #setMaxClauseCount(int)
+   * @see IndexSearcher#setMaxClauseCount(int)
+   * @deprecated use {@link IndexSearcher#getMaxClauseCount()}
    */
-  public static int getMaxClauseCount() { return maxClauseCount; }
+  @Deprecated
+  public static int getMaxClauseCount() { return IndexSearcher.getMaxClauseCount(); }
 
   /** 
    * Set the maximum number of clauses permitted per BooleanQuery.
    * Default value is 1024.
+   * @deprecated use {@link IndexSearcher#setMaxClauseCount(int)}
    */
+  @Deprecated
   public static void setMaxClauseCount(int maxClauseCount) {
-    if (maxClauseCount < 1) {
-      throw new IllegalArgumentException("maxClauseCount must be >= 1");
-    }
-    BooleanQuery.maxClauseCount = maxClauseCount;
+    IndexSearcher.setMaxClauseCount(maxClauseCount);
   }
 
   /** A builder for boolean queries. */
@@ -107,11 +104,14 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
      * Add a new clause to this {@link Builder}. Note that the order in which
      * clauses are added does not have any impact on matching documents or query
      * performance.
-     * @throws TooManyClauses if the new number of clauses exceeds the maximum clause number
+     * @throws IndexSearcher.TooManyClauses if the new number of clauses exceeds the maximum clause number
      */
     public Builder add(BooleanClause clause) {
-      if (clauses.size() >= maxClauseCount) {
-        throw new TooManyClauses();
+      // We do the final deep check for max clauses count limit during
+      //<code>IndexSearcher.rewrite</code> but do this check to short
+      // circuit in case a single query holds more than numClauses
+      if (clauses.size() >= IndexSearcher.maxClauseCount) {
+        throw new IndexSearcher.TooManyClauses();
       }
       clauses.add(clause);
       return this;
@@ -121,7 +121,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
      * Add a new clause to this {@link Builder}. Note that the order in which
      * clauses are added does not have any impact on matching documents or query
      * performance.
-     * @throws TooManyClauses if the new number of clauses exceeds the maximum clause number
+     * @throws IndexSearcher.TooManyClauses if the new number of clauses exceeds the maximum clause number
      */
     public Builder add(Query query, Occur occur) {
       return add(new BooleanClause(query, occur));
