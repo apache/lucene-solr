@@ -614,7 +614,7 @@ public class TestBKD extends LuceneTestCase {
     verify(docValues, null, numDataDims, numIndexDims, numBytesPerDim);
   }
 
-  //this should trigger low cardinality leaves
+  // this should trigger low cardinality leaves
   public void testRandomFewDifferentValues() throws Exception {
     int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
     int numIndexDims = TestUtil.nextInt(random(), 1, 8);
@@ -623,14 +623,14 @@ public class TestBKD extends LuceneTestCase {
     int numDocs = atLeast(10000);
     int cardinality = TestUtil.nextInt(random(), 2, 100);
     byte[][][] values = new byte[cardinality][numDataDims][numBytesPerDim];
-    for (int i =0; i < cardinality; i++) {
-      for (int j =0; j < numDataDims; j ++) {
+    for (int i = 0; i < cardinality; i++) {
+      for (int j = 0; j < numDataDims; j++) {
         random().nextBytes(values[i][j]);
       }
     }
 
     byte[][][] docValues = new byte[numDocs][][];
-    for(int docID=0;docID<numDocs;docID++) {
+    for(int docID = 0; docID < numDocs; docID++) {
       docValues[docID] = values[random().nextInt(cardinality)];
     }
 
