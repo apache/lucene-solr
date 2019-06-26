@@ -210,7 +210,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
   private void verify(Directory dir, PointWriter points, int dataDimensions, int indexDimensions, long start, long end, long middle, int packedLength, int bytesPerDimensions, int sortedOnHeap) throws IOException{
     BKDRadixSelector radixSelector = new BKDRadixSelector(dataDimensions, bytesPerDimensions, sortedOnHeap, dir, "test");
     //we only split by indexed dimension so we check for each only those dimension
-    for (int splitDim =0; splitDim < indexDimensions; splitDim++) {
+    for (int splitDim = 0; splitDim < indexDimensions; splitDim++) {
       //We need to make a copy of the data as it is deleted in the process
       BKDRadixSelector.PathSlice inputSlice = new BKDRadixSelector.PathSlice(copyPoints(dir, points, packedLength), 0, points.count());
       int commonPrefixLengthInput = getRandomCommonPrefix(inputSlice, bytesPerDimensions, splitDim);
