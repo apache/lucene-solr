@@ -22,6 +22,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -127,7 +128,7 @@ public class TestBKDRadixSort extends LuceneTestCase {
       for (int j = start; j < end; j++) {
         PointValue pointValue = points.getPackedValueSlice(j);
         BytesRef value = pointValue.packedValue();
-        int cmp = Arrays.compareUnsigned(value.bytes, value.offset + dimOffset, value.offset + dimOffset + bytesPerDim, previous, dimOffset, dimOffset + bytesPerDim);
+        int cmp = FutureArrays.compareUnsigned(value.bytes, value.offset + dimOffset, value.offset + dimOffset + bytesPerDim, previous, dimOffset, dimOffset + bytesPerDim);
         assertTrue(cmp >= 0);
         if (cmp == 0) {
           assertTrue(pointValue.docID() >= previousDocId);
@@ -150,7 +151,7 @@ public class TestBKDRadixSort extends LuceneTestCase {
     for (int i = start + 1; i < end; i++) {
       value = points.getPackedValueSlice(i);
       bytesRef = value.packedValue();
-      int diff = Arrays.mismatch(bytesRef.bytes, bytesRef.offset + offset, bytesRef.offset + offset + bytesPerDimension, firstValue, 0, bytesPerDimension);
+      int diff = FutureArrays.mismatch(bytesRef.bytes, bytesRef.offset + offset, bytesRef.offset + offset + bytesPerDimension, firstValue, 0, bytesPerDimension);
       if (diff != -1 && commonPrefixLength > diff) {
         if (diff == 0) {
           return diff;
