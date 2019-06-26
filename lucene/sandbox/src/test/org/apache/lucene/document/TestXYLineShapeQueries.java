@@ -43,17 +43,17 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
       if (maxBound < 2) {
         maxBound = shapes.length;
       }
-      double[] x = new double[RandomNumbers.randomIntBetween(random(), 2, maxBound)];
-      double[] y = new double[x.length];
+      float[] x = new float[RandomNumbers.randomIntBetween(random(), 2, maxBound)];
+      float[] y = new float[x.length];
       for (int i = 0, j = 0; j < x.length && i < shapes.length; ++i, ++j) {
         XYLine l = (XYLine) (shapes[i]);
         if (random().nextBoolean() && l != null) {
           int v = random().nextInt(l.numPoints() - 1);
-          x[j] = l.getX(v);
-          y[j] = l.getY(v);
+          x[j] = (float)l.getX(v);
+          y[j] = (float)l.getY(v);
         } else {
-          x[j] = ShapeTestUtil.nextDouble();
-          y[j] = ShapeTestUtil.nextDouble();
+          x[j] = (float)ShapeTestUtil.nextDouble();
+          y[j] = (float)ShapeTestUtil.nextDouble();
         }
       }
       return new XYLine(x, y);

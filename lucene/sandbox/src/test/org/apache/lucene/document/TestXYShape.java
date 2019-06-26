@@ -66,11 +66,11 @@ public class TestXYShape extends LuceneTestCase {
     // add a line document
     document = new Document();
     // add a line string
-    double x[] = new double[p.numPoints() - 1];
-    double y[] = new double[p.numPoints() - 1];
+    float x[] = new float[p.numPoints() - 1];
+    float y[] = new float[p.numPoints() - 1];
     for (int i = 0; i < x.length; ++i) {
-      x[i] = p.getPolyX(i);
-      y[i] = p.getPolyY(i);
+      x[i] = (float)p.getPolyX(i);
+      y[i] = (float)p.getPolyY(i);
     }
     XYLine l = new XYLine(x, y);
     addLineToDoc(FIELDNAME, document, l);
@@ -94,15 +94,15 @@ public class TestXYShape extends LuceneTestCase {
 
     // search w/ an intersecting polygon
     q = XYShape.newPolygonQuery(FIELDNAME, QueryRelation.INTERSECTS, new XYPolygon(
-        new double[] {minX, minX, maxX, maxX, minX},
-        new double[] {minY, maxY, maxY, minY, minY}
+        new float[] {(float)minX, (float)minX, (float)maxX, (float)maxX, (float)minX},
+        new float[] {(float)minY, (float)maxY, (float)maxY, (float)minY, (float)minY}
     ));
     assertEquals(2, searcher.count(q));
 
     // search w/ an intersecting line
     q = XYShape.newLineQuery(FIELDNAME, QueryRelation.INTERSECTS, new XYLine(
-       new double[] {minX, minX, maxX, maxX},
-       new double[] {minY, maxY, maxY, minY}
+       new float[] {(float)minX, (float)minX, (float)maxX, (float)maxX},
+       new float[] {(float)minY, (float)maxY, (float)maxY, (float)minY}
     ));
     assertEquals(2, searcher.count(q));
 

@@ -263,8 +263,8 @@ public class TestLatLonShape extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document document = new Document();
-    BaseShapeTestCase.Point p = (BaseShapeTestCase.Point) BaseLatLonShapeTestCase.ShapeType.POINT.nextShape();
-    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.y, p.x);
+    BaseLatLonShapeTestCase.Point p = (BaseLatLonShapeTestCase.Point) BaseLatLonShapeTestCase.ShapeType.POINT.nextShape();
+    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.lat, p.lon);
     for (Field f : fields) {
       document.add(f);
     }
@@ -276,7 +276,7 @@ public class TestLatLonShape extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
 
     // search by same point
-    Query q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.INTERSECTS, p.y, p.x, p.y, p.x);
+    Query q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.INTERSECTS, p.lat, p.lat, p.lon, p.lon);
     assertEquals(1, s.count(q));
     IOUtils.close(r, dir);
   }

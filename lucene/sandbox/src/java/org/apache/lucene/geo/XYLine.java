@@ -42,7 +42,7 @@ public class XYLine {
   /**
    * Creates a new Line from the supplied x/y array.
    */
-  public XYLine(double[] x, double[] y) {
+  public XYLine(float[] x, float[] y) {
     if (x == null) {
       throw new IllegalArgumentException("x must not be null");
     }
@@ -68,8 +68,12 @@ public class XYLine {
       maxY = Math.max(y[i], maxY);
     }
 
-    this.x = x.clone();
-    this.y = y.clone();
+    this.x = new double[x.length];
+    this.y = new double[y.length];
+    for (int i = 0; i < x.length; ++i) {
+      this.x[i] = (double)x[i];
+      this.y[i] = (double)y[i];
+    }
     this.minX = minX;
     this.maxX = maxX;
     this.minY = minY;

@@ -222,7 +222,7 @@ public abstract class ShapeField {
   }
 
   /**
-   * Decode a triangle encoded by {@link LatLonShape#encodeTriangle(byte[], int, int, int, int, int, int)}.
+   * Decode a triangle encoded by {@link ShapeField#encodeTriangle(byte[], int, int, int, int, int, int)}.
    */
   public static void decodeTriangle(byte[] t, int[] triangle) {
     assert triangle.length == 6;

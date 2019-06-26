@@ -45,7 +45,7 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
     Point[] points = (Point[]) o;
     List<Field> allFields = new ArrayList<>();
     for (Point point : points) {
-      Field[] fields = LatLonShape.createIndexableFields(name, point.y, point.x);
+      Field[] fields = LatLonShape.createIndexableFields(name, point.lat, point.lon);
       for (Field field : fields) {
         allFields.add(field);
       }

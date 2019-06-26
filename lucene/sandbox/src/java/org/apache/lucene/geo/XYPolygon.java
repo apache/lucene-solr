@@ -43,7 +43,7 @@ public class XYPolygon {
   /**
    * Creates a new Polygon from the supplied x, y arrays, and optionally any holes.
    */
-  public XYPolygon(double[] x, double[] y, XYPolygon... holes) {
+  public XYPolygon(float[] x, float[] y, XYPolygon... holes) {
     if (x == null) {
       throw new IllegalArgumentException("x must not be null");
     }
@@ -71,8 +71,12 @@ public class XYPolygon {
         throw new IllegalArgumentException("holes may not contain holes: polygons may not nest.");
       }
     }
-    this.x = x.clone();
-    this.y = y.clone();
+    this.x = new double[x.length];
+    this.y = new double[y.length];
+    for (int i = 0; i < x.length; ++i) {
+      this.x[i] = (double)x[i];
+      this.y[i] = (double)y[i];
+    }
     this.holes = holes.clone();
 
     // compute bounding box

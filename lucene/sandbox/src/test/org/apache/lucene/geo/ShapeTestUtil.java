@@ -56,16 +56,16 @@ public class ShapeTestUtil {
   }
 
   private static XYPolygon trianglePolygon(XYRectangle box) {
-    final double[] polyX = new double[4];
-    final double[] polyY = new double[4];
-    polyX[0] = box.minX;
-    polyY[0] = box.minY;
-    polyX[1] = box.minX;
-    polyY[1] = box.minY;
-    polyX[2] = box.minX;
-    polyY[2] = box.minY;
-    polyX[3] = box.minX;
-    polyY[3] = box.minY;
+    final float[] polyX = new float[4];
+    final float[] polyY = new float[4];
+    polyX[0] = (float)box.minX;
+    polyY[0] = (float)box.minY;
+    polyX[1] = (float)box.minX;
+    polyY[1] = (float)box.minY;
+    polyX[2] = (float)box.minX;
+    polyY[2] = (float)box.minY;
+    polyX[3] = (float)box.minX;
+    polyY[3] = (float)box.minY;
     return new XYPolygon(polyX, polyY);
   }
 
@@ -103,18 +103,18 @@ public class ShapeTestUtil {
   }
 
   private static XYPolygon boxPolygon(XYRectangle box) {
-    final double[] polyX = new double[5];
-    final double[] polyY = new double[5];
-    polyX[0] = box.minX;
-    polyY[0] = box.minY;
-    polyX[1] = box.minX;
-    polyY[1] = box.minY;
-    polyX[2] = box.minX;
-    polyY[2] = box.minY;
-    polyX[3] = box.minX;
-    polyY[3] = box.minY;
-    polyX[4] = box.minX;
-    polyY[4] = box.minY;
+    final float[] polyX = new float[5];
+    final float[] polyY = new float[5];
+    polyX[0] = (float)box.minX;
+    polyY[0] = (float)box.minY;
+    polyX[1] = (float)box.minX;
+    polyY[1] = (float)box.minY;
+    polyX[2] = (float)box.minX;
+    polyY[2] = (float)box.minY;
+    polyX[3] = (float)box.minX;
+    polyY[3] = (float)box.minY;
+    polyX[4] = (float)box.minX;
+    polyY[4] = (float)box.minY;
     return new XYPolygon(polyX, polyY);
   }
 
@@ -127,8 +127,8 @@ public class ShapeTestUtil {
       double radius = 0.1 + 20 * random().nextDouble();
       double radiusDelta = random().nextDouble();
 
-      ArrayList<Double> xList = new ArrayList<>();
-      ArrayList<Double> yList = new ArrayList<>();
+      ArrayList<Float> xList = new ArrayList<>();
+      ArrayList<Float> yList = new ArrayList<>();
       double angle = 0.0;
       while (true) {
         angle += random().nextDouble()*40.0;
@@ -143,8 +143,8 @@ public class ShapeTestUtil {
         len = StrictMath.min(len, StrictMath.min(maxX, maxY));
 
         //System.out.println("    len=" + len);
-        double x = centerX + len * Math.cos(SloppyMath.toRadians(angle));
-        double y = centerY + len * Math.sin(SloppyMath.toRadians(angle));
+        float x = (float)(centerX + len * Math.cos(SloppyMath.toRadians(angle)));
+        float y = (float)(centerY + len * Math.sin(SloppyMath.toRadians(angle)));
 
         xList.add(x);
         yList.add(y);
@@ -156,8 +156,8 @@ public class ShapeTestUtil {
       xList.add(xList.get(0));
       yList.add(yList.get(0));
 
-      double[] xArray = new double[xList.size()];
-      double[] yArray = new double[yList.size()];
+      float[] xArray = new float[xList.size()];
+      float[] yArray = new float[yList.size()];
       for(int i=0;i<xList.size();i++) {
         xArray[i] = xList.get(i);
         yArray[i] = yList.get(i);
@@ -172,32 +172,27 @@ public class ShapeTestUtil {
    * Do not invoke me across the dateline or a pole!! */
   public static XYPolygon createRegularPolygon(double centerX, double centerY, double radius, int gons) {
 
-    // System.out.println("MAKE POLY: centerLat=" + centerLat + " centerLon=" + centerLon + " radiusMeters=" + radiusMeters + " gons=" + gons);
-
     double maxX = StrictMath.min(StrictMath.abs(Float.MAX_VALUE - centerX), StrictMath.abs(-Float.MAX_VALUE - centerX));
     double maxY = StrictMath.min(StrictMath.abs(Float.MAX_VALUE - centerY), StrictMath.abs(-Float.MAX_VALUE - centerY));
 
     radius = StrictMath.min(radius, StrictMath.min(maxX, maxY));
 
-    double[][] result = new double[2][];
-    result[0] = new double[gons+1];
-    result[1] = new double[gons+1];
+    float[][] result = new float[2][];
+    result[0] = new float[gons+1];
+    result[1] = new float[gons+1];
     //System.out.println("make gon=" + gons);
     for(int i=0;i<gons;i++) {
       double angle = 360.0-i*(360.0/gons);
       //System.out.println("  angle " + angle);
       double x = Math.cos(StrictMath.toRadians(angle));
       double y = Math.sin(StrictMath.toRadians(angle));
-      result[0][i] = centerY + y * radius;
-      result[1][i] = centerX + x * radius;
+      result[0][i] = (float)(centerY + y * radius);
+      result[1][i] = (float)(centerX + x * radius);
     }
 
     // close poly
     result[0][gons] = result[0][0];
     result[1][gons] = result[1][0];
-
-    //System.out.println("  polyLats=" + Arrays.toString(result[0]));
-    //System.out.println("  polyLons=" + Arrays.toString(result[1]));
 
     return new XYPolygon(result[0], result[1]);
   }

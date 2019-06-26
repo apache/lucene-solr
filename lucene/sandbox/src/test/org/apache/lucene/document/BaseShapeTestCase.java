@@ -559,25 +559,4 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
       return this;
     }
   }
-
-  /** internal point class for testing point shapes */
-  protected static class Point {
-    double x;
-    double y;
-
-    public Point(double x, double y) {
-      this.x = x;
-      this.y = y;
-    }
-
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append("POINT(");
-      sb.append(x);
-      sb.append(',');
-      sb.append(y);
-      sb.append(')');
-      return sb.toString();
-    }
-  }
 }

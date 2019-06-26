@@ -46,8 +46,8 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
       for (int i = 0, j = 0; j < lats.length && i < shapes.length; ++i, ++j) {
         Point p = (Point) (shapes[i]);
         if (random().nextBoolean() && p != null) {
-          lats[j] = p.y;
-          lons[j] = p.x;
+          lats[j] = p.lat;
+          lons[j] = p.lon;
         } else {
           lats[j] = GeoTestUtil.nextLatitude();
           lons[j] = GeoTestUtil.nextLongitude();
@@ -61,19 +61,13 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
   @Override
   protected Field[] createIndexableFields(String field, Object point) {
     Point p = (Point)point;
-    return LatLonShape.createIndexableFields(field, p.y, p.x);
+    return LatLonShape.createIndexableFields(field, p.lat, p.lon);
   }
 
   @Override
   protected Validator getValidator() {
     return new PointValidator(this.ENCODER);
   }
-
-//  @Override
-//  protected Validator getValidator(QueryRelation relation) {
-//    VALIDATOR.setRelation(relation);
-//    return VALIDATOR;
-//  }
 
   protected static class PointValidator extends Validator {
     protected PointValidator(Encoder encoder) {
@@ -83,8 +77,8 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Point p = (Point)shape;
-      double lat = encoder.quantizeY(p.y);
-      double lon = encoder.quantizeX(p.x);
+      double lat = encoder.quantizeY(p.lat);
+      double lon = encoder.quantizeX(p.lon);
       boolean isDisjoint = lat < minLat || lat > maxLat;
 
       isDisjoint = isDisjoint || ((minLon > maxLon)
@@ -107,8 +101,8 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     private boolean testPoint(EdgeTree tree, Point p) {
-      double lat = encoder.quantizeY(p.y);
-      double lon = encoder.quantizeX(p.x);
+      double lat = encoder.quantizeY(p.lat);
+      double lon = encoder.quantizeX(p.lon);
       // for consistency w/ the query we test the point as a triangle
       Relation r = tree.relateTriangle(lon, lat, lon, lat, lon, lat);
       if (queryRelation == QueryRelation.WITHIN) {

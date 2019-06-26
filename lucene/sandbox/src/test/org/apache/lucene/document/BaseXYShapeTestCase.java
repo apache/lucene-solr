@@ -105,10 +105,12 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
 
   public static XYLine getNextLine() {
     XYPolygon poly = ShapeTestUtil.nextPolygon();
-    double[] x = new double[poly.numPoints() - 1];
-    double[] y = new double[x.length];
-    System.arraycopy(poly.getPolyX(), 0, x, 0, x.length);
-    System.arraycopy(poly.getPolyY(), 0, y, 0, y.length);
+    float[] x = new float[poly.numPoints() - 1];
+    float[] y = new float[x.length];
+    for (int i = 0; i < x.length; ++i) {
+      x[i] = (float) poly.getPolyX(i);
+      y[i] = (float) poly.getPolyY(i);
+    }
 
     return new XYLine(x, y);
   }
@@ -162,17 +164,17 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   protected enum ShapeType {
     POINT() {
       public Point nextShape() {
-        return new Point(random().nextDouble(), random().nextDouble());
+        return new Point((float)random().nextDouble(), (float)random().nextDouble());
       }
     },
     LINE() {
       public XYLine nextShape() {
         XYPolygon p = ShapeTestUtil.nextPolygon();
-        double[] x = new double[p.numPoints() - 1];
-        double[] y = new double[x.length];
+        float[] x = new float[p.numPoints() - 1];
+        float[] y = new float[x.length];
         for (int i = 0; i < x.length; ++i) {
-          x[i] = p.getPolyX(i);
-          y[i] = p.getPolyY(i);
+          x[i] = (float)p.getPolyX(i);
+          y[i] = (float)p.getPolyY(i);
         }
         return new XYLine(x, y);
       }
@@ -204,6 +206,27 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
         return POLYGON;
       }
       throw new IllegalArgumentException("invalid shape type from " + shape.toString());
+    }
+  }
+
+  /** internal point class for testing point shapes */
+  protected static class Point {
+    float x;
+    float y;
+
+    public Point(float x, float y) {
+      this.x = x;
+      this.y = y;
+    }
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append("POINT(");
+      sb.append(x);
+      sb.append(',');
+      sb.append(y);
+      sb.append(')');
+      return sb.toString();
     }
   }
 }

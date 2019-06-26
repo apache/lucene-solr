@@ -329,4 +329,25 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
     }
   }
 
+  /** internal lat lon point class for testing point shapes */
+  protected static class Point {
+    double lon;
+    double lat;
+
+    public Point(double lon, double lat) {
+      this.lon = lon;
+      this.lat = lat;
+    }
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append("POINT(");
+      sb.append(lon);
+      sb.append(',');
+      sb.append(lat);
+      sb.append(')');
+      return sb.toString();
+    }
+  }
+
 }
