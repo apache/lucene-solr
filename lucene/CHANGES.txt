@@ -47,6 +47,9 @@ API Changes
   and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
   Grand, Alan Woodward)
 
+* LUCENE-8856: Intervals queries have moved from the sandbox to the queries
+  module. (Alan Woodward)
+
 New Features
 
 * LUCENE-8815: Provide a DoubleValues implementation for retrieving the value of features without
