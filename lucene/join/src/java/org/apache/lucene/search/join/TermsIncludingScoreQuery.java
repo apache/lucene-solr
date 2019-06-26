@@ -33,12 +33,15 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 
-class TermsIncludingScoreQuery extends Query {
+class TermsIncludingScoreQuery extends Query implements Accountable {
+  protected static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(TermsIncludingScoreQuery.class);
 
   private final ScoreMode scoreMode;
   private final String toField;
@@ -53,6 +56,8 @@ class TermsIncludingScoreQuery extends Query {
   // id of the context rather than the context itself in order not to hold references to index readers
   private final Object topReaderContextId;
 
+  private final long ramBytesUsed; // cache
+
   TermsIncludingScoreQuery(ScoreMode scoreMode, String toField, boolean multipleValuesPerDocument, BytesRefHash terms, float[] scores,
                            String fromField, Query fromQuery, Object indexReaderContextId) {
     this.scoreMode = scoreMode;
@@ -65,6 +70,14 @@ class TermsIncludingScoreQuery extends Query {
     this.fromField = fromField;
     this.fromQuery = fromQuery;
     this.topReaderContextId = indexReaderContextId;
+
+    this.ramBytesUsed = BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(fromField) +
+        RamUsageEstimator.sizeOfObject(fromQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+        RamUsageEstimator.sizeOfObject(ords) +
+        RamUsageEstimator.sizeOfObject(scores) +
+        RamUsageEstimator.sizeOfObject(terms) +
+        RamUsageEstimator.sizeOfObject(toField);
   }
 
   @Override
@@ -96,6 +109,11 @@ class TermsIncludingScoreQuery extends Query {
   @Override
   public int hashCode() {
     return classHash() + Objects.hash(scoreMode, toField, fromField, fromQuery, topReaderContextId);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed;
   }
 
   @Override
