@@ -147,6 +147,8 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final String URL_SCHEME = "urlScheme";
 
+  private static final String SOLR_ENVIRONMENT = "environment";
+
   public static final String REPLICA_TYPE = "type";
 
   /**
@@ -277,6 +279,7 @@ public class ZkStateReader implements SolrCloseable {
       DEFAULT_SHARD_PREFERENCES,
       MAX_CORES_PER_NODE,
       SAMPLE_PERCENTAGE,
+      SOLR_ENVIRONMENT,
       CollectionAdminParams.DEFAULTS)));
 
   /**
