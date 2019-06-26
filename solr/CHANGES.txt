@@ -144,6 +144,8 @@ New Features
 
 * SOLR-10291: Add matches Stream Evaluator to support regex matching (Joel Bernstein)
 
+* SOLR-13367: Highlighting: Range queries will now highlight in hl.method=unified mode. (David Smiley)
+
 Bug Fixes
 ----------------------
 
@@ -176,6 +178,15 @@ Bug Fixes
   for callers that don't care about liveNodes. (hossman)
 
 * SOLR-13545: ContentStreamUpdateRequest refused to close file (Colvin Cowie, Mikhail Khludnev)
+
+* SOLR-12127: Updates containing 'set' operation with value null or empty list should be considered as Atomic Update
+  (Oliver Kuldmäe, Munendra S N, Ishan Chattopadhyaya)
+
+* SOLR-13187: Fix NPE when invalid query parser is specified and return 400 error code.
+  (Cesar Rodriguez, Marek, Charles Sanders, Munendra S N, Mikhail Khludnev)
+
+* SOLR-12979: Improve error message and change error code to 400 when collapse field is non-docValued and
+  non-uninvertible (hossman, Munendra S N)
 
 Other Changes
 ----------------------
@@ -216,6 +227,8 @@ Bug Fixes
 * SOLR-13523: In 8.1, Atomic Updates were broken (NPE) when the schema declared the new _nest_path_ field even if you
   weren't using nested docs.  In-place updates were not affected (worked).
   Reminder: if you don't need nested docs then remove both _root_ and _nest_path_ !  (David Smiley)
+
+* SOLR-13566: REINDEXCOLLECTION does not work with (basic) authentication. (Colvin Cowie, ab)
 
 ==================  8.1.1 ==================
 

@@ -60,7 +60,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
  * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the Jar in a single node.
  */
 public class BlobRepository {
-  private static final long MAX_JAR_SIZE = Long.parseLong(System.getProperty("runtme.lib.size", String.valueOf(5* 1024*1024)));
+  private static final long MAX_JAR_SIZE = Long.parseLong(System.getProperty("runtme.lib.size", String.valueOf(5 * 1024 * 1024)));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final Random RANDOM;
   static final Pattern BLOB_KEY_PATTERN_CHECKER = Pattern.compile(".*/\\d+");
@@ -89,8 +89,9 @@ public class BlobRepository {
   }
 
   // I wanted to {@link SolrCore#loadDecodeAndCacheBlob(String, Decoder)} below but precommit complains
+
   /**
-   * Returns the contents of a blob containing a ByteBuffer and increments a reference count. Please return the 
+   * Returns the contents of a blob containing a ByteBuffer and increments a reference count. Please return the
    * same object to decrease the refcount. This is normally used for storing jar files, and binary raw data.
    * If you are caching Java Objects you want to use {@code SolrCore#loadDecodeAndCacheBlob(String, Decoder)}
    *
@@ -98,27 +99,27 @@ public class BlobRepository {
    * @return The reference of a blob
    */
   public BlobContentRef<ByteBuffer> getBlobIncRef(String key) {
-   return getBlobIncRef(key, () -> addBlob(key));
+    return getBlobIncRef(key, () -> addBlob(key));
   }
-  
+
   /**
-   * Internal method that returns the contents of a blob and increments a reference count. Please return the same 
-   * object to decrease the refcount. Only the decoded content will be cached when this method is used. Component 
-   * authors attempting to share objects across cores should use 
+   * Internal method that returns the contents of a blob and increments a reference count. Please return the same
+   * object to decrease the refcount. Only the decoded content will be cached when this method is used. Component
+   * authors attempting to share objects across cores should use
    * {@code SolrCore#loadDecodeAndCacheBlob(String, Decoder)} which ensures that a proper close hook is also created.
    *
-   * @param key it is a combination of blob name and version like blobName/version
+   * @param key     it is a combination of blob name and version like blobName/version
    * @param decoder a decoder that knows how to interpret the bytes from the blob
    * @return The reference of a blob
    */
   BlobContentRef<Object> getBlobIncRef(String key, Decoder<Object> decoder) {
-    return getBlobIncRef(key.concat(decoder.getName()), () -> addBlob(key,decoder));
+    return getBlobIncRef(key.concat(decoder.getName()), () -> addBlob(key, decoder));
   }
 
   BlobContentRef getBlobIncRef(String key, Decoder decoder, String url, String sha512) {
     StringBuffer keyBuilder = new StringBuffer(key);
-    if (decoder != null) keyBuilder .append( decoder.getName());
-    keyBuilder.append("/").append( sha512);
+    if (decoder != null) keyBuilder.append(decoder.getName());
+    keyBuilder.append("/").append(sha512);
 
     return getBlobIncRef(keyBuilder.toString(), () -> new BlobContent<>(key, fetchBlobAndVerify(key, url, sha512), decoder));
   }
@@ -133,7 +134,7 @@ public class BlobRepository {
           try {
             aBlob = blobCreator.call();
           } catch (Exception e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Blob loading failed: "+e.getMessage(), e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Blob loading failed: " + e.getMessage(), e);
           }
         }
       }
@@ -151,7 +152,7 @@ public class BlobRepository {
   // For use cases sharing raw bytes
   private BlobContent<ByteBuffer> addBlob(String key) {
     ByteBuffer b = fetchBlob(key);
-    BlobContent<ByteBuffer> aBlob  = new BlobContent<>(key, b);
+    BlobContent<ByteBuffer> aBlob = new BlobContent<>(key, b);
     blobs.put(key, aBlob);
     return aBlob;
   }
@@ -159,11 +160,12 @@ public class BlobRepository {
   // for use cases sharing java objects
   private BlobContent<Object> addBlob(String key, Decoder<Object> decoder) {
     ByteBuffer b = fetchBlob(key);
-    String  keyPlusName = key + decoder.getName();
+    String keyPlusName = key + decoder.getName();
     BlobContent<Object> aBlob = new BlobContent<>(keyPlusName, b, decoder);
     blobs.put(keyPlusName, aBlob);
     return aBlob;
   }
+
   static String INVALID_JAR_MSG = "Invalid jar from {0} , expected sha512 hash : {1} , actual : {2}";
 
   private ByteBuffer fetchBlobAndVerify(String key, String url, String sha512) {
@@ -193,7 +195,7 @@ public class BlobRepository {
 
 
   /**
-   *  Package local for unit tests only please do not use elsewhere
+   * Package local for unit tests only please do not use elsewhere
    */
   ByteBuffer fetchBlob(String key) {
     Replica replica = getSystemCollReplica();
@@ -234,9 +236,11 @@ public class BlobRepository {
     ZkStateReader zkStateReader = this.coreContainer.getZkController().getZkStateReader();
     ClusterState cs = zkStateReader.getClusterState();
     DocCollection coll = cs.getCollectionOrNull(CollectionAdminParams.SYSTEM_COLL);
-    if (coll == null) throw new SolrException(SERVICE_UNAVAILABLE, CollectionAdminParams.SYSTEM_COLL + " collection not available");
+    if (coll == null)
+      throw new SolrException(SERVICE_UNAVAILABLE, CollectionAdminParams.SYSTEM_COLL + " collection not available");
     ArrayList<Slice> slices = new ArrayList<>(coll.getActiveSlices());
-    if (slices.isEmpty()) throw new SolrException(SERVICE_UNAVAILABLE, "No active slices for " + CollectionAdminParams.SYSTEM_COLL + " collection");
+    if (slices.isEmpty())
+      throw new SolrException(SERVICE_UNAVAILABLE, "No active slices for " + CollectionAdminParams.SYSTEM_COLL + " collection");
     Collections.shuffle(slices, RANDOM); //do load balancing
 
     Replica replica = null;
@@ -245,7 +249,7 @@ public class BlobRepository {
       Collections.shuffle(replicas, RANDOM);
       for (Replica r : replicas) {
         if (r.getState() == Replica.State.ACTIVE) {
-          if(zkStateReader.getClusterState().getLiveNodes().contains(r.get(ZkStateReader.NODE_NAME_PROP))){
+          if (zkStateReader.getClusterState().getLiveNodes().contains(r.get(ZkStateReader.NODE_NAME_PROP))) {
             replica = r;
             break;
           } else {
@@ -291,12 +295,12 @@ public class BlobRepository {
     @SuppressWarnings("unchecked")
     public BlobContent(String key, ByteBuffer buffer) {
       this.key = key;
-      this.content = (T) buffer; 
+      this.content = (T) buffer;
     }
 
     /**
-     * Get the cached object. 
-     * 
+     * Get the cached object.
+     *
      * @return the object representing the content that is cached.
      */
     public T get() {
@@ -310,14 +314,16 @@ public class BlobRepository {
     /**
      * A name by which to distinguish this decoding. This only needs to be implemented if you want to support
      * decoding the same blob content with more than one decoder.
-     * 
+     *
      * @return The name of the decoding, defaults to empty string.
      */
-    default String getName() { return ""; }
+    default String getName() {
+      return "";
+    }
 
     /**
      * A routine that knows how to convert the stream of bytes from the blob into a Java object.
-     * 
+     *
      * @param inputStream the bytes from a blob
      * @return A Java object of the specified type.
      */
