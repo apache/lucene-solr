@@ -22,6 +22,9 @@ API Changes
   byte[] that stores the UTF-8 bytes of the stored string.
   (Namgyu Kim via Adrien Grand)
 
+* LUCENE-8811: Deprecated BooleanQuery#setMaxClauseCount() and getMaxClauseCount
+  have been removed (Atri Sharma, Adrien Grand, Alan Woodward)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
