@@ -71,8 +71,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * </ul>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class StopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "stop";
+
   public static final String FORMAT_WORDSET = "wordset";
   public static final String FORMAT_SNOWBALL = "snowball";
   

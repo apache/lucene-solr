@@ -77,8 +77,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * <p>See related {@link org.apache.lucene.analysis.custom.CustomAnalyzer.Builder#whenTerm(Predicate)}
  *
  * @since 7.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class ProtectedTermFilterFactory extends ConditionalTokenFilterFactory implements ResourceLoaderAware {
+
+  public static final String NAME = "protectedTerm";
 
   public static final String PROTECTED_TERMS = "protected";
   public static final char FILTER_ARG_SEPARATOR = '.';

@@ -40,8 +40,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;
  * </pre>
  * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
 public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  public static final String NAME = "japanesePartOfSpeechStop";
+
   private final String stopTagFiles;
   private Set<String> stopTags;
 

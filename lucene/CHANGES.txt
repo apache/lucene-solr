@@ -65,6 +65,9 @@ New Features
   in an efficient manner, for use as a monitoring or classification tool.
   (Alan Woodward)
 
+* LUCENE-7714: Add a numeric range query in sandbox that takes advantage of index sorting.
+  (Julie Tibshirani via Jim Ferenczi)
+
 Bug Fixes
 
 * LUCENE-8831: Fixed LatLonShapeBoundingBoxQuery .hashCode methods. (Ignacio Vera)
@@ -109,6 +112,13 @@ Improvements
 * LUCENE-8845: Allow Intervals.prefix() and Intervals.wildcard() to specify
   their maximum allowed expansions (Alan Woodward)
 
+* LUCENE-8848 LUCENE-7757 LUCENE-8492: The UnifiedHighlighter now detects that parts of the query are not understood by
+  it, and thus it should not make optimizations that result in no highlights or slow highlighting.  This generally works
+  best for WEIGHT_MATCHES mode.  Consequently queries produced by ComplexPhraseQueryParser and the surround QueryParser
+  will now highlight correctly. (David Smiley)
+
+* LUCENE-8793: Luke enhanced UI for CustomAnalyzer: show detailed analysis steps. (Jun Ohtani via Tomoko Uchida)
+
 Optimizations
 
 * LUCENE-8796: Use exponential search instead of binary search in
@@ -117,6 +127,10 @@ Optimizations
 * LUCENE-8865: Use incoming thread for execution if IndexSearcher has an executor.
   Now caller threads execute at least one search on an index even if there is
   an executor provided to minimize thread context switching. (Simon Willnauer)
+
+* LUCENE-8868: New storing strategy for BKD tree leaves with low cardinality.
+  It stores the distinct values once with the cardinality value reducing the
+  storage cost.
 
 Test Framework
 
@@ -131,6 +145,13 @@ Other
 * LUCENE-8861: Script to find open Github PRs that needs attention (janhoy)
 
 * LUCENE-8852: ReleaseWizard tool for release managers (janhoy)
+
+* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
+  (Tomoko Uchida, Uwe Schindler)
+
+* LUCENE-8838: Remove support for Steiner points on Tessellator. (Ignacio Vera)
+
+* LUCENE-8879: Improve BKDRadixSelector tests. (Ignacio Vera)
 
 ======================= Lucene 8.1.1 =======================
 (No Changes)
@@ -433,7 +454,7 @@ Changes in Runtime Behavior
 
 * LUCENE-8535: Highlighter and FVH doesn't support ToParent and ToChildBlockJoinQuery out of the
   box anymore. In order to highlight on Block-Join Queries a custom WeightedSpanTermExtractor / FieldQuery
-  should be used. (Simon Willnauer, Jim Ferenczi, Julie Tibshiran)
+  should be used. (Simon Willnauer, Jim Ferenczi, Julie Tibshirani)
 
 * LUCENE-8563: BM25 scores don't include the (k1+1) factor in their numerator
   anymore. This doesn't affect ordering as this is a constant factor which is

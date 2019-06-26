@@ -41,9 +41,13 @@ import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LE
  * else {@link CharTokenizer}::DEFAULT_MAX_WORD_LEN</li>
  * </ul>
  * @deprecated Use {@link org.apache.lucene.analysis.core.LetterTokenizerFactory} and {@link LowerCaseFilterFactory}
+ * @lucene.spi {@value #NAME}
  */
 @Deprecated
 public class LowerCaseTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "lowercase";
 
   private final int maxTokenLen;
 

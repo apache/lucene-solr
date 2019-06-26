@@ -2938,6 +2938,74 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals("s1", replicaPosition.shard); // sanity check
   }
 
+  public void testPolicyForEmptyCollection() throws IOException, InterruptedException {
+    Map m = (Map) loadFromResource("testEmptyCollection.json");
+    Map clusterStateMap = (Map) m.remove("clusterstate");
+    Map replicaInfoMap = (Map) m.remove("replicaInfo");
+
+    ClusterState clusterState = ClusterState.load(1, clusterStateMap, ImmutableSet.of("node1", "node2"), CLUSTER_STATE);
+
+    List<String> shards = Arrays.asList("shard1", "shard2", "shard3");
+
+    Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
+        .forCollection("test_empty_collection")
+        .forShard(shards)
+        .assignNrtReplicas(1)
+        .build();
+
+    DelegatingCloudManager cloudManager = new DelegatingCloudManager(null) {
+      @Override
+      public ClusterStateProvider getClusterStateProvider() {
+        return new DelegatingClusterStateProvider(null) {
+          @Override
+          public ClusterState getClusterState() {
+            return clusterState;
+          }
+
+          @Override
+          public Set<String> getLiveNodes() {
+            return clusterState.getLiveNodes();
+          }
+        };
+      }
+
+      @Override
+      public DistribStateManager getDistribStateManager() {
+        return new DelegatingDistribStateManager(null) {
+          @Override
+          public AutoScalingConfig getAutoScalingConfig() {
+            return new AutoScalingConfig(new HashMap<>());
+          }
+        };
+      }
+
+      public NodeStateProvider getNodeStateProvider() {
+        return new DelegatingNodeStateProvider(null) {
+          @Override
+          public Map<String, Object> getNodeValues(String node, Collection<String> keys) {
+            return Collections.EMPTY_MAP;
+          }
+
+          @Override
+          public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
+            //return Collections.EMPTY_MAP;
+            return replicaInfoMap;
+          }
+        };
+      }
+
+    };
+
+    Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(cloudManager);
+    ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
+    DocCollection collection = state.getCollection("test_empty_collection");
+
+    Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(state, collection);
+    List<ReplicaPosition> replicaPositions = assignStrategy.assign(cloudManager, assignRequest);
+    assertEquals(2,replicaPositions.stream().map((rp)-> rp.node).distinct().count());
+    assertEquals(3,replicaPositions.stream().map((rp)-> rp.shard).distinct().count());
+  }
+
   /**
    * Tests that an empty policy should not persist implicitly added keys to MapWriter
    * <p>
