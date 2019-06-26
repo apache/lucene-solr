@@ -56,6 +56,31 @@ public abstract class QueryVisitor {
     return true;
   }
 
+
+  /**
+   * Get the metadata object associated with the given metadata tag.
+   * Note that the implementation of how the metadata is represented is not
+   * relevant for this API -- that is a visitor's decision
+   *
+   * @return null if metadata does not exists, value otherwise
+   */
+  public Object getMetadata(String metadataTag) { return null; }
+
+  /**
+   * Add a metadata object to the visitor's metadata store. Note that
+   * this method will put a new object if none exists or replace if the tag
+   * already exists.
+   */
+  public void addOrUpdateMetadata(String metadataTag, Object metadata) { }
+
+  /**
+   * Add a metadata object iff it does not exist
+   *
+   * @return true if object was added, false if metadata tag already existed hence
+   * not added
+   */
+  public boolean addMetadata(String metadataTag, Object metadata) { return false; }
+
   /**
    * Pulls a visitor instance for visiting child clauses of a query
    *
