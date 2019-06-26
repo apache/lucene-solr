@@ -128,6 +128,10 @@ Optimizations
   Now caller threads execute at least one search on an index even if there is
   an executor provided to minimize thread context switching. (Simon Willnauer)
 
+* LUCENE-8868: New storing strategy for BKD tree leaves with low cardinality.
+  It stores the distinct values once with the cardinality value reducing the
+  storage cost.
+
 Test Framework
 
 * LUCENE-8825: CheckHits now display the shard index in case of mismatch
