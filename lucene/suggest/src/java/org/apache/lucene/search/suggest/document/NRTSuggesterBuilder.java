@@ -21,6 +21,7 @@ import java.util.PriorityQueue;
 
 import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -115,7 +116,7 @@ final class NRTSuggesterBuilder {
 
   /**
    * Builds and stores a FST that can be loaded with
-   * {@link NRTSuggester#load(org.apache.lucene.store.IndexInput)}
+   * {@link NRTSuggester#load(IndexInput, CompletionPostingsFormat.FSTLoadMode)})}
    */
   public boolean store(DataOutput output) throws IOException {
     final FST<PairOutputs.Pair<Long, BytesRef>> build = builder.finish();
@@ -124,7 +125,7 @@ final class NRTSuggesterBuilder {
     }
     build.save(output);
 
-    /* write some more meta-info */
+    /* write some more  meta-info */
     assert maxAnalyzedPathsPerOutput > 0;
     output.writeVInt(maxAnalyzedPathsPerOutput);
     output.writeVInt(END_BYTE);

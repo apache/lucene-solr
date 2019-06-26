@@ -45,6 +45,9 @@ New Features
 * LUCENE-7714: Add a numeric range query in sandbox that takes advantage of index sorting.
   (Julie Tibshirani via Jim Ferenczi)
 
+* LUCENE-8859: The completion suggester's postings format now have an option to
+  load its internal FST off-heap. (Jim Ferenczi)
+
 Bug Fixes
 
 * LUCENE-8831: Fixed LatLonShapeBoundingBoxQuery .hashCode methods. (Ignacio Vera)
@@ -70,7 +73,7 @@ Bug Fixes
   underlying filesystem directory. (Simon Willnauer)
 
 * LUCENE-8853: FileSwitchDirectory now applies best effort to place tmp files in the same
-  direcotry as the target files. (Simon Willnauer)
+  directory as the target files. (Simon Willnauer)
 
 Improvements
 
