@@ -33,8 +33,10 @@ import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Transition;
@@ -66,7 +68,9 @@ import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZ
  *
  *  @lucene.experimental */
 
-public class TermAutomatonQuery extends Query {
+public class TermAutomatonQuery extends Query implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(TermAutomatonQuery.class);
+
   private final String field;
   private final Automaton.Builder builder;
   Automaton det;
@@ -262,6 +266,16 @@ public class TermAutomatonQuery extends Query {
     // that no two instances are equivalent instead (until somebody finds a better way to check
     // on automaton equivalence quickly).
     return System.identityHashCode(this);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(builder) +
+        RamUsageEstimator.sizeOfObject(det) +
+        RamUsageEstimator.sizeOfObject(field) +
+        RamUsageEstimator.sizeOfObject(idToTerm) +
+        RamUsageEstimator.sizeOfObject(termToID);
   }
 
   /** Returns the dot (graphviz) representation of this automaton.
