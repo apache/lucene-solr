@@ -46,7 +46,7 @@ import java.util.regex.Pattern;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.RecoveryStrategy;
@@ -234,10 +234,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     // Parse indexConfig section, using mainIndex as backup in case old config is used
     indexConfig = new SolrIndexConfig(this, "indexConfig", null);
 
-    booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
-    if (BooleanQuery.getMaxClauseCount() < booleanQueryMaxClauseCount) {
+    booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", IndexSearcher.getMaxClauseCount());
+    if (IndexSearcher.getMaxClauseCount() < booleanQueryMaxClauseCount) {
       log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} "+
-               "and will have no effect", booleanQueryMaxClauseCount, BooleanQuery.getMaxClauseCount());
+               "and will have no effect", booleanQueryMaxClauseCount, IndexSearcher.getMaxClauseCount());
       log.warn("set 'maxBooleanClauses' in solr.xml to increase global limit");
     }
     

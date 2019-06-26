@@ -11,6 +11,11 @@ API Changes
   This change is fully backwards compatible since ExecutorService directly
   implements Executor. (Simon Willnauer)
 
+* LUCENE-8811: BooleanQuery#setMaxClauseCount() and #getMaxClauseCount() have
+  moved to IndexSearcher. The checks are now implemented using a QueryVisitor
+  and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
+  Grand, Alan Woodward)
+
 New Features
 
 * LUCENE-8815: Provide a DoubleValues implementation for retrieving the value of features without
