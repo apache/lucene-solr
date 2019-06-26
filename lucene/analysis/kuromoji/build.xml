@@ -69,13 +69,8 @@
            originalfile="${dict.src.dir}/Noun.proper.csv"/>
   </target>
 
-  <path id="tools.dependencies">
-    <fileset dir="../icu/lib"/>
-  </path>
-
   <path id="tools.classpath">
     <path refid="classpath"/>
-    <path refid="tools.dependencies"/>
     <pathelement location="${build.dir}/classes/java"/>
     <pathelement location="${build.dir}/classes/tools"/>
   </path>
@@ -108,14 +103,7 @@
     </sequential>
   </target>
 
-   <!-- we don't actually need to compile this thing, we just want its lib -->
-   <target name="resolve-icu">
-     <ant dir="../icu/" target="resolve" inheritAll="false">
-       <propertyset refid="uptodate.and.compiled.properties"/>
-     </ant>
-   </target>
-
-  <target name="compile-tools" depends="resolve-icu, compile-core, common.compile-tools">
+  <target name="compile-tools" depends="compile-core, common.compile-tools">
     <compile
       srcdir="src/tools/java"
       destdir="${build.dir}/classes/tools">
@@ -136,8 +124,8 @@
      </compile>
   </target>
 
-  <target name="test-tools" depends="compile-tools-tests">
-    <test-macro dataDir="src/tools/test" junit.classpath="tools.test.classpath"/>
+  <target name="test-tools" depends="install-junit4-taskdef, compile-tools-tests">
+    <test-macro testsDir="${build.dir}/classes/tools-test" workDir="src/tools/test" junit.classpath="tools.test.classpath"/>
   </target>
 
   <target name="compile-test" depends="module-build.compile-test, compile-tools-tests"/>

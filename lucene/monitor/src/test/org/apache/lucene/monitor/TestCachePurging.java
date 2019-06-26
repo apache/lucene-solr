@@ -132,7 +132,7 @@ public class TestCachePurging extends MonitorTestBase {
 
   public void testBackgroundPurges() throws IOException, InterruptedException {
 
-    MonitorConfiguration config = new MonitorConfiguration().setPurgeFrequency(1, TimeUnit.SECONDS);
+    MonitorConfiguration config = new MonitorConfiguration().setPurgeFrequency(50, TimeUnit.MILLISECONDS);
     try (Monitor monitor = new Monitor(ANALYZER, Presearcher.NO_FILTERING, config)) {
 
       assertEquals(-1, monitor.getQueryCacheStats().lastPurged);
@@ -140,11 +140,20 @@ public class TestCachePurging extends MonitorTestBase {
       for (int i = 0; i < 100; i++) {
         monitor.register(newMonitorQuery(i));
       }
-      monitor.deleteById("5");
-      assertEquals(99, monitor.getQueryCacheStats().queries);
       assertEquals(100, monitor.getQueryCacheStats().cachedQueries);
 
-      TimeUnit.SECONDS.sleep(2);
+      monitor.deleteById("5");
+      assertEquals(99, monitor.getQueryCacheStats().queries);
+
+      CountDownLatch latch = new CountDownLatch(1);
+      monitor.addQueryIndexUpdateListener(new MonitorUpdateListener() {
+        @Override
+        public void onPurge() {
+          latch.countDown();
+        }
+      });
+
+      assertTrue(latch.await(5, TimeUnit.SECONDS));
       assertEquals(99, monitor.getQueryCacheStats().queries);
       assertEquals(99, monitor.getQueryCacheStats().cachedQueries);
       assertTrue(monitor.getQueryCacheStats().lastPurged > 0);

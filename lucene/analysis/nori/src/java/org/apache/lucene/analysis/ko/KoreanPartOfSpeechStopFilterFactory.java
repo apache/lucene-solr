@@ -43,8 +43,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @lucene.experimental
  *
  * @since 7.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class KoreanPartOfSpeechStopFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "koreanPartOfSpeechStop";
+
   private Set<POS.Tag> stopTags;
 
   /** Creates a new KoreanPartOfSpeechStopFilterFactory */

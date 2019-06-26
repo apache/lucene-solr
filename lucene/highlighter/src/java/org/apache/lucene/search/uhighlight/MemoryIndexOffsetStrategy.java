@@ -57,6 +57,11 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
    * Build one {@link CharacterRunAutomaton} matching any term the query might match.
    */
   private static CharacterRunAutomaton buildCombinedAutomaton(UHComponents components) {
+    // We don't know enough about the query to do this confidently
+    if (components.getTerms() == null || components.getAutomata() == null) {
+      return null;
+    }
+
     List<CharacterRunAutomaton> allAutomata = new ArrayList<>();
     if (components.getTerms().length > 0) {
       allAutomata.add(new CharacterRunAutomaton(Automata.makeStringUnion(Arrays.asList(components.getTerms()))));
@@ -93,7 +98,9 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
     TokenStream tokenStream = tokenStream(content);
 
     // Filter the tokenStream to applicable terms
-    tokenStream = newKeepWordFilter(tokenStream, preMemIndexFilterAutomaton);
+    if (preMemIndexFilterAutomaton != null) {
+      tokenStream = newKeepWordFilter(tokenStream, preMemIndexFilterAutomaton);
+    }
     memoryIndex.reset();
     memoryIndex.addField(getField(), tokenStream);//note: calls tokenStream.reset() & close()
 

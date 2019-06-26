@@ -61,7 +61,9 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
     return new RequestWriter.ContentWriter() {
       @Override
       public void write(OutputStream os) throws IOException {
-        IOUtils.copy(stream.getStream(), os);
+        try(var inStream = stream.getStream()) {
+          IOUtils.copy(inStream, os);
+        }
       }
 
       @Override

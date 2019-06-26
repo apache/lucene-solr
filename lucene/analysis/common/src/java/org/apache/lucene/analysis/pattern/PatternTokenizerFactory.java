@@ -57,8 +57,13 @@ import org.apache.lucene.util.AttributeFactory;
  * 
  * @see PatternTokenizer
  * @since solr1.2
+ * @lucene.spi {@value #NAME}
  */
 public class PatternTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "pattern";
+
   public static final String PATTERN = "pattern";
   public static final String GROUP = "group";
  
