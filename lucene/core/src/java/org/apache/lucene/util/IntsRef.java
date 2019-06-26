@@ -116,7 +116,7 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
     sb.append(']');
     return sb.toString();
   }
-  
+
   /**
    * Creates a new IntsRef that points to a copy of the ints from 
    * <code>other</code>

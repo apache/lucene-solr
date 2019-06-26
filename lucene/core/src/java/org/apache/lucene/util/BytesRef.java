@@ -31,9 +31,9 @@ package org.apache.lucene.util;
  * are sorted lexicographically, numerically treating elements as unsigned.
  * This is identical to Unicode codepoint order.
  */
-public final class BytesRef implements Comparable<BytesRef>,Cloneable {
+public final class BytesRef implements Comparable<BytesRef>, Cloneable {
   /** An empty byte array for convenience */
-  public static final byte[] EMPTY_BYTES = new byte[0]; 
+  public static final byte[] EMPTY_BYTES = new byte[0];
 
   /** The contents of the BytesRef. Should never be {@code null}. */
   public byte[] bytes;
