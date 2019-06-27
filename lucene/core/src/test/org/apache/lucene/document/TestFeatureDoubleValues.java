@@ -145,7 +145,6 @@ public class TestFeatureDoubleValues extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
-    System.out.println(writer.w.getConfig());
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
