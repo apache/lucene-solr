@@ -814,7 +814,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
     @Override
     public int advance(int target) throws IOException {
-      throw new UnsupportedOperationException();
+      return slowAdvance(target);
     }
 
     @Override
