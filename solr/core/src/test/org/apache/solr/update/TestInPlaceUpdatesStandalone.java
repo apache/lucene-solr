@@ -41,6 +41,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -332,6 +333,27 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     assertJQ(req("qt","/get", "id","1", "fl","id,inplace_updatable_float,inplace_updatable_int"),
         "=={'doc':{'id':'1', 'inplace_updatable_float':" + 202.0 + ",'inplace_updatable_int':" + 12 + "}}");
 
+  }
+
+  @Test
+  public void testUpdateWithValueNull() throws Exception {
+    long doc = addAndGetVersion(sdoc("id", "1", "title_s", "first", "inplace_updatable_float", 42), null);
+    assertU(commit("softCommit", "false"));
+
+    assertQ(req("q", "*:*", "fq", "inplace_updatable_float:[* TO *]"), "//*[@numFound='1']");
+    // RTG before update
+    assertJQ(req("qt","/get", "id","1", "fl","id,inplace_updatable_float,title_s"),
+        "=={'doc':{'id':'1', 'inplace_updatable_float':" + 42.0 + ",'title_s':" + "first" + "}}");
+
+    // set the value to null
+    doc = addAndAssertVersion(doc, "id", "1", "inplace_updatable_float", map("set", null));
+    assertU(commit("softCommit", "false"));
+
+    // numProducts should be 0
+    assertQ(req("q", "*:*", "fq", "inplace_updatable_float:[* TO *]"), "//*[@numFound='0']");
+    // after update
+    assertJQ(req("qt","/get", "id","1", "fl","id,inplace_updatable_float,title_s"),
+        "=={'doc':{'id':'1','title_s':first}}");
   }
 
   @Test
@@ -1086,7 +1108,30 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
       assertEquals(version1, cmd.prevVersion);
     }
   }
-  
+
+  public void testFailOnVersionConflicts() throws Exception {
+
+    assertU(add(doc("id", "1", "title_s", "first")));
+    assertU(commit());
+    assertQ(req("q", "title_s:first"), "//*[@numFound='1']");
+    assertU(add(doc("id", "1", "title_s", "first1")));
+    assertU(commit());
+    assertQ(req("q", "title_s:first1"), "//*[@numFound='1']");
+    assertFailedU(add(doc("id", "1", "title_s", "first2", "_version_", "-1")));
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("_version_", "-1");
+    SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "first2");
+    SolrInputDocument doc2 = new SolrInputDocument("id", "2", "title_s", "second");
+    SolrException ex = expectThrows(SolrException.class, "This should have failed", () -> updateJ(jsonAdd(doc, doc2), params));
+
+    assertTrue(ex.getMessage().contains("version conflict for"));
+    params.add(CommonParams.FAIL_ON_VERSION_CONFLICTS, "false");
+    updateJ(jsonAdd(doc, doc2), params);//this should not throw any error
+    assertU(commit());
+    assertQ(req("q", "title_s:second"), "//*[@numFound='1']");
+    assertQ(req("q", "title_s:first1"), "//*[@numFound='1']");// but the old value exists
+    assertQ(req("q", "title_s:first2"), "//*[@numFound='0']");// and the new value does not reflect
+  }
   /** 
    * Helper method that sets up a req/cmd to run {@link AtomicUpdateDocumentMerger#computeInPlaceUpdatableFields} 
    * on the specified solr input document.

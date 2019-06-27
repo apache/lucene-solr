@@ -32,7 +32,8 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,27 +45,39 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
   }
 
-  private void waitForNewOverseer(int seconds, Predicate<String> state) throws Exception {
+  @After
+  public void tearDownCluster() throws Exception {
+    shutdownCluster();
+  }
+  
+  private void waitForNewOverseer(int seconds, Predicate<String> state, boolean failOnIntermediateTransition) throws Exception {
     TimeOut timeout = new TimeOut(seconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     String current = null;
     while (timeout.hasTimedOut() == false) {
+      String prev = current;
       current = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
       if (state.test(current))
         return;
+      else if (failOnIntermediateTransition) {
+        if (prev != null && current != null && !current.equals(prev)) {
+          fail ("There was an intermediate transition, previous: "+prev+", intermediate transition: "+current);
+        }
+      }
       Thread.sleep(100);
     }
-    fail("Timed out waiting for overseer state change");
+    fail("Timed out waiting for overseer state change. The current overseer is: "+current);
   }
 
-  private void waitForNewOverseer(int seconds, String expected) throws Exception {
-    waitForNewOverseer(seconds, s -> Objects.equals(s, expected));
+  private void waitForNewOverseer(int seconds, String expected, boolean failOnIntermediateTransition) throws Exception {
+    log.info("Expecting node: "+expected);
+    waitForNewOverseer(seconds, s -> Objects.equals(s, expected), failOnIntermediateTransition);
   }
 
   private JettySolrRunner getOverseerJetty() throws Exception {
@@ -85,7 +98,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
   private void logOverseerState() throws KeeperException, InterruptedException {
     log.info("Overseer: {}", getLeaderNode(zkClient()));
-    log.info("Election queue: ", getSortedElectionNodes(zkClient(), "/overseer_elect/election"));
+    log.info("Election queue: {}", getSortedElectionNodes(zkClient(), "/overseer_elect/election"));
   }
 
   @Test
@@ -93,6 +106,10 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
     logOverseerState();
     List<String> nodes = OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient());
+    // Remove the OVERSEER role, in case it was already assigned by another test in this suite
+    for (String node: nodes) {
+      CollectionAdminRequest.removeRole(node, "overseer").process(cluster.getSolrClient());
+    }
     String overseer1 = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
     nodes.remove(overseer1);
 
@@ -102,7 +119,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.addRole(overseer2, "overseer").process(cluster.getSolrClient());
 
-    waitForNewOverseer(15, overseer2);
+    waitForNewOverseer(15, overseer2, false);
 
     //add another node as overseer
     nodes.remove(overseer2);
@@ -117,7 +134,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     logOverseerState();
 
     leaderJetty.stop();
-    waitForNewOverseer(10, overseer3);
+    waitForNewOverseer(10, overseer3, false);
 
     // add another node as overseer
     nodes.remove(overseer3);
@@ -129,7 +146,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
     // remove the overseer role from the current overseer
     CollectionAdminRequest.removeRole(overseer3, "overseer").process(cluster.getSolrClient());
-    waitForNewOverseer(15, overseer4);
+    waitForNewOverseer(15, overseer4, false);
 
     // Add it back again - we now have two delegates, 4 and 3
     CollectionAdminRequest.addRole(overseer3, "overseer").process(cluster.getSolrClient());
@@ -142,7 +159,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
         .offer(Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
             "id", leaderId)));
 
-    waitForNewOverseer(15, s -> Objects.equals(leader, s) == false);
+    waitForNewOverseer(15, s -> Objects.equals(leader, s) == false, false);
 
     Thread.sleep(1000);
     
@@ -150,6 +167,43 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     assertTrue("The old leader should have rejoined election",
         OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient()).contains(leader));
 
+    leaderJetty.start(); // starting this back, just for good measure
   }
 
+  @Test
+  public void testDesignatedOverseerRestarts() throws Exception {
+    logOverseerState();
+    // Remove the OVERSEER role, in case it was already assigned by another test in this suite
+    for (String node: OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient())) {
+      CollectionAdminRequest.removeRole(node, "overseer").process(cluster.getSolrClient());
+    }
+    String overseer1 = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
+    int counter = 0;
+    while (overseer1 == null && counter < 10) {
+      overseer1 = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
+      Thread.sleep(1000);
+    }
+
+    // Setting overseer role to the current overseer
+    CollectionAdminRequest.addRole(overseer1, "overseer").process(cluster.getSolrClient());
+    waitForNewOverseer(15, overseer1, false);
+    JettySolrRunner leaderJetty = getOverseerJetty();
+
+    List<String> nodes = OverseerCollectionConfigSetProcessor.getSortedOverseerNodeNames(zkClient());
+    nodes.remove(overseer1); // remove the designated overseer
+
+    logOverseerState();
+    // kill the current overseer, and check that the next node in the election queue assumes leadership
+    leaderJetty.stop();
+    log.info("Killing designated overseer: "+overseer1);
+
+    // after 5 seconds, bring back dead designated overseer and assert that it assumes leadership "right away",
+    // i.e. without any other node assuming leadership before this node becomes leader.
+    Thread.sleep(5);
+    logOverseerState();
+    log.info("Starting back the prioritized overseer..");
+    leaderJetty.start();
+    waitForNewOverseer(15, overseer1, true); // assert that there is just a single leadership transition
+  }
 }
+

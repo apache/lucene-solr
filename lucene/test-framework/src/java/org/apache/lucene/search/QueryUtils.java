@@ -67,6 +67,9 @@ public class QueryUtils {
       }
 
       @Override
+      public void visit(QueryVisitor visitor) { }
+
+      @Override
       public boolean equals(Object o) {
         return o == this;
       }

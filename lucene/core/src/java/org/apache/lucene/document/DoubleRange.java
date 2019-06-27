@@ -16,10 +16,11 @@
  */
 package org.apache.lucene.document;
 
+import java.util.Objects;
+
 import org.apache.lucene.document.RangeFieldQuery.QueryType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FutureObjects;
 import org.apache.lucene.util.NumericUtils;
 
 /**
@@ -108,7 +109,7 @@ public class DoubleRange extends Field {
   /**
    * Encodes the min, max ranges into a byte array
    */
-  private static byte[] encode(double[] min, double[] max) {
+  static byte[] encode(double[] min, double[] max) {
     checkArgs(min, max);
     byte[] b = new byte[BYTES*2*min.length];
     verifyAndEncode(min, max, b);
@@ -148,7 +149,7 @@ public class DoubleRange extends Field {
    * @return the decoded min value
    */
   public double getMin(int dimension) {
-    FutureObjects.checkIndex(dimension, type.pointDataDimensionCount()/2);
+    Objects.checkIndex(dimension, type.pointDataDimensionCount()/2);
     return decodeMin(((BytesRef)fieldsData).bytes, dimension);
   }
 
@@ -158,7 +159,7 @@ public class DoubleRange extends Field {
    * @return the decoded max value
    */
   public double getMax(int dimension) {
-    FutureObjects.checkIndex(dimension, type.pointDataDimensionCount()/2);
+    Objects.checkIndex(dimension, type.pointDataDimensionCount()/2);
     return decodeMax(((BytesRef)fieldsData).bytes, dimension);
   }
 

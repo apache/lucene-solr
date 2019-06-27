@@ -53,6 +53,8 @@ import org.noggit.CharArr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
+
 /**
  * Defines a space-efficient serialization/deserialization format for transferring data.
  * <p>
@@ -98,6 +100,7 @@ public class JavaBinCodec implements PushWriter {
           MAP_ENTRY_ITER = 17,
           ENUM_FIELD_VALUE = 18,
           MAP_ENTRY = 19,
+          UUID = 20, // This is reserved to be used only in LogCodec
           // types that combine tag + length (or other info) in a single byte
           TAG_AND_LEN = (byte) (1 << 5),
           STR = (byte) (1 << 5),
@@ -818,7 +821,7 @@ public class JavaBinCodec implements PushWriter {
    */
   public EnumFieldValue readEnumFieldValue(DataInputInputStream dis) throws IOException {
     Integer intValue = (Integer) readVal(dis);
-    String stringValue = (String) readVal(dis);
+    String stringValue = (String) convertCharSeq (readVal(dis));
     return new EnumFieldValue(intValue, stringValue);
   }
   

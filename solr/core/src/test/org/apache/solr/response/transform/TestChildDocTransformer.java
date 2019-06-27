@@ -36,7 +36,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml"); // *not* the "nest" schema version
+    initCore("solrconfig.xml","schema-root.xml"); // *not* the "nest" schema
   }
 
   @After
@@ -356,12 +356,12 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     String[] tests = new String[] {
         "/response/docs/[0]/id=='1'",
         "/response/docs/[0]/_childDocuments_/[0]/id=='2'",
-        "/response/docs/[0]/_childDocuments_/[0]/cat/[0]/=='childDocument'",
-        "/response/docs/[0]/_childDocuments_/[0]/title/[0]/=='" + titleVals[0] + "'",
+        "/response/docs/[0]/_childDocuments_/[0]/cat=='childDocument'",
+        "/response/docs/[0]/_childDocuments_/[0]/title=='" + titleVals[0] + "'",
         "/response/docs/[1]/id=='4'",
         "/response/docs/[1]/_childDocuments_/[0]/id=='5'",
-        "/response/docs/[1]/_childDocuments_/[0]/cat/[0]/=='childDocument'",
-        "/response/docs/[1]/_childDocuments_/[0]/title/[0]/=='" + titleVals[1] + "'"
+        "/response/docs/[1]/_childDocuments_/[0]/cat=='childDocument'",
+        "/response/docs/[1]/_childDocuments_/[0]/title=='" + titleVals[1] + "'"
     };
 
 
@@ -384,12 +384,12 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     String[] tests = new String[] {
         "/response/docs/[0]/id=='1'",
         "/response/docs/[0]/children/docs/[0]/id=='2'",
-        "/response/docs/[0]/children/docs/[0]/cat/[0]/=='childDocument'",
-        "/response/docs/[0]/children/docs/[0]/title/[0]/=='" + titleVals[0] + "'",
+        "/response/docs/[0]/children/docs/[0]/cat=='childDocument'",
+        "/response/docs/[0]/children/docs/[0]/title=='" + titleVals[0] + "'",
         "/response/docs/[1]/id=='4'",
         "/response/docs/[1]/children/docs/[0]/id=='5'",
-        "/response/docs/[1]/children/docs/[0]/cat/[0]/=='childDocument'",
-        "/response/docs/[1]/children/docs/[0]/title/[0]/=='" + titleVals[1] + "'"
+        "/response/docs/[1]/children/docs/[0]/cat=='childDocument'",
+        "/response/docs/[1]/children/docs/[0]/title=='" + titleVals[1] + "'"
     };
 
 
@@ -417,12 +417,12 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         "//*[@numFound='2']",
         "/response/result/doc[1]/str[@name='id']='1'" ,
         "/response/result/doc[1]/doc[1]/str[@name='id']='2'" ,
-        "/response/result/doc[1]/doc[1]/arr[@name='cat']/str[1]='childDocument'" ,
-        "/response/result/doc[1]/doc[1]/arr[@name='title']/str[1]='" + titleVals[0] + "'" ,
+        "/response/result/doc[1]/doc[1]/str[@name='cat']='childDocument'" ,
+        "/response/result/doc[1]/doc[1]/str[@name='title']='" + titleVals[0] + "'" ,
         "/response/result/doc[2]/str[@name='id']='4'" ,
         "/response/result/doc[2]/doc[1]/str[@name='id']='5'",
-        "/response/result/doc[2]/doc[1]/arr[@name='cat']/str[1]='childDocument'",
-        "/response/result/doc[2]/doc[1]/arr[@name='title']/str[1]='" + titleVals[1] + "'"};
+        "/response/result/doc[2]/doc[1]/str[@name='cat']='childDocument'",
+        "/response/result/doc[2]/doc[1]/str[@name='title']='" + titleVals[1] + "'"};
 
     assertQ(req("q", "*:*", 
                 "sort", "id asc",
@@ -443,12 +443,12 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         "//*[@numFound='2']",
         "/response/result/doc[1]/str[@name='id']='1'" ,
         "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/str[@name='id']='2'" ,
-        "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/arr[@name='cat']/str[1]='childDocument'" ,
-        "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/arr[@name='title']/str[1]='" + titleVals[0] + "'" ,
+        "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/str[@name='cat']='childDocument'" ,
+        "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/str[@name='title']='" + titleVals[0] + "'" ,
         "/response/result/doc[2]/str[@name='id']='4'" ,
         "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/str[@name='id']='5'",
-        "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/arr[@name='cat']/str[1]='childDocument'",
-        "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/arr[@name='title']/str[1]='" + titleVals[1] + "'"};
+        "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/str[@name='cat']='childDocument'",
+        "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/str[@name='title']='" + titleVals[1] + "'"};
 
     assertQ(req(
         "q", "*:*", "fq", "subject:\"parentDocument\" ",

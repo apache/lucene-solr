@@ -22,10 +22,9 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -78,7 +77,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     final Path testDir = createTempDir();
-    String zkDir = testDir.resolve("zookeeper/server1/data").toString();
+    final Path zkDir = testDir.resolve("zookeeper/server1/data");
     zkTestServer = new ZkTestServer(zkDir);
     zkTestServer.run();
     zkTestServer.setZKDatabase(new FailureDuringCopyZKDatabase(zkTestServer.getZKDatabase(), zkTestServer));
@@ -89,8 +88,14 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
   @Override
   @After
   public void tearDown() throws Exception {
-    solrCluster.shutdown();
-    zkTestServer.shutdown();
+    if (null != solrCluster) {
+      solrCluster.shutdown();
+      solrCluster = null;
+    }
+    if (null != zkTestServer) {
+      zkTestServer.shutdown();
+      zkTestServer = null;
+    }
     super.tearDown();
   }
 
@@ -204,18 +209,13 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     }
 
     @Override
-    public synchronized LinkedList<Proposal> getCommittedLog() {
+    public synchronized List<Proposal> getCommittedLog() {
       return zkdb.getCommittedLog();
     }
 
     @Override
     public long getDataTreeLastProcessedZxid() {
       return zkdb.getDataTreeLastProcessedZxid();
-    }
-
-    @Override
-    public void setDataTreeInit(boolean b) {
-      zkdb.setDataTreeInit(b);
     }
 
     @Override
@@ -259,7 +259,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     }
 
     @Override
-    public HashSet<String> getEphemerals(long sessionId) {
+    public Set<String> getEphemerals(long sessionId) {
       return zkdb.getEphemerals(sessionId);
     }
 

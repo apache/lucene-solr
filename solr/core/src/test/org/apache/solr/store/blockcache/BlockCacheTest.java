@@ -21,12 +21,25 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+
 import com.github.benmanes.caffeine.cache.*;
-import org.apache.lucene.util.LuceneTestCase;
+
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+
+import org.apache.solr.SolrIgnoredThreadsFilter;
+import org.apache.solr.SolrTestCase;
+
 import org.junit.Test;
 
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
-public class BlockCacheTest extends LuceneTestCase {
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class
+})
+@ThreadLeakLingering(linger = 10000)
+public class BlockCacheTest extends SolrTestCase {
+
   @Test
   public void testBlockCache() {
     int blocksInTest = 2000000;

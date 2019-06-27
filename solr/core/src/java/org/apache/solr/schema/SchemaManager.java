@@ -159,16 +159,16 @@ public class SchemaManager {
   }
 
   private void waitForOtherReplicasToUpdate(TimeOut timeOut, int latestVersion) {
-    CoreDescriptor cd = req.getCore().getCoreDescriptor();
+    SolrCore core = req.getCore();
+    CoreDescriptor cd = core.getCoreDescriptor();
     String collection = cd.getCollectionName();
     if (collection != null) {
-      ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) managedIndexSchema.getResourceLoader();
       if (timeOut.hasTimedOut()) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Not enough time left to update replicas. However, the schema is updated already.");
       }
       ManagedIndexSchema.waitForSchemaZkVersionAgreement(collection, cd.getCloudDescriptor().getCoreNodeName(),
-          latestVersion, zkLoader.getZkController(), (int) timeOut.timeLeft(TimeUnit.SECONDS));
+          latestVersion, core.getCoreContainer().getZkController(), (int) timeOut.timeLeft(TimeUnit.SECONDS));
     }
   }
 

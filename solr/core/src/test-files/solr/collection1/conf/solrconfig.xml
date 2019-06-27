@@ -49,8 +49,8 @@
     <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool> 
     <bool name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:true}</bool>
     <bool name="solr.hdfs.blockcache.write.enabled">${solr.hdfs.blockcache.write.enabled:false}</bool>
-    <int name="solr.hdfs.blockcache.blocksperbank">10</int>
-    <int name="solr.hdfs.blockcache.slab.count">1</int>
+    <int name="solr.hdfs.blockcache.blocksperbank">${solr.hdfs.blockcache.blocksperbank:10}</int>
+    <int name="solr.hdfs.blockcache.slab.count">${solr.hdfs.blockcache.slab.count:1}</int>
   </directoryFactory>
 
   <schemaFactory class="ClassicIndexSchemaFactory"/>

@@ -33,6 +33,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -59,9 +60,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.XmlConfigFile;
-import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -126,9 +127,9 @@ public class IndexSchema {
   private static final String XPATH_OR = " | ";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  protected final SolrConfig solrConfig;
   protected String resourceName;
   protected String name;
+  protected final Version luceneVersion;
   protected float version;
   protected final SolrResourceLoader loader;
 
@@ -161,20 +162,16 @@ public class IndexSchema {
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
 
-    /**
+  /**
    * Constructs a schema using the specified resource name and stream.
    * @see SolrResourceLoader#openSchema
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
-  public IndexSchema(SolrConfig solrConfig, String name, InputSource is) {
-    assert null != solrConfig : "SolrConfig should never be null";
-    assert null != name : "schema resource name should never be null";
-    assert null != is : "schema InputSource should never be null";
+  public IndexSchema(String name, InputSource is, Version luceneVersion, SolrResourceLoader resourceLoader) {
+    this(luceneVersion, resourceLoader);
 
-    this.solrConfig = solrConfig;
-    this.resourceName = name;
-    loader = solrConfig.getResourceLoader();
+    this.resourceName = Objects.requireNonNull(name);
     try {
       readSchema(is);
       loader.inform(loader);
@@ -183,10 +180,20 @@ public class IndexSchema {
     }
   }
 
+  protected IndexSchema(Version luceneVersion, SolrResourceLoader loader) {
+    this.luceneVersion = Objects.requireNonNull(luceneVersion);
+    this.loader = loader;
+  }
+
   /**
+   * The resource loader to be used to load components related to the schema when the schema is loading
+   * / initialising.
+   * It should <em>not</em> be used for any other purpose or time;
+   * consider {@link SolrCore#getResourceLoader()} instead.
    * @since solr 1.4
    */
   public SolrResourceLoader getResourceLoader() {
+    //TODO consider asserting the schema has not finished loading somehow?
     return loader;
   }
 
@@ -207,7 +214,7 @@ public class IndexSchema {
 
   /** The Default Lucene Match Version for this IndexSchema */
   public Version getDefaultLuceneMatchVersion() {
-    return solrConfig.luceneMatchVersion;
+    return luceneVersion;
   }
 
   public float getVersion() {
@@ -443,6 +450,7 @@ public class IndexSchema {
   }
 
   protected void readSchema(InputSource is) {
+    assert null != is : "schema InputSource should never be null";
     try {
       // pass the config resource loader to avoid building an empty one for no reason:
       // in the current case though, the stream is valid so we wont load the resource by name
@@ -1595,11 +1603,6 @@ public class IndexSchema {
     return copyFieldProperties;
   }
 
-  protected IndexSchema(final SolrConfig solrConfig, final SolrResourceLoader loader) {
-    this.solrConfig = solrConfig;
-    this.loader = loader;
-  }
-
   /**
    * Copies this schema, adds the given field to the copy
    * Requires synchronizing on the object returned by
@@ -1954,6 +1957,21 @@ public class IndexSchema {
     return (null != uniqueKeyFieldType &&
             null != rootType &&
             rootType.getTypeName().equals(uniqueKeyFieldType.getTypeName()));
+  }
+
+  /**
+   * Helper method that returns <code>true</code> if the {@link #ROOT_FIELD_NAME} uses the exact
+   * same 'type' as the {@link #getUniqueKeyField()} and has {@link #NEST_PATH_FIELD_NAME}
+   * defined as a {@link NestPathField}
+   * @lucene.internal
+   */
+  public boolean savesChildDocRelations() {
+    //TODO make this boolean a field so it needn't be looked up each time?
+    if (!isUsableForChildDocs()) {
+      return false;
+    }
+    FieldType nestPathType = getFieldTypeNoEx(NEST_PATH_FIELD_NAME);
+    return nestPathType instanceof NestPathField;
   }
 
   public PayloadDecoder getPayloadDecoder(String field) {

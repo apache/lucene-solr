@@ -62,8 +62,10 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
-    String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
+    String extCollectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
+
+    String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
 
     log.info("Delete shard invoked");
     Slice slice = clusterState.getCollection(collectionName).getSlice(sliceId);
@@ -132,7 +134,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       ZkStateReader zkStateReader = ocmh.zkStateReader;
       ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
-      zkStateReader.waitForState(collectionName, 45, TimeUnit.SECONDS, (l, c) -> c.getSlice(sliceId) == null);
+      zkStateReader.waitForState(collectionName, 45, TimeUnit.SECONDS, (c) -> c.getSlice(sliceId) == null);
 
       log.info("Successfully deleted collection: " + collectionName + ", shard: " + sliceId);
     } catch (SolrException e) {

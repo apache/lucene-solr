@@ -59,7 +59,7 @@ public final class CommitTracker implements Runnable {
   private long tLogFileSizeUpperBound;
   
   private final ScheduledExecutorService scheduler = 
-      Executors.newScheduledThreadPool(0, new DefaultSolrThreadFactory("commitScheduler"));
+      Executors.newScheduledThreadPool(1, new DefaultSolrThreadFactory("commitScheduler"));
   private ScheduledFuture pending;
   
   // state

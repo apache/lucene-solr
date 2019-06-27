@@ -56,7 +56,7 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
     try {
       SyncData syncData = factory.getData(path);
       if (syncData != null) {
-        this.buffer = syncData.data;
+        setBuffer(syncData.data);
         this.lastModifiedTime = syncData.timestamp;
       }
     } catch (IOException e) {
@@ -75,9 +75,10 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
     readOnly = true;
     factory = null;
     this.lastModifiedTime = other.lastModifiedTime;
-    byte[] otherBuffer = other.buffer;
-    buffer = new byte[otherBuffer.length];
-    System.arraycopy(otherBuffer, 0, buffer, 0, otherBuffer.length);
+    byte[] otherBuffer = other.getBuffer();
+    byte[] newBuffer = new byte[otherBuffer.length];
+    System.arraycopy(otherBuffer, 0, newBuffer, 0, otherBuffer.length);
+    super.setBuffer(newBuffer);
   }
 
   public boolean isReadOnly() {
@@ -88,6 +89,11 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
     return lastModifiedTime;
   }
 
+  private void markDirty() {
+    lastModifiedTime = TimeUnit.MILLISECONDS.convert(factory.getTimeSource().getEpochTimeNs(), TimeUnit.NANOSECONDS);
+    dirty = true;
+  }
+
   @Override
   protected void write(long offset, byte[] bytes) throws IOException {
     if (readOnly || closed) {
@@ -96,14 +102,144 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
     lock.lock();
     try {
       super.write(offset, bytes);
-      lastModifiedTime = TimeUnit.MILLISECONDS.convert(factory.getTimeSource().getEpochTimeNs(), TimeUnit.NANOSECONDS);
-      dirty = true;
+      markDirty();
     } finally {
       lock.unlock();
     }
   }
 
-  public SyncData getSyncData() {
+  @Override
+  protected void writeShort(long offset, short value) throws IOException {
+    if (readOnly || closed) {
+      return;
+    }
+    lock.lock();
+    try {
+      super.writeShort(offset, value);
+      markDirty();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
+  protected void writeInt(long offset, int value) throws IOException {
+    if (readOnly || closed) {
+      return;
+    }
+    lock.lock();
+    try {
+      super.writeInt(offset, value);
+      markDirty();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
+  protected void writeLong(long offset, long value) throws IOException {
+    if (readOnly || closed) {
+      return;
+    }
+    lock.lock();
+    try {
+      super.writeLong(offset, value);
+      markDirty();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
+  protected void writeDouble(long offset, double value) throws IOException {
+    if (readOnly || closed) {
+      return;
+    }
+    lock.lock();
+    try {
+      super.writeDouble(offset, value);
+      markDirty();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
+  protected void writeDouble(long offset, double value, int count) throws IOException {
+    if (readOnly || closed) {
+      return;
+    }
+    lock.lock();
+    try {
+      super.writeDouble(offset, value, count);
+      markDirty();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
+  protected void writeDouble(long offset, double[] values) throws IOException {
+    if (readOnly || closed) {
+      return;
+    }
+    lock.lock();
+    try {
+      super.writeDouble(offset, values);
+      markDirty();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
+  protected void writeString(long offset, String value, int length) throws IOException {
+    if (readOnly || closed) {
+      return;
+    }
+    lock.lock();
+    try {
+      super.writeString(offset, value, length);
+      markDirty();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
+  protected boolean isDirty() {
+    return dirty;
+  }
+
+  @Override
+  protected void setBuffer(byte[] buffer) {
+    if (readOnly || closed) {
+      return;
+    }
+    lock.lock();
+    try {
+      super.setBuffer(buffer);
+      markDirty();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  @Override
+  protected void setLength(long length) throws IOException {
+    if (readOnly || closed) {
+      return;
+    }
+    lock.lock();
+    try {
+      super.setLength(length);
+      markDirty();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  public SyncData getSyncDataAndMarkClean() {
     if (readOnly || closed) {
       return null;
     }
@@ -113,16 +249,15 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
     // hold a lock to block writes so that we get consistent data
     lock.lock();
     try {
-      byte[] bufferCopy = new byte[buffer.length];
-      System.arraycopy(buffer, 0, bufferCopy, 0, buffer.length);
+      byte[] oldBuffer = getBuffer();
+      byte[] bufferCopy = new byte[oldBuffer.length];
+      System.arraycopy(oldBuffer, 0, bufferCopy, 0, oldBuffer.length);
       return new SyncData(bufferCopy, lastModifiedTime);
     } finally {
+      // reset the dirty flag
+      dirty = false;
       lock.unlock();
     }
-  }
-
-  public void markClean() {
-    dirty = false;
   }
 
   @Override

@@ -17,11 +17,17 @@
 package org.apache.solr.client.solrj;
 
 
+import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.StringContains.containsString;
+
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,8 +37,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
-import com.google.common.collect.Maps;
-import junit.framework.Assert;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -68,17 +72,17 @@ import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
-import static org.hamcrest.core.StringContains.containsString;
-import static org.hamcrest.CoreMatchers.is;
+import com.google.common.collect.Maps;
 
 /**
  * This should include tests against the example solr config
@@ -305,9 +309,52 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertEquals( 1, rsp.getResults().getNumFound() );
 
   }
- 
+  @Test
+  public void testFailOnVersionConflicts() throws Exception {
+    SolrClient client = getSolrClient();
 
- /**
+    // Empty the database...
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+
+    client.request(new UpdateRequest()
+        .add("id", "id1", "name", "doc1.v1"));
+    client.commit();
+
+    QueryResponse rsp = null;
+    assertResponseValues(client.query(new SolrQuery("id:id1")), "response[0]/name", "doc1.v1");
+
+    assertResponseValues(client.query(new SolrQuery("*:*").set("sort", "id asc")),
+        "response[0]/name", "doc1.v1"
+    );
+
+    client.request(
+        new UpdateRequest()
+            .add("id", "id1", "name", "doc1.v2")
+            .add("id", "id2", "name", "doc2.v1"));
+    client.commit();
+    assertResponseValues(client.query(new SolrQuery("*:*").set("sort", "id asc")),
+        "response[0]/name", "doc1.v2",
+        "response[1]/name", "doc2.v1"
+    );
+
+    UpdateRequest add = new UpdateRequest()
+        .add("id", "id1", "name", "doc1.v3")
+        .add("id", "id3", "name", "doc3.v1");
+    add.setParam(CommonParams.FAIL_ON_VERSION_CONFLICTS, "false");
+    add.setParam(CommonParams.VERSION_FIELD, "-1");
+    client.request(add);
+    client.commit();
+
+    assertResponseValues(client.query(new SolrQuery("*:*").set("sort", "id asc")),
+        "response[0]/name", "doc1.v2" ,
+        "response[1]/name", "doc2.v1" ,
+        "response[2]/name", "doc3.v1");
+
+  }
+
+
+  /**
   * Get empty results
   */
   @Test
@@ -667,13 +714,45 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    up.addFile(getFile("solrj/books.csv"), "application/csv");
+    var file = getFile("solrj/books.csv");
+    final int opened[] =  new int[] {0};
+    final int closed[] =  new int[] {0};
+
+    var assertClosed = random().nextBoolean();
+    if (assertClosed) {
+      var allBytes = Files.readAllBytes(file.toPath());
+      
+      var contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
+        @Override
+        public InputStream getStream() throws IOException {
+          opened [0]++;
+          return new ByteArrayInputStream( allBytes ) {
+            @Override
+            public void close() throws IOException {
+              super.close();
+              closed[0]++;
+            }
+          };
+        }
+      };
+      up.addContentStream(contentStreamMock);
+    } else {
+      up.addFile(file, "application/csv");
+    }
+    
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = client.request(up);
     assertNotNull("Couldn't upload books.csv", result);
+    
+    if (assertClosed) {
+      assertEquals("open only once",1, opened[0]);
+      assertEquals("close exactly once",1, closed[0]);
+    }
     rsp = client.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 10, rsp.getResults().getNumFound() );
  }
+ 
+ 
   @Test
   public void testStreamingRequest() throws Exception {
     SolrClient client = getSolrClient();

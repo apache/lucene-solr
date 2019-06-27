@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.commons.lang.ObjectUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -37,6 +36,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 
 public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
@@ -223,10 +223,10 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
         DeleteUpdateCommand expected = deleteCommands.poll();
         assertNotNull("Unexpected delete command: [" + cmd + "]", expected);
         assertTrue("Expected [" + expected + "] but found [" + cmd + "]",
-            ObjectUtils.equals(expected.id, cmd.id) &&
-            ObjectUtils.equals(expected.query, cmd.query) &&
+            Objects.equals(expected.id, cmd.id) &&
+            Objects.equals(expected.query, cmd.query) &&
             expected.commitWithin==cmd.commitWithin && 
-            ObjectUtils.equals(expected.getRoute(), cmd.getRoute()));
+            Objects.equals(expected.getRoute(), cmd.getRoute()));
       }
     }
 

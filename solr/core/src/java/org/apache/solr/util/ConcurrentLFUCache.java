@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,8 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.common.util.Cache;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A LFU cache implementation based upon ConcurrentHashMap.
@@ -42,7 +39,6 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.6
  */
 public class ConcurrentLFUCache<K, V> implements Cache<K,V> {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ConcurrentHashMap<Object, CacheEntry<K, V>> map;
   private final int upperWaterMark, lowerWaterMark;
@@ -469,15 +465,4 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V> {
     }
   }
 
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if (!isDestroyed) {
-        log.error("ConcurrentLFUCache was not destroyed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
-        destroy();
-      }
-    } finally {
-      super.finalize();
-    }
-  }
 }

@@ -63,6 +63,9 @@ public interface ShardParams {
   /** Replica location sort rule */
   String SHARDS_PREFERENCE_REPLICA_LOCATION = "replica.location";
 
+  /** Node with same system property sort rule */
+  String SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP = "node.sysprop";
+
   /** Value denoting local replicas */
   String REPLICA_LOCAL = "local";
 

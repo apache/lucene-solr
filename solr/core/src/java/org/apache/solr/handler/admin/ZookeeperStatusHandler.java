@@ -94,6 +94,8 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
     int reportedFollowers = 0;
     int leaders = 0;
     List<String> errors = new ArrayList<>();
+    zkStatus.put("ensembleSize", zookeepers.size());
+    zkStatus.put("zkHost", zkHost);
     for (String zk : zookeepers) {
       try {
         Map<String, Object> stat = monitorZookeeper(zk);
@@ -113,14 +115,14 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
       } catch (SolrException se) {
         log.warn("Failed talking to zookeeper" + zk, se);
         errors.add(se.getMessage());
+        zkStatus.put("errors", errors);
         Map<String, Object> stat = new HashMap<>();
         stat.put("host", zk);
         stat.put("ok", false);
-        details.add(stat);
+        zkStatus.put("status", STATUS_YELLOW);
+        return zkStatus;
       }       
     }
-    zkStatus.put("ensembleSize", zookeepers.size());
-    zkStatus.put("zkHost", zkHost);
     zkStatus.put("details", details);
     if (followers+leaders > 0 && standalone > 0) {
       status = STATUS_RED;
@@ -176,17 +178,37 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
     return zkStatus;
   }
 
-  private Map<String, Object> monitorZookeeper(String zkHostPort) {
-    List<String> lines = getZkRawResponse(zkHostPort, "mntr");
+  private Map<String, Object> monitorZookeeper(String zkHostPort) throws SolrException {
     Map<String, Object> obj = new HashMap<>();
     obj.put("host", zkHostPort);
-    obj.put("ok", "imok".equals(getZkRawResponse(zkHostPort, "ruok").get(0)));
+    List<String> lines = getZkRawResponse(zkHostPort, "ruok");
+    boolean ok = "imok".equals(lines.get(0));
+    if (ok == false) {
+      log.warn("Check 4lw.commands.whitelist setting in zookeeper configuration file, ZK response {}", lines.get(0));
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lines.get(0) + " Check 4lw.commands.whitelist setting in zookeeper configuration file.");
+    }
+    obj.put("ok", ok);
+    lines = getZkRawResponse(zkHostPort, "mntr");
+    String[] parts;
     for (String line : lines) {
-      obj.put(line.split("\t")[0], line.split("\t")[1]);
+      parts = line.split("\t");
+      if (parts.length >= 2) {
+        obj.put(parts[0], parts[1]);
+      } else {
+        log.warn("Check 4lw.commands.whitelist setting in zookeeper configuration file, ZK response {}", line);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, line + " Check 4lw.commands.whitelist setting in zookeeper configuration file.");
+      }
     }
     lines = getZkRawResponse(zkHostPort, "conf");
+
     for (String line : lines) {
-      obj.put(line.split("=")[0], line.split("=")[1]);
+      parts = line.split("=");
+      if (parts.length >= 2) {
+        obj.put(parts[0], parts[1]);
+      } else {
+        log.warn("Check 4lw.commands.whitelist setting in zookeeper configuration file, ZK response {}", line);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, line + " Check 4lw.commands.whitelist setting in zookeeper configuration file.");
+      }
     }
     return obj;
   }
@@ -204,6 +226,7 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
     if (hostPort.length > 1) {
       port = Integer.parseInt(hostPort[1]);
     }
+
     try (
         Socket socket = new Socket(host, port);
         Writer writer = new OutputStreamWriter(socket.getOutputStream(), "utf-8");

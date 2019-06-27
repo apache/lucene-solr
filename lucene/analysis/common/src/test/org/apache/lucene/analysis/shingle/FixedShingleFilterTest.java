@@ -199,6 +199,23 @@ public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
           new int[] {    1,        0,      0,       0,       1,        0,     });
   }
 
+  public void testTrailingGraphsOfDifferingLengths() throws IOException {
+
+    // a b:3/c d e f
+    TokenStream ts = new CannedTokenStream(
+        new Token("a", 0, 1),
+        new Token("b", 1, 2, 3, 3),
+        new Token("c", 0, 2, 3),
+        new Token("d", 2, 3),
+        new Token("e", 2, 3),
+        new Token("f", 4, 5)
+    );
+
+    assertTokenStreamContents(new FixedShingleFilter(ts, 3),
+        new String[]{ "a b f", "a c d", "c d e", "d e f"});
+
+  }
+
   public void testParameterLimits() {
     IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
       new FixedShingleFilter(new CannedTokenStream(), 1);

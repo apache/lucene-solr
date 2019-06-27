@@ -16,6 +16,8 @@
  */
 package org.apache.solr.ltr.feature;
 
+import java.util.LinkedHashMap;
+
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
@@ -149,6 +151,12 @@ public class TestFieldLengthFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='1'");
   }
 
+  @Test
+  public void testParamsToMap() throws Exception {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<String,Object>();
+    params.put("field", "field"+random().nextInt(10));
+    doTestParamsToMap(FieldLengthFeature.class.getName(), params);
+  }
 
 
 

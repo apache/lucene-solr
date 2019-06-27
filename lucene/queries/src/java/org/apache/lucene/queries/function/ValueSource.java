@@ -32,7 +32,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.Scorable;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.SortField;
 
@@ -182,16 +181,17 @@ public abstract class ValueSource {
    * Expose this ValueSource as a DoubleValuesSource
    */
   public DoubleValuesSource asDoubleValuesSource() {
-    return new WrappedDoubleValuesSource(this);
+    return new WrappedDoubleValuesSource(this, null);
   }
 
-  private static class WrappedDoubleValuesSource extends DoubleValuesSource {
+  static class WrappedDoubleValuesSource extends DoubleValuesSource {
 
-    private final ValueSource in;
-    private IndexSearcher searcher;
+    final ValueSource in;
+    final IndexSearcher searcher;
 
-    private WrappedDoubleValuesSource(ValueSource in) {
+    private WrappedDoubleValuesSource(ValueSource in, IndexSearcher searcher) {
       this.in = in;
+      this.searcher = searcher;
     }
 
     @Override
@@ -247,8 +247,7 @@ public abstract class ValueSource {
 
     @Override
     public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
-      this.searcher = searcher;
-      return this;
+      return new WrappedDoubleValuesSource(in, searcher);
     }
 
     @Override
@@ -285,7 +284,7 @@ public abstract class ValueSource {
 
     @Override
     public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-      Scorer scorer = (Scorer) context.get("scorer");
+      Scorable scorer = (Scorable) context.get("scorer");
       DoubleValues scores = scorer == null ? null : DoubleValuesSource.fromScorer(scorer);
 
       IndexSearcher searcher = (IndexSearcher) context.get("searcher");

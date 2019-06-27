@@ -38,11 +38,17 @@ import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.PropertiesRequestHandler;
 import org.apache.solr.handler.component.SearchHandler;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.common.util.CommandOperation;
+import org.hamcrest.core.IsInstanceOf;
+import org.hamcrest.core.IsNot;
+import org.junit.Test;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
@@ -50,6 +56,10 @@ import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 
 public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
+  private static final int STATUS_OK = 200;
+  private static final int FORBIDDEN = 403;
+  private static final int PROMPT_FOR_CREDENTIALS = 401;
+
   String permissions = "{" +
       "  user-role : {" +
       "    steve: [dev,user]," +
@@ -75,10 +85,6 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
 
 
   public void testBasicPermissions() {
-    int STATUS_OK = 200;
-    int FORBIDDEN = 403;
-    int PROMPT_FOR_CREDENTIALS = 401;
-
     checkRules(makeMap("resource", "/update/json/docs",
         "httpMethod", "POST",
         "userPrincipal", "unknownuser",
@@ -322,6 +328,127 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "]}"));
   }
 
+  /*
+   * RuleBasedAuthorizationPlugin handles requests differently based on whether the underlying handler implements
+   * PermissionNameProvider or not.  If this test fails because UpdateRequestHandler stops implementing
+   * PermissionNameProvider, or PropertiesRequestHandler starts to, then just change the handlers used here.
+   */
+  @Test
+  public void testAllPermissionAllowsActionsWhenUserHasCorrectRole() {
+    SolrRequestHandler handler = new UpdateRequestHandler();
+    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    checkRules(makeMap("resource", "/update",
+        "userPrincipal", "dev",
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", handler,
+        "params", new MapSolrParams(singletonMap("key", "VAL2")))
+        , STATUS_OK, (Map<String, Object>) Utils.fromJSONString( "{" +
+            "    user-role:{" +
+            "      dev:[dev_role]," +
+            "      admin:[admin_role]}," +
+            "    permissions:[" +
+            "      {name:all, role:[dev_role, admin_role]}" +
+            "]}"));
+
+    handler = new PropertiesRequestHandler();
+    assertThat(handler, new IsNot<>(new IsInstanceOf(PermissionNameProvider.class)));
+    checkRules(makeMap("resource", "/admin/info/properties",
+        "userPrincipal", "dev",
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", handler,
+        "params", new MapSolrParams(emptyMap()))
+        , STATUS_OK, (Map<String, Object>) Utils.fromJSONString( "{" +
+            "    user-role:{" +
+            "      dev:[dev_role]," +
+            "      admin:[admin_role]}," +
+            "    permissions:[" +
+            "      {name:all, role:[dev_role, admin_role]}" +
+            "]}"));
+  }
+
+
+  /*
+   * RuleBasedAuthorizationPlugin handles requests differently based on whether the underlying handler implements
+   * PermissionNameProvider or not.  If this test fails because UpdateRequestHandler stops implementing
+   * PermissionNameProvider, or PropertiesRequestHandler starts to, then just change the handlers used here.
+   */
+  @Test
+  public void testAllPermissionAllowsActionsWhenAssociatedRoleIsWildcard() {
+    SolrRequestHandler handler = new UpdateRequestHandler();
+    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    checkRules(makeMap("resource", "/update",
+        "userPrincipal", "dev",
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", new UpdateRequestHandler(),
+        "params", new MapSolrParams(singletonMap("key", "VAL2")))
+        , STATUS_OK, (Map<String, Object>) Utils.fromJSONString( "{" +
+            "    user-role:{" +
+            "      dev:[dev_role]," +
+            "      admin:[admin_role]}," +
+            "    permissions:[" +
+            "      {name:all, role:'*'}" +
+            "]}"));
+
+    handler = new PropertiesRequestHandler();
+    assertThat(handler, new IsNot<>(new IsInstanceOf(PermissionNameProvider.class)));
+    checkRules(makeMap("resource", "/admin/info/properties",
+        "userPrincipal", "dev",
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", handler,
+        "params", new MapSolrParams(emptyMap()))
+        , STATUS_OK, (Map<String, Object>) Utils.fromJSONString( "{" +
+            "    user-role:{" +
+            "      dev:[dev_role]," +
+            "      admin:[admin_role]}," +
+            "    permissions:[" +
+            "      {name:all, role:'*'}" +
+            "]}"));
+  }
+
+  /*
+   * RuleBasedAuthorizationPlugin handles requests differently based on whether the underlying handler implements
+   * PermissionNameProvider or not.  If this test fails because UpdateRequestHandler stops implementing
+   * PermissionNameProvider, or PropertiesRequestHandler starts to, then just change the handlers used here.
+   */
+  @Test
+  public void testAllPermissionDeniesActionsWhenUserIsNotCorrectRole() {
+    SolrRequestHandler handler = new UpdateRequestHandler();
+    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
+    checkRules(makeMap("resource", "/update",
+        "userPrincipal", "dev",
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", new UpdateRequestHandler(),
+        "params", new MapSolrParams(singletonMap("key", "VAL2")))
+        , FORBIDDEN, (Map<String, Object>) Utils.fromJSONString( "{" +
+            "    user-role:{" +
+            "      dev:[dev_role]," +
+            "      admin:[admin_role]}," +
+            "    permissions:[" +
+            "      {name:all, role:'admin_role'}" +
+            "]}"));
+
+    handler = new PropertiesRequestHandler();
+    assertThat(handler, new IsNot<>(new IsInstanceOf(PermissionNameProvider.class)));
+    checkRules(makeMap("resource", "/admin/info/properties",
+        "userPrincipal", "dev",
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", handler,
+        "params", new MapSolrParams(emptyMap()))
+        , FORBIDDEN, (Map<String, Object>) Utils.fromJSONString( "{" +
+            "    user-role:{" +
+            "      dev:[dev_role]," +
+            "      admin:[admin_role]}," +
+            "    permissions:[" +
+            "      {name:all, role:'admin_role'}" +
+            "]}"));
+  }
+
   public void testEditRules() throws IOException {
     Perms perms =  new Perms();
     perms.runCmd("{set-permission : {name: config-edit, role: admin } }", true);
@@ -455,14 +582,4 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
       return (String) values.get("resource");
     }
   }
-
-static String testPerms = "{user-role:{" +
-    "      admin:[admin_role]," +
-    "      update:[update_role]," +
-    "      solr:[read_role]}," +
-    "    permissions:[" +
-    "      {name:update,role:[admin_role,update_role]}," +
-    "      {name:read,role:[admin_role,update_role,read_role]" +
-    "]}";
-
 }

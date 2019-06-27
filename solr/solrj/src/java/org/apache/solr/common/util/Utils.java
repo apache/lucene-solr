@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -87,6 +88,7 @@ public class Utils {
   public static final Function NEW_LINKED_HASHMAP_FUN = o -> new LinkedHashMap<>();
   public static final Function NEW_ATOMICLONG_FUN = o -> new AtomicLong();
   public static final Function NEW_ARRAYLIST_FUN = o -> new ArrayList<>();
+  public static final Function NEW_SYNCHRONIZED_ARRAYLIST_FUN = o -> Collections.synchronizedList(new ArrayList<>());
   public static final Function NEW_HASHSET_FUN = o -> new HashSet<>();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -273,12 +275,16 @@ public class Utils {
   }
 
   public static Object fromJSON(InputStream is){
+    return fromJSON(new InputStreamReader(is, UTF_8));
+  }
+  public static Object fromJSON(Reader is){
     try {
-      return STANDARDOBJBUILDER.apply(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getVal();
+      return STANDARDOBJBUILDER.apply(getJSONParser(is)).getVal();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
   }
+
 
   public static final Function<JSONParser, ObjectBuilder> STANDARDOBJBUILDER = jsonParser -> {
     try {
@@ -344,21 +350,19 @@ public class Utils {
   public static Object fromJSONString(String json)  {
     try {
       return STANDARDOBJBUILDER.apply(getJSONParser(new StringReader(json))).getVal();
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error : "+ json, e );
     }
   }
 
   public static Object getObjectByPath(Object root, boolean onlyPrimitive, String hierarchy) {
     if (hierarchy == null) return getObjectByPath(root, onlyPrimitive, singletonList(null));
-    List<String> parts = StrUtils.splitSmart(hierarchy, '/');
-    if (parts.get(0).isEmpty()) parts.remove(0);
+    List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return getObjectByPath(root, onlyPrimitive, parts);
   }
 
   public static boolean setObjectByPath(Object root, String hierarchy, Object value) {
-    List<String> parts = StrUtils.splitSmart(hierarchy, '/');
-    if (parts.get(0).isEmpty()) parts.remove(0);
+    List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return setObjectByPath(root, parts, value);
   }
 
@@ -571,7 +575,7 @@ public class Utils {
     VersionedData data = null;
     try {
       data = distribStateManager.getData(path);
-    } catch (KeeperException.NoNodeException e) {
+    } catch (KeeperException.NoNodeException | NoSuchElementException e) {
       return Collections.emptyMap();
     }
     if (data == null || data.getData() == null || data.getData().length == 0) return Collections.emptyMap();

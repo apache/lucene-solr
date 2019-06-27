@@ -28,6 +28,7 @@ import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -139,6 +140,11 @@ public final class DoubleRange extends Range {
     @Override
     public String toString(String field) {
       return "Filter(" + range.toString() + ")";
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
     }
 
     @Override

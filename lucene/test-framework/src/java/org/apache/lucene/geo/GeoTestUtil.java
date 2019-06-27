@@ -590,10 +590,10 @@ public class GeoTestUtil {
       if (o instanceof double[]) {
         double point[] = (double[]) o;
         sb.append("<!-- point: ");
-        sb.append(point[0] + "," + point[1]);
+        sb.append(point[0]).append(',').append(point[1]);
         sb.append(" -->\n");
       } else {
-        sb.append("<!-- " + o.getClass().getSimpleName() + ": \n");
+        sb.append("<!-- ").append(o.getClass().getSimpleName()).append(": \n");
         sb.append(o.toString());
         sb.append("\n-->\n");
       }
@@ -620,7 +620,7 @@ public class GeoTestUtil {
       // polygon
       double polyLats[] = gon.getPolyLats();
       double polyLons[] = gon.getPolyLons();
-      sb.append("<polygon fill-opacity=\"" + opacity + "\" points=\"");
+      sb.append("<polygon fill-opacity=\"").append(opacity).append("\" points=\"");
       for (int i = 0; i < polyLats.length; i++) {
         if (i > 0) {
           sb.append(" ");
@@ -629,7 +629,7 @@ public class GeoTestUtil {
         .append(",")
         .append(90 - polyLats[i]);
       }
-      sb.append("\" style=\"" + style + "\"/>\n");
+      sb.append("\" style=\"").append(style).append("\"/>\n");
       for (Polygon hole : gon.getHoles()) {
         double holeLats[] = hole.getPolyLats();
         double holeLons[] = hole.getPolyLons();
@@ -695,10 +695,19 @@ public class GeoTestUtil {
     double vertx[] = polyLons;
     double testy = latitude;
     double testx = longitude;
-    for (i = 0, j = nvert-1; i < nvert; j = i++) {
-      if ( ((verty[i]>testy) != (verty[j]>testy)) &&
-     (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
-         c = !c;
+    for (i = 0, j = 1; j < nvert; ++i, ++j) {
+      if (testy == verty[j] && testy == verty[i] ||
+          ((testy <= verty[j] && testy >= verty[i]) != (testy >= verty[j] && testy <= verty[i]))) {
+        if ((testx == vertx[j] && testx == vertx[i]) ||
+            ((testx <= vertx[j] && testx >= vertx[i]) != (testx >= vertx[j] && testx <= vertx[i]) &&
+            GeoUtils.orient(vertx[i], verty[i], vertx[j], verty[j], testx, testy) == 0)) {
+          // return true if point is on boundary
+          return true;
+        } else if ( ((verty[i] > testy) != (verty[j] > testy)) &&
+            (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) ) {
+          c = !c;
+        }
+      }
     }
     return c;
   }

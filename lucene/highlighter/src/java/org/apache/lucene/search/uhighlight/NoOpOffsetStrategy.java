@@ -34,7 +34,7 @@ public class NoOpOffsetStrategy extends FieldOffsetStrategy {
   public static final NoOpOffsetStrategy INSTANCE = new NoOpOffsetStrategy();
 
   private NoOpOffsetStrategy() {
-    super(new UHComponents("_ignored_", (s) -> false, new MatchNoDocsQuery(), new BytesRef[0], PhraseHelper.NONE, new CharacterRunAutomaton[0], Collections.emptySet()));
+    super(new UHComponents("_ignored_", (s) -> false, new MatchNoDocsQuery(), new BytesRef[0], PhraseHelper.NONE, new CharacterRunAutomaton[0], false, Collections.emptySet()));
   }
 
   @Override

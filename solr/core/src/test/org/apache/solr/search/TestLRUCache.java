@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.SolrException;
@@ -30,7 +30,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 /**
  * Test for <code>org.apache.solr.search.LRUCache</code>
  */
-public class TestLRUCache extends LuceneTestCase {
+public class TestLRUCache extends SolrTestCase {
 
   SolrMetricManager metricManager = new SolrMetricManager();
   String registry = TestUtil.randomSimpleString(random(), 2, 10);

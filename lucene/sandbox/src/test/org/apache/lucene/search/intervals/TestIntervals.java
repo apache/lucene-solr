@@ -118,12 +118,12 @@ public class TestIntervals extends LuceneTestCase {
             if (i >= expected[id].length) {
               fail("Unexpected match in doc " + id + ": " + intervals);
             }
-            assertEquals("Wrong start value in doc " + id, expected[id][i], pos);
+            assertEquals(source + ": wrong start value in doc " + id, expected[id][i], pos);
             assertEquals("start() != pos returned from nextInterval()", expected[id][i], intervals.start());
             assertEquals("Wrong end value in doc " + id, expected[id][i + 1], intervals.end());
             i += 2;
           }
-          assertEquals("Wrong number of endpoints in doc " + id, expected[id].length, i);
+          assertEquals(source + ": wrong number of endpoints in doc " + id, expected[id].length, i);
           assertEquals(IntervalIterator.NO_MORE_INTERVALS, intervals.start());
           assertEquals(IntervalIterator.NO_MORE_INTERVALS, intervals.end());
           if (i > 0)
@@ -401,7 +401,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testUnorderedDistinct() throws IOException {
-    checkIntervals(Intervals.unordered(false, Intervals.term("pease"), Intervals.term("pease")),
+    checkIntervals(Intervals.unorderedNoOverlaps(Intervals.term("pease"), Intervals.term("pease")),
         "field1", 3, new int[][]{
             {},
             { 0, 3, 3, 6 },
@@ -410,18 +410,18 @@ public class TestIntervals extends LuceneTestCase {
             { 0, 3, 3, 6 },
             {}
         });
-    checkIntervals(Intervals.unordered(false,
+    checkIntervals(Intervals.unorderedNoOverlaps(
         Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"), Intervals.term("hot")),
         Intervals.term("porridge")),
         "field1", 3, new int[][]{
             {},
-            { 1, 4, 4, 17 },
+            { 1, 4, 2, 7, 4, 17 },
             { 1, 5, 4, 7 },
             {},
-            { 1, 4, 4, 17 },
+            { 1, 4, 2, 7, 4, 17 },
             {}
         });
-    checkIntervals(Intervals.unordered(false,
+    checkIntervals(Intervals.unorderedNoOverlaps(
         Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"), Intervals.term("hot")),
         Intervals.term("porridge")),
         "field2", 1, new int[][]{
@@ -432,6 +432,16 @@ public class TestIntervals extends LuceneTestCase {
             { 0, 3 },
             {}
         });
+    checkIntervals(Intervals.unorderedNoOverlaps(
+        Intervals.term("porridge"),
+        Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"))), "field1", 3, new int[][]{
+        {},
+        { 1, 4, 4, 7 },
+        { 1, 4, 4, 7 },
+        {},
+        { 1, 4, 4, 7 },
+        {}
+    });
   }
 
   public void testContainedBy() throws IOException {
@@ -743,6 +753,14 @@ public class TestIntervals extends LuceneTestCase {
 
     IntervalsSource noSuch = Intervals.prefix("qqq");
     checkIntervals(noSuch, "field1", 0, new int[][]{});
+
+    IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
+      IntervalsSource s = Intervals.prefix("p", 1);
+      for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
+        s.intervals("field1", ctx);
+      }
+    });
+    assertEquals("Automaton [p*] expanded to too many terms (limit 1)", e.getMessage());
   }
 
   public void testWildcard() throws IOException {
@@ -760,6 +778,32 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 2, 2, 15, 18);
     assertMatch(mi, 10, 10, 63, 66);
     assertMatch(mi, 17, 17, 97, 100);
+
+    IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
+      IntervalsSource s = Intervals.wildcard("?ot", 1);
+      for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
+        s.intervals("field1", ctx);
+      }
+    });
+    assertEquals("Automaton [?ot] expanded to too many terms (limit 1)", e.getMessage());
+  }
+
+  public void testWrappedFilters() throws IOException {
+
+    IntervalsSource source = Intervals.or(
+        Intervals.term("nine"),
+        Intervals.maxgaps(1, Intervals.or(
+            Intervals.ordered(Intervals.term("pease"), Intervals.term("hot")),
+            Intervals.ordered(Intervals.term("pease"), Intervals.term("cold")))));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {},
+        { 0, 2, 3, 5, 11, 11, 28, 28 },
+        { 0, 2, 3, 5 },
+        {},
+        { 0, 2, 3, 5, 11, 11 },
+        {}
+    });
+
   }
 
 }

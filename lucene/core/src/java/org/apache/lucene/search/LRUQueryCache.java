@@ -36,7 +36,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -89,7 +88,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
   // approximate memory usage that we assign to all queries
   // this maps roughly to a BooleanQuery with a couple term clauses
-  static final long QUERY_DEFAULT_RAM_BYTES_USED = 1024;
+  static final long QUERY_DEFAULT_RAM_BYTES_USED = RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
 
   static final long HASHTABLE_RAM_BYTES_PER_ENTRY =
       2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // key + value
@@ -671,11 +670,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
       this.in = in;
       this.policy = policy;
       used = new AtomicBoolean(false);
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      in.extractTerms(terms);
     }
 
     @Override

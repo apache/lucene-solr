@@ -38,7 +38,7 @@ Enabling a field for docValues only requires adding `docValues="true"` to the fi
 ----
 
 [IMPORTANT]
-If you have already indexed data into your Solr index, you will need to completely re-index your content after changing your field definitions in `schema.xml` in order to successfully use docValues.
+If you have already indexed data into your Solr index, you will need to completely reindex your content after changing your field definitions in `schema.xml` in order to successfully use docValues.
 
 DocValues are only available for specific field types. The types chosen determine the underlying Lucene docValue type that will be used. The available Solr field types are:
 
@@ -79,7 +79,7 @@ If `docValues="true"` for a field, then DocValues will automatically be used any
 
 Field values retrieved during search queries are typically returned from stored values. However, non-stored docValues fields will be also returned along with other stored fields when all fields (or pattern matching globs) are specified to be returned (e.g., "`fl=*`") for search queries depending on the effective value of the `useDocValuesAsStored` parameter for each field. For schema versions >= 1.6, the implicit default is `useDocValuesAsStored="true"`. See <<field-type-definitions-and-properties.adoc#field-type-definitions-and-properties,Field Type Definitions and Properties>> & <<defining-fields.adoc#defining-fields,Defining Fields>> for more details.
 
-When `useDocValuesAsStored="false"`, non-stored DocValues fields can still be explicitly requested by name in the <<common-query-parameters.adoc#fl-field-list-parameter,fl param>>, but will not match glob patterns (`"*"`). Note that returning DocValues along with "regular" stored fields at query time has performance implications that stored fields may not because DocValues are column-oriented and may therefore incur additional cost to retrieve for each returned document. Also note that while returning non-stored fields from DocValues, the values of a multi-valued field are returned in sorted order rather than insertion order and may have duplicates removed, see above. If you require the multi-valued fields to be returned in the original insertion order, then make your multi-valued field as stored (such a change requires re-indexing).
+When `useDocValuesAsStored="false"`, non-stored DocValues fields can still be explicitly requested by name in the <<common-query-parameters.adoc#fl-field-list-parameter,fl param>>, but will not match glob patterns (`"*"`). Note that returning DocValues along with "regular" stored fields at query time has performance implications that stored fields may not because DocValues are column-oriented and may therefore incur additional cost to retrieve for each returned document. Also note that while returning non-stored fields from DocValues, the values of a multi-valued field are returned in sorted order rather than insertion order and may have duplicates removed, see above. If you require the multi-valued fields to be returned in the original insertion order, then make your multi-valued field as stored (such a change requires reindexing).
 
 In cases where the query is returning _only_ docValues fields performance may improve since returning stored fields requires disk reads and decompression whereas returning docValues fields in the fl list only requires memory access.
 

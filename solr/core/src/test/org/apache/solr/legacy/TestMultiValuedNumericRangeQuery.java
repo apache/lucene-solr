@@ -31,10 +31,10 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 
-public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
+public class TestMultiValuedNumericRangeQuery extends SolrTestCase {
 
   /** Tests LegacyNumericRangeQuery on a multi-valued field (multiple numeric values per document).
    * This test ensures, that a classical TermRangeQuery returns exactly the same document numbers as

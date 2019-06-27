@@ -149,7 +149,7 @@ public final class Util {
         
         fst.readFirstRealTargetArc(arc.target, arc, in);
 
-        if (arc.bytesPerArc != 0) {
+        if (arc.bytesPerArc != 0 && arc.arcIdx > Integer.MIN_VALUE) {
 
           int low = 0;
           int high = arc.numArcs-1;
@@ -169,7 +169,7 @@ public final class Util {
             } else {
               minArcOutput = output;
             }
-            //System.out.println("  cycle mid=" + mid + " label=" + (char) label + " output=" + minArcOutput);
+            //System.out.println("  cycle mid=" + mid + " output=" + minArcOutput);
             if (minArcOutput == targetOutput) {
               exact = true;
               break;
@@ -924,7 +924,7 @@ public final class Util {
   */
 
   /**
-   * Reads the first arc greater or equal that the given label into the provided
+   * Reads the first arc greater or equal than the given label into the provided
    * arc in place and returns it iff found, otherwise return <code>null</code>.
    * 
    * @param label the label to ceil on
@@ -958,7 +958,19 @@ public final class Util {
     }
     fst.readFirstTargetArc(follow, arc, in);
     if (arc.bytesPerArc != 0 && arc.label != FST.END_LABEL) {
-      // Arcs are fixed array -- use binary search to find
+      if (arc.arcIdx == Integer.MIN_VALUE) {
+        // Arcs are in an array-with-gaps
+        int offset = label - arc.label;
+        if (offset >= arc.numArcs) {
+          return null;
+        } else if (offset < 0) {
+          return arc;
+        } else {
+          arc.nextArc = arc.posArcsStart - offset * arc.bytesPerArc;
+          return fst.readNextRealArc(arc, in);
+        }
+      }
+      // Arcs are packed array -- use binary search to find
       // the target.
 
       int low = arc.arcIdx;
@@ -987,7 +999,7 @@ public final class Util {
         // DEAD END!
         return null;
       }
-      
+
       arc.arcIdx = (low > high ? high : low);
       return fst.readNextRealArc(arc, in);
     }

@@ -122,13 +122,13 @@ public class TrecTopicsReader {
       }
       if (line.startsWith(prefix)) {
         if (collectMatchLine) {
-          sb.append(sep+line);
+          sb.append(sep).append(line);
           sep = newline;
         }
         break;
       }
       if (collectAll) {
-        sb.append(sep+line);
+        sb.append(sep).append(line);
         sep = newline;
       }
     }

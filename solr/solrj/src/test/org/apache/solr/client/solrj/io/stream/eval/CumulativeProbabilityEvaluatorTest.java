@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.CumulativeProbabilityEvaluator;
 import org.apache.solr.client.solrj.io.eval.NormalDistributionEvaluator;
@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class CumulativeProbabilityEvaluatorTest extends LuceneTestCase {
+public class CumulativeProbabilityEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;

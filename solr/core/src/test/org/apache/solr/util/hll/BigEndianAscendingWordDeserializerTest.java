@@ -18,7 +18,8 @@ package org.apache.solr.util.hll;
 
 import java.util.Random;
 
-import org.apache.lucene.util.LuceneTestCase;
+
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
@@ -26,7 +27,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
 /**
  * Unit and smoke tests for {@link BigEndianAscendingWordDeserializer}.
  */
-public class BigEndianAscendingWordDeserializerTest extends LuceneTestCase {
+public class BigEndianAscendingWordDeserializerTest extends SolrTestCase {
     /**
      * Error checking tests for constructor.
      */

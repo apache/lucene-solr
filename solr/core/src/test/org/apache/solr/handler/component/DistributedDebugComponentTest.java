@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -99,12 +98,18 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
   @AfterClass
   public static void destroyThings() throws Exception {
-    collection1.close();
-    collection2.close();
-    collection1 = null;
-    collection2 = null;
-    jetty.stop();
-    jetty=null;
+    if (null != collection1) {
+      collection1.close();
+      collection1 = null;
+    }
+    if (null != collection2) {
+      collection2.close();
+      collection2 = null;
+    }
+    if (null != jetty) {
+      jetty.stop();
+      jetty=null;
+    }
     resetExceptionIgnores();
     systemClearPropertySolrDisableShardsWhitelist();
   }
@@ -118,6 +123,10 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.set("distrib", "true");
     query.setFields("id", "text");
     query.set("shards", shard1 + "," + shard2);
+    
+    if (random().nextBoolean()) {
+      query.add("omitHeader", Boolean.toString(random().nextBoolean()));
+    }
     QueryResponse response = collection1.query(query);
     NamedList<Object> track = (NamedList<Object>) response.getDebugMap().get("track");
     assertNotNull(track);
@@ -138,13 +147,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
         "QTime", "ElapsedTime", "RequestPurpose", "NumFound", "Response");
     assertElementsPresent((NamedList<String>)((NamedList<Object>)track.get("GET_FIELDS")).get(shard2), 
         "QTime", "ElapsedTime", "RequestPurpose", "NumFound", "Response");
-    
-    query.add("omitHeader", "true");
-    response = collection1.query(query);
-    assertNull("QTime is not included in the response when omitHeader is set to true", 
-        ((NamedList<Object>)response.getDebugMap().get("track")).findRecursive("EXECUTE_QUERY", shard1, "QTime"));
-    assertNull("QTime is not included in the response when omitHeader is set to true", 
-        ((NamedList<Object>)response.getDebugMap().get("track")).findRecursive("GET_FIELDS", shard2, "QTime"));
     
     query.setQuery("id:1");
     response = collection1.query(query);
@@ -187,7 +189,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       } else if (random().nextBoolean()) {
         shards.remove(shard2);
       }
-      q.set("shards", StringUtils.join(shards, ","));
+      q.set("shards", String.join(",", shards));
 
 
       List<String> debug = new ArrayList<String>(10);

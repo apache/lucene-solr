@@ -178,9 +178,11 @@ public class BlockJoinFacetRandomTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void cleanUp() throws Exception {
-    assertU(delQ("*:*"));
-    optimize();
-    assertU((commit()));
+    if (null != h) {
+      assertU(delQ("*:*"));
+      optimize();
+      assertU((commit()));
+    }
   }
 
   @Test

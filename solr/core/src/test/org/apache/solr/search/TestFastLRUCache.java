@@ -16,8 +16,8 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLRUCache;
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @see org.apache.solr.search.FastLRUCache
  * @since solr 1.4
  */
-public class TestFastLRUCache extends LuceneTestCase {
+public class TestFastLRUCache extends SolrTestCase {
   SolrMetricManager metricManager = new SolrMetricManager();
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
   String scope = TestUtil.randomSimpleString(random(), 2, 10);

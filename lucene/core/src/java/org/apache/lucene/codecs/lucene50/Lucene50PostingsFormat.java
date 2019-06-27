@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.codecs.lucene50;
 
-
-
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
@@ -353,6 +351,7 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 
 public final class Lucene50PostingsFormat extends PostingsFormat {
+
   /**
    * Filename extension for document number, frequencies, and skip data.
    * See chapter: <a href="#Frequencies">Frequencies and Skip Data</a>
@@ -370,8 +369,8 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
    * See chapter: <a href="#Payloads">Payloads and Offsets</a>
    */
   public static final String PAY_EXTENSION = "pay";
-  
-  /** 
+
+  /**
    * Expert: The maximum number of skip levels. Smaller values result in 
    * slightly smaller indexes, but slower skipping in big posting lists.
    */
@@ -396,22 +395,24 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
    */
   // NOTE: must be multiple of 64 because of PackedInts long-aligned encoding/decoding
   public final static int BLOCK_SIZE = 128;
+  private final BlockTreeTermsReader.FSTLoadMode fstLoadMode;
 
   /** Creates {@code Lucene50PostingsFormat} with default
    *  settings. */
   public Lucene50PostingsFormat() {
-    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, BlockTreeTermsReader.FSTLoadMode.AUTO);
   }
 
   /** Creates {@code Lucene50PostingsFormat} with custom
    *  values for {@code minBlockSize} and {@code
    *  maxBlockSize} passed to block terms dictionary.
    *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
-  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
+  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize, BlockTreeTermsReader.FSTLoadMode loadMode) {
     super("Lucene50");
     BlockTreeTermsWriter.validateSettings(minTermBlockSize, maxTermBlockSize);
     this.minTermBlockSize = minTermBlockSize;
     this.maxTermBlockSize = maxTermBlockSize;
+    this.fstLoadMode = loadMode;
   }
 
   @Override
@@ -422,7 +423,6 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     PostingsWriterBase postingsWriter = new Lucene50PostingsWriter(state);
-
     boolean success = false;
     try {
       FieldsConsumer ret = new BlockTreeTermsWriter(state, 
@@ -443,7 +443,7 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
     PostingsReaderBase postingsReader = new Lucene50PostingsReader(state);
     boolean success = false;
     try {
-      FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state);
+      FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state, fstLoadMode);
       success = true;
       return ret;
     } finally {

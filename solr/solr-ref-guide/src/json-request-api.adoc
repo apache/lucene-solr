@@ -281,7 +281,7 @@ Solr uses the *Noggit* JSON parser in its request API.  Noggit is capable of mor
 * Multi-line ("C style") comments can be inserted using `/\*` and `*/`
 * strings can be single-quoted
 * special characters can be backslash-escaped
-* trailing (extra) commas are silently ignored (e.g. `[9,4,3,]`)
+* trailing (extra) commas are silently ignored (e.g., `[9,4,3,]`)
 * nbsp (non-break space, \u00a0) is treated as whitespace.
 
 == Debugging

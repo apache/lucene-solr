@@ -51,6 +51,7 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
@@ -308,10 +309,10 @@ public class WeightedSpanTermExtractor {
       for (final String field : fieldNames) {
         final SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(getLeafContext().reader());
         queries.put(field, rewrittenQuery);
-        rewrittenQuery.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost).extractTerms(nonWeightedTerms);
+        rewrittenQuery.visit(QueryVisitor.termCollector(nonWeightedTerms));
       }
     } else {
-      spanQuery.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost).extractTerms(nonWeightedTerms);
+      spanQuery.visit(QueryVisitor.termCollector(nonWeightedTerms));
     }
 
     List<PositionSpan> spanPositions = new ArrayList<>();
@@ -378,7 +379,7 @@ public class WeightedSpanTermExtractor {
   protected void extractWeightedTerms(Map<String,WeightedSpanTerm> terms, Query query, float boost) throws IOException {
     Set<Term> nonWeightedTerms = new HashSet<>();
     final IndexSearcher searcher = new IndexSearcher(getLeafContext());
-    searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1).extractTerms(nonWeightedTerms);
+    searcher.rewrite(query).visit(QueryVisitor.termCollector(nonWeightedTerms));
 
     for (final Term queryTerm : nonWeightedTerms) {
 

@@ -111,7 +111,7 @@ final class LatLonShapeLineQuery extends LatLonShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("Line(" + lines[0].toGeoJSON() + ")");
+    sb.append("Line(").append(lines[0].toGeoJSON()).append(')');
     return sb.toString();
   }
 

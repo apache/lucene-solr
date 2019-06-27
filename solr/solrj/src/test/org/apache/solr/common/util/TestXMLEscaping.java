@@ -18,12 +18,12 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
 /** Test (some of the) character escaping functions of the XML class
  */
 
-public class TestXMLEscaping extends LuceneTestCase {
+public class TestXMLEscaping extends SolrTestCase {
   private void doSimpleTest(String input,String expectedOutput) throws IOException {
     final StringWriter sw = new StringWriter();
     XML.escapeCharData(input, sw);

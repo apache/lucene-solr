@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
@@ -33,19 +35,17 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.Nightly;
-
 @Nightly // this test is currently too slow for non nightly
 public class ForceLeaderTest extends HttpPartitionTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  // TODO: SOLR-12313 tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
-  private final boolean onlyLeaderIndexes = random().nextBoolean() && false; // consume same amount of random
 
   @BeforeClass
   public static void beforeClassSetup() {
@@ -54,11 +54,6 @@ public class ForceLeaderTest extends HttpPartitionTest {
     System.setProperty("solr.httpclient.retries", "0");
     System.setProperty("solr.retries.on.forward", "0");
     System.setProperty("solr.retries.to.followers", "0"); 
-  }
-  
-  @Override
-  protected boolean useTlogReplicas() {
-    return onlyLeaderIndexes;
   }
 
   @Test
@@ -73,7 +68,6 @@ public class ForceLeaderTest extends HttpPartitionTest {
    */
   @Test
   @Slow
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testReplicasInLowerTerms() throws Exception {
     handle.put("maxScore", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
@@ -150,11 +144,25 @@ public class ForceLeaderTest extends HttpPartitionTest {
       assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 1);
       assertDocsExistInAllReplicas(notLeaders, testCollectionName, 4, 4);
 
+      if (useTlogReplicas()) {
+
+      }
       // Docs 1 and 4 should be here. 2 was lost during the partition, 3 had failed to be indexed.
       log.info("Checking doc counts...");
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add("q", "*:*");
-      assertEquals("Expected only 2 documents in the index", 2, cloudClient.query(params).getResults().getNumFound());
+      if (useTlogReplicas()) {
+        TimeOut timeOut = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        timeOut.waitFor("Expected only 2 documents in the index", () -> {
+          try {
+            return 2 == cloudClient.query(params).getResults().getNumFound();
+          } catch (Exception e) {
+            return false;
+          }
+        });
+      } else {
+        assertEquals("Expected only 2 documents in the index", 2, cloudClient.query(params).getResults().getNumFound());
+      }
 
       bringBackOldLeaderAndSendDoc(testCollectionName, leader, notLeaders, 5);
     } finally {

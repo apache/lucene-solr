@@ -101,7 +101,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
     final int numDocs = atLeast(1000);
     final int maxTermId = atLeast(TERM_VALUES_RANDOMIZER);
-    
+
+    // clear the RANGE_MODEL
+    Arrays.fill(RANGE_MODEL, 0);
     // seed the TERM_MODEL Maps so we don't have null check later
     for (int i = 0; i < NUM_RANGE_VALUES; i++) {
       TERM_MODEL[i] = new LinkedHashMap<>();
@@ -216,6 +218,15 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
         }
       }
     }
+  }
+
+  public void testStatsWithOmitHeader() throws Exception {
+    // SOLR-13509: no NPE should be thrown when only stats are specified with omitHeader=true
+    SolrQuery solrQuery = new SolrQuery("q", "*:*", "omitHeader", "true",
+        "json.facet", "{unique_foo:\"unique(" + STR_FIELD+ ")\"}");
+    final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+    // response shouldn't contain header as omitHeader is set to true
+    assertNull(rsp.getResponseHeader());
   }
   
   public void testInclude_Upper() throws Exception {

@@ -30,6 +30,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -65,6 +66,13 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
     h = 31 * h + Long.hashCode(lowerValue);
     h = 31 * h + Long.hashCode(upperValue);
     return h;
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
   }
 
   @Override

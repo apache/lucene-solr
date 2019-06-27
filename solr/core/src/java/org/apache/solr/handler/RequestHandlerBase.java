@@ -200,9 +200,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       // count timeouts
       NamedList header = rsp.getResponseHeader();
       if(header != null) {
-        Object partialResults = header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
-        boolean timedOut = partialResults == null ? false : (Boolean)partialResults;
-        if( timedOut ) {
+        if( Boolean.TRUE.equals(header.getBooleanArg(
+                     SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)) ) {
           numTimeouts.mark();
           rsp.setHttpCaching(false);
         }

@@ -17,11 +17,9 @@
 package org.apache.lucene.search.suggest.document;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Explanation;
@@ -140,11 +138,6 @@ public class CompletionWeight extends Weight {
   @Override
   public boolean isCacheable(LeafReaderContext ctx) {
     return true;
-  }
-
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    // no-op
   }
 
   @Override

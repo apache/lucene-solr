@@ -91,7 +91,7 @@ final class Lucene70NormsProducer extends NormsProducer implements Cloneable {
   }
 
   @Override
-  public NormsProducer getMergeInstance() throws IOException {
+  public NormsProducer getMergeInstance() {
     Lucene70NormsProducer clone;
     try {
       clone = (Lucene70NormsProducer) super.clone();

@@ -107,6 +107,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private List<Config> configs = new ArrayList<>();
     private Map<String, Object> clusterProperties = new HashMap<>();
 
+    private boolean trackJettyMetrics;
     /**
      * Create a builder
      * @param nodeCount the number of nodes in the cluster
@@ -191,6 +192,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       return this;
     }
 
+    public Builder withMetrics(boolean trackJettyMetrics) {
+      this.trackJettyMetrics = trackJettyMetrics; 
+      return this;
+    }
     /**
      * Configure and run the {@link MiniSolrCloudCluster}
      * @throws Exception if an error occurs on startup
@@ -204,7 +209,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster build() throws Exception {
-      MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig, null, securityJson);
+      MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig,
+          null, securityJson, trackJettyMetrics);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
         ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);

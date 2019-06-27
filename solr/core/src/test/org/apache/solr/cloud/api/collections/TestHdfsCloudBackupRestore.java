@@ -26,8 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
-
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -65,7 +63,6 @@ import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12866")
 public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   public static final String SOLR_XML = "<solr>\n" +
       "\n" +
@@ -112,7 +109,6 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     try {
       URI uri = new URI(hdfsUri);
       Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
       fs = FileSystem.get(uri, conf);
 
       if (fs instanceof DistributedFileSystem) {
@@ -147,14 +143,17 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
 
   @AfterClass
   public static void teardownClass() throws Exception {
-    System.clearProperty("solr.hdfs.home");
-    System.clearProperty("solr.hdfs.default.backup.path");
-    System.clearProperty("test.build.data");
-    System.clearProperty("test.cache.data");
     IOUtils.closeQuietly(fs);
     fs = null;
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+      System.clearProperty("solr.hdfs.home");
+      System.clearProperty("solr.hdfs.default.backup.path");
+      System.clearProperty("test.build.data");
+      System.clearProperty("test.cache.data");
+    }
   }
 
   @Override
@@ -211,11 +210,10 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
       assertTrue(expected.contains(d));
     }
   }
+
   @Override
   @Test
-  // commented 15-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void test() throws Exception {
     super.test();
   }
-
-  }
+}

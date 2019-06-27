@@ -18,11 +18,11 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.Collection;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.QueryVisitor;
 
 /**
  * A helper class for {@link IntervalQuery} that provides an {@link IntervalIterator}
@@ -56,16 +56,21 @@ public abstract class IntervalsSource {
   public abstract MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException;
 
   /**
-   * Expert: collect {@link Term} objects from this source
-   * @param field the field to be scored
-   * @param terms a {@link Set} which terms should be added to
+   * Expert: visit the tree of sources
    */
-  public abstract void extractTerms(String field, Set<Term> terms);
+  public abstract void visit(String field, QueryVisitor visitor);
 
   /**
    * Return the minimum possible width of an interval returned by this source
    */
   public abstract int minExtent();
+
+  /**
+   * Expert: return the set of disjunctions that make up this IntervalsSource
+   *
+   * Most implementations can return {@code Collections.singleton(this)}
+   */
+  public abstract Collection<IntervalsSource> pullUpDisjunctions();
 
   @Override
   public abstract int hashCode();

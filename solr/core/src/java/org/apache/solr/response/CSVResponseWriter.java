@@ -22,18 +22,12 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.FastWriter;
@@ -44,11 +38,10 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 
 /**
- *
+ * Response writer for csv data
  */
 
 public class CSVResponseWriter implements QueryResponseWriter {
@@ -75,7 +68,7 @@ public class CSVResponseWriter implements QueryResponseWriter {
 }
 
 
-class CSVWriter extends TextResponseWriter {
+class CSVWriter extends TabularResponseWriter {
   static String SEPARATOR = "separator";
   static String ENCAPSULATOR = "encapsulator";
   static String ESCAPE = "escape";
@@ -245,35 +238,7 @@ class CSVWriter extends TextResponseWriter {
       // encapsulator will already be disabled if it wasn't specified
     }
 
-    Collection<String> fields = returnFields.getRequestedFieldNames();
-    Object responseObj = rsp.getResponse();
-    boolean returnStoredOrDocValStored = false;
-    if (fields==null||returnFields.hasPatternMatching()) {
-      if (responseObj instanceof SolrDocumentList) {
-        // get the list of fields from the SolrDocumentList
-        if(fields==null) {
-          fields = new LinkedHashSet<>();
-        }
-        for (SolrDocument sdoc: (SolrDocumentList)responseObj) {
-          fields.addAll(sdoc.getFieldNames());
-        }
-      } else {
-        // get the list of fields from the index
-        Iterable<String> all = req.getSearcher().getFieldNames();
-        if (fields == null) {
-          fields = Sets.newHashSet(all);
-        } else {
-          Iterables.addAll(fields, all);
-        }
-      }
-      if (returnFields.wantsScore()) {
-        fields.add("score");
-      } else {
-        fields.remove("score");
-      }
-      returnStoredOrDocValStored = true;
-    }
-
+    Collection<String> fields = getFields();
     CSVSharedBufPrinter csvPrinterMV = new CSVSharedBufPrinter(mvWriter, mvStrategy);
 
     for (String field : fields) {
@@ -287,16 +252,14 @@ class CSVWriter extends TextResponseWriter {
         continue;
       }
 
+      if (shouldSkipField(field)) {
+        continue;
+      }
+
       SchemaField sf = schema.getFieldOrNull(field);
       if (sf == null) {
         FieldType ft = new StrField();
         sf = new SchemaField(field, ft);
-      }
-      
-      // Return stored fields or useDocValuesAsStored=true fields,
-      // unless an explicit field list is specified
-      if (returnStoredOrDocValStored && !sf.stored() && !(sf.hasDocValues() && sf.useDocValuesAsStored())) {
-        continue;
       }
 
       // check for per-field overrides
@@ -350,40 +313,13 @@ class CSVWriter extends TextResponseWriter {
       printer.println();
     }
 
-    if (responseObj instanceof ResultContext) {
-      writeDocuments(null, (ResultContext)responseObj );
-    }
-    else if (responseObj instanceof DocList) {
-
-      ResultContext ctx = new BasicResultContext((DocList)responseObj, returnFields, null, null, req);
-      writeDocuments(null, ctx );
-    } else if (responseObj instanceof SolrDocumentList) {
-      writeSolrDocumentList(null, (SolrDocumentList)responseObj, returnFields );
-    }
-
+    writeResponse(rsp.getResponse());
   }
 
   @Override
   public void close() throws IOException {
     if (printer != null) printer.flush();
     super.close();
-  }
-
-  @Override
-  public void writeNamedList(String name, NamedList val) throws IOException {
-  }
-
-  @Override
-  public void writeStartDocumentList(String name, 
-      long start, int size, long numFound, Float maxScore) throws IOException
-  {
-    // nothing
-  }
-
-  @Override
-  public void writeEndDocumentList() throws IOException
-  {
-    // nothing
   }
 
   //NOTE: a document cannot currently contain another document
@@ -457,14 +393,6 @@ class CSVWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
-  }
-
-  @Override
-  public void writeArray(String name, Iterator val) throws IOException {
-  }
-
-  @Override
   public void writeNull(String name) throws IOException {
     printer.print(NullValue);
   }
@@ -492,11 +420,6 @@ class CSVWriter extends TextResponseWriter {
   @Override
   public void writeDouble(String name, String val) throws IOException {
     printer.print(val, false);
-  }
-
-  @Override
-  public void writeDate(String name, Date val) throws IOException {
-    writeDate(name, val.toInstant().toString());
   }
 
   @Override

@@ -19,11 +19,10 @@ package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
@@ -31,6 +30,7 @@ import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -120,6 +120,11 @@ public final class FunctionScoreQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    in.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+  }
+
+  @Override
   public String toString(String field) {
     return "FunctionScoreQuery(" + in.toString(field) + ", scored by " + source.toString() + ")";
   }
@@ -149,11 +154,6 @@ public final class FunctionScoreQuery extends Query {
       this.inner = inner;
       this.valueSource = valueSource;
       this.boost = boost;
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      this.inner.extractTerms(terms);
     }
 
     @Override
@@ -235,9 +235,9 @@ public final class FunctionScoreQuery extends Query {
 
   }
 
-  private static class MultiplicativeBoostValuesSource extends DoubleValuesSource {
+  static class MultiplicativeBoostValuesSource extends DoubleValuesSource {
 
-    private final DoubleValuesSource boost;
+    final DoubleValuesSource boost;
 
     private MultiplicativeBoostValuesSource(DoubleValuesSource boost) {
       this.boost = boost;

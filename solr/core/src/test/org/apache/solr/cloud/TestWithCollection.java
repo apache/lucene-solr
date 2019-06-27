@@ -391,7 +391,7 @@ public class TestWithCollection extends SolrCloudTestCase {
    * Tests that when a new node is added to the cluster and autoscaling framework
    * moves replicas to the new node, we maintain all co-locating guarantees
    */
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
+  // commented out on: 01-Apr-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testNodeAdded() throws Exception  {
     String prefix = "testNodeAdded";
     String xyz = prefix + "_xyz";

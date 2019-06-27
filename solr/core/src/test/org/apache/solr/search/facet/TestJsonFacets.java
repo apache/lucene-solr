@@ -58,6 +58,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    systemSetPropertySolrDisableShardsWhitelist("true");
     JSONTestUtil.failRepeatedKeys = true;
 
     origTableSize = FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE;
@@ -74,35 +75,16 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   /**
-   * Start all servers for cluster, initialize shards whitelist and then restart
+   * Start all servers for cluster if they don't already exist
    */
   public static void initServers() throws Exception {
     if (servers == null) {
       servers = new SolrInstances(3, "solrconfig-tlog.xml", "schema_latest.xml");
-      // Set the shards whitelist to all shards plus the fake one used for tolerant test
-      System.setProperty(SOLR_TESTS_SHARDS_WHITELIST, servers.getWhitelistString() + ",http://[ff01::114]:33332");
-      systemSetPropertySolrDisableShardsWhitelist("false");
-      restartServers();
     }
-  }
-
-  /**
-   * Restart all configured servers, i.e. configuration will be re-read
-   */
-  public static void restartServers() {
-    servers.slist.forEach(s -> {
-      try {
-        s.stop();
-        s.start();
-      } catch (Exception e) {
-        fail("Exception during server restart: " + e.getMessage());
-      }
-    });
   }
 
   @AfterClass
   public static void afterTests() throws Exception {
-    System.clearProperty(SOLR_TESTS_SHARDS_WHITELIST);
     systemClearPropertySolrDisableShardsWhitelist();
     JSONTestUtil.failRepeatedKeys = false;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;

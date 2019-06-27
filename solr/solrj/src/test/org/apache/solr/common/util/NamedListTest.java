@@ -20,11 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
-public class NamedListTest extends LuceneTestCase {
+public class NamedListTest extends SolrTestCase {
   public void testRemove() {
     NamedList<String> nl = new NamedList<>();
     nl.add("key1", "value1");

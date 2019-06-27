@@ -54,8 +54,10 @@ public class TestBM25FQuery extends LuceneTestCase {
     assertEquals(actual, new TermQuery(new Term("field", "foo")));
     builder.addTerm(new BytesRef("bar"));
     actual = searcher.rewrite(builder.build());
-    assertEquals(actual, new SynonymQuery(new Term("field", "foo"),
-        new Term("field", "bar")));
+    assertEquals(actual, new SynonymQuery.Builder("field")
+        .addTerm(new Term("field", "foo"))
+        .addTerm(new Term("field", "bar"))
+        .build());
     builder.addField("another_field", 1f);
     Query query = builder.build();
     actual = searcher.rewrite(query);

@@ -34,8 +34,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * <p>
  * The {@code consumeAllTokens} property is optional and defaults to {@code false}.
  * @since 5.2.0
+ * @lucene.spi {@value #NAME}
  */
 public class LimitTokenOffsetFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "limitTokenOffset";
 
   public static final String MAX_START_OFFSET = "maxStartOffset";
   public static final String CONSUME_ALL_TOKENS_KEY = "consumeAllTokens";

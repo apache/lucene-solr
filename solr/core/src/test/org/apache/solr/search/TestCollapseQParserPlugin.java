@@ -814,8 +814,12 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // this is currently ok on fields that don't exist on any docs in the index
     for (String f : Arrays.asList("not_indexed_sS", "indexed_s_not_uninvert")) {
       for (String hint : Arrays.asList("", " hint=top_fc")) {
-        assertQ(req(params("q", "*:*", "fq", "{!collapse field="+f+hint+"}"))
-                , "*[count(//doc)=0]");
+        SolrException e = expectThrows(SolrException.class,
+            () -> h.query(req("q", "*:*", "fq", "{!collapse field="+f + hint +"}")));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue("unexpected Message: " + e.getMessage(),
+            e.getMessage().contains("Collapsing field '" + f + "' " +
+                "should be either docValues enabled or indexed with uninvertible enabled"));
       }
     }
   }
@@ -941,18 +945,24 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         req("q","*:*", "fq","{!collapse field=bleh}"), SolrException.ErrorCode.BAD_REQUEST);
 
     // if a field is uninvertible=false, it should behave the same as a field that is indexed=false ...
+    // this also tests docValues=false along with indexed=false or univertible=false
     for (String f : Arrays.asList("not_indexed_sS", "indexed_s_not_uninvert")) {
-      { // this currently propogates up the low level DocValues error in the common case...
-        Exception e = expectThrows(RuntimeException.class, IllegalStateException.class,
+      {
+        SolrException e = expectThrows(SolrException.class,
                                     () -> h.query(req(params("q", "*:*",
                                                              "fq", "{!collapse field="+f+"}"))));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
         assertTrue("unexpected Message: " + e.getMessage(),
-                   e.getMessage().contains("Re-index with correct docvalues type"));
+                   e.getMessage().contains("Collapsing field '" + f + "' " +
+                       "should be either docValues enabled or indexed with uninvertible enabled"));
       }
-      { // ... but in the case of hint=top_fc a bare NPE gets propogated up (SOLR-12979)...
-        expectThrows(RuntimeException.class, NullPointerException.class, 
-                     () -> h.query(req(params("q", "*:*",
-                                              "fq", "{!collapse field="+f+" hint=top_fc}"))));
+      {
+        SolrException e = expectThrows(SolrException.class,
+            () -> h.query(req("q", "*:*", "fq", "{!collapse field="+f+" hint=top_fc}")));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue("unexpected Message: " + e.getMessage(),
+            e.getMessage().contains("Collapsing field '" + f + "' " +
+                "should be either docValues enabled or indexed with uninvertible enabled"));
       }
       
     }

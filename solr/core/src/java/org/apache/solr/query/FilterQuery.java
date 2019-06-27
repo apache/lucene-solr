@@ -24,6 +24,7 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.search.DocSet;
@@ -67,6 +68,10 @@ public class FilterQuery extends ExtendedQueryBase {
     return sb.toString();
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    q.visit(visitor);
+  }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {

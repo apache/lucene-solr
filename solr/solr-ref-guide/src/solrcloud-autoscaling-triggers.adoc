@@ -255,8 +255,8 @@ In addition to the parameters described at <<Trigger Configuration>>, this trigg
 This trigger can be used for monitoring the size of collection shards, measured either by the
 number of documents in a shard or the physical size of the shard's index in bytes.
 
-When either of the upper thresholds is exceeded the trigger will generate an event with
-a (configurable) requested operation to perform on the offending shards - by default
+When either of the upper thresholds is exceeded for a particular shard the trigger will generate
+an event with a (configurable) requested operation to perform on the offending shards - by default
 this is a SPLITSHARD operation.
 
 Similarly, when either of the lower thresholds is exceeded the trigger will generate an
@@ -264,13 +264,22 @@ event with a (configurable) requested operation to perform on two of the smalles
 shards. By default this is a MERGESHARDS operation, and is currently ignored because
 that operation is not yet implemented (see https://issues.apache.org/jira/browse/SOLR-9407[SOLR-9407]).
 
+When `splitMethod=link` is used the resulting sub-shards will initially have nearly the same size
+as the parent shard due to the hard-linking of parent index files, and will differ just in the lists of
+deleted documents. In order to correctly recognize the effectively reduced index size an estimate
+is calculated using a simple formula: `indexCommitSize * numDocs / maxDoc`. This value is then
+compared with `aboveBytes` and `belowBytes` limits.
+
 Additionally, monitoring can be restricted to a list of collections; by default
 all collections are monitored.
 
 In addition to the parameters described at <<Trigger Configuration>>, this trigger supports the following configuration parameters (all thresholds are exclusive):
 
 `aboveBytes`::
-A upper threshold in bytes. This value is compared to the `INDEX.sizeInBytes` metric.
+An upper threshold in bytes. This value is compared to the `SEARCHER.searcher.indexCommitSize` metric, which
+reports the size of the latest commit point (ignoring any data related to earlier commit points, which may be
+still present for replication or snapshot purposes). See also the note above how this value is used with
+`splitMethod=link`.
 
 `belowBytes`::
 A lower threshold in bytes. Note that this value should be at least 2x smaller than
@@ -280,7 +289,7 @@ A lower threshold in bytes. Note that this value should be at least 2x smaller t
 An upper threshold expressed as the number of documents. This value is compared with `SEARCHER.searcher.numDocs` metric.
 +
 NOTE: Due to the way Lucene indexes work, a shard may exceed the `aboveBytes` threshold
-even if the number of documents is relatively small, because replaced and deleted documents keep
+on disk even if the number of documents is relatively small, because replaced and deleted documents keep
 occupying disk space until they are actually removed during Lucene index merging.
 
 `belowDocs`::

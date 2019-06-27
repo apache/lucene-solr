@@ -660,14 +660,8 @@ public class Dictionary {
     }
   }
 
-  static final Map<String,String> CHARSET_ALIASES;
-  static {
-    Map<String,String> m = new HashMap<>();
-    m.put("microsoft-cp1251", "windows-1251");
-    m.put("TIS620-2533", "TIS-620");
-    CHARSET_ALIASES = Collections.unmodifiableMap(m);
-  }
-  
+  static final Map<String,String> CHARSET_ALIASES = Map.of("microsoft-cp1251", "windows-1251", "TIS620-2533", "TIS-620");
+
   /**
    * Retrieves the CharsetDecoder for the given encoding.  Note, This isn't perfect as I think ISCII-DEVANAGARI and
    * MICROSOFT-CP1251 etc are allowed...

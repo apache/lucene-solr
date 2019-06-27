@@ -332,9 +332,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       if (!schemaField.hasDocValues()) {
         throw new IOException(schemaField + " must have DocValues to use this feature.");
       }
-
       boolean multiValued = schemaField.multiValued();
       FieldType fieldType = schemaField.getType();
+
+      if (fieldType instanceof SortableTextField && schemaField.useDocValuesAsStored() == false) {
+        throw new IOException(schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
+      }
+
       if (fieldType instanceof IntValueFieldType) {
         if (multiValued) {
           writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
@@ -396,6 +400,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
       if (!schemaField.hasDocValues()) {
         throw new IOException(field + " must have DocValues to use this feature.");
+      }
+
+      if (ft instanceof SortableTextField && schemaField.useDocValuesAsStored() == false) {
+        throw new IOException(schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
       }
 
       if (ft instanceof IntValueFieldType) {

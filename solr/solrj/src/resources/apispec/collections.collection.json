@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#list",
+  "documentation": "https://lucene.apache.org/solr/guide/collection-management.html#list",
   "description": "Lists all collections, with details on shards and replicas in each collection.",
   "methods": [
     "GET"

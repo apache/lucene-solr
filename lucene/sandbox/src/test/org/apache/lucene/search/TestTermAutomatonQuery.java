@@ -606,6 +606,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public String toString(String field) {
       return "RandomFilter(seed=" + seed + ",density=" + density + ")";
     }

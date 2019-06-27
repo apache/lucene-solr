@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -190,7 +189,7 @@ final class DocumentsWriterPerThread {
     assert numDocsInRAM == 0 : "num docs " + numDocsInRAM;
     deleteSlice = deleteQueue.newSlice();
    
-    segmentInfo = new SegmentInfo(directoryOrig, Version.LATEST, Version.LATEST, segmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), indexWriterConfig.getIndexSort());
+    segmentInfo = new SegmentInfo(directoryOrig, Version.LATEST, Version.LATEST, segmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), indexWriterConfig.getIndexSort());
     assert numDocsInRAM == 0;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segmentName + " delQueue=" + deleteQueue);  

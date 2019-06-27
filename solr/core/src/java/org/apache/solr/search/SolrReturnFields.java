@@ -16,6 +16,15 @@
  */
 package org.apache.solr.search;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -34,15 +43,6 @@ import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.response.transform.ValueSourceAugmenter;
 import org.apache.solr.search.SolrDocumentFetcher.RetrieveFieldsOptimizer;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * The default implementation of return fields parsing for Solr.
@@ -448,7 +448,15 @@ public class SolrReturnFields extends ReturnFields {
 
   @Override
   public Set<String> getRequestedFieldNames() {
-    if(_wantsAllFields || reqFieldNames==null || reqFieldNames.isEmpty()) {
+    if(_wantsAllFields || reqFieldNames == null || reqFieldNames.isEmpty()) {
+      return null;
+    }
+    return reqFieldNames;
+  }
+
+  @Override
+  public Set<String> getExplicitlyRequestedFieldNames() {
+    if (reqFieldNames == null || reqFieldNames.isEmpty()) {
       return null;
     }
     return reqFieldNames;

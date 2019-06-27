@@ -407,11 +407,14 @@ public abstract class FacetRequest {
       debugInfo.setProcessor(facetProcessor.getClass().getSimpleName());
       debugInfo.putInfoItem("domainSize", (long) fcontext.base.size());
       RTimer timer = new RTimer();
-      facetProcessor.process();
-      debugInfo.setElapse((long) timer.getTime());
+      try {
+        facetProcessor.process();
+      }finally {
+        debugInfo.setElapse((long) timer.getTime());
+      }
     }
 
-    return facetProcessor.getResponse(); // note: not captured in elapsed time above; good/bad?
+    return facetProcessor.getResponse(); 
   }
 
   public abstract FacetProcessor createFacetProcessor(FacetContext fcontext);

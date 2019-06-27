@@ -37,8 +37,13 @@ import org.apache.lucene.analysis.fr.FrenchAnalyzer;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class ElisionFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "elision";
+
   private final String articlesFile;
   private final boolean ignoreCase;
   private CharArraySet articles;

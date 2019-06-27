@@ -85,7 +85,7 @@ public abstract class IntervalFilter extends IntervalIterator {
     do {
       next = in.nextInterval();
     }
-    while (accept() == false && next != IntervalIterator.NO_MORE_INTERVALS);
+    while (next != IntervalIterator.NO_MORE_INTERVALS && accept() == false);
     return next;
   }
 

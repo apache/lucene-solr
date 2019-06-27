@@ -194,27 +194,28 @@ public final class GeoUtils {
     }
   }
 
-  /**
-   * uses orient method to compute relation between two line segments
-   * note the following return values:
-   * CELL_CROSSES_QUERY - if the two line segments fully cross
-   * CELL_INSIDE_QUERY - if the one line segment terminates on the other
-   * CELL_OUTSIDE_QUERY - if the two segments do not cross
+  /** uses orient method to compute whether two line segments cross */
+  public static boolean lineCrossesLine(double a1x, double a1y, double b1x, double b1y, double a2x, double a2y, double b2x, double b2y) {
+    if (orient(a2x, a2y, b2x, b2y, a1x, a1y) * orient(a2x, a2y, b2x, b2y, b1x, b1y) < 0 &&
+        orient(a1x, a1y, b1x, b1y, a2x, a2y) * orient(a1x, a1y, b1x, b1y, b2x, b2y) < 0) {
+      return true;
+    }
+    return false;
+  }
+
+  /** uses orient method to compute whether two line segments cross; boundaries included - returning true for
+   * lines that terminate on each other.
+   *
+   * e.g., (plus sign) + == true, and (capital 't') T == true
+   *
+   * Use {@link #lineCrossesLine} to exclude lines that terminate on each other from the truth table
    **/
-  public static Relation lineRelateLine(double a1x, double a1y, double b1x, double b1y, double a2x, double a2y, double b2x, double b2y) {
-    // shortcut: either "line" is actually a point
-    if ((a1x == b1x && a1y == b1y) || (a2x == b2x && a2y == b2y)) {
-      return Relation.CELL_OUTSIDE_QUERY;
+  public static boolean lineCrossesLineWithBoundary(double a1x, double a1y, double b1x, double b1y, double a2x, double a2y, double b2x, double b2y) {
+    if (orient(a2x, a2y, b2x, b2y, a1x, a1y) * orient(a2x, a2y, b2x, b2y, b1x, b1y) <= 0 &&
+        orient(a1x, a1y, b1x, b1y, a2x, a2y) * orient(a1x, a1y, b1x, b1y, b2x, b2y) <= 0) {
+      return true;
     }
-
-    int a = orient(a2x, a2y, b2x, b2y, a1x, a1y) * orient(a2x, a2y, b2x, b2y, b1x, b1y);
-    int b = orient(a1x, a1y, b1x, b1y, a2x, a2y) * orient(a1x, a1y, b1x, b1y, b2x, b2y);
-
-    if (a <= 0 && b <= 0) {
-      return a == 0 || b == 0 ? Relation.CELL_INSIDE_QUERY : Relation.CELL_CROSSES_QUERY;
-    }
-
-    return Relation.CELL_OUTSIDE_QUERY;
+    return false;
   }
 
   /**

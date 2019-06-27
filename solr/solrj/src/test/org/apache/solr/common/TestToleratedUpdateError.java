@@ -18,15 +18,15 @@ package org.apache.solr.common;
 
 import java.util.EnumSet;
 
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.ToleratedUpdateError.CmdType;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 /** Basic testing of the serialization/encapsulation code in ToleratedUpdateError */
-public class TestToleratedUpdateError extends LuceneTestCase {
+public class TestToleratedUpdateError extends SolrTestCase {
   
   private final static CmdType[] ALL_TYPES = EnumSet.allOf(CmdType.class).toArray(new CmdType[0]);
   

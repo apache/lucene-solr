@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -76,6 +77,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -2737,6 +2740,45 @@ public class TestIndexWriter extends LuceneTestCase {
 
   }
 
+  public void testPendingDeletionsRollbackWithReader() throws IOException {
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+
+    Path path = createTempDir();
+
+    // Use WindowsFS to prevent open files from being deleted:
+    FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path root = new FilterPath(path, fs);
+    try (FSDirectory _dir = new SimpleFSDirectory(root)) {
+      Directory dir = new FilterDirectory(_dir) {};
+
+      IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+      IndexWriter w = new IndexWriter(dir, iwc);
+      Document d = new Document();
+      d.add(new StringField("id", "1", Field.Store.YES));
+      d.add(new NumericDocValuesField("numval", 1));
+      w.addDocument(d);
+      w.commit();
+      w.addDocument(d);
+      w.flush();
+      DirectoryReader reader = DirectoryReader.open(w);
+      w.rollback();
+
+      // try-delete superfluous files (some will fail due to windows-fs)
+      IndexWriterConfig iwc2 = new IndexWriterConfig(new MockAnalyzer(random()));
+      new IndexWriter(dir, iwc2).close();
+
+      // test that we can index on top of pending deletions
+      IndexWriterConfig iwc3 = new IndexWriterConfig(new MockAnalyzer(random()));
+      w = new IndexWriter(dir, iwc3);
+      w.addDocument(d);
+      w.commit();
+
+      reader.close();
+      w.close();
+    }
+  }
+
   public void testWithPendingDeletions() throws Exception {
     // irony: currently we don't emulate windows well enough to work on windows!
     assumeFalse("windows is not supported", Constants.WINDOWS);
@@ -3691,4 +3733,50 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
+  public void testRefreshAndRollbackConcurrently() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    AtomicBoolean stopped = new AtomicBoolean();
+    Semaphore indexedDocs = new Semaphore(0);
+    Thread indexer = new Thread(() -> {
+      while (stopped.get() == false) {
+        try {
+          String id = Integer.toString(random().nextInt(100));
+          Document doc = new Document();
+          doc.add(new StringField("id", id, Field.Store.YES));
+          w.updateDocument(new Term("id", id), doc);
+          indexedDocs.release(1);
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        } catch (AlreadyClosedException ignored) {
+          return;
+        }
+      }
+    });
+
+    SearcherManager sm = new SearcherManager(w, new SearcherFactory());
+    Thread refresher = new Thread(() -> {
+      while (stopped.get() == false) {
+        try {
+          sm.maybeRefreshBlocking();
+        } catch (IOException e) {
+          throw new AssertionError(e);
+        } catch (AlreadyClosedException ignored) {
+          return;
+        }
+      }
+    });
+
+    try {
+      indexer.start();
+      refresher.start();
+      indexedDocs.acquire(1 + random().nextInt(100));
+      w.rollback();
+    } finally {
+      stopped.set(true);
+      indexer.join();
+      refresher.join();
+      IOUtils.close(sm, dir);
+    }
+  }
 }

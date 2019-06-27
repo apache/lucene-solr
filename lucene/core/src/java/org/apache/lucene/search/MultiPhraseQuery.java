@@ -21,12 +21,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -204,6 +202,18 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    for (Term[] terms : termArrays) {
+      QueryVisitor sv = v.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+      sv.consumeTerms(this, terms);
+    }
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final Map<Term,TermStates> termStates = new HashMap<>();
     return new PhraseWeight(this, field, searcher, scoreMode) {
@@ -297,13 +307,6 @@ public class MultiPhraseQuery extends Query {
           return new SloppyPhraseMatcher(postingsFreqs, slop, totalMatchCost, exposeOffsets);
         }
 
-      }
-
-      @Override
-      public void extractTerms(Set<Term> terms) {
-        for (final Term[] arr : termArrays) {
-          Collections.addAll(terms, arr);
-        }
       }
     };
   }

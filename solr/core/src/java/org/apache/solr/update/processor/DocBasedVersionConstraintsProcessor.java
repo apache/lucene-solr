@@ -218,7 +218,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
 
   private DocFoundAndOldUserAndSolrVersions getOldUserVersionsFromStored(BytesRef indexedDocId) throws IOException {
     // stored fields only...
-    SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(core, indexedDocId);
+    SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(core, indexedDocId, RealTimeGetComponent.Resolution.DOC);
     if (null == oldDoc) {
       return DocFoundAndOldUserAndSolrVersions.NOT_FOUND;
     } else {
@@ -368,7 +368,8 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       return true;
     }
     // if phase==TOLEADER, we can't just assume we are the leader... let the normal logic check.
-    return !distribProc.isLeader(cmd);
+    distribProc.setupRequest(cmd);
+    return !distribProc.isLeader();
   }
 
   @Override

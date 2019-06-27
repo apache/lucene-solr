@@ -162,6 +162,8 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
       }
     };
 
+    private Set<SegmentCommitInfo> mergingSegments = Collections.emptySet();
+
     public MockMergeContext(ToIntFunction<SegmentCommitInfo> numDeletesFunc) {
       this.numDeletesFunc = numDeletesFunc;
     }
@@ -183,7 +185,11 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
 
     @Override
     public Set<SegmentCommitInfo> getMergingSegments() {
-      return Collections.emptySet();
+      return mergingSegments;
+    }
+
+    public void setMergingSegments(Set<SegmentCommitInfo> mergingSegments) {
+      this.mergingSegments = mergingSegments;
     }
   }
 
@@ -271,6 +277,10 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
       throw new UnsupportedOperationException();
     }
 
+    @Override
+    public Set<String> getPendingDeletions() throws IOException {
+      throw new UnsupportedOperationException();
+    }
   };
 
   /**

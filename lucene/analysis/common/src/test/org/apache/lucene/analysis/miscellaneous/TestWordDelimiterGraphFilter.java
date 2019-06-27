@@ -380,6 +380,23 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
     };
   }
 
+  public void testOriginalTokenEmittedFirst() throws Exception {
+    final int flags = PRESERVE_ORIGINAL | GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_WORDS | CATENATE_NUMBERS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
+
+    /* analyzer that uses whitespace + wdf */
+    Analyzer a = new Analyzer() {
+      @Override
+      public TokenStreamComponents createComponents(String field) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(tokenizer, true, DEFAULT_WORD_DELIM_TABLE, flags, null));
+      }
+    };
+
+    assertAnalyzesTo(a, "abc-def abcDEF abc123",
+        new String[] { "abc-def", "abcdef", "abc", "def", "abcDEF", "abcDEF", "abc", "DEF", "abc123", "abc123", "abc", "123" });
+    a.close();
+  }
+
   /** concat numbers + words + all */
   public void testLotsOfConcatenating() throws Exception {
     final int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_WORDS | CATENATE_NUMBERS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;    
@@ -418,7 +435,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
     };
     
     assertAnalyzesTo(a, "abc-def-123-456", 
-                     new String[] { "abcdef123456", "abc-def-123-456", "abcdef", "abc", "def", "123456", "123", "456" }, 
+                     new String[] { "abc-def-123-456", "abcdef123456", "abcdef", "abc", "def", "123456", "123", "456" },
                      new int[] { 0, 0, 0, 0, 0, 0, 0, 0 },
                      new int[] { 15, 15, 15, 15, 15, 15, 15, 15 },
                      null,

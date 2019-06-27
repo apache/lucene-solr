@@ -23,11 +23,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
 /**
  */
-public class SolrDocumentTest extends LuceneTestCase 
+public class SolrDocumentTest extends SolrTestCase
 {
   public void testSimple() 
   {

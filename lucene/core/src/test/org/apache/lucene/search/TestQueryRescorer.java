@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -423,10 +422,6 @@ public class TestQueryRescorer extends LuceneTestCase {
       return new Weight(FixedScoreQuery.this) {
 
         @Override
-        public void extractTerms(Set<Term> terms) {
-        }
-
-        @Override
         public Scorer scorer(final LeafReaderContext context) throws IOException {
 
           return new Scorer(this) {
@@ -497,6 +492,11 @@ public class TestQueryRescorer extends LuceneTestCase {
           return null;
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override

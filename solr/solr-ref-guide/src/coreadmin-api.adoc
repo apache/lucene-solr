@@ -58,9 +58,9 @@ Note that this command is the only one of the Core Admin API commands that *does
 ====
 Your CREATE call must be able to find a configuration, or it will not succeed.
 
-When you are running SolrCloud and create a new core for a collection, the configuration will be inherited from the collection. Each collection is linked to a configName, which is stored in ZooKeeper. This satisfies the config requirement. There is something to note, though – if you're running SolrCloud, you should *NOT* be using the CoreAdmin API at all. Use the <<collections-api.adoc#collections-api,Collections API>>.
+When you are running SolrCloud and create a new core for a collection, the configuration will be inherited from the collection. Each collection is linked to a configName, which is stored in ZooKeeper. This satisfies the configuration requirement. There is something to note, though: if you're running SolrCloud, you should *NOT* use the CoreAdmin API at all. Use the <<collections-api.adoc#collections-api,Collections API>>.
 
-When you are not running SolrCloud, if you have <<config-sets.adoc#config-sets,Config Sets>> defined, you can use the configSet parameter as documented below. If there are no configsets, then the `instanceDir` specified in the CREATE call must already exist, and it must contain a `conf` directory which in turn must contain `solrconfig.xml`, your schema (usually named either `managed-schema` or `schema.xml`), and any files referenced by those configs.
+When you are not running SolrCloud, if you have <<config-sets.adoc#config-sets,Config Sets>> defined, you can use the `configSet` parameter as documented below. If there are no configsets, then the `instanceDir` specified in the CREATE call must already exist, and it must contain a `conf` directory which in turn must contain `solrconfig.xml`, your schema (usually named either `managed-schema` or `schema.xml`), and any files referenced by those configs.
 
 The config and schema filenames can be specified with the `config` and `schema` parameters, but these are expert options. One thing you could do to avoid creating the `conf` directory is use `config` and `schema` parameters that point at absolute paths, but this can lead to confusing configurations unless you fully understand what you are doing.
 ====
@@ -299,7 +299,7 @@ This example uses the `ranges` parameter with hash ranges 0-500, 501-1000 and 10
 
 The `targetCore` must already exist and must have a compatible schema with the `core` index. A commit is automatically called on the `core` index before it is split.
 
-This command is used as part of the <<collections-api.adoc#splitshard,SPLITSHARD>> command but it can be used for non-cloud Solr cores as well. When used against a non-cloud core without `split.key` parameter, this action will split the source index and distribute its documents alternately so that each split piece contains an equal number of documents. If the `split.key` parameter is specified then only documents having the same route key will be split from the source index.
+This command is used as part of the <<shard-management.adoc#splitshard,SPLITSHARD>> command but it can be used for non-cloud Solr cores as well. When used against a non-cloud core without `split.key` parameter, this action will split the source index and distribute its documents alternately so that each split piece contains an equal number of documents. If the `split.key` parameter is specified then only documents having the same route key will be split from the source index.
 
 [[coreadmin-requeststatus]]
 == REQUESTSTATUS

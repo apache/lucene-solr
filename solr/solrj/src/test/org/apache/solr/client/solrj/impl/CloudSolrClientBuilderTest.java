@@ -23,11 +23,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.junit.Test;
 
-public class CloudSolrClientBuilderTest extends LuceneTestCase {
+public class CloudSolrClientBuilderTest extends SolrTestCase {
   private static final String ANY_CHROOT = "/ANY_CHROOT";
   private static final String ANY_ZK_HOST = "ANY_ZK_HOST";
   private static final String ANY_OTHER_ZK_HOST = "ANY_OTHER_ZK_HOST";

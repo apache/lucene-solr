@@ -19,6 +19,7 @@ package org.apache.lucene.replicator.nrt;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,7 +56,7 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
     this.searcherFactory = searcherFactory;
     currentInfos = infosIn;
     node.message("SegmentInfosSearcherManager.init: use incoming infos=" + infosIn.toString());
-    current = SearcherManager.getSearcher(searcherFactory, StandardDirectoryReader.open(dir, currentInfos, null), null);
+    current = SearcherManager.getSearcher(searcherFactory, StandardDirectoryReader.open(dir, currentInfos, null, Collections.emptyMap()), null);
     addReaderClosedListener(current.getIndexReader());
   }
 
@@ -104,7 +105,7 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
     }
 
     // Open a new reader, sharing any common segment readers with the old one:
-    DirectoryReader r = StandardDirectoryReader.open(dir, currentInfos, subs);
+    DirectoryReader r = StandardDirectoryReader.open(dir, currentInfos, subs, Collections.emptyMap());
     addReaderClosedListener(r);
     node.message("refreshed to version=" + currentInfos.getVersion() + " r=" + r);
     return SearcherManager.getSearcher(searcherFactory, r, old.getIndexReader());

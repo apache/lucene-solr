@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util.hll;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
 
 import org.junit.Test;
@@ -35,7 +35,7 @@ import static org.apache.solr.util.hll.HLL.*;
 /**
  * Serialization smoke-tests.
  */
-public class HLLSerializationTest extends LuceneTestCase {
+public class HLLSerializationTest extends SolrTestCase {
   
   /**
    * A smoke-test that covers serialization/deserialization of an HLL

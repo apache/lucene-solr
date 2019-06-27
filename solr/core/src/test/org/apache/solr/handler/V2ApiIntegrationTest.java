@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -112,6 +113,34 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         new V2Request.Builder("/c/"+COLL_NAME+"/_introspect")
             .withParams(params).build());
     assertEquals("Command not found!", Utils.getObjectByPath(result, false, "/spec[0]/commands/XXXX"));
+  }
+
+  @SuppressWarnings("rawtypes")
+  @Test
+  public void testWTParam() throws Exception {
+    V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
+    // TODO: If possible do this in a better way
+    request.setResponseParser(new NoOpResponseParser("bleh"));
+
+    Map resp = resAsMap(cluster.getSolrClient(), request);
+    String respString = resp.toString();
+
+    assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
+    assertFalse(respString.contains("500"));
+    assertFalse(respString.contains("NullPointerException"));
+    assertFalse(respString.contains("<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));
+    // since no-op response writer is used, doing contains match
+    assertTrue(respString.contains("/c/collection1/get"));
+
+    // no response parser
+    request.setResponseParser(null);
+    resp = resAsMap(cluster.getSolrClient(), request);
+    respString = resp.toString();
+
+    assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
+    assertFalse(respString.contains("<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));
+    assertEquals("/c/collection1/get", Utils.getObjectByPath(resp, true, "/spec[0]/url/paths[0]"));
+    assertEquals(respString, 0, Utils.getObjectByPath(resp, true, "/responseHeader/status"));
   }
 
   @Test

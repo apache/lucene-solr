@@ -21,7 +21,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
 
 class MemWriter extends FastWriter {
@@ -54,7 +54,7 @@ class MemWriter extends FastWriter {
 
 
 
-public class TestFastWriter extends LuceneTestCase {
+public class TestFastWriter extends SolrTestCase {
 
   Random rand;
   char[] arr;

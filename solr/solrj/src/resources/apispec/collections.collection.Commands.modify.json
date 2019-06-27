@@ -1,5 +1,5 @@
 {
-  "documentation":"https://lucene.apache.org/solr/guide/collections-api.html#modifycollection",
+  "documentation":"https://lucene.apache.org/solr/guide/collection-management.html#modifycollection",
   "description":"Modifies specific attributes of a collection. Multiple attributes can be changed at one time.",
   "type": "object",
   "properties":{

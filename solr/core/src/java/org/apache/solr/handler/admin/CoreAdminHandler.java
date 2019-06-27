@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.Api;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;

@@ -214,8 +214,9 @@ public interface Variable {
     @Meta(name = "STRING",
         type = String.class,
         wildCards = Policy.EACH,
-        supportArrayVals = true)
-    STRING,
+        supportArrayVals = true
+    )
+    SYSPROP,
 
     @Meta(name = "node",
         type = String.class,

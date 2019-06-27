@@ -16,7 +16,7 @@
  */
 package org.apache.solr.common.params;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
@@ -24,7 +24,7 @@ import org.junit.Test;
  * This class tests backwards compatibility of {@link ShardParams} parameter constants.
  * If someone accidentally changes those constants then this test will flag that up. 
  */
-public class ShardParamsTest extends LuceneTestCase
+public class ShardParamsTest extends SolrTestCase
 {
   public void testShards() { assertEquals(ShardParams.SHARDS, "shards"); }
 

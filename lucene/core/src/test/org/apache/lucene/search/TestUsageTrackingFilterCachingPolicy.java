@@ -132,6 +132,11 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
       };
     }
 
+    @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
   }
 
 }

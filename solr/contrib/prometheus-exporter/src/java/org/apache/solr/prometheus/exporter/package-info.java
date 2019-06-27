@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-/** 
- * Solr metrics exporter.
+/**
+ * Prometheus Metrics Exporter.
  */
 package org.apache.solr.prometheus.exporter;

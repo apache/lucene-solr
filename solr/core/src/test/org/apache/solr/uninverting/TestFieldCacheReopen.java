@@ -24,9 +24,9 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
-public class TestFieldCacheReopen extends LuceneTestCase {
+public class TestFieldCacheReopen extends SolrTestCase {
   
   // TODO: make a version of this that tests the same thing with UninvertingReader.wrap()
   

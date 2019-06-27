@@ -705,6 +705,11 @@ public class DocTermOrds implements Accountable {
     }
 
     @Override
+    public boolean seekExact(BytesRef text) throws IOException {
+      return seekCeil(text) == SeekStatus.FOUND;
+    }
+    
+    @Override
     public void seekExact(long targetOrd) throws IOException {
       int delta = (int) (targetOrd - ordBase - ord);
       //System.out.println("  seek(ord) targetOrd=" + targetOrd + " delta=" + delta + " ord=" + ord + " ii=" + indexInterval);

@@ -111,9 +111,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         shardInfo.add(srsp.getShard(), individualShardInfo);
       }
       if (ShardParams.getShardsTolerantAsBool(rb.req.getParams()) && srsp.getException() != null) {
-        if(rb.rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
-          rb.rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-        }
+        rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
         continue; // continue if there was an error and we're tolerant.  
       }
       NamedList<NamedList> secondPhaseResult = (NamedList<NamedList>) srsp.getSolrResponse().getResponse().get("secondPhase");

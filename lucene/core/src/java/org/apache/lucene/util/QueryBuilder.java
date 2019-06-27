@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -416,7 +417,7 @@ public class QueryBuilder {
     
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
-    
+
     stream.reset();
     while (stream.incrementToken()) {
       if (posIncrAtt.getPositionIncrement() != 0) {
@@ -571,7 +572,7 @@ public class QueryBuilder {
     List<SpanQuery> clauses = new ArrayList<>();
     int[] articulationPoints = graph.articulationPoints();
     int lastState = 0;
-    int maxClauseCount = BooleanQuery.getMaxClauseCount();
+    int maxClauseCount = IndexSearcher.getMaxClauseCount();
     for (int i = 0; i <= articulationPoints.length; i++) {
       int start = lastState;
       int end = -1;
@@ -588,7 +589,7 @@ public class QueryBuilder {
           SpanQuery q = createSpanQuery(ts, field);
           if (q != null) {
             if (queries.size() >= maxClauseCount) {
-              throw new BooleanQuery.TooManyClauses();
+              throw new IndexSearcher.TooManyClauses();
             }
             queries.add(q);
           }
@@ -605,7 +606,7 @@ public class QueryBuilder {
           queryPos = new SpanTermQuery(terms[0]);
         } else {
           if (terms.length >= maxClauseCount) {
-            throw new BooleanQuery.TooManyClauses();
+            throw new IndexSearcher.TooManyClauses();
           }
           SpanTermQuery[] orClauses = new SpanTermQuery[terms.length];
           for (int idx = 0; idx < terms.length; idx++) {
@@ -618,7 +619,7 @@ public class QueryBuilder {
 
       if (queryPos != null) {
         if (clauses.size() >= maxClauseCount) {
-          throw new BooleanQuery.TooManyClauses();
+          throw new IndexSearcher.TooManyClauses();
         }
         clauses.add(queryPos);
       }
@@ -650,7 +651,11 @@ public class QueryBuilder {
    * @return new Query instance
    */
   protected Query newSynonymQuery(Term terms[]) {
-    return new SynonymQuery(terms);
+    SynonymQuery.Builder builder = new SynonymQuery.Builder(terms[0].field());
+    for (Term term : terms) {
+      builder.addTerm(term);
+    }
+    return builder.build();
   }
 
   /**

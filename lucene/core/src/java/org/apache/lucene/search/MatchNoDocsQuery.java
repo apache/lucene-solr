@@ -18,10 +18,8 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 
 /**
  * A query that matches no documents.
@@ -45,10 +43,6 @@ public class MatchNoDocsQuery extends Query {
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new Weight(this) {
       @Override
-      public void extractTerms(Set<Term> terms) {
-      }
-
-      @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         return Explanation.noMatch(reason);
       }
@@ -63,6 +57,11 @@ public class MatchNoDocsQuery extends Query {
         return true;
       }
     };
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   @Override

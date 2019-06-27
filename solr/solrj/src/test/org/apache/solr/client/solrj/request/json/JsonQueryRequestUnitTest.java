@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.MapWriter;
@@ -33,7 +33,7 @@ import static org.hamcrest.core.StringContains.containsString;
 /**
  * Unit tests for {@link JsonQueryRequest}
  */
-public class JsonQueryRequestUnitTest extends LuceneTestCase {
+public class JsonQueryRequestUnitTest extends SolrTestCase {
 
   private static final boolean LEAVE_WHITESPACE = false;
 

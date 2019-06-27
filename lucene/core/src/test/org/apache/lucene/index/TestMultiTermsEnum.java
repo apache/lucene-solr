@@ -222,7 +222,7 @@ public class TestMultiTermsEnum extends LuceneTestCase {
       }
 
       @Override
-      public FieldsProducer getMergeInstance() throws IOException {
+      public FieldsProducer getMergeInstance() {
         return create(delegate.getMergeInstance(), newFieldInfo);
       }
 

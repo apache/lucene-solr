@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -496,7 +495,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
       // makes it a robust test (especially for multi-valued fields)
       fields[i] = fieldNames[TestUtil.nextInt(random(),0,fieldNames.length-1)];
     }
-    return StringUtils.join(fields, ",");
+    return String.join(",", fields);
   }
 
   /**

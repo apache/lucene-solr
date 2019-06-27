@@ -178,7 +178,7 @@ public class QueryParsing {
     ft = schema.getFieldTypeNoEx(name);
     out.append(name);
     if (ft == null) {
-      out.append("(UNKNOWN FIELD " + name + ')');
+      out.append("(UNKNOWN FIELD ").append(name).append(String.valueOf(')'));
     }
     out.append(':');
     return ft;
@@ -328,12 +328,11 @@ public class QueryParsing {
     } else if (query instanceof BoostQuery) {
       BoostQuery q = (BoostQuery)query;
       toString(q.getQuery(), schema, out, subflag | FLAG_BOOSTED);
-      out.append("^");
+      out.append('^');
       out.append(Float.toString(q.getBoost()));
     }
     else {
-      out.append(query.getClass().getSimpleName()
-              + '(' + query.toString() + ')');
+      out.append(query.getClass().getSimpleName()).append('(').append(query.toString()).append(')');
     }
   }
 

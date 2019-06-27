@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.overseer.SliceMutator;

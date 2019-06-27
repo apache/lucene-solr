@@ -61,7 +61,10 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.tearDown();
-    Files.delete(file.toPath());
+    if (null != file) {
+      Files.delete(file.toPath());
+      file = null;
+    }
   }
 
   void makeFile(String contents) {

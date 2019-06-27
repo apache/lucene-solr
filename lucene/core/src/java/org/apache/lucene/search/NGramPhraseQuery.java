@@ -78,6 +78,11 @@ public class NGramPhraseQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    phraseQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+  }
+
+  @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&
            equalsTo(getClass().cast(other));

@@ -43,8 +43,13 @@ import org.tartarus.snowball.SnowballProgram;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class SnowballPorterFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "snowballPorter";
+
   public static final String PROTECTED_TOKENS = "protected";
 
   private final String language;
@@ -76,7 +81,7 @@ public class SnowballPorterFilterFactory extends TokenFilterFactory implements R
   public TokenFilter create(TokenStream input) {
     SnowballProgram program;
     try {
-      program = stemClass.newInstance();
+      program = stemClass.getConstructor().newInstance();
     } catch (Exception e) {
       throw new RuntimeException("Error instantiating stemmer for language " + language + "from class " + stemClass, e);
     }

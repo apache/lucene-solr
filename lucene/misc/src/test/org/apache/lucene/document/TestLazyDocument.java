@@ -17,11 +17,11 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.analysis.*;
@@ -209,12 +209,12 @@ public class TestLazyDocument extends LuceneTestCase {
     }
 
     @Override
-    public void stringField(FieldInfo fieldInfo, byte[] bytes) throws IOException {
-      String value = new String(bytes, StandardCharsets.UTF_8);
+    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
       final FieldType ft = new FieldType(TextField.TYPE_STORED);
       ft.setStoreTermVectors(fieldInfo.hasVectors());
       ft.setOmitNorms(fieldInfo.omitsNorms());
       ft.setIndexOptions(fieldInfo.getIndexOptions());
+      Objects.requireNonNull(value, "String value should not be null");
       doc.add(new Field(fieldInfo.name, value, ft));
     }
 

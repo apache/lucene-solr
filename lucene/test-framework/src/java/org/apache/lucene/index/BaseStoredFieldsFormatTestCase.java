@@ -140,7 +140,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       String[] idsList = docs.keySet().toArray(new String[docs.size()]);
 
       for(int x=0;x<2;x++) {
-        IndexReader r = w.getReader();
+        DirectoryReader r = maybeWrapWithMergingReader(w.getReader());
         IndexSearcher s = newSearcher(r);
 
         if (VERBOSE) {
@@ -181,7 +181,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     doc.add(newField("aaa", "a b c", customType));
     doc.add(newField("zzz", "1 2 3", customType));
     w.addDocument(doc);
-    IndexReader r = w.getReader();
+    IndexReader r = maybeWrapWithMergingReader(w.getReader());
     Document doc2 = r.document(0);
     Iterator<IndexableField> it = doc2.getFields().iterator();
     assertTrue(it.hasNext());
@@ -280,7 +280,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       doc.add(new NumericDocValuesField("id", id));
       w.addDocument(doc);
     }
-    final DirectoryReader r = w.getReader();
+    final DirectoryReader r = maybeWrapWithMergingReader(w.getReader());
     w.close();
     
     assertEquals(numDocs, r.numDocs());
@@ -309,7 +309,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     doc.add(new Field("field", "value", onlyStored));
     doc.add(new StringField("field2", "value", Field.Store.YES));
     w.addDocument(doc);
-    IndexReader r = w.getReader();
+    IndexReader r = maybeWrapWithMergingReader(w.getReader());
     w.close();
     assertEquals(IndexOptions.NONE, r.document(0).getField("field").fieldType().indexOptions());
     assertNotNull(r.document(0).getField("field2").fieldType().indexOptions());
@@ -352,7 +352,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     }
     iw.commit();
 
-    final DirectoryReader reader = DirectoryReader.open(dir);
+    final DirectoryReader reader = maybeWrapWithMergingReader(DirectoryReader.open(dir));
     final int docID = random().nextInt(100);
     for (Field fld : fields) {
       String fldName = fld.name();
@@ -383,7 +383,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       iw.addDocument(emptyDoc);
     }
     iw.commit();
-    final DirectoryReader rd = DirectoryReader.open(dir);
+    final DirectoryReader rd = maybeWrapWithMergingReader(DirectoryReader.open(dir));
     for (int i = 0; i < numDocs; ++i) {
       final Document doc = rd.document(i);
       assertNotNull(doc);
@@ -412,7 +412,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     }
     iw.commit();
 
-    final DirectoryReader rd = DirectoryReader.open(dir);
+    final DirectoryReader rd = maybeWrapWithMergingReader(DirectoryReader.open(dir));
     final IndexSearcher searcher = new IndexSearcher(rd);
     final int concurrentReads = atLeast(5);
     final int readsPerThread = atLeast(50);
@@ -545,7 +545,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
 
     iw.commit();
 
-    final DirectoryReader ir = DirectoryReader.open(dir);
+    final DirectoryReader ir = maybeWrapWithMergingReader(DirectoryReader.open(dir));
     assertTrue(ir.numDocs() > 0);
     int numDocs = 0;
     for (int i = 0; i < ir.maxDoc(); ++i) {
@@ -649,7 +649,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     w.commit();
     w.close();
     
-    DirectoryReader reader = new DummyFilterDirectoryReader(DirectoryReader.open(dir));
+    DirectoryReader reader = new DummyFilterDirectoryReader(maybeWrapWithMergingReader(DirectoryReader.open(dir)));
     
     Directory dir2 = newDirectory();
     w = new RandomIndexWriter(random(), dir2);
@@ -657,7 +657,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     reader.close();
     dir.close();
 
-    reader = w.getReader();
+    reader = maybeWrapWithMergingReader(w.getReader());
     for (int i = 0; i < reader.maxDoc(); ++i) {
       final Document doc = reader.document(i);
       final int id = doc.getField("id").numericValue().intValue();
@@ -728,7 +728,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     }
     iw.commit();
     iw.forceMerge(1); // look at what happens when big docs are merged
-    final DirectoryReader rd = DirectoryReader.open(dir);
+    final DirectoryReader rd = maybeWrapWithMergingReader(DirectoryReader.open(dir));
     final IndexSearcher searcher = new IndexSearcher(rd);
     for (int i = 0; i < numDocs; ++i) {
       final Query query = new TermQuery(new Term("id", "" + i));
@@ -788,7 +788,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
         iw.addDocument(doc);
       }
       
-      DirectoryReader reader = DirectoryReader.open(iw);
+      DirectoryReader reader = maybeWrapWithMergingReader(DirectoryReader.open(iw));
       // mix up fields explicitly
       if (random().nextBoolean()) {
         reader = new MismatchedDirectoryReader(reader, random());

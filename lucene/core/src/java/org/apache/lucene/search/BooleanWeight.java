@@ -24,10 +24,8 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
@@ -53,17 +51,6 @@ final class BooleanWeight extends Weight {
     for (BooleanClause c : query) {
       Weight w = searcher.createWeight(c.getQuery(), c.isScoring() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, boost);
       weights.add(w);
-    }
-  }
-
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    int i = 0;
-    for (BooleanClause clause : query) {
-      if (clause.isScoring() || (scoreMode.needsScores() == false && clause.isProhibited() == false)) {
-        weights.get(i).extractTerms(terms);
-      }
-      i++;
     }
   }
 
@@ -398,11 +385,6 @@ final class BooleanWeight extends Weight {
       // optional scorer. Therefore if there are not enough optional scorers
       // no documents will be matched by the query
       return null;
-    }
-
-    // we don't need scores, so if we have required clauses, drop optional clauses completely
-    if (scoreMode.needsScores() == false && minShouldMatch == 0 && scorers.get(Occur.MUST).size() + scorers.get(Occur.FILTER).size() > 0) {
-      scorers.get(Occur.SHOULD).clear();
     }
 
     return new Boolean2ScorerSupplier(this, scorers, scoreMode, minShouldMatch);

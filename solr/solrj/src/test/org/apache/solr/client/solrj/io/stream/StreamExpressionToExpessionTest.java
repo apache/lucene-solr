@@ -16,7 +16,7 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
@@ -32,7 +32,7 @@ import org.junit.Test;
 /**
  **/
 
-public class StreamExpressionToExpessionTest extends LuceneTestCase {
+public class StreamExpressionToExpessionTest extends SolrTestCase {
 
   private StreamFactory factory;
   

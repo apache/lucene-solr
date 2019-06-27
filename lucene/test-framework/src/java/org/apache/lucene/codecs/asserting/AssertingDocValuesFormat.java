@@ -62,7 +62,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     assert state.fieldInfos.hasDocValues();
     DocValuesProducer producer = in.fieldsProducer(state);
     assert producer != null;
-    return new AssertingDocValuesProducer(producer, state.segmentInfo.maxDoc());
+    return new AssertingDocValuesProducer(producer, state.segmentInfo.maxDoc(), false);
   }
   
   static class AssertingDocValuesConsumer extends DocValuesConsumer {
@@ -219,10 +219,14 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
   static class AssertingDocValuesProducer extends DocValuesProducer {
     private final DocValuesProducer in;
     private final int maxDoc;
+    private final boolean merging;
+    private final Thread creationThread;
     
-    AssertingDocValuesProducer(DocValuesProducer in, int maxDoc) {
+    AssertingDocValuesProducer(DocValuesProducer in, int maxDoc, boolean merging) {
       this.in = in;
       this.maxDoc = maxDoc;
+      this.merging = merging;
+      this.creationThread = Thread.currentThread();
       // do a few simple checks on init
       assert toString() != null;
       assert ramBytesUsed() >= 0;
@@ -231,6 +235,9 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
 
     @Override
     public NumericDocValues getNumeric(FieldInfo field) throws IOException {
+      if (merging) {
+        AssertingCodec.assertThread("DocValuesProducer", creationThread);
+      }
       assert field.getDocValuesType() == DocValuesType.NUMERIC;
       NumericDocValues values = in.getNumeric(field);
       assert values != null;
@@ -239,6 +246,9 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
 
     @Override
     public BinaryDocValues getBinary(FieldInfo field) throws IOException {
+      if (merging) {
+        AssertingCodec.assertThread("DocValuesProducer", creationThread);
+      }
       assert field.getDocValuesType() == DocValuesType.BINARY;
       BinaryDocValues values = in.getBinary(field);
       assert values != null;
@@ -247,6 +257,9 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
 
     @Override
     public SortedDocValues getSorted(FieldInfo field) throws IOException {
+      if (merging) {
+        AssertingCodec.assertThread("DocValuesProducer", creationThread);
+      }
       assert field.getDocValuesType() == DocValuesType.SORTED;
       SortedDocValues values = in.getSorted(field);
       assert values != null;
@@ -255,6 +268,9 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     
     @Override
     public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
+      if (merging) {
+        AssertingCodec.assertThread("DocValuesProducer", creationThread);
+      }
       assert field.getDocValuesType() == DocValuesType.SORTED_NUMERIC;
       SortedNumericDocValues values = in.getSortedNumeric(field);
       assert values != null;
@@ -263,6 +279,9 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     
     @Override
     public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
+      if (merging) {
+        AssertingCodec.assertThread("DocValuesProducer", creationThread);
+      }
       assert field.getDocValuesType() == DocValuesType.SORTED_SET;
       SortedSetDocValues values = in.getSortedSet(field);
       assert values != null;
@@ -295,8 +314,8 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     }
     
     @Override
-    public DocValuesProducer getMergeInstance() throws IOException {
-      return new AssertingDocValuesProducer(in.getMergeInstance(), maxDoc);
+    public DocValuesProducer getMergeInstance() {
+      return new AssertingDocValuesProducer(in.getMergeInstance(), maxDoc, true);
     }
 
     @Override

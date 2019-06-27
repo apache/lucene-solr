@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.rest;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -39,7 +40,6 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
-import org.noggit.ObjectBuilder;
 import org.restlet.Request;
 import org.restlet.data.MediaType;
 import org.restlet.data.Method;
@@ -49,6 +49,8 @@ import org.restlet.resource.ResourceException;
 import org.restlet.routing.Router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /**
  * Supports runtime mapping of REST API endpoints to ManagedResource 
@@ -422,8 +424,8 @@ public class RestManager {
 
       Object parsedJson = null;
       try {
-        parsedJson = ObjectBuilder.fromJSON(text);
-      } catch (IOException ioExc) {
+        parsedJson = fromJSONString(text);
+      } catch (Exception ioExc) {
         String errMsg = String.format(Locale.ROOT,
             "Failed to parse request [%s] into JSON due to: %s",
             text, ioExc.toString());

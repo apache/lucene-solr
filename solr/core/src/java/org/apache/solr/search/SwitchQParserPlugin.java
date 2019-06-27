@@ -22,7 +22,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.handler.component.SearchHandler; // jdoc
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * <p>A QParserPlugin that acts like a "switch/case" statement.</p>

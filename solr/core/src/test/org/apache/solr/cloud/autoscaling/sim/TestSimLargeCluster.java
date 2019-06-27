@@ -31,16 +31,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.CapturedEvent;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
@@ -49,14 +47,11 @@ import org.apache.solr.cloud.autoscaling.SearchRateTrigger;
 import org.apache.solr.cloud.autoscaling.TriggerActionBase;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
-import org.apache.solr.cloud.autoscaling.TriggerValidationException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
@@ -76,12 +71,13 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
 
   public static final int NUM_NODES = 100;
  
-  static Map<String, List<CapturedEvent>> listenerEvents = new ConcurrentHashMap<>();
-  static AtomicInteger triggerFinishedCount = new AtomicInteger();
-  static AtomicInteger triggerStartedCount = new AtomicInteger();
-  static CountDownLatch triggerStartedLatch;
-  static CountDownLatch triggerFinishedLatch;
-  static int waitForSeconds;
+  static final Map<String, List<CapturedEvent>> listenerEvents = new ConcurrentHashMap<>();
+  static final AtomicInteger triggerFinishedCount = new AtomicInteger();
+  static final AtomicInteger triggerStartedCount = new AtomicInteger();
+  static volatile CountDownLatch triggerStartedLatch;
+  static volatile CountDownLatch triggerFinishedLatch;
+  static volatile CountDownLatch listenerEventLatch;
+  static volatile int waitForSeconds;
 
   @After
   public void tearDownTest() throws Exception {
@@ -105,20 +101,28 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     triggerFinishedCount.set(0);
     triggerStartedLatch = new CountDownLatch(1);
     triggerFinishedLatch = new CountDownLatch(1);
+    
+    // by default assume we want to allow a (virtually) unbounded amount of events,
+    // tests that expect a specific number can override
+    listenerEventLatch = new CountDownLatch(Integer.MAX_VALUE);
     listenerEvents.clear();
   }
 
   public static class TestTriggerListener extends TriggerListenerBase {
     @Override
-    public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException {
-      super.configure(loader, cloudManager, config);
-    }
-
-    @Override
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
-      List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
-      lst.add(new CapturedEvent(cluster.getTimeSource().getTimeNs(), context, config, stage, actionName, event, message));
+      CapturedEvent ev = new CapturedEvent(cluster.getTimeSource().getTimeNs(), context, config, stage, actionName, event, message);
+      final CountDownLatch latch = listenerEventLatch;
+      synchronized (latch) {
+        if (0 == latch.getCount()) {
+          log.warn("Ignoring captured event since latch is 'full': {}", ev);
+        } else {
+          List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
+          lst.add(ev);
+          latch.countDown();
+        }
+      }
     }
   }
 
@@ -133,8 +137,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
   public static class StartTriggerAction extends TriggerActionBase {
     @Override
     public void process(TriggerEvent event, ActionContext context) throws Exception {
-      triggerStartedLatch.countDown();
       triggerStartedCount.incrementAndGet();
+      triggerStartedLatch.countDown();
     }
   }
 
@@ -142,7 +146,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
   @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // this test hits a timeout easily
   public void testBasic() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
-    String setTriggerCommand = "{" +
+    assertAutoScalingRequest
+      ( "{" +
         "'set-trigger' : {" +
         "'name' : 'node_lost_trigger1'," +
         "'event' : 'nodeLost'," +
@@ -154,12 +159,10 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
         "{'name':'test','class':'" + FinishTriggerAction.class.getName() + "'}" +
         "]" +
-        "}}";
-    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+        "}}");
 
-    String setListenerCommand = "{" +
+    assertAutoScalingRequest
+      ( "{" +
         "'set-listener' : " +
         "{" +
         "'name' : 'foo'," +
@@ -169,14 +172,9 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "'afterAction' : ['compute', 'execute']," +
         "'class' : '" + TestTriggerListener.class.getName() + "'" +
         "}" +
-        "}";
-    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+        "}");
 
     assertAutoscalingUpdateComplete();
-
-    cluster.getTimeSource().sleep(5000);
 
     // pick a few random nodes
     List<String> nodes = new ArrayList<>();
@@ -197,8 +195,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     create.setCreateNodeSet(String.join(",", nodes));
     create.process(solrClient);
 
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 30 * nodes.size(), TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(5, 15, false, true)) + "ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 30 * nodes.size(), TimeUnit.SECONDS,
+        CloudUtil.clusterShape(5, 15, false, true)) + "ms");
 
     int KILL_NODES = 8;
     // kill off a number of nodes
@@ -206,8 +204,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
       cluster.simRemoveNode(nodes.get(i), false);
     }
     // should fully recover
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 90 * KILL_NODES, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(5, 15, false, true)) + "ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 90 * KILL_NODES, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(5, 15, false, true)) + "ms");
 
     log.info("OP COUNTS: " + cluster.simGetOpCounts());
     long moveReplicaOps = cluster.simGetOpCount(CollectionParams.CollectionAction.MOVEREPLICA.name());
@@ -240,9 +238,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
       fail("did not finish processing all events in time: started=" + triggerStartedCount.get() + ", finished=" + triggerFinishedCount.get());
     }
 
-
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 30 * nodes.size(), TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(5, 15, false, true)) + "ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 30 * nodes.size(), TimeUnit.SECONDS,
+        CloudUtil.clusterShape(5, 15, false, true)) + "ms");
     long newMoveReplicaOps = cluster.simGetOpCount(CollectionParams.CollectionAction.MOVEREPLICA.name());
     log.info("==== Flaky replicas: {}. Additional MOVEREPLICA count: {}", flakyReplicas, (newMoveReplicaOps - moveReplicaOps));
     // flaky nodes lead to a number of MOVEREPLICA that is non-zero but lower than the number of flaky replicas
@@ -252,9 +249,46 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
   }
 
   @Test
+  public void testCreateLargeSimCollections() throws Exception {
+    SolrClient solrClient = cluster.simGetSolrClient();
+
+    final int numCollections = atLeast(5);
+    for (int i = 0; i < numCollections; i++) {
+      // wide and shallow, or deep and narrow...
+      final int numShards = TestUtil.nextInt(random(), 5, 20);
+      final int nReps = TestUtil.nextInt(random(), 2, 25 - numShards);
+      final int tReps = TestUtil.nextInt(random(), 2, 25 - numShards);
+      final int pReps = TestUtil.nextInt(random(), 2, 25 - numShards);
+      final int repsPerShard = (nReps + tReps + pReps);
+      final int totalCores = repsPerShard * numShards;
+      final int maxShardsPerNode = atLeast(2) + (totalCores / NUM_NODES);
+      final String name = "large_sim_collection" + i;
+      
+      final CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection
+        (name, "conf", numShards, nReps, tReps, pReps);
+      create.setMaxShardsPerNode(maxShardsPerNode);
+      create.setAutoAddReplicas(false);
+      
+      log.info("CREATE: {}", create);
+      create.process(solrClient);
+
+      // Since our current goal is to try and find situations where cores are just flat out missing
+      // no matter how long we wait, let's be excessive and generous in our timeout.
+      // (REMINDER: this uses the cluster's timesource, and ADDREPLICA has a hardcoded delay of 500ms)
+      CloudUtil.waitForState(cluster, name, 2 * totalCores, TimeUnit.SECONDS,
+          CloudUtil.clusterShape(numShards, repsPerShard, false, true));
+      
+      final CollectionAdminRequest.Delete delete = CollectionAdminRequest.deleteCollection(name);
+      log.info("DELETE: {}", delete);
+      delete.process(solrClient);
+    }
+  }
+  
+  @Test
   public void testAddNode() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
-    String setTriggerCommand = "{" +
+    assertAutoScalingRequest
+      ( "{" +
         "'set-trigger' : {" +
         "'name' : 'node_added_trigger2'," +
         "'event' : 'nodeAdded'," +
@@ -266,10 +300,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
         "{'name':'test','class':'" + FinishTriggerAction.class.getName() + "'}" +
         "]" +
-        "}}";
-    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+        "}}");
 
     assertAutoscalingUpdateComplete();
 
@@ -281,24 +312,27 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     create.setAutoAddReplicas(false);
     create.process(solrClient);
 
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 90 * NUM_NODES, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(NUM_NODES / 10, NUM_NODES / 8 * 3, false, true)) + " ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 90 * NUM_NODES, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(NUM_NODES / 10, NUM_NODES / 8 * 3, false, true)) + " ms");
 
     // start adding nodes
     int numAddNode = NUM_NODES / 5;
     List<String> addNodesList = new ArrayList<>(numAddNode);
     for (int i = 0; i < numAddNode; i++) {
       addNodesList.add(cluster.simAddNode());
-      cluster.getTimeSource().sleep(5000);
     }
     // wait until at least one event is generated
-    boolean await = triggerStartedLatch.await(20000 / SPEED, TimeUnit.MILLISECONDS);
-    assertTrue("trigger did not fire", await);
+    assertTrue("Trigger did not start even after await()ing an excessive amount of time",
+               triggerStartedLatch.await(60, TimeUnit.SECONDS));
 
     // wait until started == finished
     TimeOut timeOut = new TimeOut(45 * waitForSeconds * NUM_NODES, TimeUnit.SECONDS, cluster.getTimeSource());
     while (!timeOut.hasTimedOut()) {
+      final int started = triggerStartedCount.get();
+      final int finished = triggerFinishedCount.get();
+      log.info("started={} =?= finished={}", started, finished);
       if (triggerStartedCount.get() == triggerFinishedCount.get()) {
+        log.info("started == finished: {} == {}", started, finished);
         break;
       }
       timeOut.sleep(1000);
@@ -324,18 +358,22 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     SolrInputDocument startedEvent = systemColl.get(startedEventPos);
     int lastIgnoredPos = startedEventPos;
     // make sure some replicas have been moved
-    assertTrue("no MOVEREPLICA ops?", cluster.simGetOpCount("MOVEREPLICA") > 0);
+    long lastNumOps = cluster.simGetOpCount("MOVEREPLICA");
+    log.info("1st check: lastNumOps (MOVEREPLICA) = {}", lastNumOps);
+    assertTrue("no MOVEREPLICA ops?", lastNumOps > 0);
 
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 20 * NUM_NODES, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(NUM_NODES / 10, NUM_NODES / 8 * 3, false, true)) + " ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 20 * NUM_NODES, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(NUM_NODES / 10, NUM_NODES / 8 * 3, false, true)) + " ms");
 
     int count = 1000;
     SolrInputDocument finishedEvent = null;
-    long lastNumOps = cluster.simGetOpCount("MOVEREPLICA");
+    lastNumOps = cluster.simGetOpCount("MOVEREPLICA");
+    log.info("2nd check: lastNumOps (MOVEREPLICA) = {}", lastNumOps);
     while (count-- > 0) {
       cluster.getTimeSource().sleep(10000);
       
       if (cluster.simGetOpCount("MOVEREPLICA") < 2) {
+        log.info("MOVEREPLICA < 2");
         continue;
       }
       
@@ -349,24 +387,25 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
           }
           if ("SUCCEEDED".equals(d.getFieldValue("stage_s"))) {
             finishedEvent = d;
+            log.info("finishedEvent = {}", finishedEvent);
             break;
           }
         }
+        log.info("breaking because currentNumOps == lastNumOps == {}", currentNumOps);
         break;
       } else {
         lastNumOps = currentNumOps;
       }
     }
 
-    assertTrue("did not finish processing changes", finishedEvent != null);
+    assertNotNull("did not finish processing changes", finishedEvent);
     long delta = (Long)finishedEvent.getFieldValue("event.time_l") - (Long)startedEvent.getFieldValue("event.time_l");
     log.info("#### System stabilized after " + TimeUnit.NANOSECONDS.toMillis(delta) + " ms");
-    assertTrue("unexpected number of MOVEREPLICA ops", cluster.simGetOpCount("MOVEREPLICA") > 1);
+    assertTrue("unexpected number of MOVEREPLICA ops: " + cluster.simGetOpCount("MOVEREPLICA"),
+               cluster.simGetOpCount("MOVEREPLICA") > 1);
   }
 
   @Test
-  // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNodeLost() throws Exception {
     doTestNodeLost(waitForSeconds, 5000, 0);
   }
@@ -446,7 +485,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
 
   private long doTestNodeLost(int waitFor, long killDelay, int minIgnored) throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
-    String setTriggerCommand = "{" +
+    assertAutoScalingRequest
+      ( "{" +
         "'set-trigger' : {" +
         "'name' : 'node_lost_trigger3'," +
         "'event' : 'nodeLost'," +
@@ -458,12 +498,10 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
         "{'name':'test','class':'" + FinishTriggerAction.class.getName() + "'}" +
         "]" +
-        "}}";
-    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+        "}}");
 
-    String setListenerCommand = "{" +
+    assertAutoScalingRequest
+      ( "{" +
         "'set-listener' : " +
         "{" +
         "'name' : 'failures'," +
@@ -471,10 +509,7 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "'stage' : ['FAILED']," +
         "'class' : '" + TestTriggerListener.class.getName() + "'" +
         "}" +
-        "}";
-    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+        "}");
 
     assertAutoscalingUpdateComplete();
 
@@ -486,8 +521,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     create.setAutoAddReplicas(false);
     create.process(solrClient);
 
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 60 * NUM_NODES, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(NUM_NODES / 5, NUM_NODES / 10, false, true)) + " ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 60 * NUM_NODES, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(NUM_NODES / 5, NUM_NODES / 10, false, true)) + " ms");
 
     // start killing nodes
     int numNodes = NUM_NODES / 5;
@@ -499,10 +534,9 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
       cluster.getTimeSource().sleep(killDelay);
     }
     // wait for the trigger to fire and complete at least once
-    boolean await = triggerFinishedLatch.await(20 * waitFor * 1000 / SPEED, TimeUnit.MILLISECONDS);
-    assertTrue("trigger did not fire within timeout, " +
-        "waitFor=" + waitFor + ", killDelay=" + killDelay + ", minIgnored=" + minIgnored,
-        await);
+    assertTrue("Trigger did not finish even after await()ing an excessive amount of time",
+               triggerFinishedLatch.await(60, TimeUnit.SECONDS));
+               
     List<SolrInputDocument> systemColl = cluster.simGetSystemCollection();
     int startedEventPos = -1;
 
@@ -571,8 +605,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
 
     if (listenerEvents.isEmpty()) {
       // no failed movements - verify collection shape
-      log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 20 * NUM_NODES, TimeUnit.SECONDS,
-          CloudTestUtils.clusterShape(NUM_NODES / 5, NUM_NODES / 10, false, true)) + " ms");
+      log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 20 * NUM_NODES, TimeUnit.SECONDS,
+          CloudUtil.clusterShape(NUM_NODES / 5, NUM_NODES / 10, false, true)) + " ms");
     } else {
       cluster.getTimeSource().sleep(NUM_NODES * 100);
     }
@@ -630,8 +664,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "conf", 2, 10);
     create.process(solrClient);
 
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 300, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(2, 10, false, true)) + " ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 300, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(2, 10, false, true)) + " ms");
 
     // collect the node names for shard1
     Set<String> nodes = new HashSet<>();
@@ -646,7 +680,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
 
     // now define the trigger. doing it earlier may cause partial events to be generated (where only some
     // nodes / replicas exceeded the threshold).
-    String setTriggerCommand = "{" +
+    assertAutoScalingRequest
+      ( "{" +
         "'set-trigger' : {" +
         "'name' : 'search_rate_trigger'," +
         "'event' : 'searchRate'," +
@@ -659,11 +694,13 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "{'name':'execute','class':'" + ExecutePlanAction.class.getName() + "'}," +
         "{'name':'test','class':'" + FinishTriggerAction.class.getName() + "'}" +
         "]" +
-        "}}";
-    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
-    String setListenerCommand1 = "{" +
+        "}}");
+
+
+    // we're going to expect our trigger listener to process exactly one captured event
+    listenerEventLatch = new CountDownLatch(1);
+    assertAutoScalingRequest
+      ( "{" +
         "'set-listener' : " +
         "{" +
         "'name' : 'srt'," +
@@ -671,23 +708,20 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "'stage' : ['FAILED','SUCCEEDED']," +
         "'class' : '" + TestTriggerListener.class.getName() + "'" +
         "}" +
-        "}";
-    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand1);
-    response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+        "}");
 
     assertAutoscalingUpdateComplete();
 
-    boolean await = triggerFinishedLatch.await(waitForSeconds * 45000 / SPEED, TimeUnit.MILLISECONDS);
-    assertTrue("The trigger did not fire at all", await);
-    // wait for listener to capture the SUCCEEDED stage
-    cluster.getTimeSource().sleep(25000);
+    assertTrue("Trigger did not finish even after await()ing an excessive amount of time",
+               triggerFinishedLatch.await(60, TimeUnit.SECONDS));
     
-    assertNotNull(listenerEvents.entrySet().iterator().toString(), listenerEvents.get("srt"));
+    assertTrue("The listener didn't record the event even after await()ing an excessive amount of time",
+               listenerEventLatch.await(60, TimeUnit.SECONDS));
+    List<CapturedEvent> events = listenerEvents.get("srt");
+    assertNotNull("no srt events: " + listenerEvents.toString(), events);
+    assertEquals(events.toString(), 1, events.size());
 
-    assertTrue(listenerEvents.entrySet().iterator().toString(), listenerEvents.get("srt").size() >= 1);
-
-    CapturedEvent ev = listenerEvents.get("srt").get(0);
+    CapturedEvent ev = events.get(0);
     assertEquals(TriggerEventType.SEARCHRATE, ev.event.getEventType());
     Map<String, Number> m = (Map<String, Number>)ev.event.getProperty(SearchRateTrigger.HOT_NODES);
     assertNotNull(m);

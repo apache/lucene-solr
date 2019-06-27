@@ -49,9 +49,16 @@ public class DistributedUpdateProcessorFactory
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
+
+    final boolean isZkAware = req.getCore().getCoreContainer().isZooKeeperAware();
+
+    DistributedUpdateProcessor distribUpdateProcessor =
+        isZkAware ?
+            new DistributedZkUpdateProcessor(req, rsp, next) :
+            new DistributedUpdateProcessor(req, rsp, next);
     // note: will sometimes return DURP (no overhead) instead of wrapping
-    return TimeRoutedAliasUpdateProcessor.wrap(req,
-        new DistributedUpdateProcessor(req, rsp, next));
+    return RoutedAliasUpdateProcessor.wrap(req,
+        distribUpdateProcessor);
   }
   
 }

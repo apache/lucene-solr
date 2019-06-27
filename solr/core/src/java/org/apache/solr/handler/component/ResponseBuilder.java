@@ -30,6 +30,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.DocListAndSet;
+import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryResult;
@@ -460,7 +461,11 @@ public class ResponseBuilder
   public void setResult(QueryResult result) {
     setResults(result.getDocListAndSet());
     if (result.isPartialResults()) {
-      rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+      rsp.getResponseHeader().asShallowMap()
+          .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+      if(getResults() != null && getResults().docList==null) {
+        getResults().docList = new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0);
+      }
     }
     final Boolean segmentTerminatedEarly = result.getSegmentTerminatedEarly();
     if (segmentTerminatedEarly != null) {

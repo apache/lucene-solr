@@ -37,6 +37,7 @@ import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -263,6 +264,11 @@ public class PointVectorStrategy extends SpatialStrategy {
       if (rewritten == inner)
         return this;
       return new DistanceRangeQuery(rewritten, distanceSource, limit);
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
     }
 
     @Override

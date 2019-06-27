@@ -127,6 +127,7 @@ If you need to disable this feature for backwards compatibility, you can set the
 +
 NOTE: In SolrCloud mode, if at least one node is included in the whitelist, then the `live_nodes` will no longer be used as source for the list. This means that if you need to do a cross-cluster request using the `shards` parameter in SolrCloud mode (in addition to regular within-cluster requests), you'll need to add all nodes (local cluster + remote nodes) to the whitelist.
 
+[[distributedidf]]
 == Configuring statsCache (Distributed IDF)
 
 Document and term statistics are needed in order to calculate relevancy. Solr provides four implementations out of the box when it comes to document stats calculation:

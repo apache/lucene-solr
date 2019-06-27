@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -1713,7 +1714,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       set = DocSetUtil.getDocSet(setCollector, this);
 
       totalHits = topCollector.getTotalHits();
-      assert (totalHits == set.size());
+      assert (totalHits == set.size()) || qr.isPartialResults();
 
       TopDocs topDocs = topCollector.topDocs(0, len);
       if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
@@ -2281,6 +2282,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     manager.registerGauge(this, registry, () -> reader.toString(), tag, true, "reader", Category.SEARCHER.toString(), scope);
     manager.registerGauge(this, registry, () -> reader.directory().toString(), tag, true, "readerDir", Category.SEARCHER.toString(), scope);
     manager.registerGauge(this, registry, () -> reader.getVersion(), tag, true, "indexVersion", Category.SEARCHER.toString(), scope);
+    // size of the currently opened commit
+    manager.registerGauge(this, registry, () -> {
+      try {
+        Collection<String> files = reader.getIndexCommit().getFileNames();
+        long total = 0;
+        for (String file : files) {
+          total += DirectoryFactory.sizeOf(reader.directory(), file);
+        }
+        return total;
+      } catch (Exception e) {
+        return -1;
+      }
+    }, tag, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
 
   }
 
@@ -2308,6 +2322,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     @Override
     public String toString(String field) {
       return "SolrFilter";
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
     }
 
     private class FilterSet extends DocIdSet {

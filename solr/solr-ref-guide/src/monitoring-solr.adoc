@@ -1,5 +1,5 @@
 = Monitoring Solr
-:page-children: metrics-reporting, metrics-history, mbean-request-handler, configuring-logging, using-jmx-with-solr, monitoring-solr-with-prometheus-and-grafana, performance-statistics-reference
+:page-children: metrics-reporting, metrics-history, mbean-request-handler, configuring-logging, using-jmx-with-solr, monitoring-solr-with-prometheus-and-grafana, performance-statistics-reference, solr-tracing
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -35,5 +35,7 @@ Common administrative tasks include:
 <<monitoring-solr-with-prometheus-and-grafana.adoc#monitoring-solr-with-prometheus-and-grafana,Monitoring Solr with Prometheus and Grafana>>: Describes how to monitor Solr with Prometheus and Grafana.
 
 <<performance-statistics-reference.adoc#performance-statistics-reference,Performance Statistics Reference>>: Additional information on statistics returned from JMX.
+
+<<solr-tracing.adoc#solr-tracing,Distributed Solr Tracing>>: Describes how to do distributed tracing for Solr requests.
 
 

@@ -697,6 +697,8 @@
   <!-- :TODO: why are these identical?!?!?! -->
   <dynamicField name="*_s" type="string" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_sdv" type="string" indexed="false" stored="false" docValues="true" useDocValuesAsStored="true"/>
+  <dynamicField name="*_bdv" type="boolean" indexed="false" stored="false" docValues="true" useDocValuesAsStored="true"/>
   <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
   <dynamicField name="*_tt" type="text" indexed="true" stored="true"/>
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>

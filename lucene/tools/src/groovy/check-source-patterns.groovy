@@ -74,6 +74,8 @@ def sourceHeaderPattern = ~$/\[source\b.*/$;
 def blockBoundaryPattern = ~$/----\s*/$;
 def blockTitlePattern = ~$/\..*/$;
 def unescapedSymbolPattern = ~$/(?<=[^\\]|^)([-=]>|<[-=])/$; // SOLR-10883
+def extendsLuceneTestCasePattern = ~$/public.*?class.*?extends.*?LuceneTestCase[^\n]*?\n/$;
+def validSPINameJavadocTag = ~$/(?s)\s*\*\s*@lucene\.spi\s+\{@value #NAME\}/$;
 
 def isLicense = { matcher, ratDocument ->
   licenseMatcher.reset();
@@ -176,9 +178,27 @@ ant.fileScanner{
         reportViolation(f, 'invalid logger name [log, uses static class name, not specialized logger]')
       }
     }
+    // make sure that SPI names of all tokenizers/charfilters/tokenfilters are documented
+    if (!f.name.contains("Test") && !f.name.contains("Mock") && !text.contains("abstract class") &&
+        !f.name.equals("TokenizerFactory.java") && !f.name.equals("CharFilterFactory.java") && !f.name.equals("TokenFilterFactory.java") &&
+        (f.name.contains("TokenizerFactory") && text.contains("extends TokenizerFactory") ||
+            f.name.contains("CharFilterFactory") && text.contains("extends CharFilterFactory") ||
+            f.name.contains("FilterFactory") && text.contains("extends TokenFilterFactory"))) {
+      if (!validSPINameJavadocTag.matcher(text).find()) {
+        reportViolation(f, 'invalid spi name documentation')
+      }
+    }
     checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);
     if (f.name.contains("Test")) {
       checkMockitoAssume(f, text);
+    }
+
+    if (f.path.substring(baseDirLen).contains("solr/")
+        && f.name.equals("SolrTestCase.java") == false
+        && f.name.equals("TestXmlQParser.java") == false) {
+      if (extendsLuceneTestCasePattern.matcher(text).find()) {
+        reportViolation(f, "Solr test cases should extend SolrTestCase rather than LuceneTestCase");
+      }
     }
   }
   if (f.name.endsWith('.xml') || f.name.endsWith('.xml.template')) {

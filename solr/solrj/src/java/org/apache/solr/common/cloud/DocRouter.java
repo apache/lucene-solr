@@ -48,7 +48,7 @@ public abstract class DocRouter {
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown document router '"+ routerName + "'");
   }
 
-  protected String getRouteField(DocCollection coll) {
+  public String getRouteField(DocCollection coll) {
     if (coll == null) return null;
     Map m = (Map) coll.get(DOC_ROUTER);
     if (m == null) return null;
@@ -223,6 +223,7 @@ public abstract class DocRouter {
 
   public abstract boolean isTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, String shardId, DocCollection collection);
 
+  public abstract String getName();
 
   /** This method is consulted to determine what slices should be queried for a request when
    *  an explicit shards parameter was not used.

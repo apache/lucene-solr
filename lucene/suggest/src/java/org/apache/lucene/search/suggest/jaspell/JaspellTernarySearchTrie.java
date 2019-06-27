@@ -439,14 +439,14 @@ public class JaspellTernarySearchTrie implements Accountable {
   protected String getKey(TSTNode node) {
     StringBuilder getKeyBuffer = new StringBuilder();
     getKeyBuffer.setLength(0);
-    getKeyBuffer.append("" + node.splitchar);
+    getKeyBuffer.append("").append(node.splitchar);
     TSTNode currentNode;
     TSTNode lastNode;
     currentNode = node.relatives[TSTNode.PARENT];
     lastNode = node;
     while (currentNode != null) {
       if (currentNode.relatives[TSTNode.EQKID] == lastNode) {
-        getKeyBuffer.append("" + currentNode.splitchar);
+        getKeyBuffer.append("").append(currentNode.splitchar);
       }
       lastNode = currentNode;
       currentNode = currentNode.relatives[TSTNode.PARENT];

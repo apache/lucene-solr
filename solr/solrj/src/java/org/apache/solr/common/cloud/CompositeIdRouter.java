@@ -100,6 +100,11 @@ public class CompositeIdRouter extends HashBasedRouter {
     return targetSlices;
   }
 
+  @Override
+  public String getName() {
+    return NAME;
+  }
+
   public List<Range> partitionRangeByKey(String key, Range range) {
     List<Range> result = new ArrayList<>(3);
     Range keyRange = keyHashRange(key);

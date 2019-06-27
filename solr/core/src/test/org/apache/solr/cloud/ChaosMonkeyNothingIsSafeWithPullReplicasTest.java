@@ -69,7 +69,6 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
     System.clearProperty("solr.httpclient.retries");
     System.clearProperty("solr.retries.on.forward");
     System.clearProperty("solr.retries.to.followers"); 
-    TestInjection.waitForReplicasInSync = null;
     setErrorHook();
   }
   

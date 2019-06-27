@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -31,7 +32,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
-public class MiniSolrCloudClusterTest extends LuceneTestCase {
+public class MiniSolrCloudClusterTest extends SolrTestCase {
 
   @ClassRule
   public static TestRule solrClassRules = RuleChain.outerRule(

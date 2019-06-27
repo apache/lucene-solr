@@ -39,6 +39,15 @@ public class StrUtils {
     return lst;
 
   }
+
+  public static List<String> splitSmart(String s, char separator, boolean trimEmpty) {
+    List<String> l = splitSmart(s, separator);
+    if(trimEmpty){
+      if (l.size() > 0 && l.get(0).isEmpty()) l.remove(0);
+    }
+    return l;
+  }
+
   /**
    * Split a string based on a separator, but don't split if it's inside
    * a string.  Assume '\' escapes the next char both inside and

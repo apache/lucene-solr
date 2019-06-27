@@ -92,63 +92,67 @@ public final class FixedShingleFilter extends GraphTokenFilter {
   @Override
   public boolean incrementToken() throws IOException {
 
-    int shinglePosInc;
-    if (incrementGraph() == false) {
-      if (incrementBaseToken() == false) {
-        return false;
-      }
-      // starting a shingle at a new base position, use base position increment
-      shinglePosInc = incAtt.getPositionIncrement();
-    }
-    else {
-      // starting a new shingle at the same base with a different graph, use a 0
-      // position increment
-      shinglePosInc = 0;
-    }
+    int shinglePosInc, startOffset, endOffset;
 
-    final int startOffset = offsetAtt.startOffset();
-    int endOffset = offsetAtt.endOffset();
-    this.buffer.setEmpty();
-    this.buffer.append(termAtt);
-
-    // build the shingle by iterating over the current graph, adding
-    // filler tokens if we encounter gaps
-    for (int i = 1; i < shingleSize; i++) {
-      if (incrementGraphToken() == false) {
-        // we've reached the end of the token stream, check for trailing
-        // positions and add fillers if necessary
-        int trailingPositions = getTrailingPositions();
-        if (i + trailingPositions < shingleSize) {
-          // not enough trailing positions to make a full shingle
+    outer: while (true) {
+      if (incrementGraph() == false) {
+        if (incrementBaseToken() == false) {
           return false;
         }
-        while (i < shingleSize) {
-          this.buffer.append(tokenSeparator).append(fillerToken);
-          i++;
-        }
-        break;
+        // starting a shingle at a new base position, use base position increment
+        shinglePosInc = incAtt.getPositionIncrement();
+      } else {
+        // starting a new shingle at the same base with a different graph, use a 0
+        // position increment
+        shinglePosInc = 0;
       }
-      int posInc = incAtt.getPositionIncrement();
-      if (posInc > 1) {
-        // if we have a posInc > 1, we need to fill in the gaps
-        if (i + posInc > shingleSize) {
-          // if the posInc is greater than the shingle size, we need to add fillers
-          // up to the shingle size but no further
+
+      startOffset = offsetAtt.startOffset();
+      endOffset = offsetAtt.endOffset();
+      this.buffer.setEmpty();
+      this.buffer.append(termAtt);
+
+      // build the shingle by iterating over the current graph, adding
+      // filler tokens if we encounter gaps
+      for (int i = 1; i < shingleSize; i++) {
+        if (incrementGraphToken() == false) {
+          // we've reached the end of the token stream, check for trailing
+          // positions and add fillers if necessary
+          int trailingPositions = getTrailingPositions();
+          if (i + trailingPositions < shingleSize) {
+            // not enough trailing positions to make a full shingle
+            // start again at a different graph
+            continue outer;
+          }
           while (i < shingleSize) {
             this.buffer.append(tokenSeparator).append(fillerToken);
             i++;
           }
           break;
         }
-        // otherwise just add them in as far as we need
-        while (posInc > 1) {
-          this.buffer.append(tokenSeparator).append(fillerToken);
-          posInc--;
-          i++;
+        int posInc = incAtt.getPositionIncrement();
+        if (posInc > 1) {
+          // if we have a posInc > 1, we need to fill in the gaps
+          if (i + posInc > shingleSize) {
+            // if the posInc is greater than the shingle size, we need to add fillers
+            // up to the shingle size but no further
+            while (i < shingleSize) {
+              this.buffer.append(tokenSeparator).append(fillerToken);
+              i++;
+            }
+            break;
+          }
+          // otherwise just add them in as far as we need
+          while (posInc > 1) {
+            this.buffer.append(tokenSeparator).append(fillerToken);
+            posInc--;
+            i++;
+          }
         }
+        this.buffer.append(tokenSeparator).append(termAtt);
+        endOffset = offsetAtt.endOffset();
       }
-      this.buffer.append(tokenSeparator).append(termAtt);
-      endOffset = offsetAtt.endOffset();
+      break;
     }
     clearAttributes();
     this.offsetAtt.setOffset(startOffset, endOffset);

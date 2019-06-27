@@ -21,15 +21,23 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
+import org.apache.lucene.util.Version;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.autoscaling.OverseerTriggerThread;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -45,11 +53,15 @@ import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ConnectionManager;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
@@ -524,6 +536,8 @@ public class Overseer implements SolrCloseable {
   private Stats stats;
   private String id;
   private volatile boolean closed;
+  private volatile boolean systemCollCompatCheck = true;
+
   private CloudConfig config;
 
   // overseer not responsible for closing reader
@@ -570,8 +584,128 @@ public class Overseer implements SolrCloseable {
     updaterThread.start();
     ccThread.start();
     triggerThread.start();
- 
+
+    systemCollectionCompatCheck(new BiConsumer<String, Object>() {
+      boolean firstPair = true;
+      @Override
+      public void accept(String s, Object o) {
+        if (firstPair) {
+          log.warn("WARNING: Collection '.system' may need re-indexing due to compatibility issues listed below. See REINDEXCOLLECTION documentation for more details.");
+          firstPair = false;
+        }
+        log.warn("WARNING: *\t{}:\t{}", s, o);
+      }
+    });
+
     assert ObjectReleaseTracker.track(this);
+  }
+
+  public void systemCollectionCompatCheck(final BiConsumer<String, Object> consumer) {
+    ClusterState clusterState = zkController.getClusterState();
+    if (clusterState == null) {
+      log.warn("Unable to check back-compat of .system collection - can't obtain ClusterState.");
+      return;
+    }
+    DocCollection coll = clusterState.getCollectionOrNull(CollectionAdminParams.SYSTEM_COLL);
+    if (coll == null) {
+      return;
+    }
+    // check that all shard leaders are active
+    boolean allActive = true;
+    for (Slice s : coll.getActiveSlices()) {
+      if (s.getLeader() == null || !s.getLeader().isActive(clusterState.getLiveNodes())) {
+        allActive = false;
+        break;
+      }
+    }
+    if (allActive) {
+      doCompatCheck(consumer);
+    } else {
+      // wait for all leaders to become active and then check
+      zkController.zkStateReader.registerCollectionStateWatcher(CollectionAdminParams.SYSTEM_COLL, (liveNodes, state) -> {
+        boolean active = true;
+        if (state == null || liveNodes.isEmpty()) {
+          return true;
+        }
+        for (Slice s : state.getActiveSlices()) {
+          if (s.getLeader() == null || !s.getLeader().isActive(liveNodes)) {
+            active = false;
+            break;
+          }
+        }
+        if (active) {
+          doCompatCheck(consumer);
+        }
+        return active;
+      });
+    }
+  }
+
+  private void doCompatCheck(BiConsumer<String, Object> consumer) {
+    if (systemCollCompatCheck) {
+      systemCollCompatCheck = false;
+    } else {
+      return;
+    }
+    try (CloudSolrClient client = new CloudSolrClient.Builder(Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
+          .withSocketTimeout(30000).withConnectionTimeout(15000)
+        .withHttpClient(updateShardHandler.getDefaultHttpClient()).build()) {
+      CollectionAdminRequest.ColStatus req = CollectionAdminRequest.collectionStatus(CollectionAdminParams.SYSTEM_COLL)
+          .setWithSegments(true)
+          .setWithFieldInfo(true);
+      CollectionAdminResponse rsp = req.process(client);
+      NamedList<Object> status = (NamedList<Object>)rsp.getResponse().get(CollectionAdminParams.SYSTEM_COLL);
+      Collection<String> nonCompliant = (Collection<String>)status.get("schemaNonCompliant");
+      if (!nonCompliant.contains("(NONE)")) {
+        consumer.accept("indexFieldsNotMatchingSchema", nonCompliant);
+      }
+      Set<Integer> segmentCreatedMajorVersions = new HashSet<>();
+      Set<String> segmentVersions = new HashSet<>();
+      int currentMajorVersion = Version.LATEST.major;
+      String currentVersion = Version.LATEST.toString();
+      segmentVersions.add(currentVersion);
+      segmentCreatedMajorVersions.add(currentMajorVersion);
+      NamedList<Object> shards = (NamedList<Object>)status.get("shards");
+      for (Map.Entry<String, Object> entry : shards) {
+        NamedList<Object> leader = (NamedList<Object>)((NamedList<Object>)entry.getValue()).get("leader");
+        if (leader == null) {
+          continue;
+        }
+        NamedList<Object> segInfos = (NamedList<Object>)leader.get("segInfos");
+        if (segInfos == null) {
+          continue;
+        }
+        NamedList<Object> infos = (NamedList<Object>)segInfos.get("info");
+        if (((Number)infos.get("numSegments")).intValue() > 0) {
+          segmentVersions.add(infos.get("minSegmentLuceneVersion").toString());
+        }
+        if (infos.get("commitLuceneVersion") != null) {
+          segmentVersions.add(infos.get("commitLuceneVersion").toString());
+        }
+        NamedList<Object> segmentInfos = (NamedList<Object>)segInfos.get("segments");
+        segmentInfos.forEach((k, v) -> {
+          NamedList<Object> segment = (NamedList<Object>)v;
+          segmentVersions.add(segment.get("version").toString());
+          if (segment.get("minVersion") != null) {
+            segmentVersions.add(segment.get("version").toString());
+          }
+          if (segment.get("createdVersionMajor") != null) {
+            segmentCreatedMajorVersions.add(((Number)segment.get("createdVersionMajor")).intValue());
+          }
+        });
+      }
+      if (segmentVersions.size() > 1) {
+        consumer.accept("differentSegmentVersions", segmentVersions);
+        consumer.accept("currentLuceneVersion", currentVersion);
+      }
+      if (segmentCreatedMajorVersions.size() > 1) {
+        consumer.accept("differentMajorSegmentVersions", segmentCreatedMajorVersions);
+        consumer.accept("currentLuceneMajorVersion", currentMajorVersion);
+      }
+
+    } catch (SolrServerException | IOException e) {
+      log.warn("Unable to perform back-compat check of .system collection", e);
+    }
   }
 
   public Stats getStats() {

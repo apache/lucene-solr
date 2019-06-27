@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.math3.stat.StatUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.NormalizeEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class NormalizeEvaluatorTest extends LuceneTestCase {
+public class NormalizeEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String,Object> values;

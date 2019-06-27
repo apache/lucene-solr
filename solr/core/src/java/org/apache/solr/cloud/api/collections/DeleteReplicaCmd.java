@@ -16,6 +16,12 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,9 +30,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.Cmd;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -43,12 +49,6 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 
 public class DeleteReplicaCmd implements Cmd {
@@ -81,9 +81,11 @@ public class DeleteReplicaCmd implements Cmd {
 
 
     ocmh.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP);
-    String collectionName = message.getStr(COLLECTION_PROP);
+    String extCollectionName = message.getStr(COLLECTION_PROP);
     String shard = message.getStr(SHARD_ID_PROP);
     String replicaName = message.getStr(REPLICA_PROP);
+
+    String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
 
     DocCollection coll = clusterState.getCollection(collectionName);
     Slice slice = coll.getSlice(shard);
@@ -221,10 +223,6 @@ public class DeleteReplicaCmd implements Cmd {
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
     String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
     String asyncId = message.getStr(ASYNC);
-    AtomicReference<Map<String, String>> requestMap = new AtomicReference<>(null);
-    if (asyncId != null) {
-      requestMap.set(new HashMap<>(1, 1.0f));
-    }
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.UNLOAD.toString());
@@ -236,14 +234,15 @@ public class DeleteReplicaCmd implements Cmd {
     params.set(CoreAdminParams.DELETE_METRICS_HISTORY, message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true));
 
     boolean isLive = ocmh.zkStateReader.getClusterState().getLiveNodes().contains(replica.getNodeName());
+    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
     if (isLive) {
-      ocmh.sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap.get());
+      shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
     }
 
     Callable<Boolean> callable = () -> {
       try {
         if (isLive) {
-          ocmh.processResponses(results, shardHandler, false, null, asyncId, requestMap.get());
+          shardRequestTracker.processResponses(results, shardHandler, false, null);
 
           //check if the core unload removed the corenode zk entry
           if (ocmh.waitForCoreNodeGone(collectionName, shard, replicaName, 30000)) return Boolean.TRUE;

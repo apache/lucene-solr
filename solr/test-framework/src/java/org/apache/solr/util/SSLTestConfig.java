@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import javax.net.ssl.SSLContext;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -24,8 +25,6 @@ import java.security.SecureRandom;
 import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
 import java.util.Random;
-
-import javax.net.ssl.SSLContext;
 
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -36,10 +35,10 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
-import org.apache.solr.client.solrj.util.Constants;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -50,7 +49,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * Solr test-framework classes
  */
 public class SSLTestConfig {
-
   private static final String TEST_KEYSTORE_BOGUSHOST_RESOURCE = "SSLTestConfig.hostname-and-ip-missmatch.keystore";
   private static final String TEST_KEYSTORE_LOCALHOST_RESOURCE = "SSLTestConfig.testing.keystore";
   private static final String TEST_PASSWORD = "secret";
@@ -185,10 +183,9 @@ public class SSLTestConfig {
     return new SSLConfig(isSSLMode(), isClientAuthMode(), null, null, null, null) {
       @Override
       public SslContextFactory createContextFactory() {
-        SslContextFactory factory = new SslContextFactory(false);
+        SslContextFactory.Client factory = new SslContextFactory.Client(!checkPeerName);
         try {
           factory.setSslContext(buildClientSSLContext());
-          factory.setNeedClientAuth(checkPeerName);
         } catch (KeyManagementException | UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException e) {
           throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", e);
         }
@@ -214,7 +211,7 @@ public class SSLTestConfig {
     return new SSLConfig(isSSLMode(), isClientAuthMode(), null, null, null, null) {
       @Override
       public SslContextFactory createContextFactory() {
-        SslContextFactory factory = new SslContextFactory(false);
+        SslContextFactory.Server factory = new SslContextFactory.Server();
         try {
           SSLContextBuilder builder = SSLContexts.custom();
           builder.setSecureRandom(NotSecurePsuedoRandom.INSTANCE);

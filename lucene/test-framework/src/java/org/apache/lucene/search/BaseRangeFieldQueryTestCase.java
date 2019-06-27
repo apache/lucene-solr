@@ -272,20 +272,20 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
 
         if (hits.get(docID) != expected) {
           StringBuilder b = new StringBuilder();
-          b.append("FAIL (iter " + iter + "): ");
+          b.append("FAIL (iter ").append(iter).append("): ");
           if (expected == true) {
-            b.append("id=" + id + (ranges[id].length > 1 ? " (MultiValue) " : " ") + "should match but did not\n");
+            b.append("id=").append(id).append(ranges[id].length > 1 ? " (MultiValue) " : " ").append("should match but did not\n");
           } else {
-            b.append("id=" + id + " should not match but did\n");
+            b.append("id=").append(id).append(" should not match but did\n");
           }
-          b.append(" queryRange=" + queryRange + "\n");
-          b.append(" box" + ((ranges[id].length > 1) ? "es=" : "=" ) + ranges[id][0]);
+          b.append(" queryRange=").append(queryRange).append("\n");
+          b.append(" box").append((ranges[id].length > 1) ? "es=" : "=").append(ranges[id][0]);
           for (int n=1; n<ranges[id].length; ++n) {
             b.append(", ");
             b.append(ranges[id][n]);
           }
-          b.append("\n queryType=" + queryType + "\n");
-          b.append(" deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("\n queryType=").append(queryType).append("\n");
+          b.append(" deleted?=").append(liveDocs != null && liveDocs.get(docID) == false);
           fail("wrong hit (first of possibly more):\n\n" + b);
         }
       }
