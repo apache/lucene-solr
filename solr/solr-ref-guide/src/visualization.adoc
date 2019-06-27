@@ -67,6 +67,10 @@ image::images/math-expressions/sterms.png[]
 
 image::images/math-expressions/text-analytics.png[]
 
+=== Convex Hulls
+
+image::images/math-expressions/convex.png[]
+
 === Random Sampling & Scatter Plots
 
 image::images/math-expressions/xyscatter.png[]
