@@ -66,13 +66,15 @@ public final class HeapPointReader implements PointReader {
    */
   static class HeapPointValue implements PointValue {
 
-    BytesRef packedValue;
-    BytesRef docIDBytes;
+    final BytesRef packedValue;
+    final BytesRef packedValueDocIDBytes;
+    final int packedValueLength;
     int docID;
 
-    public HeapPointValue(byte[] value, int packedLength) {
-      packedValue = new BytesRef(value, 0, packedLength);
-      docIDBytes = new BytesRef(new byte[4]);
+    public HeapPointValue(byte[] value, int packedValueLength) {
+      this.packedValueLength = packedValueLength;
+      packedValue = new BytesRef(value, 0, packedValueLength);
+      packedValueDocIDBytes = new BytesRef(new byte[packedValueLength + Integer.BYTES]);
     }
 
     /**
@@ -94,12 +96,14 @@ public final class HeapPointReader implements PointReader {
     }
 
     @Override
-    public BytesRef docIDBytes() {
-      docIDBytes.bytes[0] = (byte) (docID >> 24);
-      docIDBytes.bytes[1] = (byte) (docID >> 16);
-      docIDBytes.bytes[2] = (byte) (docID >> 8);
-      docIDBytes.bytes[3] = (byte) (docID >> 0);
-      return docIDBytes;
+    public BytesRef packedValueDocIDBytes() {
+      System.arraycopy(packedValue.bytes, packedValue.offset,  packedValueDocIDBytes.bytes, 0, packedValueLength);
+      int position = packedValueLength;
+      packedValueDocIDBytes.bytes[position] = (byte) (docID >> 24);
+      packedValueDocIDBytes.bytes[++position] = (byte) (docID >> 16);
+      packedValueDocIDBytes.bytes[++position] = (byte) (docID >> 8);
+      packedValueDocIDBytes.bytes[++position] = (byte) (docID >> 0);
+      return packedValueDocIDBytes;
     }
   }
 }

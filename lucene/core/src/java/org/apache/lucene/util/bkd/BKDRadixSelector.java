@@ -60,18 +60,18 @@ public final class BKDRadixSelector {
   // prefix for temp files
   private final String tempFileNamePrefix;
 
-  private  int numDatadim, numIndexDim;
+  private  int numDataDims, numIndexDims;
 
 
   /**
    * Sole constructor.
    */
-  public BKDRadixSelector(int numDataDim, int numIndexDim, int bytesPerDim, int maxPointsSortInHeap, Directory tempDir, String tempFileNamePrefix) {
+  public BKDRadixSelector(int numDataDims, int numIndexDims, int bytesPerDim, int maxPointsSortInHeap, Directory tempDir, String tempFileNamePrefix) {
     this.bytesPerDim = bytesPerDim;
-    this.numDatadim = numDataDim;
-    this.numIndexDim = numIndexDim;
-    this.packedBytesLength = numDataDim * bytesPerDim;
-    this.bytesSorted = bytesPerDim  + (numDataDim - numIndexDim) * bytesPerDim + Integer.BYTES;
+    this.numDataDims = numDataDims;
+    this.numIndexDims = numIndexDims;
+    this.packedBytesLength = numDataDims * bytesPerDim;
+    this.bytesSorted = bytesPerDim  + (numDataDims - numIndexDims) * bytesPerDim + Integer.BYTES;
     this.maxPointsSortInHeap = maxPointsSortInHeap;
     int numberOfPointsOffline  = MAX_SIZE_OFFLINE_BUFFER / (packedBytesLength + Integer.BYTES);
     this.offlineBuffer = new byte[numberOfPointsOffline * (packedBytesLength + Integer.BYTES)];
@@ -137,14 +137,12 @@ public final class BKDRadixSelector {
       assert commonPrefixPosition > dimCommonPrefix;
       reader.next();
       PointValue pointValue = reader.pointValue();
+      BytesRef packedValueDocID = pointValue.packedValueDocIDBytes();
       // copy dimension
-      BytesRef packedValue = pointValue.packedValue();
-      System.arraycopy(packedValue.bytes, packedValue.offset + offset, scratch, 0, bytesPerDim);
-      // copy data dimensions
-      System.arraycopy(packedValue.bytes, packedValue.offset + numIndexDim * bytesPerDim, scratch, bytesPerDim, (numDatadim - numIndexDim) * bytesPerDim);
-      // copy docID
-      BytesRef docIDBytes = pointValue.docIDBytes();
-      System.arraycopy(docIDBytes.bytes, docIDBytes.offset, scratch, bytesPerDim + (numDatadim - numIndexDim) * bytesPerDim, Integer.BYTES);
+      System.arraycopy(packedValueDocID.bytes, packedValueDocID.offset + offset, scratch, 0, bytesPerDim);
+      // copy data dimensions and docID
+      System.arraycopy(packedValueDocID.bytes, packedValueDocID.offset + numIndexDims * bytesPerDim, scratch, bytesPerDim, (numDataDims - numIndexDims) * bytesPerDim + Integer.BYTES);
+
       for (long i = from + 1; i < to; i++) {
         reader.next();
         pointValue = reader.pointValue();
@@ -162,27 +160,16 @@ public final class BKDRadixSelector {
           //check common prefix and adjust histogram
           final int startIndex = (dimCommonPrefix > bytesPerDim) ? bytesPerDim : dimCommonPrefix;
           final int endIndex = (commonPrefixPosition > bytesPerDim) ? bytesPerDim : commonPrefixPosition;
-          packedValue = pointValue.packedValue();
-          int j = Arrays.mismatch(scratch, startIndex, endIndex, packedValue.bytes, packedValue.offset + offset + startIndex, packedValue.offset + offset + endIndex);
+          packedValueDocID = pointValue.packedValueDocIDBytes();
+          int j = Arrays.mismatch(scratch, startIndex, endIndex, packedValueDocID.bytes, packedValueDocID.offset + offset + startIndex, packedValueDocID.offset + offset + endIndex);
           if (j == -1) {
             if (commonPrefixPosition > bytesPerDim) {
-              //tie-break on data dimensions
-              final int endDataDimSorted = bytesSorted - Integer.BYTES;
-              final int dataOffset = numIndexDim * bytesPerDim;
-              final int dataLength =  (commonPrefixPosition > endDataDimSorted) ? (numDatadim - numIndexDim) * bytesPerDim : commonPrefixPosition - bytesPerDim;
-              int k = Arrays.mismatch(scratch, bytesPerDim, bytesPerDim + dataLength, packedValue.bytes, packedValue.offset + dataOffset, packedValue.offset + dataOffset + dataLength);
-              if (k == -1) {
-                if (commonPrefixPosition > endDataDimSorted) {
-                  //tie-break on docID
-                  docIDBytes = pointValue.docIDBytes();
-                  int m = Arrays.mismatch(scratch, endDataDimSorted, commonPrefixPosition, docIDBytes.bytes, docIDBytes.offset, docIDBytes.offset + commonPrefixPosition - endDataDimSorted);
-                  if (m != -1) {
-                    commonPrefixPosition = endDataDimSorted + m;
-                    Arrays.fill(histogram, 0);
-                    histogram[scratch[commonPrefixPosition] & 0xff] = i - from;
-                  }
-                }
-              } else {
+              //tie-break on data dimensions + docID
+              final int startTieBreak = numIndexDims * bytesPerDim;
+              final int endTieBreak = startTieBreak + commonPrefixPosition - bytesPerDim;
+              int k = Arrays.mismatch(scratch, bytesPerDim, commonPrefixPosition,
+                  packedValueDocID.bytes, packedValueDocID.offset + startTieBreak , packedValueDocID.offset + endTieBreak);
+              if (k != -1) {
                 commonPrefixPosition = bytesPerDim + k;
                 Arrays.fill(histogram, 0);
                 histogram[scratch[commonPrefixPosition] & 0xff] = i - from;
@@ -212,12 +199,9 @@ public final class BKDRadixSelector {
     if (commonPrefixPosition < bytesPerDim) {
       BytesRef packedValue = pointValue.packedValue();
       bucket = packedValue.bytes[packedValue.offset + offset + commonPrefixPosition] & 0xff;
-    } else if (commonPrefixPosition < bytesPerDim + (numDatadim - numIndexDim) * bytesPerDim) {
-      BytesRef packedValue = pointValue.packedValue();
-      bucket = packedValue.bytes[packedValue.offset + numIndexDim * bytesPerDim + commonPrefixPosition - bytesPerDim] & 0xff;
     } else {
-      BytesRef docIDValue = pointValue.docIDBytes();
-      bucket = docIDValue.bytes[docIDValue.offset + commonPrefixPosition - bytesSorted + Integer.BYTES] & 0xff;
+      BytesRef packedValueDocID = pointValue.packedValueDocIDBytes();
+      bucket = packedValueDocID.bytes[packedValueDocID.offset + numIndexDims * bytesPerDim + commonPrefixPosition - bytesPerDim] & 0xff;
     }
     return bucket;
   }
@@ -334,8 +318,8 @@ public final class BKDRadixSelector {
   private byte[] heapRadixSelect(HeapPointWriter points, int dim, int from, int to, int partitionPoint, int commonPrefixLength) {
     final int dimOffset = dim * bytesPerDim + commonPrefixLength;
     final int dimCmpBytes = bytesPerDim - commonPrefixLength;
-    final int dataOffset = numIndexDim * bytesPerDim - dimCmpBytes;
-    final int dataCmpBytes = (numDatadim - numIndexDim) * bytesPerDim + dimCmpBytes;
+    final int dataOffset = numIndexDims * bytesPerDim - dimCmpBytes;
+    final int dataCmpBytes = (numDataDims - numIndexDims) * bytesPerDim + dimCmpBytes;
     new RadixSelector(bytesSorted - commonPrefixLength) {
 
       @Override
@@ -364,8 +348,8 @@ public final class BKDRadixSelector {
         int skypedBytes = d + commonPrefixLength;
         final int start = dim * bytesPerDim + skypedBytes;
         final int dimEnd =  dim * bytesPerDim + bytesPerDim;
-        final int startDataDim = numIndexDim * bytesPerDim;
-        final int lengthDataDims = (numDatadim - numIndexDim) * bytesPerDim;
+        final int startDataDim = numIndexDims * bytesPerDim;
+        final int lengthDataDims = (numDataDims - numIndexDims) * bytesPerDim;
         return new IntroSelector() {
 
           int pivotDoc = -1;
@@ -444,8 +428,8 @@ public final class BKDRadixSelector {
   public void heapRadixSort(final HeapPointWriter points, int from, int to, int dim, int commonPrefixLength) {
     final int dimOffset = dim * bytesPerDim + commonPrefixLength;
     final int dimCmpBytes = bytesPerDim - commonPrefixLength;
-    final int dataOffset = numIndexDim * bytesPerDim - dimCmpBytes;
-    final int dataCmpBytes = (numDatadim - numIndexDim) * bytesPerDim + dimCmpBytes;
+    final int dataOffset = numIndexDims * bytesPerDim - dimCmpBytes;
+    final int dataCmpBytes = (numDataDims - numIndexDims) * bytesPerDim + dimCmpBytes;
 
     new MSBRadixSorter(bytesSorted - commonPrefixLength) {
 
@@ -475,8 +459,8 @@ public final class BKDRadixSelector {
         int skypedBytes = k + commonPrefixLength;
         final int start = dim * bytesPerDim + skypedBytes;
         final int end =  dim * bytesPerDim + bytesPerDim;
-        final int startDataDim = numIndexDim * bytesPerDim;
-        final int lengthDataDims = (numDatadim - numIndexDim) * bytesPerDim;
+        final int startDataDim = numIndexDims * bytesPerDim;
+        final int lengthDataDims = (numDataDims - numIndexDims) * bytesPerDim;
         return new IntroSorter() {
 
           int pivotDoc = -1;
