@@ -40,7 +40,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -76,13 +75,10 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
 
   @After
   public void doAfter() throws Exception {
-    solrClient.close();
-    shutdownCluster();
-  }
-
-  @AfterClass
-  public static void finish() throws Exception {
     IOUtils.close(solrClient);
+    if (null != cluster) {
+      shutdownCluster();
+    }
   }
 
   public void testNonEnglish() throws Exception {

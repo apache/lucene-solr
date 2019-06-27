@@ -530,9 +530,15 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
   
   protected void stopComponentUnderTest() throws Exception {
-    underTest.close();
-    thread.interrupt();
-    thread.join();
+    if (null != underTest) {
+      underTest.close();
+      underTest = null;
+    }
+    if (null != thread) {
+      thread.interrupt();
+      thread.join();
+      thread = null;
+    }
   }
 
   protected void issueCreateJob(Integer numberOfSlices,

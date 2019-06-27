@@ -87,7 +87,9 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   @Override
   @After
   public void tearDown() throws Exception {
-    testHarness.get().close();
+    if (null != testHarness.get()) {
+      testHarness.get().close();
+    }
     super.tearDown();
   }
   

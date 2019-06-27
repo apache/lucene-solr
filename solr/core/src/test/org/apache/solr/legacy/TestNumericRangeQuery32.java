@@ -127,10 +127,14 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
     searcher = null;
-    reader.close();
-    reader = null;
-    directory.close();
-    directory = null;
+    if (null != reader) {
+      reader.close();
+      reader = null;
+    }
+    if (null != directory) {
+      directory.close();
+      directory = null;
+    }
   }
   
   @Override

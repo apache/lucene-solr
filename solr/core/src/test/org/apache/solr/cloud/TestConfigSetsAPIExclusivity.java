@@ -56,7 +56,10 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   @Override
   @After
   public void tearDown() throws Exception {
-    solrCluster.shutdown();
+    if (null != solrCluster) {
+      solrCluster.shutdown();
+      solrCluster = null;
+    }
     super.tearDown();
   }
 

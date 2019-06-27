@@ -138,8 +138,14 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     } catch (Exception e) {
       log.error("Error deleting core", e);
     }
-    jetty.stop();
-    instance.tearDown();
+    if (null != jetty) {
+      jetty.stop();
+      jetty = null;
+    }
+    if (null != instance) {
+      instance.tearDown();
+      instance = null;
+    }
     super.tearDown();
   }
 

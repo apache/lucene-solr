@@ -58,9 +58,10 @@ public class TestZkChroot extends SolrTestCaseJ4 {
       cores = null;
     }
     
-    zkServer.shutdown();
-    
-    zkServer = null;
+    if (null != zkServer) {
+      zkServer.shutdown();
+      zkServer = null;
+    }
     zkDir = null;
     
     super.tearDown();

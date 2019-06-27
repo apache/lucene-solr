@@ -82,7 +82,10 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void doAfter() throws Exception {
     cluster.deleteAllCollections(); // deletes aliases too
 
-    solrClient.close();
+    if (null != solrClient) {
+      solrClient.close();
+      solrClient = null;
+    }
   }
 
   // This is a fairly complete test where we set many options and see that it both affected the created
