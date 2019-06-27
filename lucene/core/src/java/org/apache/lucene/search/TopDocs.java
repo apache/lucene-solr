@@ -31,23 +31,13 @@ public class TopDocs {
   public ScoreDoc[] scoreDocs;
 
   /** Internal comparator with shardIndex */
-  private static final Comparator<ScoreDoc> shardIndexTieBreaker = Comparator.comparingInt(d -> d.shardIndex);
+  private static final Comparator<ScoreDoc> SHARD_INDEX_TIE_BREAKER = Comparator.comparingInt(d -> d.shardIndex);
 
   /** Internal comparator with docID */
-  private static final Comparator<ScoreDoc> docIDTieBreaker = Comparator.comparingInt(d -> d.doc);
+  private static final Comparator<ScoreDoc> DOC_ID_TIE_BREAKER = Comparator.comparingInt(d -> d.doc);
 
   /** Default comparator */
-  private static final Comparator<ScoreDoc> defaultTieBreaker = new Comparator<ScoreDoc>() {
-    @Override
-    public int compare(ScoreDoc o1, ScoreDoc o2) {
-      int shardResultVal = shardIndexTieBreaker.compare(o1, o2);
-      if (shardResultVal != 0) {
-        return shardResultVal;
-      }
-
-      return docIDTieBreaker.compare(o1, o2);
-    }
-  };
+  private static final Comparator<ScoreDoc> DEFAULT_TIE_BREAKER = SHARD_INDEX_TIE_BREAKER.thenComparing(DOC_ID_TIE_BREAKER);
 
   /** Constructs a TopDocs. */
   public TopDocs(TotalHits totalHits, ScoreDoc[] scoreDocs) {
@@ -74,7 +64,7 @@ public class TopDocs {
   }
 
   /**
-   * Use the tie breaker if provided. If tie breaker returns 0 signifying equal values, we use shard indices
+   * Use the tie breaker if provided. If tie breaker returns 0 signifying equal values, we use hit indices
    * to tie break intra shard ties
    */
   static boolean tieBreakLessThan(ShardRef first, ScoreDoc firstDoc, ShardRef second, ScoreDoc secondDoc,
@@ -208,7 +198,7 @@ public class TopDocs {
    * @lucene.experimental
    */
   public static TopDocs merge(int start, int topN, TopDocs[] shardHits) {
-    return mergeAux(null, start, topN, shardHits, defaultTieBreaker);
+    return mergeAux(null, start, topN, shardHits, DEFAULT_TIE_BREAKER);
   }
 
   /**
@@ -248,7 +238,7 @@ public class TopDocs {
     if (sort == null) {
       throw new IllegalArgumentException("sort must be non-null when merging field-docs");
     }
-    return (TopFieldDocs) mergeAux(sort, start, topN, shardHits, defaultTieBreaker);
+    return (TopFieldDocs) mergeAux(sort, start, topN, shardHits, DEFAULT_TIE_BREAKER);
   }
 
   /**
@@ -296,7 +286,7 @@ public class TopDocs {
     }
 
     final ScoreDoc[] hits;
-    final boolean unsetShardIndex = shardHits[0].scoreDocs[0].shardIndex == -1;
+    boolean unsetShardIndex = false;
     if (availHitCount <= start) {
       hits = new ScoreDoc[0];
     } else {
@@ -309,12 +299,15 @@ public class TopDocs {
         ShardRef ref = queue.top();
         final ScoreDoc hit = shardHits[ref.shardIndex].scoreDocs[ref.hitIndex++];
 
-        //Irrespective of whether we use shard indices for tie breaking or not, we check for consistent
+        // Irrespective of whether we use shard indices for tie breaking or not, we check for consistent
         // order in shard indices to defend against potential bugs
-        if ((unsetShardIndex && hit.shardIndex != -1) ||
-            (unsetShardIndex == false && hit.shardIndex == -1)) {
-          throw new IllegalArgumentException("Inconsistent order of shard indices");
-        }
+        if (hitUpto > 0) {
+          if (unsetShardIndex != (hit.shardIndex == -1)) {
+            throw new IllegalArgumentException("Inconsistent order of shard indices");
+          }
+      }
+
+      unsetShardIndex |= hit.shardIndex == -1;
           
         if (hitUpto >= start) {
           hits[hitUpto - start] = hit;

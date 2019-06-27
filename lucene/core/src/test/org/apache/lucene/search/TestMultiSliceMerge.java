@@ -18,10 +18,7 @@
 package org.apache.lucene.search;
 
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executor;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -31,8 +28,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.lucene.util.TestUtil;
 
 public class TestMultiSliceMerge extends LuceneTestCase {
   Directory dir1;
@@ -46,7 +41,7 @@ public class TestMultiSliceMerge extends LuceneTestCase {
     dir1 = newDirectory();
     dir2 = newDirectory();
     Random random = random();
-    RandomIndexWriter iw1 = new RandomIndexWriter(random(), dir1);
+    RandomIndexWriter iw1 = new RandomIndexWriter(random(), dir1, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       doc.add(newStringField("field", Integer.toString(i), Field.Store.NO));
@@ -55,13 +50,13 @@ public class TestMultiSliceMerge extends LuceneTestCase {
       iw1.addDocument(doc);
 
       if (random.nextBoolean()) {
-        iw1.commit();
+        iw1.getReader().close();
       }
     }
     reader1 = iw1.getReader();
     iw1.close();
 
-    RandomIndexWriter iw2 = new RandomIndexWriter(random(), dir2);
+    RandomIndexWriter iw2 = new RandomIndexWriter(random(), dir2, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       doc.add(newStringField("field", Integer.toString(i), Field.Store.NO));
@@ -87,16 +82,12 @@ public class TestMultiSliceMerge extends LuceneTestCase {
   }
 
   public void testMultipleSlicesOfSameIndexSearcher() throws Exception {
-    ExecutorService service1 = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>(),
-        new NamedThreadFactory("TestMultiSliceMerge"));
-    ExecutorService service2 = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>(),
-        new NamedThreadFactory("TestMultiSliceMerge"));
+    Executor executor1 = runnable -> runnable.run();
+    Executor executor2 = runnable -> runnable.run();
 
     IndexSearcher searchers[] = new IndexSearcher[] {
-        new IndexSearcher(reader1, service1),
-        new IndexSearcher(reader2, service2)
+        new IndexSearcher(reader1, executor1),
+        new IndexSearcher(reader2, executor2)
     };
 
     Query query = new MatchAllDocsQuery();
@@ -105,22 +96,15 @@ public class TestMultiSliceMerge extends LuceneTestCase {
     TopDocs topDocs2 = searchers[1].search(query, Integer.MAX_VALUE);
 
     CheckHits.checkEqual(query, topDocs1.scoreDocs, topDocs2.scoreDocs);
-
-    TestUtil.shutdownExecutorService(service1);
-    TestUtil.shutdownExecutorService(service2);
   }
 
   public void testMultipleSlicesOfMultipleIndexSearchers() throws Exception {
-    ExecutorService service1 = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>(),
-        new NamedThreadFactory("TestMultiSliceMerge"));
-    ExecutorService service2 = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>(),
-        new NamedThreadFactory("TestMultiSliceMerge"));
+    Executor executor1 = runnable -> runnable.run();
+    Executor executor2 = runnable -> runnable.run();
 
     IndexSearcher searchers[] = new IndexSearcher[] {
-        new IndexSearcher(reader1, service1),
-        new IndexSearcher(reader2, service2)
+        new IndexSearcher(reader1, executor1),
+        new IndexSearcher(reader2, executor2)
     };
 
     Query query = new MatchAllDocsQuery();
@@ -141,8 +125,5 @@ public class TestMultiSliceMerge extends LuceneTestCase {
     TopDocs mergedHits2 = TopDocs.merge(0, topDocs1.scoreDocs.length, shardHits);
 
     CheckHits.checkEqual(query, mergedHits1.scoreDocs, mergedHits2.scoreDocs);
-
-    TestUtil.shutdownExecutorService(service1);
-    TestUtil.shutdownExecutorService(service2);
   }
 }
