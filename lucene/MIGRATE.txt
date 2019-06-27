@@ -182,3 +182,9 @@ to concurrent changes.
 ## maxClausesCount moved from BooleanQuery To IndexSearcher (LUCENE-8811) ##
 IndexSearcher now performs max clause count checks on all types of queries (including BooleanQueries).
 This led to a logical move of the clauses count from BooleanQuery to IndexSearcher.
+
+## TopDocs.merge shall no longer allow setting of shard indices ##
+
+TopDocs.merge's API has been changed to stop allowing passing in a parameter to indicate if it should
+set shard indices for hits as they are seen during the merge process. This is done to simplify the API
+to be more dynamic in terms of passing in custom tie breakers
