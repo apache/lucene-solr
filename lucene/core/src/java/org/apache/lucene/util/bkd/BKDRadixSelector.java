@@ -59,8 +59,8 @@ public final class BKDRadixSelector {
   private final Directory tempDir;
   // prefix for temp files
   private final String tempFileNamePrefix;
-
-  private  int numDataDims, numIndexDims;
+  // data and index dimensions
+  private final int numDataDims, numIndexDims;
 
 
   /**
@@ -71,6 +71,9 @@ public final class BKDRadixSelector {
     this.numDataDims = numDataDims;
     this.numIndexDims = numIndexDims;
     this.packedBytesLength = numDataDims * bytesPerDim;
+    // Selection and sorting is done in a given dimension. In case the value of the dimension are equal
+    // between two points we tie break first using the data-only dimensions and if those are still equal
+    // we tie-break on the docID. Here we account for all bytes used in the process.
     this.bytesSorted = bytesPerDim  + (numDataDims - numIndexDims) * bytesPerDim + Integer.BYTES;
     this.maxPointsSortInHeap = maxPointsSortInHeap;
     int numberOfPointsOffline  = MAX_SIZE_OFFLINE_BUFFER / (packedBytesLength + Integer.BYTES);
