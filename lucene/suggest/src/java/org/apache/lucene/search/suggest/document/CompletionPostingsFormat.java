@@ -97,10 +97,42 @@ public abstract class CompletionPostingsFormat extends PostingsFormat {
   static final String DICT_EXTENSION = "lkp";
 
   /**
+   * An enum that allows to control if suggester FSTs are loaded into memory or read off-heap
+   */
+  public enum FSTLoadMode {
+    /**
+     * Always read FSTs from disk.
+     * NOTE: If this option is used the FST will be read off-heap even if buffered directory implementations
+     * are used.
+     */
+    OFF_HEAP,
+    /**
+     * Never read FSTs from disk ie. all suggest fields FSTs are loaded into memory
+     */
+    ON_HEAP,
+    /**
+     * Automatically make the decision if FSTs are read from disk depending if the segment read from an MMAPDirectory
+     */
+    AUTO
+  }
+
+  private final FSTLoadMode fstLoadMode;
+
+  /**
    * Used only by core Lucene at read-time via Service Provider instantiation
    */
   public CompletionPostingsFormat() {
+    this(FSTLoadMode.ON_HEAP);
+  }
+
+  /**
+   * Creates a {@link CompletionPostingsFormat} that will
+   * use the provided <code>fstLoadMode</code> to determine
+   * if the completion FST should be loaded on or off heap.
+   */
+  public CompletionPostingsFormat(FSTLoadMode fstLoadMode) {
     super(CODEC_NAME);
+    this.fstLoadMode = fstLoadMode;
   }
 
   /**
@@ -120,6 +152,6 @@ public abstract class CompletionPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new CompletionFieldsProducer(state);
+    return new CompletionFieldsProducer(state, fstLoadMode);
   }
 }

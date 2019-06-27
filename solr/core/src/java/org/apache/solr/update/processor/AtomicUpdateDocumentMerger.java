@@ -16,8 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.common.params.CommonParams.ID;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -58,6 +56,8 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * @lucene.experimental
@@ -194,9 +194,15 @@ public class AtomicUpdateDocumentMerger {
         return Collections.emptySet();
       }
       // else it's a atomic update map...
-      for (String op : ((Map<String, Object>)fieldValue).keySet()) {
+      Map<String, Object> fieldValueMap = (Map<String, Object>)fieldValue;
+      for (String op : fieldValueMap.keySet()) {
+        Object obj = fieldValueMap.get(op);
         if (!op.equals("set") && !op.equals("inc")) {
           // not a supported in-place update op
+          return Collections.emptySet();
+        } else if (op.equals("set") && (obj == null || (obj instanceof Collection && ((Collection) obj).isEmpty()))) {
+          // when operation is set and value is either null or empty list
+          // treat the update as atomic instead of inplace
           return Collections.emptySet();
         }
         // fail fast if child doc

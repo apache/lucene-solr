@@ -18,10 +18,15 @@ package org.apache.lucene.store;
 
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileSystem;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter;
@@ -31,9 +36,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TestIndexWriterReader;
+import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.mockfile.WindowsFS;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.TestUtil;
 
-// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
 
   /**
@@ -108,6 +115,32 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
     dir.close();
   }
 
+  public void testRenameTmpFile() throws IOException {
+    try (Directory directory = getDirectory(createTempDir())) {
+      final String name;
+      try (IndexOutput out = directory.createTempOutput("foo.cfs", "", IOContext.DEFAULT)) {
+        out.writeInt(1);
+        name = out.getName();
+      }
+      assertEquals(1, Arrays.stream(directory.listAll()).filter(f -> f.equals(name)).count());
+      assertEquals(0, Arrays.stream(directory.listAll()).filter(f -> f.equals("foo.cfs")).count());
+      directory.rename(name, "foo.cfs");
+      assertEquals(1, Arrays.stream(directory.listAll()).filter(f -> f.equals("foo.cfs")).count());
+      assertEquals(0, Arrays.stream(directory.listAll()).filter(f -> f.equals(name)).count());
+    }
+
+    try (Directory directory= newFSSwitchDirectory(Collections.singleton("bar"))) {
+      String brokenName;
+      try (IndexOutput out = directory.createTempOutput("foo", "bar", IOContext.DEFAULT)) {
+        out.writeInt(1);
+        brokenName = out.getName();
+      }
+      AtomicMoveNotSupportedException exception = expectThrows(AtomicMoveNotSupportedException.class,
+          () -> directory.rename(brokenName, "foo.bar"));
+      assertEquals("foo_bar_0.tmp -> foo.bar: source and dest are in different directories", exception.getMessage());
+    }
+  }
+
   @Override
   protected Directory getDirectory(Path path) throws IOException {
     Set<String> extensions = new HashSet<String>();
@@ -130,5 +163,32 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
       extensions.add("del");
     }
     return newFSSwitchDirectory(extensions);
+  }
+
+  public void testDeleteAndList() throws IOException {
+    // relies on windows semantics
+    Path path = createTempDir();
+    assumeFalse("Irony we seem to not emulate windows well enough", Constants.WINDOWS);
+    FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path indexPath = new FilterPath(path, fs);
+    try (final FileSwitchDirectory dir = new FileSwitchDirectory(Collections.singleton("tim"),
+        new SimpleFSDirectory(indexPath), new SimpleFSDirectory(indexPath), true)) {
+      dir.createOutput("foo.tim", IOContext.DEFAULT).close();
+      Function<String[], Long> stripExtra = array -> Arrays.asList(array).stream()
+          .filter(f -> f.startsWith("extra") == false).count();
+      try (IndexInput indexInput = dir.openInput("foo.tim", IOContext.DEFAULT)) {
+        dir.deleteFile("foo.tim");
+        assertEquals(1, dir.getPrimaryDir().getPendingDeletions().size());
+        assertEquals(1, dir.getPendingDeletions().size());
+        assertEquals(0, stripExtra.apply(dir.listAll()).intValue());
+        assertEquals(0, stripExtra.apply(dir.getPrimaryDir().listAll()).intValue());
+        assertEquals(1, stripExtra.apply(dir.getSecondaryDir().listAll()).intValue());
+      }
+      assertEquals(0, dir.getPrimaryDir().getPendingDeletions().size());
+      assertEquals(0, dir.getPendingDeletions().size());
+      assertEquals(0, stripExtra.apply(dir.listAll()).intValue());
+      assertEquals(0, stripExtra.apply(dir.getPrimaryDir().listAll()).intValue());
+      assertEquals(0, stripExtra.apply(dir.getSecondaryDir().listAll()).intValue());
+    }
   }
 }

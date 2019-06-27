@@ -914,7 +914,13 @@ public class Http2SolrClient extends SolrClient {
   }
 
   private static SslContextFactory getDefaultSslContextFactory() {
-    SslContextFactory sslContextFactory = new SslContextFactory(false);
+    String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
+    boolean sslCheckPeerName = true;
+    if (checkPeerNameStr == null || "false".equalsIgnoreCase(checkPeerNameStr)) {
+      sslCheckPeerName = false;
+    }
+
+    SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(!sslCheckPeerName);
 
     if (null != System.getProperty("javax.net.ssl.keyStore")) {
       sslContextFactory.setKeyStorePath
@@ -933,17 +939,6 @@ public class Http2SolrClient extends SolrClient {
           (System.getProperty("javax.net.ssl.trustStorePassword"));
     }
 
-    String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
-    boolean sslCheckPeerName = true;
-    if (checkPeerNameStr == null || "false".equalsIgnoreCase(checkPeerNameStr)) {
-      sslCheckPeerName = false;
-    }
-
-    if (System.getProperty("tests.jettySsl.clientAuth") != null) {
-      sslCheckPeerName = sslCheckPeerName || Boolean.getBoolean("tests.jettySsl.clientAuth");
-    }
-
-    sslContextFactory.setNeedClientAuth(sslCheckPeerName);
     return sslContextFactory;
   }
 

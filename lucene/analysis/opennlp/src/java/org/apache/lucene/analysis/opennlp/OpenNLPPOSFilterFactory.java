@@ -37,8 +37,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 7.3.0
+ * @lucene.spi {@value #NAME}
  */
 public class OpenNLPPOSFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "openNlppos";
+
   public static final String POS_TAGGER_MODEL = "posTaggerModel";
 
   private final String posTaggerModelFile;

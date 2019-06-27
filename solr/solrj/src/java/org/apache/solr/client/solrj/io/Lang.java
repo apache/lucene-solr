@@ -286,6 +286,10 @@ public class Lang {
         .withFunctionName("repeat", RepeatEvaluator.class)
         .withFunctionName("natural", NaturalEvaluator.class)
         .withFunctionName("movingMAD", MovingMADEvaluator.class)
+        .withFunctionName("recNum", RecNumEvaluator.class)
+        .withFunctionName("notNull", NotNullEvaluator.class)
+        .withFunctionName("isNull", IsNullEvaluator.class)
+        .withFunctionName("matches", MatchesEvaluator.class)
 
         // Boolean Stream Evaluators
 

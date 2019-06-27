@@ -63,11 +63,13 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
   public void testEqualOnNonNode() {
     List<Map> l = (List<Map>) loadFromResource("testEqualOnNonNode.json");
     String autoScalingjson = "{cluster-policy:[" +
-        "    { replica : '<3' , shard : '#EACH', sysprop.zone: [east,west] } ]," +
+        "    { replica : '<3' , shard : '#EACH', sysprop.zone: east}," +
+        "{ replica : '<3' , shard : '#EACH', sysprop.zone: west} ]," +
         "  'cluster-preferences':[{ minimize : cores},{maximize : freedisk, precision : 50}]}";
     if(useNodeset){
       autoScalingjson = "{cluster-policy:[" +
-          "    { replica : '<3' , shard : '#EACH', nodeset:{ sysprop.zone: [east,west] }} ]," +
+          "{ replica : '<3' , shard : '#EACH', nodeset:{ sysprop.zone: east}}," +
+          "{ replica : '<3' , shard : '#EACH', nodeset:{ sysprop.zone: west}} ]," +
           "  'cluster-preferences':[{ minimize : cores},{maximize : freedisk, precision : 50}]}";
       
     }
@@ -87,7 +89,8 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
         "  'cluster-preferences':[{ minimize : cores},{maximize : freedisk, precision : 50}]}";
     if(useNodeset){
       autoScalingjson = "{cluster-policy:[" +
-          "    { replica : '<3' , shard : '#EACH', nodeset:{sysprop.zone: [east , west]} } ]," +
+          "{ replica : '<3' , shard : '#EACH', nodeset:{sysprop.zone: east}} , " +
+          "{ replica : '<3' , shard : '#EACH', nodeset:{sysprop.zone: west}}  ]," +
           "  'cluster-preferences':[{ minimize : cores},{maximize : freedisk, precision : 50}]}";
     }
     policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoScalingjson));
@@ -362,10 +365,14 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
           "      {" +
           "        'minimize':'sysLoadAvg'," +
           "        'precision':10}]," +
-          "    'cluster-policy':[{" +
-          "      'replica':'<3'," +
+          "    'cluster-policy':[" +
+          "{'replica':'<3'," +
           "      'shard':'#EACH'," +
-          "      nodeset: {'sysprop.zone':['east','west']}}]}");
+          "      nodeset: {'sysprop.zone':'east'}}, " +
+          "{'replica':'<3'," +
+          "      'shard':'#EACH'," +
+          "      nodeset: {'sysprop.zone':'west'}} " +
+          " ]}");
     }
     Policy policy = new Policy(conf);
     SolrCloudManager cloudManagerFromDiagnostics = createCloudManagerFromDiagnostics(m);

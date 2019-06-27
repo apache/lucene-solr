@@ -50,6 +50,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.apache.solr.cloud.api.collections.RoutedAlias.SupportedRouterTypes.TIME;
+
 /**
  * Direct http tests of the CreateRoutedAlias functionality.
  */
@@ -224,17 +226,17 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
           .process(client);
     }
 
-    assertCollectionExists(aliasName + "_2018-01-15");
+    assertCollectionExists(aliasName + TIME.getSeparatorPrefix() +"2018-01-15");
   }
 
   @Test
   public void testCollectionNamesMustBeAbsent() throws Exception {
     CollectionAdminRequest.createCollection("collection1meta", "_default", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2meta", "_default", 1, 1).process(cluster.getSolrClient());
-    
+
     cluster.waitForActiveCollection("collection1meta", 2, 2);
     cluster.waitForActiveCollection("collection2meta", 1, 1);
-    
+
     waitForState("Expected collection1 to be created with 2 shards and 1 replica", "collection1meta", clusterShape(2, 2));
     waitForState("Expected collection2 to be created with 1 shard and 1 replica", "collection2meta", clusterShape(1, 1));
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();

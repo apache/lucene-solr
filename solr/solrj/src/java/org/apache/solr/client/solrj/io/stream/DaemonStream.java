@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.lang.Thread.State;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Date;
@@ -25,12 +26,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -202,7 +206,13 @@ public class DaemonStream extends TupleStream implements Expressible {
     }
     this.closed = false;
     this.streamRunner = new StreamRunner(runInterval, id);
-    this.streamRunner.start();
+    ExecutorService service = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("DaemonStream-" + id));
+    try {
+      service.submit(this.streamRunner);
+    }
+    finally {
+      service.shutdown();
+    }
   }
 
   public Tuple read() throws IOException {
@@ -267,13 +277,15 @@ public class DaemonStream extends TupleStream implements Expressible {
     this.stopTime = stopTime;
   }
 
-  private class StreamRunner extends Thread {
+  private class StreamRunner implements Runnable {
 
     private long sleepMillis = 1000;
     private long runInterval;
     private long lastRun;
     private String id;
 
+    // a reference to the Thread that is executing the stream to track its state
+    private volatile Thread executingThread;
     private boolean shutdown;
 
     public StreamRunner(long runInterval, String id) {
@@ -289,7 +301,29 @@ public class DaemonStream extends TupleStream implements Expressible {
       return shutdown;
     }
 
+    public State getState() {
+      if (executingThread == null) {
+        if (shutdown) {
+          return Thread.State.TERMINATED;
+        } else {
+          return Thread.State.NEW;
+        }
+      } else {
+        return executingThread.getState();
+      }
+    }
+
     public void run() {
+      executingThread = Thread.currentThread();
+      try {
+        stream();
+      } finally {
+        setShutdown(true);
+        executingThread = null;
+      }
+    }
+
+    private void stream() {
       int errors = 0;
       setStartTime(new Date().getTime());
       OUTER:

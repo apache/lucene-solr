@@ -299,7 +299,7 @@ This example uses the `ranges` parameter with hash ranges 0-500, 501-1000 and 10
 
 The `targetCore` must already exist and must have a compatible schema with the `core` index. A commit is automatically called on the `core` index before it is split.
 
-This command is used as part of the <<collections-api.adoc#splitshard,SPLITSHARD>> command but it can be used for non-cloud Solr cores as well. When used against a non-cloud core without `split.key` parameter, this action will split the source index and distribute its documents alternately so that each split piece contains an equal number of documents. If the `split.key` parameter is specified then only documents having the same route key will be split from the source index.
+This command is used as part of the <<shard-management.adoc#splitshard,SPLITSHARD>> command but it can be used for non-cloud Solr cores as well. When used against a non-cloud core without `split.key` parameter, this action will split the source index and distribute its documents alternately so that each split piece contains an equal number of documents. If the `split.key` parameter is specified then only documents having the same route key will be split from the source index.
 
 [[coreadmin-requeststatus]]
 == REQUESTSTATUS

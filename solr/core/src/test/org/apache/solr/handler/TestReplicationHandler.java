@@ -672,18 +672,27 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       masterJetty.start();
 
       // poll interval on slave is 1 second, so we just sleep for a few seconds
-      Thread.sleep(2000);
+      for(int retries=0; ;retries++) { 
+        Thread.sleep(2000);
+        try {
+          int failed = Integer.parseInt(getSlaveDetails("timesFailed"));
+          if (previousTimesFailed != null) {
+            assertTrue(failed > previousTimesFailed);
+          }
+          assertEquals(1, Integer.parseInt(getSlaveDetails("timesIndexReplicated")) - failed);
+          break;
+        } catch (NumberFormatException | AssertionError notYet) {
+          if (retries>9) {
+            throw notYet;
+          } 
+        }
+      }
 
       //get docs from slave and assert that they are still the same as before
       slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
       slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
       assertEquals(nDocs, numFound(slaveQueryRsp));
 
-      int failed = Integer.parseInt(getSlaveDetails("timesFailed"));
-      if (previousTimesFailed != null) {
-        assertTrue(failed > previousTimesFailed);
-      }
-      assertEquals(1, Integer.parseInt(getSlaveDetails("timesIndexReplicated")) - failed);
     } finally {
       resetFactory();
     }
