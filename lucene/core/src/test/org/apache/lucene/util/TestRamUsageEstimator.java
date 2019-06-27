@@ -22,7 +22,6 @@ import static org.apache.lucene.util.RamUsageTester.sizeOf;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,56 +115,58 @@ public class TestRamUsageEstimator extends LuceneTestCase {
     }
     long actual = sizeOf(bytes);
     long estimated = RamUsageEstimator.sizeOf(bytes);
-    assertEquals(actual, estimated);
+    assertEquals((double)actual, (double)estimated, (double)actual * 0.1);
   }
 
   public void testMap() {
     Map<String, Object> map = new HashMap<>();
     map.put("primitive", 1234L);
     map.put("string", "string");
+    for (int i = 0; i < 100; i++) {
+      map.put("complex " + i, new Term("foo " + i, "bar " + i));
+    }
     long actual = sizeOf(map);
     long estimated = RamUsageEstimator.sizeOfObject(map);
-    assertTrue(estimated > actual); // RamUsageTester under-estimates the size of map
+    assertEquals((double)actual, (double)estimated, (double)actual * 0.2);
 
     // test recursion
-    map.clear();
-    map.put("string[]", new String[]{"foo", "bar"});
-    map.put("map", Collections.singletonMap("foo", "bar"));
     map.put("self", map);
     actual = sizeOf(map);
     estimated = RamUsageEstimator.sizeOfObject(map);
-    assertTrue(estimated > actual);
+    assertEquals((double)actual, (double)estimated, (double)actual * 0.2);
   }
 
   public void testCollection() {
     List<Object> list = new ArrayList<>();
     list.add(1234L);
     list.add("string");
-    list.add(new Term("foo", "bar"));
+    for (int i = 0; i < 100; i++) {
+      list.add(new Term("foo " + i, "term " + i));
+    }
     long actual = sizeOf(list);
     long estimated = RamUsageEstimator.sizeOfObject(list);
-    assertEquals(actual, estimated);
+    assertEquals((double)actual, (double)estimated, (double)actual * 0.1);
 
     // test recursion
-    list.clear();
-    list.add(1234L);
     list.add(list);
     actual = sizeOf(list);
     estimated = RamUsageEstimator.sizeOfObject(list);
-    assertEquals(actual + RamUsageEstimator.shallowSizeOf(list), estimated);
+    assertEquals((double)actual, (double)estimated, (double)actual * 0.1);
   }
 
   public void testQuery() {
     DisjunctionMaxQuery dismax = new DisjunctionMaxQuery(
-        Arrays.asList(new TermQuery(new Term("foo", "bar")), new TermQuery(new Term("baz", "bam"))), 1.0f);
+        Arrays.asList(new TermQuery(new Term("foo1", "bar1")), new TermQuery(new Term("baz1", "bam1"))), 1.0f);
     BooleanQuery bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD)
-        .add(new FuzzyQuery(new Term("foo", "baz")), BooleanClause.Occur.MUST_NOT)
+        .add(new TermQuery(new Term("foo2", "bar2")), BooleanClause.Occur.SHOULD)
+        .add(new FuzzyQuery(new Term("foo3", "baz3")), BooleanClause.Occur.MUST_NOT)
         .add(dismax, BooleanClause.Occur.MUST)
         .build();
     long actual = sizeOf(bq);
     long estimated = RamUsageEstimator.sizeOfObject(bq);
-    assertTrue(actual < estimated);
+    // sizeOfObject uses much lower default size estimate than we normally use
+    // but the query-specific default is so large that the comparison becomes meaningless.
+    assertEquals((double)actual, (double)estimated, (double)actual * 0.5);
   }
 
   public void testReferenceSize() {

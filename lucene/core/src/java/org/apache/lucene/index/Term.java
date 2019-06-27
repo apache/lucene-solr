@@ -172,6 +172,6 @@ public final class Term implements Comparable<Term>, Accountable {
   public long ramBytesUsed() {
     return BASE_RAM_BYTES +
         RamUsageEstimator.sizeOfObject(field) +
-        (bytes != null ? bytes.bytes.length + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER : 0L);
+        (bytes != null ? RamUsageEstimator.alignObjectSize(bytes.bytes.length + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER) : 0L);
   }
 }
