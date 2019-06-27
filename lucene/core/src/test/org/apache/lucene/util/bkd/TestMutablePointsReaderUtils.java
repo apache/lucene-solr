@@ -157,6 +157,7 @@ public class TestMutablePointsReaderUtils extends LuceneTestCase {
       this.packedValue.bytes[0] = (byte) random().nextInt(256);
       this.packedValue.offset = 1;
       this.packedValue.length = packedValue.length;
+      System.arraycopy(packedValue, 0, this.packedValue.bytes, 1, packedValue.length);
       this.doc = doc;
     }
 
