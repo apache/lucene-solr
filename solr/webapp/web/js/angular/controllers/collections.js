@@ -53,9 +53,14 @@ solrAdminApp.controller('CollectionsController',
                   }
               }
               for (var name in data.cluster.aliases) {
-                alias = {name: name, collections: data.cluster.aliases[name], type: 'alias'};
+                props = {};
+                if (data.cluster.properties && name in data.cluster.properties) {
+                  props = data.cluster.properties[name];
+                }
+
+                alias = {name: name, collections: data.cluster.aliases[name], properties: props, type: 'alias'};
                 $scope.aliases.push(alias);
-                if ($routeParams.collection == name) {
+                if ($routeParams.collection == 'alias_' + name) {
                   $scope.collection = alias;
                 }
               }
@@ -120,7 +125,7 @@ solrAdminApp.controller('CollectionsController',
         Collections.createAlias({name: $scope.aliasToCreate, collections: collections.join(",")}, function(data) {
           $scope.cancelCreateAlias();
           $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
-          $location.path("/~collections/" + $scope.aliasToCreate);
+          $location.path("/~collections/alias_" + $scope.aliasToCreate);
         });
       }
       $scope.deleteAlias = function() {
