@@ -45,16 +45,13 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.RamUsageEstimator;
 
 // A TermsIncludingScoreQuery variant for point values:
-abstract class PointInSetIncludingScoreQuery extends Query implements Accountable {
-  protected static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(PointInSetIncludingScoreQuery.class);
+abstract class PointInSetIncludingScoreQuery extends Query {
 
   static BiFunction<byte[], Class<? extends Number>, String> toString = (value, numericType) -> {
     if (Integer.class.equals(numericType)) {
@@ -79,8 +76,6 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
   final int bytesPerDim;
 
   final List<Float> aggregatedJoinScores;
-
-  private final long ramBytesUsed; // cache
 
   static abstract class Stream extends PointInSetQuery.Stream {
 
@@ -123,11 +118,6 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
     }
     sortedPackedPoints = builder.finish();
     sortedPackedPointsHashCode = sortedPackedPoints.hashCode();
-
-    this.ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(this.field) +
-        RamUsageEstimator.sizeOfObject(this.originalQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
-        RamUsageEstimator.sizeOfObject(this.sortedPackedPoints);
   }
 
   @Override
@@ -351,9 +341,4 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
   }
 
   protected abstract String toString(byte[] value);
-
-  @Override
-  public long ramBytesUsed() {
-    return ramBytesUsed;
-  }
 }

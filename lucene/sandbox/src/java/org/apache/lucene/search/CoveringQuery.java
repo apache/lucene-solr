@@ -27,21 +27,17 @@ import java.util.stream.Collectors;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /** A {@link Query} that allows to have a configurable number or required
  *  matches per document. This is typically useful in order to build queries
  *  whose query terms must all appear in documents.
  *  @lucene.experimental
  */
-public final class CoveringQuery extends Query implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(CoveringQuery.class);
+public final class CoveringQuery extends Query {
 
   private final Collection<Query> queries;
   private final LongValuesSource minimumNumberMatch;
   private final int hashCode;
-  private final long ramBytesUsed;
 
   /**
    * Sole constructor.
@@ -64,9 +60,6 @@ public final class CoveringQuery extends Query implements Accountable {
     this.queries.addAll(queries);
     this.minimumNumberMatch = Objects.requireNonNull(minimumNumberMatch);
     this.hashCode = computeHashCode();
-
-    this.ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(this.queries, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   @Override
@@ -99,11 +92,6 @@ public final class CoveringQuery extends Query implements Accountable {
   @Override
   public int hashCode() {
     return hashCode;
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return ramBytesUsed;
   }
 
   @Override

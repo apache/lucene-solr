@@ -15,12 +15,6 @@ Bug fixes
 * LUCENE-8775: Improve tessellator to handle better cases where a hole share a vertex
   with the polygon. (Ignacio Vera)
 
-======================= Lucene 8.1.2 =======================
-
-Improvements
-
-* LUCENE-8855: Add Accountable to some Query implementations (ab, Adrien Grand)
-
 ======================= Lucene 8.1.1 =======================
 (No Changes)
 

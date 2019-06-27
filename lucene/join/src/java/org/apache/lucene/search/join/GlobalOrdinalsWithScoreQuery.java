@@ -32,13 +32,10 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
-import org.apache.lucene.util.RamUsageEstimator;
 
-final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(GlobalOrdinalsWithScoreQuery.class);
+final class GlobalOrdinalsWithScoreQuery extends Query {
 
   private final GlobalOrdinalsWithScoreCollector collector;
   private final String joinField;
@@ -54,8 +51,6 @@ final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
   // id of the context rather than the context itself in order not to hold references to index readers
   private final Object indexReaderContextId;
 
-  private final long ramBytesUsed; // cache
-
   GlobalOrdinalsWithScoreQuery(GlobalOrdinalsWithScoreCollector collector, ScoreMode scoreMode, String joinField,
                                OrdinalMap globalOrds, Query toQuery, Query fromQuery, int min, int max,
                                Object indexReaderContextId) {
@@ -68,12 +63,6 @@ final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
     this.min = min;
     this.max = max;
     this.indexReaderContextId = indexReaderContextId;
-
-    this.ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(this.fromQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
-        RamUsageEstimator.sizeOfObject(this.globalOrds) +
-        RamUsageEstimator.sizeOfObject(this.joinField) +
-        RamUsageEstimator.sizeOfObject(this.toQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   @Override
@@ -133,11 +122,6 @@ final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
           "max=" + max +
           "fromQuery=" + fromQuery +
         '}';
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return ramBytesUsed;
   }
 
   final class W extends FilterWeight {

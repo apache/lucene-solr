@@ -89,7 +89,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
   // approximate memory usage that we assign to all queries
   // this maps roughly to a BooleanQuery with a couple term clauses
-  static final long QUERY_DEFAULT_RAM_BYTES_USED = RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
+  static final long QUERY_DEFAULT_RAM_BYTES_USED = 1024;
 
   static final long HASHTABLE_RAM_BYTES_PER_ENTRY =
       2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // key + value

@@ -26,8 +26,7 @@ import java.util.Arrays;
  * 
  * @lucene.internal
  */
-public final class LongBitSet implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(LongBitSet.class);
+public final class LongBitSet {
 
   private final long[] bits; // Array of longs holding the bits 
   private final long numBits; // The number of bits in use
@@ -428,11 +427,5 @@ public final class LongBitSet implements Accountable {
     // fold leftmost bits into right and add a constant to prevent
     // empty sets from returning 0, which is too common.
     return (int) ((h>>32) ^ h) + 0x98761234;
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(bits);
   }
 }

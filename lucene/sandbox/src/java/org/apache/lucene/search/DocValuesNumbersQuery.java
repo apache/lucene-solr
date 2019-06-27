@@ -28,8 +28,6 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Like {@link DocValuesTermsQuery}, but this query only
@@ -45,8 +43,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @lucene.experimental
  */
-public class DocValuesNumbersQuery extends Query implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(DocValuesNumbersQuery.class);
+public class DocValuesNumbersQuery extends Query {
 
   private final String field;
   private final LongHashSet numbers;
@@ -103,13 +100,6 @@ public class DocValuesNumbersQuery extends Query implements Accountable {
         .append(": ")
         .append(numbers.toString())
         .toString();
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(field) +
-        RamUsageEstimator.sizeOfObject(numbers);
   }
 
   @Override

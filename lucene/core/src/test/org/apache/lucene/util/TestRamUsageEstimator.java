@@ -20,30 +20,9 @@ package org.apache.lucene.util;
 import static org.apache.lucene.util.RamUsageEstimator.*;
 import static org.apache.lucene.util.RamUsageTester.sizeOf;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.FuzzyQuery;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.WildcardQuery;
-
 public class TestRamUsageEstimator extends LuceneTestCase {
-
-  static final String[] strings = new String[] {
-      "test string",
-      "hollow",
-      "catchmaster"
-  };
-
   public void testSanity() {
     assertTrue(sizeOf("test string") > shallowSizeOfInstance(String.class));
 
@@ -57,6 +36,11 @@ public class TestRamUsageEstimator extends LuceneTestCase {
     assertTrue(
         shallowSizeOfInstance(Holder.class)         == shallowSizeOfInstance(HolderSubclass2.class));
 
+    String[] strings = new String[] {
+        "test string",
+        "hollow",
+        "catchmaster"
+    };
     assertTrue(sizeOf(strings) > shallowSizeOf(strings));
   }
 
@@ -102,73 +86,7 @@ public class TestRamUsageEstimator extends LuceneTestCase {
       assertEquals(sizeOf(array), sizeOf((Object) array));
     }
   }
-
-  public void testStrings() {
-    long actual = sizeOf(strings);
-    long estimated = RamUsageEstimator.sizeOf(strings);
-    assertEquals(actual, estimated);
-  }
-
-  public void testBytesRefHash() {
-    BytesRefHash bytes = new BytesRefHash();
-    for (int i = 0; i < 100; i++) {
-      bytes.add(new BytesRef("foo bar " + i));
-      bytes.add(new BytesRef("baz bam " + i));
-    }
-    long actual = sizeOf(bytes);
-    long estimated = RamUsageEstimator.sizeOf(bytes);
-    assertEquals(actual, estimated);
-  }
-
-  public void testMap() {
-    Map<String, Object> map = new HashMap<>();
-    map.put("primitive", 1234L);
-    map.put("string", "string");
-    long actual = sizeOf(map);
-    long estimated = RamUsageEstimator.sizeOfObject(map);
-    assertTrue(estimated > actual); // RamUsageTester under-estimates the size of map
-
-    // test recursion
-    map.clear();
-    map.put("string[]", new String[]{"foo", "bar"});
-    map.put("map", Collections.singletonMap("foo", "bar"));
-    map.put("self", map);
-    actual = sizeOf(map);
-    estimated = RamUsageEstimator.sizeOfObject(map);
-    assertTrue(estimated > actual);
-  }
-
-  public void testCollection() {
-    List<Object> list = new ArrayList<>();
-    list.add(1234L);
-    list.add("string");
-    list.add(new Term("foo", "bar"));
-    long actual = sizeOf(list);
-    long estimated = RamUsageEstimator.sizeOfObject(list);
-    assertEquals(actual, estimated);
-
-    // test recursion
-    list.clear();
-    list.add(1234L);
-    list.add(list);
-    actual = sizeOf(list);
-    estimated = RamUsageEstimator.sizeOfObject(list);
-    assertEquals(actual + RamUsageEstimator.shallowSizeOf(list), estimated);
-  }
-
-  public void testQuery() {
-    DisjunctionMaxQuery dismax = new DisjunctionMaxQuery(
-        Arrays.asList(new TermQuery(new Term("foo", "bar")), new TermQuery(new Term("baz", "bam"))), 1.0f);
-    BooleanQuery bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD)
-        .add(new FuzzyQuery(new Term("foo", "baz")), BooleanClause.Occur.MUST_NOT)
-        .add(dismax, BooleanClause.Occur.MUST)
-        .build();
-    long actual = sizeOf(bq);
-    long estimated = RamUsageEstimator.sizeOfObject(bq);
-    assertTrue(actual < estimated);
-  }
-
+  
   public void testReferenceSize() {
     assertTrue(NUM_BYTES_OBJECT_REF == 4 || NUM_BYTES_OBJECT_REF == 8);
     if (Constants.JRE_IS_64BIT) {

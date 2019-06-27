@@ -31,17 +31,12 @@ package org.apache.lucene.util.automaton;
 
 import java.util.Arrays;
 
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
-
 /**
  * Finite-state automaton with fast run operation.  The initial state is always 0.
  * 
  * @lucene.experimental
  */
-public abstract class RunAutomaton implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(RunAutomaton.class);
-
+public abstract class RunAutomaton {
   final Automaton automaton;
   final int alphabetSize;
   final int size;
@@ -208,15 +203,5 @@ public abstract class RunAutomaton implements Accountable {
     if (!Arrays.equals(accept, other.accept)) return false;
     if (!Arrays.equals(transitions, other.transitions)) return false;
     return true;
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(accept) +
-        RamUsageEstimator.sizeOfObject(automaton) +
-        RamUsageEstimator.sizeOfObject(classmap) +
-        RamUsageEstimator.sizeOfObject(points) +
-        RamUsageEstimator.sizeOfObject(transitions);
   }
 }

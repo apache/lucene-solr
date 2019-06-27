@@ -41,9 +41,7 @@ import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
  * 
  * @lucene.internal
  **/
-public final class ByteBlockPool implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(ByteBlockPool.class);
-
+public final class ByteBlockPool {
   public final static int BYTE_BLOCK_SHIFT = 15;
   public final static int BYTE_BLOCK_SIZE = 1 << BYTE_BLOCK_SHIFT;
   public final static int BYTE_BLOCK_MASK = BYTE_BLOCK_SIZE - 1;
@@ -393,15 +391,6 @@ public final class ByteBlockPool implements Accountable {
     int pos = (int) (offset & BYTE_BLOCK_MASK);
     byte[] buffer = buffers[bufferIndex];
     return buffer[pos];
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    long size = BASE_RAM_BYTES;
-    for (byte[] buffer : buffers) {
-      size += RamUsageEstimator.sizeOfObject(buffer);
-    }
-    return size;
   }
 }
 

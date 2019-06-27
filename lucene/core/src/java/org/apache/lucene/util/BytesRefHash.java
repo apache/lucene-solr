@@ -42,12 +42,7 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
  * 
  * @lucene.internal
  */
-public final class BytesRefHash implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(BytesRefHash.class) +
-      // size of scratch1
-      RamUsageEstimator.shallowSizeOf(BytesRef.class) +
-      // size of Counter
-      RamUsageEstimator.shallowSizeOf(Counter.class);
+public final class BytesRefHash {
 
   public static final int DEFAULT_CAPACITY = 16;
 
@@ -475,15 +470,6 @@ public final class BytesRefHash implements Accountable {
     assert bytesStart != null : "bytesStart is null - not initialized";
     assert bytesID >= 0 && bytesID < count : bytesID;
     return bytesStart[bytesID];
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    long size = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(bytesStart) +
-        RamUsageEstimator.sizeOfObject(ids) +
-        RamUsageEstimator.sizeOfObject(pool);
-    return size;
   }
 
   /**

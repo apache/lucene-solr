@@ -31,13 +31,11 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FutureArrays;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Abstract query class to find all documents whose single or multi-dimensional point values, previously indexed with e.g. {@link IntPoint},
@@ -51,16 +49,13 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @see PointValues
  * @lucene.experimental */
 
-public abstract class PointInSetQuery extends Query implements Accountable {
-  protected static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(PointInSetQuery.class);
-
+public abstract class PointInSetQuery extends Query {
   // A little bit overkill for us, since all of our "terms" are always in the same field:
   final PrefixCodedTerms sortedPackedPoints;
   final int sortedPackedPointsHashCode;
   final String field;
   final int numDims;
   final int bytesPerDim;
-  final long ramBytesUsed; // cache
   
   /** 
    * Iterator of encoded point values.
@@ -108,10 +103,6 @@ public abstract class PointInSetQuery extends Query implements Accountable {
     }
     sortedPackedPoints = builder.finish();
     sortedPackedPointsHashCode = sortedPackedPoints.hashCode();
-    ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(field) +
-        RamUsageEstimator.sizeOfObject(sortedPackedPoints);
-
   }
 
   @Override
@@ -432,9 +423,4 @@ public abstract class PointInSetQuery extends Query implements Accountable {
    * @return human readable value for debugging
    */
   protected abstract String toString(byte[] value);
-
-  @Override
-  public long ramBytesUsed() {
-    return ramBytesUsed;
-  }
 }

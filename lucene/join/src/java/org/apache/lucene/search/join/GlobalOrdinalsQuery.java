@@ -32,14 +32,11 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.LongValues;
-import org.apache.lucene.util.RamUsageEstimator;
 
-final class GlobalOrdinalsQuery extends Query implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(GlobalOrdinalsQuery.class);
+final class GlobalOrdinalsQuery extends Query {
 
   // All the ords of matching docs found with OrdinalsCollector.
   private final LongBitSet foundOrds;
@@ -53,8 +50,6 @@ final class GlobalOrdinalsQuery extends Query implements Accountable {
   // id of the context rather than the context itself in order not to hold references to index readers
   private final Object indexReaderContextId;
 
-  private final long ramBytesUsed; // cache
-
   GlobalOrdinalsQuery(LongBitSet foundOrds, String joinField, OrdinalMap globalOrds, Query toQuery,
                       Query fromQuery, Object indexReaderContextId) {
     this.foundOrds = foundOrds;
@@ -63,13 +58,6 @@ final class GlobalOrdinalsQuery extends Query implements Accountable {
     this.toQuery = toQuery;
     this.fromQuery = fromQuery;
     this.indexReaderContextId = indexReaderContextId;
-
-    this.ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(this.foundOrds) +
-        RamUsageEstimator.sizeOfObject(this.globalOrds) +
-        RamUsageEstimator.sizeOfObject(this.joinField) +
-        RamUsageEstimator.sizeOfObject(this.fromQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
-        RamUsageEstimator.sizeOfObject(this.toQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   @Override
@@ -113,11 +101,6 @@ final class GlobalOrdinalsQuery extends Query implements Accountable {
     return "GlobalOrdinalsQuery{" +
         "joinField=" + joinField +
         '}';
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return ramBytesUsed;
   }
 
   final class W extends ConstantScoreWeight {

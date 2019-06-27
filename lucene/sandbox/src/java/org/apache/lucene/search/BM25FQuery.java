@@ -37,9 +37,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.SimilarityBase;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * A {@link Query} that treats multiple fields as a single stream and scores
@@ -55,8 +53,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @lucene.experimental
  */
-public final class BM25FQuery extends Query implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(BM25FQuery.class);
+public final class BM25FQuery extends Query {
 
   /**
    * A builder for {@link BM25FQuery}.
@@ -146,8 +143,6 @@ public final class BM25FQuery extends Query implements Accountable {
   // array of terms per field, sorted
   private final Term fieldTerms[];
 
-  private final long ramBytesUsed;
-
   private BM25FQuery(BM25Similarity similarity, TreeMap<String, FieldAndWeight> fieldAndWeights, BytesRef[] terms) {
     this.similarity = similarity;
     this.fieldAndWeights = fieldAndWeights;
@@ -164,11 +159,6 @@ public final class BM25FQuery extends Query implements Accountable {
         fieldTerms[pos++] = new Term(field, term);
       }
     }
-
-    this.ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(fieldAndWeights) +
-        RamUsageEstimator.sizeOfObject(fieldTerms) +
-        RamUsageEstimator.sizeOfObject(terms);
   }
 
   public List<Term> getTerms() {
@@ -210,11 +200,6 @@ public final class BM25FQuery extends Query implements Accountable {
   public boolean equals(Object other) {
     return sameClassAs(other) &&
         Arrays.equals(terms, ((BM25FQuery) other).terms);
-  }
-
-  @Override
-  public long ramBytesUsed() {
-    return ramBytesUsed;
   }
 
   @Override
