@@ -164,6 +164,8 @@ Other
 
 * LUCENE-8879: Improve BKDRadixSelector tests. (Ignacio Vera)
 
+* LUCENE-8886: Fix TestMutablePointsReaderUtils tests. (Ignacio Vera)
+
 ======================= Lucene 8.1.2 =======================
 
 Improvements
