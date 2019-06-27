@@ -25,7 +25,7 @@ import java.util.Objects;
 import org.apache.lucene.analysis.ja.dict.TokenInfoDictionary;
 import org.apache.lucene.util.fst.FST;
 
-public class TokenInfoDictionaryWriter extends BinaryDictionaryWriter {
+class TokenInfoDictionaryWriter extends BinaryDictionaryWriter {
   private FST<Long> fst;
 
   TokenInfoDictionaryWriter(int size) {

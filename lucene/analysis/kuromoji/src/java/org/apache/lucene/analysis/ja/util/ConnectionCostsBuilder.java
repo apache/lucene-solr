@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class ConnectionCostsBuilder {
+class ConnectionCostsBuilder {
 
   private ConnectionCostsBuilder() {
   }

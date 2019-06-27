@@ -30,7 +30,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 
-public final class CharacterDefinitionWriter {
+final class CharacterDefinitionWriter {
 
   private final byte[] characterCategoryMap = new byte[0x10000];
   
