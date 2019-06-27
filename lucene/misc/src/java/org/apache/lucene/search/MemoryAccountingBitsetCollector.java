@@ -31,7 +31,7 @@ public class MemoryAccountingBitsetCollector extends SimpleCollector {
   int length = 0;
   int docBase = 0;
 
-  MemoryAccountingBitsetCollector(CollectorMemoryTracker tracker) {
+  public MemoryAccountingBitsetCollector(CollectorMemoryTracker tracker) {
     this.tracker = tracker;
     tracker.updateBytes(bitSet.ramBytesUsed());
   }
