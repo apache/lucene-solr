@@ -73,8 +73,8 @@ public final class HeapPointReader implements PointReader {
 
     public HeapPointValue(byte[] value, int packedValueLength) {
       this.packedValueLength = packedValueLength;
-      packedValue = new BytesRef(value, 0, packedValueLength);
-      packedValueDocIDBytes = new BytesRef(new byte[packedValueLength + Integer.BYTES]);
+      this.packedValue = new BytesRef(value, 0, packedValueLength);
+      this.packedValueDocIDBytes = new BytesRef(new byte[packedValueLength + Integer.BYTES]);
     }
 
     /**
@@ -82,7 +82,7 @@ public final class HeapPointReader implements PointReader {
      */
     public void setValue(int offset, int docID) {
       this.docID = docID;
-      packedValue.offset = offset;
+      this.packedValue.offset = offset;
     }
 
     @Override

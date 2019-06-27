@@ -143,8 +143,8 @@ public final class OfflinePointReader implements PointReader {
 
     OfflinePointValue(byte[] value, int packedValueLength) {
       this.packedValueLength = packedValueLength;
-      packedValue = new BytesRef(value, 0, packedValueLength);
-      packedValueDocID = new BytesRef(value, 0, packedValueLength + Integer.BYTES);
+      this.packedValue = new BytesRef(value, 0, packedValueLength);
+      this.packedValueDocID = new BytesRef(value, 0, packedValueLength + Integer.BYTES);
     }
 
     /**

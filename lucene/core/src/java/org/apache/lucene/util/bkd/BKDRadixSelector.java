@@ -168,7 +168,7 @@ public final class BKDRadixSelector {
               final int startTieBreak = numIndexDims * bytesPerDim;
               final int endTieBreak = startTieBreak + commonPrefixPosition - bytesPerDim;
               int k = Arrays.mismatch(scratch, bytesPerDim, commonPrefixPosition,
-                  packedValueDocID.bytes, packedValueDocID.offset + startTieBreak , packedValueDocID.offset + endTieBreak);
+                  packedValueDocID.bytes, packedValueDocID.offset + startTieBreak, packedValueDocID.offset + endTieBreak);
               if (k != -1) {
                 commonPrefixPosition = bytesPerDim + k;
                 Arrays.fill(histogram, 0);
