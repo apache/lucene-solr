@@ -82,12 +82,16 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
   public static void shutdown() throws Exception {
     if (miniCluster != null) {
       miniCluster.shutdown();
+      miniCluster = null;
     }
-    miniCluster = null;
-    solrClientPrimary.close();
-    solrClientPrimary = null;
-    solrClientSecondary.close();
-    solrClientSecondary = null;
+    if (null != solrClientPrimary) {
+      solrClientPrimary.close();
+      solrClientPrimary = null;
+    }
+    if (null != solrClientSecondary) {
+      solrClientSecondary.close();
+      solrClientSecondary = null;
+    }
     System.clearProperty("authenticationPlugin");
     System.clearProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED);
     System.clearProperty("solr.kerberos.cookie.domain");

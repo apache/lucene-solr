@@ -51,9 +51,11 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
 
   @After
   public void afterTest() throws IOException {
-    coreMetricManager.close();
-    assertTrue(metricManager.getReporters(coreMetricManager.getRegistryName()).isEmpty());
-    deleteCore();
+    if (null != coreMetricManager) {
+      coreMetricManager.close();
+      assertTrue(metricManager.getReporters(coreMetricManager.getRegistryName()).isEmpty());
+      deleteCore();
+    }
   }
 
   @Test

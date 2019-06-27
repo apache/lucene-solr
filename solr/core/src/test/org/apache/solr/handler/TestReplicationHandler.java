@@ -147,13 +147,22 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    masterJetty.stop();
-    slaveJetty.stop();
-    masterJetty = slaveJetty = null;
-    master = slave = null;
-    masterClient.close();
-    slaveClient.close();
-    masterClient = slaveClient = null;
+    if (null != masterJetty) {
+      masterJetty.stop();
+      masterJetty = null;
+    }
+    if (null != slaveJetty) {
+      slaveJetty.stop();
+      slaveJetty = null;
+    }
+    if (null != masterClient) {
+      masterClient.close();
+      masterClient = null;
+    }
+    if (null != slaveClient) {
+      slaveClient.close();
+      slaveClient = null;
+    }
     System.clearProperty("solr.indexfetcher.sotimeout");
   }
 

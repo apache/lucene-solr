@@ -95,7 +95,10 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   @Override
   @After
   public void tearDown() throws Exception {
-    cluster.shutdown();
+    if (null != cluster) {
+      cluster.shutdown();
+      cluster = null;
+    }
     super.tearDown();
   }
 
