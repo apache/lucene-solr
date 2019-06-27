@@ -124,7 +124,7 @@ public final class Polygon {
     this.windingOrder = (windingSum < 0) ? GeoUtils.WindingOrder.CCW : GeoUtils.WindingOrder.CW;
     double area = Math.abs(windingSum / 2d);
     for (Polygon hole : holes) {
-      area -= hole.area();
+      area -= hole.getArea();
     }
     if (area <= 0) {
       throw new IllegalArgumentException("Polygon has an invalid area (area = " + area + ").");
@@ -139,7 +139,7 @@ public final class Polygon {
   }
 
   /** returns the area of the polygon */
-  public double area() {
+  protected double getArea() {
     return area;
   }
 

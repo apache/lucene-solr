@@ -551,7 +551,7 @@ public class TestTessellator extends LuceneTestCase {
   private void checkPolygon(String wkt) throws Exception {
     Polygon polygon = (Polygon) SimpleWKTShapeParser.parse(wkt);
     List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
-    assertEquals(polygon.area(), area(tessellation), 0.0);
+    assertEquals(polygon.getArea(), area(tessellation), 0.0);
   }
 
   private double area(List<Tessellator.Triangle> triangles) {
@@ -559,7 +559,7 @@ public class TestTessellator extends LuceneTestCase {
     for (Tessellator.Triangle t : triangles) {
       double[] lats = new double[] {t.getLat(0), t.getLat(1), t.getLat(2), t.getLat(0)};
       double[] lons = new double[] {t.getLon(0), t.getLon(1), t.getLon(2), t.getLon(0)};
-      area +=  new Polygon(lats, lons).area();
+      area +=  new Polygon(lats, lons).getArea();
     }
     return area;
   }
