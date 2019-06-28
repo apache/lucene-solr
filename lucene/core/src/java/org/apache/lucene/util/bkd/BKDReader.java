@@ -435,7 +435,7 @@ public final class BKDReader extends PointValues implements Accountable {
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
 
-    DocIdsWriter.readInts(in, count, iterator.docIds);
+    DocIdsWriter.readInts(in, count, iterator.docIDs);
 
     return count;
   }
@@ -475,7 +475,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
       if (r == Relation.CELL_INSIDE_QUERY) {
         for (int i = 0; i < count; ++i) {
-          visitor.visit(scratchIterator.docIds[i]);
+          visitor.visit(scratchIterator.docIDs[i]);
         }
         return;
       }
@@ -525,7 +525,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
         if (r == Relation.CELL_INSIDE_QUERY) {
           for (int i = 0; i < count; ++i) {
-            visitor.visit(scratchIterator.docIds[i]);
+            visitor.visit(scratchIterator.docIDs[i]);
           }
           return;
         }
@@ -559,9 +559,7 @@ public final class BKDReader extends PointValues implements Accountable {
         int prefix = commonPrefixLengths[dim];
         in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
       }
-      scratchIterator.idx = -1;
-      scratchIterator.offset = i;
-      scratchIterator.length = length;
+      scratchIterator.reset(i, length);
       visitor.visit(scratchIterator, scratchPackedValue);
       i += length;
     }
@@ -572,9 +570,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
   // point is under commonPrefix
   private void visitUniqueRawDocValues(byte[] scratchPackedValue, BKDReaderDocIDSetIterator scratchIterator, int count, IntersectVisitor visitor) throws IOException {
-    scratchIterator.idx = -1;
-    scratchIterator.offset = 0;
-    scratchIterator.length = count;
+    scratchIterator.reset(0, count);
     visitor.visit(scratchIterator, scratchPackedValue);
   }
 
@@ -592,7 +588,7 @@ public final class BKDReader extends PointValues implements Accountable {
           int prefix = commonPrefixLengths[dim];
           in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
         }
-        visitor.visit(scratchIterator.docIds[i+j], scratchPackedValue);
+        visitor.visit(scratchIterator.docIDs[i+j], scratchPackedValue);
       }
       i += runLen;
     }
@@ -786,30 +782,38 @@ public final class BKDReader extends PointValues implements Accountable {
 
   protected static class BKDReaderDocIDSetIterator extends DocIdSetIterator {
 
-    int idx;
-    int length;
-    int offset;
-    int[] docIds;
+    private int idx;
+    private int length;
+    private int offset;
+    private int docID;
+    int[] docIDs;
 
     public BKDReaderDocIDSetIterator(int maxPointsInLeafNode) {
-      this.docIds = new int[maxPointsInLeafNode];
+      this.docIDs = new int[maxPointsInLeafNode];
     }
 
     @Override
     public int docID() {
-      if (idx == -1)  {
-        return -1;
-      }
-      return docIds[offset + idx];
+     return docID;
+    }
+
+    private void  reset(int offset, int length) {
+      this.offset = offset;
+      this.length = length;
+      assert offset + length <= docIDs.length;
+      this.docID = -1;
+      this.idx = 0;
     }
 
     @Override
     public int nextDoc() throws IOException {
-      if (idx == length - 1) {
-        return DocIdSetIterator.NO_MORE_DOCS;
+      if (idx == length) {
+        docID = DocIdSetIterator.NO_MORE_DOCS;
+      } else {
+        docID = docIDs[offset + idx];
+        idx++;
       }
-      idx++;
-      return docIds[offset + idx];
+      return docID;
     }
 
     @Override

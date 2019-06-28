@@ -304,7 +304,7 @@ public class BKDWriter implements Closeable {
 
             @Override
             public void visit(int docID, byte[] packedValue) {
-              assert docID == state.scratchIterator.docIds[i];
+              assert docID == state.scratchIterator.docIDs[i];
               System.arraycopy(packedValue, 0, packedValues, i * bkd.packedBytesLength, bkd.packedBytesLength);
               i++;
             }
@@ -320,7 +320,7 @@ public class BKDWriter implements Closeable {
         }
 
         final int index = docBlockUpto++;
-        int oldDocID = state.scratchIterator.docIds[index];
+        int oldDocID = state.scratchIterator.docIDs[index];
 
         int mappedDocID;
         if (docMap == null) {

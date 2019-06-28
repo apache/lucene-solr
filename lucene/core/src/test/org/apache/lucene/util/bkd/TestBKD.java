@@ -31,6 +31,7 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.mockfile.ExtrasFS;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.CorruptingIndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -844,7 +845,27 @@ public class TestBKD extends LuceneTestCase {
               hits.set(docID);
             }
 
-            @Override
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+              if (random().nextBoolean()) {
+                //check the default method is correct
+                IntersectVisitor.super.visit(iterator, packedValue);
+              } else {
+                assertTrue(iterator.docID() == -1);
+                int cost = (int) iterator.cost();
+                int numberOfPoints = 0;
+                int docID;
+                while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                  visit(docID, packedValue);
+                  numberOfPoints++;
+                }
+                assertTrue(cost == numberOfPoints);
+                assertTrue(iterator.nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
+                assertTrue(iterator.docID() == DocIdSetIterator.NO_MORE_DOCS);
+              }
+          }
+
+          @Override
             public Relation compare(byte[] minPacked, byte[] maxPacked) {
               boolean crosses = false;
               for(int dim=0;dim<numIndexDims;dim++) {
