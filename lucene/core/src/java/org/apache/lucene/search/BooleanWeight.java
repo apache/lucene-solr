@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -38,8 +37,18 @@ final class BooleanWeight extends Weight {
   /** The Similarity implementation. */
   final Similarity similarity;
   final BooleanQuery query;
-  
-  final ArrayList<Weight> weights;
+
+  private static class WeightedBooleanClause {
+    final BooleanClause clause;
+    final Weight weight;
+
+    WeightedBooleanClause(BooleanClause clause, Weight weight) {
+      this.clause = clause;
+      this.weight = weight;
+    }
+  }
+
+  final ArrayList<WeightedBooleanClause> weightedClauses;
   final ScoreMode scoreMode;
 
   BooleanWeight(BooleanQuery query, IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
@@ -47,10 +56,10 @@ final class BooleanWeight extends Weight {
     this.query = query;
     this.scoreMode = scoreMode;
     this.similarity = searcher.getSimilarity();
-    weights = new ArrayList<>();
+    weightedClauses = new ArrayList<>();
     for (BooleanClause c : query) {
       Weight w = searcher.createWeight(c.getQuery(), c.isScoring() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, boost);
-      weights.add(w);
+      weightedClauses.add(new WeightedBooleanClause(c, w));
     }
   }
 
@@ -61,10 +70,9 @@ final class BooleanWeight extends Weight {
     boolean fail = false;
     int matchCount = 0;
     int shouldMatchCount = 0;
-    Iterator<BooleanClause> cIter = query.iterator();
-    for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
-      Weight w = wIter.next();
-      BooleanClause c = cIter.next();
+    for (WeightedBooleanClause wc : weightedClauses) {
+      Weight w = wc.weight;
+      BooleanClause c = wc.clause;
       Explanation e = w.explain(context, doc);
       if (e.isMatch()) {
         if (c.isScoring()) {
@@ -111,11 +119,9 @@ final class BooleanWeight extends Weight {
     final int minShouldMatch = query.getMinimumNumberShouldMatch();
     List<Matches> matches = new ArrayList<>();
     int shouldMatchCount = 0;
-    Iterator<Weight> wIt = weights.iterator();
-    Iterator<BooleanClause> cIt = query.clauses().iterator();
-    while (wIt.hasNext()) {
-      Weight w = wIt.next();
-      BooleanClause bc = cIt.next();
+    for (WeightedBooleanClause wc : weightedClauses) {
+      Weight w = wc.weight;
+      BooleanClause bc = wc.clause;
       Matches m = w.matches(context, doc);
       if (bc.isProhibited()) {
         if (m != null) {
@@ -175,9 +181,9 @@ final class BooleanWeight extends Weight {
   // pkg-private for forcing use of BooleanScorer in tests
   BulkScorer optionalBulkScorer(LeafReaderContext context) throws IOException {
     List<BulkScorer> optional = new ArrayList<BulkScorer>();
-    Iterator<BooleanClause> cIter = query.iterator();
-    for (Weight w  : weights) {
-      BooleanClause c =  cIter.next();
+    for (WeightedBooleanClause wc : weightedClauses) {
+      Weight w = wc.weight;
+      BooleanClause c = wc.clause;
       if (c.getOccur() != Occur.SHOULD) {
         continue;
       }
@@ -208,9 +214,9 @@ final class BooleanWeight extends Weight {
   private BulkScorer requiredBulkScorer(LeafReaderContext context) throws IOException {
     BulkScorer scorer = null;
 
-    Iterator<BooleanClause> cIter = query.iterator();
-    for (Weight w  : weights) {
-      BooleanClause c =  cIter.next();
+    for (WeightedBooleanClause wc : weightedClauses) {
+      Weight w = wc.weight;
+      BooleanClause c = wc.clause;
       if (c.isRequired() == false) {
         continue;
       }
@@ -280,9 +286,9 @@ final class BooleanWeight extends Weight {
     }
 
     List<Scorer> prohibited = new ArrayList<>();
-    Iterator<BooleanClause> cIter = query.iterator();
-    for (Weight w  : weights) {
-      BooleanClause c =  cIter.next();
+    for (WeightedBooleanClause wc : weightedClauses) {
+      Weight w = wc.weight;
+      BooleanClause c = wc.clause;
       if (c.isProhibited()) {
         Scorer scorer = w.scorer(context);
         if (scorer != null) {
@@ -333,13 +339,14 @@ final class BooleanWeight extends Weight {
 
   @Override
   public boolean isCacheable(LeafReaderContext ctx) {
-    if (weights.size() > TermInSetQuery.BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD) {
+    if (query.clauses().size() > TermInSetQuery.BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD) {
       // Disallow caching large boolean queries to not encourage users
       // to build large boolean queries as a workaround to the fact that
       // we disallow caching large TermInSetQueries.
       return false;
     }
-    for (Weight w : weights) {
+    for (WeightedBooleanClause wc : weightedClauses) {
+      Weight w = wc.weight;
       if (w.isCacheable(ctx) == false)
         return false;
     }
@@ -355,9 +362,9 @@ final class BooleanWeight extends Weight {
       scorers.put(occur, new ArrayList<>());
     }
 
-    Iterator<BooleanClause> cIter = query.iterator();
-    for (Weight w  : weights) {
-      BooleanClause c =  cIter.next();
+    for (WeightedBooleanClause wc : weightedClauses) {
+      Weight w = wc.weight;
+      BooleanClause c = wc.clause;
       ScorerSupplier subScorer = w.scorerSupplier(context);
       if (subScorer == null) {
         if (c.isRequired()) {
