@@ -6,7 +6,7 @@ import java.util.List;
 
  /**
  * Interface responsible for mapping Solr abstractions to an external blob store. It handles writing
- * to and reading Solr Cores from the blob store.
+ * to and reading shard index data from the blob store.
  */
 public interface CoreStorageClient {
     
@@ -14,22 +14,24 @@ public interface CoreStorageClient {
      * Replaces the special CORE_METADATA_BLOB_FILENAME blob on the blob store for the core by a new version passed as a
      * {@link BlobCoreMetadata} instance.
      * 
-     * @param blobName name of the core to write metadata for
+     * @param sharedStoreName name of the shared shard index data to write the metadata file for
+     * @param blobCoreMetadataName name of metadata file to write to the blob store
      * @param bcm blob metadata to be serialized and written to the blob store
      */
-    public void pushCoreMetadata(String blobName, BlobCoreMetadata bcm) throws BlobException;
+    public void pushCoreMetadata(String sharedStoreName, String blobCoreMetadataName, BlobCoreMetadata bcm) throws BlobException;
     
     /**
      * Reads the special CORE_METADATA_BLOB_FILENAME blob on the blob store for the core and returns the corresponding
      * {@link BlobCoreMetadata} object.
      * 
-     * @param blobName name of the core to get metadata for
+     * @param sharedStoreName name of the shared shard index data to get metadata for
+     * @param blobCoreMetadataName name of metadata file to pull from the blob store
      * @return <code>null</code> if the core does not exist on the Blob store or method {@link #pushCoreMetadata} was
      * never called for it. Otherwise returns the latest value written using {@link #pushCoreMetadata} ("latest" here
      * based on the consistency model of the underlying store, in practice the last value written by any server given the
      * strong consistency of the Salesforce S3 implementation).
      */ 
-    public BlobCoreMetadata pullCoreMetadata(String blobName) throws BlobException;
+    public BlobCoreMetadata pullCoreMetadata(String sharedStoreName, String blobCoreMetadataName) throws BlobException;
     
     /**
      * Returns an input stream for the given blob. The caller must close the stream when done.
@@ -52,12 +54,13 @@ public interface CoreStorageClient {
     public String pushStream(String blobName, InputStream is, long contentLength, String fileNamePrefix) throws BlobException;
     
     /**
-     * Checks if the core metadata file exists for the given blobName.
+     * Checks if the shard index data with the given shard metadata file exists
      * 
-     * @param blobName name of the core to check
+     * @param sharedStoreName name of the shared shard index data to check exists
+     * @param blobCoreMetadataName name of metadata file to check exists
      * @return true if the core has blobs
      */
-    public boolean coreMetadataExists(String blobName) throws BlobException;
+    public boolean coreMetadataExists(String sharedStoreName, String blobCoreMetadataName) throws BlobException;
     
     /**
      * Deletes all blob files associated with this blobName.

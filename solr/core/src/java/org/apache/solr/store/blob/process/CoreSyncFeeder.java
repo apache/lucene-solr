@@ -39,7 +39,7 @@ public abstract class CoreSyncFeeder implements Runnable, Closeable {
      * When a transient error occurs, the number of attempts to sync with Blob before giving up. Attempts are spaced by
      * at least 10 seconds (see {@link CorePullTask#MIN_RETRY_DELAY_MS}) which means we'll retry for at least 90 seconds 
      * before giving up. This is something to adjust as the implementation of the delay between retries is cleaned up, 
-     * see {@link CorePullTask#pullCoreFromBlob()}.
+     * see {@link CorePullTask}.
      */
     protected static final int MAX_ATTEMPTS = 10;
 

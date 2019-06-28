@@ -1,30 +1,35 @@
 package org.apache.solr.store.blob.metadata;
 
-import com.google.common.collect.*;
-import org.apache.solr.store.blob.client.BlobException;
-import org.apache.solr.store.blob.client.BlobCoreMetadata;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Objects;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
-import org.apache.solr.core.*;
-import java.io.*;
-import java.security.*;
-import java.util.*;
-import java.util.stream.Collectors;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.store.blob.client.BlobCoreMetadata;
+import org.apache.solr.store.blob.client.BlobException;
+
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 
 /**
- * Object capturing the metadata of the local index on a Solr Server.<p>
- * This works in conjunction with {@link BlobCoreMetadata} to find the differences between local (Solr server) and remote
- * (Blob store) commit point for a core.<p>
+ * Object capturing the metadata of a shard index on a Solr node. 
+ * 
+ * This works in conjunction with {@link BlobCoreMetadata} to find the differences between 
+ * local (Solr node) and remote (Blob store) commit point for a core.<p>
+ * 
  * This object is somewhere between {@link org.apache.lucene.index.IndexCommit} and {@link org.apache.lucene.index.SegmentInfos}
- * and by implementing it separately we can add SFDC specific data in it (such as sequence number) and don't have to deal
- * with the complexity of class hierarchies in the Solr implementation(s).
- *
- * @author iginzburg
- * @since 214/solr.6
+ * and by implementing it separately we can add additional metadata to it as needed.
  */
-public class ServerSideCoreMetadata {
+public class ServerSideMetadata {
+    
     /**
      * Files composing the core. They are are referenced from the core's current commit point's segments_N file
      * which is ALSO included in this collection.
@@ -32,50 +37,35 @@ public class ServerSideCoreMetadata {
     private final ImmutableCollection<CoreFileData> files;
 
     /**
-     * Config files associated with the core
-     */
-    private final ImmutableSet<CoreConfigFileData> configFiles;
-
-    /**
      * Hash of the directory content used to make sure the content doesn't change as we proceed to pull new files from Blob
      * (if we need to pull new files from Blob)
      */
     private final String directoryHash;
 
-    /**
-     * ...but we need generation anyway because encryption updates the generation of a core without changing the sequence number.
-     */
-    private final long generation;
-
+    private final SolrCore core;
     private final String coreName;
     private final CoreContainer container;
 
     /**
      * Given a core name, builds the local metadata
+     * 
+     * 
      * @throws Exception if core corresponding to <code>coreName</code> can't be found.
      */
-    public ServerSideCoreMetadata(String coreName, CoreContainer container) throws Exception {
+    public ServerSideMetadata(String coreName, CoreContainer container) throws Exception {
         this.coreName = coreName;
         this.container = container;
-
-        SolrCore core = container.getCore(coreName);
+        this.core = container.getCore(coreName);
 
         if (core == null) {
             throw new Exception("Can't find core " + coreName);
         }
 
         try {
-
             IndexCommit commit = core.getDeletionPolicy().getLatestCommit();
-
             if (commit == null) {
                 throw new BlobException("Core " + coreName + " has no available commit point");
             }
-
-            // Sequence number was once called replay count. data structures (and DB column names) haven't been renamed everywhere.
-            // SfdcUserData coreUserData = SfdcUserData.getMetadataFromIndexCommit(core, commit);
-            // sequenceNumber = coreUserData.replayCount;
-            generation = commit.getGeneration();
 
             // Work around possible bug returning same file multiple times by using a set here
             // See org.apache.solr.handler.ReplicationHandler.getFileList()
@@ -97,7 +87,6 @@ public class ServerSideCoreMetadata {
                 core.getDirectoryFactory().release(coreDir);
             }
             files = builder.build();
-            configFiles = getConfigFilesMetadata(core);
         } finally {
             core.close();
         }
@@ -111,20 +100,12 @@ public class ServerSideCoreMetadata {
         return this.container;
     }
 
-    public long getGeneration() {
-        return this.generation;
-    }
-
     public String getDirectoryHash() {
         return this.directoryHash;
     }
 
     public ImmutableCollection<CoreFileData> getFiles(){
         return this.files;
-    }
-
-    public ImmutableCollection<CoreConfigFileData> getConfigFiles() {
-        return configFiles;
     }
 
     /**
@@ -136,46 +117,6 @@ public class ServerSideCoreMetadata {
      */
     public boolean isSameDirectoryContent(Directory coreDir) throws NoSuchAlgorithmException, IOException {
         return directoryHash.equals(getSolrDirectoryHash(coreDir));
-    }
-
-    /**
-     * Tells whether blob config file is fresher than local config file. It does not rely on metadata computed at the creation time
-     * of this object and returned by {@link #getConfigFiles()}. Rather it directly looks into local config directory. 
-     * If config file does not exist locally or blob's updatedAt is greater than local's lastModified, returns true; otherwise, false.
-     */
-    public boolean isBlobConfigFileFresher(BlobCoreMetadata.BlobConfigFile blobConfigFile){
-        SolrCore core = container.getCore(coreName);
-        try {
-            List<File> localConfigFile = getConfigFiles(core).stream()
-                    .filter(f -> f.getName().equals(blobConfigFile.getSolrFileName()))
-                    .collect(Collectors.toList());
-            assert localConfigFile.size() <= 1;
-            return localConfigFile.isEmpty() || (blobConfigFile.getUpdatedAt() > localConfigFile.get(0).lastModified());
-        } finally {
-            core.close();
-        }
-    }
-
-    private ImmutableSet<CoreConfigFileData> getConfigFilesMetadata(SolrCore core) {
-        Set<File> configFiles = getConfigFiles(core);
-        return ImmutableSet.copyOf(
-                configFiles.stream()
-                        .filter(File::exists)
-                        .map(f -> new CoreConfigFileData(f.getName(), f.length(), f.lastModified()))
-                        .iterator());
-    }
-
-    /**
-     * Returns all the config files that are meant to be persisted/synchronized with blob store.
-     * 
-     * If you add a new set of config files make sure that once created they only become empty and do not get deleted(unless they are corrupt)
-     * because in blob syncing presence of config file on one side(local or blob) means it is fresher.
-     */
-    private Set<File> getConfigFiles(SolrCore core) {
-        // Set<File> configFiles = Sets.newHashSet(SynonymUtil.getSynonymFilesForCore(core)); // all synonym files
-        // configFiles.add(SearchPromotionRuleDataHandler.getSearchPromotionRuleConfigFile(core)); // elevate.xml carrying promotion rules
-        // return configFiles;
-        return Sets.newHashSet();
     }
 
     /**
@@ -242,33 +183,8 @@ public class ServerSideCoreMetadata {
 
     @Override
     public String toString() {
-        return "coreName=" + coreName + " generation=" + generation;
-    }
-    
-    /**
-     * Information captured per local config file
-     */
-    public static class CoreConfigFileData extends CoreFileData {
-        /** Last updated time of the file */
-        public final long updatedAt;
-
-        CoreConfigFileData(String fileName, long fileSize, long updatedAt) {
-            super(fileName, fileSize);
-            this.updatedAt = updatedAt;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            if (!super.equals(o)) return false;
-            CoreConfigFileData other = (CoreConfigFileData) o;
-            return Objects.equals(updatedAt, other.updatedAt);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(super.hashCode(), updatedAt);
-        }
+        return "collectionName=" + core.getCoreDescriptor().getCollectionName() +
+            " shardName=" + core.getCoreDescriptor().getCloudDescriptor().getShardId() + 
+            " coreName=" + core.getName();
     }
 }

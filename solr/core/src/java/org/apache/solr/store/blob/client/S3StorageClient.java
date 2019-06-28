@@ -26,8 +26,6 @@ import org.apache.solr.store.blob.client.ToFromJson;
 public class S3StorageClient implements CoreStorageClient {
     
     private final AmazonS3 s3Client;
-    /** The key that identifies a file as the blob core metadata */
-    private final String blobCoreMetadataName;
     /** The S3 bucket where we write all of our blobs to. */
     private String blobBucketName;
     /** The S3 endpoint this client will connect to. */
@@ -45,8 +43,7 @@ public class S3StorageClient implements CoreStorageClient {
      * @param accessKey aws access key
      * @param secretKey aws secret
      */
-    public S3StorageClient(String blobBucketName, String endpoint, String accessKey, String secretKey, String blobCoreMetadataName) {
-        this.blobCoreMetadataName = blobCoreMetadataName;
+    public S3StorageClient(String blobBucketName, String endpoint, String accessKey, String secretKey) {
         this.blobBucketName = blobBucketName;
         this.endpoint = endpoint;
           
@@ -60,12 +57,12 @@ public class S3StorageClient implements CoreStorageClient {
     }
 
     @Override
-    public void pushCoreMetadata(String blobName, BlobCoreMetadata bcm) throws BlobException {
+    public void pushCoreMetadata(String sharedStoreName, String blobCoreMetadataName, BlobCoreMetadata bcm) throws BlobException {
         try {
             ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
             String json = converter.toJson(bcm);
             
-            String blobCoreMetadataPath = getBlobMetadataPath(blobName);
+            String blobCoreMetadataPath = getBlobMetadataPath(sharedStoreName, blobCoreMetadataName);
             /*
              * Encodes contents of the string into an S3 object. If no exception is thrown 
              * then the object is guaranteed to have been stored
@@ -81,11 +78,11 @@ public class S3StorageClient implements CoreStorageClient {
     }
 
     @Override
-    public BlobCoreMetadata pullCoreMetadata(String blobName) throws BlobException {
+    public BlobCoreMetadata pullCoreMetadata(String sharedStoreName, String blobCoreMetadataName) throws BlobException {
         try {
-            String blobCoreMetadataPath = getBlobMetadataPath(blobName);
+            String blobCoreMetadataPath = getBlobMetadataPath(sharedStoreName, blobCoreMetadataName);
             
-            if (!coreMetadataExists(blobName)) {
+            if (!coreMetadataExists(sharedStoreName, blobCoreMetadataName)) {
                 return null;
             }
              
@@ -143,9 +140,9 @@ public class S3StorageClient implements CoreStorageClient {
     }
 
     @Override
-    public boolean coreMetadataExists(String blobName) throws BlobException {
+    public boolean coreMetadataExists(String sharedStoreName, String blobCoreMetadataName) throws BlobException {
         try {
-            return s3Client.doesObjectExist(blobBucketName, getBlobMetadataPath(blobName));
+            return s3Client.doesObjectExist(blobBucketName, getBlobMetadataPath(sharedStoreName, blobCoreMetadataName));
         } catch (AmazonServiceException ase) {
             throw handleAmazonServiceException(ase);
         } catch (AmazonClientException ace) {
@@ -155,8 +152,8 @@ public class S3StorageClient implements CoreStorageClient {
         }
     }
     
-    private String getBlobMetadataPath(String blobName) {
-        return BlobClientUtils.concatenatePaths(blobName, blobCoreMetadataName);
+    private String getBlobMetadataPath(String sharedStoreName, String blobCoreMetadataName) {
+        return BlobClientUtils.concatenatePaths(sharedStoreName, blobCoreMetadataName);
     }
 
     /**

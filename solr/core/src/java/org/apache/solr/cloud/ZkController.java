@@ -16,6 +16,16 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -52,15 +62,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
-import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.AlreadyClosedException;
@@ -112,6 +121,8 @@ import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.store.blob.provider.BlobStorageProvider;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -126,15 +137,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import com.google.common.base.Strings;
 
 /**
  * Handle ZooKeeper interactions.
@@ -206,6 +209,8 @@ public class ZkController implements Closeable {
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
   private CloudSolrClient cloudSolrClient;
+  private SharedShardMetadataController shardSharedMetadataController;
+  private BlobStorageProvider blobStorageProvider;
 
   private final String zkServerAddress;          // example: 127.0.0.1:54062/solr
 
@@ -738,6 +743,22 @@ public class ZkController implements Closeable {
       cloudManager.getClusterStateProvider().connect();
     }
     return cloudManager;
+  }
+  
+  public SharedShardMetadataController getShardSharedMetadataController() {
+    if (shardSharedMetadataController != null) {
+      return shardSharedMetadataController;
+    }
+    shardSharedMetadataController = new SharedShardMetadataController(getSolrCloudManager());
+    return shardSharedMetadataController;
+  }
+  
+  public BlobStorageProvider getBlobStorageProvider() {
+    if (blobStorageProvider != null) {
+      return blobStorageProvider;
+    }
+    blobStorageProvider = new BlobStorageProvider();
+    return blobStorageProvider;
   }
 
   /**

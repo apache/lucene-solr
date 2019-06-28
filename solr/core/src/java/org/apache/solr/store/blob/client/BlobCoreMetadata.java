@@ -5,21 +5,16 @@ import java.util.*;
 /**
  * Object defining metadata stored in blob store for a Shared Collection shard and its builders.  
  * This metadata includes all actual segment files as well as the segments_N file of the commit point.
- * That object is serialized to/from Json and stored in the blob store as a blob.
+ * 
+ * This object is serialized to/from Json and stored in the blob store as a blob.
  */
 public class BlobCoreMetadata {
 
     /**
-     * Name of the core that is shared by all replicas belonging to the same shard. This name is to decouple the 
-     * core name that Solr manages from the name of the core on blob store. 
+     * Name of the shard index data that is shared by all replicas belonging to that shard. This 
+     * name is to decouple the core name that Solr manages from the name of the core on blob store. 
      */
     private final String sharedBlobName;
-
-    /**
-     * Encryption does increase generation but not sequence number, so we need to compare (sequence number, generation) between
-     * two cores to tell which one is fresher.
-     */
-    private final long generation;
 
     /**
      * Unique identifier of this metadata, that changes on every update to the metadata (except generating a new corrupt metadata
@@ -52,32 +47,20 @@ public class BlobCoreMetadata {
     private final BlobConfigFile[] blobConfigFiles;
 
     /**
-     * Files marked for delete but not yet removed from the Blob store. Each such file contains information indicating when
-     * it was marked for delete so we can actually remove the corresponding blob (and the entry from this array in the metadata)
-     * when it's safe to do so even if there are (unexpected) conflicting updates to the blob store by multiple solr servers...
-     * TODO: we might want to separate the metadata blob with the deletes as it's not required to always fetch the delete list when checking freshness of local core...
-     */
-    private final BlobFileToDelete[] blobFilesToDelete;
-
-    /**
      * This is the constructor called by {@link BlobCoreMetadataBuilder}.
      * It always builds non "isCorrupt" and non "isDeleted" metadata. 
      * The only way to build an instance of "isCorrupt" metadata is to use {@link #getCorruptOf} and for "isDeleted" use {@link #getDeletedOf()}
      */
-    BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobConfigFile[] blobConfigFiles,
-                     BlobFileToDelete[] blobFilesToDelete, long generation) {
-        this(sharedBlobName, blobFiles, blobConfigFiles, blobFilesToDelete, generation, UUID.randomUUID().toString(), false,
+    BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobConfigFile[] blobConfigFiles) {
+        this(sharedBlobName, blobFiles, blobConfigFiles, UUID.randomUUID().toString(), false,
                 false);
     }
 
-    private BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobConfigFile[] blobConfigFiles,
-                             BlobFileToDelete[] blobFilesToDelete, long generation,
-                             String uniqueIdentifier, boolean isCorrupt, boolean isDeleted) {
+    private BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobConfigFile[] blobConfigFiles, 
+        String uniqueIdentifier, boolean isCorrupt, boolean isDeleted) {
         this.sharedBlobName = sharedBlobName;
         this.blobFiles = blobFiles;
         this.blobConfigFiles = blobConfigFiles;
-        this.blobFilesToDelete = blobFilesToDelete;
-        this.generation = generation;
         this.uniqueIdentifier = uniqueIdentifier;
         this.isCorrupt = isCorrupt;
         this.isDeleted = isDeleted;
@@ -89,7 +72,7 @@ public class BlobCoreMetadata {
      */
     public BlobCoreMetadata getCorruptOf() {
         assert !isCorrupt;
-        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobConfigFiles, blobFilesToDelete, generation, uniqueIdentifier, true, isDeleted);
+        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobConfigFiles, uniqueIdentifier, true, isDeleted);
     }
 
     /**
@@ -99,8 +82,7 @@ public class BlobCoreMetadata {
      */
     public BlobCoreMetadata getDeletedOf() {
         assert !isDeleted;
-        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobConfigFiles, blobFilesToDelete, generation,
-                uniqueIdentifier, isCorrupt, true);
+        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobConfigFiles, uniqueIdentifier, isCorrupt, true);
     }
 
     /**
@@ -135,20 +117,12 @@ public class BlobCoreMetadata {
         return uniqueIdentifier;
     }
 
-    public long getGeneration() {
-        return this.generation;
-    }
-
     public BlobFile[] getBlobFiles() {
         return blobFiles;
     }
 
     public BlobConfigFile[] getBlobConfigFiles() {
         return blobConfigFiles;
-    }
-
-    public BlobFileToDelete[] getBlobFilesToDelete() {
-        return blobFilesToDelete;
     }
 
     @Override
@@ -158,7 +132,6 @@ public class BlobCoreMetadata {
 
         BlobCoreMetadata that = (BlobCoreMetadata) o;
 
-        if (this.generation != that.generation) return false;
         if (this.isCorrupt != that.isCorrupt) return false;
         if (this.isDeleted != that.isDeleted) return false;
         if (!this.uniqueIdentifier.equals(that.uniqueIdentifier)) return false;
@@ -173,22 +146,16 @@ public class BlobCoreMetadata {
         Set<BlobConfigFile> thisConfigFiles = new HashSet<>(Arrays.asList(this.blobConfigFiles));
         Set<BlobConfigFile> thatConfigFiles = new HashSet<>(Arrays.asList(that.blobConfigFiles));
         if (!thisConfigFiles.equals(thatConfigFiles)) return false;
-
-        // same for the files to delete array
-        Set<BlobFileToDelete> thisFilesToDelete = new HashSet<>(Arrays.asList(this.blobFilesToDelete));
-        Set<BlobFileToDelete> thatFilesToDelete = new HashSet<>(Arrays.asList(that.blobFilesToDelete));
-        return thisFilesToDelete.equals(thatFilesToDelete);
+        return true;
     }
 
     @Override
     public int hashCode() {
         int result = sharedBlobName.hashCode();
         result = 31 * result + uniqueIdentifier.hashCode();
-        result = 31 * result + (int) (generation ^ (generation >>> 32));
         // The array of files is not ordered so need to compare as a set
         result = 31 * result + new HashSet<>(Arrays.asList(this.blobFiles)).hashCode();
         result = 31 * result + new HashSet<>(Arrays.asList(this.blobConfigFiles)).hashCode();
-        result = 31 * result + new HashSet<>(Arrays.asList(this.blobFilesToDelete)).hashCode();
         result = 31 * result + (isCorrupt ? 1 : 0);
         result = 31 * result + (isDeleted ? 1 : 0);
         return result;
@@ -196,8 +163,7 @@ public class BlobCoreMetadata {
 
     @Override
     public String toString() {
-        return "sharedBlobName=" + sharedBlobName + " generation=" + generation
-                + " isCorrupt=" + isCorrupt + " uniqueIdentifier=" + uniqueIdentifier;
+        return "sharedBlobName=" + sharedBlobName + " isCorrupt=" + isCorrupt + " uniqueIdentifier=" + uniqueIdentifier;
     }
 
     /**

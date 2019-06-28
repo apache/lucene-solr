@@ -161,198 +161,200 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
         return pullCoreInfo;
     }
 
-    /**
-     * Pulls the local core updates from the Blob store then calls the task callback to notify the
-     * {@link CorePullerFeeder} of success or failure of the operation, give an indication of the reason the periodic
-     * puller can decide to retry or not.
-     */
-    void pullCoreFromBlob() throws InterruptedException {
-        BlobCoreMetadata blobMetadata = null;
-        if (coreContainer.isShutDown()) {
-            this.callback.finishedPull(this, blobMetadata, CoreSyncStatus.SHUTTING_DOWN, null);
-            // TODO could throw InterruptedException here or interrupt ourselves if we wanted to signal to
-            // CorePullerThread to stop everything.
-            return;
-        }
-
-        synchronized (pullsInFlight) {
-            Long pullInFlightTimestamp = pullsInFlight.get(pullCoreInfo.getSharedStoreName());
-            if (pullInFlightTimestamp != null) {
-                // Another pull is in progress, we'll retry later.
-                // Note we can't just cancel this pull, because the other pull might be working on a previous commit
-                // point.
-                long prevPullMs = System.currentTimeMillis() - pullInFlightTimestamp;
-                logger.warn("Skipping core pull for " + pullCoreInfo.getSharedStoreName()
-                                + " because another thread is currently pulling it (started " + prevPullMs
-                                + " ms ago). Will retry.");
-                this.callback.finishedPull(this, blobMetadata, CoreSyncStatus.CONCURRENT_SYNC, null);
-                return;
-            } else {
-                pullsInFlight.put(pullCoreInfo.getSharedStoreName(), System.currentTimeMillis());
-            }
-        }
-
-        // Copying the non final variables so we're clean wrt the Java memory model and values do not change as we go
-        // (even though we know that no other thread can be working on this CorePullTask when we handle it here).
-        final int attemptsCopy = getAttempts();
-        final long lasAttemptTimestampCopy = getLastAttemptTimestamp();
-
-
-        if (attemptsCopy != 0) {
-            long now = System.currentTimeMillis();
-            if (now - lasAttemptTimestampCopy < MIN_RETRY_DELAY_MS) {
-                Thread.sleep(MIN_RETRY_DELAY_MS - now + lasAttemptTimestampCopy);
-            }
-        }
-
-        CoreSyncStatus syncStatus = CoreSyncStatus.FAILURE;
-        // Auxiliary information related to pull outcome. It can be metadata resolver message which can be null or exception detail in case of failure 
-        String message = null;
-        try {
-            // Do the sequence of actions required to pull a core from the Blob store.
-            CoreStorageClient blobClient = BlobStorageProvider.get().getBlobStorageClient();
-            blobMetadata = blobClient.pullCoreMetadata(pullCoreInfo.getSharedStoreName());
-            if (blobMetadata == null) {
-                syncStatus = CoreSyncStatus.BLOB_MISSING;
-                this.callback.finishedPull(this, blobMetadata, syncStatus, null);
-                return;
-            } else if (blobMetadata.getIsDeleted()) {
-                syncStatus = CoreSyncStatus.BLOB_DELETED_FOR_PULL;
-                this.callback.finishedPull(this, blobMetadata, syncStatus, "deleted flag is set on core in Blob store. Not pulling.");
-                return;
-            } else if (blobMetadata.getIsCorrupt()) {
-                // TODO this might mean we have no local core at this stage. If that's the case, we may need to do something about it so that Core App does not immediately reindex into a new core...
-                //      likely changes needed here for W-5388477 Blob store corruption repair
-                syncStatus = CoreSyncStatus.BLOB_CORRUPT;
-                this.callback.finishedPull(this, blobMetadata, syncStatus, "corrupt flag is set on core in Blob store. Not pulling.");
-                return;
-            }
-
-            // TODO unknown core pulls in context of solr cloud
-            if (!coreExists(pullCoreInfo.getCoreName())) {
-                if (pullCoreInfo.shouldCreateCoreIfAbsent()) {
-                    // We set the core as created awaiting pull before creating it, otherwise it's too late.
-                    // If we get to this point, we're setting the "created not pulled yet" status of the core here (only place
-                    // in the code where this happens) and we're clearing it in the finally below.
-                    // We're not leaking entries in coresCreatedNotPulledYet that might stay there forever...
-                    synchronized (pullsInFlight) {
-                        synchronized (coresCreatedNotPulledYet) {
-                            coresCreatedNotPulledYet.add(pullCoreInfo.getSharedStoreName());
-                        }
-                    }
-                    createCore(pullCoreInfo);
-                } else {
-                    syncStatus = CoreSyncStatus.LOCAL_MISSING_FOR_PULL;
-                    this.callback.finishedPull(this, blobMetadata, syncStatus, null);
-                    return;
-                }
-            }
-
-            // Get local metadata
-            ServerSideCoreMetadata serverMetadata = new ServerSideCoreMetadata(pullCoreInfo.getCoreName(), coreContainer);
-
-            MetadataResolver resolver = new MetadataResolver(serverMetadata, blobMetadata);
-
-            message = resolver.getMessage();
-
-            switch (resolver.getAction()) {
-                case PULL:
-                    // pull the core from Blob
-                    CorePushPull cp = new CorePushPull(pullCoreInfo, resolver, serverMetadata, blobMetadata);
-                    // The following call can fail if blob is corrupt (in non trivial ways, trivial ways are identified by other cases)
-                    cp.pullUpdateFromBlob(queuedTimeMs, pullCoreInfo.shouldWaitForSearcher(), attemptsCopy);
-                    // pull was successful
-                    if(isEmptyCoreAwaitingPull(pullCoreInfo.getCoreName())){
-                        // the javadoc for pulledBlob suggests that it is only meant to be called if we pulled from scratch
-                        // therefore only limiting this call when we created the local core for this pull ourselves
-                        // BlobTransientLog.get().getCorruptCoreTracker().pulledBlob(pullCoreInfo.coreName, blobMetadata);
-                    }
-                    syncStatus = CoreSyncStatus.SUCCESS;
-                    break;
-                case PUSH:
-                    // Somehow the local copy is fresher than blob. Do nothing
-                    syncStatus = CoreSyncStatus.SUCCESS_EQUIVALENT;
-                    break;
-                case CONFIG_CHANGE:
-                    // it is possible that config files to pull are empty and config files to push are non-empty
-                    if (resolver.getConfigFilesToPull().isEmpty()) {
-                        syncStatus = CoreSyncStatus.SUCCESS_EQUIVALENT;
-                    } else {
-                        // so far we have decided not to pull config only changes
-                        syncStatus = CoreSyncStatus.SKIP_CONFIG;
-                    }
-                    break;
-                case EQUIVALENT:
-                    // Local already has all that it needs. Possibly a previous task was delayed enough and pulled the
-                    // changes enqueued twice (and we are the second task to run)
-                    syncStatus = CoreSyncStatus.SUCCESS_EQUIVALENT;
-                    break;
-                case CONFLICT:
-                    // Well, this is the kind of things we hope do not occur too often. Unclear who wins here.
-                    // TODO more work required to address this.
-                    syncStatus = CoreSyncStatus.BLOB_CONFLICT;
-                    break;
-                case BLOB_CORRUPT:
-                    // Blob being corrupt at this stage should be pretty straightforward: remove whatever the blob has
-                    // for the core and push our local version. Leaving this for later though
-                    // TODO mark Blob Core as corrupt (set flag)
-
-                    // TODO likely replace Blob content with local core
-                    // TODO local core is not made corrupt by this, but maybe local core doesn't exist as a result (if there was no local core before trying to pull)
-                    // TODO if no local core exists, set state in corrupt core tracker to deleted_pullable? Other cases to manage?
-                    syncStatus = CoreSyncStatus.BLOB_CORRUPT;
-                    break;
-                default:
-                    // Somebody added a value to the enum without saying?
-                	logger.warn("Unexpected enum value " + resolver.getAction() + ", please update the code");
-                    syncStatus = CoreSyncStatus.FAILURE;
-                    break;
-            }
-        } catch (InterruptedException e) {
-            throw e;
-        } catch (Exception e) {
-            syncStatus = CoreSyncStatus.FAILURE;
-            message = Throwables.getStackTraceAsString(e);
-            logger.warn("Failed (attempt=" + attemptsCopy + ") to pull core " + pullCoreInfo.getSharedStoreName(), e);
-        } finally {
-            // Remove ourselves from the in flight set before calling the callback method (just in case it takes
-            // forever)
-            synchronized (pullsInFlight) {
-                // No matter how the pull ends (success or any kind of error), we don't want to consider the core as awaiting pull,
-                // since it doesn't anymore (code is inline here rather than in a method or in notifyEndOfPull() to make
-                // it clear how coresCreatedNotPulledYet is managed).
-                synchronized (coresCreatedNotPulledYet) {
-                    // TODO: Can we move this business of core creation and deletion outside of this task so that
-                    //       we may not sub-optimally repeatedly create/delete core in case of reattempt of a transient pull error?
-                    //       or get whether a reattempt will be made or not, and if there is a guaranteed reattempt then do not delete it
-                    if (coresCreatedNotPulledYet.remove(pullCoreInfo.getSharedStoreName())) {
-                        if (!syncStatus.isSuccess()) {
-                            // If we created the core and we could not pull successfully then we should cleanup after ourselves by deleting it
-                            // otherwise queries can incorrectly return 0 results from that core.
-                            if(coreExists(pullCoreInfo.getCoreName())) {
-                                try {
-                                    // try to delete core within 3 minutes. In future when we time box our pull task then we 
-                                    // need to make sure this value is within that bound. 
-                                    // CoreDeleter.deleteCoreByName(coreContainer, pullCoreInfo.coreName, 3, TimeUnit.MINUTES);
-                                	// TODO: need to migrate deleter
-                                } catch (Exception ex) {
-                                    // TODO: should we gack?
-                                    //       can we do anything more here since we are unable to delete and we are leaving an empty core behind
-                                    //       when we should not. Should we keep the core in coresCreatedNotPulledYet and try few more times
-                                    //       but at some point we would have to let it go
-                                    //       So may be, few more attempts here and then gack
-                                    logger.warn("CorePullTask successfully created local core but failed to pull it" +
-                                            " and now is unable to delete that local core " + pullCoreInfo.getCoreName(), ex);
-                                }
-                            }
-                        }
-                    }
-                }
-                pullsInFlight.remove(pullCoreInfo.getSharedStoreName());
-            }
-        }
-        this.callback.finishedPull(this, blobMetadata, syncStatus, message);
-    }
+//    /**
+//     * Pulls the local core updates from the Blob store then calls the task callback to notify the
+//     * {@link CorePullerFeeder} of success or failure of the operation, give an indication of the reason the periodic
+//     * puller can decide to retry or not.
+//     */
+//    void pullCoreFromBlob() throws InterruptedException {
+//        BlobCoreMetadata blobMetadata = null;
+//        if (coreContainer.isShutDown()) {
+//            this.callback.finishedPull(this, blobMetadata, CoreSyncStatus.SHUTTING_DOWN, null);
+//            // TODO could throw InterruptedException here or interrupt ourselves if we wanted to signal to
+//            // CorePullerThread to stop everything.
+//            return;
+//        }
+//
+//        synchronized (pullsInFlight) {
+//            Long pullInFlightTimestamp = pullsInFlight.get(pullCoreInfo.getSharedStoreName());
+//            if (pullInFlightTimestamp != null) {
+//                // Another pull is in progress, we'll retry later.
+//                // Note we can't just cancel this pull, because the other pull might be working on a previous commit
+//                // point.
+//                long prevPullMs = System.currentTimeMillis() - pullInFlightTimestamp;
+//                logger.warn("Skipping core pull for " + pullCoreInfo.getSharedStoreName()
+//                                + " because another thread is currently pulling it (started " + prevPullMs
+//                                + " ms ago). Will retry.");
+//                this.callback.finishedPull(this, blobMetadata, CoreSyncStatus.CONCURRENT_SYNC, null);
+//                return;
+//            } else {
+//                pullsInFlight.put(pullCoreInfo.getSharedStoreName(), System.currentTimeMillis());
+//            }
+//        }
+//
+//        // Copying the non final variables so we're clean wrt the Java memory model and values do not change as we go
+//        // (even though we know that no other thread can be working on this CorePullTask when we handle it here).
+//        final int attemptsCopy = getAttempts();
+//        final long lasAttemptTimestampCopy = getLastAttemptTimestamp();
+//
+//
+//        if (attemptsCopy != 0) {
+//            long now = System.currentTimeMillis();
+//            if (now - lasAttemptTimestampCopy < MIN_RETRY_DELAY_MS) {
+//                Thread.sleep(MIN_RETRY_DELAY_MS - now + lasAttemptTimestampCopy);
+//            }
+//        }
+//
+//        CoreSyncStatus syncStatus = CoreSyncStatus.FAILURE;
+//        // Auxiliary information related to pull outcome. It can be metadata resolver message which can be null or exception detail in case of failure 
+//        String message = null;
+//        try {
+//            // Do the sequence of actions required to pull a core from the Blob store.
+//          
+//            // TODO - just super() to avoid compile errors
+//            CoreStorageClient blobClient = null;
+//            blobMetadata = blobClient.pullCoreMetadata(pullCoreInfo.getSharedStoreName(), null);
+//            if (blobMetadata == null) {
+//                syncStatus = CoreSyncStatus.BLOB_MISSING;
+//                this.callback.finishedPull(this, blobMetadata, syncStatus, null);
+//                return;
+//            } else if (blobMetadata.getIsDeleted()) {
+//                syncStatus = CoreSyncStatus.BLOB_DELETED_FOR_PULL;
+//                this.callback.finishedPull(this, blobMetadata, syncStatus, "deleted flag is set on core in Blob store. Not pulling.");
+//                return;
+//            } else if (blobMetadata.getIsCorrupt()) {
+//                // TODO this might mean we have no local core at this stage. If that's the case, we may need to do something about it so that Core App does not immediately reindex into a new core...
+//                //      likely changes needed here for W-5388477 Blob store corruption repair
+//                syncStatus = CoreSyncStatus.BLOB_CORRUPT;
+//                this.callback.finishedPull(this, blobMetadata, syncStatus, "corrupt flag is set on core in Blob store. Not pulling.");
+//                return;
+//            }
+//
+//            // TODO unknown core pulls in context of solr cloud
+//            if (!coreExists(pullCoreInfo.getCoreName())) {
+//                if (pullCoreInfo.shouldCreateCoreIfAbsent()) {
+//                    // We set the core as created awaiting pull before creating it, otherwise it's too late.
+//                    // If we get to this point, we're setting the "created not pulled yet" status of the core here (only place
+//                    // in the code where this happens) and we're clearing it in the finally below.
+//                    // We're not leaking entries in coresCreatedNotPulledYet that might stay there forever...
+//                    synchronized (pullsInFlight) {
+//                        synchronized (coresCreatedNotPulledYet) {
+//                            coresCreatedNotPulledYet.add(pullCoreInfo.getSharedStoreName());
+//                        }
+//                    }
+//                    createCore(pullCoreInfo);
+//                } else {
+//                    syncStatus = CoreSyncStatus.LOCAL_MISSING_FOR_PULL;
+//                    this.callback.finishedPull(this, blobMetadata, syncStatus, null);
+//                    return;
+//                }
+//            }
+//
+//            // Get local metadata
+//            ServerSideMetadata serverMetadata = new ServerSideMetadata(pullCoreInfo.getCoreName(), coreContainer);
+//
+//            SharedStoreResolutionUtil resolver = new SharedStoreResolutionUtil(serverMetadata, blobMetadata);
+//
+//            message = resolver.getMessage();
+//
+//            switch (resolver.getAction()) {
+//                case PULL:
+//                    // pull the core from Blob
+//                    CorePushPull cp = new CorePushPull(pullCoreInfo, resolver, serverMetadata, blobMetadata);
+//                    // The following call can fail if blob is corrupt (in non trivial ways, trivial ways are identified by other cases)
+//                    cp.pullUpdateFromBlob(queuedTimeMs, pullCoreInfo.shouldWaitForSearcher(), attemptsCopy);
+//                    // pull was successful
+//                    if(isEmptyCoreAwaitingPull(pullCoreInfo.getCoreName())){
+//                        // the javadoc for pulledBlob suggests that it is only meant to be called if we pulled from scratch
+//                        // therefore only limiting this call when we created the local core for this pull ourselves
+//                        // BlobTransientLog.get().getCorruptCoreTracker().pulledBlob(pullCoreInfo.coreName, blobMetadata);
+//                    }
+//                    syncStatus = CoreSyncStatus.SUCCESS;
+//                    break;
+//                case PUSH:
+//                    // Somehow the local copy is fresher than blob. Do nothing
+//                    syncStatus = CoreSyncStatus.SUCCESS_EQUIVALENT;
+//                    break;
+//                case CONFIG_CHANGE:
+//                    // it is possible that config files to pull are empty and config files to push are non-empty
+//                    if (resolver.getConfigFilesToPull().isEmpty()) {
+//                        syncStatus = CoreSyncStatus.SUCCESS_EQUIVALENT;
+//                    } else {
+//                        // so far we have decided not to pull config only changes
+//                        syncStatus = CoreSyncStatus.SKIP_CONFIG;
+//                    }
+//                    break;
+//                case EQUIVALENT:
+//                    // Local already has all that it needs. Possibly a previous task was delayed enough and pulled the
+//                    // changes enqueued twice (and we are the second task to run)
+//                    syncStatus = CoreSyncStatus.SUCCESS_EQUIVALENT;
+//                    break;
+//                case CONFLICT:
+//                    // Well, this is the kind of things we hope do not occur too often. Unclear who wins here.
+//                    // TODO more work required to address this.
+//                    syncStatus = CoreSyncStatus.BLOB_CONFLICT;
+//                    break;
+//                case BLOB_CORRUPT:
+//                    // Blob being corrupt at this stage should be pretty straightforward: remove whatever the blob has
+//                    // for the core and push our local version. Leaving this for later though
+//                    // TODO mark Blob Core as corrupt (set flag)
+//
+//                    // TODO likely replace Blob content with local core
+//                    // TODO local core is not made corrupt by this, but maybe local core doesn't exist as a result (if there was no local core before trying to pull)
+//                    // TODO if no local core exists, set state in corrupt core tracker to deleted_pullable? Other cases to manage?
+//                    syncStatus = CoreSyncStatus.BLOB_CORRUPT;
+//                    break;
+//                default:
+//                    // Somebody added a value to the enum without saying?
+//                	logger.warn("Unexpected enum value " + resolver.getAction() + ", please update the code");
+//                    syncStatus = CoreSyncStatus.FAILURE;
+//                    break;
+//            }
+//        } catch (InterruptedException e) {
+//            throw e;
+//        } catch (Exception e) {
+//            syncStatus = CoreSyncStatus.FAILURE;
+//            message = Throwables.getStackTraceAsString(e);
+//            logger.warn("Failed (attempt=" + attemptsCopy + ") to pull core " + pullCoreInfo.getSharedStoreName(), e);
+//        } finally {
+//            // Remove ourselves from the in flight set before calling the callback method (just in case it takes
+//            // forever)
+//            synchronized (pullsInFlight) {
+//                // No matter how the pull ends (success or any kind of error), we don't want to consider the core as awaiting pull,
+//                // since it doesn't anymore (code is inline here rather than in a method or in notifyEndOfPull() to make
+//                // it clear how coresCreatedNotPulledYet is managed).
+//                synchronized (coresCreatedNotPulledYet) {
+//                    // TODO: Can we move this business of core creation and deletion outside of this task so that
+//                    //       we may not sub-optimally repeatedly create/delete core in case of reattempt of a transient pull error?
+//                    //       or get whether a reattempt will be made or not, and if there is a guaranteed reattempt then do not delete it
+//                    if (coresCreatedNotPulledYet.remove(pullCoreInfo.getSharedStoreName())) {
+//                        if (!syncStatus.isSuccess()) {
+//                            // If we created the core and we could not pull successfully then we should cleanup after ourselves by deleting it
+//                            // otherwise queries can incorrectly return 0 results from that core.
+//                            if(coreExists(pullCoreInfo.getCoreName())) {
+//                                try {
+//                                    // try to delete core within 3 minutes. In future when we time box our pull task then we 
+//                                    // need to make sure this value is within that bound. 
+//                                    // CoreDeleter.deleteCoreByName(coreContainer, pullCoreInfo.coreName, 3, TimeUnit.MINUTES);
+//                                	// TODO: need to migrate deleter
+//                                } catch (Exception ex) {
+//                                    // TODO: should we gack?
+//                                    //       can we do anything more here since we are unable to delete and we are leaving an empty core behind
+//                                    //       when we should not. Should we keep the core in coresCreatedNotPulledYet and try few more times
+//                                    //       but at some point we would have to let it go
+//                                    //       So may be, few more attempts here and then gack
+//                                    logger.warn("CorePullTask successfully created local core but failed to pull it" +
+//                                            " and now is unable to delete that local core " + pullCoreInfo.getCoreName(), ex);
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//                pullsInFlight.remove(pullCoreInfo.getSharedStoreName());
+//            }
+//        }
+//        this.callback.finishedPull(this, blobMetadata, syncStatus, message);
+//    }
 
 
     /**

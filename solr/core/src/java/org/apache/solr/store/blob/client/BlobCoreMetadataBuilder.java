@@ -6,35 +6,24 @@ import java.util.*;
  * Builder for {@link BlobCoreMetadata}.
  */
 public class BlobCoreMetadataBuilder {
-    /**
-     * Generation and sequence number in metadata of cores not existing on the Blob Store.
-     */
-    public static final long UNDEFINED_VALUE = -1L;
 
     final private String sharedBlobName;
-    final private long generation;
     final private Set<BlobCoreMetadata.BlobFile> blobFiles;
     final private Set<BlobCoreMetadata.BlobConfigFile> blobConfigFiles;
-    final private Set<BlobCoreMetadata.BlobFileToDelete> blobFilesToDelete;
 
-    public BlobCoreMetadataBuilder(String sharedBlobName, long generation) {
+    public BlobCoreMetadataBuilder(String sharedBlobName) {
         this.sharedBlobName = sharedBlobName;
-        this.generation= generation;
         this.blobFiles = new HashSet<>();
         this.blobConfigFiles = new HashSet<>();
-        this.blobFilesToDelete = new HashSet<>();
     }
 
     /**
      * Builder used for "cloning" then modifying an existing instance of {@link BlobCoreMetadata}.
-     * The new sequence number and generation have to be passed in because they are final and can't be set later.
      */
-    public BlobCoreMetadataBuilder (BlobCoreMetadata bcm, long generation) {
+    public BlobCoreMetadataBuilder(BlobCoreMetadata bcm) {
         this.sharedBlobName = bcm.getSharedBlobName();
-        this.generation = generation;
         this.blobFiles = new HashSet<>(Arrays.asList(bcm.getBlobFiles()));
         this.blobConfigFiles = new HashSet<> (Arrays.asList(bcm.getBlobConfigFiles()));
-        this.blobFilesToDelete = new HashSet<>(Arrays.asList(bcm.getBlobFilesToDelete()));
     }
 
     public String getSharedBlobName() {
@@ -44,8 +33,8 @@ public class BlobCoreMetadataBuilder {
     /**
      * Builds a {@link BlobCoreMetadata} for a non existing core of a given name.
      */
-    static public BlobCoreMetadata buildEmptyCoreMetadata(String coreName) {
-        return (new BlobCoreMetadataBuilder(coreName, UNDEFINED_VALUE)).build();
+    static public BlobCoreMetadata buildEmptyCoreMetadata(String sharedBlobName) {
+        return (new BlobCoreMetadataBuilder(sharedBlobName)).build();
     }
 
     /**
@@ -73,43 +62,11 @@ public class BlobCoreMetadataBuilder {
         return this;
     }
 
-    /**
-     * Adds a file to the set of files to delete listed in the metadata<p>
-     * This method should always be called with {@link #removeFile(BlobCoreMetadata.BlobFile)} above. Possibly it's
-     * better to only have a single method doing both operations (TODO).
-     */
-    public BlobCoreMetadataBuilder addFileToDelete(BlobCoreMetadata.BlobFileToDelete f) {
-        this.blobFilesToDelete.add(f);
-        return this;
-    }
-
-    /**
-     * Returns an iterator on the set of files to delete.
-     * The returned iterator will be used to remove files from the set (as they are enqueued for hard delete from the Blob store).
-     */
-    public Iterator<BlobCoreMetadata.BlobFileToDelete> getDeletedFilesIterator() {
-        return this.blobFilesToDelete.iterator();
-    }
-    
-    /**
-     * Removes a file from the set of "deleted" files listed in the metadata
-     */
-    public BlobCoreMetadataBuilder removeFilesFromDeleted(Set<BlobCoreMetadata.BlobFileToDelete> files) {
-        int originalSize = this.blobFilesToDelete.size();
-        boolean removed = this.blobFilesToDelete.removeAll(files);
-        int totalRemoved = originalSize - this.blobFilesToDelete.size();
-        
-        // If we remove things that are not there, likely a bug in our code
-        assert removed && (totalRemoved == files.size()); 
-        return this;
-    }
-
     public BlobCoreMetadata build() {
         // TODO make this fail if we find more than one segments_N files.
         BlobCoreMetadata.BlobFile[] blobFilesArray = this.blobFiles.toArray(new BlobCoreMetadata.BlobFile[this.blobFiles.size()]);
         BlobCoreMetadata.BlobConfigFile[] blobConfigFilesArray = this.blobConfigFiles.toArray(new BlobCoreMetadata.BlobConfigFile[this.blobConfigFiles.size()]);
-        BlobCoreMetadata.BlobFileToDelete[] blobFilesToDeleteArray = this.blobFilesToDelete.toArray(new BlobCoreMetadata.BlobFileToDelete[this.blobFilesToDelete.size()]);
 
-        return new BlobCoreMetadata(this.sharedBlobName, blobFilesArray, blobConfigFilesArray, blobFilesToDeleteArray, generation);
+        return new BlobCoreMetadata(this.sharedBlobName, blobFilesArray, blobConfigFilesArray);
     }
 }

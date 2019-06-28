@@ -1,12 +1,8 @@
 package org.apache.solr.store.blob.client;
- import org.apache.solr.store.blob.client.BlobstoreProviderType;
-//import shaded.com.google.cloud.storage.BlobId;
-//import shaded.com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
- /**
+import org.apache.solr.store.blob.client.BlobstoreProviderType;
+ 
+/**
  * Builder for {@link CoreStorageClient}
- *
- * @author a.vuong
- * @since 218
  */
 public class BlobStorageClientBuilder {
     private String localStorageRootDir;
@@ -14,18 +10,16 @@ public class BlobStorageClientBuilder {
     private String endpoint;
     private String accessKey;
     private String secretKey;
-    private String blobCoreMetadataName;
     private String blobStorageProvider;
-     private static final String UNKNOWN_PROVIDER_TYPE = "Blob storage provider [%s] is unknown. Please check configuration.";
+    private static final String UNKNOWN_PROVIDER_TYPE = "Blob storage provider [%s] is unknown. Please check configuration.";
+     
      public BlobStorageClientBuilder(String localStorageRootDir, String blobStorageProvider,
-            String blobBucketName, String endpoint, 
-            String accessKey, String secretKey, String blobCoreMetadataName) {
+            String blobBucketName, String endpoint, String accessKey, String secretKey) {
         this.localStorageRootDir = localStorageRootDir;
         this.blobBucketName = blobBucketName;
         this.endpoint = endpoint;
         this.accessKey = accessKey;
         this.secretKey = secretKey;
-        this.blobCoreMetadataName = blobCoreMetadataName;
         this.blobStorageProvider = blobStorageProvider;
     }
     
@@ -35,17 +29,15 @@ public class BlobStorageClientBuilder {
             if (isNullOrEmpty(localStorageRootDir)) {
             throw new IllegalArgumentException(String.format(
                     "Could not build LocalStorageClient due to invalid fields! "
-                        + "Displaying non-secret values for debug: localStorageDir=%s blobCoreMetadataName=%s", localStorageRootDir, blobCoreMetadataName));
+                        + "Displaying non-secret values for debug: localStorageDir=%s", localStorageRootDir));
             }
-            client = new LocalStorageClient(localStorageRootDir, blobCoreMetadataName);
+            client = new LocalStorageClient(localStorageRootDir);
         } else if (blobStorageProvider.equals(BlobstoreProviderType.S3.name())) {
-            if (isNullOrEmpty(blobBucketName, endpoint, accessKey, secretKey,
-                    blobCoreMetadataName)) {
+            if (isNullOrEmpty(blobBucketName, endpoint, accessKey, secretKey)) {
             throw new IllegalArgumentException(String.format("Could not build S3StorageClient due to invalid fields! "
-                        + "Displaying non-secret values for debug: blobBucketName=%s endpoint=%s "
-                        + "blobCoreMetadataName=%s", blobBucketName, endpoint, blobCoreMetadataName));
+                        + "Displaying non-secret values for debug: blobBucketName=%s endpoint=%s ", blobBucketName, endpoint));
             }
-            client = new S3StorageClient(blobBucketName, endpoint, accessKey, secretKey, blobCoreMetadataName);
+            client = new S3StorageClient(blobBucketName, endpoint, accessKey, secretKey);
         } else {
             throw new IllegalArgumentException(String.format(UNKNOWN_PROVIDER_TYPE, blobStorageProvider));
         }

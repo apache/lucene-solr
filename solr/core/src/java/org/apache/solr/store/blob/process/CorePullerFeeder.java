@@ -111,16 +111,16 @@ public class CorePullerFeeder extends CoreSyncFeeder {
         private final boolean createCoreIfAbsent;
         
         PullCoreInfo(PushPullData data, boolean createCoreIfAbsent, boolean waitForSearcher) {
-          super(data.getCollectionName(), data.getShardName(), data.getCoreName(), 
-              data.getSharedStoreName());
+          // TODO - just super() to avoid compile errors
+          super();
           this.waitForSearcher = waitForSearcher;
           this.createCoreIfAbsent = createCoreIfAbsent;
         }
 
         PullCoreInfo(String collectionName, String shardName, String coreName, String sharedStoreName,
             boolean createCoreIfAbsent, boolean waitForSearcher) {
-          // String collectionName, String shardName, String coreName, String sharedStoreName,
-          super(collectionName, shardName, coreName, sharedStoreName);
+          // TODO - just super() to avoid compile errors
+          super();
           this.waitForSearcher = waitForSearcher;
           this.createCoreIfAbsent = createCoreIfAbsent;
         }

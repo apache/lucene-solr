@@ -2,22 +2,34 @@ package org.apache.solr.store.blob.client;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Collection;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.*;
+import org.apache.solr.store.blob.provider.BlobStorageProvider;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import org.apache.solr.store.blob.provider.BlobStorageProvider;
-
 /**
  * Unit tests for {@link LocalStorageClient}
  *
- * @author iginzburg
- * @since 214/solr.6
+ * TODO - right now this test fails. This test should evolve into one that tests
+ * the {@link CoreStorageClient} abstraction vs an actual integration test with an 
+ * underlying storage provider (meaning we won't actually be writing files anywhere 
+ * like we're doing here). 
+ * 
+ * What that means is we should be testing that each implementation type adhere's to 
+ * the interface's prescribed behavior and verify input argument correctly and consistently
+ * across implementations transform to the correct input arguments that underlying (mocked)
+ * storage libraries expect.
  */
 public class CoreStorageClientTest {
    
@@ -31,8 +43,7 @@ public class CoreStorageClientTest {
 
     @Before
     public void setup() throws Exception {
-        BlobStorageProvider.init();
-        blobClient = BlobStorageProvider.get().getBlobStorageClient();
+        blobClient = (new BlobStorageProvider()).getDefaultClient();
 
         blobClient.deleteCore(TEST_CORE_NAME_1);
         blobClient.deleteCore(TEST_CORE_NAME_2);
@@ -155,16 +166,18 @@ public class CoreStorageClientTest {
     
     /**
      * Test that we can push, check existence of, and pull the blob core metadata from the blob store
+     * 
+     * TODO fix this test
      */
     @Test
     public void testPushPullCoreMetadata() throws Exception {
         blobClient.deleteCore(TEST_CORE_NAME_1);
-        BlobCoreMetadata pushedBcm = new BlobCoreMetadataBuilder(TEST_CORE_NAME_1, 19L).build();
-        Assert.assertNull(blobClient.pullCoreMetadata(TEST_CORE_NAME_1));
+        BlobCoreMetadata pushedBcm = new BlobCoreMetadataBuilder(TEST_CORE_NAME_1).build();
+        Assert.assertNull(blobClient.pullCoreMetadata(TEST_CORE_NAME_1, "core.metadata"));
         
-        blobClient.pushCoreMetadata(TEST_CORE_NAME_1, pushedBcm);
-        Assert.assertTrue(blobClient.coreMetadataExists(TEST_CORE_NAME_1));
-        BlobCoreMetadata pulledBcm = blobClient.pullCoreMetadata(TEST_CORE_NAME_1);
+        blobClient.pushCoreMetadata(TEST_CORE_NAME_1, "core.metadata", pushedBcm);
+        Assert.assertTrue(blobClient.coreMetadataExists(TEST_CORE_NAME_1, "core.metadata"));
+        BlobCoreMetadata pulledBcm = blobClient.pullCoreMetadata(TEST_CORE_NAME_1, "core.metadata");
         
         Assert.assertEquals(pushedBcm, pulledBcm);
     }

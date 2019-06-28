@@ -16,6 +16,8 @@
  */
 package org.apache.solr.store.blob.metadata;
 
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
+
 /*
  * Class containing information needed to complete a push or a pull to a shared store in 
  * a Shared Collection.
@@ -31,13 +33,36 @@ public class PushPullData {
    */
   protected String sharedStoreName;
   
+  /**
+   * Unique value of the metadataSuffix for the last persisted shard index in the shared store.
+   * If this value is equal to {@link SharedShardMetadataController#METADATA_NODE_DEFAULT_VALUE} then 
+   * the shard index this instance is associated with has not yet been successfully persisted
+   */
+  protected String lastReadMetadataSuffix;
+  
+  /*
+   * Unique value of the metadataSuffix that will be appended to the core metadata file name if this 
+   * PushPullData instance is association with a push operation to the shared store.
+   */
+  protected String newMetadataSuffix;
+  
+  /*
+   * Value originating from a ZooKeeper node used to handle conditionally and safely update the 
+   * core.metadata file written to the shared store.
+   */
+  protected int version;
+  
   public PushPullData() {}
   
-  public PushPullData(String collectionName, String shardName, String coreName, String sharedStoreName) {
+  public PushPullData(String collectionName, String shardName, String coreName, String sharedStoreName, String lastReadMetadataSuffix,
+      String newMetadataSuffix, int version) {
     this.collectionName = collectionName;
     this.shardName = shardName;
     this.coreName = coreName;
     this.sharedStoreName = sharedStoreName;
+    this.lastReadMetadataSuffix = lastReadMetadataSuffix;
+    this.newMetadataSuffix = newMetadataSuffix;
+    this.version = version;
   }
 
   public String getCoreName() {
@@ -56,29 +81,67 @@ public class PushPullData {
     return sharedStoreName;
   }
 
+  public String getLastReadMetadataSuffix() {
+    return lastReadMetadataSuffix;
+  }
+  
+  public String getNewMetadataSuffix() {
+    return newMetadataSuffix;
+  }
+  
+  public int getZkVersion() {
+    return version;
+  }
+  
+  @Override
+  public String toString() {
+    return "collectionName=" + collectionName + " shardName=" + shardName + " coreName=" + 
+        sharedStoreName + " coreName=" + coreName + " lastReadMetadataSuffix=" + lastReadMetadataSuffix +
+        " newMetadataSuffix=" + newMetadataSuffix + " lastReadZkVersion=" + version;
+  }
+
   public static class Builder {
     
     private PushPullData data = new PushPullData();
     
-    public void setCollectionName(String collectionName) {
+    public Builder setCollectionName(String collectionName) {
       data.collectionName = collectionName;
+      return this;
     }
 
-    public void setShardName(String shardName) {
+    public Builder setShardName(String shardName) {
       data.shardName = shardName;
+      return this;
     }
 
-    public void setCoreName(String coreName) {
+    public Builder setCoreName(String coreName) {
       data.coreName = coreName;
+      return this;
     }
     
-    public void setSharedStoreName(String sharedStoreName) {
+    public Builder setSharedStoreName(String sharedStoreName) {
       data.sharedStoreName = sharedStoreName;
+      return this;
+    }
+    
+    public Builder setLastReadMetadataSuffix(String lastReadMetadataSuffix) {
+      data.lastReadMetadataSuffix = lastReadMetadataSuffix;
+      return this;
+    }
+    
+    public Builder setNewMetadataSuffix(String newMetadataSuffix) {
+      data.newMetadataSuffix = newMetadataSuffix;
+      return this;
+    }
+    
+    public Builder setZkVersion(int version) {
+      data.version = version;
+      return this;
     }
     
     public PushPullData build() {
       return new PushPullData(data.collectionName, data.shardName, data.coreName, 
-          data.sharedStoreName);
+          data.sharedStoreName, data.lastReadMetadataSuffix, data.newMetadataSuffix, data.version);
     }    
   }
 

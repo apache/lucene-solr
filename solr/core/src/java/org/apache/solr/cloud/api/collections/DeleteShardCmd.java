@@ -128,6 +128,8 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       log.debug("Waiting for delete shard action to complete");
       cleanupLatch.await(1, TimeUnit.MINUTES);
+      
+      ocmh.overseer.getShardSharedMetadataController().cleanUpMetadataNodes(collectionName, slice.getName());
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETESHARD.toLower(), ZkStateReader.COLLECTION_PROP,
           collectionName, ZkStateReader.SHARD_ID_PROP, sliceId);

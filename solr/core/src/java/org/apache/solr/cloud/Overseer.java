@@ -70,6 +70,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -722,6 +723,10 @@ public class Overseer implements SolrCloseable {
 
   public SolrCloudManager getSolrCloudManager() {
     return zkController.getSolrCloudManager();
+  }
+  
+  public SharedShardMetadataController getShardSharedMetadataController() {
+    return zkController.getShardSharedMetadataController();
   }
 
   /**

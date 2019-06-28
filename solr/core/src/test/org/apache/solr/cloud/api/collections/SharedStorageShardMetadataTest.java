@@ -43,7 +43,7 @@ public class SharedStorageShardMetadataTest extends SolrCloudTestCase  {
   }
   
   /**
-   * Test CreateCollection stores the sharedIndex and SharedStoreName in ZooKeeper. SharedStoreName should be per
+   * Test CreateCollection stores the sharedIndex and SharedShardName in ZooKeeper. SharedShardName should be per
    * shard metadata object
    */
   @Test

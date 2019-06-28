@@ -16,6 +16,10 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -27,13 +31,11 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.store.blob.metadata.PushPullData;
 import org.apache.solr.store.blob.process.CoreUpdateTracker;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
-import static org.mockito.Mockito.*;
 
 /**
  * Test for the {@link DistributedZkUpdateProcessor}.
@@ -89,7 +91,7 @@ public class DistributedZkUpdateProcessorTest extends SolrCloudTestCase {
     core.close();
     
     // Verify that core tracker was updated
-    verify(tracker).updatingCore(any(PushPullData.class));
+    verify(tracker).persistShardIndexToSharedStore(any(), any(), any(), any());
   }
   
   /**
@@ -135,7 +137,7 @@ public class DistributedZkUpdateProcessorTest extends SolrCloudTestCase {
     core.close();
     
     // Verify that core tracker was not updated
-    verify(tracker, never()).updatingCore(any(PushPullData.class));
+    verify(tracker, never()).persistShardIndexToSharedStore(any(), any(), any(), any()); 
   }
   
 }

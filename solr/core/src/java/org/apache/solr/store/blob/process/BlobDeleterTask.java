@@ -51,7 +51,9 @@ class BlobDeleterTask implements Runnable {
         boolean isSuccess = true;
         
         try {
-            blobClient = BlobStorageProvider.get().getBlobStorageClient();
+            // TODO - this class will change given that changes no longer work the way we expect them to.
+            // making this null for now to avoid compile errors. 
+            blobClient = null;
             blobClient.deleteBlobs(blobNames);
             // Blob might not have been deleted if at some point we've enqueued files to delete while doing a core push,
             // but the push ended up failing and the core.metadata file was not updated. We ended up with the blobs enqueued for

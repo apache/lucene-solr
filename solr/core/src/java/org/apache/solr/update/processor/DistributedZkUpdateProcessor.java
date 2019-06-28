@@ -17,6 +17,8 @@
 
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -58,6 +60,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.store.blob.process.CoreUpdateTracker;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -72,11 +75,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
-
-import org.apache.solr.store.blob.metadata.PushPullData;
-import org.apache.solr.store.blob.process.CoreUpdateTracker;
-
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
@@ -102,7 +100,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
                                       SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    this(req,rsp,next,CoreUpdateTracker.get());
+    this(req,rsp,next, CoreUpdateTracker.get(req.getCore().getCoreContainer()));
   }
   
   @VisibleForTesting
@@ -1061,11 +1059,14 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     doFinish();
   }
   
-  private void trackCoreForSharedStore(String coreName, String sharedStoreName) {
-    log.info("tracking coreName={}, collection={}, shardName={} for push to shared storage sharedStoreName={}.", 
-        coreName,  collection, cloudDesc.getShardId(), sharedStoreName);
-        sharedCoreTracker.updatingCore(new PushPullData(
-            collection, cloudDesc.getShardId(), coreName, sharedStoreName));
+  private void writeToShareStore() {
+    log.info("Attempting to initiate index update write to shared store for collection=" + cloudDesc.getCollectionName() + 
+        " and shard=" + cloudDesc.getShardId() + " using core=" + req.getCore().getName());
+
+    sharedCoreTracker.persistShardIndexToSharedStore(zkController.zkStateReader.getClusterState(), 
+        cloudDesc.getCollectionName(), 
+        cloudDesc.getShardId(), 
+        req.getCore().getName());
   }
   
   
@@ -1089,11 +1090,16 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
      */
     if ( updateCommand != null &&
         updateCommand.getClass() == CommitUpdateCommand.class &&
-        replicaType.equals(Replica.Type.SHARED)) {
-      String coreName = req.getCore().getCoreDescriptor().getName();
-      // TODO (a.vuong): this implementation assumes that shareStoreName is the same as core name 
-      // and needs to be changes once we have a naming strategy.
-      trackCoreForSharedStore(coreName, /*sharedStoreName*/ coreName);
+        replicaType.equals(Replica.Type.SHARED)
+        && !((CommitUpdateCommand) updateCommand).softCommit) {
+      /*
+       * TODO SPLITSHARD triggers soft commits.  
+       * We don't persist on softCommit because there is nothing to so we should ignore those kinds of commits.
+       * Configuring behavior based on soft/hard commit seems like we're getting into an abstraction deeper then
+       * what the DUP is concerned about so we may want to consider moving this code somewhere more appropriate
+       * in the future (deeper in the stack) 
+       */
+      writeToShareStore();
     }
     
     // TODO: if not a forward and replication req is not specified, we could

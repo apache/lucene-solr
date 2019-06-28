@@ -18,13 +18,9 @@ public class LocalStorageClient implements CoreStorageClient {
 
     /** The directory on the local file system where blobs will be stored. */
     private final String blobStoreRootDir;
-    
-    /** The key that identifies a file as the blob core metadata */
-    private final String blobCoreMetadataName;
 
-    public LocalStorageClient(String blobStoreRootDir, String blobCoreMetadataName) throws Exception {
+    public LocalStorageClient(String blobStoreRootDir) throws Exception {
         this.blobStoreRootDir = blobStoreRootDir;
-        this.blobCoreMetadataName = blobCoreMetadataName;
         File rootDir = new File(blobStoreRootDir);
         rootDir.mkdirs(); // Might create the directory... or not
         if (!rootDir.isDirectory()) {
@@ -85,14 +81,14 @@ public class LocalStorageClient implements CoreStorageClient {
     }
 
     @Override
-    public void pushCoreMetadata(String blobName, BlobCoreMetadata bcm) throws BlobException {
+    public void pushCoreMetadata(String sharedStoreName, String blobCoreMetadataName, BlobCoreMetadata bcm) throws BlobException {
         try {
-            createCoreStorage(blobName);
+            createCoreStorage(sharedStoreName);
             ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
             String json = converter.toJson(bcm);
     
             // Constant path under which the core metadata is stored in the Blob store (the only blob stored under a constant path!)
-            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(blobName));
+            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(sharedStoreName, blobCoreMetadataName));
             final File blobMetadataFile = new File(blobMetadataPath); 
     
             // Writing to the file assumed atomic, the file cannot be observed midway. Might not hold here but should be the case
@@ -106,13 +102,13 @@ public class LocalStorageClient implements CoreStorageClient {
     }
 
     @Override
-    public BlobCoreMetadata pullCoreMetadata(String blobName) throws BlobException {
+    public BlobCoreMetadata pullCoreMetadata(String sharedStoreName, String blobCoreMetadataName) throws BlobException {
         try {
-            if (!coreMetadataExists(blobName)) {
+            if (!coreMetadataExists(sharedStoreName, blobCoreMetadataName)) {
                 return null;
             }
             
-            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(blobName));
+            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(sharedStoreName, blobCoreMetadataName));
             File blobMetadataFile = new File(blobMetadataPath); 
             
             String json = new String(Files.readAllBytes(blobMetadataFile.toPath()));
@@ -124,9 +120,9 @@ public class LocalStorageClient implements CoreStorageClient {
     }
 
     @Override
-    public boolean coreMetadataExists(String blobName) throws BlobException { 
+    public boolean coreMetadataExists(String sharedStoreName, String blobCoreMetadataName) throws BlobException { 
         try {
-            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(blobName));
+            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(sharedStoreName, blobCoreMetadataName));
             File coreMetadataFile = new File(blobMetadataPath); 
             return coreMetadataFile.exists();
         } catch (Exception ex) {
@@ -182,7 +178,7 @@ public class LocalStorageClient implements CoreStorageClient {
         }
     }
     
-    private String getBlobMetadataName(String blobName) {
+    private String getBlobMetadataName(String blobName, String blobCoreMetadataName) {
         return BlobClientUtils.concatenatePaths(blobName, blobCoreMetadataName);
     }
     
