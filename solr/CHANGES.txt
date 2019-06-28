@@ -152,6 +152,8 @@ Bug Fixes
 * SOLR-13574: Fix many test and test-framework classes to not fail on After/AfterClass cleanup if
   assumptions fail in Before/BeforeClass setup (hossman)
   
+* SOLR-13280: Strengthen ScheduledTrigger's preferredOperation parameter validation. (Christine Poerschke)
+
 Other Changes
 ----------------------
 
