@@ -80,7 +80,7 @@ public class TopDocs {
       return first.hitIndex < second.hitIndex;
     }
 
-    return value < 0 ? true : false;
+    return value < 0;
   }
 
   // Specialized MergeSortQueue that just merges by
