@@ -188,7 +188,14 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
       }
       rb.mergedQueryCommandResults.put(query, new QueryCommandResult(mergedTopDocs, mergedMatches, maxScore));
     }
+    fillResultIds(rb);
+  }
 
+  /**
+   * Fill the {@link ResponseBuilder}'s <code>resultIds</code> field.
+   * @param rb the response builder
+   */
+  static void fillResultIds(ResponseBuilder rb) {
     Map<Object, ShardDoc> resultIds = new HashMap<>();
     int i = 0;
     for (TopGroups<BytesRef> topGroups : rb.mergedTopGroups.values()) {
