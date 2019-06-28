@@ -67,12 +67,10 @@ final class BooleanWeight extends Weight {
 
   @Override
   public void extractTerms(Set<Term> terms) {
-    int i = 0;
-    for (BooleanClause clause : query) {
-      if (clause.isScoring() || (scoreMode.needsScores() == false && clause.isProhibited() == false)) {
-        weights.get(i).extractTerms(terms);
+    for (WeightedBooleanClause wc : weightedClauses) {
+      if (wc.clause.isScoring() || (scoreMode.needsScores() == false && wc.clause.isProhibited() == false)) {
+        wc.weight.extractTerms(terms);
       }
-      i++;
     }
   }
 
