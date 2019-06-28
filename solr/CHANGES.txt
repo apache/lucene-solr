@@ -219,6 +219,8 @@ Other Changes
 
 * SOLR-13279: Clarify ScheduledTrigger's "every parameter missing" error response. (Christine Poerschke)
 
+* SOLR-13576: Factor out a TopGroupsShardResponseProcessor.fillResultIds method. (Christine Poerschke, Diego Ceccarelli)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
