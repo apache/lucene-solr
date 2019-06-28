@@ -65,8 +65,8 @@ public class ScheduledTrigger extends TriggerBase {
 
   public ScheduledTrigger(String name) {
     super(TriggerEventType.SCHEDULED, name);
-    TriggerUtils.requiredProperties(requiredProperties, validProperties, "startTime");
-    TriggerUtils.validProperties(validProperties, "timeZone", "every", "graceDuration", AutoScalingParams.PREFERRED_OP);
+    TriggerUtils.requiredProperties(requiredProperties, validProperties, "startTime", "every");
+    TriggerUtils.validProperties(validProperties, "timeZone", "graceDuration", AutoScalingParams.PREFERRED_OP);
   }
 
   @Override
