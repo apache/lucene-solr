@@ -17,8 +17,6 @@
 
 package org.apache.lucene.geo;
 
-import java.util.Arrays;
-
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.NumericUtils;
@@ -26,8 +24,6 @@ import org.apache.lucene.util.NumericUtils;
 import static java.lang.Integer.BYTES;
 import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
 import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
@@ -274,37 +270,5 @@ public class Rectangle2D {
   private static boolean boxesAreDisjoint(final int aMinX, final int aMaxX, final int aMinY, final int aMaxY,
                                          final int bMinX, final int bMaxX, final int bMinY, final int bMaxY) {
     return (aMaxX < bMinX || aMinX > bMaxX || aMaxY < bMinY || aMinY > bMaxY);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    return Arrays.equals(bbox, ((Rectangle2D)o).bbox)
-        && Arrays.equals(west, ((Rectangle2D)o).west);
-  }
-
-  @Override
-  public int hashCode() {
-    int hash = super.hashCode();
-    hash = 31 * hash + Arrays.hashCode(bbox);
-    hash = 31 * hash + Arrays.hashCode(west);
-    return hash;
-  }
-
-  @Override
-  public String toString() {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("Rectangle(lat=");
-    sb.append(decodeLatitude(minY));
-    sb.append(" TO ");
-    sb.append(decodeLatitude(maxY));
-    sb.append(" lon=");
-    sb.append(decodeLongitude(minX));
-    sb.append(" TO ");
-    sb.append(decodeLongitude(maxX));
-    if (maxX < minX) {
-      sb.append(" [crosses dateline!]");
-    }
-    sb.append(")");
-    return sb.toString();
   }
 }
