@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AutoScalingParams;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DateMathParser;
@@ -80,6 +81,10 @@ public class ScheduledTrigger extends TriggerBase {
     this.graceDurationStr = (String) properties.getOrDefault("graceDuration", DEFAULT_GRACE_DURATION);
 
     preferredOp = (String) properties.get(PREFERRED_OP);
+    if (preferredOp != null &&
+        CollectionParams.CollectionAction.get(preferredOp) == null) {
+      throw new TriggerValidationException(getName(), PREFERRED_OP, "unrecognized value of: '" + preferredOp + "'");
+    }
 
     // attempt parsing to validate date math strings
     // explicitly set NOW because it may be different for simulated time
