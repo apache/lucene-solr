@@ -215,6 +215,8 @@ Other Changes
 * SOLR-12988: SSLTestConfig has been changed to throw AssumptionViolatedException when tests/seeds
   request SSL but the JVM appears to be an OpenJDK version known to have SSL bugs (hossman, Cao Manh Dat)
 
+* SOLR-13279: Clarify ScheduledTrigger's "every parameter missing" error response. (Christine Poerschke)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
