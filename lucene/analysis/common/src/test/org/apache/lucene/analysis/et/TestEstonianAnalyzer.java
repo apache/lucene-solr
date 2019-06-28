@@ -14,8 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.analysis.et;
 
-/**
- * Analyzer for Estonian.
- */
-package org.apache.lucene.analysis.ee;
+
+import java.io.IOException;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CharArraySet;
+
+public class TestEstonianAnalyzer extends BaseTokenStreamTestCase {
+
+    /** This test fails with NPE when the
+     * stopwords file is missing in classpath */
+    public void testResourcesAvailable() {
+        new EstonianAnalyzer().close();
+    }
+
+    /** Test stopword removal */
+    public void testStopWord() throws Exception {
+        Analyzer a = new EstonianAnalyzer();
+        assertAnalyzesTo(a, "alla",
+                new String[] { });
+    }
+
+
+}
