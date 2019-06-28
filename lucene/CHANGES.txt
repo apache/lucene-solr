@@ -19,6 +19,9 @@ API Changes
 * LUCENE-8856: Intervals queries have moved from the sandbox to the queries
   module. (Alan Woodward)
 
+* LUCENE-8893: Intervals.wildcard() and Intervals.prefix() methods now take
+  BytesRef rather than String. (Alan Woodward)
+
 New Features
 
 * LUCENE-8891: Snowball stemmer/analyzer for the Estonian language.
