@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CharArraySet;
 
 public class TestEstonianAnalyzer extends BaseTokenStreamTestCase {
 
@@ -31,11 +30,32 @@ public class TestEstonianAnalyzer extends BaseTokenStreamTestCase {
         new EstonianAnalyzer().close();
     }
 
-    /** Test stopword removal */
-    public void testStopWord() throws Exception {
+    /** test stopwords and stemming */
+    public void testBasics() throws IOException {
         Analyzer a = new EstonianAnalyzer();
-        assertAnalyzesTo(a, "alla",
-                new String[] { });
+        // stemming
+        checkOneTerm(a, "teadaolevalt", "teadaole");
+        checkOneTerm(a, "teadaolevaid", "teadaole");
+        checkOneTerm(a, "teadaolevatest", "teadaole");
+        checkOneTerm(a, "teadaolevail", "teadaole");
+        checkOneTerm(a, "teadaolevatele", "teadaole");
+        checkOneTerm(a, "teadaolevatel", "teadaole");
+        checkOneTerm(a, "teadaolevateks", "teadaole");
+        checkOneTerm(a, "teadaolevate", "teadaole");
+        checkOneTerm(a, "teadaolevaks", "teadaole");
+        checkOneTerm(a, "teadaoleval", "teadaole");
+        checkOneTerm(a, "teadaolevates", "teadaole");
+        checkOneTerm(a, "teadaolevat", "teadaole");
+        checkOneTerm(a, "teadaolevast", "teadaole");
+        checkOneTerm(a, "teadaoleva", "teadaole");
+        checkOneTerm(a, "teadaolevais", "teadaole");
+        checkOneTerm(a, "teadaolevas", "teadaole");
+        checkOneTerm(a, "teadaolevad", "teadaole");
+        checkOneTerm(a, "teadaolevale", "teadaole");
+        checkOneTerm(a, "teadaolevatesse", "teadaole");
+        // stopword
+        assertAnalyzesTo(a, "alla", new String[] { });
+        a.close();
     }
 
 
