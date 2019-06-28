@@ -675,28 +675,34 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       masterJetty.stop();
 
-      // poll interval on slave is 1 second, so we just sleep for a few seconds
-      Thread.sleep(2000);
-
-      masterJetty.start();
-
-      // poll interval on slave is 1 second, so we just sleep for a few seconds
       for(int retries=0; ;retries++) { 
+
+        Thread.yield(); // might not be necessary at all
+        // poll interval on slave is 1 second, so we just sleep for a few seconds
         Thread.sleep(2000);
+        
+        NamedList<Object> slaveDetails=null;
         try {
-          int failed = Integer.parseInt(getSlaveDetails("timesFailed"));
+          slaveDetails = getSlaveDetails();
+          int failed = Integer.parseInt(getStringOrNull(slaveDetails,"timesFailed"));
           if (previousTimesFailed != null) {
             assertTrue(failed > previousTimesFailed);
           }
-          assertEquals(1, Integer.parseInt(getSlaveDetails("timesIndexReplicated")) - failed);
+          assertEquals(1, Integer.parseInt(getStringOrNull(slaveDetails,"timesIndexReplicated")) - failed);
           break;
         } catch (NumberFormatException | AssertionError notYet) {
+          log.info((retries+1)+"th attempt failure on " + notYet+" details are "+slaveDetails);
           if (retries>9) {
+            log.error("giving up: ", notYet);
             throw notYet;
           } 
         }
       }
+      
+      masterJetty.start();
 
+      // poll interval on slave is 1 second, so we just sleep for a few seconds
+      Thread.sleep(2000);
       //get docs from slave and assert that they are still the same as before
       slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
       slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
@@ -708,6 +714,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   private String getSlaveDetails(String keyName) throws SolrServerException, IOException {
+    NamedList<Object> details = getSlaveDetails();
+    return getStringOrNull(details, keyName);
+  }
+
+  private String getStringOrNull(NamedList<Object> details, String keyName) {
+    Object o = details.get(keyName);
+    return o != null ? o.toString() : null;
+  }
+
+  private NamedList<Object> getSlaveDetails() throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.QT, "/replication");
     params.set("command", "details");
@@ -716,8 +732,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // details/slave/timesIndexReplicated
     NamedList<Object> details = (NamedList<Object>) response.getResponse().get("details");
     NamedList<Object> slave = (NamedList<Object>) details.get("slave");
-    Object o = slave.get(keyName);
-    return o != null ? o.toString() : null;
+    return slave;
   }
 
   @Test
