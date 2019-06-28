@@ -34,8 +34,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 
@@ -177,7 +177,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
   
   @Test
   public void testOpenIfChangedAndRefCount() throws Exception {
-    Directory dir = new RAMDirectory(); // no need for random directories here
+    Directory dir = new ByteBuffersDirectory(); // no need for random directories here
 
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir);
     taxoWriter.addCategory(new FacetLabel("a"));

@@ -17,7 +17,11 @@
 package org.apache.lucene.analysis;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -38,6 +42,8 @@ import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
  *  offsets are consistent with one another). */
 public final class ValidatingTokenFilter extends TokenFilter {
 
+  private static final int MAX_DEBUG_TOKENS = 20;
+
   private int pos;
   private int lastStartOffset;
 
@@ -49,6 +55,9 @@ public final class ValidatingTokenFilter extends TokenFilter {
   private final PositionLengthAttribute posLenAtt = getAttribute(PositionLengthAttribute.class);
   private final OffsetAttribute offsetAtt = getAttribute(OffsetAttribute.class);
   private final CharTermAttribute termAtt = getAttribute(CharTermAttribute.class);
+
+  // record the last MAX_DEBUG_TOKENS tokens seen so they can be dumped on failure
+  private final List<Token> tokens = new LinkedList<>();
 
   private final String name;
 
@@ -72,27 +81,37 @@ public final class ValidatingTokenFilter extends TokenFilter {
     int startOffset = 0;
     int endOffset = 0;
     int posLen = 0;
+    int posInc = 0;
+
+    if (posIncAtt != null) {
+      posInc = posIncAtt.getPositionIncrement();
+    }
+    if (offsetAtt != null) {
+      startOffset = offsetAtt.startOffset();
+      endOffset = offsetAtt.endOffset();
+    }
+
+    posLen = posLenAtt == null ? 1 : posLenAtt.getPositionLength();
+
+    addToken(startOffset, endOffset, posInc);
 
     // System.out.println(name + ": " + this);
     
     if (posIncAtt != null) {
-      pos += posIncAtt.getPositionIncrement();
+      pos += posInc;
       if (pos == -1) {
+        dumpValidatingTokenFilters(this, System.err);
         throw new IllegalStateException(name + ": first posInc must be > 0");
       }
     }
     
     if (offsetAtt != null) {
-      startOffset = offsetAtt.startOffset();
-      endOffset = offsetAtt.endOffset();
-
-      if (offsetAtt.startOffset() < lastStartOffset) {
+      if (startOffset < lastStartOffset) {
+        dumpValidatingTokenFilters(this, System.err);
         throw new IllegalStateException(name + ": offsets must not go backwards startOffset=" + startOffset + " is < lastStartOffset=" + lastStartOffset);
       }
       lastStartOffset = offsetAtt.startOffset();
     }
-    
-    posLen = posLenAtt == null ? 1 : posLenAtt.getPositionLength();
     
     if (offsetAtt != null && posIncAtt != null) {
 
@@ -106,6 +125,7 @@ public final class ValidatingTokenFilter extends TokenFilter {
         // System.out.println(name + "  + vs " + pos + " -> " + startOffset);
         final int oldStartOffset = posToStartOffset.get(pos);
         if (oldStartOffset != startOffset) {
+          dumpValidatingTokenFilters(this, System.err);
           throw new IllegalStateException(name + ": inconsistent startOffset at pos=" + pos + ": " + oldStartOffset + " vs " + startOffset + "; token=" + termAtt);
         }
       }
@@ -122,6 +142,7 @@ public final class ValidatingTokenFilter extends TokenFilter {
         //System.out.println(name + "  + ve " + endPos + " -> " + endOffset);
         final int oldEndOffset = posToEndOffset.get(endPos);
         if (oldEndOffset != endOffset) {
+          dumpValidatingTokenFilters(this, System.err);
           throw new IllegalStateException(name + ": inconsistent endOffset at pos=" + endPos + ": " + oldEndOffset + " vs " + endOffset + "; token=" + termAtt);
         }
       }
@@ -147,5 +168,39 @@ public final class ValidatingTokenFilter extends TokenFilter {
     posToStartOffset.clear();
     posToEndOffset.clear();
     lastStartOffset = 0;
+    tokens.clear();
   }
+
+
+  private void addToken(int startOffset, int endOffset, int posInc) {
+    if (tokens.size() == MAX_DEBUG_TOKENS) {
+      tokens.remove(0);
+    }
+    tokens.add(new Token(termAtt.toString(), posInc, startOffset, endOffset));
+  }
+
+  /**
+   * Prints details about consumed tokens stored in any ValidatingTokenFilters in the input chain
+   * @param in the input token stream
+   * @param out the output print stream
+   */
+  public static void dumpValidatingTokenFilters(TokenStream in, PrintStream out) {
+    if (in instanceof TokenFilter) {
+      dumpValidatingTokenFilters(((TokenFilter) in).input, out);
+      if (in instanceof ValidatingTokenFilter) {
+        out.println(((ValidatingTokenFilter) in).dump());
+      }
+    }
+  }
+
+  public String dump() {
+    StringBuilder buf = new StringBuilder();
+    buf.append(name).append(": ");
+    for (Token token : tokens) {
+      buf.append(String.format(Locale.ROOT, "%s<[%d-%d] +%d> ",
+          token, token.startOffset(), token.endOffset(), token.getPositionIncrement()));
+    }
+    return buf.toString();
+  }
+
 }

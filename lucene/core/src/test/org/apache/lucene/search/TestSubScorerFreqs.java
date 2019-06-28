@@ -34,8 +34,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -48,7 +48,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
 
   @BeforeClass
   public static void makeIndex() throws Exception {
-    dir = new RAMDirectory();
+    dir = new ByteBuffersDirectory();
     RandomIndexWriter w = new RandomIndexWriter(
         random(), dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     // make sure we have more than one segment occationally

@@ -20,14 +20,11 @@ package org.apache.lucene.analysis.icu;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-
 import com.ibm.icu.text.FilteredNormalizer2;
 import com.ibm.icu.text.Normalizer2;
 import com.ibm.icu.text.UnicodeSet;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link ICUNormalizer2Filter}
@@ -45,8 +42,13 @@ import com.ibm.icu.text.UnicodeSet;
  * @see Normalizer2
  * @see FilteredNormalizer2
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
-public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+public class ICUNormalizer2FilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "icuNormalizer2";
+
   private final Normalizer2 normalizer;
 
   /** Creates a new ICUNormalizer2FilterFactory */
@@ -79,7 +81,7 @@ public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements M
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public TokenStream normalize(TokenStream input) {
+    return create(input);
   }
 }

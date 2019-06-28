@@ -1,4 +1,5 @@
 = Language Analysis
+:example-source-dir: {solr-root-path}core/src/test-files/solr/collection1/conf/
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -28,7 +29,7 @@ For information about language detection at index time, see <<detecting-language
 
 Protects words from being modified by stemmers. A customized protected word list may be specified with the "protected" attribute in the schema. Any words in the protected word list will not be modified by any stemmer in Solr.
 
-A sample Solr `protwords.txt` with comments can be found in the `sample_techproducts_configs` <<config-sets.adoc#config-sets,config set>> directory:
+A sample Solr `protwords.txt` with comments can be found in the `sample_techproducts_configs` <<config-sets.adoc#config-sets,configset>> directory:
 
 [source,xml]
 ----
@@ -69,9 +70,8 @@ IMPORTANT: When adding the same token twice, it will also score twice (double), 
 
 Overrides stemming algorithms by applying a custom mapping, then protecting these terms from being modified by stemmers.
 
-A customized mapping of words to stems, in a tab-separated file, can be specified to the "dictionary" attribute in the schema. Words in this mapping will be stemmed to the stems from the file, and will not be further changed by any stemmer.
+A customized mapping of words to stems, in a tab-separated file, can be specified to the `dictionary` attribute in the schema. Words in this mapping will be stemmed to the stems from the file, and will not be further changed by any stemmer.
 
-A sample http://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/test-files/solr/collection1/conf/stemdict.txt[stemdict.txt] with comments can be found in the Source Repository.
 
 [source,xml]
 ----
@@ -83,6 +83,15 @@ A sample http://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/test-fil
   </analyzer>
 </fieldtype>
 ----
+
+A sample `stemdict.txt` file is shown below:
+
+[source,text]
+----
+include::{example-source-dir}stemdict.txt[lines=18..22]
+----
+
+If you have a checkout of Solr's source code locally, you can also find this example in Solr's test resources at `solr/core/src/test-files/solr/collection1/conf/stemdict.txt`.
 
 == Dictionary Compound Word Token Filter
 
@@ -568,6 +577,7 @@ Perform model-based lemmatization only, preserving the original token and emitti
 These factories are each designed to work with specific languages. The languages covered here are:
 
 * <<Arabic>>
+* <<Bengali>>
 * <<Brazilian Portuguese>>
 * <<Bulgarian>>
 * <<Catalan>>
@@ -623,6 +633,31 @@ This algorithm defines both character normalization and stemming, so these are s
   <filter class="solr.ArabicStemFilterFactory"/>
 </analyzer>
 ----
+
+=== Bengali
+
+There are two filters written specifically for dealing with Bengali language. They use the Lucene classes `org.apache.lucene.analysis.bn.BengaliNormalizationFilter` and `org.apache.lucene.analysis.bn.BengaliStemFilter`.
+
+*Factory classes:* `solr.BengaliStemFilterFactory`, `solr.BengaliNormalizationFilterFactory`
+
+*Arguments:* None
+
+*Example:*
+
+[source,xml]
+----
+<analyzer> 
+  <tokenizer class="solr.StandardTokenizerFactory"/> 
+  <filter class="solr.BengaliNormalizationFilterFactory"/> 
+  <filter class="solr.BengaliStemFilterFactory"/>       
+</analyzer>
+
+----
+
+*Normalisation* - `মানুষ` \-> `মানুস`
+
+*Stemming* - `সমস্ত` \-> `সমস্` 
+
 
 === Brazilian Portuguese
 
@@ -1232,7 +1267,7 @@ Removes terms with one of the configured parts-of-speech. `JapaneseTokenizer` an
 
 *Arguments:*
 
-`tags`:: filename for a list of parts-of-speech for which to remove terms; see `conf/lang/stoptags_ja.txt` in the `sample_techproducts_config` <<config-sets.adoc#config-sets,config set>> for an example.
+`tags`:: filename for a list of parts-of-speech for which to remove terms; see `conf/lang/stoptags_ja.txt` in the `sample_techproducts_config` <<config-sets.adoc#config-sets,configset>> for an example.
 
 `enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens. *This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
 

@@ -16,14 +16,17 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
-import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
+
+import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
  * ZkNodeProps contains generic immutable properties.
@@ -89,7 +92,16 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * Create Replica from json string that is typically stored in zookeeper.
    */
   public static ZkNodeProps load(byte[] bytes) {
-    Map<String, Object> props = (Map<String, Object>) Utils.fromJSON(bytes);
+    Map<String, Object> props = null;
+    if (bytes[0] == 2) {
+      try {
+        props = (Map<String, Object>) new JavaBinCodec().unmarshal(bytes);
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to parse javabin content");
+      }
+    } else {
+      props = (Map<String, Object>) Utils.fromJSON(bytes);
+    }
     return new ZkNodeProps(props);
   }
 
@@ -128,7 +140,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
 
   @Override
   public String toString() {
-    return JSONUtil.toJSON(this);
+    return toJSONString(this);
     /***
     StringBuilder sb = new StringBuilder();
     Set<Entry<String,Object>> entries = propMap.entrySet();

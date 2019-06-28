@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
@@ -76,7 +77,11 @@ public class LetStream extends TupleStream implements Expressible {
       }
 
       StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
-      if(factory.isEvaluator((StreamExpression)param)) {
+
+      if(param instanceof StreamExpressionValue) {
+        String paramValue = ((StreamExpressionValue) param).getValue();
+        letParams.put(name, factory.constructPrimitiveObject(paramValue));
+      } else if(factory.isEvaluator((StreamExpression)param)) {
         StreamEvaluator evaluator = factory.constructEvaluator((StreamExpression) param);
         letParams.put(name, evaluator);
       } else {
@@ -182,7 +187,7 @@ public class LetStream extends TupleStream implements Expressible {
         } finally {
           tStream.close();
         }
-      } else {
+      } else if(o instanceof StreamEvaluator) {
         //Add the data from the StreamContext to a tuple.
         //Let the evaluator works from this tuple.
         //This will allow columns to be created from tuples already in the StreamContext.
@@ -196,6 +201,8 @@ public class LetStream extends TupleStream implements Expressible {
         } else {
           lets.put(name, eo);
         }
+      } else {
+        lets.put(name, o);
       }
     }
     stream.open();

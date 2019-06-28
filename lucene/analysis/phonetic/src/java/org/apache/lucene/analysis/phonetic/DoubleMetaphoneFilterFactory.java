@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.phonetic;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -32,9 +31,16 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.DoubleMetaphoneFilterFactory" inject="true" maxCodeLength="4"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class DoubleMetaphoneFilterFactory extends TokenFilterFactory
 {
+
+  /** SPI name */
+  public static final String NAME = "doubleMetaphone";
+
   /** parameter name: true if encoded tokens should be added as synonyms */
   public static final String INJECT = "inject"; 
   /** parameter name: restricts the length of the phonetic code */

@@ -21,6 +21,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.Sets;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.IndexableField;
@@ -32,9 +33,6 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-
-
-import com.google.common.collect.Sets;
 
 /**
  * Builds a Lucene {@link Document} from a {@link SolrInputDocument}.
@@ -137,7 +135,7 @@ public class DocumentBuilder {
     // Load fields from SolrDocument to Document
     for( SolrInputField field : doc ) {
 
-      if (field.getFirstValue() instanceof SolrDocumentBase) {
+      if (field.getFirstRawValue() instanceof SolrDocumentBase) {
         if (ignoreNestedDocs) {
           continue;
         }
@@ -161,7 +159,9 @@ public class DocumentBuilder {
       // load each field value
       boolean hasField = false;
       try {
-        for( Object v : field ) {
+        Iterator it = field.getRawIterator();
+        while (it.hasNext()) {
+          Object v = it.next();
           if( v == null ) {
             continue;
           }
@@ -231,8 +231,8 @@ public class DocumentBuilder {
     // Now validate required fields or add default values
     // fields with default values are defacto 'required'
 
-    // Note: We don't need to add default fields if this document is to be used for
-    // in-place updates, since this validation and population of default fields would've happened
+    // Note: We don't need to add required fields if this document is to be used for
+    // in-place updates, since this validation and population of required fields would've happened
     // during the full indexing initially.
     if (!forInPlaceUpdate) {
       for (SchemaField field : schema.getRequiredFields()) {

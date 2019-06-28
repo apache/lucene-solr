@@ -333,7 +333,7 @@ public class DataImporter {
     PropertyWriter configPw = config.getPropertyWriter();
     try {
       Class<DIHProperties> writerClass = DocBuilder.loadClass(configPw.getType(), this.core);
-      propWriter = writerClass.newInstance();
+      propWriter = writerClass.getConstructor().newInstance();
       propWriter.init(this, configPw.getParameters());
     } catch (Exception e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Unable to PropertyWriter implementation:" + configPw.getType(), e);
@@ -378,7 +378,7 @@ public class DataImporter {
       dataSrc = new JdbcDataSource();
     } else {
       try {
-        dataSrc = (DataSource) DocBuilder.loadClass(type, getCore()).newInstance();
+        dataSrc = (DataSource) DocBuilder.loadClass(type, getCore()).getConstructor().newInstance();
       } catch (Exception e) {
         wrapAndThrow(SEVERE, e, "Invalid type for data source: " + type);
       }
@@ -533,7 +533,7 @@ public class DataImporter {
     SolrCore core = docBuilder == null ? null : docBuilder.dataImporter.getCore();
     for (Map<String, String> map : fn) {
       try {
-        evaluators.put(map.get(NAME), (Evaluator) loadClass(map.get(CLASS), core).newInstance());
+        evaluators.put(map.get(NAME), (Evaluator) loadClass(map.get(CLASS), core).getConstructor().newInstance());
       } catch (Exception e) {
         wrapAndThrow(SEVERE, e, "Unable to instantiate evaluator: " + map.get(CLASS));
       }

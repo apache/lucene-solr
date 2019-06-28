@@ -43,7 +43,8 @@ more concise example.
 
   <fieldType name="lowerCasefieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
     <analyzer type="index">
-      <tokenizer class="solr.LowerCaseTokenizerFactory" maxTokenLen="3" />
+      <tokenizer class="solr.LetterTokenizerFactory" maxTokenLen="3" />
+      <filter class="solr.LowerCaseFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
@@ -85,12 +86,6 @@ more concise example.
     </analyzer>
   </fieldType>
 
-  <fieldType name="lowerCase0fieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
-    <analyzer>
-      <tokenizer class="solr.LowerCaseTokenizerFactory" maxTokenLen="3" />
-    </analyzer>
-  </fieldType>
-
   <fieldType name="whiteSp0fieldType" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false">
     <analyzer>
       <tokenizer class="solr.WhitespaceTokenizerFactory" maxTokenLen="3" />
@@ -112,13 +107,11 @@ more concise example.
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
 
   <field name="letter" type="letterfieldType" indexed="true" stored="true"/>
-  <field name="lowerCase" type="lowerCasefieldType" indexed="true" stored="true"/>
   <field name="whiteSpace" type="whiteSpfieldType" indexed="true" stored="true"/>
   <field name="unicodeWhiteSpace" type="uniWhiteSpfieldType" indexed="true" stored="true"/>
   <field name="keyword" type="keywordfieldType" indexed="true" stored="true"/>
 
   <field name="letter0" type="letter0fieldType" indexed="true" stored="true"/>
-  <field name="lowerCase0" type="lowerCase0fieldType" indexed="true" stored="true"/>
   <field name="whiteSpace0" type="whiteSp0fieldType" indexed="true" stored="true"/>
   <field name="unicodeWhiteSpace0" type="uniWhiteSp0fieldType" indexed="true" stored="true"/>
   <field name="keyword0" type="keyword0fieldType" indexed="true" stored="true"/>

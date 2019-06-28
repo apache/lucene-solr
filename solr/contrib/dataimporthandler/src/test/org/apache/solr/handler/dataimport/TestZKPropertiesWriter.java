@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import java.lang.invoke.MethodHandles;
 
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -26,7 +27,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -46,7 +46,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static ZkTestServer zkServer;
 
-  protected static String zkDir;
+  protected static Path zkDir;
 
   private static CoreContainer cc;
 
@@ -54,7 +54,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
 
   @BeforeClass
   public static void dihZk_beforeClass() throws Exception {
-    zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    zkDir = createTempDir("zkData");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 
@@ -62,7 +62,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
     System.setProperty("zkHost", zkServer.getZkAddress());
     System.setProperty("jetty.port", "0000");
 
-    AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), getFile("dih/solr"),
+    zkServer.buildZooKeeper(getFile("dih/solr"),
         "dataimport-solrconfig.xml", "dataimport-schema.xml");
 
     //initCore("solrconfig.xml", "schema.xml", getFile("dih/solr").getAbsolutePath());
@@ -82,13 +82,15 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
 
   @AfterClass
   public static void dihZk_afterClass() throws Exception {
-    cc.shutdown();
-    
-    zkServer.shutdown();
-
-    zkServer = null;
+    if (null != cc) {
+      cc.shutdown();
+      cc = null;
+    }
+    if (null != zkServer) {
+      zkServer.shutdown();
+      zkServer = null;
+    }
     zkDir = null;
-    cc = null;
   }
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to construct date stamps")

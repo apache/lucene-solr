@@ -26,7 +26,7 @@ Solr ships with two example configsets located in `server/solr/configsets`, whic
 
 If you are using Solr in standalone mode, configsets are created on the filesystem.
 
-To create a configset, add a new directory under the configset base directory. The configset will be identified by the name of this directory. Then into this copy the config directory you want to share. The structure should look something like this:
+To create a configset, add a new directory under the configset base directory. The configset will be identified by the name of this directory. Then into this copy the configuration directory you want to share. The structure should look something like this:
 
 [source,bash]
 ----

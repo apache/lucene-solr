@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -44,12 +43,11 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrCLI;
 import org.junit.Test;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
+import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 /**
@@ -279,7 +277,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     try {
       entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
       String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+      return (Map) fromJSONString(response);
     } finally {
       EntityUtils.consumeQuietly(entity);
     }

@@ -583,7 +583,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
             }
             docs.close();
             if (VERBOSE) {
-              System.out.println("TEST: index count=" + writerRef.get().maxDoc());
+              System.out.println("TEST: index count=" + writerRef.get().getDocStats().maxDoc);
             }
           } catch (IOException ioe) {
             throw new RuntimeException(ioe);

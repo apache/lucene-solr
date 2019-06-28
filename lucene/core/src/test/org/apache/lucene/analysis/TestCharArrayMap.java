@@ -18,8 +18,6 @@ package org.apache.lucene.analysis;
 
 import java.util.*;
 
-import org.apache.lucene.analysis.CharArrayMap;
-import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCharArrayMap extends LuceneTestCase {

@@ -27,11 +27,11 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
-import org.noggit.JSONUtil;
 
 public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
@@ -46,34 +46,30 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
   @Test
   public void testEmptyConfigSetProperties() throws Exception {
-    try {
+    SolrException thrown = expectThrows(SolrException.class, () -> {
       createConfigSetProps("");
-      fail("Excepted SolrException");
-    } catch (SolrException ex) {
-      assertEquals(ErrorCode.SERVER_ERROR.code, ex.code());
-    }
+    });
+    assertEquals(ErrorCode.SERVER_ERROR.code, thrown.code());
   }
 
   @Test
   public void testConfigSetPropertiesNotMap() throws Exception {
-    try {
-      createConfigSetProps(JSONUtil.toJSON(new String[] {"test"}));
-      fail("Expected SolrException");
-    } catch (SolrException ex) {
-      assertEquals(ErrorCode.SERVER_ERROR.code, ex.code());
-    }
+    SolrException thrown = expectThrows(SolrException.class, () -> {
+      createConfigSetProps(Utils.toJSONString(new String[] {"test"}));
+    });
+    assertEquals(ErrorCode.SERVER_ERROR.code, thrown.code());
   }
 
   @Test
   public void testEmptyMap() throws Exception {
-    NamedList list = createConfigSetProps(JSONUtil.toJSON(ImmutableMap.of()));
+    NamedList list = createConfigSetProps(Utils.toJSONString(ImmutableMap.of()));
     assertEquals(0, list.size());
   }
 
   @Test
   public void testMultipleProps() throws Exception {
     Map map = ImmutableMap.of("immutable", "true", "someOtherProp", "true");
-    NamedList list = createConfigSetProps(JSONUtil.toJSON(map));
+    NamedList list = createConfigSetProps(Utils.toJSONString(map));
     assertEquals(2, list.size());
     assertEquals("true", list.get("immutable"));
     assertEquals("true", list.get("someOtherProp"));

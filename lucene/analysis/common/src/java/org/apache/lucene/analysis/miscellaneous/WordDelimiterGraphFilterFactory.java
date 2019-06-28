@@ -49,16 +49,23 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.*;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 6.5.0
+ * @lucene.spi {@value #NAME}
  */
 public class WordDelimiterGraphFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "wordDelimiterGraph";
+
   public static final String PROTECTED_TOKENS = "protected";
   public static final String TYPES = "types";
+  public static final String OFFSETS = "adjustOffsets";
 
   private final String wordFiles;
   private final String types;
   private final int flags;
   byte[] typeTable = null;
   private CharArraySet protectedWords = null;
+  private boolean adjustOffsets = false;
   
   /** Creates a new WordDelimiterGraphFilterFactory */
   public WordDelimiterGraphFilterFactory(Map<String, String> args) {
@@ -94,6 +101,7 @@ public class WordDelimiterGraphFilterFactory extends TokenFilterFactory implemen
     wordFiles = get(args, PROTECTED_TOKENS);
     types = get(args, TYPES);
     this.flags = flags;
+    this.adjustOffsets = getBoolean(args, OFFSETS, true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -117,7 +125,7 @@ public class WordDelimiterGraphFilterFactory extends TokenFilterFactory implemen
 
   @Override
   public TokenFilter create(TokenStream input) {
-    return new WordDelimiterGraphFilter(input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
+    return new WordDelimiterGraphFilter(input, adjustOffsets, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
                                         flags, protectedWords);
   }
   

@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -26,7 +27,6 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.VirtualMethod;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
@@ -1028,7 +1028,7 @@ public class AssertingLeafReader extends FilterLeafReader {
 
   /** Wraps a SortedSetDocValues but with additional asserts */
   public static class AssertingPointValues extends PointValues {
-
+    private final Thread creationThread = Thread.currentThread();
     private final PointValues in;
 
     /** Sole constructor. */
@@ -1048,11 +1048,13 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public void intersect(IntersectVisitor visitor) throws IOException {
-      in.intersect(new AssertingIntersectVisitor(in.getNumDimensions(), in.getBytesPerDimension(), visitor));
+      assertThread("Points", creationThread);
+      in.intersect(new AssertingIntersectVisitor(in.getNumDataDimensions(), in.getNumIndexDimensions(), in.getBytesPerDimension(), visitor));
     }
 
     @Override
     public long estimatePointCount(IntersectVisitor visitor) {
+      assertThread("Points", creationThread);
       long cost = in.estimatePointCount(visitor);
       assert cost >= 0;
       return cost;
@@ -1060,31 +1062,43 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public byte[] getMinPackedValue() throws IOException {
+      assertThread("Points", creationThread);
       return Objects.requireNonNull(in.getMinPackedValue());
     }
 
     @Override
     public byte[] getMaxPackedValue() throws IOException {
+      assertThread("Points", creationThread);
       return Objects.requireNonNull(in.getMaxPackedValue());
     }
 
     @Override
-    public int getNumDimensions() throws IOException {
-      return in.getNumDimensions();
+    public int getNumDataDimensions() throws IOException {
+      assertThread("Points", creationThread);
+      return in.getNumDataDimensions();
+    }
+
+    @Override
+    public int getNumIndexDimensions() throws IOException {
+      assertThread("Points", creationThread);
+      return in.getNumIndexDimensions();
     }
 
     @Override
     public int getBytesPerDimension() throws IOException {
+      assertThread("Points", creationThread);
       return in.getBytesPerDimension();
     }
 
     @Override
     public long size() {
+      assertThread("Points", creationThread);
       return in.size();
     }
 
     @Override
     public int getDocCount() {
+      assertThread("Points", creationThread);
       return in.getDocCount();
     }
 
@@ -1093,7 +1107,8 @@ public class AssertingLeafReader extends FilterLeafReader {
   /** Validates in the 1D case that all points are visited in order, and point values are in bounds of the last cell checked */
   static class AssertingIntersectVisitor implements IntersectVisitor {
     final IntersectVisitor in;
-    final int numDims;
+    final int numDataDims;
+    final int numIndexDims;
     final int bytesPerDim;
     final byte[] lastDocValue;
     final byte[] lastMinPackedValue;
@@ -1102,13 +1117,14 @@ public class AssertingLeafReader extends FilterLeafReader {
     private int lastDocID = -1;
     private int docBudget;
 
-    AssertingIntersectVisitor(int numDims, int bytesPerDim, IntersectVisitor in) {
+    AssertingIntersectVisitor(int numDataDims, int numIndexDims, int bytesPerDim, IntersectVisitor in) {
       this.in = in;
-      this.numDims = numDims;
+      this.numDataDims = numDataDims;
+      this.numIndexDims = numIndexDims;
       this.bytesPerDim = bytesPerDim;
-      lastMaxPackedValue = new byte[numDims*bytesPerDim];
-      lastMinPackedValue = new byte[numDims*bytesPerDim];
-      if (numDims == 1) {
+      lastMaxPackedValue = new byte[numDataDims*bytesPerDim];
+      lastMinPackedValue = new byte[numDataDims*bytesPerDim];
+      if (numDataDims == 1) {
         lastDocValue = new byte[bytesPerDim];
       } else {
         lastDocValue = null;
@@ -1132,15 +1148,15 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert lastCompareResult == PointValues.Relation.CELL_CROSSES_QUERY;
 
       // This doc's packed value should be contained in the last cell passed to compare:
-      for(int dim=0;dim<numDims;dim++) {
-        assert FutureArrays.compareUnsigned(lastMinPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, packedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) <= 0: "dim=" + dim + " of " +  numDims + " value=" + new BytesRef(packedValue);
-        assert FutureArrays.compareUnsigned(lastMaxPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, packedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) >= 0: "dim=" + dim + " of " +  numDims + " value=" + new BytesRef(packedValue);
+      for(int dim=0;dim<numIndexDims;dim++) {
+        assert Arrays.compareUnsigned(lastMinPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, packedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) <= 0: "dim=" + dim + " of " +  numDataDims + " value=" + new BytesRef(packedValue);
+        assert Arrays.compareUnsigned(lastMaxPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, packedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) >= 0: "dim=" + dim + " of " +  numDataDims + " value=" + new BytesRef(packedValue);
       }
 
       // TODO: we should assert that this "matches" whatever relation the last call to compare had returned
-      assert packedValue.length == numDims * bytesPerDim;
-      if (numDims == 1) {
-        int cmp = FutureArrays.compareUnsigned(lastDocValue, 0, bytesPerDim, packedValue, 0, bytesPerDim);
+      assert packedValue.length == numDataDims * bytesPerDim;
+      if (numDataDims == 1) {
+        int cmp = Arrays.compareUnsigned(lastDocValue, 0, bytesPerDim, packedValue, 0, bytesPerDim);
         if (cmp < 0) {
           // ok
         } else if (cmp == 0) {
@@ -1163,11 +1179,11 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-      for(int dim=0;dim<numDims;dim++) {
-        assert FutureArrays.compareUnsigned(minPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, maxPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) <= 0;
+      for(int dim=0;dim<numIndexDims;dim++) {
+        assert Arrays.compareUnsigned(minPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, maxPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) <= 0;
       }
-      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, numDims*bytesPerDim);
-      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, numDims*bytesPerDim);
+      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, numIndexDims*bytesPerDim);
+      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, numIndexDims*bytesPerDim);
       lastCompareResult = in.compare(minPackedValue, maxPackedValue);
       return lastCompareResult;
     }

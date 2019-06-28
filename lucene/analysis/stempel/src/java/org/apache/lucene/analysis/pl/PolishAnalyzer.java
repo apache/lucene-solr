@@ -38,6 +38,8 @@ import org.egothor.stemmer.Trie;
 
 /**
  * {@link Analyzer} for Polish.
+ *
+ * @since 3.1
  */
 public final class PolishAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

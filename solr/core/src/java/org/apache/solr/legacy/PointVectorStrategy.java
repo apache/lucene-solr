@@ -152,7 +152,7 @@ public class PointVectorStrategy extends SpatialStrategy {
     if ((this.hasDocVals = fieldType.docValuesType() != DocValuesType.NONE)) {
       numPairs++;
     }
-    if ((this.hasPointVals = fieldType.pointDimensionCount() > 0)) {
+    if ((this.hasPointVals = fieldType.pointDataDimensionCount() > 0)) {
       numPairs++;
     }
     if (fieldType.indexOptions() != IndexOptions.NONE && fieldType instanceof LegacyFieldType && ((LegacyFieldType)fieldType).numericType() != null) {

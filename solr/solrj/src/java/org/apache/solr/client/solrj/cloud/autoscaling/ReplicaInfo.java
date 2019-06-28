@@ -49,10 +49,12 @@ public class ReplicaInfo implements MapWriter {
     this.collection = coll;
     this.shard = shard;
     this.type = r.getType();
-    this.isLeader = r.getBool(LEADER_PROP, false);
+    boolean maybeLeader = r.getBool(LEADER_PROP, false);
     if (vals != null) {
       this.variables.putAll(vals);
+      maybeLeader = "true".equals(String.valueOf(vals.getOrDefault(LEADER_PROP, maybeLeader)));
     }
+    this.isLeader = maybeLeader;
     this.node = r.getNodeName();
   }
 
@@ -70,7 +72,7 @@ public class ReplicaInfo implements MapWriter {
     this.node = node;
   }
 
-  ReplicaInfo(Map<String, Object> map) {
+  public ReplicaInfo(Map<String, Object> map) {
     this.name = map.keySet().iterator().next();
     Map details = (Map) map.get(name);
     details = Utils.getDeepCopy(details, 4);
@@ -91,7 +93,7 @@ public class ReplicaInfo implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    BiPredicate<String, Object> p = dedupeKeyPredicate(new HashSet<>())
+    BiPredicate<CharSequence, Object> p = dedupeKeyPredicate(new HashSet<>())
         .and(NON_NULL_VAL);
     ew.put(name, (MapWriter) ew1 -> {
       ew1.put(ZkStateReader.CORE_NAME_PROP, core, p)
@@ -166,6 +168,30 @@ public class ReplicaInfo implements MapWriter {
       return (Boolean)o;
     } else {
       return Boolean.parseBoolean(String.valueOf(o));
+    }
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null) {
+      return false;
+    }
+    if (!(o instanceof ReplicaInfo)) {
+      return false;
+    }
+    ReplicaInfo other = (ReplicaInfo)o;
+    if (
+        name.equals(other.name) &&
+        collection.equals(other.collection) &&
+        core.equals(other.core) &&
+        isLeader == other.isLeader &&
+        node.equals(other.node) &&
+        shard.equals(other.shard) &&
+        type == other.type &&
+        variables.equals(other.variables)) {
+      return true;
+    } else {
+      return false;
     }
   }
 

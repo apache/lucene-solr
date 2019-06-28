@@ -103,7 +103,7 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertQ("strict phrase handling",
         req("q", "text:\"strict phrases\"", "sort", "id asc", "hl", "true"),
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1",
-        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Strict</em> <em>phrases</em> should be enabled for phrases'");
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Strict phrases</em> should be enabled for phrases'");
   }
 
   public void testStrictPhrasesCanBeDisabled() {
@@ -282,6 +282,11 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em>&#32;one&#32;has&#32;a&#32;first&#32;&lt;i&gt;sentence&lt;&#x2F;i&gt;&#46;'");
   }
 
+  public void testRangeQuery() {
+    assertQ(req("q", "id:101", "hl", "true", "hl.q", "text:[dob TO doe]"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1");
+  }
+
   public void testRequireFieldMatch() {
     // We highlight on field text3 (hl.fl), but our query only references the "text" field. Nonetheless, the query word
     //  "document" is found in all fields here.
@@ -291,5 +296,27 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertQ(req("q", "id:101", "hl", "true", "hl.q", "text:document", "hl.fl", "text3", "hl.requireFieldMatch", "true"),
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/*)=0");
   }
-  
+
+  public void testWeightMatchesDisabled() {
+    clearIndex();
+    assertU(adoc("text", "alpha bravo charlie", "id", "101"));
+    assertU(commit());
+    assertQ("weight matches disabled, phrase highlights separately",
+        req("q", "text:\"alpha bravo\"", "hl", "true", "hl.weightMatches", "false"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1",
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>alpha</em> <em>bravo</em> charlie'");
+  }
+
+  // LUCENE-8492
+  public void testSurroundQParser() {
+    assertQ(req("q", "{!surround df=text}2w(second, document)", "hl", "true", "hl.fl", "text"),
+        "count(//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/*)=1");
+  }
+
+  // LUCENE-7757
+  public void testComplexPhraseQParser() {
+    assertQ(req("q", "{!complexphrase df=text}(\"sec* doc*\")", "hl", "true", "hl.fl", "text"),
+        "count(//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/*)=1");
+  }
+
 }

@@ -36,6 +36,7 @@ public class TestSnowballVocab extends LuceneTestCase {
    * Run all languages against their snowball vocabulary tests.
    */
   public void testStemmers() throws IOException {
+    assertCorrectOutput("Arabic", "arabic");
     assertCorrectOutput("Danish", "danish");
     assertCorrectOutput("Dutch", "dutch");
     assertCorrectOutput("English", "english");

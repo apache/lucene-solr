@@ -33,14 +33,16 @@ The reason that this is discouraged is because hand-edits of the schema may be l
 
 The API allows two output modes for all calls: JSON or XML. When requesting the complete schema, there is another output mode which is XML modeled after the managed-schema file itself, which is in XML format.
 
-When modifying the schema with the API, a core reload will automatically occur in order for the changes to be available immediately for documents indexed thereafter. Previously indexed documents will *not* be automatically updated - they *must* be re-indexed if existing index data uses schema elements that you changed.
+When modifying the schema with the API, a core reload will automatically occur in order for the changes to be available immediately for documents indexed thereafter. Previously indexed documents will *not* be automatically updated - they *must* be reindexed if existing index data uses schema elements that you changed.
 
-.Re-index after schema modifications!
+.Reindex after schema modifications!
 [IMPORTANT]
 ====
-If you modify your schema, you will likely need to re-index all documents. If you do not, you may lose access to documents, or not be able to interpret them properly, e.g., after replacing a field type.
+If you modify your schema, you will likely need to reindex all documents. If you do not, you may lose access to documents, or not be able to interpret them properly, e.g., after replacing a field type.
 
-Modifying your schema will never modify any documents that are already indexed. You must re-index documents in order to apply schema changes to them. Queries and updates made after the change may encounter errors that were not present before the change. Completely deleting the index and rebuilding it is usually the only option to fix such errors.
+Modifying your schema will never modify any documents that are already indexed. You must reindex documents in order to apply schema changes to them. Queries and updates made after the change may encounter errors that were not present before the change. Completely deleting the index and rebuilding it is usually the only option to fix such errors.
+
+See the section <<reindexing.adoc#reindexing,Reindexing>> for more information about reindexing.
 ====
 
 ////
@@ -89,7 +91,7 @@ These commands can be issued in separate POST requests or in the same POST reque
 
 In each case, the response will include the status and the time to process the request, but will not include the entire schema.
 
-When modifying the schema with the API, a core reload will automatically occur in order for the changes to be available immediately for documents indexed thereafter. Previously indexed documents will *not* be automatically handled - they *must* be re-indexed if they used schema elements that you changed.
+When modifying the schema with the API, a core reload will automatically occur in order for the changes to be available immediately for documents indexed thereafter. Previously indexed documents will *not* be automatically handled - they *must* be reindexed if they used schema elements that you changed.
 
 === Add a New Field
 
@@ -313,7 +315,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 The `add-field-type` command adds a new field type to your schema.
 
-All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request. The structure of the command is a json mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc. Details of all of the available options are described in the section <<solr-field-types.adoc#solr-field-types,Solr Field Types>>.
+All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request. The structure of the command is a JSON mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc. Details of all of the available options are described in the section <<solr-field-types.adoc#solr-field-types,Solr Field Types>>.
 
 For example, to create a new field type named "myNewTxtField", you can POST a request as follows:
 
@@ -426,7 +428,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 The `replace-field-type` command replaces a field type in your schema. Note that you must supply the full definition for a field type - this command will *not* partially modify a field type's definition. If the field type does not exist in the schema an error is thrown.
 
-All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request. The structure of the command is a json mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc. Details of all of the available options are described in the section <<solr-field-types.adoc#solr-field-types,Solr Field Types>>.
+All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request. The structure of the command is a JSON mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc. Details of all of the available options are described in the section <<solr-field-types.adoc#solr-field-types,Solr Field Types>>.
 
 For example, to replace the definition of a field type named "myNewTxtField", you can make a POST request as follows:
 
@@ -1187,7 +1189,7 @@ The output will simply be the schema version in use.
 
 ==== Show Schema Version Example
 
-Get the schema version
+Get the schema version:
 
 [source,bash]
 ----

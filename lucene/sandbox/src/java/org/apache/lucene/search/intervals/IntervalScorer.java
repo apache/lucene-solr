@@ -20,24 +20,27 @@ package org.apache.lucene.search.intervals;
 import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.LeafSimScorer;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.similarities.Similarity;
 
 class IntervalScorer extends Scorer {
 
   private final IntervalIterator intervals;
-  private final LeafSimScorer simScorer;
+  private final Similarity.SimScorer simScorer;
+  private final float boost;
+  private final int minExtent;
 
-  private float freq = -1;
+  private float freq;
   private int lastScoredDoc = -1;
 
-  protected IntervalScorer(Weight weight, IntervalIterator intervals, LeafSimScorer simScorer) {
+  IntervalScorer(Weight weight, IntervalIterator intervals, int minExtent, float boost, IntervalScoreFunction scoreFunction) {
     super(weight);
     this.intervals = intervals;
-    this.simScorer = simScorer;
+    this.minExtent = minExtent;
+    this.boost = boost;
+    this.simScorer = scoreFunction.scorer(boost);
   }
 
   @Override
@@ -48,19 +51,10 @@ class IntervalScorer extends Scorer {
   @Override
   public float score() throws IOException {
     ensureFreq();
-    return simScorer.score(docID(), freq);
+    return simScorer.score(freq, 1);
   }
 
-  public Explanation explain(String topLevel) throws IOException {
-    ensureFreq();
-    Explanation freqExplanation = Explanation.match(freq, "intervalFreq=" + freq);
-    Explanation scoreExplanation = simScorer.explain(docID(), freqExplanation);
-    return Explanation.match(scoreExplanation.getValue(),
-        topLevel + ", result of:",
-        scoreExplanation);
-  }
-
-  public float freq() throws IOException {
+  float freq() throws IOException {
     ensureFreq();
     return freq;
   }
@@ -70,7 +64,8 @@ class IntervalScorer extends Scorer {
       lastScoredDoc = docID();
       freq = 0;
       do {
-        freq += (1.0 / (intervals.end() - intervals.start() + 1));
+        int length = (intervals.end() - intervals.start() + 1);
+        freq += 1.0 / Math.max(length - minExtent + 1, 1);
       }
       while (intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS);
     }
@@ -97,9 +92,8 @@ class IntervalScorer extends Scorer {
   }
 
   @Override
-  public float getMaxScore(int upTo) throws IOException {
-    return Float.POSITIVE_INFINITY;
+  public float getMaxScore(int upTo) {
+    return boost;
   }
-
 
 }

@@ -1,4 +1,4 @@
-= IndexUpgrader Tool
+= IndexUpgraderTool
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Lucene distribution includes {lucene-javadocs}/core/org/apache/lucene/index/IndexUpgrader.html[a tool that upgrades] an index from previous Lucene versions to the current file format.
+The Lucene distribution includes {lucene-javadocs}/core/org/apache/lucene/index/IndexUpgrader.html[a tool that upgrades] an index from the previous Lucene version to the current file format.
 
 The tool can be used from command line, or it can be instantiated and executed in Java.
 
@@ -24,9 +24,11 @@ The tool can be used from command line, or it can be instantiated and executed i
 ====
 Indexes can *only* be upgraded from the previous major release version to the current major release version.
 
-This means that the IndexUpgrader Tool in any Solr 7.x release, for example, can only work with indexes from 6.x releases, but cannot work with indexes from Solr 5.x or earlier.
+This means that the IndexUpgraderTool in any Solr 8.x release, for example, can only work with indexes from 7.x releases, but cannot work with indexes from Solr 6.x or earlier.
 
-If you are currently using an earlier release such as 5.x and want to move more than one major version ahead, you need to first upgrade your indexes to the next major version (6.x), then again to the major version after that (7.x), etc.
+If you are currently using a release two or more major versions older, such as moving from Solr 6x to Solr 8x, you will need to reindex your content.
+
+The IndexUpgraderTool performs a forceMerge (optimize) down to one segment, which may be undesirable.
 ====
 
 In a Solr distribution, the Lucene files are located in `./server/solr-webapp/webapp/WEB-INF/lib`. You will need to include the `lucene-core-<version>.jar` and `lucene-backwards-codecs-<version>.jar` on the classpath when running the tool.

@@ -37,6 +37,8 @@ import org.tartarus.snowball.ext.SwedishStemmer;
 
 /**
  * {@link Analyzer} for Swedish.
+ *
+ * @since 3.1
  */
 public final class SwedishAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

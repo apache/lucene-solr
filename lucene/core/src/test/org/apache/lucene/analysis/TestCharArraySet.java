@@ -19,7 +19,6 @@ package org.apache.lucene.analysis;
 
 import java.util.*;
 
-import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SuppressForbidden;
 

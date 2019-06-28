@@ -24,6 +24,7 @@ import java.util.Locale;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterWeight;
@@ -31,11 +32,14 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSet;
+
+import static org.apache.lucene.search.ScoreMode.COMPLETE;
 
 /**
  * This query requires that you index
@@ -86,8 +90,26 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode weightScoreMode, float boost) throws IOException {
-    return new BlockJoinWeight(this, childQuery.createWeight(searcher, weightScoreMode, boost), parentsFilter, weightScoreMode.needsScores() ? scoreMode : ScoreMode.None);
+    ScoreMode childScoreMode = weightScoreMode.needsScores() ? scoreMode : ScoreMode.None;
+    final Weight childWeight;
+    if (childScoreMode == ScoreMode.None) {
+      // we don't need to compute a score for the child query so we wrap
+      // it under a constant score query that can early terminate if the
+      // minimum score is greater than 0 and the total hits that match the
+      // query is not requested.
+      childWeight = searcher.rewrite(new ConstantScoreQuery(childQuery)).createWeight(searcher, weightScoreMode, 0f);
+    } else {
+      // if the score is needed we force the collection mode to COMPLETE because the child query cannot skip
+      // non-competitive documents.
+      childWeight = childQuery.createWeight(searcher, weightScoreMode.needsScores() ? COMPLETE : weightScoreMode, boost);
+    }
+    return new BlockJoinWeight(this, childWeight, parentsFilter, childScoreMode);
   }
 
   /** Return our child query. */
@@ -312,7 +334,17 @@ public class ToParentBlockJoinQuery extends Query {
 
     @Override
     public float getMaxScore(int upTo) throws IOException {
+      if (scoreMode == ScoreMode.None) {
+        return childScorer.getMaxScore(upTo);
+      }
       return Float.POSITIVE_INFINITY;
+    }
+
+    @Override
+    public void setMinCompetitiveScore(float minScore) throws IOException {
+      if (scoreMode == ScoreMode.None) {
+        childScorer.setMinCompetitiveScore(minScore);
+      }
     }
 
     private void setScoreAndFreq() throws IOException {
@@ -323,7 +355,7 @@ public class ToParentBlockJoinQuery extends Query {
       int freq = 1;
       while (childApproximation.nextDoc() < parentApproximation.docID()) {
         if (childTwoPhase == null || childTwoPhase.matches()) {
-          final float childScore = childScorer.score();
+          final float childScore = scoreMode == ScoreMode.None ? 0 : childScorer.score();
           freq += 1;
           switch (scoreMode) {
             case Total:

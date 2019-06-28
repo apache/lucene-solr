@@ -37,7 +37,7 @@ public class TestLockFactory extends LuceneTestCase {
 
     public void testCustomLockFactory() throws IOException {
         MockLockFactory lf = new MockLockFactory();
-        Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory(lf));
+        Directory dir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory(lf));
 
         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
 
@@ -52,14 +52,14 @@ public class TestLockFactory extends LuceneTestCase {
         writer.close();
     }
 
-    // Verify: we can use the NoLockFactory with RAMDirectory w/ no
-    // exceptions raised:
+    // Verify: we can use the NoLockFactory w/ no exceptions raised.
     // Verify: NoLockFactory allows two IndexWriters
-    public void testRAMDirectoryNoLocking() throws IOException {
-        MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory(NoLockFactory.INSTANCE));
+    public void testDirectoryNoLocking() throws IOException {
+        MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory(NoLockFactory.INSTANCE));
 
         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
-        writer.commit(); // required so the second open succeed 
+        writer.commit(); // required so the second open succeed
+
         // Create a 2nd IndexWriter.  This is normally not allowed but it should run through since we're not
         // using any locks:
         IndexWriter writer2 = null;

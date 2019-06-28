@@ -24,9 +24,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -231,8 +231,8 @@ public class TestTransactions extends LuceneTestCase {
 
   public void testTransactions() throws Throwable {
     // we cant use non-ramdir on windows, because this test needs to double-write.
-    MockDirectoryWrapper dir1 = new MockDirectoryWrapper(random(), new RAMDirectory());
-    MockDirectoryWrapper dir2 = new MockDirectoryWrapper(random(), new RAMDirectory());
+    MockDirectoryWrapper dir1 = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
+    MockDirectoryWrapper dir2 = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
     dir1.failOn(new RandomFailure());
     dir2.failOn(new RandomFailure());
     dir1.setFailOnOpenInput(false);

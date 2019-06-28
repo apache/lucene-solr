@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -478,6 +477,11 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+      query.visit(visitor);
+    }
+
+    @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       if (scoreMode.needsScores() == false) {
         return query.createWeight(searcher, scoreMode, boost);
@@ -520,12 +524,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
             }
           };
         }
-        
-        @Override
-        public void extractTerms(Set<Term> terms) {
-          inner.extractTerms(terms);
-        }
-        
+
         @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           Scorer s = scorer(context);

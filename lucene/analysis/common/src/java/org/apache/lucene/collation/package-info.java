@@ -49,13 +49,14 @@
  *   // "fa" Locale is not supported by Sun JDK 1.4 or 1.5
  *   Collator collator = Collator.getInstance(new Locale("ar"));
  *   CollationKeyAnalyzer analyzer = new CollationKeyAnalyzer(collator);
- *   RAMDirectory ramDir = new RAMDirectory();
- *   IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(analyzer));
+ *   Path dirPath = Files.createTempDirectory("tempIndex");
+ *   Directory dir = FSDirectory.open(dirPath);
+ *   IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
  *   Document doc = new Document();
  *   doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
  *   writer.addDocument(doc);
  *   writer.close();
- *   IndexReader ir = DirectoryReader.open(ramDir);
+ *   IndexReader ir = DirectoryReader.open(dir);
  *   IndexSearcher is = new IndexSearcher(ir);
  * 
  *   QueryParser aqp = new QueryParser("content", analyzer);
@@ -75,8 +76,9 @@
  * <pre class="prettyprint">
  *   Analyzer analyzer 
  *     = new CollationKeyAnalyzer(Collator.getInstance(new Locale("da", "dk")));
- *   RAMDirectory indexStore = new RAMDirectory();
- *   IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(analyzer));
+ *   Path dirPath = Files.createTempDirectory("tempIndex");
+ *   Directory dir = FSDirectory.open(dirPath);
+ *   IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
  *   String[] tracer = new String[] { "A", "B", "C", "D", "E" };
  *   String[] data = new String[] { "HAT", "HUT", "H\u00C5T", "H\u00D8T", "HOT" };
  *   String[] sortedTracerOrder = new String[] { "A", "E", "B", "D", "C" };
@@ -87,7 +89,7 @@
  *     writer.addDocument(doc);
  *   }
  *   writer.close();
- *   IndexReader ir = DirectoryReader.open(indexStore);
+ *   IndexReader ir = DirectoryReader.open(dir);
  *   IndexSearcher searcher = new IndexSearcher(ir);
  *   Sort sort = new Sort();
  *   sort.setSort(new SortField("contents", SortField.STRING));
@@ -104,13 +106,14 @@
  *   Collator collator = Collator.getInstance(new Locale("tr", "TR"));
  *   collator.setStrength(Collator.PRIMARY);
  *   Analyzer analyzer = new CollationKeyAnalyzer(collator);
- *   RAMDirectory ramDir = new RAMDirectory();
- *   IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(analyzer));
+ *   Path dirPath = Files.createTempDirectory("tempIndex");
+ *   Directory dir = FSDirectory.open(dirPath);
+ *   IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer));
  *   Document doc = new Document();
  *   doc.add(new TextField("contents", "DIGY", Field.Store.NO));
  *   writer.addDocument(doc);
  *   writer.close();
- *   IndexReader ir = DirectoryReader.open(ramDir);
+ *   IndexReader ir = DirectoryReader.open(dir);
  *   IndexSearcher is = new IndexSearcher(ir);
  *   QueryParser parser = new QueryParser("contents", analyzer);
  *   Query query = parser.parse("d\u0131gy");   // U+0131: dotless i

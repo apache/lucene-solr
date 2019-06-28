@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import java.io.StringWriter;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,7 +31,9 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.TimeOut;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -54,26 +57,27 @@ public class RequestLoggingTest extends SolrTestCaseJ4 {
       PatternLayout
         .newBuilder()
         .withPattern("%-5p [%t]: %m%n")
-        .build(), 
+        .build(),
         null, writer, "RequestLoggingTest", false, true);
     appender.start();
+
   }
 
   @Test
-  public void testLogBeforeExecuteWithCoreLogger() {
+  public void testLogBeforeExecuteWithCoreLogger() throws InterruptedException {
     Logger logger = LogManager.getLogger(SolrCore.class);
     testLogBeforeExecute(logger);
   }
 
   @Test
-  public void testLogBeforeExecuteWithRequestLogger() {
+  public void testLogBeforeExecuteWithRequestLogger() throws InterruptedException {
     Logger logger = LogManager.getLogger("org.apache.solr.core.SolrCore.Request");
     testLogBeforeExecute(logger);
   }
 
-  public void testLogBeforeExecute(Logger logger) {
+  public void testLogBeforeExecute(Logger logger) throws InterruptedException {
     Level level = logger.getLevel();
-    
+
     LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
     LoggerConfig config = ctx.getConfiguration().getLoggerConfig(logger.getName());
     config.setLevel(Level.DEBUG);
@@ -82,23 +86,23 @@ public class RequestLoggingTest extends SolrTestCaseJ4 {
 
     try {
       assertQ(req("q", "*:*"));
-      Matcher matcher = null;
-      boolean foundDebugMsg = false;
+
+      TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      boolean found = false;
+      Matcher matcher;
+      String pat = "DEBUG.*q=\\*:\\*.*";
       String output = "";
-      for (int msgIdx = 0; msgIdx < 100; ++msgIdx) {
+      Pattern pattern = Pattern.compile(pat);
+      do {
         output = writer.toString();
-        matcher = Pattern.compile("DEBUG.*q=\\*:\\*.*").matcher(output);
-        if (matcher.find()) {
-          foundDebugMsg = true;
+        matcher = pattern.matcher(output);
+        found = matcher.find();
+        if (found) {
           break;
         }
-        try {
-          Thread.sleep(10);
-        } catch (InterruptedException ie) {
-          ;
-        }
-      }
-      assertTrue("Should have found debug-level message. Found " + output, foundDebugMsg);
+        timeOut.sleep(10);
+      } while (timeOut.hasTimedOut() == false);
+      assertTrue("Did not find expected pattern: '" + pat + "' in output: '" + output + "'", found);
       final String group = matcher.group();
       final String msg = "Should not have post query information";
       assertFalse(msg, group.contains("hits"));

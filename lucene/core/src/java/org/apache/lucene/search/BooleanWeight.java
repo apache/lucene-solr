@@ -23,10 +23,8 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
@@ -62,19 +60,6 @@ final class BooleanWeight extends Weight {
     for (BooleanClause c : query) {
       Weight w = searcher.createWeight(c.getQuery(), c.isScoring() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, boost);
       weightedClauses.add(new WeightedBooleanClause(c, w));
-    }
-  }
-
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    int i = 0;
-    for (WeightedBooleanClause clause : weightedClauses) {
-      BooleanClause c = clause.clause;
-      Weight w = clause.weight;
-      if (c.isScoring() || (scoreMode.needsScores() == false && c.isProhibited() == false)) {
-        w.extractTerms(terms);
-      }
-      i++;
     }
   }
 
@@ -168,7 +153,7 @@ final class BooleanWeight extends Weight {
       @Override
       public int score(final LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
         final LeafCollector noScoreCollector = new LeafCollector() {
-          FakeScorer fake = new FakeScorer();
+          ScoreAndDoc fake = new ScoreAndDoc();
 
           @Override
           public void setScorer(Scorable scorer) throws IOException {
@@ -407,11 +392,6 @@ final class BooleanWeight extends Weight {
       // optional scorer. Therefore if there are not enough optional scorers
       // no documents will be matched by the query
       return null;
-    }
-
-    // we don't need scores, so if we have required clauses, drop optional clauses completely
-    if (scoreMode.needsScores() == false && minShouldMatch == 0 && scorers.get(Occur.MUST).size() + scorers.get(Occur.FILTER).size() > 0) {
-      scorers.get(Occur.SHOULD).clear();
     }
 
     return new Boolean2ScorerSupplier(this, scorers, scoreMode, minShouldMatch);

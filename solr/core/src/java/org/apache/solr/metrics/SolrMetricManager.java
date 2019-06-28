@@ -354,13 +354,13 @@ public class SolrMetricManager {
   }
 
   /**
-   * Check whether a registry with a given (overridable) name already exists.
+   * Check whether a registry with a given name already exists.
    * @param name registry name
    * @return true if this name points to a registry that already exists, false otherwise
    */
   public boolean hasRegistry(String name) {
     Set<String> names = registryNames();
-    name = overridableRegistryName(name);
+    name = enforcePrefix(name);
     return names.contains(name);
   }
 
@@ -399,18 +399,13 @@ public class SolrMetricManager {
 
   /**
    * Check for predefined shared registry names. This compares the input name
-   * with normalized and possibly overriden names of predefined shared registries -
+   * with normalized names of predefined shared registries -
    * {@link #JVM_REGISTRY} and {@link #JETTY_REGISTRY}.
-   * @param registry already normalized and possibly overriden name
+   * @param registry already normalized name
    * @return true if the name matches one of shared registries
    */
   private static boolean isSharedRegistry(String registry) {
-    if (overridableRegistryName(JETTY_REGISTRY).equals(registry) ||
-        overridableRegistryName(JVM_REGISTRY).equals(registry)) {
-      return true;
-    } else {
-      return false;
-    }
+    return JETTY_REGISTRY.equals(registry) || JVM_REGISTRY.equals(registry);
   }
 
   /**
@@ -419,7 +414,7 @@ public class SolrMetricManager {
    * @return existing or newly created registry
    */
   public MetricRegistry registry(String registry) {
-    registry = overridableRegistryName(registry);
+    registry = enforcePrefix(registry);
     if (isSharedRegistry(registry)) {
       return SharedMetricRegistries.getOrCreate(registry);
     } else {
@@ -454,8 +449,8 @@ public class SolrMetricManager {
   public void removeRegistry(String registry) {
     // close any reporters for this registry first
     closeReporters(registry, null);
-    // make sure we use a name with prefix, with overrides
-    registry = overridableRegistryName(registry);
+    // make sure we use a name with prefix
+    registry = enforcePrefix(registry);
     if (isSharedRegistry(registry)) {
       SharedMetricRegistries.remove(registry);
     } else {
@@ -478,8 +473,8 @@ public class SolrMetricManager {
    *                  an empty one under the previous name.
    */
   public void swapRegistries(String registry1, String registry2) {
-    registry1 = overridableRegistryName(registry1);
-    registry2 = overridableRegistryName(registry2);
+    registry1 = enforcePrefix(registry1);
+    registry2 = enforcePrefix(registry2);
     if (isSharedRegistry(registry1) || isSharedRegistry(registry2)) {
       throw new UnsupportedOperationException("Cannot swap shared registry: " + registry1 + ", " + registry2);
     }
@@ -748,26 +743,6 @@ public class SolrMetricManager {
   }
 
   /**
-   * Allows named registries to be renamed using System properties.
-   * This would be mostly be useful if you want to combine the metrics from a few registries for a single
-   * reporter.
-   * <p>For example, in order to collect metrics from related cores in a single registry you could specify
-   * the following system properties:</p>
-   * <pre>
-   *   ... -Dsolr.core.collection1=solr.core.allCollections -Dsolr.core.collection2=solr.core.allCollections
-   * </pre>
-   * <b>NOTE:</b> Once a registry is renamed in a way that its metrics are combined with another repository
-   * it is no longer possible to retrieve the original metrics until this renaming is removed and the Solr
-   * {@link org.apache.solr.core.SolrInfoBean.Group} of components that reported to that name is restarted.
-   * @param registry The name of the registry
-   * @return A potentially overridden (via System properties) registry name
-   */
-  public static String overridableRegistryName(String registry) {
-    String fqRegistry = enforcePrefix(registry);
-    return enforcePrefix(System.getProperty(fqRegistry,fqRegistry));
-  }
-
-  /**
    * Enforces the leading {@link #REGISTRY_NAME_PREFIX} in a name.
    * @param name input name, possibly without the prefix
    * @return original name if it contained the prefix, or the
@@ -791,7 +766,7 @@ public class SolrMetricManager {
    */
   public static String getRegistryName(SolrInfoBean.Group group, String... names) {
     String fullName;
-    String prefix = REGISTRY_NAME_PREFIX + group.toString() + ".";
+    String prefix = new StringBuilder(REGISTRY_NAME_PREFIX).append(group.name()).append('.').toString();
     // check for existing prefix and group
     if (names != null && names.length > 0 && names[0] != null && names[0].startsWith(prefix)) {
       // assume the first segment already was expanded
@@ -805,7 +780,7 @@ public class SolrMetricManager {
     } else {
       fullName = MetricRegistry.name(group.toString(), names);
     }
-    return overridableRegistryName(fullName);
+    return enforcePrefix(fullName);
   }
 
   // reporter management
@@ -838,7 +813,7 @@ public class SolrMetricManager {
           String[] targets = target.split("[\\s,]+");
           boolean found = false;
           for (String t : targets) {
-            t = overridableRegistryName(t);
+            t = enforcePrefix(t);
             if (registryName.equals(t)) {
               found = true;
               break;
@@ -914,8 +889,8 @@ public class SolrMetricManager {
       throw new IllegalArgumentException("loadReporter called with missing arguments: " +
           "registry=" + registry + ", loader=" + loader + ", pluginInfo=" + pluginInfo);
     }
-    // make sure we use a name with prefix, with overrides
-    registry = overridableRegistryName(registry);
+    // make sure we use a name with prefix
+    registry = enforcePrefix(registry);
     SolrMetricReporter reporter = loader.newInstance(
         pluginInfo.className,
         SolrMetricReporter.class,
@@ -987,8 +962,8 @@ public class SolrMetricManager {
    * @return true if a named reporter existed and was closed.
    */
   public boolean closeReporter(String registry, String name, String tag) {
-    // make sure we use a name with prefix, with overrides
-    registry = overridableRegistryName(registry);
+    // make sure we use a name with prefix
+    registry = enforcePrefix(registry);
     try {
       if (!reportersLock.tryLock(10, TimeUnit.SECONDS)) {
         log.warn("Could not obtain lock to modify reporters registry: " + registry);
@@ -1038,8 +1013,8 @@ public class SolrMetricManager {
    * @return names of closed reporters
    */
   public Set<String> closeReporters(String registry, String tag) {
-    // make sure we use a name with prefix, with overrides
-    registry = overridableRegistryName(registry);
+    // make sure we use a name with prefix
+    registry = enforcePrefix(registry);
     try {
       if (!reportersLock.tryLock(10, TimeUnit.SECONDS)) {
         log.warn("Could not obtain lock to modify reporters registry: " + registry);
@@ -1085,8 +1060,8 @@ public class SolrMetricManager {
    * @return map of reporters and their names, may be empty but never null
    */
   public Map<String, SolrMetricReporter> getReporters(String registry) {
-    // make sure we use a name with prefix, with overrides
-    registry = overridableRegistryName(registry);
+    // make sure we use a name with prefix
+    registry = enforcePrefix(registry);
     try {
       if (!reportersLock.tryLock(10, TimeUnit.SECONDS)) {
         log.warn("Could not obtain lock to modify reporters registry: " + registry);

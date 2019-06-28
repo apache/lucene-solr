@@ -16,11 +16,14 @@
  */
 package org.apache.solr.ltr.model;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
@@ -81,6 +84,7 @@ public abstract class LTRScoringModel {
   private final List<Feature> allFeatures;
   private final Map<String,Object> params;
   protected final List<Normalizer> norms;
+  private Integer hashCode; // cached since it shouldn't actually change after construction
 
   public static LTRScoringModel getInstance(SolrResourceLoader solrResourceLoader,
       String className, String name, List<Feature> features,
@@ -111,11 +115,11 @@ public abstract class LTRScoringModel {
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) {
     this.name = name;
-    this.features = features;
+    this.features = features != null ? Collections.unmodifiableList(new ArrayList<>(features)) : null;
     this.featureStoreName = featureStoreName;
-    this.allFeatures = allFeatures;
-    this.params = params;
-    this.norms = norms;
+    this.allFeatures = allFeatures != null ? Collections.unmodifiableList(new ArrayList<>(allFeatures)) : null;
+    this.params = params != null ? Collections.unmodifiableMap(new LinkedHashMap<>(params)) : null;
+    this.norms = norms != null ? Collections.unmodifiableList(new ArrayList<>(norms)) : null;
   }
 
   /**
@@ -144,7 +148,7 @@ public abstract class LTRScoringModel {
    * @return the norms
    */
   public List<Normalizer> getNorms() {
-    return Collections.unmodifiableList(norms);
+    return norms;
   }
 
   /**
@@ -158,7 +162,7 @@ public abstract class LTRScoringModel {
    * @return the features
    */
   public List<Feature> getFeatures() {
-    return Collections.unmodifiableList(features);
+    return features;
   }
 
   public Map<String,Object> getParams() {
@@ -167,13 +171,20 @@ public abstract class LTRScoringModel {
 
   @Override
   public int hashCode() {
+    if(hashCode == null) {
+      hashCode = calculateHashCode();
+    }
+    return hashCode;
+  }
+
+  final private int calculateHashCode() {
     final int prime = 31;
     int result = 1;
-    result = (prime * result) + ((features == null) ? 0 : features.hashCode());
-    result = (prime * result) + ((name == null) ? 0 : name.hashCode());
-    result = (prime * result) + ((params == null) ? 0 : params.hashCode());
-    result = (prime * result) + ((norms == null) ? 0 : norms.hashCode());
-    result = (prime * result) + ((featureStoreName == null) ? 0 : featureStoreName.hashCode());
+    result = (prime * result) + Objects.hashCode(features);
+    result = (prime * result) + Objects.hashCode(name);
+    result = (prime * result) + Objects.hashCode(params);
+    result = (prime * result) + Objects.hashCode(norms);
+    result = (prime * result) + Objects.hashCode(featureStoreName);
     return result;
   }
 

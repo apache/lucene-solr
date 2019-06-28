@@ -35,6 +35,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
@@ -70,7 +71,7 @@ public class SyncStrategy {
   public SyncStrategy(CoreContainer cc) {
     UpdateShardHandler updateShardHandler = cc.getUpdateShardHandler();
     client = updateShardHandler.getDefaultHttpClient();
-    shardHandler = cc.getShardHandlerFactory().getShardHandler();
+    shardHandler = ((HttpShardHandlerFactory)cc.getShardHandlerFactory()).getShardHandler(cc.getUpdateShardHandler().getDefaultHttpClient());
     updateExecutor = updateShardHandler.getUpdateExecutor();
   }
   
@@ -113,17 +114,18 @@ public class SyncStrategy {
   
   private PeerSync.PeerSyncResult syncReplicas(ZkController zkController, SolrCore core,
       ZkNodeProps leaderProps, boolean peerSyncOnlyWithActive) {
-    boolean success = false;
-    PeerSync.PeerSyncResult result = null;
-    CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
-    String collection = cloudDesc.getCollectionName();
-    String shardId = cloudDesc.getShardId();
-
     if (isClosed) {
       log.info("We have been closed, won't sync with replicas");
       return PeerSync.PeerSyncResult.failure();
     }
-    
+    boolean success = false;
+    PeerSync.PeerSyncResult result = null;
+    assert core != null;
+    assert core.getCoreDescriptor() != null;
+    CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
+    String collection = cloudDesc.getCollectionName();
+    String shardId = cloudDesc.getShardId();
+
     // first sync ourselves - we are the potential leader after all
     try {
       result = syncWithReplicas(zkController, core, leaderProps, collection,
@@ -160,6 +162,11 @@ public class SyncStrategy {
     List<ZkCoreNodeProps> nodes = zkController.getZkStateReader()
         .getReplicaProps(collection, shardId,core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
     
+    if (isClosed) {
+      log.info("We have been closed, won't sync with replicas");
+      return PeerSync.PeerSyncResult.failure();
+    }
+    
     if (nodes == null) {
       // I have no replicas
       return PeerSync.PeerSyncResult.success();
@@ -183,6 +190,11 @@ public class SyncStrategy {
   private void syncToMe(ZkController zkController, String collection,
                         String shardId, ZkNodeProps leaderProps, CoreDescriptor cd,
                         int nUpdates) {
+    
+    if (isClosed) {
+      log.info("We have been closed, won't sync replicas to me.");
+      return;
+    }
     
     // sync everyone else
     // TODO: we should do this in parallel at least
@@ -289,6 +301,11 @@ public class SyncStrategy {
       }
       @Override
       public void run() {
+        
+        if (isClosed) {
+          log.info("We have been closed, won't request recovery");
+          return;
+        }
         RequestRecovery recoverRequestCmd = new RequestRecovery();
         recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
         recoverRequestCmd.setCoreName(coreName);

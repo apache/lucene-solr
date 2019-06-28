@@ -217,8 +217,8 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
     assertUlogDir(collections);
 
-    ChaosMonkey.stop(jettys.get(1));
-    ChaosMonkey.stop(jettys.get(2));
+    jettys.get(1).stop();
+    jettys.get(2).stop();
 
     Thread.sleep(5000);
 
@@ -249,12 +249,12 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     List<JettySolrRunner> stoppedJetties = allowOverseerRestart
         ? jettys.stream().filter(jettySolrRunner -> random().nextBoolean()).collect(Collectors.toList()) : notOverseerJetties();
     ChaosMonkey.stop(stoppedJetties);
-    ChaosMonkey.stop(controlJetty);
+    controlJetty.stop();
 
     assertTrue("Timeout waiting for all not live", waitingForReplicasNotLive(cloudClient.getZkStateReader(), 45000, stoppedJetties));
 
     ChaosMonkey.start(stoppedJetties);
-    ChaosMonkey.start(controlJetty);
+    controlJetty.start();
 
     assertSliceAndReplicaCount(collection1, 2, 2, 120000);
     assertSliceAndReplicaCount(collection3, 5, 1, 120000);
@@ -266,8 +266,8 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     assertUlogDir(collections);
 
     int jettyIndex = random().nextInt(jettys.size());
-    ChaosMonkey.stop(jettys.get(jettyIndex));
-    ChaosMonkey.start(jettys.get(jettyIndex));
+    jettys.get(jettyIndex).stop();
+    jettys.get(jettyIndex).start();
 
     assertSliceAndReplicaCount(collection1, 2, 2, 120000);
 

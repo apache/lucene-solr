@@ -38,7 +38,7 @@ public class CapturedEvent {
   public CapturedEvent(long timestamp, ActionContext context, AutoScalingConfig.TriggerListenerConfig config, TriggerEventProcessorStage stage, String actionName,
                        TriggerEvent event, String message) {
     if (context != null) {
-      context.toMap(this.context);
+      context._forEachEntry((o, o2) -> CapturedEvent.this.context.put((String) o, o2));
       TriggerEvent.fixOps("properties." + TriggerEvent.REQUESTED_OPS, this.context);
       TriggerEvent.fixOps("properties." + TriggerEvent.UNSUPPORTED_OPS, this.context);
     }

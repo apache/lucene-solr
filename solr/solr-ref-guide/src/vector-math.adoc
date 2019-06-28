@@ -16,23 +16,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This section of the user guide covers vector math and
-vector manipulation functions.
+This section covers vector math and vector manipulation functions.
 
 == Arrays
 
 Arrays can be created with the `array` function.
 
-For example the expression below creates a numeric array with
-three elements:
+For example, the expression below creates a numeric array with three elements:
 
 [source,text]
 ----
 array(1, 2, 3)
 ----
 
-When this expression is sent to the /stream handler it responds with
-a json array.
+When this expression is sent to the `/stream` handler it responds with a JSON array:
 
 [source,json]
 ----
@@ -66,7 +63,7 @@ For example, an array can be reversed with the `rev` function:
 rev(array(1, 2, 3))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -89,15 +86,14 @@ When this expression is sent to the /stream handler it responds with:
 }
 ----
 
-Another example is the `length` function,
-which returns the length of an array:
+Another example is the `length` function, which returns the length of an array:
 
 [source,text]
 ----
 length(array(1, 2, 3))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -124,7 +120,7 @@ copies elements of an array from a start and end range.
 copyOfRange(array(1,2,3,4,5,6), 1, 4)
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -147,23 +143,93 @@ When this expression is sent to the /stream handler it responds with:
 }
 ----
 
+Elements of an array can be trimmed using the `ltrim` (left trim) and `rtrim` (right trim) functions.
+The `ltrim` and `rtrim` functions remove a specific number of elements from the left or right of an array.
+
+The example below shows the `lrtim` function trimming the first 2 elements of an array:
+
+[source,text]
+----
+ltrim(array(0,1,2,3,4,5,6), 2)
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "return-value": [
+          2,
+          3,
+          4,
+          5,
+          6,
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 1
+      }
+    ]
+  }
+}
+----
+
+== Vector Sorting
+
+An array can be sorted in natural ascending order with the `asc` function.
+
+The example below shows the `asc` function sorting an array:
+
+[source,text]
+----
+asc(array(10,1,2,3,4,5,6))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "return-value": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          10
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 1
+      }
+    ]
+  }
+}
+----
+
 == Vector Summarizations and Norms
 
-There are a set of functions that perform
-summerizations and return norms of arrays. These functions
-operate over an array and return a single
-value. The following vector summarizations and norm functions are available:
+There are a set of functions that perform summarizations and return norms of arrays. These functions
+operate over an array and return a single value. The following vector summarizations and norm functions are available:
 `mult`, `add`, `sumSq`, `mean`, `l1norm`, `l2norm`, `linfnorm`.
 
-The example below is using the `mult` function,
-which multiples all the values of an array.
+The example below shows the `mult` function, which multiples all the values of an array.
 
 [source,text]
 ----
 mult(array(2,4,8))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -184,14 +250,14 @@ When this expression is sent to the /stream handler it responds with:
 
 The vector norm functions provide different formulas for calculating vector magnitude.
 
-The example below calculates the *l2norm* of an array.
+The example below calculates the `l2norm` of an array.
 
 [source,text]
 ----
 l2norm(array(2,4,8))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -212,12 +278,11 @@ When this expression is sent to the /stream handler it responds with:
 
 == Scalar Vector Math
 
-Scalar vector math functions add, subtract, multiple or divide a scalar value with every value in a vector.
+Scalar vector math functions add, subtract, multiply or divide a scalar value with every value in a vector.
 The following functions perform these operations: `scalarAdd`, `scalarSubtract`, `scalarMultiply`
 and `scalarDivide`.
 
-
-Below is an example of the `scalarMultiply` function, which multiplies the scalar value 3 with
+Below is an example of the `scalarMultiply` function, which multiplies the scalar value `3` with
 every value of an array.
 
 [source,text]
@@ -225,7 +290,7 @@ every value of an array.
 scalarMultiply(3, array(1,2,3))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -251,7 +316,7 @@ When this expression is sent to the /stream handler it responds with:
 == Element-By-Element Vector Math
 
 Two vectors can be added, subtracted, multiplied and divided using element-by-element
-vector math functions. The following element-by-element vector math functions are:
+vector math functions. The available element-by-element vector math functions are:
 `ebeAdd`, `ebeSubtract`, `ebeMultiply`, `ebeDivide`.
 
 The expression below performs the element-by-element subtraction of two arrays.
@@ -261,7 +326,7 @@ The expression below performs the element-by-element subtraction of two arrays.
 ebeSubtract(array(10, 15, 20), array(1,2,3))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -297,7 +362,7 @@ Below is an example of the `dotProduct` function:
 dotProduct(array(2,3,0,0,0,1), array(2,0,1,0,0,3))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -323,7 +388,7 @@ Below is an example of the `cosineSimilarity` function:
 cosineSimilarity(array(2,3,0,0,0,1), array(2,0,1,0,0,3))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----

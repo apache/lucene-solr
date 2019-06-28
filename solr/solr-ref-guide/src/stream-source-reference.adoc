@@ -130,8 +130,12 @@ The `facet` function provides aggregations that are rolled up over buckets. Unde
 * `collection`: (Mandatory) Collection the facets will be aggregated from.
 * `q`: (Mandatory) The query to build the aggregations from.
 * `buckets`: (Mandatory) Comma separated list of fields to rollup over. The comma separated list represents the dimensions in a multi-dimensional rollup.
-* `bucketSorts`: Comma separated list of sorts to apply to each dimension in the buckets parameters. Sorts can be on the computed metrics or on the bucket values.
-* `bucketSizeLimit`: The number of buckets to include. This value is applied to each dimension.
+* `bucketSorts`: (Mandatory) Comma separated list of sorts to apply to each dimension in the buckets parameters. Sorts can be on the computed metrics or on the bucket values.
+* `rows`: (Default 10) The number of rows to return. '-1' will return all rows.
+* `offset`:(Default 0) The offset in the result set to start from.
+* `overfetch`: (Default 150) Over-fetching is used to provide accurate aggregations over high cardinality fields.
+* `method`: The JSON facet API aggregation method.
+* `bucketSizeLimit`: Sets the absolute number of rows to fetch. This is incompatible with rows, offset and overfetch. This value is applied to each dimension. '-1' will fetch all the buckets.
 * `metrics`: List of metrics to compute for the buckets. Currently supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`.
 
 === facet Syntax
@@ -144,7 +148,7 @@ facet(collection1,
       q="*:*",
       buckets="a_s",
       bucketSorts="sum(a_i) desc",
-      bucketSizeLimit=100,
+      rows=100,
       sum(a_i),
       sum(a_f),
       min(a_i),
@@ -166,7 +170,8 @@ facet(collection1,
       q="*:*",
       buckets="year_i, month_i, day_i",
       bucketSorts="year_i desc, month_i desc, day_i desc",
-      bucketSizeLimit=100,
+      rows=10,
+      offset=20,
       sum(a_i),
       sum(a_f),
       min(a_i),
@@ -178,7 +183,8 @@ facet(collection1,
       count(*))
 ----
 
-The example above shows a facet function with rollups over three buckets, where the buckets are returned in descending order by bucket value.
+The example above shows a `facet` function with rollups over three buckets, where the buckets are returned in descending order by bucket value.
+The `rows` parameter returns 10 rows and the `offset` parameter starts returning rows from the 20th row.
 
 == features
 
@@ -214,36 +220,34 @@ features(collection1,
 
 The `nodes` function provides breadth-first graph traversal. For details, see the section <<graph-traversal.adoc#graph-traversal,Graph Traversal>>.
 
-== knn
+== knnSearch
 
-The `knn` function returns the K nearest neighbors for a document based on text similarity. Under the covers the `knn` function
-use the More Like This query parser plugin.
+The `knnSearch` function returns the k-nearest neighbors for a document based on text similarity. Under the covers the `knnSearch` function
+uses the More Like This query parser plugin.
 
-=== knn Parameters
+=== knnSearch Parameters
 
 * `collection`: (Mandatory) The collection to perform the search in.
 * `id`: (Mandatory) The id of the source document to begin the knn search from.
 * `qf`: (Mandatory) The query field used to compare documents.
 * `k`: (Mandatory) The number of nearest neighbors to return.
 * `fl`: (Mandatory) The field list to return.
-* `mintf`: (Optional) The minimum numer of occurrences of the term in the source document to be inlcued in the search.
-* `maxtf`: (Optional) The maximum numer of occurrences of the term in the source document to be inlcued in the search.
-* `mindf`: (Optional) The minimum numer of occurrences in the corpus to be inlcued in the search.
-* `maxdf`: (Optional) The maximum numer of occurrences in the corpus to be inlcued in the search.
-* `minwl`: (Optional) The minimum world length of to be inlcued in the search.
-* `maxwl`: (Optional) The maximum world length of to be inlcued in the search.
+* `mindf`: (Optional) The minimum number of occurrences in the corpus to be included in the search.
+* `maxdf`: (Optional) The maximum number of occurrences in the corpus to be included in the search.
+* `minwl`: (Optional) The minimum world length of to be included in the search.
+* `maxwl`: (Optional) The maximum world length of to be included in the search.
 
-=== knn Syntax
+=== knnSearch Syntax
 
 [source,text]
 ----
-knn(collection1,
-    id="doc1",
-    qf="text_field",
-    k="10",
-    fl="id, title",
-    mintf="3",
-    maxdf="10000000")
+knnSearch(collection1,
+          id="doc1",
+          qf="text_field",
+          k="10",
+          fl="id, title",
+          mintf="3",
+          maxdf="10000000")
 ----
 
 == model

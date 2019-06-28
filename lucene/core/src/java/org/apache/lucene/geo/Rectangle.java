@@ -87,6 +87,13 @@ public class Rectangle {
     return maxLon < minLon;
   }
 
+  /** returns true if rectangle (defined by minLat, maxLat, minLon, maxLon) contains the lat lon point */
+  public static boolean containsPoint(final double lat, final double lon,
+                                      final double minLat, final double maxLat,
+                                      final double minLon, final double maxLon) {
+    return lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon;
+  }
+
   /** Compute Bounding Box for a circle using WGS-84 parameters */
   public static Rectangle fromPointDistance(final double centerLat, final double centerLon, final double radiusMeters) {
     checkLatitude(centerLat);

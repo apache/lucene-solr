@@ -166,12 +166,12 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
     
     try {
-      
+
       super.processDelete(cmd);
-      
+
     } catch (Throwable t) {
       firstErrTracker.caught(t);
-      
+
       ToleratedUpdateError err = new ToleratedUpdateError(cmd.isDeleteById() ? CmdType.DELID : CmdType.DELQ,
                                                           cmd.isDeleteById() ? cmd.id : cmd.query,
                                                           t.getMessage());
@@ -184,7 +184,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
       if (CmdType.DELQ.equals(err.getType())) {
         knownDBQErrors.add(err);
       }
-      
+
       if (knownErrors.size() > maxErrors) {
         firstErrTracker.throwFirst();
       }
@@ -233,13 +233,13 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     // even if processAdd threw an error, this.finish() is still called and we might have additional
     // errors from other remote leaders that we need to check for from the finish method of downstream processors
     // (like DUP)
-    
+
     try {
       super.finish();
     } catch (DistributedUpdateProcessor.DistributedUpdatesAsyncException duae) {
       firstErrTracker.caught(duae);
 
-      
+
       // adjust our stats based on each of the distributed errors
       for (Error error : duae.errors) {
         // we can't trust the req info from the Error, because multiple original requests might have been
@@ -276,7 +276,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
               knownDBQErrors.add(err);
             }
           }
-          
+
           knownErrors.add(err);
         }
       }
@@ -290,7 +290,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     firstErrTracker.annotate(knownErrors);
 
     // decide if we have hit a situation where we know an error needs to be thrown.
-    
+
     if ((DistribPhase.TOLEADER.equals(distribPhase) ? 0 : maxErrors) < knownErrors.size()) {
       // NOTE: even if maxErrors wasn't exceeded, we need to throw an error when we have any errors if we're
       // a leader that was forwarded to by another node so that the forwarding node knows we encountered some
@@ -327,11 +327,11 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     
     SolrException first = null;
     boolean thrown = false;
-    
+
     public FirstErrTracker() {
       /* NOOP */
     }
-    
+
     /** 
      * Call this method immediately anytime an exception is caught from a down stream method -- 
      * even if you are going to ignore it (for now).  If you plan to rethrow the Exception, use 
@@ -347,7 +347,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
         }
       }
     }
-    
+
     /** 
      * Call this method in place of any situation where you would normally (re)throw an exception 
      * (already passed to the {@link #caught} method because maxErrors was exceeded
@@ -374,9 +374,9 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
       if (null == first) {
         return; // no exception to annotate
       }
-      
+
       assert null != errors : "how do we have an exception to annotate w/o any errors?";
-      
+
       NamedList<String> firstErrMetadata = first.getMetadata();
       if (null == firstErrMetadata) { // obnoxious
         firstErrMetadata = new NamedList<String>();

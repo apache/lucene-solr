@@ -21,9 +21,6 @@ import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.RandomAccessInput;
-
 /**
  * An {@link IndexInput} implementing {@link RandomAccessInput} and backed
  * by a {@link ByteBuffersDataInput}.
@@ -63,7 +60,7 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
   public ByteBuffersIndexInput slice(String sliceDescription, long offset, long length) throws IOException {
     ensureOpen();
     return new ByteBuffersIndexInput(in.slice(offset, length), 
-        "(sliced) offset=" + offset + ", length=" + length + " " + toString());
+        "(sliced) offset=" + offset + ", length=" + length + " " + toString() + " [slice=" + sliceDescription + "]");
   }
 
   @Override

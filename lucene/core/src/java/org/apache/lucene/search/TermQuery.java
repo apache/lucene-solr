@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
@@ -73,11 +72,6 @@ public class TermQuery extends Query {
       } else {
         this.simScorer = similarity.scorer(boost, collectionStats, termStats);
       }
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      terms.add(getTerm());
     }
 
     @Override
@@ -205,6 +199,13 @@ public class TermQuery extends Query {
     return new TermWeight(searcher, scoreMode, boost, termState);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(term.field())) {
+      visitor.consumeTerms(this, term);
+    }
+  }
+
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {
@@ -224,7 +225,7 @@ public class TermQuery extends Query {
     return perReaderTermState;
   }
 
-  /** Returns true iff <code>o</code> is equal to this. */
+  /** Returns true iff <code>other</code> is equal to <code>this</code>. */
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&

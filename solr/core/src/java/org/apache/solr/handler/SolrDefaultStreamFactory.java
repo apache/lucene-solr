@@ -35,6 +35,7 @@ public class SolrDefaultStreamFactory extends DefaultStreamFactory {
     super();
     this.withFunctionName("analyze",  AnalyzeEvaluator.class);
     this.withFunctionName("classify", ClassifyStream.class);
+    this.withFunctionName("haversineMeters", HaversineMetersEvaluator.class);
   }
 
   public SolrDefaultStreamFactory withSolrResourceLoader(SolrResourceLoader solrResourceLoader) {

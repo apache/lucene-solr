@@ -33,6 +33,8 @@ import org.tartarus.snowball.ext.TurkishStemmer;
 
 /**
  * {@link Analyzer} for Turkish.
+ *
+ * @since 3.1
  */
 public final class TurkishAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

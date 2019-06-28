@@ -113,7 +113,7 @@ public class JaspellTernarySearchTrie implements Accountable {
   }
 
   /**
-   * Compares characters by alfabetical order.
+   * Compares characters by alphabetical order.
    * 
    *@param cCompare2
    *          The first char in the comparison.
@@ -204,7 +204,7 @@ public class JaspellTernarySearchTrie implements Accountable {
    *@param file
    *          The <code>Path</code> with the data to load into the Trie.
    *@exception IOException
-   *              A problem occured while reading the data.
+   *              A problem occurred while reading the data.
    */
   public JaspellTernarySearchTrie(Path file) throws IOException {
     this(file, false);
@@ -221,7 +221,7 @@ public class JaspellTernarySearchTrie implements Accountable {
    *          If true, the file is compressed with the GZIP algorithm, and if
    *          false, the file is a normal text document.
    *@exception IOException
-   *              A problem occured while reading the data.
+   *              A problem occurred while reading the data.
    */
   public JaspellTernarySearchTrie(Path file, boolean compression)
           throws IOException {
@@ -439,14 +439,14 @@ public class JaspellTernarySearchTrie implements Accountable {
   protected String getKey(TSTNode node) {
     StringBuilder getKeyBuffer = new StringBuilder();
     getKeyBuffer.setLength(0);
-    getKeyBuffer.append("" + node.splitchar);
+    getKeyBuffer.append("").append(node.splitchar);
     TSTNode currentNode;
     TSTNode lastNode;
     currentNode = node.relatives[TSTNode.PARENT];
     lastNode = node;
     while (currentNode != null) {
       if (currentNode.relatives[TSTNode.EQKID] == lastNode) {
-        getKeyBuffer.append("" + currentNode.splitchar);
+        getKeyBuffer.append("").append(currentNode.splitchar);
       }
       lastNode = currentNode;
       currentNode = currentNode.relatives[TSTNode.PARENT];

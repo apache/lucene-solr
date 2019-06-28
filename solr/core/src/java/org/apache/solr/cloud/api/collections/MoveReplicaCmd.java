@@ -72,13 +72,15 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   private void moveReplica(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     log.debug("moveReplica() : {}", Utils.toJSONString(message));
     ocmh.checkRequired(message, COLLECTION_PROP, CollectionParams.TARGET_NODE);
-    String collection = message.getStr(COLLECTION_PROP);
+    String extCollection = message.getStr(COLLECTION_PROP);
     String targetNode = message.getStr(CollectionParams.TARGET_NODE);
     boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     boolean inPlaceMove = message.getBool(IN_PLACE_MOVE, true);
     int timeout = message.getInt(TIMEOUT, 10 * 60); // 10 minutes
 
     String async = message.getStr(ASYNC);
+
+    String collection = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollection);
 
     DocCollection coll = clusterState.getCollection(collection);
     if (coll == null) {
@@ -169,7 +171,12 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       removeReplicasProps.getProperties().put(CoreAdminParams.DELETE_INDEX, false);
       if (async != null) removeReplicasProps.getProperties().put(ASYNC, async);
       NamedList deleteResult = new NamedList();
-      ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
+      try {
+        ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
+      } catch (SolrException e) {
+        // assume this failed completely so there's nothing to roll back
+        deleteResult.add("failure", e.toString());
+      }
       if (deleteResult.get("failure") != null) {
         String errorString = String.format(Locale.ROOT, "Failed to cleanup replica collection=%s shard=%s name=%s, failure=%s",
             coll.getName(), slice.getName(), replica.getName(), deleteResult.get("failure"));
@@ -263,7 +270,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     NamedList addResult = new NamedList();
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ocmh);
     ActiveReplicaWatcher watcher = null;
-    ZkNodeProps props = ocmh.addReplica(clusterState, addReplicasProps, addResult, null);
+    ZkNodeProps props = ocmh.addReplica(clusterState, addReplicasProps, addResult, null).get(0);
     log.debug("props " + props);
     if (replica.equals(slice.getLeader()) || waitForFinalState) {
       watcher = new ActiveReplicaWatcher(coll.getName(), null, Collections.singletonList(newCoreName), countDownLatch);
@@ -304,7 +311,11 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         REPLICA_PROP, replica.getName());
     if (async != null) removeReplicasProps.getProperties().put(ASYNC, async);
     NamedList deleteResult = new NamedList();
-    ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
+    try {
+      ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult, null);
+    } catch (SolrException e) {
+      deleteResult.add("failure", e.toString());
+    }
     if (deleteResult.get("failure") != null) {
       String errorString = String.format(Locale.ROOT, "Failed to cleanup replica collection=%s shard=%s name=%s, failure=%s",
           coll.getName(), slice.getName(), replica.getName(), deleteResult.get("failure"));

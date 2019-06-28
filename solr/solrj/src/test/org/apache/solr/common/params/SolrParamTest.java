@@ -22,12 +22,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 
 /**
  */
-public class SolrParamTest extends LuceneTestCase {  
+public class SolrParamTest extends SolrTestCase {
 
   public void testParamIterators() {
 

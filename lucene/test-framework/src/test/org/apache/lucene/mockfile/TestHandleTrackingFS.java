@@ -19,17 +19,12 @@ package org.apache.lucene.mockfile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.Object;
-import java.lang.Override;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import org.apache.lucene.mockfile.HandleTrackingFS;
-import org.apache.lucene.mockfile.LeakFS;
 
 /** Basic tests for HandleTrackingFS */
 public class TestHandleTrackingFS extends MockFileSystemTestCase {

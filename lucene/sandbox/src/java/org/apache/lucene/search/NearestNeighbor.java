@@ -178,7 +178,7 @@ class NearestNeighbor {
 
     @Override
     public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-      throw new AssertionError();
+      return Relation.CELL_CROSSES_QUERY;
     }
   }
 

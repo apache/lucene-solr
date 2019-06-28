@@ -172,8 +172,7 @@ public class CloudMLTQParser extends QParser {
 
       return realMLTQuery.build();
     } catch (IOException e) {
-      e.printStackTrace();
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad Request");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad Request", e);
     }
 
   }

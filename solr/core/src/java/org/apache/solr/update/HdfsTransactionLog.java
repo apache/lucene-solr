@@ -82,9 +82,6 @@ public class HdfsTransactionLog extends TransactionLog {
     this.fs = fs;
 
     try {
-      if (debug) {
-        //log.debug("New TransactionLog file=" + tlogFile + ", exists=" + tlogFile.exists() + ", size=" + tlogFile.length() + ", openExisting=" + openExisting);
-      }
       this.tlogFile = tlogFile;
       
       if (fs.exists(tlogFile) && openExisting) {

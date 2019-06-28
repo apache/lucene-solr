@@ -29,6 +29,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FilterCodecReader;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OneMergeWrappingMergePolicy;
@@ -134,13 +135,13 @@ public class UninvertDocValuesMergePolicyFactory extends WrapperMergePolicyFacto
    */
   private class UninvertingFilterCodecReader extends FilterCodecReader {
 
-    private final UninvertingReader uninvertingReader;
+    private final LeafReader uninvertingReader;
     private final DocValuesProducer docValuesProducer;
 
     public UninvertingFilterCodecReader(CodecReader in, Map<String,UninvertingReader.Type> uninversionMap) {
       super(in);
 
-      this.uninvertingReader = new UninvertingReader(in, uninversionMap);
+      this.uninvertingReader = UninvertingReader.wrap(in, uninversionMap::get);
       this.docValuesProducer = new DocValuesProducer() {
 
         @Override

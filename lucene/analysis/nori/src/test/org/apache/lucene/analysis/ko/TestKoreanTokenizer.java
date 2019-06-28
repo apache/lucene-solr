@@ -34,7 +34,7 @@ import org.apache.lucene.analysis.ko.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.ko.tokenattributes.ReadingAttribute;
 
 public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
-  private Analyzer analyzer, analyzerUnigram, analyzerDecompound, analyzerDecompoundKeep, analyzerReading;
+  private Analyzer analyzer, analyzerWithPunctuation, analyzerUnigram, analyzerDecompound, analyzerDecompoundKeep, analyzerReading;
 
   public static UserDictionary readDict() {
     InputStream is = TestKoreanTokenizer.class.getResourceAsStream("userdict.txt");
@@ -62,6 +62,14 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new KoreanTokenizer(newAttributeFactory(), userDictionary,
             DecompoundMode.NONE, false);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    analyzerWithPunctuation = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KoreanTokenizer(newAttributeFactory(), userDictionary,
+            DecompoundMode.NONE, false, false);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -125,6 +133,36 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
         new POS.Type[] { POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME },
         new POS.Tag[] { POS.Tag.NNG, POS.Tag.NNG, POS.Tag.J, POS.Tag.NNB },
         new POS.Tag[] { POS.Tag.NNG, POS.Tag.NNG, POS.Tag.J, POS.Tag.NNB }
+    );
+  }
+
+  public void testPartOfSpeechsWithPunc() throws IOException {
+    assertAnalyzesTo(analyzerWithPunctuation, "화학 이외의 것!",
+        new String[]{"화학", " ", "이외", "의", " ", "것", "!"},
+        new int[]{0, 2, 3, 5, 6, 7, 8, 9},
+        new int[]{2, 3, 5, 6, 7, 8, 9, 11},
+        new int[]{1, 1, 1, 1, 1, 1, 1, 1}
+    );
+    assertPartsOfSpeech(analyzerWithPunctuation, "화학 이외의 것!",
+        new POS.Type[] { POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME },
+        new POS.Tag[] { POS.Tag.NNG, POS.Tag.SP, POS.Tag.NNG, POS.Tag.J, POS.Tag.SP, POS.Tag.NNB, POS.Tag.SF },
+        new POS.Tag[] { POS.Tag.NNG, POS.Tag.SP, POS.Tag.NNG, POS.Tag.J, POS.Tag.SP, POS.Tag.NNB, POS.Tag.SF }
+    );
+  }
+
+  public void testFloatingPointNumber() throws IOException {
+    assertAnalyzesTo(analyzerWithPunctuation, "10.1 인치 모니터",
+        new String[]{"10", ".", "1", " ", "인치", " ", "모니터"},
+        new int[]{0, 2, 3, 4, 5, 7, 8},
+        new int[]{2, 3, 4, 5, 7, 8, 11},
+        new int[]{1, 1, 1, 1, 1, 1, 1}
+    );
+
+    assertAnalyzesTo(analyzer, "10.1 인치 모니터",
+        new String[]{"10", "1", "인치", "모니터"},
+        new int[]{0, 3, 5, 8},
+        new int[]{2, 4, 7, 11},
+        new int[]{1, 1, 1, 1}
     );
   }
 
@@ -287,8 +325,30 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
         new POS.Tag[]{POS.Tag.NNG, POS.Tag.NNG, POS.Tag.NNG},
         new POS.Tag[]{POS.Tag.NNG, POS.Tag.NNG, POS.Tag.NNG}
     );
+
+    assertAnalyzesTo(analyzer, "대한민국날씨",
+        new String[]{"대한민국날씨"},
+        new int[]{0},
+        new int[]{6},
+        new int[]{1}
+    );
+
+    assertAnalyzesTo(analyzer, "21세기대한민국",
+        new String[]{"21세기대한민국"},
+        new int[]{0},
+        new int[]{8},
+        new int[]{1}
+    );
   }
 
+  public void testInterpunct() throws IOException {
+    assertAnalyzesTo(analyzer, "도로ㆍ지반ㆍ수자원ㆍ건설환경ㆍ건축ㆍ화재설비연구",
+        new String[]{"도로", "지반", "수자원", "건설", "환경", "건축", "화재", "설비", "연구"},
+        new int[]{0, 3, 6, 10, 12, 15, 18, 20, 22},
+        new int[]{2, 5, 9, 12, 14, 17, 20, 22, 24},
+        new int[]{1, 1, 1, 1,   1,  1,  1,  1,  1}
+    );
+  }
 
   /** blast some random strings through the tokenizer */
   public void testRandomStrings() throws Exception {
@@ -318,6 +378,44 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
     };
     checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
     analyzer.close();
+  }
+
+  public void testCombining() throws IOException {
+    assertAnalyzesTo(analyzer, "Ба̀лтичко мо̑ре",
+        new String[]{"Ба̀лтичко", "мо̑ре"},
+        new int[]{0, 10},
+        new int[]{9, 15},
+        new int[]{1, 1}
+    );
+    assertPartsOfSpeech(analyzer, "Ба̀лтичко мо̑ре",
+        new POS.Type[]{POS.Type.MORPHEME, POS.Type.MORPHEME},
+        new POS.Tag[]{POS.Tag.SL, POS.Tag.SL},
+        new POS.Tag[]{POS.Tag.SL, POS.Tag.SL}
+    );
+
+    assertAnalyzesTo(analyzer, "ka̠k̚t͡ɕ͈a̠k̚",
+        new String[]{"ka̠k̚t͡ɕ͈a̠k̚"},
+        new int[]{0},
+        new int[]{13},
+        new int[]{1}
+    );
+    assertPartsOfSpeech(analyzer, "ka̠k̚t͡ɕ͈a̠k̚",
+        new POS.Type[]{POS.Type.MORPHEME},
+        new POS.Tag[]{POS.Tag.SL},
+        new POS.Tag[]{POS.Tag.SL}
+    );
+
+    assertAnalyzesTo(analyzer, "εἰμί",
+        new String[]{"εἰμί"},
+        new int[]{0},
+        new int[]{4},
+        new int[]{1}
+    );
+    assertPartsOfSpeech(analyzer, "εἰμί",
+        new POS.Type[]{POS.Type.MORPHEME},
+        new POS.Tag[]{POS.Tag.SL},
+        new POS.Tag[]{POS.Tag.SL}
+    );
   }
 
   private void assertReadings(Analyzer analyzer, String input, String... readings) throws IOException {

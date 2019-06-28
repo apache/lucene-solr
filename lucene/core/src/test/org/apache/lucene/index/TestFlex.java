@@ -55,7 +55,7 @@ public class TestFlex extends LuceneTestCase {
 
       IndexReader r = w.getReader();
       
-      TermsEnum terms = MultiFields.getTerms(r, "field3").iterator();
+      TermsEnum terms = MultiTerms.getTerms(r, "field3").iterator();
       assertEquals(TermsEnum.SeekStatus.END, terms.seekCeil(new BytesRef("abc")));
       r.close();
     }

@@ -20,15 +20,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -44,7 +43,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogDocMergePolicy;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiBits;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -61,8 +61,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestBlockJoin extends LuceneTestCase {
 
@@ -90,34 +88,6 @@ public class TestBlockJoin extends LuceneTestCase {
     job.add(newStringField("qualification", qualification, Field.Store.YES));
     job.add(new IntPoint("year", year));
     return job;
-  }
-
-  public void testExtractTerms() throws Exception {
-    TermQuery termQuery = new TermQuery(new Term("field", "value"));
-    QueryBitSetProducer bitSetProducer = new QueryBitSetProducer(new MatchNoDocsQuery());
-    ToParentBlockJoinQuery toParentBlockJoinQuery = new ToParentBlockJoinQuery(termQuery, bitSetProducer, ScoreMode.None);
-    ToChildBlockJoinQuery toChildBlockJoinQuery = new ToChildBlockJoinQuery(toParentBlockJoinQuery, bitSetProducer);
-
-    Directory directory = newDirectory();
-    final IndexWriter w = new IndexWriter(directory, new IndexWriterConfig(new MockAnalyzer(random())));
-    w.close();
-    IndexReader indexReader = DirectoryReader.open(directory);
-    IndexSearcher indexSearcher = new IndexSearcher(indexReader);
-
-    Weight weight = toParentBlockJoinQuery.createWeight(indexSearcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f);
-    Set<Term> terms = new HashSet<>();
-    weight.extractTerms(terms);
-    Term[] termArr =terms.toArray(new Term[0]);
-    assertEquals(1, termArr.length);
-
-    weight = toChildBlockJoinQuery.createWeight(indexSearcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f);
-    terms = new HashSet<>();
-    weight.extractTerms(terms);
-    termArr =terms.toArray(new Term[0]);
-    assertEquals(1, termArr.length);
-
-    indexReader.close();
-    directory.close();
   }
 
   public void testEmptyChildFilter() throws Exception {
@@ -651,11 +621,11 @@ public class TestBlockJoin extends LuceneTestCase {
       System.out.println("TEST: reader=" + r);
       System.out.println("TEST: joinReader=" + joinR);
 
-      Bits liveDocs = MultiFields.getLiveDocs(joinR);
+      Bits liveDocs = MultiBits.getLiveDocs(joinR);
       for(int docIDX=0;docIDX<joinR.maxDoc();docIDX++) {
         System.out.println("  docID=" + docIDX + " doc=" + joinR.document(docIDX) + " deleted?=" + (liveDocs != null && liveDocs.get(docIDX) == false));
       }
-      PostingsEnum parents = MultiFields.getTermDocsEnum(joinR, "isParent", new BytesRef("x"));
+      PostingsEnum parents = MultiTerms.getTermPostingsEnum(joinR, "isParent", new BytesRef("x"), (int) PostingsEnum.FREQS);
       System.out.println("parent docIDs:");
       while (parents.nextDoc() != PostingsEnum.NO_MORE_DOCS) {
         System.out.println("  " + parents.docID());
@@ -843,7 +813,11 @@ public class TestBlockJoin extends LuceneTestCase {
           if ("sum of:".equals(childWeightExplanation.getDescription())) {
             childWeightExplanation = childWeightExplanation.getDetails()[0];
           }
-          assertTrue("Wrong child weight description", childWeightExplanation.getDescription().startsWith("weight(child"));
+          if (agg == ScoreMode.None) {
+            assertTrue("Wrong child weight description", childWeightExplanation.getDescription().startsWith("ConstantScore("));
+          } else {
+            assertTrue("Wrong child weight description", childWeightExplanation.getDescription().startsWith("weight(child"));
+          }
         }
       }
 

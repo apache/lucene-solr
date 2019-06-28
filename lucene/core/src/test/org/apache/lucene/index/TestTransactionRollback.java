@@ -93,7 +93,7 @@ public class TestTransactionRollback extends LuceneTestCase {
 
     //Perhaps not the most efficient approach but meets our
     //needs here.
-    final Bits liveDocs = MultiFields.getLiveDocs(r);
+    final Bits liveDocs = MultiBits.getLiveDocs(r);
     for (int i = 0; i < r.maxDoc(); i++) {
       if (liveDocs == null || liveDocs.get(i)) {
         String sval=r.document(i).get(FIELD_RECORD_ID);

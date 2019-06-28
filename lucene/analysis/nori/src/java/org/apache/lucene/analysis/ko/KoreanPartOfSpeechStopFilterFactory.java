@@ -41,8 +41,15 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   <li>tags: List of stop tags. if not specified, {@link KoreanPartOfSpeechStopFilter#DEFAULT_STOP_TAGS} is used.</li>
  * </ul>
  * @lucene.experimental
+ *
+ * @since 7.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class KoreanPartOfSpeechStopFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "koreanPartOfSpeechStop";
+
   private Set<POS.Tag> stopTags;
 
   /** Creates a new KoreanPartOfSpeechStopFilterFactory */

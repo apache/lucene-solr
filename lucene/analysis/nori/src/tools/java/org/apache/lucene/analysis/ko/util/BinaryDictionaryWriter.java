@@ -26,6 +26,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.analysis.ko.dict.Dictionary;
@@ -109,23 +110,23 @@ public abstract class BinaryDictionaryWriter {
     assert existing == null || existing.equals(fullPOSData);
     posDict.set(leftId, fullPOSData);
 
-    final Dictionary.Morpheme[] morphemes;
+    final List<Dictionary.Morpheme> morphemes = new ArrayList<>();
     // true if the POS and decompounds of the token are all the same.
     boolean hasSinglePOS = (leftPOS == rightPOS);
     if (posType != POS.Type.MORPHEME && expression.length() > 0) {
       String[] exprTokens = expression.split("\\+");
-      morphemes = new Dictionary.Morpheme[exprTokens.length];
       for (int i = 0; i < exprTokens.length; i++) {
         String[] tokenSplit = exprTokens[i].split("\\/");
         assert tokenSplit.length == 3;
-        POS.Tag exprTag = POS.resolveTag(tokenSplit[1]);
-        morphemes[i] = new Dictionary.Morpheme(exprTag, tokenSplit[0]);
-        if (leftPOS != exprTag) {
-          hasSinglePOS = false;
+        String surfaceForm = tokenSplit[0].trim();
+        if (surfaceForm.isEmpty() == false) {
+          POS.Tag exprTag = POS.resolveTag(tokenSplit[1]);
+          morphemes.add(new Dictionary.Morpheme(exprTag, tokenSplit[0]));
+          if (leftPOS != exprTag) {
+            hasSinglePOS = false;
+          }
         }
       }
-    } else {
-      morphemes = new Dictionary.Morpheme[0];
     }
 
     int flags = 0;
@@ -151,17 +152,17 @@ public abstract class BinaryDictionaryWriter {
       if (hasSinglePOS == false) {
         buffer.put((byte) rightPOS.ordinal());
       }
-      buffer.put((byte) morphemes.length);
+      buffer.put((byte) morphemes.size());
       int compoundOffset = 0;
-      for (int i = 0; i < morphemes.length; i++) {
+      for (Dictionary.Morpheme morpheme : morphemes) {
         if (hasSinglePOS == false) {
-          buffer.put((byte) morphemes[i].posTag.ordinal());
+          buffer.put((byte) morpheme.posTag.ordinal());
         }
         if (posType != POS.Type.INFLECT) {
-          buffer.put((byte) morphemes[i].surfaceForm.length());
-          compoundOffset += morphemes[i].surfaceForm.length();
+          buffer.put((byte) morpheme.surfaceForm.length());
+          compoundOffset += morpheme.surfaceForm.length();
         } else {
-          writeString(morphemes[i].surfaceForm);
+          writeString(morpheme.surfaceForm);
         }
         assert compoundOffset <= entry[0].length() : Arrays.toString(entry);
       }

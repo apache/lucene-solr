@@ -32,12 +32,12 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60FieldInfosFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsFormat;
-import org.apache.lucene.codecs.lucene70.Lucene70NormsFormat;
 import org.apache.lucene.codecs.lucene70.Lucene70SegmentInfoFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
@@ -59,6 +59,7 @@ public class Lucene80Codec extends Codec {
   private final SegmentInfoFormat segmentInfosFormat = new Lucene70SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene50LiveDocsFormat();
   private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
+  private final PostingsFormat defaultFormat;
   
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
@@ -86,12 +87,13 @@ public class Lucene80Codec extends Codec {
   /** 
    * Instantiates a new codec, specifying the stored fields compression
    * mode to use.
-   * @param mode stored fields compression mode to use for newly 
+   * @param mode stored fields compression mode to use for newly
    *             flushed/merged segments.
    */
   public Lucene80Codec(Mode mode) {
     super("Lucene80");
     this.storedFieldsFormat = new Lucene50StoredFieldsFormat(Objects.requireNonNull(mode));
+    this.defaultFormat = new Lucene50PostingsFormat();
   }
   
   @Override
@@ -150,7 +152,7 @@ public class Lucene80Codec extends Codec {
   /** Returns the docvalues format that should be used for writing 
    *  new segments of <code>field</code>.
    *  
-   *  The default implementation always returns "Lucene70".
+   *  The default implementation always returns "Lucene80".
    *  <p>
    *  <b>WARNING:</b> if you subclass, you are responsible for index 
    *  backwards compatibility: future version of Lucene are only 
@@ -165,10 +167,9 @@ public class Lucene80Codec extends Codec {
     return docValuesFormat;
   }
 
-  private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene50");
-  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene70");
+  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene80");
 
-  private final NormsFormat normsFormat = new Lucene70NormsFormat();
+  private final NormsFormat normsFormat = new Lucene80NormsFormat();
 
   @Override
   public final NormsFormat normsFormat() {

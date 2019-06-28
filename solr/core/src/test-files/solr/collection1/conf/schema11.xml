@@ -455,6 +455,9 @@ valued. -->
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
    <dynamicField name="*_ws" type="text_ws" indexed="true"  stored="true"/>
    
+  <!-- Indexed, but NOT uninvertible -->
+  <dynamicField name="*_s_not_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="false" />
+   
    <!-- for testing tfidf functions, see TestFunctionQuery.testTFIDFFunctions -->
    <dynamicField name="*_tfidf"  type="tfidf_text"    indexed="true"  stored="true" />
    <fieldType name="tfidf_text" class="solr.TextField" positionIncrementGap="100">

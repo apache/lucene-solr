@@ -79,7 +79,7 @@ There are two options for this parameter.
 `index`::: Return the constraints sorted in their index order (lexicographic by indexed term). For terms in the ASCII range, this will be alphabetically sorted.
 --
 +
-The default is `count` if `facet.limit` is greater than 0, otherwise, the default is `index`.
+The default is `count` if `facet.limit` is greater than 0, otherwise, the default is `index`. Note that the default logic is changed when <<#limiting-facet-with-certain-terms>>
 
 `facet.limit`::
 This parameter specifies the maximum number of constraint counts (essentially, the number of facets for a field that are returned) that should be returned for the facet fields. A negative value means that Solr will return unlimited number of constraint counts.
@@ -615,6 +615,8 @@ The parameter setting above causes the field facet results for the "doctype" fie
 To limit field facet with certain terms specify them comma separated with `terms` local parameter. Commas and quotes in terms can be escaped with backslash, as in `\,`. In this case facet is calculated on a way similar to `facet.method=enum`, but ignores `facet.enum.cache.minDf`. For example:
 
 `facet.field={!terms='alfa,betta,with\,with\',with space'}symbol`
+
+This local parameter overrides default logic for `facet.sort`. if `facet.sort` is omitted, facets are returned in the given terms order that might be changed with `index` and `count` values. Note: other parameters might not be fully supported when this parameter is supplied.   
 
 == Related Topics
 

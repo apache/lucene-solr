@@ -26,7 +26,7 @@
 }
 
 /* Adds a custom "lead" style for use in index.html jumbotron box */
-.paragraph.lead-homepage > p {
+.lead-homepage {
   font-size: 1.21875em;
   line-height: 1.3;
   text-align: center;
@@ -172,6 +172,7 @@ li.dropdownActive a {
 
 footer {
     font-size: smaller;
+    padding-top: 10px;
 }
 
 /* FAQ page */
@@ -461,12 +462,13 @@ a[data-toggle] {
     font-weight: bold;
 }
 
-
 a.fa.fa-envelope-o.mailto {
     font-weight: 600;
 }
 
-.nav-tabs > li.active > a, .nav-tabs > li.active > a:hover, .nav-tabs > li.active > a:focus {
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
     background-color: #248ec2;
     color: white;
 }
@@ -476,10 +478,6 @@ ol li ul li {list-style-type: disc;}
 
 li img {clear:both; }
 
-div#toc ul li ul li {
-    list-style-type: none;
-    margin: 5px 0 0 0;
-}
 
 .tab-content {
     padding: 0px;

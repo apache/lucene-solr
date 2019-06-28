@@ -44,7 +44,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
   // would be good to investigate further...
   @Override
   protected Directory getDirectory(Path path) throws IOException {
-    return new NRTCachingDirectory(new RAMDirectory(),
+    return new NRTCachingDirectory(new ByteBuffersDirectory(),
                                    .1 + 2.0*random().nextDouble(),
                                    .1 + 5.0*random().nextDouble());
   }

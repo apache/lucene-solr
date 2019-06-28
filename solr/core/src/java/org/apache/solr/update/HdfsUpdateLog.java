@@ -58,7 +58,7 @@ public class HdfsUpdateLog extends UpdateLog {
   public static AtomicLong INIT_FAILED_LOGS_COUNT = new AtomicLong();
 
   public HdfsUpdateLog() {
-    this.confDir = null;
+    this(null);
   }
   
   public HdfsUpdateLog(String confDir) {
@@ -75,12 +75,16 @@ public class HdfsUpdateLog extends UpdateLog {
     log.info("Initializing HdfsUpdateLog: tlogDfsReplication={}", tlogDfsReplication);
   }
 
-  private Configuration getConf() {
+  private Configuration getConf(Path path) {
     Configuration conf = new Configuration();
     if (confDir != null) {
       HdfsUtil.addHdfsResources(conf, confDir);
     }
-    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
+
+    String fsScheme = path.toUri().getScheme();
+    if(fsScheme != null) {
+      conf.setBoolean("fs." + fsScheme + ".impl.disable.cache", true);
+    }
     return conf;
   }
   
@@ -112,7 +116,8 @@ public class HdfsUpdateLog extends UpdateLog {
         }
         
         try {
-          fs = FileSystem.get(new Path(dataDir).toUri(), getConf());
+          Path dataDirPath = new Path(dataDir);
+          fs = FileSystem.get(dataDirPath.toUri(), getConf(dataDirPath));
         } catch (IOException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }

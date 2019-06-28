@@ -17,8 +17,17 @@
 package org.apache.solr.client.solrj;
 
 
+import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.StringContains.containsString;
+
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,11 +37,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
-import com.google.common.collect.Maps;
-import junit.framework.Assert;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -43,6 +51,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.request.MultiContentWriterRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -63,13 +72,17 @@ import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Pair;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.internal.matchers.StringContains.containsString;
+import com.google.common.collect.Maps;
 
 /**
  * This should include tests against the example solr config
@@ -87,6 +100,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   static {
     ignoreException("uniqueKey");
   }
+
+  @Before
+  public void emptyCollection() throws Exception {
+    SolrClient client = getSolrClient();
+    // delete everything!
+    client.deleteByQuery("*:*");
+    client.commit();
+  }
+
   /**
    * query the example
    */
@@ -287,9 +309,52 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     assertEquals( 1, rsp.getResults().getNumFound() );
 
   }
- 
+  @Test
+  public void testFailOnVersionConflicts() throws Exception {
+    SolrClient client = getSolrClient();
 
- /**
+    // Empty the database...
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+
+    client.request(new UpdateRequest()
+        .add("id", "id1", "name", "doc1.v1"));
+    client.commit();
+
+    QueryResponse rsp = null;
+    assertResponseValues(client.query(new SolrQuery("id:id1")), "response[0]/name", "doc1.v1");
+
+    assertResponseValues(client.query(new SolrQuery("*:*").set("sort", "id asc")),
+        "response[0]/name", "doc1.v1"
+    );
+
+    client.request(
+        new UpdateRequest()
+            .add("id", "id1", "name", "doc1.v2")
+            .add("id", "id2", "name", "doc2.v1"));
+    client.commit();
+    assertResponseValues(client.query(new SolrQuery("*:*").set("sort", "id asc")),
+        "response[0]/name", "doc1.v2",
+        "response[1]/name", "doc2.v1"
+    );
+
+    UpdateRequest add = new UpdateRequest()
+        .add("id", "id1", "name", "doc1.v3")
+        .add("id", "id3", "name", "doc3.v1");
+    add.setParam(CommonParams.FAIL_ON_VERSION_CONFLICTS, "false");
+    add.setParam(CommonParams.VERSION_FIELD, "-1");
+    client.request(add);
+    client.commit();
+
+    assertResponseValues(client.query(new SolrQuery("*:*").set("sort", "id asc")),
+        "response[0]/name", "doc1.v2" ,
+        "response[1]/name", "doc2.v1" ,
+        "response[2]/name", "doc3.v1");
+
+  }
+
+
+  /**
   * Get empty results
   */
   @Test
@@ -649,13 +714,45 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    up.addFile(getFile("solrj/books.csv"), "application/csv");
+    var file = getFile("solrj/books.csv");
+    final int opened[] =  new int[] {0};
+    final int closed[] =  new int[] {0};
+
+    var assertClosed = random().nextBoolean();
+    if (assertClosed) {
+      var allBytes = Files.readAllBytes(file.toPath());
+      
+      var contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
+        @Override
+        public InputStream getStream() throws IOException {
+          opened [0]++;
+          return new ByteArrayInputStream( allBytes ) {
+            @Override
+            public void close() throws IOException {
+              super.close();
+              closed[0]++;
+            }
+          };
+        }
+      };
+      up.addContentStream(contentStreamMock);
+    } else {
+      up.addFile(file, "application/csv");
+    }
+    
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     NamedList<Object> result = client.request(up);
     assertNotNull("Couldn't upload books.csv", result);
+    
+    if (assertClosed) {
+      assertEquals("open only once",1, opened[0]);
+      assertEquals("close exactly once",1, closed[0]);
+    }
     rsp = client.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 10, rsp.getResults().getNumFound() );
  }
+ 
+ 
   @Test
   public void testStreamingRequest() throws Exception {
     SolrClient client = getSolrClient();
@@ -671,7 +768,39 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Assert.assertEquals( 10, rsp.getResults().getNumFound() );
   }
 
- @Test
+  @Test
+  public void testMultiContentWriterRequest() throws Exception {
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    QueryResponse rsp = client.query(new SolrQuery("*:*"));
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
+
+    List<Pair<NamedList, Object>> docs = new ArrayList<>();
+    NamedList params = new NamedList();
+    docs.add(new Pair(params, getFileContent(params, "solrj/docs1.xml")));
+
+    params = new NamedList();
+    params.add(ASSUME_CONTENT_TYPE, "application/csv");
+    docs.add(new Pair(params, getFileContent(params, "solrj/books.csv")));
+
+    MultiContentWriterRequest up = new MultiContentWriterRequest(SolrRequest.METHOD.POST, "/update", docs.iterator());
+    up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+    NamedList<Object> result = client.request(up);
+    System.out.println(result.jsonStr());
+    rsp = client.query(new SolrQuery("*:*"));
+    Assert.assertEquals(12, rsp.getResults().getNumFound());
+
+  }
+
+  private ByteBuffer getFileContent(NamedList nl, String name) throws IOException {
+    try (InputStream is = new FileInputStream(getFile(name))) {
+      return MultiContentWriterRequest.readByteBuffer(is);
+    }
+  }
+
+
+  @Test
  public void testMultiContentStreamRequest() throws Exception {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");// delete everything!
@@ -1651,11 +1780,16 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       client.add(doc);
       if(client instanceof HttpSolrClient) { //XXX concurrent client reports exceptions differently
         fail("Operation should throw an exception!");
-      } else {
+      } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
         client.commit(); //just to be sure the client has sent the doc
         ErrorTrackingConcurrentUpdateSolrClient concurrentClient = (ErrorTrackingConcurrentUpdateSolrClient) client;
         assertNotNull("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError.getMessage().contains("Conflict"));
+      } else if (client instanceof SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) {
+        client.commit(); //just to be sure the client has sent the doc
+        SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient concurrentClient = (SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) client;
+        assertNotNull("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
+        assertTrue("ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError.getMessage().contains("conflict"));
       }
     } catch (SolrException se) {
       assertTrue("No identifiable error message", se.getMessage().contains("version conflict for unique"));
@@ -1831,7 +1965,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       
       q = new SolrQuery("q", "*:*", "indent", "true");
       q.setFilterQueries(parentFilter);
-      q.setFields("id,[child parentFilter=\"" + parentFilter +
+      q.setFields("id, level_i, [child parentFilter=\"" + parentFilter +
                   "\" childFilter=\"" + childFilter + 
                   "\" limit=\"" + maxKidCount + "\"], name");
       resp = client.query(q);
@@ -1916,7 +2050,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         q = new SolrQuery("q", "name:" + name, "indent", "true");
       }
       q.setFilterQueries(parentFilter);
-      q.setFields("id,[child parentFilter=\"" + parentFilter +
+      q.setFields("id, level_i, [child parentFilter=\"" + parentFilter +
                   "\" childFilter=\"" + childFilter + 
                   "\" limit=\"" + maxKidCount + "\"],name");
       resp = client.query(q);
@@ -2140,5 +2274,85 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       }
     }
     return sdoc;
+  }
+
+  @Test
+  public void testAddChildToChildFreeDoc() throws IOException, SolrServerException, IllegalArgumentException, IllegalAccessException, SecurityException, NoSuchFieldException {
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");
+
+    SolrInputDocument docToUpdate = new SolrInputDocument();
+    docToUpdate.addField("id", "p0");
+    docToUpdate.addField("title_s", "i am a child free doc");
+    client.add(docToUpdate);
+    client.commit();
+
+    SolrQuery q = new SolrQuery("*:*");
+    q.set( CommonParams.FL, "id,title_s" );
+    q.addSort("id", SolrQuery.ORDER.desc);
+
+    SolrDocumentList results = client.query(q).getResults();
+    assertThat(results.getNumFound(), is(1L));
+    SolrDocument foundDoc = results.get(0);
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a child free doc"));
+
+    // Rewrite child free doc
+    docToUpdate.setField("title_s", "i am a parent");
+
+    SolrInputDocument child = new SolrInputDocument();
+    child.addField("id", "c0");
+    child.addField("title_s", "i am a child");
+
+    docToUpdate.addChildDocument(child);
+
+    client.add(docToUpdate);
+    client.commit();
+
+    results = client.query(q).getResults();
+
+    assertThat(results.getNumFound(), is(2L));
+    foundDoc = results.get(0);
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a parent"));
+    foundDoc = results.get(1);
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a child"));
+  }
+
+  @Test
+  public void testDeleteParentDoc() throws IOException, SolrServerException, IllegalArgumentException, IllegalAccessException, SecurityException, NoSuchFieldException {
+    SolrClient client = getSolrClient();
+    client.deleteByQuery("*:*");
+
+    SolrInputDocument docToDelete = new SolrInputDocument();
+    docToDelete.addField("id", "p0");
+    docToDelete.addField("title_s", "parent doc");
+
+    SolrInputDocument child = new SolrInputDocument();
+    child.addField("id", "c0");
+    child.addField("title_s", "i am a child 0");
+    docToDelete.addChildDocument(child);
+
+    child = new SolrInputDocument();
+    child.addField("id", "c1");
+    child.addField("title_s", "i am a child 1");
+    docToDelete.addChildDocument(child);
+
+    child = new SolrInputDocument();
+    child.addField("id", "c2");
+    child.addField("title_s", "i am a child 2");
+    docToDelete.addChildDocument(child);
+
+    client.add(docToDelete);
+    client.commit();
+
+    SolrQuery q = new SolrQuery("*:*");
+    SolrDocumentList results = client.query(q).getResults();
+    assertThat(results.getNumFound(), is(4L));
+
+    client.deleteById("p0");
+    client.commit();
+
+    results = client.query(q).getResults();
+    assertThat("All the children are expected to be deleted together with parent",
+        results.getNumFound(), is(0L));
   }
 }

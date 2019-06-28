@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.de;
 
 import java.util.Map;
 
-import org.apache.lucene.analysis.de.GermanStemFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -33,8 +32,14 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.GermanStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class GermanStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "germanStem";
   
   /** Creates a new GermanStemFilterFactory */
   public GermanStemFilterFactory(Map<String,String> args) {

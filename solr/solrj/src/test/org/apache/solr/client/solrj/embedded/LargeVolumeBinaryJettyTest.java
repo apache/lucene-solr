@@ -23,9 +23,10 @@ import org.junit.BeforeClass;
  * @see org.apache.solr.client.solrj.impl.BinaryRequestWriter
  * @see org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec
  */
+// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
 public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createJetty(legacyExampleCollection1SolrHome());
+    createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 }

@@ -50,6 +50,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
   String i1dv="a_idv";
   String i1="a_i1";
   String s1="a_s";
+  String s1dv = "a_s_dvo";
+  String b1dv = "a_b_dvo";
   String tlong = "other_tl1";
   String tdate_a = "a_n_tdt";
   String tdate_b = "b_n_tdt";
@@ -73,16 +75,16 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "*:*", "fq", s1 + ":a", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", i1 + " asc, id asc", "group.truncate", "true", "facet", "true", "facet.field", t1);
 
     indexr(id,1, i1, 100, tlong, 100, i1dv, 100, t1,"now is the time for all good men",
-           tdate_a, "2010-04-20T11:00:00Z",
-           tdate_b, "2009-08-20T11:00:00Z",
+           tdate_a, "2010-04-20T11:00:00Z", b1dv, true,
+           tdate_b, "2009-08-20T11:00:00Z", s1dv, "Trillian",
            "foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
     indexr(id,2, i1, 50 , tlong, 50, i1dv, 50, t1,"to come to the aid of their country.",
-           tdate_a, "2010-05-02T11:00:00Z",
+           tdate_a, "2010-05-02T11:00:00Z", b1dv, false,
            tdate_b, "2009-11-02T11:00:00Z");
     indexr(id,3, i1, 2, tlong, 2,t1,"how now brown cow",
            tdate_a, "2010-05-03T11:00:00Z");
     indexr(id,4, i1, -100 ,tlong, 101, i1dv, 101,
-           t1,"the quick fox jumped over the lazy dog",
+           t1,"the quick fox jumped over the lazy dog", b1dv, true, s1dv, "Zaphod",
            tdate_a, "2010-05-03T11:00:00Z",
            tdate_b, "2010-05-03T11:00:00Z");
     indexr(id,5, i1, 500, tlong, 500 , i1dv, 500,
@@ -111,32 +113,32 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     indexr(
         id, 18, i1, 232, tlong, 332, i1dv, 150,
-        t1,"no eggs on wall, lesson learned",
+        t1,"no eggs on wall, lesson learned", b1dv, true, s1dv, "dent",
         oddField, "odd man out"
     );
     indexr(
         id, 19, i1, 232, tlong, 432, i1dv, 300,
-        t1, "many eggs on wall",
+        t1, "many eggs on wall", b1dv, false, s1dv, "dent",
         oddField, "odd man in"
     );
     indexr(
         id, 20, i1, 232, tlong, 532, i1dv, 150,
-        t1, "some eggs on wall",
+        t1, "some eggs on wall", b1dv, false, s1dv, "author",
         oddField, "odd man between"
     );
     indexr(
         id, 21, i1, 232, tlong, 632, i1dv, 120,
-        t1, "a few eggs on wall",
+        t1, "a few eggs on wall", b1dv, true, s1dv, "ford prefect",
         oddField, "odd man under"
     );
     indexr(
         id, 22, i1, 232, tlong, 732, i1dv, 120,
-        t1, "any eggs on wall",
+        t1, "any eggs on wall", b1dv, false, s1dv, "ford prefect",
         oddField, "odd man above"
     );
     indexr(
         id, 23, i1, 233, tlong, 734, i1dv, 120,
-        t1, "dirty eggs",
+        t1, "dirty eggs", b1dv, true, s1dv, "Marvin",
         oddField, "odd eggs"
     );
 
@@ -210,6 +212,11 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     // SOLR-3109
     query("q", t1 + ":eggs", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", tlong + " asc, id asc");
     query("q", i1 + ":232", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", tlong + " asc, id asc");
+
+    // SOLR-12248
+    query("q", "*:*", "rows", 100, "fl", "id," + s1dv, "group", "true", "group.field", s1dv, "group.limit", -1, "sort", b1dv + " asc, id asc", "group.sort", "id desc");
+    query("q", "*:*", "fl", "id," + b1dv, "group", "true", "group.field", b1dv, "group.limit", 10, "sort", s1dv + " asc, id asc");
+    query("q", s1dv + ":dent", "fl", "id," + b1dv, "group", "true", "group.field", b1dv, "group.limit", 10, "sort", i1 + " asc, id asc");
 
     // In order to validate this we need to make sure that during indexing that all documents of one group only occur on the same shard
     query("q", "*:*", "fq", s1 + ":a", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "group.ngroups", "true");
@@ -303,7 +310,17 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     assertEquals(docs.toString(), "22", docs.get(0).getFirstValue("id"));
     assertEquals(docs.toString(), "21", docs.get(4).getFirstValue("id"));
 
-    
+    // grouping on boolean non-stored docValued enabled field
+    rsp = query("q", b1dv + ":*", "fl", "id," + b1dv, "group", "true", "group.field",
+        b1dv, "group.limit", 10, "sort", b1dv + " asc, id asc");
+    nl = (NamedList<?>) rsp.getResponse().get("grouped");
+    nl = (NamedList<?>) nl.get(b1dv);
+    assertEquals(rsp.toString(), 9, nl.get("matches"));
+    assertEquals(rsp.toString(), 2, ((List<NamedList<?>>)nl.get("groups")).size());
+    nl = ((List<NamedList<?>>)nl.get("groups")).get(0);
+    assertEquals(rsp.toString(), false, nl.get("groupValue"));
+    docs = (SolrDocumentList) nl.get("doclist");
+    assertEquals(docs.toString(), 4, docs.getNumFound());
 
     // Can't validate the response, but can check if no errors occur.
     simpleQuery("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", 10, "sort", i1 + " asc, id asc", CommonParams.TIME_ALLOWED, 1);

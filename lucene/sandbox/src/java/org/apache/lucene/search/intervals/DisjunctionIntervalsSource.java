@@ -19,24 +19,52 @@ package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.util.PriorityQueue;
 
 class DisjunctionIntervalsSource extends IntervalsSource {
 
-  final List<IntervalsSource> subSources;
+  final Collection<IntervalsSource> subSources;
+  final boolean pullUpDisjunctions;
 
-  public DisjunctionIntervalsSource(List<IntervalsSource> subSources) {
-    this.subSources = subSources;
+  static IntervalsSource create(Collection<IntervalsSource> subSources, boolean pullUpDisjunctions) {
+    subSources = simplify(subSources);
+    if (subSources.size() == 1) {
+      return subSources.iterator().next();
+    }
+    return new DisjunctionIntervalsSource(subSources, pullUpDisjunctions);
+  }
+
+  private DisjunctionIntervalsSource(Collection<IntervalsSource> subSources, boolean pullUpDisjunctions) {
+    this.subSources = simplify(subSources);
+    this.pullUpDisjunctions = pullUpDisjunctions;
+  }
+
+  private static Collection<IntervalsSource> simplify(Collection<IntervalsSource> sources) {
+    Set<IntervalsSource> simplified = new HashSet<>();
+    for (IntervalsSource source : sources) {
+      if (source instanceof DisjunctionIntervalsSource) {
+        simplified.addAll(source.pullUpDisjunctions());
+      }
+      else {
+        simplified.add(source);
+      }
+    }
+    return simplified;
   }
 
   @Override
@@ -84,13 +112,32 @@ class DisjunctionIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public void extractTerms(String field, Set<Term> terms) {
+  public void visit(String field, QueryVisitor visitor) {
+    Query parent = new IntervalQuery(field, this);
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, parent);
     for (IntervalsSource source : subSources) {
-      source.extractTerms(field, terms);
+      source.visit(field, v);
     }
   }
 
-  private static class DisjunctionIntervalIterator extends IntervalIterator {
+  @Override
+  public int minExtent() {
+    int minExtent = Integer.MAX_VALUE;
+    for (IntervalsSource subSource : subSources) {
+      minExtent = Math.min(minExtent, subSource.minExtent());
+    }
+    return minExtent;
+  }
+
+  @Override
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    if (pullUpDisjunctions) {
+      return subSources;
+    }
+    return Collections.singletonList(this);
+  }
+
+  static class DisjunctionIntervalIterator extends IntervalIterator {
 
     final DocIdSetIterator approximation;
     final PriorityQueue<IntervalIterator> intervalQueue;
@@ -135,6 +182,11 @@ class DisjunctionIntervalsSource extends IntervalsSource {
       return current.end();
     }
 
+    @Override
+    public int gaps() {
+      return current.gaps();
+    }
+
     private void reset() throws IOException {
       intervalQueue.clear();
       for (DisiWrapper dw = disiQueue.topList(); dw != null; dw = dw.next) {
@@ -146,7 +198,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
 
     @Override
     public int nextInterval() throws IOException {
-      if (current == EMPTY) {
+      if (current == EMPTY || current == EXHAUSTED) {
         if (intervalQueue.size() > 0) {
           current = intervalQueue.top();
         }
@@ -160,7 +212,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
         }
       }
       if (intervalQueue.size() == 0) {
-        current = EMPTY;
+        current = EXHAUSTED;
         return NO_MORE_INTERVALS;
       }
       current = intervalQueue.top();
@@ -226,6 +278,59 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     @Override
     public int end() {
       return -1;
+    }
+
+    @Override
+    public int gaps() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextInterval() {
+      return NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public float matchCost() {
+      return 0;
+    }
+  };
+
+  private static final IntervalIterator EXHAUSTED = new IntervalIterator() {
+
+    @Override
+    public int docID() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int start() {
+      return NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public int end() {
+      return NO_MORE_INTERVALS;
+    }
+
+    @Override
+    public int gaps() {
+      throw new UnsupportedOperationException();
     }
 
     @Override

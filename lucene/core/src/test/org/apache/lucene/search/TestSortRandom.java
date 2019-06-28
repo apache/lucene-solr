@@ -247,7 +247,7 @@ public class TestSortRandom extends LuceneTestCase {
             }
           }
 
-          return new ConstantScoreScorer(this, score(), new BitSetIterator(bits, bits.approximateCardinality()));
+          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
         }
 
         @Override
@@ -255,6 +255,11 @@ public class TestSortRandom extends LuceneTestCase {
           return false;
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override

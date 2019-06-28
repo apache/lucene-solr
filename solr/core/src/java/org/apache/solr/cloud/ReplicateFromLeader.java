@@ -39,11 +39,11 @@ import org.slf4j.LoggerFactory;
 public class ReplicateFromLeader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private CoreContainer cc;
-  private String coreName;
+  private final CoreContainer cc;
+  private final String coreName;
 
-  private ReplicationHandler replicationProcess;
-  private long lastVersion = 0;
+  private volatile ReplicationHandler replicationProcess;
+  private volatile long lastVersion = 0;
 
   public ReplicateFromLeader(CoreContainer cc, String coreName) {
     this.cc = cc;
@@ -66,6 +66,9 @@ public class ReplicateFromLeader {
       }
       SolrConfig.UpdateHandlerInfo uinfo = core.getSolrConfig().getUpdateHandlerInfo();
       String pollIntervalStr = "00:00:03";
+      if (System.getProperty("jetty.testMode") != null) {
+        pollIntervalStr = "00:00:01";
+      }
       if (uinfo.autoCommmitMaxTime != -1) {
         pollIntervalStr = toPollIntervalStr(uinfo.autoCommmitMaxTime/2);
       } else if (uinfo.autoSoftCommmitMaxTime != -1) {

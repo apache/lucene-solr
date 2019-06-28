@@ -21,6 +21,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -91,13 +92,23 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
-      public int pointDimensionCount() {
+      public int pointDataDimensionCount() {
+        return 0;
+      }
+
+      @Override
+      public int pointIndexDimensionCount() {
         return 0;
       }
 
       @Override
       public int pointNumBytes() {
         return 0;
+      }
+
+      @Override
+      public Map<String, String> getAttributes() {
+        return null;
       }
     };
 

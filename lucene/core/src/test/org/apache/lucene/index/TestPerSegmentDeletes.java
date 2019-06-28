@@ -23,9 +23,9 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -35,7 +35,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestPerSegmentDeletes extends LuceneTestCase {
   public void testDeletes1() throws Exception {
     //IndexWriter.debug2 = System.out;
-    Directory dir = new MockDirectoryWrapper(new Random(random().nextLong()), new RAMDirectory());
+    Directory dir = new MockDirectoryWrapper(new Random(random().nextLong()), new ByteBuffersDirectory());
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergeScheduler(new SerialMergeScheduler());
     iwc.setMaxBufferedDocs(5000);
@@ -221,7 +221,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
 
   public int[] toDocsArray(Term term, Bits bits, IndexReader reader)
       throws IOException {
-    TermsEnum ctermsEnum = MultiFields.getTerms(reader, term.field).iterator();
+    TermsEnum ctermsEnum = MultiTerms.getTerms(reader, term.field).iterator();
     if (ctermsEnum.seekExact(new BytesRef(term.text()))) {
       PostingsEnum postingsEnum = TestUtil.docs(random(), ctermsEnum, null, PostingsEnum.NONE);
       return toArray(postingsEnum);

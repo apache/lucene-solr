@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FieldValueFeature;
@@ -36,7 +37,6 @@ import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
 
 public class TestModelManagerPersistence extends TestRerankBase {
 
@@ -90,14 +90,14 @@ public class TestModelManagerPersistence extends TestRerankBase {
 
     //check feature/model stores on deletion
     final ArrayList<Object> fStore = (ArrayList<Object>) ((Map<String,Object>)
-        ObjectBuilder.fromJSON(fstorecontent)).get("managedList");
+        Utils.fromJSONString(fstorecontent)).get("managedList");
     for (int idx = 0;idx < fStore.size(); ++ idx) {
       String store = (String) ((Map<String,Object>)fStore.get(idx)).get("store");
       assertTrue(store.equals("test") || store.equals("test2") || store.equals("test1"));
     }
 
     final ArrayList<Object> mStore = (ArrayList<Object>) ((Map<String,Object>)
-        ObjectBuilder.fromJSON(mstorecontent)).get("managedList");
+        Utils.fromJSONString(mstorecontent)).get("managedList");
     for (int idx = 0;idx < mStore.size(); ++ idx) {
       String store = (String) ((Map<String,Object>)mStore.get(idx)).get("store");
       assertTrue(store.equals("test") || store.equals("test1"));

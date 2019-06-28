@@ -32,6 +32,8 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -55,7 +57,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdinalMap;
@@ -76,9 +78,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 import org.junit.Test;
-
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestJoinUtil extends LuceneTestCase {
 
@@ -521,10 +520,6 @@ public class TestJoinUtil extends LuceneTestCase {
           return new Weight(this) {
 
             @Override
-            public void extractTerms(Set<Term> terms) {
-            }
-
-            @Override
             public Explanation explain(LeafReaderContext context, int doc) throws IOException {
               return null;
             }
@@ -557,7 +552,12 @@ public class TestJoinUtil extends LuceneTestCase {
           };
         }
 
-        @Override
+      @Override
+      public void visit(QueryVisitor visitor) {
+
+      }
+
+      @Override
         public String toString(String field) {
           return fieldQuery.toString(field);
         }
@@ -1507,7 +1507,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
       final Map<Integer, JoinScore> docToJoinScore = new HashMap<>();
       if (multipleValuesPerDocument) {
-        Terms terms = MultiFields.getTerms(topLevelReader, toField);
+        Terms terms = MultiTerms.getTerms(topLevelReader, toField);
         if (terms != null) {
           PostingsEnum postingsEnum = null;
           SortedSet<BytesRef> joinValues = new TreeSet<>();
@@ -1674,7 +1674,7 @@ public class TestJoinUtil extends LuceneTestCase {
         }
 
         for (RandomDoc otherSideDoc : otherMatchingDocs) {
-          PostingsEnum postingsEnum = MultiFields.getTermDocsEnum(topLevelReader, "id", new BytesRef(otherSideDoc.id), 0);
+          PostingsEnum postingsEnum = MultiTerms.getTermPostingsEnum(topLevelReader, "id", new BytesRef(otherSideDoc.id), 0);
           assert postingsEnum != null;
           int doc = postingsEnum.nextDoc();
           expectedResult.set(doc);

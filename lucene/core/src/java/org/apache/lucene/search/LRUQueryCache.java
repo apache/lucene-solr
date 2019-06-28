@@ -36,7 +36,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -89,7 +88,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
   // approximate memory usage that we assign to all queries
   // this maps roughly to a BooleanQuery with a couple term clauses
-  static final long QUERY_DEFAULT_RAM_BYTES_USED = 1024;
+  static final long QUERY_DEFAULT_RAM_BYTES_USED = RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
 
   static final long HASHTABLE_RAM_BYTES_PER_ENTRY =
       2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // key + value
@@ -674,11 +673,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {
-      in.extractTerms(terms);
-    }
-
-    @Override
     public Matches matches(LeafReaderContext context, int doc) throws IOException {
       return in.matches(context, doc);
     }
@@ -766,7 +760,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
       return new ScorerSupplier() {
         @Override
         public Scorer get(long LeadCost) throws IOException {
-          return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, disi);
+          return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi);
         }
         
         @Override
@@ -844,7 +838,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         return null;
       }
 
-      return new DefaultBulkScorer(new ConstantScoreScorer(this, 0f, disi));
+      return new DefaultBulkScorer(new ConstantScoreScorer(this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi));
     }
 
   }

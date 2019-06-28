@@ -191,6 +191,8 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
   // used for concatenating runs of similar typed subwords (word,number)
   private final WordDelimiterConcatenation concat = new WordDelimiterConcatenation();
 
+  private final boolean adjustInternalOffsets;
+
   // number of subwords last output by concat.
   private int lastConcatCount;
 
@@ -206,10 +208,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
   private int savedEndOffset;
   private AttributeSource.State savedState;
   private int lastStartOffset;
-  
-  // if length by start + end offsets doesn't match the term text then assume
-  // this is a synonym and don't adjust the offsets.
-  private boolean hasIllegalOffsets;
+  private boolean adjustingOffsets;
 
   private int wordPos;
 
@@ -217,11 +216,12 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
    * Creates a new WordDelimiterGraphFilter
    *
    * @param in TokenStream to be filtered
+   * @param adjustInternalOffsets if the offsets of partial terms should be adjusted
    * @param charTypeTable table containing character types
    * @param configurationFlags Flags configuring the filter
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
-  public WordDelimiterGraphFilter(TokenStream in, byte[] charTypeTable, int configurationFlags, CharArraySet protWords) {
+  public WordDelimiterGraphFilter(TokenStream in, boolean adjustInternalOffsets, byte[] charTypeTable, int configurationFlags, CharArraySet protWords) {
     super(in);
     if ((configurationFlags &
         ~(GENERATE_WORD_PARTS |
@@ -240,6 +240,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
     this.protWords = protWords;
     this.iterator = new WordDelimiterIterator(
         charTypeTable, has(SPLIT_ON_CASE_CHANGE), has(SPLIT_ON_NUMERICS), has(STEM_ENGLISH_POSSESSIVE));
+    this.adjustInternalOffsets = adjustInternalOffsets;
   }
 
   /**
@@ -251,7 +252,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
   public WordDelimiterGraphFilter(TokenStream in, int configurationFlags, CharArraySet protWords) {
-    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, configurationFlags, protWords);
+    this(in, false, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, configurationFlags, protWords);
   }
 
   /** Iterates all words parts and concatenations, buffering up the term parts we should return. */
@@ -261,11 +262,17 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
 
     // if length by start + end offsets doesn't match the term's text then set offsets for all our word parts/concats to the incoming
     // offsets.  this can happen if WDGF is applied to an injected synonym, or to a stem'd form, etc:
-    hasIllegalOffsets = (savedEndOffset - savedStartOffset != savedTermLength);
+    adjustingOffsets = adjustInternalOffsets && savedEndOffset - savedStartOffset == savedTermLength;
 
     bufferedLen = 0;
     lastConcatCount = 0;
     wordPos = 0;
+
+    if (has(PRESERVE_ORIGINAL)) {
+      // add the original token now so that it is always emitted first
+      // we will edit the term length after all other parts have been buffered
+      buffer(0, 1, 0, savedTermLength);
+    }
 
     if (iterator.isSingleWord()) {
       buffer(wordPos, wordPos+1, iterator.current, iterator.end);
@@ -319,15 +326,16 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
     }
 
     if (has(PRESERVE_ORIGINAL)) {
+      // we now know how many tokens need to be injected, so we can set the original
+      // token's position length
       if (wordPos == 0) {
         // can happen w/ strange flag combos and inputs :)
         wordPos++;
       }
-      // add the original token now so that we can set the correct end position
-      buffer(0, wordPos, 0, savedTermLength);
+      bufferedParts[1] = wordPos;
     }
             
-    sorter.sort(0, bufferedLen);
+    sorter.sort(has(PRESERVE_ORIGINAL) ? 1 : 0, bufferedLen);
     wordPos = 0;
 
     // set back to 0 for iterating from the buffer
@@ -391,7 +399,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
         int startOffset;
         int endOffset;
 
-        if (hasIllegalOffsets) {
+        if (adjustingOffsets == false) {
           startOffset = savedStartOffset;
           endOffset = savedEndOffset;
         } else {

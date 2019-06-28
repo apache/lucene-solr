@@ -34,6 +34,8 @@ import org.tartarus.snowball.ext.RomanianStemmer;
 
 /**
  * {@link Analyzer} for Romanian.
+ *
+ * @since 3.1
  */
 public final class RomanianAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

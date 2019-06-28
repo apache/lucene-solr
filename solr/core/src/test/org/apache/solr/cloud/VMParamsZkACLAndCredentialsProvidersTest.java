@@ -16,9 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
@@ -41,7 +41,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   
   protected ZkTestServer zkServer;
   
-  protected String zkDir;
+  protected Path zkDir;
   
   @BeforeClass
   public static void beforeClass() {
@@ -59,11 +59,10 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     log.info("####SETUP_START " + getTestName());
     createTempDir();
     
-    zkDir = createTempDir() + File.separator
-        + "zookeeper/server1/data";
+    zkDir = createTempDir().resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:" + zkDir);
     zkServer = new ZkTestServer(zkDir);
-    zkServer.run();
+    zkServer.run(false);
     
     System.setProperty("zkHost", zkServer.getZkAddress());
     
@@ -194,7 +193,10 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
         zkClient.delete(path + "/subnode", -1, false);
       }
     } catch (NoAuthException nae) {
-      if (create) fail("No NoAuthException expected");
+      if (create) {
+        nae.printStackTrace();
+        fail("No NoAuthException expected");
+      }
       // expected
     }
     

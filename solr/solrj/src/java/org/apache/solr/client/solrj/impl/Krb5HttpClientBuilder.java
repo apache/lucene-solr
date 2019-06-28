@@ -16,16 +16,18 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import javax.security.auth.login.AppConfigurationEntry;
-import javax.security.auth.login.Configuration;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -41,6 +43,9 @@ import org.apache.http.cookie.CookieSpecProvider;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.eclipse.jetty.client.HttpAuthenticationStore;
+import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
+import org.eclipse.jetty.client.util.SPNEGOAuthentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,8 +55,9 @@ import org.slf4j.LoggerFactory;
 public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
   
   public static final String LOGIN_CONFIG_PROP = "java.security.auth.login.config";
+  private static final String SPNEGO_OID = "1.3.6.1.5.5.2";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private static Configuration jaasConfig = new SolrJaasConfiguration();
 
   public Krb5HttpClientBuilder() {
@@ -80,6 +86,49 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     return builder.isPresent() ? getBuilder(builder.get()) : getBuilder();
   }
 
+  private SPNEGOAuthentication createSPNEGOAuthentication() {
+    SPNEGOAuthentication authentication = new SPNEGOAuthentication(null){
+
+      public boolean matches(String type, URI uri, String realm) {
+        return this.getType().equals(type);
+      }
+    };
+    String clientAppName = System.getProperty("solr.kerberos.jaas.appname", "Client");
+    AppConfigurationEntry[] entries = jaasConfig.getAppConfigurationEntry(clientAppName);
+    if (entries == null) {
+      log.warn("Could not find login configuration entry for {}. SPNego authentication may not be successful.", (Object)clientAppName);
+      return authentication;
+    }
+    if (entries.length != 1) {
+      log.warn("Multiple login modules are specified in the configuration file");
+      return authentication;
+    }
+    Map<String, ?> options = entries[0].getOptions();
+    String keyTab = (String)options.get("keyTab");
+    if (keyTab != null) {
+      authentication.setUserKeyTabPath(Paths.get(keyTab, new String[0]));
+    }
+    authentication.setServiceName("HTTP");
+    authentication.setUserName((String)options.get("principal"));
+    if ("true".equalsIgnoreCase((String)options.get("useTicketCache"))) {
+      authentication.setUseTicketCache(true);
+      String ticketCachePath = (String)options.get("ticketCache");
+      if (ticketCachePath != null) {
+        authentication.setTicketCachePath(Paths.get(ticketCachePath));
+      }
+      authentication.setRenewTGT("true".equalsIgnoreCase((String)options.get("renewTGT")));
+    }
+    return authentication;
+  }
+
+  @Override
+  public void setup(Http2SolrClient http2Client) {
+    HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
+    authenticationStore.addAuthentication(createSPNEGOAuthentication());
+    http2Client.getHttpClient().setAuthenticationStore(authenticationStore);
+    http2Client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
+  }
+
   public SolrHttpClientBuilder getBuilder(SolrHttpClientBuilder builder) {
     if (System.getProperty(LOGIN_CONFIG_PROP) != null) {
       String configValue = System.getProperty(LOGIN_CONFIG_PROP);
@@ -93,8 +142,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
         // authentication mechanism can load the credentials from the JAAS configuration.
         if (useSubjectCredsVal == null) {
           System.setProperty(useSubjectCredsProp, "false");
-        }
-        else if (!useSubjectCredsVal.toLowerCase(Locale.ROOT).equals("false")) {
+        } else if (!useSubjectCredsVal.toLowerCase(Locale.ROOT).equals("false")) {
           // Don't overwrite the prop value if it's already been written to something else,
           // but log because it is likely the Credentials won't be loaded correctly.
           log.warn("System Property: " + useSubjectCredsProp + " set to: " + useSubjectCredsVal

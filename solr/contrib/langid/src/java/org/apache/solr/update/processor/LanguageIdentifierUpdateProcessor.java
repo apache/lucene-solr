@@ -30,10 +30,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,11 +41,11 @@ import java.util.regex.Pattern;
 
 
 /**
- * Identifies the language of a set of input fields.
- * Also supports mapping of field names based
- * on detected language.
  * <p>
- * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
+ *   Identifies the language of a set of input fields.
+ *   Also supports mapping of field names based on detected language.
+ * </p>
+ * See <a href="https://lucene.apache.org/solr/guide/7_4/detecting-languages-during-indexing.html">Detecting Languages During Indexing</a> in reference guide
  * @since 3.5
  * @lucene.experimental
  */
@@ -207,11 +207,10 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
   }
 
   /**
-   * This is the main, testable process method called from processAdd()
-   * @param doc the SolrInputDocument to work on
-   * @return the modified SolrInputDocument
+   * This is the main process method called from processAdd()
+   * @param doc the SolrInputDocument to modify
    */
-  protected SolrInputDocument process(SolrInputDocument doc) {
+  protected void process(SolrInputDocument doc) {
     String docLang = null;
     HashSet<String> docLangs = new HashSet<>();
     String fallbackLang = getFallbackLang(doc, fallbackFields, fallbackValue);
@@ -240,7 +239,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
         if(doc.containsKey(fieldName)) {
           String fieldLang;
           if(mapIndividual && mapIndividualFieldsSet.contains(fieldName)) {
-            List<DetectedLanguage> languagelist = detectLanguage(doc);
+            List<DetectedLanguage> languagelist = detectLanguage(solrDocReader(doc, new String[]{fieldName}));
             fieldLang = resolveLanguage(languagelist, docLang);
             docLangs.add(fieldLang);
             log.debug("Mapping field "+fieldName+" using individually detected language "+fieldLang);
@@ -270,8 +269,6 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
     if(langsField != null && langsField.length() != 0) {
       doc.setField(langsField, docLangs.toArray());
     }
-
-    return doc;
   }
 
   /**
@@ -297,12 +294,21 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
   }
 
   /**
-   * Detects language(s) from a string.
-   * Classes wishing to implement their own language detection module should override this method.
-   * @param content The content to identify
+   * Detects language(s) from all configured fields
+   * @param doc The solr document
    * @return List of detected language(s) according to RFC-3066
    */
-  protected abstract List<DetectedLanguage> detectLanguage(SolrInputDocument content);
+  protected List<DetectedLanguage> detectLanguage(SolrInputDocument doc) {
+    return detectLanguage(solrDocReader(doc, inputFields));
+  }
+
+  /**
+   * Detects language(s) from a reader, typically based on some fields in SolrInputDocument
+   * Classes wishing to implement their own language detection module should override this method.
+   * @param solrDocReader A reader serving the text from the document to detect
+   * @return List of detected language(s) according to RFC-3066
+   */
+  protected abstract List<DetectedLanguage> detectLanguage(Reader solrDocReader);
 
   /**
    * Chooses a language based on the list of candidates detected
@@ -400,67 +406,22 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
     this.enabled = enabled;
   }
 
-
-
   /**
-   * Concatenates content from multiple fields
+   * Returns a reader that streams String content from fields.
+   * This is more memory efficient than building a full string buffer
+   * @param doc the solr document
+   * @param fields the field names to read
+   * @return a reader over the fields
+   */
+  protected SolrInputDocumentReader solrDocReader(SolrInputDocument doc, String[] fields) {
+    return new SolrInputDocumentReader(doc, fields, maxTotalChars, maxFieldValueChars, " ");
+  }
+  
+  /**
+   * Concatenates content from input fields defined in langid.fl.
+   * For test purposes only
    */
   protected String concatFields(SolrInputDocument doc) {
-    StringBuilder sb = new StringBuilder(getExpectedSize(doc, inputFields));
-    for (String fieldName : inputFields) {
-      log.debug("Appending field " + fieldName);
-      if (doc.containsKey(fieldName)) {
-        Collection<Object> fieldValues = doc.getFieldValues(fieldName);
-        if (fieldValues != null) {
-          for (Object content : fieldValues) {
-            if (content instanceof String) {
-              String stringContent = (String) content;
-              if (stringContent.length() > maxFieldValueChars) {
-                sb.append(stringContent.substring(0, maxFieldValueChars));
-              } else {
-                sb.append(stringContent);
-              }
-              sb.append(" ");
-              if (sb.length() > maxTotalChars) {
-                sb.setLength(maxTotalChars);
-                break;
-              }
-            } else {
-              log.warn("Field " + fieldName + " not a String value, not including in detection");
-            }
-          }
-        }
-      }
-    }
-    return sb.toString();
-  }
-
-  /**
-   * Calculate expected string size.
-   *
-   * @param doc           solr input document
-   * @param fields        fields to select
-   * @return expected size of string value
-   */
-  private int getExpectedSize(SolrInputDocument doc, String[] fields) {
-    int docSize = 0;
-    for (String field : fields) {
-      if (doc.containsKey(field)) {
-        Collection<Object> contents = doc.getFieldValues(field);
-        if (contents != null) {
-          for (Object content : contents) {
-            if (content instanceof String) {
-              docSize += Math.min(((String) content).length(), maxFieldValueChars);
-            }
-          }
-
-          if (docSize > maxTotalChars) {
-            docSize = maxTotalChars;
-            break;
-          }
-        }
-      }
-    }
-    return docSize;
+    return SolrInputDocumentReader.asString(solrDocReader(doc, inputFields));
   }
 }

@@ -56,7 +56,7 @@ public class MultiDocValues {
     } else if (size == 1) {
       return leaves.get(0).reader().getNormValues(field);
     }
-    FieldInfo fi = MultiFields.getMergedFieldInfos(r).fieldInfo(field);
+    FieldInfo fi = FieldInfos.getMergedFieldInfos(r).fieldInfo(field); //TODO avoid merging
     if (fi == null || fi.hasNorms() == false) {
       return null;
     }

@@ -25,6 +25,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
@@ -338,7 +339,7 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     private BytesRef payloads[];
   }
 
-  private static class SimpleTVTermsEnum extends TermsEnum {
+  private static class SimpleTVTermsEnum extends BaseTermsEnum {
     SortedMap<BytesRef,SimpleTVPostings> terms;
     Iterator<Map.Entry<BytesRef,SimpleTextTermVectorsReader.SimpleTVPostings>> iterator;
     Map.Entry<BytesRef,SimpleTextTermVectorsReader.SimpleTVPostings> current;

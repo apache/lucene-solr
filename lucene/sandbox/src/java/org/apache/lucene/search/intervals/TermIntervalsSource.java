@@ -18,8 +18,9 @@
 package org.apache.lucene.search.intervals;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
@@ -32,6 +33,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.BytesRef;
 
@@ -55,6 +57,10 @@ class TermIntervalsSource extends IntervalsSource {
     if (te.seekExact(term) == false) {
       return null;
     }
+    return intervals(term, te);
+  }
+
+  static IntervalIterator intervals(BytesRef term, TermsEnum te) throws IOException {
     PostingsEnum pe = te.postings(null, PostingsEnum.POSITIONS);
     float cost = termPositionsCost(te);
     return new IntervalIterator() {
@@ -93,6 +99,11 @@ class TermIntervalsSource extends IntervalsSource {
       @Override
       public int end() {
         return pos;
+      }
+
+      @Override
+      public int gaps() {
+        return 0;
       }
 
       @Override
@@ -138,6 +149,10 @@ class TermIntervalsSource extends IntervalsSource {
     if (te.seekExact(term) == false) {
       return null;
     }
+    return matches(te, doc);
+  }
+
+  static MatchesIterator matches(TermsEnum te, int doc) throws IOException {
     PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
     if (pe.advance(doc) != doc) {
       return null;
@@ -191,6 +206,16 @@ class TermIntervalsSource extends IntervalsSource {
   }
 
   @Override
+  public int minExtent() {
+    return 1;
+  }
+
+  @Override
+  public Collection<IntervalsSource> pullUpDisjunctions() {
+    return Collections.singleton(this);
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(term);
   }
@@ -209,8 +234,8 @@ class TermIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public void extractTerms(String field, Set<Term> terms) {
-    terms.add(new Term(field, term));
+  public void visit(String field, QueryVisitor visitor) {
+    visitor.consumeTerms(new IntervalQuery(field, this), new Term(field, term));
   }
 
   /** A guess of

@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerTest;
 import org.apache.solr.cloud.Stats;
@@ -61,7 +61,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   }
 
   public void testZkStateWriterBatching() throws Exception {
-    String zkDir = createTempDir("testZkStateWriterBatching").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testZkStateWriterBatching");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -69,8 +69,6 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
     try {
       server.run();
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
       ZkController.createClusterZkNodes(zkClient);
@@ -113,7 +111,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   }
 
   public void testSingleLegacyCollection() throws Exception {
-    String zkDir = createTempDir("testSingleLegacyCollection").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testSingleLegacyCollection");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -121,8 +119,6 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
     try {
       server.run();
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
       ZkController.createClusterZkNodes(zkClient);
@@ -155,7 +151,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   }
 
   public void testSingleExternalCollection() throws Exception {
-    String zkDir = createTempDir("testSingleExternalCollection").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testSingleExternalCollection");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -163,8 +159,6 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
     try {
       server.run();
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
       ZkController.createClusterZkNodes(zkClient);
@@ -199,7 +193,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   }
 
   public void testExternalModificationToSharedClusterState() throws Exception {
-    String zkDir = createTempDir("testExternalModification").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testExternalModification");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -207,8 +201,6 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
     try {
       server.run();
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
       ZkController.createClusterZkNodes(zkClient);
@@ -275,7 +267,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   }
 
   public void testExternalModificationToStateFormat2() throws Exception {
-    String zkDir = createTempDir("testExternalModificationToStateFormat2").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testExternalModificationToStateFormat2");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -283,8 +275,6 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
     try {
       server.run();
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
       ZkController.createClusterZkNodes(zkClient);

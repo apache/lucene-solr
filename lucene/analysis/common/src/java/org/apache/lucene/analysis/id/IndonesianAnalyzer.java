@@ -31,6 +31,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
  * Analyzer for Indonesian (Bahasa)
+ *
+ * @since 3.1
  */
 public final class IndonesianAnalyzer extends StopwordAnalyzerBase {
   /** File containing default Indonesian stopwords. */

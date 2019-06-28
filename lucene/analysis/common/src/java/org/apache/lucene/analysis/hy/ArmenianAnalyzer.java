@@ -34,6 +34,8 @@ import org.tartarus.snowball.ext.ArmenianStemmer;
 
 /**
  * {@link Analyzer} for Armenian.
+ *
+ * @since 3.1
  */
 public final class ArmenianAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

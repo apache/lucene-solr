@@ -1,0 +1,11 @@
+section.footnotes aria-label='Footnotes' role='doc-endnotes'
+  hr
+  ol.footnotes
+    - footnotes.each do |fn|
+      li.footnote id=(footnote_id fn.index) role='doc-endnote'
+        ="#{fn.text} "
+        a.footnote-backref [
+            href="##{footnoteref_id fn.index}"
+            role='doc-backlink'
+            title='Jump to the first occurrence in the text' ]
+          | &#8617;

@@ -24,12 +24,12 @@ import java.util.Collections;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase;
@@ -87,7 +87,7 @@ public class TestAllFilesCheckIndexHeader extends LuceneTestCase {
   
   private void checkOneFile(Directory dir, String victim) throws IOException {
     // use ramdir explicit, as we do evil things like try to generate broken files, deletes must work.
-    try (BaseDirectoryWrapper dirCopy = new MockDirectoryWrapper(random(), new RAMDirectory())) {
+    try (BaseDirectoryWrapper dirCopy = new MockDirectoryWrapper(random(), new ByteBuffersDirectory())) {
       dirCopy.setCheckIndexOnClose(false);
 
       long victimLength = dir.fileLength(victim);

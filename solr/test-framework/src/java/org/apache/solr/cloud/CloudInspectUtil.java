@@ -209,12 +209,15 @@ public class CloudInspectUtil {
     try {
       // get versions for the mismatched ids
       boolean foundId = false;
-      StringBuilder ids = new StringBuilder("id:(");
+
+      // use filter() to allow being parsed as 'terms in set' query instead of a (weighted/scored)
+      // BooleanQuery so we don't trip too many boolean clauses
+      StringBuilder ids = new StringBuilder("filter(id:(");
       for (Map doc : differences) {
         ids.append(" ").append(doc.get("id"));
         foundId = true;
       }
-      ids.append(")");
+      ids.append("))");
 
       if (foundId) {
         // get versions for those ids that don't match

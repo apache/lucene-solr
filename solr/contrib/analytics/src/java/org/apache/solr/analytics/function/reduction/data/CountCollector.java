@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.reduction.data;
 
 import java.util.function.Consumer;
 
-import org.apache.solr.analytics.function.reduction.data.ReductionData;
 import org.apache.solr.analytics.stream.reservation.LongReservation;
 import org.apache.solr.analytics.stream.reservation.ReductionDataReservation;
 import org.apache.solr.analytics.value.AnalyticsValueStream;

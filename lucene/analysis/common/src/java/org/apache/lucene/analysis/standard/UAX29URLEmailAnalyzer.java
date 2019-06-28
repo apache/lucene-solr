@@ -32,6 +32,8 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer;
  * with {@link org.apache.lucene.analysis.LowerCaseFilter} and
  * {@link org.apache.lucene.analysis.StopFilter}, using a list of
  * English stop words.
+ *
+ * @since 3.6.0
  */
 public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
   
@@ -88,15 +90,10 @@ public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
     src.setMaxTokenLength(maxTokenLength);
     TokenStream tok = new LowerCaseFilter(src);
     tok = new StopFilter(tok, stopwords);
-    return new TokenStreamComponents(src, tok) {
-      @Override
-      protected void setReader(final Reader reader) {
-        // So that if maxTokenLength was changed, the change takes
-        // effect next time tokenStream is called:
-        src.setMaxTokenLength(UAX29URLEmailAnalyzer.this.maxTokenLength);
-        super.setReader(reader);
-      }
-    };
+    return new TokenStreamComponents(r -> {
+      src.setMaxTokenLength(UAX29URLEmailAnalyzer.this.maxTokenLength);
+      src.setReader(r);
+    }, tok);
   }
 
   @Override

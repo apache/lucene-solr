@@ -34,21 +34,15 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  */
 public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
-  private static final BytesRef[] ZERO_LEN_BYTES_REF_ARRAY = new BytesRef[0];
+  private final CharacterRunAutomaton[] combinedAutomata;
 
   public TokenStreamOffsetStrategy(UHComponents components, Analyzer indexAnalyzer) {
-    super(new UHComponents(
-            components.getField(),
-            components.getFieldMatcher(),
-            components.getQuery(),
-            ZERO_LEN_BYTES_REF_ARRAY,
-            components.getPhraseHelper(),
-            convertTermsToAutomata(components.getTerms(), components.getAutomata()),
-            components.getHighlightFlags()),
-        indexAnalyzer);
+    super(components, indexAnalyzer);
     assert components.getPhraseHelper().hasPositionSensitivity() == false;
+    combinedAutomata = convertTermsToAutomata(components.getTerms(), components.getAutomata());
   }
 
+  //TODO this is inefficient; instead build a union automata just for terms part.
   private static CharacterRunAutomaton[] convertTermsToAutomata(BytesRef[] terms, CharacterRunAutomaton[] automata) {
     CharacterRunAutomaton[] newAutomata = new CharacterRunAutomaton[terms.length + automata.length];
     for (int i = 0; i < terms.length; i++) {
@@ -67,7 +61,7 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
   @Override
   public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
-    return new TokenStreamOffsetsEnum(tokenStream(content), components.getAutomata());
+    return new TokenStreamOffsetsEnum(tokenStream(content), combinedAutomata);
   }
 
   private static class TokenStreamOffsetsEnum extends OffsetsEnum {

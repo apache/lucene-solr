@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 /**A utility class to verify signatures
  *
  */
-public final class CryptoKeys {
+public final class CryptoKeys implements CLIO {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, PublicKey> keys;
   private Exception exception;
@@ -342,14 +342,14 @@ public final class CryptoKeys {
 
   public static void main(String[] args) throws Exception {
     RSAKeyPair keyPair = new RSAKeyPair();
-    System.out.println(keyPair.getPublicKeyStr());
+    CLIO.out(keyPair.getPublicKeyStr());
     PublicKey pk = deserializeX509PublicKey(keyPair.getPublicKeyStr());
     byte[] payload = "Hello World!".getBytes(StandardCharsets.UTF_8);
     byte[] encrypted = keyPair.encrypt(ByteBuffer.wrap(payload));
     String cipherBase64 = Base64.byteArrayToBase64(encrypted);
-    System.out.println("encrypted: "+ cipherBase64);
-    System.out.println("signed: "+ Base64.byteArrayToBase64(keyPair.signSha256(payload)));
-    System.out.println("decrypted "+  new String(decryptRSA(encrypted , pk), StandardCharsets.UTF_8));
+    CLIO.out("encrypted: "+ cipherBase64);
+    CLIO.out("signed: "+ Base64.byteArrayToBase64(keyPair.signSha256(payload)));
+    CLIO.out("decrypted "+  new String(decryptRSA(encrypted , pk), StandardCharsets.UTF_8));
   }
 
 }

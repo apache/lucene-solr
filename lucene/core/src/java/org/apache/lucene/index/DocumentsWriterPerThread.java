@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -190,7 +189,7 @@ final class DocumentsWriterPerThread {
     assert numDocsInRAM == 0 : "num docs " + numDocsInRAM;
     deleteSlice = deleteQueue.newSlice();
    
-    segmentInfo = new SegmentInfo(directoryOrig, Version.LATEST, Version.LATEST, segmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), indexWriterConfig.getIndexSort());
+    segmentInfo = new SegmentInfo(directoryOrig, Version.LATEST, Version.LATEST, segmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), indexWriterConfig.getIndexSort());
     assert numDocsInRAM == 0;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segmentName + " delQueue=" + deleteQueue);  
@@ -443,8 +442,7 @@ final class DocumentsWriterPerThread {
         flushState.liveDocs.clear(delDocID);
       }
       flushState.delCountOnFlush = pendingUpdates.deleteDocIDs.size();
-      pendingUpdates.bytesUsed.addAndGet(-pendingUpdates.deleteDocIDs.size() * BufferedUpdates.BYTES_PER_DEL_DOCID);
-      pendingUpdates.deleteDocIDs.clear();
+      pendingUpdates.clearDeletedDocIds();
     }
 
     if (aborted) {
@@ -493,7 +491,7 @@ final class DocumentsWriterPerThread {
       }
 
       final BufferedUpdates segmentDeletes;
-      if (pendingUpdates.deleteQueries.isEmpty() && pendingUpdates.numericUpdates.isEmpty() && pendingUpdates.binaryUpdates.isEmpty()) {
+      if (pendingUpdates.deleteQueries.isEmpty() && pendingUpdates.numFieldUpdates.get() == 0) {
         pendingUpdates.clear();
         segmentDeletes = null;
       } else {
@@ -636,7 +634,7 @@ final class DocumentsWriterPerThread {
   }
 
   long bytesUsed() {
-    return bytesUsed.get() + pendingUpdates.bytesUsed.get();
+    return bytesUsed.get() + pendingUpdates.ramBytesUsed();
   }
 
   /* Initial chunks size of the shared byte[] blocks used to

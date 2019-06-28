@@ -37,20 +37,6 @@ import org.junit.Test;
 public class SolrMetricManagerTest extends SolrTestCaseJ4 {
 
   @Test
-  public void testOverridableRegistryName() throws Exception {
-    Random r = random();
-    String originalName = TestUtil.randomSimpleString(r, 1, 10);
-    String targetName = TestUtil.randomSimpleString(r, 1, 10);
-    // no override
-    String result = SolrMetricManager.overridableRegistryName(originalName);
-    assertEquals(SolrMetricManager.REGISTRY_NAME_PREFIX + originalName, result);
-    // with override
-    System.setProperty(SolrMetricManager.REGISTRY_NAME_PREFIX + originalName, targetName);
-    result = SolrMetricManager.overridableRegistryName(originalName);
-    assertEquals(SolrMetricManager.REGISTRY_NAME_PREFIX + targetName, result);
-  }
-
-  @Test
   public void testSwapRegistries() throws Exception {
     Random r = random();
 

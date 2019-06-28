@@ -232,14 +232,15 @@ public class CheckHits {
     for (int i=start; i<end; i++) {
         sb.append("hit=").append(i).append(':');
       if (i<len1) {
-          sb.append(" doc").append(hits1[i].doc).append('=').append(hits1[i].score);
+          sb.append(" doc").append(hits1[i].doc).append('=').append(hits1[i].score).append(" shardIndex=").append(hits1[i].shardIndex);
       } else {
         sb.append("               ");
       }
       sb.append(",\t");
       if (i<len2) {
-        sb.append(" doc").append(hits2[i].doc).append('=').append(hits2[i].score);
+        sb.append(" doc").append(hits2[i].doc).append('=').append(hits2[i].score).append(" shardIndex=").append(hits2[i].shardIndex);
       }
+
       sb.append('\n');
     }
     return sb.toString();

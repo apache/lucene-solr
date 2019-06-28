@@ -64,6 +64,8 @@ public class TriggerEvent implements MapWriter {
       if (hint.multiValued) {
         Collection<?> values = value instanceof Collection ? (Collection) value : Collections.singletonList(value);
         ((Set) hints.computeIfAbsent(hint, h -> new LinkedHashSet<>())).addAll(values);
+      } else if (value instanceof Map) {
+        hints.put(hint, value);
       } else {
         hints.put(hint, value == null ? null : String.valueOf(value));
       }

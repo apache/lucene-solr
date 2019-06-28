@@ -20,13 +20,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
@@ -38,7 +39,10 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
@@ -125,6 +129,11 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     return buffer.toString();
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
+
   private String endpoint(BytesRef ref) {
     if (ref == null) return "*";
     String toStr = Term.toString(ref);
@@ -142,7 +151,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new ConstWeight(searcher, scoreMode.needsScores(), boost);
+    return new ConstWeight(searcher, scoreMode, boost);
     /*
     DocSet docs = createDocSet(searcher.getIndexReader().leaves(), searcher.getIndexReader().maxDoc());
     SolrConstantScoreQuery csq = new SolrConstantScoreQuery( docs.getTopFilter() );
@@ -176,7 +185,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
 
-  private class RangeTermsEnum extends TermsEnum {
+  private class RangeTermsEnum extends BaseTermsEnum {
 
     TermsEnum te;
     BytesRef curr;
@@ -327,19 +336,32 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     private static final int BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD = 16;
 
     final IndexSearcher searcher;
-    final boolean needScores;
+    final ScoreMode scoreMode;
     boolean checkedFilterCache;
     Filter filter;
     final SegState[] segStates;
 
 
-    protected ConstWeight(IndexSearcher searcher, boolean needScores, float boost) {
+    protected ConstWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
       super( SolrRangeQuery.this, boost );
       this.searcher = searcher;
       this.segStates = new SegState[ searcher.getIndexReader().leaves().size() ];
-      this.needScores = needScores;
+      this.scoreMode = scoreMode;
     }
 
+    // See MultiTermQueryConstantScoreWrapper matches()
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      SolrRangeQuery query = SolrRangeQuery.this;
+      final Terms terms = context.reader().terms(query.field);
+      if (terms == null) {
+        return null;
+      }
+      if (terms.hasPositions() == false) {
+        return super.matches(context, doc);
+      }
+      return MatchesUtils.forField(query.field, () -> MatchesUtils.disjunction(context, doc, query, query.field, query.getTermsEnum(context)));
+    }
 
     /** Try to collect terms from the given terms enum and return count=sum(df) for terms visited so far
      *  or (-count - 1) if this should be rewritten into a boolean query.
@@ -347,7 +369,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
      */
     private long collectTerms(LeafReaderContext context, TermsEnum termsEnum, List<TermAndState> terms) throws IOException {
       long count = 0;
-      final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, BooleanQuery.getMaxClauseCount());
+      final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
       for (int i = 0; i < threshold; ++i) {
         final BytesRef term = termsEnum.next();
         if (term == null) {
@@ -407,7 +429,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
           bq.add(new TermQuery(new Term( SolrRangeQuery.this.getField(), t.term), termStates), BooleanClause.Occur.SHOULD);
         }
         Query q = new ConstantScoreQuery(bq.build());
-        final Weight weight = searcher.rewrite(q).createWeight(searcher, needScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES, score());
+        final Weight weight = searcher.rewrite(q).createWeight(searcher, scoreMode, score());
         return segStates[context.ord] = new SegState(weight);
       }
 
@@ -467,7 +489,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (disi == null) {
         return null;
       }
-      return new ConstantScoreScorer(this, score(), disi);
+      return new ConstantScoreScorer(this, score(), scoreMode, disi);
     }
 
     @Override

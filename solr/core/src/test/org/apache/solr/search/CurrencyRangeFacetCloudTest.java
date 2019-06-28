@@ -51,7 +51,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
 
   private static final List<String> STR_VALS = Arrays.asList("x0", "x1", "x2");
   // NOTE: in our test conversions EUR uses an asynetric echange rate
-  // these are the equivilent values relative to:                                USD        EUR        GBP
+  // these are the equivalent values relative to:                                USD        EUR        GBP
   private static final List<String> VALUES = Arrays.asList("10.00,USD",     // 10.00,USD  25.00,EUR   5.00,GBP
                                                            "15.00,EUR",     //  7.50,USD  15.00,EUR   7.50,GBP
                                                            "6.00,GBP",      // 12.00,USD  12.00,EUR   6.00,GBP

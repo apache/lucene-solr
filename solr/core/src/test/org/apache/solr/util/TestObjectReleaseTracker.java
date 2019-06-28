@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleLimitSysouts.Limit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -24,7 +23,7 @@ import org.junit.Test;
 
 
 @Limit(bytes=150000) // raise limit as this writes to sys err
-public class TestObjectReleaseTracker extends LuceneTestCase {
+public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
   
   @Test
   public void testObjectReleaseTracker() {

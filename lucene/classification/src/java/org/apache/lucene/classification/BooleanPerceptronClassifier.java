@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -80,7 +80,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
    */
   public BooleanPerceptronClassifier(IndexReader indexReader, Analyzer analyzer, Query query, Integer batchSize,
                                      Double bias, String classFieldName, String textFieldName) throws IOException {
-    this.textTerms = MultiFields.getTerms(indexReader, textFieldName);
+    this.textTerms = MultiTerms.getTerms(indexReader, textFieldName);
 
     if (textTerms == null) {
       throw new IOException("term vectors need to be available for field " + textFieldName);

@@ -947,7 +947,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     modifier.deleteDocuments(new TermQuery(new Term("nada", "nada")));
     modifier.commit();
-    assertEquals(5, modifier.numDocs());
+    assertEquals(5, modifier.getDocStats().numDocs);
     modifier.close();
     dir.close();
   }
@@ -1215,7 +1215,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     r = DirectoryReader.open(d);
     assertEquals(2, r.numDeletedDocs());
-    assertNotNull(MultiFields.getLiveDocs(r));
+    assertNotNull(MultiBits.getLiveDocs(r));
     r.close();
     d.close();
   }

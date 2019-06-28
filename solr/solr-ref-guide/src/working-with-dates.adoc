@@ -60,7 +60,8 @@ These are valid queries: +
 Solr's `DateRangeField` supports the same point in time date syntax described above (with _date math_ described below) and more to express date ranges. One class of examples is truncated dates, which represent the entire date span to the precision indicated. The other class uses the range syntax (`[ TO ]`). Here are some examples:
 
 * `2000-11` – The entire month of November, 2000.
-* `2000-11T13` – Likewise but for an hour of the day (1300 to before 1400, i.e., 1pm to 2pm).
+* `1605-11-05` – The Fifth of November.
+* `2000-11-05T13` – Likewise but for an hour of the day (1300 to before 1400, i.e., 1pm to 2pm).
 * `-0009` – The year 10 BC. A 0 in the year position is 0 AD, and is also considered 1 BC.
 * `[2000-11-01 TO 2014-12-01]` – The specified date range at a day resolution.
 * `[2014 TO 2014-12-01]` – From the start of 2014 till the end of the first day of December.
@@ -102,7 +103,7 @@ Note that while date math is most commonly used relative to `NOW` it can be appl
 
 The `NOW` parameter is used internally by Solr to ensure consistent date math expression parsing across multiple nodes in a distributed request. But it can be specified to instruct Solr to use an arbitrary moment in time (past or future) to override for all situations where the the special value of "```NOW```" would impact date math expressions.
 
-It must be specified as a (long valued) milliseconds since epoch
+It must be specified as a (long valued) milliseconds since epoch.
 
 Example:
 

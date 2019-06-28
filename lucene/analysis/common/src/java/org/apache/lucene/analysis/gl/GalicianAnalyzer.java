@@ -35,6 +35,8 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * {@link Analyzer} for Galician.
+ *
+ * @since 3.1
  */
 public final class GalicianAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

@@ -47,7 +47,7 @@ public abstract class CachingCollector extends FilterCollector {
 
   private static final int INITIAL_ARRAY_SIZE = 128;
 
-  private static final class CachedScorer extends Scorer {
+  private static final class CachedScorable extends Scorable {
 
     // NOTE: these members are package-private b/c that way accessing them from
     // the outer class does not incur access check by the JVM. The same
@@ -56,20 +56,8 @@ public abstract class CachingCollector extends FilterCollector {
     int doc;
     float score;
 
-    private CachedScorer() { super(null); }
-
-    @Override
-    public DocIdSetIterator iterator() {
-      throw new UnsupportedOperationException();
-    }
-
     @Override
     public final float score() { return score; }
-
-    @Override
-    public float getMaxScore(int upTo) throws IOException {
-      return Float.POSITIVE_INFINITY;
-    }
 
     @Override
     public int docID() {
@@ -188,7 +176,7 @@ public abstract class CachingCollector extends FilterCollector {
       final int[] docs = this.docs.get(i);
       final float[] scores = this.scores.get(i);
       assert docs.length == scores.length;
-      final CachedScorer scorer = new CachedScorer();
+      final CachedScorable scorer = new CachedScorable();
       collector.setScorer(scorer);
       for (int j = 0; j < docs.length; ++j) {
         scorer.doc = docs[j];

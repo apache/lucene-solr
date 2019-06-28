@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.apache.solr.analytics.function.reduction.data.ReductionData;
 import org.apache.solr.analytics.stream.reservation.DoubleArrayReservation;
 import org.apache.solr.analytics.stream.reservation.FloatArrayReservation;
 import org.apache.solr.analytics.stream.reservation.IntArrayReservation;

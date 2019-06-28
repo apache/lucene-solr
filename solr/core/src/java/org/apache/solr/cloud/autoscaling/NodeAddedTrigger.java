@@ -69,11 +69,11 @@ public class NodeAddedTrigger extends TriggerBase {
       List<String> added = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
       added.forEach(n -> {
         // don't add nodes that have since gone away
-        if (lastLiveNodes.contains(n)) {
+        if (lastLiveNodes.contains(n) && !nodeNameVsTimeAdded.containsKey(n)) {
+          // since {@code #restoreState(AutoScaling.Trigger)} is called first, the timeAdded for a node may also be restored
           log.debug("Adding node from marker path: {}", n);
           nodeNameVsTimeAdded.put(n, cloudManager.getTimeSource().getTimeNs());
         }
-        removeMarker(n);
       });
     } catch (NoSuchElementException e) {
       // ignore
@@ -186,14 +186,15 @@ public class NodeAddedTrigger extends TriggerBase {
           if (processor.process(new NodeAddedEvent(getEventType(), getName(), times, nodeNames, preferredOp))) {
             // remove from tracking set only if the fire was accepted
             nodeNames.forEach(n -> {
+              log.debug("Removing new node from tracking: {}", n);
               nodeNameVsTimeAdded.remove(n);
-              removeMarker(n);
             });
+          } else {
+            log.debug("Processor returned false for {}!", nodeNames);
           }
         } else  {
           nodeNames.forEach(n -> {
             nodeNameVsTimeAdded.remove(n);
-            removeMarker(n);
           });
         }
       }
@@ -201,21 +202,6 @@ public class NodeAddedTrigger extends TriggerBase {
     } catch (RuntimeException e) {
       log.error("Unexpected exception in NodeAddedTrigger", e);
     }
-  }
-
-  private void removeMarker(String nodeName) {
-    String path = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + nodeName;
-    try {
-      log.debug("NodeAddedTrigger {} - removing marker path: {}", name, path);
-      if (stateManager.hasData(path)) {
-        stateManager.removeData(path, -1);
-      }
-    } catch (NoSuchElementException e) {
-      // ignore
-    } catch (Exception e) {
-      log.debug("Exception removing nodeAdded marker " + nodeName, e);
-    }
-
   }
 
   public static class NodeAddedEvent extends TriggerEvent {

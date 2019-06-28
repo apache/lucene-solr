@@ -53,6 +53,7 @@ import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -68,6 +69,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.StringHelper;
@@ -521,7 +523,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             // reader; in theory we could instead do similar retry logic,
             // just like we do when loading segments_N
             
-            r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes, writeAllDeletes);
+            r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes, writeAllDeletes, config.getReaderAttributes());
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
             }
@@ -781,7 +783,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         // against an index that's currently open for
         // searching.  In this case we write the next
         // segments_N file with no segments:
-        final SegmentInfos sis = new SegmentInfos(Version.LATEST.major);
+        final SegmentInfos sis = new SegmentInfos(config.getIndexCreatedVersionMajor());
         if (indexExists) {
           final SegmentInfos previous = SegmentInfos.readLatestCommit(directory);
           sis.updateGenerationVersionAndCounter(previous);
@@ -883,7 +885,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           enableTestPoints, this::newSegmentName,
           config, directoryOrig, directory, globalFieldNumberMap);
       readerPool = new ReaderPool(directory, directoryOrig, segmentInfos, globalFieldNumberMap,
-          bufferedUpdatesStream::getCompletedDelGen, infoStream, conf.getSoftDeletesField(), reader);
+          bufferedUpdatesStream::getCompletedDelGen, infoStream, conf.getSoftDeletesField(), reader, config.getReaderAttributes());
       if (config.getReaderPooling()) {
         readerPool.enableReaderPooling();
       }
@@ -934,19 +936,28 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   /** Confirms that the incoming index sort (if any) matches the existing index sort (if any).  */
-  private void validateIndexSort() throws CorruptIndexException {
+  private void validateIndexSort() {
     Sort indexSort = config.getIndexSort();
     if (indexSort != null) {
       for(SegmentCommitInfo info : segmentInfos) {
         Sort segmentIndexSort = info.info.getIndexSort();
-        if (segmentIndexSort != null && indexSort.equals(segmentIndexSort) == false) {
+        if (segmentIndexSort == null || isCongruentSort(indexSort, segmentIndexSort) == false) {
           throw new IllegalArgumentException("cannot change previous indexSort=" + segmentIndexSort + " (from segment=" + info + ") to new indexSort=" + indexSort);
-        } else if (segmentIndexSort == null) {
-          // Flushed segments are not sorted if they were built with a version prior to 6.5.0
-          throw new CorruptIndexException("segment not sorted with indexSort=" + segmentIndexSort, info.info.toString());
         }
       }
     }
+  }
+
+  /**
+   * Returns true if <code>indexSort</code> is a prefix of <code>otherSort</code>.
+   **/
+  static boolean isCongruentSort(Sort indexSort, Sort otherSort) {
+    final SortField[] fields1 = indexSort.getSort();
+    final SortField[] fields2 = otherSort.getSort();
+    if (fields1.length > fields2.length) {
+      return false;
+    }
+    return Arrays.asList(fields1).equals(Arrays.asList(fields2).subList(0, fields1.length));
   }
 
   // reads latest field infos for the commit
@@ -981,7 +992,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     for(SegmentCommitInfo info : segmentInfos) {
       FieldInfos fis = readFieldInfos(info);
       for(FieldInfo fi : fis) {
-        map.addOrGet(fi.name, fi.number, fi.getIndexOptions(), fi.getDocValuesType(), fi.getPointDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
+        map.addOrGet(fi.name, fi.number, fi.getIndexOptions(), fi.getDocValuesType(), fi.getPointDataDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
       }
     }
 
@@ -1120,15 +1131,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     return analyzer;
   }
 
-  /** Returns total number of docs in this index, including
-   *  docs not yet flushed (still in the RAM buffer),
-   *  not counting deletions.
-   *  @see #numDocs */
-  public synchronized int maxDoc() {
-    ensureOpen();
-    return docWriter.getNumDocs() + segmentInfos.totalMaxDoc();
-  }
-
   /** If {@link SegmentInfos#getVersion} is below {@code newVersion} then update it to this value.
    *
    * @lucene.internal */
@@ -1138,21 +1140,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       segmentInfos.setVersion(newVersion);
     }
     changed();
-  }
-
-  /** Returns total number of docs in this index, including
-   *  docs not yet flushed (still in the RAM buffer), and
-   *  including deletions.  <b>NOTE:</b> buffered deletions
-   *  are not counted.  If you really need these to be
-   *  counted you should call {@link #commit()} first.
-   *  @see #numDocs */
-  public synchronized int numDocs() {
-    ensureOpen();
-    int count = docWriter.getNumDocs();
-    for (final SegmentCommitInfo info : segmentInfos) {
-      count += info.info.maxDoc() - numDeletedDocs(info);
-    }
-    return count;
   }
 
   /**
@@ -1803,7 +1790,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       if (globalFieldNumberMap.contains(f.name(), dvType) == false) {
         // if this field doesn't exists we try to add it. if it exists and the DV type doesn't match we
         // get a consistent error message as if you try to do that during an indexing operation.
-        globalFieldNumberMap.addOrGet(f.name(), -1, IndexOptions.NONE, dvType, 0, 0, f.name().equals(config.softDeletesField));
+        globalFieldNumberMap.addOrGet(f.name(), -1, IndexOptions.NONE, dvType, 0, 0, 0, f.name().equals(config.softDeletesField));
         assert globalFieldNumberMap.contains(f.name(), dvType);
       }
       if (config.getIndexSortFields().contains(f.name())) {
@@ -1984,7 +1971,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       for(final MergePolicy.OneMerge merge  : pendingMerges) {
         merge.maxNumSegments = maxNumSegments;
         if (merge.info != null) {
-          // TODO: explain why this is sometimes still null
+          // this can be null since we register the merge under lock before we then do the actual merge and
+          // set the merge.info in _mergeInit
           segmentsToMerge.put(merge.info, Boolean.TRUE);
         }
       }
@@ -1992,7 +1980,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       for (final MergePolicy.OneMerge merge: runningMerges) {
         merge.maxNumSegments = maxNumSegments;
         if (merge.info != null) {
-          // TODO: explain why this is sometimes still null
+          // this can be null since we put the merge on runningMerges before we do the actual merge and
+          // set the merge.info in _mergeInit
           segmentsToMerge.put(merge.info, Boolean.TRUE);
         }
       }
@@ -2597,7 +2586,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // Do this as an event so it applies higher in the stack when we are not holding DocumentsWriterFlushQueue.purgeLock:
     eventQueue.add(w -> {
       try {
-        packet.apply(w);
+        // we call tryApply here since we don't want to block if a refresh or a flush is already applying the
+        // packet. The flush will retry this packet anyway to ensure all of them are applied
+        packet.tryApply(w);
       } catch (Throwable t) {
         try {
           w.onTragicEvent(t, "applyUpdatesPacket");
@@ -2824,8 +2815,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
             Sort segmentIndexSort = info.info.getIndexSort();
 
-            if (indexSort != null && segmentIndexSort != null && indexSort.equals(segmentIndexSort) == false) {
-              // TODO: we could make this smarter, e.g. if the incoming indexSort is congruent with our sort ("starts with") then it's OK
+            if (indexSort != null && (segmentIndexSort == null || isCongruentSort(indexSort, segmentIndexSort) == false)) {
               throw new IllegalArgumentException("cannot change index sort from " + segmentIndexSort + " to " + indexSort);
             }
 
@@ -2840,7 +2830,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
             FieldInfos fis = readFieldInfos(info);
             for(FieldInfo fi : fis) {
               // This will throw exceptions if any of the incoming fields have an illegal schema change:
-              globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getIndexOptions(), fi.getDocValuesType(), fi.getPointDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
+              globalFieldNumberMap.addOrGet(fi.name, fi.number, fi.getIndexOptions(), fi.getDocValuesType(), fi.getPointDataDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
             }
             infos.add(copySegmentAsIs(info, newSegName, context));
           }
@@ -2908,8 +2898,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
 
     Sort leafIndexSort = segmentMeta.getSort();
-    if (config.getIndexSort() != null && leafIndexSort != null
-        && config.getIndexSort().equals(leafIndexSort) == false) {
+    if (config.getIndexSort() != null &&
+          (leafIndexSort == null || isCongruentSort(config.getIndexSort(), leafIndexSort) == false)) {
       throw new IllegalArgumentException("cannot change index sort from " + leafIndexSort + " to " + config.getIndexSort());
     }
   }
@@ -2985,7 +2975,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       // We set the min version to null for now, it will be set later by SegmentMerger
       SegmentInfo info = new SegmentInfo(directoryOrig, Version.LATEST, null, mergedName, -1,
-                                         false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), config.getIndexSort());
+                                         false, codec, Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), config.getIndexSort());
 
       SegmentMerger merger = new SegmentMerger(Arrays.asList(readers), info, infoStream, trackingDir,
                                                globalFieldNumberMap, 
@@ -4260,7 +4250,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // names.
     final String mergeSegmentName = newSegmentName();
     // We set the min version to null for now, it will be set later by SegmentMerger
-    SegmentInfo si = new SegmentInfo(directoryOrig, Version.LATEST, null, mergeSegmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), config.getIndexSort());
+    SegmentInfo si = new SegmentInfo(directoryOrig, Version.LATEST, null, mergeSegmentName, -1, false, codec,
+        Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), config.getIndexSort());
     Map<String,String> details = new HashMap<>();
     details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
     details.put("mergeFactor", Integer.toString(merge.segments.size()));
@@ -4341,6 +4332,36 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
   }
 
+  private void countSoftDeletes(CodecReader reader, Bits wrappedLiveDocs, Bits hardLiveDocs, Counter softDeleteCounter,
+                                Counter hardDeleteCounter) throws IOException {
+    int hardDeleteCount = 0;
+    int softDeletesCount = 0;
+    DocIdSetIterator softDeletedDocs = DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), reader);
+    if (softDeletedDocs != null) {
+      int docId;
+      while ((docId = softDeletedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        if (wrappedLiveDocs == null || wrappedLiveDocs.get(docId)) {
+          if (hardLiveDocs == null || hardLiveDocs.get(docId)) {
+            softDeletesCount++;
+          } else {
+            hardDeleteCount++;
+          }
+        }
+      }
+    }
+    softDeleteCounter.addAndGet(softDeletesCount);
+    hardDeleteCounter.addAndGet(hardDeleteCount);
+  }
+
+  private boolean assertSoftDeletesCount(CodecReader reader, int expectedCount) throws IOException {
+    Counter count = Counter.newCounter(false);
+    Counter hardDeletes = Counter.newCounter(false);
+    countSoftDeletes(reader, reader.getLiveDocs(), null, count, hardDeletes);
+    assert count.get() == expectedCount : "soft-deletes count mismatch expected: "
+        + expectedCount  + " but actual: " + count.get() ;
+    return true;
+  }
+
   /** Does the actual (time-consuming) work of the merge,
    *  but without holding synchronized lock on IndexWriter
    *  instance */
@@ -4389,7 +4410,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
 
       // Let the merge wrap readers
       List<CodecReader> mergeReaders = new ArrayList<>();
-      int softDeleteCount = 0;
+      Counter softDeleteCount = Counter.newCounter(false);
       for (int r = 0; r < merge.readers.size(); r++) {
         SegmentReader reader = merge.readers.get(r);
         CodecReader wrappedReader = merge.wrapForMerge(reader);
@@ -4397,34 +4418,31 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         if (softDeletesEnabled) {
           if (reader != wrappedReader) { // if we don't have a wrapped reader we won't preserve any soft-deletes
             Bits hardLiveDocs = merge.hardLiveDocs.get(r);
-            Bits wrappedLiveDocs = wrappedReader.getLiveDocs();
-            int hardDeleteCount = 0;
-            DocIdSetIterator softDeletedDocs = DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(config.getSoftDeletesField(), wrappedReader);
-            if (softDeletedDocs != null) {
-              int docId;
-              while ((docId = softDeletedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                if (wrappedLiveDocs == null || wrappedLiveDocs.get(docId)) {
-                  if (hardLiveDocs == null || hardLiveDocs.get(docId)) {
-                    softDeleteCount++;
-                  } else {
-                    hardDeleteCount++;
+            if (hardLiveDocs != null) { // we only need to do this accounting if we have mixed deletes
+              Bits wrappedLiveDocs = wrappedReader.getLiveDocs();
+              Counter hardDeleteCounter = Counter.newCounter(false);
+              countSoftDeletes(wrappedReader, wrappedLiveDocs, hardLiveDocs, softDeleteCount, hardDeleteCounter);
+              int hardDeleteCount = Math.toIntExact(hardDeleteCounter.get());
+              // Wrap the wrapped reader again if we have excluded some hard-deleted docs
+              if (hardDeleteCount > 0) {
+                Bits liveDocs = wrappedLiveDocs == null ? hardLiveDocs : new Bits() {
+                  @Override
+                  public boolean get(int index) {
+                    return hardLiveDocs.get(index) && wrappedLiveDocs.get(index);
                   }
-                }
+
+                  @Override
+                  public int length() {
+                    return hardLiveDocs.length();
+                  }
+                };
+                wrappedReader = FilterCodecReader.wrapLiveDocs(wrappedReader, liveDocs, wrappedReader.numDocs() - hardDeleteCount);
               }
-            }
-            // Wrap the wrapped reader again if we have excluded some hard-deleted docs
-            if (hardLiveDocs != null && hardDeleteCount > 0) {
-              Bits liveDocs = wrappedLiveDocs == null ? hardLiveDocs : new Bits() {
-                @Override
-                public boolean get(int index) {
-                  return hardLiveDocs.get(index) && wrappedLiveDocs.get(index);
-                }
-                @Override
-                public int length() {
-                  return hardLiveDocs.length();
-                }
-              };
-              wrappedReader = FilterCodecReader.wrapLiveDocs(wrappedReader, liveDocs, wrappedReader.numDocs() - hardDeleteCount);
+            } else {
+              final int carryOverSoftDeletes = reader.getSegmentInfo().getSoftDelCount() - wrappedReader.numDeletedDocs();
+              assert carryOverSoftDeletes >= 0 : "carry-over soft-deletes must be positive";
+              assert assertSoftDeletesCount(wrappedReader, carryOverSoftDeletes);
+              softDeleteCount.addAndGet(carryOverSoftDeletes);
             }
           }
         }
@@ -4434,7 +4452,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
                                                      merge.info.info, infoStream, dirWrapper,
                                                      globalFieldNumberMap, 
                                                      context);
-      merge.info.setSoftDelCount(softDeleteCount);
+      merge.info.setSoftDelCount(Math.toIntExact(softDeleteCount.get()));
       merge.checkAborted();
 
       merge.mergeStartNS = System.nanoTime();
@@ -5249,5 +5267,46 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   /** Tests should use this method to snapshot the current segmentInfos to have a consistent view */
   final synchronized SegmentInfos cloneSegmentInfos() {
     return segmentInfos.clone();
+  }
+
+  /**
+   * Returns accurate {@link DocStats} form this writer. The numDoc for instance can change after maxDoc is fetched
+   * that causes numDocs to be greater than maxDoc which makes it hard to get accurate document stats from IndexWriter.
+   */
+  public synchronized DocStats getDocStats() {
+    ensureOpen();
+    int numDocs = docWriter.getNumDocs();
+    int maxDoc = numDocs;
+    for (final SegmentCommitInfo info : segmentInfos) {
+      maxDoc += info.info.maxDoc();
+      numDocs += info.info.maxDoc() - numDeletedDocs(info);
+    }
+    assert maxDoc >= numDocs : "maxDoc is less than numDocs: " + maxDoc + " < " + numDocs;
+    return new DocStats(maxDoc, numDocs);
+  }
+
+  /**
+   * DocStats for this index
+   */
+  public static final class DocStats {
+    /**
+     * The total number of docs in this index, including
+     * docs not yet flushed (still in the RAM buffer),
+     * not counting deletions.
+     */
+    public final int maxDoc;
+    /**
+     * The total number of docs in this index, including
+     * docs not yet flushed (still in the RAM buffer), and
+     * including deletions.  <b>NOTE:</b> buffered deletions
+     * are not counted.  If you really need these to be
+     * counted you should call {@link IndexWriter#commit()} first.
+     */
+    public final int numDocs;
+
+    private DocStats(int maxDoc, int numDocs) {
+      this.maxDoc = maxDoc;
+      this.numDocs = numDocs;
+    }
   }
 }

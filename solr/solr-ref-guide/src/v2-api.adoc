@@ -55,11 +55,11 @@ Append `/_introspect` to any valid v2 API path and the API specification will be
 
 `\http://localhost:8983/api/c/_introspect`
 
-To limit the introspect output to include just one particular HTTP method, add request param `method` with value `GET`, `POST`, or `DELETE`.
+To limit the introspect output to include just one particular HTTP method, add the request parameter `method` with value `GET`, `POST`, or `DELETE`.
 
 `\http://localhost:8983/api/c/_introspect?method=POST`
 
-Most endpoints support commands provided in a body sent via POST. To limit the introspect output to only one command, add request param `command=_command-name_`.
+Most endpoints support commands provided in a body sent via POST. To limit the introspect output to only one command, add the request parameter `command=_command-name_`.
 
 `\http://localhost:8983/api/c/gettingstarted/_introspect?method=POST&command=modify`
 
@@ -146,7 +146,7 @@ Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstart
 }
 ----
 
-The `"commands"` section in the above example has one entry for each command supported at this endpoint. The key is the command name and the value is a json object describing the command structure using JSON schema (see http://json-schema.org/ for a description).
+The `"commands"` section in the above example has one entry for each command supported at this endpoint. The key is the command name and the value is a JSON object describing the command structure using JSON schema (see http://json-schema.org/ for a description).
 
 == Invocation Examples
 

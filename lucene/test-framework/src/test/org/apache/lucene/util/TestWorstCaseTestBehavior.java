@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Ignore;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;

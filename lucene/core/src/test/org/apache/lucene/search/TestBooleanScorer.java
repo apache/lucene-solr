@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -80,11 +79,6 @@ public class TestBooleanScorer extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new Weight(CrazyMustUseBulkScorerQuery.this) {
         @Override
-        public void extractTerms(Set<Term> terms) {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override
         public Explanation explain(LeafReaderContext context, int doc) {
           throw new UnsupportedOperationException();
         }
@@ -105,7 +99,7 @@ public class TestBooleanScorer extends LuceneTestCase {
             @Override
             public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
               assert min == 0;
-              collector.setScorer(new FakeScorer());
+              collector.setScorer(new ScoreAndDoc());
               collector.collect(0);
               return DocIdSetIterator.NO_MORE_DOCS;
             }
@@ -116,6 +110,11 @@ public class TestBooleanScorer extends LuceneTestCase {
           };
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override

@@ -190,7 +190,7 @@ public class FloatPointNearestNeighbor {
 
     @Override
     public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-      throw new AssertionError();
+      return PointValues.Relation.CELL_CROSSES_QUERY;
     }
   }
 

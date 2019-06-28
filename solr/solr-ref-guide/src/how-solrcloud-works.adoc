@@ -1,5 +1,5 @@
 = How SolrCloud Works
-:page-children: shards-and-indexing-data-in-solrcloud, distributed-requests, time-routed-aliases
+:page-children: shards-and-indexing-data-in-solrcloud, distributed-requests, aliases
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -21,7 +21,7 @@ The following sections cover provide general information about how various SolrC
 
 * <<shards-and-indexing-data-in-solrcloud.adoc#shards-and-indexing-data-in-solrcloud,Shards and Indexing Data in SolrCloud>>
 * <<distributed-requests.adoc#distributed-requests,Distributed Requests>>
-* <<time-routed-aliases.adoc#time-routed-aliases,Time Routed Aliases>>
+* <<aliases.adoc#aliases,Standard and Routed Aliases>>
 
 If you are already familiar with SolrCloud concepts and basic functionality, you can skip to the section covering <<solrcloud-configuration-and-parameters.adoc#solrcloud-configuration-and-parameters,SolrCloud Configuration and Parameters>>.
 

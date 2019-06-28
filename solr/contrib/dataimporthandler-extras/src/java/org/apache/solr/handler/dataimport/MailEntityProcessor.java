@@ -66,7 +66,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
   
   public void init(Context context) {
     super.init(context);
-    // set attributes using XXX getXXXFromContext(attribute, defualtValue);
+    // set attributes using XXX getXXXFromContext(attribute, defaultValue);
     // applies variable resolver and return default if value is not found or null
     // REQUIRED : connection and folder info
     user = getStringFromContext("user", null);
@@ -418,8 +418,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
     }
     if (customFilter != null && !customFilter.equals("")) {
       try {
-        Class cf = Class.forName(customFilter);
-        Object obj = cf.newInstance();
+        Class<?> cf = Class.forName(customFilter);
+        Object obj = cf.getConstructor().newInstance();
         if (obj instanceof CustomFilter) {
           filters.add((CustomFilter) obj);
         }

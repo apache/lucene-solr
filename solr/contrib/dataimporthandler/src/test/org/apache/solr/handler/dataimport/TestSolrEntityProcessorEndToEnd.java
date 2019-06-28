@@ -127,7 +127,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     // data source solr instance
     instance = new SolrInstance();
     instance.setUp();
-    jetty = createJetty(instance);
+    jetty = createAndStartJetty(instance);
   }
   
   @Override
@@ -138,8 +138,14 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     } catch (Exception e) {
       log.error("Error deleting core", e);
     }
-    jetty.stop();
-    instance.tearDown();
+    if (null != jetty) {
+      jetty.stop();
+      jetty = null;
+    }
+    if (null != instance) {
+      instance.tearDown();
+      instance = null;
+    }
     super.tearDown();
   }
 
@@ -362,7 +368,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     }
   }
   
-  private JettySolrRunner createJetty(SolrInstance instance) throws Exception {
+  private JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, buildJettyConfig("/solr"));

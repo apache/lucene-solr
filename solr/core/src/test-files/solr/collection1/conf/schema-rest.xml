@@ -199,17 +199,13 @@
 
   <fieldType name="teststop" class="solr.TextField">
     <analyzer>
-      <tokenizer class="solr.LowerCaseTokenizerFactory"/>
+      <tokenizer class="solr.LetterTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
     </analyzer>
   </fieldType>
 
   <!-- fieldTypes in this section isolate tokenizers and tokenfilters for testing -->
-  <fieldType name="lowertok" class="solr.TextField">
-    <analyzer>
-      <tokenizer class="solr.LowerCaseTokenizerFactory"/>
-    </analyzer>
-  </fieldType>
   <fieldType name="keywordtok" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
@@ -604,7 +600,6 @@
 
   <!-- fields to test individual tokenizers and tokenfilters -->
   <field name="teststop" type="teststop" indexed="true" stored="true"/>
-  <field name="lowertok" type="lowertok" indexed="true" stored="true"/>
   <field name="keywordtok" type="keywordtok" indexed="true" stored="true"/>
   <field name="standardtok" type="standardtok" indexed="true" stored="true"/>
   <field name="HTMLstandardtok" type="HTMLstandardtok" indexed="true" stored="true"/>

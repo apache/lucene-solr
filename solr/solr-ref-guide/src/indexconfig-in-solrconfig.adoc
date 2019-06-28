@@ -75,17 +75,19 @@ Other policies available are the `LogByteSizeMergePolicy`, `LogDocMergePolicy`, 
 ----
 
 [[merge-factors]]
-=== Controlling Segment Sizes: Merge Factors
+=== Controlling Segment Sizes
 
-The most common adjustment users make to the configuration of TieredMergePolicy (or LogByteSizeMergePolicy) are the "merge factors" to change how many segments should be merged at one time.
+The most common adjustment users make to the configuration of `TieredMergePolicy` (or `LogByteSizeMergePolicy`) are the "merge factors" to change how many segments should be merged at one time and, in the `TieredMergePolicy` case, the maximum size of an merged segment.
 
-For TieredMergePolicy, this is controlled by setting the `<int name="maxMergeAtOnce">` and `<int name="segmentsPerTier">` options, while LogByteSizeMergePolicy has a single `<int name="mergeFactor">` option (all of which default to `10`).
+For `TieredMergePolicy`, this is controlled by setting the `maxMergeAtOnce` (default `10`), `segmentsPerTier` (default `10`) and `maxMergedSegmentMB` (default `5000`) options.
 
-To understand why these options are important, consider what happens when an update is made to an index using LogByteSizeMergePolicy: Documents are always added to the most recently opened segment. When a segment fills up, a new segment is created and subsequent updates are placed there.
+`LogByteSizeMergePolicy` has a single `mergeFactor` option (default `10`).
 
-If creating a new segment would cause the number of lowest-level segments to exceed the `mergeFactor` value, then all those segments are merged together to form a single large segment. Thus, if the merge factor is 10, each merge results in the creation of a single segment that is roughly ten times larger than each of its ten constituents. When there are 10 of these larger segments, then they in turn are merged into an even larger single segment. This process can continue indefinitely.
+To understand why these options are important, consider what happens when an update is made to an index using `LogByteSizeMergePolicy`: Documents are always added to the most recently opened segment. When a segment fills up, a new segment is created and subsequent updates are placed there.
 
-When using TieredMergePolicy, the process is the same, but instead of a single `mergeFactor` value, the `segmentsPerTier` setting is used as the threshold to decide if a merge should happen, and the `maxMergeAtOnce` setting determines how many segments should be included in the merge.
+If creating a new segment would cause the number of lowest-level segments to exceed the `mergeFactor` value, then all those segments are merged together to form a single large segment. Thus, if the merge factor is `10`, each merge results in the creation of a single segment that is roughly ten times larger than each of its ten constituents. When there are 10 of these larger segments, then they in turn are merged into an even larger single segment. This process can continue indefinitely.
+
+When using `TieredMergePolicy`, the process is the same, but instead of a single `mergeFactor` value, the `segmentsPerTier` setting is used as the threshold to decide if a merge should happen, and the `maxMergeAtOnce` setting determines how many segments should be included in the merge.
 
 Choosing the best merge factors is generally a trade-off of indexing speed vs. searching speed. Having fewer segments in the index generally accelerates searches, because there are fewer places to look. It also can also result in fewer physical files on disk. But to keep the number of segments low, merges will occur more often, which can add load to the system and slow down updates to the index.
 

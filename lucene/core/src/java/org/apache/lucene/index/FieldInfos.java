@@ -24,9 +24,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.lucene.util.ArrayUtil;
 
@@ -35,6 +38,10 @@ import org.apache.lucene.util.ArrayUtil;
  *  @lucene.experimental
  */
 public class FieldInfos implements Iterable<FieldInfo> {
+
+  /** An instance without any fields. */
+  public final static FieldInfos EMPTY = new FieldInfos(new FieldInfo[0]);
+
   private final boolean hasFreq;
   private final boolean hasProx;
   private final boolean hasPayloads;
@@ -93,7 +100,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       hasNorms |= info.hasNorms();
       hasDocValues |= info.getDocValuesType() != DocValuesType.NONE;
       hasPayloads |= info.hasPayloads();
-      hasPointValues |= (info.getPointDimensionCount() != 0);
+      hasPointValues |= (info.getPointDataDimensionCount() != 0);
       if (info.isSoftDeletesField()) {
         if (softDeletesField != null && softDeletesField.equals(info.name) == false) {
           throw new IllegalArgumentException("multiple soft-deletes fields [" + info.name + ", " + softDeletesField + "]");
@@ -122,7 +129,43 @@ public class FieldInfos implements Iterable<FieldInfo> {
     }
     values = Collections.unmodifiableCollection(Arrays.asList(valuesTemp.toArray(new FieldInfo[0])));
   }
-  
+
+  /** Call this to get the (merged) FieldInfos for a
+   *  composite reader.
+   *  <p>
+   *  NOTE: the returned field numbers will likely not
+   *  correspond to the actual field numbers in the underlying
+   *  readers, and codec metadata ({@link FieldInfo#getAttribute(String)}
+   *  will be unavailable.
+   */
+  public static FieldInfos getMergedFieldInfos(IndexReader reader) {
+    final List<LeafReaderContext> leaves = reader.leaves();
+    if (leaves.isEmpty()) {
+      return FieldInfos.EMPTY;
+    } else if (leaves.size() == 1) {
+      return leaves.get(0).reader().getFieldInfos();
+    } else {
+      final String softDeletesField = leaves.stream()
+          .map(l -> l.reader().getFieldInfos().getSoftDeletesField())
+          .filter(Objects::nonNull)
+          .findAny().orElse(null);
+      final Builder builder = new Builder(new FieldNumbers(softDeletesField));
+      for (final LeafReaderContext ctx : leaves) {
+        builder.add(ctx.reader().getFieldInfos());
+      }
+      return builder.finish();
+    }
+  }
+
+  /** Returns a set of names of fields that have a terms index.  The order is undefined. */
+  public static Collection<String> getIndexedFields(IndexReader reader) {
+    return reader.leaves().stream()
+        .flatMap(l -> StreamSupport.stream(l.reader().getFieldInfos().spliterator(), false)
+        .filter(fi -> fi.getIndexOptions() != IndexOptions.NONE))
+        .map(fi -> fi.name)
+        .collect(Collectors.toSet());
+  }
+
   /** Returns true if any fields have freqs */
   public boolean hasFreq() {
     return hasFreq;
@@ -210,11 +253,13 @@ public class FieldInfos implements Iterable<FieldInfo> {
   }
 
   static final class FieldDimensions {
-    public final int dimensionCount;
+    public final int dataDimensionCount;
+    public final int indexDimensionCount;
     public final int dimensionNumBytes;
 
-    public FieldDimensions(int dimensionCount, int dimensionNumBytes) {
-      this.dimensionCount = dimensionCount;
+    public FieldDimensions(int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes) {
+      this.dataDimensionCount = dataDimensionCount;
+      this.indexDimensionCount = indexDimensionCount;
       this.dimensionNumBytes = dimensionNumBytes;
     }
   }
@@ -254,7 +299,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
      * number assigned if possible otherwise the first unassigned field number
      * is used as the field number.
      */
-    synchronized int addOrGet(String fieldName, int preferredFieldNumber, IndexOptions indexOptions, DocValuesType dvType, int dimensionCount, int dimensionNumBytes, boolean isSoftDeletesField) {
+    synchronized int addOrGet(String fieldName, int preferredFieldNumber, IndexOptions indexOptions, DocValuesType dvType, int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes, boolean isSoftDeletesField) {
       if (indexOptions != IndexOptions.NONE) {
         IndexOptions currentOpts = this.indexOptions.get(fieldName);
         if (currentOpts == null) {
@@ -271,17 +316,20 @@ public class FieldInfos implements Iterable<FieldInfo> {
           throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + dvType + " for field \"" + fieldName + "\"");
         }
       }
-      if (dimensionCount != 0) {
+      if (dataDimensionCount != 0) {
         FieldDimensions dims = dimensions.get(fieldName);
         if (dims != null) {
-          if (dims.dimensionCount != dimensionCount) {
-            throw new IllegalArgumentException("cannot change point dimension count from " + dims.dimensionCount + " to " + dimensionCount + " for field=\"" + fieldName + "\"");
+          if (dims.dataDimensionCount != dataDimensionCount) {
+            throw new IllegalArgumentException("cannot change point data dimension count from " + dims.dataDimensionCount + " to " + dataDimensionCount + " for field=\"" + fieldName + "\"");
+          }
+          if (dims.indexDimensionCount != indexDimensionCount) {
+            throw new IllegalArgumentException("cannot change point index dimension count from " + dims.indexDimensionCount + " to " + indexDimensionCount + " for field=\"" + fieldName + "\"");
           }
           if (dims.dimensionNumBytes != dimensionNumBytes) {
             throw new IllegalArgumentException("cannot change point numBytes from " + dims.dimensionNumBytes + " to " + dimensionNumBytes + " for field=\"" + fieldName + "\"");
           }
         } else {
-          dimensions.put(fieldName, new FieldDimensions(dimensionCount, dimensionNumBytes));
+          dimensions.put(fieldName, new FieldDimensions(dataDimensionCount, indexDimensionCount, dimensionNumBytes));
         }
       }
       Integer fieldNumber = nameToNumber.get(fieldName);
@@ -341,7 +389,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       }
     }
 
-    synchronized void verifyConsistentDimensions(Integer number, String name, int dimensionCount, int dimensionNumBytes) {
+    synchronized void verifyConsistentDimensions(Integer number, String name, int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes) {
       if (name.equals(numberToName.get(number)) == false) {
         throw new IllegalArgumentException("field number " + number + " is already mapped to field name \"" + numberToName.get(number) + "\", not \"" + name + "\"");
       }
@@ -350,8 +398,11 @@ public class FieldInfos implements Iterable<FieldInfo> {
       }
       FieldDimensions dim = dimensions.get(name);
       if (dim != null) {
-        if (dim.dimensionCount != dimensionCount) {
-          throw new IllegalArgumentException("cannot change point dimension count from " + dim.dimensionCount + " to " + dimensionCount + " for field=\"" + name + "\"");
+        if (dim.dataDimensionCount != dataDimensionCount) {
+          throw new IllegalArgumentException("cannot change point data dimension count from " + dim.dataDimensionCount + " to " + dataDimensionCount + " for field=\"" + name + "\"");
+        }
+        if (dim.indexDimensionCount != indexDimensionCount) {
+          throw new IllegalArgumentException("cannot change point index dimension count from " + dim.indexDimensionCount + " to " + indexDimensionCount + " for field=\"" + name + "\"");
         }
         if (dim.dimensionNumBytes != dimensionNumBytes) {
           throw new IllegalArgumentException("cannot change point numBytes from " + dim.dimensionNumBytes + " to " + dimensionNumBytes + " for field=\"" + name + "\"");
@@ -395,15 +446,18 @@ public class FieldInfos implements Iterable<FieldInfo> {
       docValuesType.put(name, dvType);
     }
 
-    synchronized void setDimensions(int number, String name, int dimensionCount, int dimensionNumBytes) {
+    synchronized void setDimensions(int number, String name, int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes) {
       if (dimensionNumBytes > PointValues.MAX_NUM_BYTES) {
         throw new IllegalArgumentException("dimension numBytes must be <= PointValues.MAX_NUM_BYTES (= " + PointValues.MAX_NUM_BYTES + "); got " + dimensionNumBytes + " for field=\"" + name + "\"");
       }
-      if (dimensionCount > PointValues.MAX_DIMENSIONS) {
-        throw new IllegalArgumentException("pointDimensionCount must be <= PointValues.MAX_DIMENSIONS (= " + PointValues.MAX_DIMENSIONS + "); got " + dimensionCount + " for field=\"" + name + "\"");
+      if (dataDimensionCount > PointValues.MAX_DIMENSIONS) {
+        throw new IllegalArgumentException("pointDataDimensionCount must be <= PointValues.MAX_DIMENSIONS (= " + PointValues.MAX_DIMENSIONS + "); got " + dataDimensionCount + " for field=\"" + name + "\"");
       }
-      verifyConsistentDimensions(number, name, dimensionCount, dimensionNumBytes);
-      dimensions.put(name, new FieldDimensions(dimensionCount, dimensionNumBytes));
+      if (indexDimensionCount > dataDimensionCount) {
+        throw new IllegalArgumentException("pointIndexDimensionCount must be <= pointDataDimensionCount (= " + dataDimensionCount + "); got " + indexDimensionCount + " for field=\"" + name + "\"");
+      }
+      verifyConsistentDimensions(number, name, dataDimensionCount, indexDimensionCount, dimensionNumBytes);
+      dimensions.put(name, new FieldDimensions(dataDimensionCount, indexDimensionCount, dimensionNumBytes));
     }
   }
   
@@ -438,8 +492,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
         final boolean isSoftDeletesField = name.equals(globalFieldNumbers.softDeletesFieldName);
-        final int fieldNumber = globalFieldNumbers.addOrGet(name, -1, IndexOptions.NONE, DocValuesType.NONE, 0, 0, isSoftDeletesField);
-        fi = new FieldInfo(name, fieldNumber, false, false, false, IndexOptions.NONE, DocValuesType.NONE, -1, new HashMap<>(), 0, 0, isSoftDeletesField);
+        final int fieldNumber = globalFieldNumbers.addOrGet(name, -1, IndexOptions.NONE, DocValuesType.NONE, 0, 0, 0, isSoftDeletesField);
+        fi = new FieldInfo(name, fieldNumber, false, false, false, IndexOptions.NONE, DocValuesType.NONE, -1, new HashMap<>(), 0, 0, 0, isSoftDeletesField);
         assert !byName.containsKey(fi.name);
         globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, DocValuesType.NONE);
         byName.put(fi.name, fi);
@@ -452,11 +506,18 @@ public class FieldInfos implements Iterable<FieldInfo> {
                                           boolean storeTermVector,
                                           boolean omitNorms, boolean storePayloads, IndexOptions indexOptions,
                                           DocValuesType docValues, long dvGen,
-                                          int dimensionCount, int dimensionNumBytes, boolean isSoftDeletesField) {
+                                          Map<String, String> attributes,
+                                          int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes,
+                                          boolean isSoftDeletesField) {
       assert assertNotFinished();
       if (docValues == null) {
         throw new NullPointerException("DocValuesType must not be null");
       }
+      if (attributes != null) {
+        // original attributes is UnmodifiableMap
+        attributes = new HashMap<>(attributes);
+      }
+
       FieldInfo fi = fieldInfo(name);
       if (fi == null) {
         // This field wasn't yet added to this in-RAM
@@ -464,13 +525,13 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // number for this field.  If the field was seen
         // before then we'll get the same name and number,
         // else we'll allocate a new one:
-        final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, indexOptions, docValues, dimensionCount, dimensionNumBytes, isSoftDeletesField);
-        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, dvGen, new HashMap<>(), dimensionCount, dimensionNumBytes, isSoftDeletesField);
+        final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, indexOptions, docValues, dataDimensionCount, indexDimensionCount, dimensionNumBytes, isSoftDeletesField);
+        fi = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, dvGen, attributes, dataDimensionCount, indexDimensionCount, dimensionNumBytes, isSoftDeletesField);
         assert !byName.containsKey(fi.name);
         globalFieldNumbers.verifyConsistent(Integer.valueOf(fi.number), fi.name, fi.getDocValuesType());
         byName.put(fi.name, fi);
       } else {
-        fi.update(storeTermVector, omitNorms, storePayloads, indexOptions, dimensionCount, dimensionNumBytes);
+        fi.update(storeTermVector, omitNorms, storePayloads, indexOptions, attributes, dataDimensionCount, indexDimensionCount, dimensionNumBytes);
 
         if (docValues != DocValuesType.NONE) {
           // Only pay the synchronization cost if fi does not already have a DVType
@@ -498,7 +559,9 @@ public class FieldInfos implements Iterable<FieldInfo> {
       return addOrUpdateInternal(fi.name, fi.number, fi.hasVectors(),
                                  fi.omitsNorms(), fi.hasPayloads(),
                                  fi.getIndexOptions(), fi.getDocValuesType(), dvGen,
-                                 fi.getPointDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField());
+                                 fi.attributes(),
+                                 fi.getPointDataDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(),
+                                 fi.isSoftDeletesField());
     }
     
     public FieldInfo fieldInfo(String fieldName) {

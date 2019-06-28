@@ -216,14 +216,6 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     int length = highSurEndingLower.length();
     assertEquals('\ud801', termBuffer[length - 1]);
   }
-  
-  public void testLowerCaseTokenizer() throws IOException {
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer();
-    tokenizer.setReader(reader);
-    assertTokenStreamContents(tokenizer, new String[] { "tokenizer",
-        "\ud801\udc44test" });
-  }
 
   public void testWhitespaceTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");

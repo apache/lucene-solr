@@ -55,7 +55,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     //this one has handleSelect=true which a test here needs
     solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
-    createJetty(solrHomeDirectory.getAbsolutePath());
+    createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
 
   @AfterClass

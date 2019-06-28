@@ -27,6 +27,8 @@ import java.util.Set;
 /**
  * Abstract parent class for analysis factories that create {@link Tokenizer}
  * instances.
+ *
+ * @since 3.1
  */
 public abstract class TokenizerFactory extends AbstractAnalysisFactory {
 

@@ -1,0 +1,187 @@
+= Computational Geometry
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+
+This section of the math expressions user guide covers computational geometry functions.
+
+== Convex Hull
+
+A convex hull is the smallest convex set of points that encloses a data set. Math expressions has support for computing
+the convex hull of a 2D data set. Once a convex hull has been calculated, a set of math expression functions
+can be applied to geometrically describe the convex hull.
+
+The `convexHull` function finds the convex hull of an observation matrix of 2D vectors.
+Each row of the matrix is a 2D observation.
+
+In the example below a convex hull is calculated for a randomly generated set of 100 2D observations.
+
+Then the following functions are called on the convex hull:
+
+-`getBaryCenter`: Returns the 2D point that is the bary center of the convex hull.
+
+-`getArea`: Returns the area of the convex hull.
+
+-`getBoundarySize`: Returns the boundary size of the convex hull.
+
+-`getVertices`: Returns a set of 2D points that are the vertices of the convex hull.
+
+
+[source,text]
+----
+let(echo="baryCenter, area, boundarySize, vertices",
+    x=sample(normalDistribution(0, 20), 100),
+    y=sample(normalDistribution(0, 10), 100),
+    observations=transpose(matrix(x,y)),
+    chull=convexHull(observations),
+    baryCenter=getBaryCenter(chull),
+    area=getArea(chull),
+    boundarySize=getBoundarySize(chull),
+    vertices=getVertices(chull))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "baryCenter": [
+          -3.0969292101230343,
+          1.2160948182691975
+        ],
+        "area": 3477.480599967595,
+        "boundarySize": 267.52419019533664,
+        "vertices": [
+          [
+            -66.17632818958485,
+            -8.394931552315256
+          ],
+          [
+            -47.556667594765216,
+            -16.940434013651263
+          ],
+          [
+            -33.13582183446102,
+            -17.30914425443977
+          ],
+          [
+            -9.97459859015698,
+            -17.795012801599654
+          ],
+          [
+            27.7705917246824,
+            -14.487224686587767
+          ],
+          [
+            54.689432954170236,
+            -1.3333371984299605
+          ],
+          [
+            35.97568654458672,
+            23.054169251772556
+          ],
+          [
+            -15.539456215337585,
+            19.811330468093704
+          ],
+          [
+            -17.05125031092752,
+            19.53581741341663
+          ],
+          [
+            -35.92010024412891,
+            15.126430698395572
+          ]
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 3
+      }
+    ]
+  }
+}
+----
+
+== Enclosing Disk
+
+The `enclosingDisk` function finds the smallest enclosing circle the encloses a 2D data set.
+Once an enclosing disk has been calculated, a set of math expression functions
+can be applied to geometrically describe the enclosing disk.
+
+In the example below an enclosing disk is calculated for a randomly generated set of 1000 2D observations.
+
+Then the following functions are called on the enclosing disk:
+
+-`getCenter`: Returns the 2D point that is the center of the disk.
+
+-`getRadius`: Returns the radius of the disk.
+
+-`getSupportPoints`: Returns the support points of the disk.
+
+[source,text]
+----
+let(echo="center, radius, support",
+    x=sample(normalDistribution(0, 20), 1000),
+    y=sample(normalDistribution(0, 20), 1000),
+    observations=transpose(matrix(x,y)),
+    disk=enclosingDisk(observations),
+    center=getCenter(disk),
+    radius=getRadius(disk),
+    support=getSupportPoints(disk))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "center": [
+          -6.668825009733749,
+          -2.9825450908240025
+        ],
+        "radius": 72.66109546907208,
+        "support": [
+          [
+            20.350992271739464,
+            64.46791279377014
+          ],
+          [
+            33.02079953093981,
+            57.880978456420365
+          ],
+          [
+            -44.7273247899923,
+            -64.87911518353323
+          ]
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 8
+      }
+    ]
+  }
+}
+----

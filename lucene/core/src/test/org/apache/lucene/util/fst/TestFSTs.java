@@ -46,7 +46,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -157,7 +157,7 @@ public class TestFSTs extends LuceneTestCase {
         final BytesRef NO_OUTPUT = outputs.getNoOutput();      
         final List<FSTTester.InputOutput<BytesRef>> pairs = new ArrayList<>(terms2.length);
         for(int idx=0;idx<terms2.length;idx++) {
-          final BytesRef output = random().nextInt(30) == 17 ? NO_OUTPUT : new BytesRef(Integer.toString(idx));
+          final BytesRef output = idx == 17 ? NO_OUTPUT : new BytesRef(Integer.toString(idx));
           pairs.add(new FSTTester.InputOutput<>(terms2[idx], output));
         }
         FSTTester<BytesRef> tester = new FSTTester<>(random(), dir, inputMode, pairs, outputs, false);
@@ -327,7 +327,7 @@ public class TestFSTs extends LuceneTestCase {
     writer.close();
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
 
-    Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
+    Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15, true);
 
     boolean storeOrd = random().nextBoolean();
     if (VERBOSE) {
@@ -337,7 +337,7 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("FST stores docFreq");
       }
     }
-    Terms terms = MultiFields.getTerms(r, "body");
+    Terms terms = MultiTerms.getTerms(r, "body");
     if (terms != null) {
       final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();
       final TermsEnum termsEnum = terms.iterator();
@@ -468,7 +468,7 @@ public class TestFSTs extends LuceneTestCase {
       this.inputMode = inputMode;
       this.outputs = outputs;
 
-      builder = new Builder<>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, 0, prune, prune == 0, true, Integer.MAX_VALUE, outputs, !noArcArrays, 15);
+      builder = new Builder<>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, 0, prune, prune == 0, true, Integer.MAX_VALUE, outputs, !noArcArrays, 15, true);
     }
 
     protected abstract T getOutput(IntsRef input, int ord) throws IOException;
@@ -917,7 +917,7 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       // Verify w/ MultiTermsEnum
-      final TermsEnum termsEnum = MultiFields.getTerms(r, "id").iterator();
+      final TermsEnum termsEnum = MultiTerms.getTerms(r, "id").iterator();
       for(int iter=0;iter<2*NUM_IDS;iter++) {
         final String id;
         final String nextID;
@@ -1110,7 +1110,7 @@ public class TestFSTs extends LuceneTestCase {
   public void testFinalOutputOnEndState() throws Exception {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
 
-    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE4, 2, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
+    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE4, 2, 0, true, true, Integer.MAX_VALUE, outputs, true, 15, true);
     builder.add(Util.toUTF32("stat", new IntsRefBuilder()), 17L);
     builder.add(Util.toUTF32("station", new IntsRefBuilder()), 10L);
     final FST<Long> fst = builder.finish();
@@ -1124,7 +1124,7 @@ public class TestFSTs extends LuceneTestCase {
 
   public void testInternalFinalState() throws Exception {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
+    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15, true);
     builder.add(Util.toIntsRef(new BytesRef("stat"), new IntsRefBuilder()), outputs.getNoOutput());
     builder.add(Util.toIntsRef(new BytesRef("station"), new IntsRefBuilder()), outputs.getNoOutput());
     final FST<Long> fst = builder.finish();

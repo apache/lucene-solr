@@ -43,6 +43,8 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST;
 
+import static java.lang.Character.UnicodeScript;
+
 /**
  * Tokenizer for Korean that uses morphological analysis.
  * <p>
@@ -124,6 +126,7 @@ public final class KoreanTokenizer extends Tokenizer {
   private final FST.BytesReader userFSTReader;
   private final TokenInfoFST userFST;
 
+  private final boolean discardPunctuation;
   private final DecompoundMode mode;
   private final boolean outputUnknownUnigrams;
 
@@ -157,7 +160,7 @@ public final class KoreanTokenizer extends Tokenizer {
    * Uses the default AttributeFactory.
    */
   public KoreanTokenizer() {
-    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, null, DEFAULT_DECOMPOUND, false);
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, null, DEFAULT_DECOMPOUND, false, true);
   }
 
   /**
@@ -169,8 +172,22 @@ public final class KoreanTokenizer extends Tokenizer {
    * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
    */
   public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams) {
+    this(factory, userDictionary, mode, outputUnknownUnigrams, true);
+  }
+
+  /**
+   * Create a new KoreanTokenizer.
+   *
+   * @param factory the AttributeFactory to use
+   * @param userDictionary Optional: if non-null, user dictionary.
+   * @param mode Decompound mode.
+   * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
+   * @param discardPunctuation true if punctuation tokens should be dropped from the output.
+   */
+  public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams, boolean discardPunctuation) {
     super(factory);
     this.mode = mode;
+    this.discardPunctuation = discardPunctuation;
     this.outputUnknownUnigrams = outputUnknownUnigrams;
     dictionary = TokenInfoDictionary.getInstance();
     fst = dictionary.getFST();
@@ -512,6 +529,9 @@ public final class KoreanTokenizer extends Tokenizer {
     // Index of the last character of unknown word:
     int unknownWordEndIndex = -1;
 
+    // Maximum posAhead of user word in the entire input
+    int userWordMaxPosAhead = -1;
+
     // Advances over each position (character):
     while (true) {
 
@@ -533,7 +553,6 @@ public final class KoreanTokenizer extends Tokenizer {
       }
 
       if (pos > lastBackTracePos && posData.count == 1 && isFrontier) {
-        //  if (pos > lastBackTracePos && posData.count == 1 && isFrontier) {
         // We are at a "frontier", and only one node is
         // alive, so whatever the eventual best path is must
         // come through this node.  So we can safely commit
@@ -616,6 +635,7 @@ public final class KoreanTokenizer extends Tokenizer {
         } else {
           // This means the backtrace only produced
           // punctuation tokens, so we must keep parsing.
+          continue;
         }
       }
 
@@ -649,6 +669,10 @@ public final class KoreanTokenizer extends Tokenizer {
       if (userFST != null) {
         userFST.getFirstArc(arc);
         int output = 0;
+        int maxPosAhead = 0;
+        int outputMaxPosAhead = 0;
+        int arcFinalOutMaxPosAhead = 0;
+
         for(int posAhead=pos;;posAhead++) {
           final int ch = buffer.get(posAhead);
           if (ch == -1) {
@@ -659,13 +683,21 @@ public final class KoreanTokenizer extends Tokenizer {
           }
           output += arc.output.intValue();
           if (arc.isFinal()) {
-            if (VERBOSE) {
-              System.out.println("    USER word " + new String(buffer.get(pos, posAhead - pos + 1)) + " toPos=" + (posAhead + 1));
-            }
-            add(userDictionary, posData, pos, posAhead+1, output + arc.nextFinalOutput.intValue(), Type.USER);
+            maxPosAhead = posAhead;
+            outputMaxPosAhead = output;
+            arcFinalOutMaxPosAhead = arc.nextFinalOutput.intValue();
             anyMatches = true;
           }
         }
+
+        // Longest matching for user word
+        if (anyMatches && maxPosAhead > userWordMaxPosAhead) {
+          if (VERBOSE) {
+            System.out.println("    USER word " + new String(buffer.get(pos, maxPosAhead + 1)) + " toPos=" + (maxPosAhead + 1));
+          }
+          add(userDictionary, posData, pos, maxPosAhead+1, outputMaxPosAhead+arcFinalOutMaxPosAhead, Type.USER);
+          userWordMaxPosAhead = Math.max(userWordMaxPosAhead, maxPosAhead);
+        } 
       }
 
       // TODO: we can be more aggressive about user
@@ -718,26 +750,41 @@ public final class KoreanTokenizer extends Tokenizer {
       if (!anyMatches || characterDefinition.isInvoke(firstCharacter)) {
 
         // Find unknown match:
-        final int characterId = characterDefinition.getCharacterClass(firstCharacter);
-        final boolean isPunct = isPunctuation(firstCharacter);
-
+        int characterId = characterDefinition.getCharacterClass(firstCharacter);
         // NOTE: copied from UnknownDictionary.lookup:
         int unknownWordLength;
         if (!characterDefinition.isGroup(firstCharacter)) {
           unknownWordLength = 1;
         } else {
-          // Extract unknown word. Characters with the same character class are considered to be part of unknown word
+          // Extract unknown word. Characters with the same script are considered to be part of unknown word
           unknownWordLength = 1;
+          UnicodeScript scriptCode = UnicodeScript.of((int) firstCharacter);
+          final boolean isPunct = isPunctuation(firstCharacter);
           for (int posAhead = pos + 1; unknownWordLength < MAX_UNKNOWN_WORD_LENGTH; posAhead++) {
-            final int ch = buffer.get(posAhead);
-            if (ch == -1) {
+            int next = buffer.get(posAhead);
+            if (next == -1) {
               break;
             }
-            if (characterId == characterDefinition.getCharacterClass((char) ch) &&
-                isPunctuation((char) ch) == isPunct) {
+            char ch = (char) next;
+            int chType = Character.getType(ch);
+            UnicodeScript sc = UnicodeScript.of(next);
+            boolean sameScript = isSameScript(scriptCode, sc)
+                // Non-spacing marks inherit the script of their base character,
+                // following recommendations from UTR #24.
+                || chType == Character.NON_SPACING_MARK;
+
+            if (sameScript
+                  && isPunctuation(ch, chType) == isPunct
+                  && characterDefinition.isGroup(ch)) {
               unknownWordLength++;
             } else {
               break;
+            }
+            // Update the script code and character class if the original script
+            // is Inherited or Common.
+            if (isCommonOrInherited(scriptCode) && isCommonOrInherited(sc) == false) {
+              scriptCode = sc;
+              characterId = characterDefinition.getCharacterClass(ch);
             }
           }
         }
@@ -842,11 +889,9 @@ public final class KoreanTokenizer extends Tokenizer {
               backWordPos+i,
               backWordPos+i+charLen
           );
-          if (shouldFilterToken(token) == false) {
-            pending.add(token);
-            if (VERBOSE) {
-              System.out.println("    add token=" + pending.get(pending.size() - 1));
-            }
+          pending.add(token);
+          if (VERBOSE) {
+            System.out.println("    add token=" + pending.get(pending.size() - 1));
           }
         }
       } else {
@@ -907,6 +952,16 @@ public final class KoreanTokenizer extends Tokenizer {
           }
         }
       }
+      if (discardPunctuation == false && backWordPos != backPos) {
+        // Add a token for whitespaces between terms
+        int offset = backPos - lastBackTracePos;
+        int len = backWordPos - backPos;
+        //System.out.println(offset + " " + fragmentOffset + " " + len + " " + backWordPos + " " + backPos);
+        unkDictionary.lookupWordIds(characterDefinition.getCharacterClass(' '), wordIdRef);
+        DictionaryToken spaceToken = new DictionaryToken(Type.UNKNOWN, unkDictionary,
+            wordIdRef.ints[wordIdRef.offset], fragment, offset, len, backPos, backPos+len);
+        pending.add(spaceToken);
+      }
 
       pos = backPos;
       bestIDX = nextBestIDX;
@@ -928,11 +983,19 @@ public final class KoreanTokenizer extends Tokenizer {
   }
 
   private boolean shouldFilterToken(Token token) {
-    return isPunctuation(token.getSurfaceForm()[token.getOffset()]);
+    return discardPunctuation && isPunctuation(token.getSurfaceForm()[token.getOffset()]);
   }
 
   private static boolean isPunctuation(char ch) {
-    switch(Character.getType(ch)) {
+    return isPunctuation(ch, Character.getType(ch));
+  }
+
+  private static boolean isPunctuation(char ch, int cid) {
+    // special case for Hangul Letter Araea (interpunct)
+    if (ch == 0x318D) {
+      return true;
+    }
+    switch(cid) {
       case Character.SPACE_SEPARATOR:
       case Character.LINE_SEPARATOR:
       case Character.PARAGRAPH_SEPARATOR:
@@ -953,5 +1016,17 @@ public final class KoreanTokenizer extends Tokenizer {
       default:
         return false;
     }
+  }
+
+  private static boolean isCommonOrInherited(UnicodeScript script) {
+    return script == UnicodeScript.INHERITED ||
+        script == UnicodeScript.COMMON;
+  }
+
+  /** Determine if two scripts are compatible. */
+  private static boolean isSameScript(UnicodeScript scriptOne, UnicodeScript scriptTwo) {
+    return scriptOne == scriptTwo
+        || isCommonOrInherited(scriptOne)
+        || isCommonOrInherited(scriptTwo);
   }
 }

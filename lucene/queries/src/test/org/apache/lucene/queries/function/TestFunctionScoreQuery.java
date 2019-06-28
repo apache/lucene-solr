@@ -220,4 +220,28 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
     reader.close();
     dir.close();
   }
+
+  // check access to the score source of a functionScoreQuery
+  public void testAccessToValueSource() throws Exception {
+
+    FunctionScoreQuery q1 = new FunctionScoreQuery(new TermQuery(new Term(TEXT_FIELD, "a")), DoubleValuesSource.constant(31));
+    Query q2 = new FunctionScoreQuery(q1.getWrappedQuery(), q1.getSource());
+    QueryUtils.check(q2);
+    QueryUtils.checkEqual(q2, q1);
+
+    FunctionScoreQuery q3 = new FunctionScoreQuery(new TermQuery(new Term(TEXT_FIELD, "first")),
+            DoubleValuesSource.fromIntField(INT_FIELD));
+    Query q4 = new FunctionScoreQuery(q3.getWrappedQuery(), q3.getSource());
+    QueryUtils.checkEqual(q3, q4);
+
+    SimpleBindings bindings = new SimpleBindings();
+    bindings.add("score", DoubleValuesSource.SCORES);
+    Expression expr = JavascriptCompiler.compile("ln(score + 4)");
+    FunctionScoreQuery q5 = new FunctionScoreQuery(new TermQuery(new Term(TEXT_FIELD, "text")), expr.getDoubleValuesSource(bindings));
+    Query q6 = new FunctionScoreQuery(q5.getWrappedQuery(), q5.getSource());
+    QueryUtils.checkEqual(q5, q6);
+
+
+  }
+
 }

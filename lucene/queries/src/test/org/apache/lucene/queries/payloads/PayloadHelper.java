@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
@@ -32,7 +33,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
 import java.util.Random;
@@ -104,7 +104,7 @@ public class PayloadHelper {
   }
 
   /**
-   * Sets up a RAMDirectory, and adds documents (using English.intToEnglish()) with two fields: field and multiField
+   * Sets up a RAM-resident Directory, and adds documents (using English.intToEnglish()) with two fields: field and multiField
    * and analyzes them using the PayloadAnalyzer
    * @param similarity The Similarity class to use in the Searcher
    * @param numDocs The num docs to add
@@ -112,7 +112,7 @@ public class PayloadHelper {
    */
   // TODO: randomize
   public IndexSearcher setUp(Random random, Similarity similarity, int numDocs) throws IOException {
-    Directory directory = new MockDirectoryWrapper(random, new RAMDirectory());
+    Directory directory = new MockDirectoryWrapper(random, new ByteBuffersDirectory());
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
 
     // TODO randomize this

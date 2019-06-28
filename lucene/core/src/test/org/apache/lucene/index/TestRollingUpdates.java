@@ -136,7 +136,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     }
 
     w.commit();
-    assertEquals(SIZE, w.numDocs());
+    assertEquals(SIZE, w.getDocStats().numDocs);
 
     w.close();
 

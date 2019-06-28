@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.search.suggest.document;
 
+import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestScoreDoc;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -35,8 +36,10 @@ final class SuggestScoreDocPriorityQueue extends PriorityQueue<SuggestScoreDoc> 
   @Override
   protected boolean lessThan(SuggestScoreDoc a, SuggestScoreDoc b) {
     if (a.score == b.score) {
+      // tie break by completion key
+      int cmp = Lookup.CHARSEQUENCE_COMPARATOR.compare(a.key, b.key);
       // prefer smaller doc id, in case of a tie
-      return a.doc > b.doc;
+      return cmp != 0 ? cmp > 0 : a.doc > b.doc;
     }
     return a.score < b.score;
   }

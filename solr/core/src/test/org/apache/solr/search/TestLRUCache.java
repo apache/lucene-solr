@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.SolrException;
@@ -30,7 +30,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 /**
  * Test for <code>org.apache.solr.search.LRUCache</code>
  */
-public class TestLRUCache extends LuceneTestCase {
+public class TestLRUCache extends SolrTestCase {
 
   SolrMetricManager metricManager = new SolrMetricManager();
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
@@ -182,11 +182,8 @@ public class TestLRUCache extends LuceneTestCase {
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = cache.init(params, null, cr);
 
-    try {
-      cache.put("1", "1");
-      fail("Adding a non-accountable value to a cache configured with maxRamBytes should have failed");
-    } catch (Exception e) {
-      assertEquals(e.getClass(), SolrException.class);
-    }
+    expectThrows(SolrException.class, "Adding a non-accountable value to a cache configured with maxRamBytes should have failed",
+        () -> cache.put("1", "1")
+    );
   }
 }

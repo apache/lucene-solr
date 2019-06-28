@@ -113,7 +113,13 @@
     <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
     <!-- docValues are enabled by default for long type so we don't need to index the version field  -->
     <field name="_version_" type="plong" indexed="false" stored="false"/>
+
+    <!-- If you don't use child/nested documents, then you should remove the next two fields:  -->
+    <!-- for nested documents (minimal; points to root document) -->
     <field name="_root_" type="string" indexed="true" stored="false" docValues="false" />
+    <!-- for nested documents (relationship tracking) -->
+    <field name="_nest_path_" type="_nest_path_" /><fieldType name="_nest_path_" class="solr.NestPathField" />
+
     <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
 
     <!-- This can be enabled, in case the client does not know what fields may be searched. It isn't enabled by default
@@ -140,6 +146,7 @@
     <dynamicField name="*_d"  type="pdouble" indexed="true"  stored="true"/>
     <dynamicField name="*_ds" type="pdoubles" indexed="true"  stored="true"/>
     <dynamicField name="random_*" type="random"/>
+    <dynamicField name="ignored_*" type="ignored"/>
 
     <!-- Type used for data-driven schema, to add a string copy for each text field -->
     <dynamicField name="*_str" type="strings" stored="false" docValues="true" indexed="false" useDocValuesAsStored="false"/>
@@ -148,7 +155,7 @@
     <dynamicField name="*_dts" type="pdate"    indexed="true"  stored="true" multiValued="true"/>
     <dynamicField name="*_p"  type="location" indexed="true" stored="true"/>
     <dynamicField name="*_srpt"  type="location_rpt" indexed="true" stored="true"/>
-    
+
     <!-- payloaded dynamic fields -->
     <dynamicField name="*_dpf" type="delimited_payloads_float" indexed="true"  stored="true"/>
     <dynamicField name="*_dpi" type="delimited_payloads_int" indexed="true"  stored="true"/>
@@ -207,13 +214,16 @@
     <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
     <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
     <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
-    
+
     <fieldType name="pints" class="solr.IntPointField" docValues="true" multiValued="true"/>
     <fieldType name="pfloats" class="solr.FloatPointField" docValues="true" multiValued="true"/>
     <fieldType name="plongs" class="solr.LongPointField" docValues="true" multiValued="true"/>
     <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
     <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
 
+    <!-- since fields of this type are by default not stored or indexed,
+       any data added to them will be ignored outright.  -->
+    <fieldType name="ignored" stored="false" indexed="false" multiValued="true" class="solr.StrField" />
 
     <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
          is a more restricted form of the canonical representation of dateTime

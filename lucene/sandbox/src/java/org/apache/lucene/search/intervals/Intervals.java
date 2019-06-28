@@ -18,8 +18,14 @@
 package org.apache.lucene.search.intervals;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.Predicate;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * Constructor functions for {@link IntervalsSource} types
@@ -27,6 +33,15 @@ import org.apache.lucene.util.BytesRef;
  * These sources implement minimum-interval algorithms taken from the paper
  * <a href="http://vigna.di.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics.pdf">
  * Efficient Optimally Lazy Algorithms for Minimal-Interval Semantics</a>
+ *
+ * By default, sources that are sensitive to internal gaps (e.g. PHRASE and MAXGAPS) will
+ * rewrite their sub-sources so that disjunctions of different lengths are pulled up
+ * to the top of the interval tree.  For example, PHRASE(or(PHRASE("a", "b", "c"), "b"), "c")
+ * will automatically rewrite itself to OR(PHRASE("a", "b", "c", "c"), PHRASE("b", "c"))
+ * to ensure that documents containing "b c" are matched.  This can lead to less efficient
+ * queries, as more terms need to be loaded (for example, the "c" iterator above is loaded
+ * twice), so if you care more about speed than about accuracy you can use the
+ * {@link #or(boolean, IntervalsSource...)} factory method to prevent rewriting.
  */
 public final class Intervals {
 
@@ -47,9 +62,28 @@ public final class Intervals {
   }
 
   /**
+   * Return an {@link IntervalsSource} exposing intervals for a term, filtered by the value
+   * of the term's payload at each position
+   */
+  public static IntervalsSource term(String term, Predicate<BytesRef> payloadFilter) {
+    return term(new BytesRef(term), payloadFilter);
+  }
+
+  /**
+   * Return an {@link IntervalsSource} exposing intervals for a term, filtered by the value
+   * of the term's payload at each position
+   */
+  public static IntervalsSource term(BytesRef term, Predicate<BytesRef> payloadFilter) {
+    return new PayloadFilteredTermIntervalsSource(term, payloadFilter);
+  }
+
+  /**
    * Return an {@link IntervalsSource} exposing intervals for a phrase consisting of a list of terms
    */
   public static IntervalsSource phrase(String... terms) {
+    if (terms.length == 1) {
+      return Intervals.term(terms[0]);
+    }
     IntervalsSource[] sources = new IntervalsSource[terms.length];
     int i = 0;
     for (String term : terms) {
@@ -63,25 +97,141 @@ public final class Intervals {
    * Return an {@link IntervalsSource} exposing intervals for a phrase consisting of a list of IntervalsSources
    */
   public static IntervalsSource phrase(IntervalsSource... subSources) {
-    return new ConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.BLOCK);
+    return BlockIntervalsSource.build(Arrays.asList(subSources));
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
+   *
+   * Automatically rewrites if wrapped by an interval source that is sensitive to
+   * internal gaps
+   */
+  public static IntervalsSource or(IntervalsSource... subSources) {
+    return or(true, Arrays.asList(subSources));
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
+   *
+   * @param rewrite      if {@code false}, do not rewrite intervals that are sensitive to
+   *                     internal gaps; this may run more efficiently, but can miss valid
+   *                     hits due to minimization
+   * @param subSources   the sources to combine
+   */
+  public static IntervalsSource or(boolean rewrite, IntervalsSource... subSources) {
+    return or(rewrite, Arrays.asList(subSources));
   }
 
   /**
    * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
    */
-  public static IntervalsSource or(IntervalsSource... subSources) {
-    if (subSources.length == 1)
-      return subSources[0];
-    return new DisjunctionIntervalsSource(Arrays.asList(subSources));
+  public static IntervalsSource or(List<IntervalsSource> subSources) {
+    return or(true, subSources);
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of a set of sub-sources
+   *
+   * @param rewrite      if {@code false}, do not rewrite intervals that are sensitive to
+   *                     internal gaps; this may run more efficiently, but can miss valid
+   *                     hits due to minimization
+   * @param subSources   the sources to combine
+   */
+  public static IntervalsSource or(boolean rewrite, List<IntervalsSource> subSources) {
+    return DisjunctionIntervalsSource.create(subSources, rewrite);
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of all terms that begin with a prefix
+   *
+   * @throws IllegalStateException if the prefix expands to more than 128 terms
+   */
+  public static IntervalsSource prefix(String prefix) {
+    return prefix(prefix, 128);
+  }
+
+  /**
+   * Expert: Return an {@link IntervalsSource} over the disjunction of all terms that begin with a prefix
+   *
+   * WARNING: Setting {@code maxExpansions} to higher than the default value of 128
+   * can be both slow and memory-intensive
+   *
+   * @param prefix        the prefix to expand
+   * @param maxExpansions the maximum number of terms to expand to
+   *
+   * @throws IllegalStateException if the prefix expands to more than {@code maxExpansions} terms
+   */
+  public static IntervalsSource prefix(String prefix, int maxExpansions) {
+    CompiledAutomaton ca = new CompiledAutomaton(PrefixQuery.toAutomaton(new BytesRef(prefix)));
+    return new MultiTermIntervalsSource(ca, maxExpansions, prefix + "*");
+  }
+
+  /**
+   * Return an {@link IntervalsSource} over the disjunction of all terms that match a wildcard glob
+   *
+   * @throws IllegalStateException if the wildcard glob expands to more than 128 terms
+   *
+   * @see WildcardQuery for glob format
+   */
+  public static IntervalsSource wildcard(String wildcard) {
+    return wildcard(wildcard, 128);
+  }
+
+  /**
+   * Expert: Return an {@link IntervalsSource} over the disjunction of all terms that match a wildcard glob
+   *
+   * WARNING: Setting {@code maxExpansions} to higher than the default value of 128
+   * can be both slow and memory-intensive
+   *
+   * @param wildcard the glob to expand
+   * @param maxExpansions the maximum number of terms to expand to
+   *
+   * @throws IllegalStateException if the wildcard glob expands to more than {@code maxExpansions} terms
+   *
+   * @see WildcardQuery for glob format
+   */
+  public static IntervalsSource wildcard(String wildcard, int maxExpansions) {
+    CompiledAutomaton ca = new CompiledAutomaton(WildcardQuery.toAutomaton(new Term("", wildcard)));
+    return new MultiTermIntervalsSource(ca, maxExpansions, wildcard);
   }
 
   /**
    * Create an {@link IntervalsSource} that filters a sub-source by the width of its intervals
-   * @param width       the maximum width of intervals in the sub-source ot return
+   * @param width       the maximum width of intervals in the sub-source to filter
    * @param subSource   the sub-source to filter
    */
   public static IntervalsSource maxwidth(int width, IntervalsSource subSource) {
-    return new LowpassIntervalsSource(subSource, width);
+    return FilteredIntervalsSource.maxWidth(subSource, width);
+  }
+
+  /**
+   * Create an {@link IntervalsSource} that filters a sub-source by its gaps
+   * @param gaps        the maximum number of gaps in the sub-source to filter
+   * @param subSource   the sub-source to filter
+   */
+  public static IntervalsSource maxgaps(int gaps, IntervalsSource subSource) {
+    return FilteredIntervalsSource.maxGaps(subSource, gaps);
+  }
+
+  /**
+   * Create an {@link IntervalsSource} that wraps another source, extending its
+   * intervals by a number of positions before and after.
+   *
+   * This can be useful for adding defined gaps in a block query; for example,
+   * to find 'a b [2 arbitrary terms] c', you can call:
+   * <pre>
+   *   Intervals.phrase(Intervals.term("a"), Intervals.extend(Intervals.term("b"), 0, 2), Intervals.term("c"));
+   * </pre>
+   *
+   * Note that calling {@link IntervalIterator#gaps()} on iterators returned by this source
+   * delegates directly to the wrapped iterator, and does not include the extensions.
+   *
+   * @param source the source to extend
+   * @param before how many positions to extend before the delegated interval
+   * @param after  how many positions to extend after the delegated interval
+   */
+  public static IntervalsSource extend(IntervalsSource source, int before, int after) {
+    return new ExtendedIntervalsSource(source, before, after);
   }
 
   /**
@@ -92,7 +242,7 @@ public final class Intervals {
    * @param subSources  an ordered set of {@link IntervalsSource} objects
    */
   public static IntervalsSource ordered(IntervalsSource... subSources) {
-    return new MinimizingConjunctionIntervalsSource(Arrays.asList(subSources), IntervalFunction.ORDERED);
+    return OrderedIntervalsSource.build(Arrays.asList(subSources));
   }
 
   /**
@@ -103,20 +253,27 @@ public final class Intervals {
    * @param subSources  an unordered set of {@link IntervalsSource}s
    */
   public static IntervalsSource unordered(IntervalsSource... subSources) {
-    return unordered(true, subSources);
+    return UnorderedIntervalsSource.build(Arrays.asList(subSources));
   }
 
   /**
-   * Create an unordered {@link IntervalsSource}
+   * Create an unordered {@link IntervalsSource} allowing no overlaps between subsources
    *
-   * Returns intervals in which all the subsources appear.
-   *
-   * @param subSources  an unordered set of {@link IntervalsSource}s
-   * @param allowOverlaps whether or not the sources should be allowed to overlap in a hit
+   * Returns intervals in which both the subsources appear and do not overlap.
    */
-  public static IntervalsSource unordered(boolean allowOverlaps, IntervalsSource... subSources) {
-    return new MinimizingConjunctionIntervalsSource(Arrays.asList(subSources),
-        allowOverlaps ? IntervalFunction.UNORDERED : IntervalFunction.UNORDERED_NO_OVERLAP);
+  public static IntervalsSource unorderedNoOverlaps(IntervalsSource a, IntervalsSource b) {
+    return Intervals.or(Intervals.ordered(a, b), Intervals.ordered(b, a));
+  }
+
+  /**
+   * Create an {@link IntervalsSource} that always returns intervals from a specific field
+   *
+   * This is useful for comparing intervals across multiple fields, for example fields that
+   * have been analyzed differently, allowing you to search for stemmed terms near unstemmed
+   * terms, etc.
+   */
+  public static IntervalsSource fixField(String field, IntervalsSource source) {
+    return new FixedFieldIntervalsSource(field, source);
   }
 
   /**
@@ -128,7 +285,16 @@ public final class Intervals {
    * @param subtrahend  the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource nonOverlapping(IntervalsSource minuend, IntervalsSource subtrahend) {
-    return new DifferenceIntervalsSource(minuend, subtrahend, DifferenceIntervalFunction.NON_OVERLAPPING);
+    return new NonOverlappingIntervalsSource(minuend, subtrahend);
+  }
+
+  /**
+   * Returns intervals from a source that overlap with intervals from another source
+   * @param source      the source to filter
+   * @param reference   the source to filter by
+   */
+  public static IntervalsSource overlapping(IntervalsSource source, IntervalsSource reference) {
+    return new OverlappingIntervalsSource(source, reference);
   }
 
   /**
@@ -138,12 +304,24 @@ public final class Intervals {
    * intervals from the subtrahend query
    *
    * @param minuend     the {@link IntervalsSource} to filter
-   * @param positions   the maximum distance that intervals from the minuend may occur from intervals
+   * @param positions   the minimum distance that intervals from the minuend may occur from intervals
    *                    of the subtrahend
    * @param subtrahend  the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource notWithin(IntervalsSource minuend, int positions, IntervalsSource subtrahend) {
-    return new DifferenceIntervalsSource(minuend, subtrahend, new DifferenceIntervalFunction.NotWithinFunction(positions));
+    return new NonOverlappingIntervalsSource(minuend, Intervals.extend(subtrahend, positions, positions));
+  }
+
+  /**
+   * Returns intervals of the source that appear within a set number of positions of intervals from
+   * the reference
+   *
+   * @param source    the {@link IntervalsSource} to filter
+   * @param positions the maximum distance that intervals of the source may occur from intervals of the reference
+   * @param reference the {@link IntervalsSource} to filter by
+   */
+  public static IntervalsSource within(IntervalsSource source, int positions, IntervalsSource reference) {
+    return containedBy(source, Intervals.extend(reference, positions, positions));
   }
 
   /**
@@ -155,7 +333,7 @@ public final class Intervals {
    * @param subtrahend  the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource notContaining(IntervalsSource minuend, IntervalsSource subtrahend) {
-    return new DifferenceIntervalsSource(minuend, subtrahend, DifferenceIntervalFunction.NOT_CONTAINING);
+    return NotContainingIntervalsSource.build(minuend, subtrahend);
   }
 
   /**
@@ -168,7 +346,7 @@ public final class Intervals {
    * @param small   the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource containing(IntervalsSource big, IntervalsSource small) {
-    return new ConjunctionIntervalsSource(Arrays.asList(big, small), IntervalFunction.CONTAINING);
+    return ContainingIntervalsSource.build(big, small);
   }
 
   /**
@@ -181,7 +359,7 @@ public final class Intervals {
    * @param big     the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource notContainedBy(IntervalsSource small, IntervalsSource big) {
-    return new DifferenceIntervalsSource(small, big, DifferenceIntervalFunction.NOT_CONTAINED_BY);
+    return NotContainedByIntervalsSource.build(small, big);
   }
 
   /**
@@ -193,9 +371,30 @@ public final class Intervals {
    * @param big       the {@link IntervalsSource} to filter by
    */
   public static IntervalsSource containedBy(IntervalsSource small, IntervalsSource big) {
-    return new ConjunctionIntervalsSource(Arrays.asList(small, big), IntervalFunction.CONTAINED_BY);
+    return ContainedByIntervalsSource.build(small, big);
   }
 
-  // TODO: beforeQuery, afterQuery, arbitrary IntervalFunctions
+  /**
+   * Return intervals that span combinations of intervals from {@code minShouldMatch} of the sources
+   */
+  public static IntervalsSource atLeast(int minShouldMatch, IntervalsSource... sources) {
+    return new MinimumShouldMatchIntervalsSource(sources, minShouldMatch);
+  }
+
+  /**
+   * Returns intervals from the source that appear before intervals from the reference
+   */
+  public static IntervalsSource before(IntervalsSource source, IntervalsSource reference) {
+    return ContainedByIntervalsSource.build(source,
+        Intervals.extend(new OffsetIntervalsSource(reference, true), Integer.MAX_VALUE, 0));
+  }
+
+  /**
+   * Returns intervals from the source that appear after intervals from the reference
+   */
+  public static IntervalsSource after(IntervalsSource source, IntervalsSource reference) {
+    return ContainedByIntervalsSource.build(source,
+        Intervals.extend(new OffsetIntervalsSource(reference, false), 0, Integer.MAX_VALUE));
+  }
 
 }

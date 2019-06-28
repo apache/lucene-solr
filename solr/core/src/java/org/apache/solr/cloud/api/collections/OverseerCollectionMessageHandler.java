@@ -30,13 +30,13 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
@@ -79,8 +79,8 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
-import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -156,9 +156,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       COLOCATED_WITH, null));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String FAILURE_FIELD = "failure";
+  public static final String SUCCESS_FIELD = "success";
 
   Overseer overseer;
-  ShardHandlerFactory shardHandlerFactory;
+  HttpShardHandlerFactory shardHandlerFactory;
   String adminPath;
   ZkStateReader zkStateReader;
   SolrCloudManager cloudManager;
@@ -191,7 +193,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private volatile boolean isClosed;
 
   public OverseerCollectionMessageHandler(ZkStateReader zkStateReader, String myId,
-                                        final ShardHandlerFactory shardHandlerFactory,
+                                        final HttpShardHandlerFactory shardHandlerFactory,
                                         String adminPath,
                                         Stats stats,
                                         Overseer overseer,
@@ -232,13 +234,16 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         .put(CREATEALIAS, new CreateAliasCmd(this))
         .put(DELETEALIAS, new DeleteAliasCmd(this))
         .put(ALIASPROP, new SetAliasPropCmd(this))
-        .put(MAINTAINROUTEDALIAS, new MaintainRoutedAliasCmd(this))
+        .put(MAINTAINTIMEROUTEDALIAS, new MaintainTimeRoutedAliasCmd(this))
+        .put(MAINTAINCATEGORYROUTEDALIAS, new MaintainCategoryRoutedAliasCmd(this))
         .put(OVERSEERSTATUS, new OverseerStatusCmd(this))
         .put(DELETESHARD, new DeleteShardCmd(this))
         .put(DELETEREPLICA, new DeleteReplicaCmd(this))
         .put(ADDREPLICA, new AddReplicaCmd(this))
         .put(MOVEREPLICA, new MoveReplicaCmd(this))
+        .put(REINDEXCOLLECTION, new ReindexCollectionCmd(this))
         .put(UTILIZENODE, new UtilizeNodeCmd(this))
+        .put(RENAME, new RenameCmd(this))
         .build()
     ;
   }
@@ -302,11 +307,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
 
     String asyncId = message.getStr(ASYNC);
-    Map<String, String> requestMap = null;
-    if (asyncId != null) {
-      requestMap = new HashMap<>();
-    }
-    collectionCmd(message, params, results, Replica.State.ACTIVE, asyncId, requestMap);
+    collectionCmd(message, params, results, Replica.State.ACTIVE, asyncId);
   }
 
   @SuppressWarnings("unchecked")
@@ -334,7 +335,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     sreq.shards = new String[] {baseUrl};
     sreq.actualShards = sreq.shards;
     sreq.params = params;
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
     shardHandler.submit(sreq, baseUrl, sreq.params);
   }
 
@@ -343,24 +344,22 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP);
     SolrZkClient zkClient = zkStateReader.getZkClient();
-    DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkClient);
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICAPROP.toLower());
     propMap.putAll(message.getProperties());
     ZkNodeProps m = new ZkNodeProps(propMap);
-    inQueue.offer(Utils.toJSON(m));
+    overseer.offerStateUpdate(Utils.toJSON(m));
   }
 
   private void processReplicaDeletePropertyCommand(ClusterState clusterState, ZkNodeProps message, NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
     SolrZkClient zkClient = zkStateReader.getZkClient();
-    DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkClient);
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, DELETEREPLICAPROP.toLower());
     propMap.putAll(message.getProperties());
     ZkNodeProps m = new ZkNodeProps(propMap);
-    inQueue.offer(Utils.toJSON(m));
+    overseer.offerStateUpdate(Utils.toJSON(m));
   }
 
   private void balanceProperty(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
@@ -370,11 +369,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
               "' parameters are required for the BALANCESHARDUNIQUE operation, no action taken");
     }
     SolrZkClient zkClient = zkStateReader.getZkClient();
-    DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkClient);
-    Map<String, Object> propMap = new HashMap<>();
-    propMap.put(Overseer.QUEUE_OPERATION, BALANCESHARDUNIQUE.toLower());
-    propMap.putAll(message.getProperties());
-    inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
+    Map<String, Object> m = new HashMap<>();
+    m.put(Overseer.QUEUE_OPERATION, BALANCESHARDUNIQUE.toLower());
+    m.putAll(message.getProperties());
+    overseer.offerStateUpdate(Utils.toJSON(m));
   }
 
   /**
@@ -417,20 +415,21 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName, int timeoutms) throws InterruptedException {
-    TimeOut timeout = new TimeOut(timeoutms, TimeUnit.MILLISECONDS, timeSource);
-    while (! timeout.hasTimedOut()) {
-      timeout.sleep(100);
-      DocCollection docCollection = zkStateReader.getClusterState().getCollection(collectionName);
-      if (docCollection == null) { // someone already deleted the collection
-        return true;
-      }
-      Slice slice = docCollection.getSlice(shard);
-      if(slice == null || slice.getReplica(replicaName) == null) {
-        return true;
-      }
+    try {
+      zkStateReader.waitForState(collectionName, timeoutms, TimeUnit.MILLISECONDS, (c) -> {
+          if (c == null)
+            return true;
+          Slice slice = c.getSlice(shard);
+          if(slice == null || slice.getReplica(replicaName) == null) {
+            return true;
+          }
+          return false;
+        });
+    } catch (TimeoutException e) {
+      return false;
     }
-    // replica still exists after the timeout
-    return false;
+    
+    return true;
   }
 
   void deleteCoreNode(String collectionName, String replicaName, Replica replica, String core) throws Exception {
@@ -441,7 +440,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         ZkStateReader.COLLECTION_PROP, collectionName,
         ZkStateReader.CORE_NODE_NAME_PROP, replicaName,
         ZkStateReader.BASE_URL_PROP, replica.getStr(ZkStateReader.BASE_URL_PROP));
-    Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+    overseer.offerStateUpdate(Utils.toJSON(m));
   }
 
   void checkRequired(ZkNodeProps message, String... props) {
@@ -452,6 +451,22 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
 
   }
+
+  void checkResults(String label, NamedList<Object> results, boolean failureIsFatal) throws SolrException {
+    Object failure = results.get("failure");
+    if (failure == null) {
+      failure = results.get("error");
+    }
+    if (failure != null) {
+      String msg = "Error: " + label + ": " + Utils.toJSONString(results);
+      if (failureIsFatal) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+      } else {
+        log.error(msg);
+      }
+    }
+  }
+
 
   //TODO should we not remove in the next release ?
   private void migrateStateFormat(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
@@ -475,7 +490,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         // Actually queue the migration command.
         firstLoop = false;
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, MIGRATESTATEFORMAT.toLower(), COLLECTION_PROP, collectionName);
-        Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+        overseer.offerStateUpdate(Utils.toJSON(m));
       }
       timeout.sleep(100);
     }
@@ -577,34 +592,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
   }
 
-  void sendShardRequest(String nodeName, ModifiableSolrParams params,
-                        ShardHandler shardHandler, String asyncId,
-                        Map<String, String> requestMap) {
-    sendShardRequest(nodeName, params, shardHandler, asyncId, requestMap, adminPath, zkStateReader);
-
-  }
-
-  public static void sendShardRequest(String nodeName, ModifiableSolrParams params, ShardHandler shardHandler,
-                                      String asyncId, Map<String, String> requestMap, String adminPath,
-                                      ZkStateReader zkStateReader) {
-    if (asyncId != null) {
-      String coreAdminAsyncId = asyncId + Math.abs(System.nanoTime());
-      params.set(ASYNC, coreAdminAsyncId);
-      requestMap.put(nodeName, coreAdminAsyncId);
-    }
-
-    ShardRequest sreq = new ShardRequest();
-    params.set("qt", adminPath);
-    sreq.purpose = 1;
-    String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
-    sreq.shards = new String[]{replica};
-    sreq.actualShards = sreq.shards;
-    sreq.nodeName = nodeName;
-    sreq.params = params;
-
-    shardHandler.submit(sreq, replica, sreq.params);
-  }
-
   void addPropertyParams(ZkNodeProps message, ModifiableSolrParams params) {
     // Now add the property.key=value pairs
     for (String key : message.keySet()) {
@@ -640,7 +627,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
     }
     
-    Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+    overseer.offerStateUpdate(Utils.toJSON(message));
 
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, timeSource);
     boolean areChangesVisible = true;
@@ -653,7 +640,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
             && !updateKey.equals(Overseer.QUEUE_OPERATION)
             && updateEntry.getValue() != null // handled below in a separate conditional
-            && !collection.get(updateKey).equals(updateEntry.getValue())){
+            && !updateEntry.getValue().equals(collection.get(updateKey))) {
           areChangesVisible = false;
           break;
         }
@@ -669,6 +656,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
     if (!areChangesVisible)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not modify collection " + message);
+
+    // if switching to/from read-only mode reload the collection
+    if (message.keySet().contains(ZkStateReader.READ_ONLY)) {
+      reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
+    }
   }
 
   void cleanupCollection(String collectionName, NamedList results) throws Exception {
@@ -680,8 +672,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   Map<String, Replica> waitToSeeReplicasInState(String collectionName, Collection<String> coreNames) throws InterruptedException {
+    assert coreNames.size() > 0;
     Map<String, Replica> result = new HashMap<>();
-    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, timeSource);
+    TimeOut timeout = new TimeOut(Integer.getInteger("solr.waitToSeeReplicasInStateTimeoutSeconds", 120), TimeUnit.SECONDS, timeSource); // could be a big cluster
     while (true) {
       DocCollection coll = zkStateReader.getClusterState().getCollection(collectionName);
       for (String coreName : coreNames) {
@@ -709,43 +702,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
   }
 
-  ZkNodeProps addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
+  List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
       throws Exception {
 
     return ((AddReplicaCmd) commandMap.get(ADDREPLICA)).addReplica(clusterState, message, results, onComplete);
   }
-
-  void processResponses(NamedList results, ShardHandler shardHandler, boolean abortOnError, String msgOnError,
-                        String asyncId, Map<String, String> requestMap) {
-    processResponses(results, shardHandler, abortOnError, msgOnError, asyncId, requestMap, Collections.emptySet());
-  }
-
-  void processResponses(NamedList results, ShardHandler shardHandler, boolean abortOnError, String msgOnError,
-                                String asyncId, Map<String, String> requestMap, Set<String> okayExceptions) {
-    //Processes all shard responses
-    ShardResponse srsp;
-    do {
-      srsp = shardHandler.takeCompletedOrError();
-      if (srsp != null) {
-        processResponse(results, srsp, okayExceptions);
-        Throwable exception = srsp.getException();
-        if (abortOnError && exception != null)  {
-          // drain pending requests
-          while (srsp != null)  {
-            srsp = shardHandler.takeCompletedOrError();
-          }
-          throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError, exception);
-        }
-      }
-    } while (srsp != null);
-
-    //If request is async wait for the core admin to complete before returning
-    if (asyncId != null) {
-      waitForAsyncCallsToComplete(requestMap, results);
-      requestMap.clear();
-    }
-  }
-
 
   void validateConfigOrThrowSolrException(String configName) throws IOException, KeeperException, InterruptedException {
     boolean isValid = cloudManager.getDistribStateManager().hasData(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName);
@@ -779,8 +740,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
   
   private List<Replica> collectionCmd(ZkNodeProps message, ModifiableSolrParams params,
-                             NamedList results, Replica.State stateMatcher, String asyncId, Map<String, String> requestMap) {
-    return collectionCmd( message, params, results, stateMatcher, asyncId, requestMap, Collections.emptySet());
+                             NamedList<Object> results, Replica.State stateMatcher, String asyncId) {
+    return collectionCmd( message, params, results, stateMatcher, asyncId, Collections.emptySet());
   }
 
   /**
@@ -788,47 +749,25 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
    * @return List of replicas which is not live for receiving the request
    */
   List<Replica> collectionCmd(ZkNodeProps message, ModifiableSolrParams params,
-                     NamedList results, Replica.State stateMatcher, String asyncId, Map<String, String> requestMap, Set<String> okayExceptions) {
+                     NamedList<Object> results, Replica.State stateMatcher, String asyncId, Set<String> okayExceptions) {
     log.info("Executing Collection Cmd={}, asyncId={}", params, asyncId);
     String collectionName = message.getStr(NAME);
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+    @SuppressWarnings("deprecation")
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
 
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection coll = clusterState.getCollection(collectionName);
     List<Replica> notLivesReplicas = new ArrayList<>();
+    final ShardRequestTracker shardRequestTracker = new ShardRequestTracker(asyncId);
     for (Slice slice : coll.getSlices()) {
-      notLivesReplicas.addAll(sliceCmd(clusterState, params, stateMatcher, slice, shardHandler, asyncId, requestMap));
+      notLivesReplicas.addAll(shardRequestTracker.sliceCmd(clusterState, params, stateMatcher, slice, shardHandler));
     }
 
-    processResponses(results, shardHandler, false, null, asyncId, requestMap, okayExceptions);
+    shardRequestTracker.processResponses(results, shardHandler, false, null, okayExceptions);
     return notLivesReplicas;
   }
 
-  /**
-   * Send request to all replicas of a slice
-   * @return List of replicas which is not live for receiving the request
-   */
-  List<Replica> sliceCmd(ClusterState clusterState, ModifiableSolrParams params, Replica.State stateMatcher,
-                Slice slice, ShardHandler shardHandler, String asyncId, Map<String, String> requestMap) {
-    List<Replica> notLiveReplicas = new ArrayList<>();
-    for (Replica replica : slice.getReplicas()) {
-      if ((stateMatcher == null || Replica.State.getState(replica.getStr(ZkStateReader.STATE_PROP)) == stateMatcher)) {
-        if (clusterState.liveNodesContain(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
-          // For thread safety, only simple clone the ModifiableSolrParams
-          ModifiableSolrParams cloneParams = new ModifiableSolrParams();
-          cloneParams.add(params);
-          cloneParams.set(CoreAdminParams.CORE, replica.getStr(ZkStateReader.CORE_NAME_PROP));
-
-          sendShardRequest(replica.getStr(ZkStateReader.NODE_NAME_PROP), cloneParams, shardHandler, asyncId, requestMap);
-        } else {
-          notLiveReplicas.add(replica);
-        }
-      }
-    }
-    return notLiveReplicas;
-  }
-  
-  private void processResponse(NamedList results, ShardResponse srsp, Set<String> okayExceptions) {
+  private void processResponse(NamedList<Object> results, ShardResponse srsp, Set<String> okayExceptions) {
     Throwable e = srsp.getException();
     String nodeName = srsp.getNodeName();
     SolrResponse solrResponse = srsp.getSolrResponse();
@@ -837,8 +776,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     processResponse(results, e, nodeName, solrResponse, shard, okayExceptions);
   }
 
-  @SuppressWarnings("unchecked")
-  private void processResponse(NamedList results, Throwable e, String nodeName, SolrResponse solrResponse, String shard, Set<String> okayExceptions) {
+  @SuppressWarnings("deprecation")
+  private void processResponse(NamedList<Object> results, Throwable e, String nodeName, SolrResponse solrResponse, String shard, Set<String> okayExceptions) {
     String rootThrowable = null;
     if (e instanceof RemoteSolrException) {
       rootThrowable = ((RemoteSolrException) e).getRootThrowable();
@@ -846,36 +785,33 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
     if (e != null && (rootThrowable == null || !okayExceptions.contains(rootThrowable))) {
       log.error("Error from shard: " + shard, e);
-
-      SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
-      if (failure == null) {
-        failure = new SimpleOrderedMap();
-        results.add("failure", failure);
-      }
-
-      failure.add(nodeName, e.getClass().getName() + ":" + e.getMessage());
-
+      addFailure(results, nodeName, e.getClass().getName() + ":" + e.getMessage());
     } else {
-
-      SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
-      if (success == null) {
-        success = new SimpleOrderedMap();
-        results.add("success", success);
-      }
-
-      success.add(nodeName, solrResponse.getResponse());
+      addSuccess(results, nodeName, solrResponse.getResponse());
     }
   }
 
   @SuppressWarnings("unchecked")
-  private void waitForAsyncCallsToComplete(Map<String, String> requestMap, NamedList results) {
-    for (String k:requestMap.keySet()) {
-      log.debug("I am Waiting for :{}/{}", k, requestMap.get(k));
-      results.add(requestMap.get(k), waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k)));
+  private static void addFailure(NamedList<Object> results, String key, Object value) {
+    SimpleOrderedMap<Object> failure = (SimpleOrderedMap<Object>) results.get("failure");
+    if (failure == null) {
+      failure = new SimpleOrderedMap<>();
+      results.add("failure", failure);
     }
+    failure.add(key, value);
+  }
+  
+  @SuppressWarnings("unchecked")
+  private static void addSuccess(NamedList<Object> results, String key, Object value) {
+    SimpleOrderedMap<Object> success = (SimpleOrderedMap<Object>) results.get("success");
+    if (success == null) {
+      success = new SimpleOrderedMap<>();
+      results.add("success", success);
+    }
+    success.add(key, value);
   }
 
-  private NamedList waitForCoreAdminAsyncCallToComplete(String nodeName, String requestId) {
+  private NamedList<Object> waitForCoreAdminAsyncCallToComplete(String nodeName, String requestId) {
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.REQUESTSTATUS.toString());
@@ -897,10 +833,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       do {
         srsp = shardHandler.takeCompletedOrError();
         if (srsp != null) {
-          NamedList results = new NamedList();
+          NamedList<Object> results = new NamedList<>();
           processResponse(results, srsp, Collections.emptySet());
           if (srsp.getSolrResponse().getResponse() == null) {
-            NamedList response = new NamedList();
+            NamedList<Object> response = new NamedList<>();
             response.add("STATUS", "failed");
             return response;
           }
@@ -999,5 +935,131 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   protected interface Cmd {
     void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception;
+  }
+
+  /*
+   * backward compatibility reasons, add the response with the async ID as top level.
+   * This can be removed in Solr 9
+   */
+  @Deprecated
+  static boolean INCLUDE_TOP_LEVEL_RESPONSE = true;
+  
+  public ShardRequestTracker syncRequestTracker() {
+    return new ShardRequestTracker(null);
+  }
+  
+  public ShardRequestTracker asyncRequestTracker(String asyncId) {
+    return new ShardRequestTracker(asyncId);
+  }
+  
+  public class ShardRequestTracker{
+    private final String asyncId;
+    private final NamedList<String> shardAsyncIdByNode = new NamedList<String>();
+
+    private ShardRequestTracker(String asyncId) {
+      this.asyncId = asyncId;
+    }
+    
+    /**
+     * Send request to all replicas of a slice
+     * @return List of replicas which is not live for receiving the request
+     */
+    public List<Replica> sliceCmd(ClusterState clusterState, ModifiableSolrParams params, Replica.State stateMatcher,
+                  Slice slice, ShardHandler shardHandler) {
+      List<Replica> notLiveReplicas = new ArrayList<>();
+      for (Replica replica : slice.getReplicas()) {
+        if ((stateMatcher == null || Replica.State.getState(replica.getStr(ZkStateReader.STATE_PROP)) == stateMatcher)) {
+          if (clusterState.liveNodesContain(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
+            // For thread safety, only simple clone the ModifiableSolrParams
+            ModifiableSolrParams cloneParams = new ModifiableSolrParams();
+            cloneParams.add(params);
+            cloneParams.set(CoreAdminParams.CORE, replica.getStr(ZkStateReader.CORE_NAME_PROP));
+
+            sendShardRequest(replica.getStr(ZkStateReader.NODE_NAME_PROP), cloneParams, shardHandler);
+          } else {
+            notLiveReplicas.add(replica);
+          }
+        }
+      }
+      return notLiveReplicas;
+    }
+    
+    public void sendShardRequest(String nodeName, ModifiableSolrParams params,
+        ShardHandler shardHandler) {
+      sendShardRequest(nodeName, params, shardHandler, adminPath, zkStateReader);
+    }
+
+    public void sendShardRequest(String nodeName, ModifiableSolrParams params, ShardHandler shardHandler,
+        String adminPath, ZkStateReader zkStateReader) {
+      if (asyncId != null) {
+        String coreAdminAsyncId = asyncId + Math.abs(System.nanoTime());
+        params.set(ASYNC, coreAdminAsyncId);
+        track(nodeName, coreAdminAsyncId);
+      }
+
+      ShardRequest sreq = new ShardRequest();
+      params.set("qt", adminPath);
+      sreq.purpose = 1;
+      String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
+      sreq.shards = new String[] {replica};
+      sreq.actualShards = sreq.shards;
+      sreq.nodeName = nodeName;
+      sreq.params = params;
+
+      shardHandler.submit(sreq, replica, sreq.params);
+    }
+    
+    void processResponses(NamedList<Object> results, ShardHandler shardHandler, boolean abortOnError, String msgOnError) {
+      processResponses(results, shardHandler, abortOnError, msgOnError, Collections.emptySet());
+    }
+
+    void processResponses(NamedList<Object> results, ShardHandler shardHandler, boolean abortOnError, String msgOnError,
+        Set<String> okayExceptions) {
+      // Processes all shard responses
+      ShardResponse srsp;
+      do {
+        srsp = shardHandler.takeCompletedOrError();
+        if (srsp != null) {
+          processResponse(results, srsp, okayExceptions);
+          Throwable exception = srsp.getException();
+          if (abortOnError && exception != null) {
+            // drain pending requests
+            while (srsp != null) {
+              srsp = shardHandler.takeCompletedOrError();
+            }
+            throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError, exception);
+          }
+        }
+      } while (srsp != null);
+
+      // If request is async wait for the core admin to complete before returning
+      if (asyncId != null) {
+        waitForAsyncCallsToComplete(results);
+        shardAsyncIdByNode.clear();
+      }
+    }
+
+    private void waitForAsyncCallsToComplete(NamedList<Object> results) {
+      for (Map.Entry<String,String> nodeToAsync:shardAsyncIdByNode) {
+        final String node = nodeToAsync.getKey();
+        final String shardAsyncId = nodeToAsync.getValue();
+        log.debug("I am Waiting for :{}/{}", node, shardAsyncId);
+        NamedList<Object> reqResult = waitForCoreAdminAsyncCallToComplete(node, shardAsyncId);
+        if (INCLUDE_TOP_LEVEL_RESPONSE) {
+          results.add(shardAsyncId, reqResult);
+        }
+        if ("failed".equalsIgnoreCase(((String)reqResult.get("STATUS")))) {
+          log.error("Error from shard {}: {}", node,  reqResult);
+          addFailure(results, node, reqResult);
+        } else {
+          addSuccess(results, node, reqResult);
+        }
+      }
+    }
+
+    /** @deprecated consider to make it private after {@link CreateCollectionCmd} refactoring*/
+    @Deprecated void track(String nodeName, String coreAdminAsyncId) {
+      shardAsyncIdByNode.add(nodeName, coreAdminAsyncId);
+    }
   }
 }

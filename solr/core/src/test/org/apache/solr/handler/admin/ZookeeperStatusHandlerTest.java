@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
@@ -37,8 +38,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
@@ -68,7 +73,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
     GenericSolrRequest mntrReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
     mntrReq.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
-    NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(1000, TimeUnit.MILLISECONDS);
+    NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
 
     assertEquals("zkStatus", nl.getName(1));
     Map<String,Object> zkStatus = (Map<String,Object>) nl.get("zkStatus");

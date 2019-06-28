@@ -18,9 +18,7 @@ package org.apache.solr.handler.extraction;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,7 +30,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.NumberType;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaMetadataKeys;
 import org.slf4j.Logger;
@@ -61,8 +58,6 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   protected final SolrInputDocument document;
 
-  protected final Collection<String> dateFormats;
-
   protected final Metadata metadata;
   protected final SolrParams params;
   protected final StringBuilder catchAllBuilder = new StringBuilder(2048);
@@ -79,19 +74,13 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   private final boolean literalsOverride;
   
   private Set<String> literalFieldNames = null;
-  
+
+
   public SolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
-    this(metadata, params, schema, ExtractionDateUtil.DEFAULT_DATE_FORMATS);
-  }
-
-
-  public SolrContentHandler(Metadata metadata, SolrParams params,
-                            IndexSchema schema, Collection<String> dateFormats) {
     this.document = new SolrInputDocument();
     this.metadata = metadata;
     this.params = params;
     this.schema = schema;
-    this.dateFormats = dateFormats;
 
     this.lowerNames = params.getBool(LOWERNAMES, false);
     this.captureAttribs = params.getBool(CAPTURE_ATTRIBUTES, false);
@@ -253,12 +242,12 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     }
 
     if (fval != null) {
-      document.addField(name, transformValue(fval, sf));
+      document.addField(name, fval);
     }
 
     if (vals != null) {
       for (String val : vals) {
-        document.addField(name, transformValue(val, sf));
+        document.addField(name, val);
       }
     }
 
@@ -308,30 +297,6 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   @Override
   public void ignorableWhitespace(char[] chars, int offset, int length) throws SAXException {
     characters(chars, offset, length);
-  }
-
-  /**
-   * Can be used to transform input values based on their {@link org.apache.solr.schema.SchemaField}
-   * <p>
-   * This implementation only formats dates using the {@link ExtractionDateUtil}.
-   *
-   * @param val    The value to transform
-   * @param schFld The {@link org.apache.solr.schema.SchemaField}
-   * @return The potentially new value.
-   */
-  protected String transformValue(String val, SchemaField schFld) {
-    String result = val;
-    if (schFld != null && NumberType.DATE.equals(schFld.getType().getNumberType())) {
-      //try to transform the date
-      try {
-        Date date = ExtractionDateUtil.parseDate(val, dateFormats); // may throw
-        result = date.toInstant().toString();//ISO format
-      } catch (Exception e) {
-        // Let the specific fieldType handle errors
-        // throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid value: " + val + " for field: " + schFld, e);
-      }
-    }
-    return result;
   }
 
   /**

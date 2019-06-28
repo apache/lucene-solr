@@ -33,6 +33,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
 
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
@@ -57,12 +58,28 @@ public class ChildDocTransformerFactory extends TransformerFactory {
 
   static final char PATH_SEP_CHAR = '/';
   static final char NUM_SEP_CHAR = '#';
+  private static final ThreadLocal<Boolean> recursionCheckThreadLocal = ThreadLocal.withInitial(() -> Boolean.FALSE);
   private static final BooleanQuery rootFilter = new BooleanQuery.Builder()
       .add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.MUST))
       .add(new BooleanClause(new DocValuesFieldExistsQuery(NEST_PATH_FIELD_NAME), BooleanClause.Occur.MUST_NOT)).build();
 
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
+    if(recursionCheckThreadLocal.get()) {
+      // this is a recursive call by SolrReturnFields, see ChildDocTransformerFactory#createChildDocTransformer
+      return new DocTransformer.NoopFieldTransformer();
+    } else {
+      try {
+        // transformer is yet to be initialized in this thread, create it
+        recursionCheckThreadLocal.set(true);
+        return createChildDocTransformer(field, params, req);
+      } finally {
+        recursionCheckThreadLocal.set(false);
+      }
+    }
+  }
+
+  private DocTransformer createChildDocTransformer(String field, SolrParams params, SolrQueryRequest req) {
     SchemaField uniqueKeyField = req.getSchema().getUniqueKeyField();
     if (uniqueKeyField == null) {
       throw new SolrException( ErrorCode.BAD_REQUEST,
@@ -106,9 +123,20 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       }
     }
 
+    String childReturnFields = params.get("fl");
+    SolrReturnFields childSolrReturnFields;
+    if(childReturnFields != null) {
+      childSolrReturnFields = new SolrReturnFields(childReturnFields, req);
+    } else if(req.getSchema().getDefaultLuceneMatchVersion().major < 8) {
+      // ensure backwards for versions prior to SOLR 8
+      childSolrReturnFields = new SolrReturnFields();
+    } else {
+      childSolrReturnFields = new SolrReturnFields(req);
+    }
+
     int limit = params.getInt( "limit", 10 );
 
-    return new ChildDocTransformer(field, parentsFilter, childDocSet, buildHierarchy, limit);
+    return new ChildDocTransformer(field, parentsFilter, childDocSet, childSolrReturnFields, buildHierarchy, limit);
   }
 
   private static Query parseQuery(String qstr, SolrQueryRequest req, String param) {
@@ -122,19 +150,24 @@ public class ChildDocTransformerFactory extends TransformerFactory {
   // NOTE: THIS FEATURE IS PRESENTLY EXPERIMENTAL; WAIT TO SEE IT IN THE REF GUIDE.  FINAL SYNTAX IS TBD.
   protected static String processPathHierarchyQueryString(String queryString) {
     // if the filter includes a path string, build a lucene query string to match those specific child documents.
-    // e.g. toppings/ingredients/name_s:cocoa -> +_nest_path_:"toppings/ingredients/" +(name_s:cocoa)
+    // e.g. /toppings/ingredients/name_s:cocoa -> +_nest_path_:/toppings/ingredients +(name_s:cocoa)
+    // ingredients/name_s:cocoa -> +_nest_path_:*/ingredients +(name_s:cocoa)
     int indexOfFirstColon = queryString.indexOf(':');
     if (indexOfFirstColon <= 0) {
       return queryString;// give up
     }
     int indexOfLastPathSepChar = queryString.lastIndexOf(PATH_SEP_CHAR, indexOfFirstColon);
     if (indexOfLastPathSepChar < 0) {
-      return queryString;
+      // regular filter, not hierarchy based.
+      return ClientUtils.escapeQueryChars(queryString.substring(0, indexOfFirstColon))
+          + ":" + ClientUtils.escapeQueryChars(queryString.substring(indexOfFirstColon + 1));
     }
-    String path = queryString.substring(0, indexOfLastPathSepChar + 1);
-    String remaining = queryString.substring(indexOfLastPathSepChar + 1);
+    final boolean isAbsolutePath = queryString.charAt(0) == PATH_SEP_CHAR;
+    String path = ClientUtils.escapeQueryChars(queryString.substring(0, indexOfLastPathSepChar));
+    String remaining = queryString.substring(indexOfLastPathSepChar + 1); // last part of path hierarchy
+
     return
-        "+" + NEST_PATH_FIELD_NAME + ":" + ClientUtils.escapeQueryChars(path)
+        "+" + NEST_PATH_FIELD_NAME + (isAbsolutePath? ":": ":*\\/") + path
         + " +(" + remaining + ")";
   }
 }

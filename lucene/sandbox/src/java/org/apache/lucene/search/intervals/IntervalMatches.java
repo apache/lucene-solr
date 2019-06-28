@@ -49,12 +49,12 @@ final class IntervalMatches {
 
       @Override
       public int startPosition() {
-        return source.startPosition();
+        return iterator.start();
       }
 
       @Override
       public int endPosition() {
-        return source.endPosition();
+        return iterator.end();
       }
 
       @Override
@@ -96,6 +96,15 @@ final class IntervalMatches {
       public int end() {
         assert state == State.ITERATING;
         return mi.endPosition();
+      }
+
+      @Override
+      public int gaps() {
+        assert state == State.ITERATING;
+        if (mi instanceof IntervalMatchesIterator) {
+          return ((IntervalMatchesIterator)mi).gaps();
+        }
+        return 0;
       }
 
       @Override

@@ -27,6 +27,7 @@ import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -96,6 +97,13 @@ final class LatLonDocValuesBoxQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
       @Override
@@ -139,7 +147,7 @@ final class LatLonDocValuesBoxQuery extends Query {
             return 5; // 5 comparisons
           }
         };
-        return new ConstantScoreScorer(this, boost, iterator);
+        return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
 
       @Override

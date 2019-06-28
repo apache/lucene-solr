@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -227,8 +226,8 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
   }
 
   public static void restartNode(JettySolrRunner jetty) throws Exception {
-    ChaosMonkey.stop(jetty);
-    ChaosMonkey.start(jetty);
+    jetty.stop();
+    jetty.start();
     Thread.sleep(10000);
   }
 

@@ -310,4 +310,16 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
 
     return enumMapping.intValueToStringValue(val.intValue());
   }
+  
+  @Override
+  public Object toNativeType(Object val) {
+    if (val instanceof CharSequence || val instanceof String) {
+      final String str = val.toString();
+      return new EnumFieldValue(enumMapping.enumStringToIntMap.get(str), str);
+    } else if(val instanceof Number) {
+      final int num = ((Number)val).intValue();
+      return new EnumFieldValue(num, enumMapping.enumIntToStringMap.get(num));
+    }
+    return super.toNativeType(val);
+  }
 }

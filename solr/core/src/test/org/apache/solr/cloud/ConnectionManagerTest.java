@@ -17,8 +17,11 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ConnectionManager;
@@ -41,14 +44,10 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
   public void testConnectionManager() throws Exception {
     
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
-    
+    Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-      
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
       
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
       ConnectionManager cm = zkClient.getConnectionManager();
@@ -74,39 +73,35 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
   public void testLikelyExpired() throws Exception {
 
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
-
+    Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
       ConnectionManager cm = zkClient.getConnectionManager();
       try {
         assertFalse(cm.isLikelyExpired());
-        assertTrue(cm.isConnected());
+        assertTrue(cm.isConnectedAndNotClosed());
         cm.process(new WatchedEvent(EventType.None, KeeperState.Disconnected, ""));
         // disconnect shouldn't immediately set likelyExpired
-        assertFalse(cm.isConnected());
+        assertFalse(cm.isConnectedAndNotClosed());
         assertFalse(cm.isLikelyExpired());
 
         // but it should after the timeout
         Thread.sleep((long)(zkClient.getZkClientTimeout() * 1.5));
-        assertFalse(cm.isConnected());
+        assertFalse(cm.isConnectedAndNotClosed());
         assertTrue(cm.isLikelyExpired());
 
         // even if we disconnect immediately again
         cm.process(new WatchedEvent(EventType.None, KeeperState.Disconnected, ""));
-        assertFalse(cm.isConnected());
+        assertFalse(cm.isConnectedAndNotClosed());
         assertTrue(cm.isLikelyExpired());
 
         // reconnect -- should no longer be likely expired
         cm.process(new WatchedEvent(EventType.None, KeeperState.SyncConnected, ""));
         assertFalse(cm.isLikelyExpired());
-        assertTrue(cm.isConnected());
+        assertTrue(cm.isConnectedAndNotClosed());
       } finally {
         cm.close();
         zkClient.close();
@@ -121,14 +116,10 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
     ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new DefaultSolrThreadFactory("connectionManagerTest"));
     
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
-
+    Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
       
       MockZkClientConnectionStrategy strat = new MockZkClientConnectionStrategy();
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT, strat , null);
@@ -136,12 +127,12 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       
       try {
         assertFalse(cm.isLikelyExpired());
-        assertTrue(cm.isConnected());
+        assertTrue(cm.isConnectedAndNotClosed());
                
         // reconnect -- should no longer be likely expired
         cm.process(new WatchedEvent(EventType.None, KeeperState.Expired, ""));
         assertFalse(cm.isLikelyExpired());
-        assertTrue(cm.isConnected());
+        assertTrue(cm.isConnectedAndNotClosed());
         assertTrue(strat.isExceptionThrow());
       } finally {
         cm.close();
@@ -159,7 +150,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
     
     @Override
     public void reconnect(final String serverAddress, final int zkClientTimeout,
-        final Watcher watcher, final ZkUpdate updater) throws IOException {
+        final Watcher watcher, final ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
       
       if(called++ < 1) {
         exceptionThrown = true;

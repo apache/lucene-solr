@@ -107,7 +107,7 @@ public class TestPerFieldAnalyzerWrapper extends BaseTokenStreamTestCase {
       protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
         assertNotSame(specialAnalyzer.tokenStream("special", text), components.getTokenStream());
         TokenFilter filter = new ASCIIFoldingFilter(components.getTokenStream());
-        return new TokenStreamComponents(components.getTokenizer(), filter);
+        return new TokenStreamComponents(components.getSource(), filter);
       }
     };
     ts3 = wrapper2.tokenStream("special", text);

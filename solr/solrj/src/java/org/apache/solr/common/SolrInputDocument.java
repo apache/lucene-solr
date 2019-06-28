@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -44,7 +45,12 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
       addField(fields[i], fields[i + 1]);
     }
   }
-  
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    _fields.forEach(ew.getBiConsumer());
+  }
+
   public SolrInputDocument(Map<String,SolrInputField> fields) {
     _fields = fields;
   }

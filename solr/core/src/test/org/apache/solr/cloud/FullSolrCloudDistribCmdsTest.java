@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -69,7 +68,8 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
 
   @Test
   @ShardsFixed(num = 6)
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
@@ -622,11 +622,11 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
       
       @Override
       public void run() {
-        int rnds = random().nextInt(TEST_NIGHTLY ? 25 : 3) + 1;
+        int rnds = random().nextInt(TEST_NIGHTLY ? 10 : 3) + 1;
         for (int i = 0; i < rnds; i++) {
           UpdateRequest uReq;
           uReq = new UpdateRequest();
-          int cnt = random().nextInt(TEST_NIGHTLY ? 3313 : 350) + 1;
+          int cnt = random().nextInt(TEST_NIGHTLY ? 2000 : 200) + 1;
           for (int j = 0; j <cnt; j++) {
             addDoc("thread" + name + "_" + i + "_" + j, uReq);
           }

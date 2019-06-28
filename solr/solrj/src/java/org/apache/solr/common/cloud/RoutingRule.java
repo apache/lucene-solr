@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.util.SuppressForbidden;
-import org.noggit.JSONUtil;
+import org.apache.solr.common.util.Utils;
 
 /**
  * Used for routing docs with particular keys into another collection
@@ -72,6 +72,6 @@ public class RoutingRule extends ZkNodeProps {
 
   @Override
   public String toString() {
-    return JSONUtil.toJSON(propMap, -1);
+    return Utils.toJSONString(propMap);
   }
 }

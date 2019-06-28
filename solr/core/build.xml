@@ -25,6 +25,7 @@
 
   <property name="forbidden-tests-excludes" value="
     org/apache/solr/internal/**
+    org/apache/hadoop/**
   "/>
 
   <import file="../common-build.xml"/>

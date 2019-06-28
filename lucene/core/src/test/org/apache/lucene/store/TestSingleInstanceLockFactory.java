@@ -33,17 +33,15 @@ public class TestSingleInstanceLockFactory extends BaseLockFactoryTestCase {
     return newDirectory(random(), new SingleInstanceLockFactory());
   }
   
-  // Verify: SingleInstanceLockFactory is the default lock for RAMDirectory
-  // Verify: RAMDirectory does basic locking correctly (can't create two IndexWriters)
-  public void testDefaultRAMDirectory() throws IOException {
-    RAMDirectory dir = new RAMDirectory();
-    
-    assertTrue("RAMDirectory did not use correct LockFactory: got " + dir.lockFactory,
-        dir.lockFactory instanceof SingleInstanceLockFactory);
-    
+  // Verify: basic locking on single instance lock factory (can't create two IndexWriters)
+  public void testDefaultLockFactory() throws IOException {
+    ByteBuffersDirectory dir = new ByteBuffersDirectory();
+
+    assertTrue(dir.lockFactory instanceof SingleInstanceLockFactory);
+
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
     
-    // Create a 2nd IndexWriter.  This should fail:
+    // Create a 2nd IndexWriter.  This should fail.
     expectThrows(IOException.class, () -> {
       new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     });

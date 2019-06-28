@@ -539,14 +539,16 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
   }
 
   public void testMultipleSidePaths() throws Exception {
+    // 0   1        2    3         4    5  6         7  8
+    // the ny:4/new york wifi:5/wi fi:4 [] wifi:2/wi fi network
     TokenStream ts = new CannedTokenStream(
         token("the", 1, 1),
         token("ny", 1, 4),
         token("new", 0, 1),
         token("york", 1, 1),
-        token("wifi", 1, 4),
+        token("wifi", 1, 5),
         token("wi", 0, 1),
-        token("fi", 1, 3),
+        token("fi", 1, 4),
         token("wifi", 2, 2),
         token("wi", 0, 1),
         token("fi", 1, 1),
@@ -596,4 +598,46 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
     terms = graph.getTerms("field", 7);
     assertArrayEquals(terms, new Term[] {new Term("field", "network")});
   }
+
+  public void testSidePathWithGap() throws Exception {
+    // 0    1               2  3  4             5
+    // king alfred:3/alfred [] [] great/awesome ruled
+    CannedTokenStream cts = new CannedTokenStream(
+        token("king", 1, 1),
+        token("alfred", 1, 4),
+        token("alfred", 0, 1),
+        token("great", 3, 1),
+        token("awesome", 0, 1),
+        token("ruled", 1, 1)
+    );
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(cts);
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{ "king", "alfred", "ruled" }, new int[]{ 1, 1, 1 });
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{ "king", "alfred", "great", "ruled"}, new int[]{ 1, 1, 3, 1 });
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{ "king", "alfred", "awesome", "ruled"}, new int[]{ 1, 1, 3, 1 });
+    assertFalse(it.hasNext());
+  }
+
+  public void testMultipleSidePathsWithGaps() throws Exception {
+    // king alfred:4/alfred [] [] saxons:3 [] wessex ruled
+    CannedTokenStream cts = new CannedTokenStream(
+        token("king", 1, 1),
+        token("alfred", 1, 4),
+        token("alfred", 0, 1),
+        token("saxons", 3, 3),
+        token("wessex", 2, 1),
+        token("ruled", 1, 1)
+    );
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(cts);
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{ "king", "alfred", "wessex", "ruled" }, new int[]{ 1, 1, 2, 1 });
+    assertTrue(it.hasNext());
+    assertTokenStream(it.next(), new String[]{ "king", "alfred", "saxons", "ruled" }, new int[]{ 1, 1, 3, 1 });
+    assertFalse(it.hasNext());
+  }
+
 }

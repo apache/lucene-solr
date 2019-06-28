@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.ImpactsEnum;
@@ -111,7 +112,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
   }
 
-  private class SimpleTextTermsEnum extends TermsEnum {
+  private class SimpleTextTermsEnum extends BaseTermsEnum {
     private final IndexOptions indexOptions;
     private int docFreq;
     private long totalTermFreq;

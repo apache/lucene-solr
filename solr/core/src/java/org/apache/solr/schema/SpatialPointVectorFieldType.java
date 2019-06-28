@@ -64,8 +64,12 @@ public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointV
     }
     precisionStep = ((TrieField)fieldType).getPrecisionStep();
 
-    //Just set these, delegate everything else to the field type
-    final int p = (INDEXED | TOKENIZED | OMIT_NORMS | OMIT_TF_POSITIONS);
+    // NOTE: the SchemaField constructor we're using ignores any properties of the fieldType
+    // so only the ones we're explicitly setting get used.
+    //
+    // In theory we should fix this, but since this class is already deprecated, we'll leave it alone
+    // to simplify the risk of back-compat break for existing users.
+    final int p = (INDEXED | TOKENIZED | OMIT_NORMS | OMIT_TF_POSITIONS | UNINVERTIBLE);
     List<SchemaField> newFields = new ArrayList<>();
     for( SchemaField sf : schema.getFields().values() ) {
       if( sf.getType() == this ) {

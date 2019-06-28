@@ -216,7 +216,8 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
       if (phase == DistributedUpdateProcessor.DistribPhase.FROMLEADER) {
         return false;
       }
-      return distribProc.isLeader(cmd);
+      distribProc.setupRequest(cmd);
+      return distribProc.isLeader();
     }
 
     @Override

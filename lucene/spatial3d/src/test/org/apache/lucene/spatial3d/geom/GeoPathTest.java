@@ -19,11 +19,10 @@ package org.apache.lucene.spatial3d.geom;
 import org.junit.Test;
 
 import static org.apache.lucene.util.SloppyMath.toRadians;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
-public class GeoPathTest {
+import org.apache.lucene.util.LuceneTestCase;
+
+public class GeoPathTest extends LuceneTestCase {
 
   @Test
   public void testPathDistance() {
@@ -400,6 +399,39 @@ public class GeoPathTest {
     path = GeoPathFactory.makeGeoPath(planetModel, 0, new GeoPoint[] {point4, point5, point6});
     path = GeoPathFactory.makeGeoPath(planetModel, 0.5, new GeoPoint[] {point4, point5, point6});
 
+  }
+
+  @Test
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8696")
+  public void testLUCENE8696() {
+    GeoPoint[] points = new GeoPoint[4];
+    points[0] = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, 0.017453291479645996);
+    points[1] = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, 0.8952476719156919);
+    points[2] = new GeoPoint(PlanetModel.WGS84, 2.4457272005608357E-47, 0.6491968536639036);
+    points[3] = new GeoPoint(PlanetModel.WGS84, -0.7718789008737459, 0.9236607495528212);
+    GeoPath path  = GeoPathFactory.makeGeoPath(PlanetModel.WGS84, 1.3439035240356338, points);
+    GeoPoint check = new GeoPoint(0.02071783020158524, 0.9523290535474472, 0.30699177256064203);
+    // Map to surface point, to remove that source of confusion
+    GeoPoint surfaceCheck = PlanetModel.WGS84.createSurfacePoint(check);
+    /*
+   [junit4]   1>   cycle: cell=12502 parentCellID=12500 x: -1658490249 TO 2147483041, y: 2042111310 TO 2147483041, z: -2140282940 TO 2140277970, splits: 1 queue.size()=1
+   [junit4]   1>     minx=-0.7731590077686981 maxx=1.0011188539924791 miny=0.9519964046486451 maxy=1.0011188539924791 minz=-0.9977622932859775 maxz=0.9977599768255027
+   [junit4]   1>     GeoArea.CONTAINS: now addAll
+    */
+    XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84,
+      -0.7731590077686981, 1.0011188539924791,
+      0.9519964046486451, 1.0011188539924791,
+      -0.9977622932859775, 0.9977599768255027);
+    // Verify that the point is within it
+    assertTrue(solid.isWithin(surfaceCheck));
+    // Check the (surface) relationship
+    int relationship = solid.getRelationship(path);
+    if (relationship == GeoArea.CONTAINS) {
+      // If relationship is CONTAINS then any point in the solid must also be within the path
+      // If point is within solid, it must be within shape
+      assertTrue(path.isWithin(surfaceCheck));
+    }
+    
   }
 
 }

@@ -85,8 +85,12 @@ public class Condition implements MapWriter {
     return false;
   }
 
-  public Double delta(Object val) {
+  public Double replicaCountDelta(Object val) {
     if (val instanceof ReplicaCount) val = ((ReplicaCount) val).getVal(getClause().type);
+    return op.delta(this.val, val);
+  }
+
+  public Double delta(Object val) {
     if (this.val instanceof String) {
       if (op == LESS_THAN || op == GREATER_THAN) {
         return op
@@ -96,15 +100,9 @@ public class Condition implements MapWriter {
         return 0d;
       }
     } else {
-      if (this == getClause().getReplica()) {
-        Double delta = op.delta(this.val, val);
-        return getClause().isReplicaZero() ? -1 * delta : delta;
-      } else {
-        return op
-            .opposite(getClause().isReplicaZero() && this == getClause().getTag())
-            .delta(this.val, val);
-      }
-
+      return op
+          .opposite(getClause().isReplicaZero() && this == getClause().getTag())
+          .delta(this.val, val);
     }
   }
 

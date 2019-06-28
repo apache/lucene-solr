@@ -59,9 +59,8 @@ solrAdminApp.controller('StreamController',
 
         $scope.lang = "json";
         $scope.response = data;
-        $scope.url = $location.protocol() + "://" +
-          $location.host() + ":" +
-          $location.port() + url;
+        $scope.url = url;
+        $scope.hostPortContext = $location.absUrl().substr(0,$location.absUrl().indexOf("#")); // For display only
 
       });
     };

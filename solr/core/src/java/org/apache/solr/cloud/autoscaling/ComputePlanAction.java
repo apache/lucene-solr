@@ -136,7 +136,7 @@ public class ComputePlanAction extends TriggerActionBase {
               continue;
             }
           }
-          log.info("Computed Plan: {}", operation.getParams());
+          log.debug("Computed Plan: {}", operation.getParams());
           if (!collections.isEmpty()) {
             String coll = operation.getParams().get(CoreAdminParams.COLLECTION);
             if (coll != null && !collections.contains(coll)) {
@@ -175,7 +175,11 @@ public class ComputePlanAction extends TriggerActionBase {
     clusterState.forEachCollection(coll -> {
       Integer rf = coll.getReplicationFactor();
       if (rf == null) {
-        rf = coll.getReplicas().size() / coll.getSlices().size();
+        if (coll.getSlices().isEmpty()) {
+          rf = 1; // ???
+        } else {
+          rf = coll.getReplicas().size() / coll.getSlices().size();
+        }
       }
       totalRF.addAndGet(rf * coll.getSlices().size());
     });

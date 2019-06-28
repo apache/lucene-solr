@@ -20,8 +20,6 @@ package org.apache.lucene.analysis.core;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -33,8 +31,14 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
-public class LowerCaseFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+public class LowerCaseFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "lowercase";
   
   /** Creates a new LowerCaseFilterFactory */
   public LowerCaseFilterFactory(Map<String,String> args) {
@@ -45,12 +49,12 @@ public class LowerCaseFilterFactory extends TokenFilterFactory implements MultiT
   }
 
   @Override
-  public LowerCaseFilter create(TokenStream input) {
+  public TokenStream create(TokenStream input) {
     return new LowerCaseFilter(input);
   }
 
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public TokenStream normalize(TokenStream input) {
+    return create(input);
   }
 }

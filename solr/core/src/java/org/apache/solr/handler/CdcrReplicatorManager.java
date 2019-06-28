@@ -97,6 +97,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
         String targetCollection = params.get(CdcrParams.TARGET_COLLECTION_PARAM);
 
         CloudSolrClient client = new Builder(Collections.singletonList(zkHost), Optional.empty())
+            .withSocketTimeout(30000).withConnectionTimeout(15000)
             .sendUpdatesOnlyToShardLeaders()
             .build();
         client.setDefaultCollection(targetCollection);

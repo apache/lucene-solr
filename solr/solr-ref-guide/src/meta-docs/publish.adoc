@@ -71,7 +71,7 @@ These steps walk through checking out this directory and uploading the Guide to 
 IMPORTANT: The next step requires that you have already generated your GPG keys. Your GPG passphrase will be required.
 
 [start=3]
-. Run the Prep Ref Guide script to prepare the RC. This script ensures proper naming of the PDF file, generates `.sha1`,
+. Run the Prep Ref Guide script to prepare the RC. This script ensures proper naming of the PDF file, generates 
  `.sha512` and `.asc` files and creates the proper RC sub-directories under `solr-ref-guide-rc`.
 .. The structure of the input is: `prep-solr-ref-guide-rc.sh <path/PDFfilename> <Solrversion-RC#> GPGkey`.
 .. From the `solr-ref-guide-rc` directory, it will look something like this:
@@ -83,7 +83,6 @@ $ ~/lucene-source/dev-tools/scripts/prep-solr-ref-guide-rc.sh apache-solr-ref-gu
 + mkdir apache-solr-ref-guide-7.0-RC0
 + mv apache-solr-ref-guide-7.0.pdf apache-solr-ref-guide-7.0-RC0/apache-solr-ref-guide-7.0.pdf
 + cd apache-solr-ref-guide-7.0-RC0
-+ shasum apache-solr-ref-guide-7.0.pdf
 + shasum -a 512 apache-solr-ref-guide-7.0.pdf
 + gpg -u DEADBEEF --armor --output apache-solr-ref-guide-7.0.pdf.asc --detach-sig apache-solr-ref-guide-7.0.pdf
 
@@ -157,7 +156,7 @@ Once at least three PMC members have voted for release (see https://www.apache.o
 $ ~/lucene-source/dev-tools/scripts/publish-solr-ref-guide-rc.sh X.Y-RCZ
 
 ## Run the following commands when ready...
-svn move -m 'publishing apache-solr-ref-guide-X.Y-RCZ' https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf.asc https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf.sha1 https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf.sha512 https://dist.apache.org/repos/dist/release/lucene/solr/ref-guide/
+svn move -m 'publishing apache-solr-ref-guide-X.Y-RCZ' https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf.asc https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ/apache-solr-ref-guide-X.Y.pdf.sha512 https://dist.apache.org/repos/dist/release/lucene/solr/ref-guide/
 
 svn rm -m 'cleaning up apache-solr-ref-guide-X.Y-RCZ' https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RCZ
 ----
@@ -182,7 +181,7 @@ $ ~/lucene-source/dev-tools/scripts/archive-solr-ref-guide.sh X.Y
 ## Run the following commands when ready...
 
 # Delete old releases
-svn rm -m 'removing archived ref guide files prior to X.Y' https://dist.apache.org/repos/dist/release/lucene/solr/ref-guide/apache-solr-ref-guide-A.B.pdf https://dist.apache.org/repos/dist/release/lucene/solr/ref-guide/apache-solr-ref-guide-A.B.pdf.asc https://dist.apache.org/repos/dist/release/lucene/solr/ref-guide/apache-solr-ref-guide-A.B.pdf.sha1
+svn rm -m 'removing archived ref guide files prior to X.Y' https://dist.apache.org/repos/dist/release/lucene/solr/ref-guide/apache-solr-ref-guide-A.B.pdf https://dist.apache.org/repos/dist/release/lucene/solr/ref-guide/apache-solr-ref-guide-A.B.pdf.asc https://dist.apache.org/repos/dist/release/lucene/solr/ref-guide/apache-solr-ref-guide-A.B.pdf.sha512
 
 # Delete old RC files
 svn rm -m 'cleaning up old RCs now that X.Y has been released' https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RC0/ https://dist.apache.org/repos/dist/dev/lucene/solr/ref-guide/apache-solr-ref-guide-X.Y-RC1/

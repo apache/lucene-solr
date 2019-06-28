@@ -37,6 +37,8 @@ import org.tartarus.snowball.ext.FinnishStemmer;
 
 /**
  * {@link Analyzer} for Finnish.
+ *
+ * @since 3.1
  */
 public final class FinnishAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

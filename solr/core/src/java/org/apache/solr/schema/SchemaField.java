@@ -88,6 +88,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
   public FieldType getType() { return type; }
   public int getProperties() { return properties; }
 
+  public boolean isUninvertible() { return (properties & UNINVERTIBLE)!=0; }
   public boolean indexed() { return (properties & INDEXED)!=0; }
   public boolean stored() { return (properties & STORED)!=0; }
   public boolean hasDocValues() { return (properties & DOC_VALUES) != 0; }
@@ -171,18 +172,18 @@ public final class SchemaField extends FieldProperties implements IndexableField
                               + getName() + " of type: " + this.type.getTypeName());
     }
     if (! hasDocValues() ) {
-      if ( ! ( indexed() && null != this.type.getUninversionType(this) ) ) {
+      if ( ! ( indexed() && isUninvertible() && null != this.type.getUninversionType(this) ) ) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                                "can not sort on a field w/o docValues unless it is indexed and supports Uninversion: " 
+                                "can not sort on a field w/o docValues unless it is indexed=true uninvertible=true and the type supports Uninversion: " 
                                 + getName());
       }
     }
   }
 
   /** 
-   * Sanity checks that the properties of this field type are plausible 
-   * for a field that may be used to get a FieldCacheSource, throwing
-   * an appropriate exception (including the field name) if it is not.  
+   * Sanity checks that the properties of this field type are plausible for a field
+   * that may be used to get a {@link org.apache.lucene.queries.function.valuesource.FieldCacheSource},
+   * throwing an appropriate exception (including the field name) if it is not.  
    * FieldType subclasses can choose to call this method in their 
    * getValueSource implementation 
    * @see FieldType#getValueSource
@@ -194,9 +195,9 @@ public final class SchemaField extends FieldProperties implements IndexableField
                               + getName());
     }
     if (! hasDocValues() ) {
-      if ( ! ( indexed() && null != this.type.getUninversionType(this) ) ) {
+      if ( ! ( indexed() && isUninvertible() && null != this.type.getUninversionType(this) ) ) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                                "can not use FieldCache on a field w/o docValues unless it is indexed and supports Uninversion: " 
+                                "can not use FieldCache on a field w/o docValues unless it is indexed uninvertible=true and the type supports Uninversion: " 
                                 + getName());
       }
     }
@@ -247,17 +248,17 @@ public final class SchemaField extends FieldProperties implements IndexableField
 
     if (on(falseProps,INDEXED)) {
       int pp = (INDEXED 
-              | STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS | STORE_TERMPAYLOADS);
+              | STORE_TERMVECTORS | STORE_TERMPOSITIONS | STORE_TERMOFFSETS | STORE_TERMPAYLOADS | UNINVERTIBLE);
       if (on(pp,trueProps)) {
         throw new RuntimeException("SchemaField: " + name + " conflicting 'true' field options for non-indexed field:" + props);
       }
       p &= ~pp;
     }
     
-    if (on(falseProps,INDEXED) && on(falseProps,DOC_VALUES)) {
+    if (on(falseProps,UNINVERTIBLE) && on(falseProps,DOC_VALUES)) {
       int pp = (SORT_MISSING_FIRST | SORT_MISSING_LAST);
       if (on(pp,trueProps)) {
-        throw new RuntimeException("SchemaField: " + name + " conflicting 'true' field options for non-indexed/non-docValues field:" + props);
+        throw new RuntimeException("SchemaField: " + name + " conflicting 'true' field options for non-docValues/non-uninvertible field:" + props);
       }
       p &= ~pp;
     }
@@ -341,6 +342,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
       properties.add(getPropertyName(STORE_OFFSETS), storeOffsetsWithPositions());
       properties.add(getPropertyName(MULTIVALUED), multiValued());
       properties.add(getPropertyName(LARGE_FIELD), isLarge());
+      properties.add(getPropertyName(UNINVERTIBLE), isUninvertible());
       if (sortMissingFirst()) {
         properties.add(getPropertyName(SORT_MISSING_FIRST), sortMissingFirst());
       } else if (sortMissingLast()) {
@@ -415,12 +417,22 @@ public final class SchemaField extends FieldProperties implements IndexableField
   }
 
   @Override
-  public int pointDimensionCount() {
+  public int pointDataDimensionCount() {
+    return 0;
+  }
+
+  @Override
+  public int pointIndexDimensionCount() {
     return 0;
   }
 
   @Override
   public int pointNumBytes() {
     return 0;
+  }
+
+  @Override
+  public Map<String, String> getAttributes() {
+    return null;
   }
 }

@@ -25,7 +25,6 @@ import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.store.FeatureStore;
-import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

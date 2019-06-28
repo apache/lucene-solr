@@ -76,8 +76,15 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  * <p>
  * Parameters nBestCost and nBestExamples work with all tokenizer
  * modes, but it makes the most sense to use them with NORMAL mode.
+ *
+ * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
 public class JapaneseTokenizerFactory extends TokenizerFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "japanese";
+
   private static final String MODE = "mode";
 
   private static final String USER_DICT_PATH = "userDictionary";

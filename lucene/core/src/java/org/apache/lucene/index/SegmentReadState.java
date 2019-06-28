@@ -17,6 +17,8 @@
 package org.apache.lucene.index;
 
 
+import java.util.Map;
+
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat; // javadocs
 import org.apache.lucene.store.Directory;
@@ -49,23 +51,36 @@ public class SegmentReadState {
    *  {@link IndexFileNames#segmentFileName(String,String,String)}). */
   public final String segmentSuffix;
 
+  /**
+   * True iff this SegmentReadState is opened from an IndexWriter.
+   */
+  public final boolean openedFromWriter;
+
+  /**
+   * The reader attributes for this reader. This is used to configure low level options on the codec layer.
+   * This attribute map is user supplied at reader creation time.
+   */
+  public final Map<String, String> readerAttributes;
+
   /** Create a {@code SegmentReadState}. */
   public SegmentReadState(Directory dir, SegmentInfo info,
-      FieldInfos fieldInfos, IOContext context) {
-    this(dir, info, fieldInfos,  context, "");
+                          FieldInfos fieldInfos, boolean openedFromWriter, IOContext context, Map<String, String> readerAttributes) {
+    this(dir, info, fieldInfos, openedFromWriter, context, "", readerAttributes);
   }
   
   /** Create a {@code SegmentReadState}. */
   public SegmentReadState(Directory dir,
                           SegmentInfo info,
                           FieldInfos fieldInfos,
-                          IOContext context,
-                          String segmentSuffix) {
+                          boolean openedFromWriter, IOContext context,
+                          String segmentSuffix, Map<String, String> readerAttributes) {
     this.directory = dir;
     this.segmentInfo = info;
     this.fieldInfos = fieldInfos;
     this.context = context;
     this.segmentSuffix = segmentSuffix;
+    this.openedFromWriter = openedFromWriter;
+    this.readerAttributes = Map.copyOf(readerAttributes);
   }
 
   /** Create a {@code SegmentReadState}. */
@@ -75,6 +90,8 @@ public class SegmentReadState {
     this.segmentInfo = other.segmentInfo;
     this.fieldInfos = other.fieldInfos;
     this.context = other.context;
+    this.openedFromWriter = other.openedFromWriter;
     this.segmentSuffix = newSegmentSuffix;
+    this.readerAttributes = other.readerAttributes;
   }
 }

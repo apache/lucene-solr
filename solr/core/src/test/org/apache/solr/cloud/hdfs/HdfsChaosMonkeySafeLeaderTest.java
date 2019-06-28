@@ -19,7 +19,6 @@ package org.apache.solr.cloud.hdfs;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.ChaosMonkeySafeLeaderTest;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -34,7 +33,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
 public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTest {
   private static MiniDFSCluster dfsCluster;
   
@@ -46,8 +44,12 @@ public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTest {
   
   @AfterClass
   public static void teardownClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+      System.clearProperty("solr.hdfs.blockcache.global");
+    }
   }
   
   @Override
@@ -57,12 +59,9 @@ public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTest {
     // super class may hard code directory
     useFactory("org.apache.solr.core.HdfsDirectoryFactory");
   }
-
   
   @Override
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
-
-
 }

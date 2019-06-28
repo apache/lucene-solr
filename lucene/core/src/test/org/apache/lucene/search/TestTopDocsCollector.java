@@ -192,14 +192,10 @@ public class TestTopDocsCollector extends LuceneTestCase {
     }
   }
 
-  private static class FakeScorer extends Scorer {
+  private static class ScoreAndDoc extends Scorable {
     int doc = -1;
     float score;
     Float minCompetitiveScore = null;
-
-    FakeScorer() {
-      super(null);
-    }
 
     @Override
     public void setMinCompetitiveScore(float minCompetitiveScore) {
@@ -214,16 +210,6 @@ public class TestTopDocsCollector extends LuceneTestCase {
     @Override
     public float score() throws IOException {
       return score;
-    }
-
-    @Override
-    public float getMaxScore(int upTo) throws IOException {
-      return Float.POSITIVE_INFINITY;
-    }
-
-    @Override
-    public DocIdSetIterator iterator() {
-      throw new UnsupportedOperationException();
     }
   }
 
@@ -240,7 +226,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     w.close();
 
     TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, 1);
-    FakeScorer scorer = new FakeScorer();
+    ScoreAndDoc scorer = new ScoreAndDoc();
 
     LeafCollector leafCollector = collector.getLeafCollector(reader.leaves().get(0));
     leafCollector.setScorer(scorer);
@@ -269,7 +255,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
 
     // Make sure the min score is set on scorers on new segments
-    scorer = new FakeScorer();
+    scorer = new ScoreAndDoc();
     leafCollector = collector.getLeafCollector(reader.leaves().get(1));
     leafCollector.setScorer(scorer);
     assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
@@ -300,9 +286,9 @@ public class TestTopDocsCollector extends LuceneTestCase {
     assertEquals(2, reader.leaves().size());
     w.close();
 
-    for (int totalHitsThreshold = 1; totalHitsThreshold < 20; ++ totalHitsThreshold) {
+    for (int totalHitsThreshold = 0; totalHitsThreshold < 20; ++ totalHitsThreshold) {
       TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, totalHitsThreshold);
-      FakeScorer scorer = new FakeScorer();
+      ScoreAndDoc scorer = new ScoreAndDoc();
 
       LeafCollector leafCollector = collector.getLeafCollector(reader.leaves().get(0));
       leafCollector.setScorer(scorer);
@@ -328,8 +314,8 @@ public class TestTopDocsCollector extends LuceneTestCase {
 
       TopDocs topDocs = collector.topDocs();
       assertEquals(4, topDocs.totalHits.value);
-      assertEquals(totalHitsThreshold <= 4, scorer.minCompetitiveScore != null);
-      assertEquals(totalHitsThreshold <= 4 ? TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO : TotalHits.Relation.EQUAL_TO, topDocs.totalHits.relation);
+      assertEquals(totalHitsThreshold < 4, scorer.minCompetitiveScore != null);
+      assertEquals(new TotalHits(4, totalHitsThreshold < 4 ? TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO : TotalHits.Relation.EQUAL_TO), topDocs.totalHits);
     }
 
     reader.close();

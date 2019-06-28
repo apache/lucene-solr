@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.Api;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -194,8 +194,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
               removeTask("running", taskObject.taskId);
               if (exceptionCaught) {
                 addTask("failed", taskObject, true);
-              } else
+              } else {
                 addTask("completed", taskObject, true);
+              }
             }
           });
         } finally {
@@ -371,7 +372,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
    * Method to ensure shutting down of the ThreadPool Executor.
    */
   public void shutdown() {
-    if (parallelExecutor != null && !parallelExecutor.isShutdown())
+    if (parallelExecutor != null)
       ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
   }
 

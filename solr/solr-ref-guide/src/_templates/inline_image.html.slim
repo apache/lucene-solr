@@ -1,0 +1,10 @@
+= html_tag_if((attr? :link), :a, :class=>'image', :href=>(attr :link), :target=>(attr :window), :rel=>link_rel)
+  - if type == 'icon' && (document.attr? :icons, 'font')
+    i class=[*icon_fa_classes, role] title=(attr :title)
+  - elsif type == 'icon' && !(document.attr? :icons)
+    b class=['icon', role] title=(attr :title)
+      | [#{attr :alt}]
+  - else
+    img (src=(type == 'icon' ? (icon_uri target) : (image_uri target))
+         alt=(attr :alt) width=(attr :width) height=(attr :height) title=(attr :title)
+         class=[(type if type != 'image'), role] style=style_value(float: (attr :float)))

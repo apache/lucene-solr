@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -222,13 +223,21 @@ final class BufferedUpdatesStream implements Accountable {
       infoStream.message("BD", "waitApply: " + waitFor.size() + " packets: " + waitFor);
     }
 
+    ArrayList<FrozenBufferedUpdates> pendingPackets = new ArrayList<>();
     long totalDelCount = 0;
     for (FrozenBufferedUpdates packet : waitFor) {
       // Frozen packets are now resolved, concurrently, by the indexing threads that
       // create them, by adding a DocumentsWriter.ResolveUpdatesEvent to the events queue,
       // but if we get here and the packet is not yet resolved, we resolve it now ourselves:
-      packet.apply(writer);
+      if (packet.tryApply(writer) == false) {
+        // if somebody else is currently applying it - move on to the next one and force apply below
+        pendingPackets.add(packet);
+      }
       totalDelCount += packet.totalDelCount;
+    }
+    for (FrozenBufferedUpdates packet : pendingPackets) {
+      // now block on all the packets that were concurrently applied to ensure they are due before we continue.
+      packet.forceApply(writer);
     }
 
     if (infoStream.isEnabled("BD")) {
@@ -336,4 +345,5 @@ final class BufferedUpdatesStream implements Accountable {
       }
     }
   }
+
 }

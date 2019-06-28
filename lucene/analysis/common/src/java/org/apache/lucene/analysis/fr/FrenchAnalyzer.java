@@ -49,6 +49,8 @@ import org.apache.lucene.util.IOUtils;
  *
  * <p><b>NOTE</b>: This class uses the same {@link org.apache.lucene.util.Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
+ *
+ * @since 3.1
  */
 public final class FrenchAnalyzer extends StopwordAnalyzerBase {
 

@@ -21,6 +21,8 @@ import org.apache.lucene.analysis.Analyzer;
 
 /**
  * An Analyzer that uses {@link WhitespaceTokenizer}.
+ *
+ * @since 3.1
  **/
 public final class WhitespaceAnalyzer extends Analyzer {
   

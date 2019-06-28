@@ -305,7 +305,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
     }
 
     // Only wraps common operations for PBF interact
-    abstract class BaseTermsEnum extends TermsEnum {
+    abstract class BaseTermsEnum extends org.apache.lucene.index.BaseTermsEnum {
 
       /* Current term's ord, starts from 0 */
       long ord;

@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.solr.common.util.StrUtils;
-
 import static java.util.Collections.emptyList;
 
 /**A utility class to efficiently parse/store/lookup hierarchical paths which are templatized

@@ -124,7 +124,7 @@ class FreqProxFields extends Fields {
     }
   }
 
-  private static class FreqProxTermsEnum extends TermsEnum {
+  private static class FreqProxTermsEnum extends BaseTermsEnum {
     final FreqProxTermsWriterPerField terms;
     final int[] sortedTermIDs;
     final FreqProxPostingsArray postingsArray;

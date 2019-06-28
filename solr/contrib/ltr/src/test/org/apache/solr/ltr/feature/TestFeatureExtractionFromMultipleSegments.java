@@ -20,11 +20,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
 
 
 public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
@@ -91,7 +91,7 @@ public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
     query.add("fl", "*, score,id,normHits,description,fv:[features store='feature-store-6' format='dense' efi.user_text='apple']");
     String res = restTestHarness.query("/query" + query.toQueryString());
 
-    Map<String,Object> resultJson = (Map<String,Object>) ObjectBuilder.fromJSON(res);
+    Map<String,Object> resultJson = (Map<String,Object>) Utils.fromJSONString(res);
 
     List<Map<String,Object>> docs = (List<Map<String,Object>>)((Map<String,Object>)resultJson.get("response")).get("docs");
     int passCount = 0;

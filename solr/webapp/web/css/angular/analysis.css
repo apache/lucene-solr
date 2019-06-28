@@ -82,7 +82,7 @@ limitations under the License.
 
 #content #analysis .settings #tor_schema span
 {
-//  display: none;
+/*  display: none;  */
 }
 
 #content #analysis .settings #tor_schema:hover span

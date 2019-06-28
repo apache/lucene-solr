@@ -120,4 +120,31 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
           //#Deletes
           DEL_COUNT+"=sum(//lst[@name='segments']/lst/int[@name='delCount'])");
   }
+
+  @Test
+  public void testCoreInfo() {
+    assertQ("Missing core info",
+        req("qt", "/admin/segments", "coreInfo", "true"),
+        "boolean(//lst[@name='info']/lst[@name='core'])");
+  }
+
+  @Test
+  public void testFieldInfo() throws Exception {
+    String[] segmentNamePatterns = new String[NUM_SEGMENTS];
+    h.getCore().withSearcher((searcher) -> {
+      int i = 0;
+      for (SegmentCommitInfo sInfo : SegmentInfos.readLatestCommit(searcher.getIndexReader().directory())) {
+        assertTrue("Unexpected number of segment in the index: " + i, i < NUM_SEGMENTS);
+        segmentNamePatterns[i] = "boolean(//lst[@name='segments']/lst[@name='" + sInfo.info.name + "']/lst[@name='fields']/lst[@name='id']/str[@name='flags'])";
+        i++;
+      }
+
+      return null;
+    });
+    assertQ("Unexpected field infos returned",
+        req("qt","/admin/segments", "fieldInfo", "true"),
+        segmentNamePatterns);
+  }
+
+
 }

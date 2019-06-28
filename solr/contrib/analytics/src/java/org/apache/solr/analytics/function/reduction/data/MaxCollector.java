@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.reduction.data;
 
 import java.util.function.Consumer;
 
-import org.apache.solr.analytics.function.reduction.data.ReductionData;
 import org.apache.solr.analytics.stream.reservation.DoubleCheckedReservation;
 import org.apache.solr.analytics.stream.reservation.FloatCheckedReservation;
 import org.apache.solr.analytics.stream.reservation.IntCheckedReservation;

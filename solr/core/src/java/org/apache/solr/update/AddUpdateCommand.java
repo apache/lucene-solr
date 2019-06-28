@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -63,6 +64,9 @@ public class AddUpdateCommand extends UpdateCommand {
 
   public boolean isLastDocInBatch = false;
 
+  /** Is this a nested update, null means not yet calculated. */
+  public Boolean isNested = null;
+
   // optional id in "internal" indexed form... if it is needed and not supplied,
   // it will be obtained from the doc.
   private BytesRef indexedId;
@@ -95,11 +99,14 @@ public class AddUpdateCommand extends UpdateCommand {
    * Nested documents, if found, will cause an exception to be thrown.  Call {@link #getLuceneDocsIfNested()} for that.
    * Any changes made to the returned Document will not be reflected in the SolrInputDocument, or future calls to this
    * method.
-   * Note that the behavior of this is sensitive to {@link #isInPlaceUpdate()}.
-   */
+   * Note that the behavior of this is sensitive to {@link #isInPlaceUpdate()}.*/
    public Document getLuceneDocument() {
      final boolean ignoreNestedDocs = false; // throw an exception if found
-     return DocumentBuilder.toDocument(getSolrInputDocument(), req.getSchema(), isInPlaceUpdate(), ignoreNestedDocs);
+     SolrInputDocument solrInputDocument = getSolrInputDocument();
+     if (!isInPlaceUpdate() && getReq().getSchema().isUsableForChildDocs()) {
+       addRootField(solrInputDocument, getRootIdUsingRouteParam());
+     }
+     return DocumentBuilder.toDocument(solrInputDocument, req.getSchema(), isInPlaceUpdate(), ignoreNestedDocs);
    }
 
   /** Returns the indexed ID for this document.  The returned BytesRef is retained across multiple calls, and should not be modified. */
@@ -145,6 +152,14 @@ public class AddUpdateCommand extends UpdateCommand {
       }
     }
      return "(null)";
+   }
+
+  /**
+   *
+   * @return value of _route_ param({@link ShardParams#_ROUTE_}), otherwise doc id.
+   */
+  public String getRootIdUsingRouteParam() {
+     return req.getParams().get(ShardParams._ROUTE_, getHashableId());
    }
 
   /**
@@ -194,18 +209,30 @@ public class AddUpdateCommand extends UpdateCommand {
       return null; // caller should call getLuceneDocument() instead
     }
 
-    String rootId = getHashableId();
-
-    boolean isVersion = version != 0;
+    final String rootId = getRootIdUsingRouteParam();
+    final SolrInputField versionSif = solrDoc.get(CommonParams.VERSION_FIELD);
 
     for (SolrInputDocument sdoc : all) {
-      sdoc.setField(IndexSchema.ROOT_FIELD_NAME, rootId);
-      if(isVersion) sdoc.setField(CommonParams.VERSION_FIELD, version);
+      addRootField(sdoc, rootId);
+      if (versionSif != null) {
+        addVersionField(sdoc, versionSif);
+      }
       // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
       // then we could add this field to the generated lucene document instead.
     }
 
     return () -> all.stream().map(sdoc -> DocumentBuilder.toDocument(sdoc, req.getSchema())).iterator();
+  }
+
+  private void addRootField(SolrInputDocument sdoc, String rootId) {
+    sdoc.setField(IndexSchema.ROOT_FIELD_NAME, rootId);
+  }
+
+  private void addVersionField(SolrInputDocument sdoc, SolrInputField versionSif) {
+    // Reordered delete-by-query assumes all documents have a version, see SOLR-10114
+    // all docs in hierarchy should have the same version.
+    // Either fetch the version from the root doc or compute it and propagate it.
+    sdoc.put(CommonParams.VERSION_FIELD, versionSif);
   }
 
   private List<SolrInputDocument> flatten(SolrInputDocument root) {

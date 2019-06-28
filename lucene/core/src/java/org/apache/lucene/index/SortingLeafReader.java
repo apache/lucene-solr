@@ -24,11 +24,9 @@ import java.util.Map;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMFile;
-import org.apache.lucene.store.RAMInputStream;
-import org.apache.lucene.store.RAMOutputStream;
+import org.apache.lucene.store.ByteBuffersDataInput;
+import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
@@ -344,8 +342,13 @@ class SortingLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public int getNumDimensions() throws IOException {
-      return in.getNumDimensions();
+    public int getNumDataDimensions() throws IOException {
+      return in.getNumDataDimensions();
+    }
+
+    @Override
+    public int getNumIndexDimensions() throws IOException {
+      return in.getNumIndexDimensions();
     }
 
     @Override
@@ -851,7 +854,7 @@ class SortingLeafReader extends FilterLeafReader {
     private long[] offsets;
     private final int upto;
 
-    private final IndexInput postingInput;
+    private final ByteBuffersDataInput postingInput;
     private final boolean storeOffsets;
 
     private int docIt = -1;
@@ -861,7 +864,7 @@ class SortingLeafReader extends FilterLeafReader {
     private final BytesRef payload;
     private int currFreq;
 
-    private final RAMFile file;
+    private final ByteBuffersDataOutput buffer;
 
     SortingPostingsEnum(int maxDoc, SortingPostingsEnum reuse, final PostingsEnum in, Sorter.DocMap docMap, boolean storeOffsets) throws IOException {
       super(in);
@@ -871,7 +874,8 @@ class SortingLeafReader extends FilterLeafReader {
         docs = reuse.docs;
         offsets = reuse.offsets;
         payload = reuse.payload;
-        file = reuse.file;
+        buffer = reuse.buffer;
+        buffer.reset();
         if (reuse.maxDoc == maxDoc) {
           sorter = reuse.sorter;
         } else {
@@ -881,10 +885,10 @@ class SortingLeafReader extends FilterLeafReader {
         docs = new int[32];
         offsets = new long[32];
         payload = new BytesRef(32);
-        file = new RAMFile();
+        buffer = ByteBuffersDataOutput.newResettableInstance();
         sorter = new DocOffsetSorter(maxDoc);
       }
-      final IndexOutput out = new RAMOutputStream(file, false);
+
       int doc;
       int i = 0;
       while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -894,15 +898,15 @@ class SortingLeafReader extends FilterLeafReader {
           offsets = ArrayUtil.growExact(offsets, newLength);
         }
         docs[i] = docMap.oldToNew(doc);
-        offsets[i] = out.getFilePointer();
-        addPositions(in, out);
+        offsets[i] = buffer.size();
+        addPositions(in, buffer);
         i++;
       }
       upto = i;
       sorter.reset(docs, offsets);
       sorter.sort(0, upto);
-      out.close();
-      this.postingInput = new RAMInputStream("", file);
+
+      this.postingInput = buffer.toDataInput();
     }
 
     // for testing
@@ -913,7 +917,7 @@ class SortingLeafReader extends FilterLeafReader {
       return docs == ((SortingPostingsEnum) other).docs;
     }
 
-    private void addPositions(final PostingsEnum in, final IndexOutput out) throws IOException {
+    private void addPositions(final PostingsEnum in, final DataOutput out) throws IOException {
       int freq = in.freq();
       out.writeVInt(freq);
       int previousPosition = 0;

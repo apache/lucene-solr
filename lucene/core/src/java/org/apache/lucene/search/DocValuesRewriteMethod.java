@@ -70,6 +70,13 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
     
     /** Returns the field name for this query */
     public final String getField() { return query.getField(); }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      if (visitor.acceptField(query.getField())) {
+        visitor.visitLeaf(this);
+      }
+    }
     
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
@@ -150,7 +157,7 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
             }
           } while (termsEnum.next() != null);
 
-          return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(fcsi) {
+          return new ConstantScoreScorer(this, score(), scoreMode, new TwoPhaseIterator(fcsi) {
 
             @Override
             public boolean matches() throws IOException {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -87,14 +88,11 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
                  ZkController.generateNodeName("foo-bar", "77", "/solr/sub_dir/"));
 
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
 
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       try (SolrZkClient client = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
 
@@ -169,15 +167,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReadConfigName() throws Exception {
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
     CoreContainer cc = null;
 
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
       String actualConfigName = "firstConfig";
@@ -221,15 +216,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   public void testGetHostName() throws Exception {
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
     CoreContainer cc = null;
 
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       cc = getCoreContainer();
       ZkController zkController = null;
@@ -273,7 +265,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
     assumeWorkingMockito();
     final String collectionName = "testPublishAndWaitForDownStates";
-    String zkDir = createTempDir(collectionName).toFile().getAbsolutePath();
+    Path zkDir = createTempDir(collectionName);
     CoreContainer cc = null;
 
     String nodeName = "127.0.0.1:8983_solr";
@@ -281,9 +273,6 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       cc = new MockCoreContainer()  {
         @Override
@@ -336,8 +325,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
 
         long now = System.nanoTime();
-        long timeout = now + TimeUnit.NANOSECONDS.convert(ZkController.WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        zkController.publishAndWaitForDownStates();
+        long timeout = now + TimeUnit.NANOSECONDS.convert(5, TimeUnit.SECONDS);
+        zkController.publishAndWaitForDownStates(5);
         assertTrue("The ZkController.publishAndWaitForDownStates should have timed out but it didn't", System.nanoTime() >= timeout);
       } finally {
         if (zkController != null)

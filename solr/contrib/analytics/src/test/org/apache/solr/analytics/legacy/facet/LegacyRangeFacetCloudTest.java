@@ -21,7 +21,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.NamedList;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 
@@ -44,9 +44,8 @@ public class LegacyRangeFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
   static ArrayList<ArrayList<Float>> floatDoubleTestStart; 
   static ArrayList<ArrayList<Float>> floatDateTestStart; 
   
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    cleanIndex();
+  @Before
+  public void beforeTest() throws Exception {
     
     //INT
     intLongTestStart = new ArrayList<>();

@@ -53,7 +53,13 @@ public class UniqueBlockAgg extends UniqueAgg {
       Arrays.fill(counts, 0);
       Arrays.fill(lastSeenValuesPerSlot, Integer.MIN_VALUE);
     }
-    
+
+    @Override
+    public void resize(Resizer resizer) {
+      lastSeenValuesPerSlot = resizer.resize(lastSeenValuesPerSlot, Integer.MIN_VALUE);
+      super.resize(resizer);
+    }
+
     @Override
     public Object getValue(int slot) throws IOException {
       return counts[slot];

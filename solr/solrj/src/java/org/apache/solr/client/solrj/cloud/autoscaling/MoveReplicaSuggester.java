@@ -49,6 +49,7 @@ public class MoveReplicaSuggester extends Suggester {
     List<Pair<ReplicaInfo, Row>> validReplicas = getValidReplicas(true, true, -1);
     validReplicas.sort(leaderLast);
     for (int i1 = 0; i1 < validReplicas.size(); i1++) {
+      lastBestDeviation = null;
       Pair<ReplicaInfo, Row> fromReplica = validReplicas.get(i1);
       Row fromRow = fromReplica.second();
       ReplicaInfo ri = fromReplica.first();
@@ -59,12 +60,10 @@ public class MoveReplicaSuggester extends Suggester {
       for (int j = session.matrix.size() - 1; j >= stopAt; j--) {
         targetRow = session.matrix.get(j);
         if (targetRow.node.equals(fromRow.node)) continue;
-        if (!isNodeSuitableForReplicaAddition(targetRow)) continue;
+        if (!isNodeSuitableForReplicaAddition(targetRow, fromRow)) continue;
         targetRow = targetRow.addReplica(ri.getCollection(), ri.getShard(), ri.getType(), strict); // add replica to target first
         Row srcRowModified = targetRow.session.getNode(fromRow.node).removeReplica(ri.getCollection(), ri.getShard(), ri.getType());//then remove replica from source node
-        double[] deviation = new double[1];
-        List<Violation> errs = testChangedMatrix(strict, srcRowModified.session, deviation);
-        srcRowModified.session.applyRules(); // now resort the nodes with the new values
+        List<Violation> errs = testChangedMatrix(strict, srcRowModified.session);
         Policy.Session tmpSession = srcRowModified.session;
 
         if (!containsNewErrors(errs) &&

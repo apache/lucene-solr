@@ -91,4 +91,5 @@ public interface HighlightParams {
   public static final String PHRASE_LIMIT = HIGHLIGHT + ".phraseLimit"; // FVH
   public static final String OFFSET_SOURCE = HIGHLIGHT + ".offsetSource"; // UH
   public static final String CACHE_FIELD_VAL_CHARS_THRESHOLD = HIGHLIGHT + ".cacheFieldValCharsThreshold"; // UH
+  public static final String WEIGHT_MATCHES = HIGHLIGHT + ".weightMatches"; // UH
 }

@@ -40,7 +40,7 @@ public class ReplicaPosition implements Comparable<ReplicaPosition> {
   public int compareTo(ReplicaPosition that) {
     //this is to ensure that we try one replica from each shard first instead of
     // all replicas from same shard
-    return that.index > index ? -1 : that.index == index ? 0 : 1;
+    return Integer.compare(index, that.index);
   }
 
   @Override

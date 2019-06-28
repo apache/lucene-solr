@@ -18,11 +18,14 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
+import java.util.ArrayList;
+
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.util.StrUtils;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Clause.parseString;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.perNodeSuggestions;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.suggestNegativeViolations;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Suggestion.suggestPositiveViolations;
 import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
 
 public class VariableBase implements Variable {
@@ -34,7 +37,21 @@ public class VariableBase implements Variable {
 
   @Override
   public void getSuggestions(Suggestion.Ctx ctx) {
-    perNodeSuggestions(ctx);
+    if (ctx.violation == null) return;
+    if (ctx.violation.replicaCountDelta > 0) {
+      suggestPositiveViolations(ctx);
+    } else {
+      suggestNegativeViolations(ctx, ArrayList::new);
+    }
+  }
+
+  @Override
+  public String postValidate(Condition condition) {
+    if(Clause.IGNORE_TAGS.contains(condition.getName())) return null;
+    if(condition.getOperand() == Operand.WILDCARD && condition.clause.nodeSetPresent){
+      return "#EACH not supported in tags in nodeset";
+    }
+    return null;
   }
 
   static Object getOperandAdjustedValue(Object val, Object original) {
@@ -76,7 +93,7 @@ public class VariableBase implements Variable {
 
   public static Type getTagType(String name) {
     Type info = Type.get(name);
-    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = Type.STRING;
+    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = Type.SYSPROP;
     if (info == null && name.startsWith(Clause.METRICS_PREFIX)) info = Type.LAZY;
     return info;
   }
@@ -177,7 +194,7 @@ public class VariableBase implements Variable {
 
     @Override
     public void getSuggestions(Suggestion.Ctx ctx) {
-      perNodeSuggestions(ctx);
+      suggestPositiveViolations(ctx);
     }
   }
 
@@ -188,7 +205,7 @@ public class VariableBase implements Variable {
 
     @Override
     public void getSuggestions(Suggestion.Ctx ctx) {
-      perNodeSuggestions(ctx);
+      suggestPositiveViolations(ctx);
     }
   }
 }

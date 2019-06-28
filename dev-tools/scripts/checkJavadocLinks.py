@@ -44,6 +44,7 @@ class FindHyperlinks(HTMLParser):
     if tag not in ('link', 'meta', 'frame', 'br', 'hr', 'p', 'li', 'img', 'col', 'a'):
       self.stack.append(tag)
     if tag == 'a':
+      id = None
       name = None
       href = None
       for attName, attValue in attrs:
@@ -51,6 +52,8 @@ class FindHyperlinks(HTMLParser):
           name = attValue
         elif attName == 'href':
           href = attValue
+        elif attName == 'id':
+          id = attValue
 
       if name is not None:
         assert href is None
@@ -72,12 +75,8 @@ class FindHyperlinks(HTMLParser):
         assert name is None
         href = href.strip()
         self.links.append(urlparse.urljoin(self.baseURL, href))
-      else:
-        if self.baseURL.endswith('/AttributeSource.html'):
-          # LUCENE-4010: AttributeSource's javadocs has an unescaped <A> generics!!  Seems to be a javadocs bug... (fixed in Java 7)
-          pass
-        else:
-          raise RuntimeError('couldn\'t find an href nor name in link in %s: only got these attrs: %s' % (self.baseURL, attrs))
+      elif id is None:
+        raise RuntimeError('couldn\'t find an href nor name in link in %s: only got these attrs: %s' % (self.baseURL, attrs))
 
   def handle_endtag(self, tag):
     if tag in ('link', 'meta', 'frame', 'br', 'hr', 'p', 'li', 'img', 'col', 'a'):

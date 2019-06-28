@@ -16,11 +16,11 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
 import java.util.Arrays;
 
-public class PrimUtilsTest extends LuceneTestCase {
+public class PrimUtilsTest extends SolrTestCase {
 
   public void testSort() {
     int maxSize = 100;

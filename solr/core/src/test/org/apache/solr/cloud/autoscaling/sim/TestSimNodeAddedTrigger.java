@@ -36,8 +36,8 @@ import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerValidationException;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrResourceLoader;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -60,17 +60,19 @@ public class TestSimNodeAddedTrigger extends SimSolrCloudTestCase {
 
   private static TimeSource timeSource;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(1, TimeSource.get("simTime:" + SPEED));
-    timeSource = cluster.getTimeSource();
-  }
-
   @Before
   public void beforeTest() throws Exception {
+    configureCluster(1, TimeSource.get("simTime:" + SPEED));
+    timeSource = cluster.getTimeSource();
+    
     actionConstructorCalled = new AtomicBoolean(false);
     actionInitCalled = new AtomicBoolean(false);
     actionCloseCalled = new AtomicBoolean(false);
+  }
+  
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test

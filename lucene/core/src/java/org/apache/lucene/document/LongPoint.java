@@ -62,8 +62,8 @@ public final class LongPoint extends Field {
 
   /** Change the values of this field */
   public void setLongValues(long... point) {
-    if (type.pointDimensionCount() != point.length) {
-      throw new IllegalArgumentException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot change to (incoming) " + point.length + " dimensions");
+    if (type.pointDataDimensionCount() != point.length) {
+      throw new IllegalArgumentException("this field (name=" + name + ") uses " + type.pointDataDimensionCount() + " dimensions; cannot change to (incoming) " + point.length + " dimensions");
     }
     fieldsData = pack(point);
   }
@@ -75,8 +75,8 @@ public final class LongPoint extends Field {
 
   @Override
   public Number numericValue() {
-    if (type.pointDimensionCount() != 1) {
-      throw new IllegalStateException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot convert to a single numeric value");
+    if (type.pointDataDimensionCount() != 1) {
+      throw new IllegalStateException("this field (name=" + name + ") uses " + type.pointDataDimensionCount() + " dimensions; cannot convert to a single numeric value");
     }
     BytesRef bytes = (BytesRef) fieldsData;
     assert bytes.length == Long.BYTES;
@@ -119,7 +119,7 @@ public final class LongPoint extends Field {
     result.append(':');
 
     BytesRef bytes = (BytesRef) fieldsData;
-    for (int dim = 0; dim < type.pointDimensionCount(); dim++) {
+    for (int dim = 0; dim < type.pointDataDimensionCount(); dim++) {
       if (dim > 0) {
         result.append(',');
       }

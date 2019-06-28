@@ -17,11 +17,14 @@
 
 package org.apache.solr.cloud;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.util.TestInjection;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,21 +38,22 @@ public class TestPrepRecovery extends SolrCloudTestCase {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
     // the default is 180s and our waitForState times out in 90s
-    // so we lower this to 10s so that we can still test timeouts
-    System.setProperty("leaderConflictResolveWait", "10000");
-
+    // so we lower this so that we can still test timeouts
+    System.setProperty("leaderConflictResolveWait", "5000");
+    System.setProperty("prepRecoveryReadTimeoutExtraWait", "1000");
+    
     configureCluster(2)
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
   }
 
+  @AfterClass
   public static void tearCluster() throws Exception {
     System.clearProperty("leaderConflictResolveWait");
   }
 
   @Test
-// 12-Jun-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testLeaderUnloaded() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
 
@@ -85,7 +89,6 @@ public class TestPrepRecovery extends SolrCloudTestCase {
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testLeaderNotResponding() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
 
@@ -102,11 +105,12 @@ public class TestPrepRecovery extends SolrCloudTestCase {
           .process(solrClient);
 
       // in the absence of fixes made in SOLR-9716, prep recovery waits forever and the following statement
-      // times out in 90 seconds
+      // times out
       waitForState("Expected collection: testLeaderNotResponding to be live with 1 shard and 2 replicas",
-          collectionName, clusterShape(1, 2));
+          collectionName, clusterShape(1, 2), 30, TimeUnit.SECONDS);
     } finally {
-      TestInjection.reset();
+      TestInjection.prepRecoveryOpPauseForever = null;
+      TestInjection.notifyPauseForeverDone();
     }
   }
 }

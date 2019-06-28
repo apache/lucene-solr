@@ -166,26 +166,17 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       assertEquals("There should not be cores", 0, cores.getCores().size());
       
       // try and remove a core that does not exist
-      try {
+      SolrException thrown = expectThrows(SolrException.class, () -> {
         cores.unload("non_existent_core");
-        fail("Should have thrown an exception when unloading a non-existent core");
-      }
-      catch (SolrException e) {
-        assertThat(e.getMessage(), containsString("Cannot unload non-existent core [non_existent_core]"));
-      }
+      });
+      assertThat(thrown.getMessage(), containsString("Cannot unload non-existent core [non_existent_core]"));
+
 
       // try and remove a null core
-      try {
+      thrown = expectThrows(SolrException.class, () -> {
         cores.unload(null);
-        fail("Should have thrown an exception when unloading a null core");
-      }
-      catch (Exception e) {
-        if (!(e instanceof SolrException)) {
-          fail("Should not have thrown SolrException but got " + e);
-        }
-        assertThat(e.getMessage(), containsString("Cannot unload non-existent core [null]"));
-      }
-
+      });
+      assertThat(thrown.getMessage(), containsString("Cannot unload non-existent core [null]"));
     } finally {
       cores.shutdown();
     }
@@ -411,16 +402,13 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // -----
     // try to add a collection with a configset that doesn't exist
-    try {
-      ignoreException(Pattern.quote("bogus_path"));
+    ignoreException(Pattern.quote("bogus_path"));
+    SolrException thrown = expectThrows(SolrException.class, () -> {
       cc.create("bogus", ImmutableMap.of("configSet", "bogus_path"));
-      fail("bogus inst dir failed to trigger exception from create");
-    } catch (SolrException e) {
-      Throwable cause = Throwables.getRootCause(e);
-      assertTrue("init exception doesn't mention bogus dir: " + cause.getMessage(),
-          0 < cause.getMessage().indexOf("bogus_path"));
-
-    }
+    });
+    Throwable rootCause = Throwables.getRootCause(thrown);
+    assertTrue("init exception doesn't mention bogus dir: " + rootCause.getMessage(),
+        0 < rootCause.getMessage().indexOf("bogus_path"));
 
     // check that we have the cores we expect
     cores = cc.getLoadedCoreNames();
@@ -439,16 +427,13 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
     // check that we get a 500 accessing the core with an init failure
-    try {
+    thrown = expectThrows(SolrException.class, () -> {
       SolrCore c = cc.getCore("bogus");
-      fail("Failed to get Exception on accessing core with init failure");
-    } catch (SolrException ex) {
-      assertEquals(500, ex.code());
-      String cause = Throwables.getRootCause(ex).getMessage();
-      assertTrue("getCore() ex cause doesn't mention init fail: " + cause,
-          0 < cause.indexOf("bogus_path"));
-
-    }
+    });
+    assertEquals(500, thrown.code());
+    String cause = Throwables.getRootCause(thrown).getMessage();
+    assertTrue("getCore() ex cause doesn't mention init fail: " + cause,
+        0 < cause.indexOf("bogus_path"));
 
     cc.shutdown();
   }
@@ -494,16 +479,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
     // check that we get a 500 accessing the core with an init failure
-    try {
+    SolrException thrown = expectThrows(SolrException.class, () -> {
       SolrCore c = cc.getCore("col_bad");
-      fail("Failed to get Exception on accessing core with init failure");
-    } catch (SolrException ex) {
-      assertEquals(500, ex.code());
-      // double wrapped
-      String cause = ex.getCause().getCause().getMessage();
-      assertTrue("getCore() ex cause doesn't mention init fail: " + cause,
-          0 < cause.indexOf("DummyMergePolicy"));
-    }
+    });
+    assertEquals(500, thrown.code());
+    String cause = thrown.getCause().getCause().getMessage();
+    assertTrue("getCore() ex cause doesn't mention init fail: " + cause, 0 < cause.indexOf("DummyMergePolicy"));
 
     // -----
     // "fix" the bad collection
@@ -528,15 +509,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // -----
     // try to add a collection with a path that doesn't exist
-    try {
-      ignoreException(Pattern.quote("bogus_path"));
+    ignoreException(Pattern.quote("bogus_path"));
+    thrown = expectThrows(SolrException.class, () -> {
       cc.create("bogus", ImmutableMap.of("configSet", "bogus_path"));
-      fail("bogus inst dir failed to trigger exception from create");
-    } catch (SolrException e) {
-      assertTrue("init exception doesn't mention bogus dir: " + e.getCause().getCause().getMessage(),
-          0 < e.getCause().getCause().getMessage().indexOf("bogus_path"));
-
-    }
+    });
+    assertTrue("init exception doesn't mention bogus dir: " + thrown.getCause().getCause().getMessage(),
+        0 < thrown.getCause().getCause().getMessage().indexOf("bogus_path"));
 
     // check that we have the cores we expect
     cores = cc.getLoadedCoreNames();
@@ -557,16 +535,13 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
     // check that we get a 500 accessing the core with an init failure
-    try {
+    thrown = expectThrows(SolrException.class, () -> {
       SolrCore c = cc.getCore("bogus");
-      fail("Failed to get Exception on accessing core with init failure");
-    } catch (SolrException ex) {
-      assertEquals(500, ex.code());
-      // double wrapped
-      String cause = ex.getCause().getMessage();
-      assertTrue("getCore() ex cause doesn't mention init fail: " + cause,
-          0 < cause.indexOf("bogus_path"));
-    }
+    });
+    assertEquals(500, thrown.code());
+    cause = thrown.getCause().getMessage();
+    assertTrue("getCore() ex cause doesn't mention init fail: " + cause,
+        0 < cause.indexOf("bogus_path"));
 
     // -----
     // break col_bad's config and try to RELOAD to add failure
@@ -578,19 +553,16 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
             "This is giberish, not valid XML <",
             IOUtils.UTF_8);
 
-    try {
-      ignoreException(Pattern.quote("SAX"));
-      cc.reload("col_bad");
-      fail("corrupt solrconfig.xml failed to trigger exception from reload");
-    } catch (SolrException e) {
-      Throwable rootException = getWrappedException(e);
-      assertTrue("We're supposed to have a wrapped SAXParserException here, but we don't",
-          rootException instanceof SAXParseException);
-      SAXParseException se = (SAXParseException) rootException;
-      assertTrue("reload exception doesn't refer to slrconfig.xml " + se.getSystemId(),
-          0 < se.getSystemId().indexOf("solrconfig.xml"));
-
-    }
+    ignoreException(Pattern.quote("SAX"));
+    thrown = expectThrows(SolrException.class,
+        "corrupt solrconfig.xml failed to trigger exception from reload",
+        () -> { cc.reload("col_bad"); });
+    Throwable rootException = getWrappedException(thrown);
+    assertTrue("We're supposed to have a wrapped SAXParserException here, but we don't",
+        rootException instanceof SAXParseException);
+    SAXParseException se = (SAXParseException) rootException;
+    assertTrue("reload exception doesn't refer to slrconfig.xml " + se.getSystemId(),
+        0 < se.getSystemId().indexOf("solrconfig.xml"));
 
     assertEquals("Failed core reload should not have changed start time",
         col_bad_old_start, getCoreStartTime(cc, "col_bad"));

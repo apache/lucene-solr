@@ -31,7 +31,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
@@ -53,7 +53,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     doc.add(newTextField("field", "a b c", Field.Store.NO));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    TermsEnum te = MultiFields.getTerms(r, "field").iterator();
+    TermsEnum te = MultiTerms.getTerms(r, "field").iterator();
 
     // Test next()
     assertEquals(new BytesRef("a"), te.next());
@@ -114,7 +114,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     }
     w.forceMerge(1);
     IndexReader r = w.getReader();
-    TermsEnum te = MultiFields.getTerms(r, "field").iterator();
+    TermsEnum te = MultiTerms.getTerms(r, "field").iterator();
 
     assertTrue(te.seekExact(new BytesRef("mo")));
     assertEquals(27, te.ord());
@@ -190,7 +190,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     }
     w.forceMerge(1);
     IndexReader r = w.getReader();
-    TermsEnum te = MultiFields.getTerms(r, "field").iterator();
+    TermsEnum te = MultiTerms.getTerms(r, "field").iterator();
 
     if (VERBOSE) {
       while (te.next() != null) {
@@ -250,7 +250,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     }
     w.forceMerge(1);
     IndexReader r = DirectoryReader.open(w);
-    TermsEnum te = MultiFields.getTerms(r, "field").iterator();
+    TermsEnum te = MultiTerms.getTerms(r, "field").iterator();
 
     if (VERBOSE) {
       BytesRef term;
@@ -300,7 +300,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     }
     w.forceMerge(1);
     IndexReader r = DirectoryReader.open(w);
-    TermsEnum te = MultiFields.getTerms(r, "field").iterator();
+    TermsEnum te = MultiTerms.getTerms(r, "field").iterator();
 
     BytesRef term;
     int ord = 0;
@@ -338,7 +338,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     }
     w.forceMerge(1);
     IndexReader r = DirectoryReader.open(w);
-    TermsEnum te = MultiFields.getTerms(r, "body").iterator();
+    TermsEnum te = MultiTerms.getTerms(r, "body").iterator();
 
     for(int i=0;i<30;i++) {
       for(int j=0;j<30;j++) {
@@ -380,7 +380,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
 
     w.forceMerge(1);
     IndexReader r = w.getReader();
-    TermsEnum te = MultiFields.getTerms(r, "field").iterator();
+    TermsEnum te = MultiTerms.getTerms(r, "field").iterator();
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef(new byte[] {0x22})));
     assertEquals("a", te.term().utf8ToString());
     assertEquals(1L, te.ord());

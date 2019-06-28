@@ -28,7 +28,6 @@ import org.apache.lucene.validation.ivyde.IvyNodeElementAdapter;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
-import org.apache.tools.ant.types.LogLevel;
 import org.apache.tools.ant.types.Resource;
 import org.apache.tools.ant.types.ResourceCollection;
 import org.apache.tools.ant.types.resources.FileResource;
@@ -36,11 +35,14 @@ import org.apache.tools.ant.types.resources.Resources;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.helpers.DefaultHandler;
-import org.xml.sax.helpers.XMLReaderFactory;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -93,6 +95,14 @@ public class LibVersionsCheckTask extends Task {
   private static final Pattern MODULE_NAME_PATTERN = Pattern.compile("\\smodule\\s*=\\s*[\"']([^\"']+)[\"']");
   private static final Pattern MODULE_DIRECTORY_PATTERN 
       = Pattern.compile(".*[/\\\\]((?:lucene|solr)[/\\\\].*)[/\\\\].*");
+  private static final SAXParserFactory SAX_PARSER_FACTORY = SAXParserFactory.newDefaultInstance();
+  static {
+    try {
+      SAX_PARSER_FACTORY.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+    } catch (SAXNotRecognizedException | SAXNotSupportedException | ParserConfigurationException e) {
+      throw new Error(e);
+    }
+  }
   private Ivy ivy;
 
   /**
@@ -826,11 +836,9 @@ public class LibVersionsCheckTask extends Task {
   private boolean checkIvyXmlFile(File ivyXmlFile)
       throws ParserConfigurationException, SAXException, IOException {
     log("Scanning: " + ivyXmlFile.getPath(), verboseLevel);
-    XMLReader xmlReader = XMLReaderFactory.createXMLReader();
+    SAXParser xmlReader = SAX_PARSER_FACTORY.newSAXParser();
     DependencyRevChecker revChecker = new DependencyRevChecker(ivyXmlFile); 
-    xmlReader.setContentHandler(revChecker);
-    xmlReader.setErrorHandler(revChecker);
-    xmlReader.parse(new InputSource(ivyXmlFile.getAbsolutePath()));
+    xmlReader.parse(new InputSource(ivyXmlFile.getAbsolutePath()), revChecker);
     return ! revChecker.fail;
   }
 

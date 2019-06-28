@@ -20,10 +20,6 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.apache.lucene.store.BaseLockFactoryTestCase;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.SingleInstanceLockFactory;
-import org.apache.lucene.store.SleepingLockWrapper;
 import org.apache.lucene.util.TestUtil;
 
 /** Simple tests for SleepingLockWrapper */

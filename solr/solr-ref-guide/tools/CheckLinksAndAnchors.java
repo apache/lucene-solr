@@ -59,7 +59,7 @@ import org.jsoup.select.NodeVisitor;
  * <li>
  * Asciidoctor doesn't do a good job of rectifying situations where multiple documents are included in one
  * massive (PDF) document may have identical anchors (either explicitly defined, or implicitly defined because of
- * section headings).  Asciidoctor also doesn't support linking directly to another (included) asciidoc 
+ * section headings).  Asciidoctor also doesn't support linking directly to another (included) asciidoc
  * document by name, unless there is an explicit '#fragement' used in the link.
  * </li>
  * <li>
@@ -75,7 +75,7 @@ import org.jsoup.select.NodeVisitor;
  *
  * <p>
  * This tool parses the generated HTML site, looking for these situations in order to fail the build, since
- * (depending on the type of check) these situations will result in inconsistent/broken HTML, or equivilent
+ * (depending on the type of check) these situations will result in inconsistent/broken HTML, or equivalent
  * problems in the generated PDF.
  * </p>
  * <p>
@@ -83,39 +83,39 @@ import org.jsoup.select.NodeVisitor;
  * </p>
  * <ul>
  *  <li><b>-check-all-relative-links</b><br />
- *    <p>By default, only relative links to files in the same directory (ie: not startin with 
- *       <code>"../"</code> are checked for existence.  This means that we can do a "quick" validatation of 
- *       links to other ref-guide files, but ignore relative links to things outside of the ref-guide -- 
- *       such as javadocs that we may not currently have built.  If this option is specified then we 
+ *    <p>By default, only relative links to files in the same directory (ie: not startin with
+ *       <code>"../"</code> are checked for existence.  This means that we can do a "quick" validatation of
+ *       links to other ref-guide files, but ignore relative links to things outside of the ref-guide --
+ *       such as javadocs that we may not currently have built.  If this option is specified then we
  *       <em>also</em> check relative links where the path starts with <code>"../"</code>
  *    </p>
  *  </li>
  *  <li><b>-bare-bones</b><br/>
- *    <p>By default, this tool assumes it is analyzing Jekyll generated files.  If this option is specified, 
+ *    <p>By default, this tool assumes it is analyzing Jekyll generated files.  If this option is specified,
  *       then it instead assumes it's checking "bare bones" HTML files...
  *    </p>
  *    <ul>
  *      <li>Jekyll Mode:
  *        <ul>
- *          <li>Requires all html pages have a "main-content" div; ignores all DOM Nodes that are
- *              <em>not</em> decendents of this div (to exclude redundent template based header, footer, 
+ *          <li>Requires all html pages have a "content" div; ignores all DOM Nodes that are
+ *              <em>not</em> decendents of this div (to exclude redundent template based header, footer,
  *              &amp; sidebar links)
  *          </li>
- *          <li>Expects that the <code>&lt;body/&gt;</code> tag will have an <code>id</code> matching 
+ *          <li>Expects that the <code>&lt;body/&gt;</code> tag will have an <code>id</code> matching
  *              the page shortname.</li>
  *        </ul>
  *      </li>
  *      <li>Bare Bones Mode:
  *        <ul>
  *          <li>Checks all links &amp; anchors in the page.</li>
- *          <li>"Fakes" the existence of a <code>&lt;body id="..."&gt;</code> tag containing the 
+ *          <li>"Fakes" the existence of a <code>&lt;body id="..."&gt;</code> tag containing the
  *              page shortname.</li>
  *        </ul>
  *      </li>
  *    </ul>
  *  </li>
  * </ul>
- * 
+ *
  * TODO: build a list of all known external links so that some other tool could (optionally) ping them all for 200 status?
  *
  * @see https://github.com/asciidoctor/asciidoctor/issues/1865
@@ -175,15 +175,15 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
       final String fileContents = readFile(file.getPath());
       final Document doc = Jsoup.parse(fileContents);
 
-      // For Jekyll, we only care about class='main-content' -- we don't want to worry
+      // For Jekyll, we only care about class='content' -- we don't want to worry
       // about ids/links duplicated in the header/footer of every page,
-      final String mainContentSelector = bareBones ? "body" : ".main-content";
+      final String mainContentSelector = bareBones ? "body" : ".content";
       final Element mainContent = doc.select(mainContentSelector).first();
       if (mainContent == null) {
         throw new RuntimeException(file.getName() + " has no main content: " + mainContentSelector);
       }
 
-      // Add all of the IDs in (the main-content of) this doc to idsToFiles (and idsInMultiFiles if needed)
+      // Add all of the IDs in (the content of) this doc to idsToFiles (and idsInMultiFiles if needed)
       final Elements nodesWithIds = mainContent.select("[id]");
 
       if (bareBones) {

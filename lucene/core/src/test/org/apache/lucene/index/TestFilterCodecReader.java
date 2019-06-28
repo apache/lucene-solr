@@ -16,8 +16,12 @@
  */
 package org.apache.lucene.index;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestFilterCodecReader extends LuceneTestCase {
@@ -25,6 +29,20 @@ public class TestFilterCodecReader extends LuceneTestCase {
   public void testDeclaredMethodsOverridden() throws Exception {
     final Class<?> subClass = FilterCodecReader.class;
     implTestDeclaredMethodsOverridden(subClass.getSuperclass(), subClass);
+  }
+
+  public void testGetDelegate() throws IOException {
+    try (Directory dir = newDirectory();
+         IndexWriter w = new IndexWriter(dir,newIndexWriterConfig())) {
+      w.addDocument(new Document());
+      try (DirectoryReader reader = w.getReader()) {
+        FilterCodecReader r = FilterCodecReader.wrapLiveDocs((CodecReader) reader.getSequentialSubReaders().get(0),
+            null, 1);
+
+        assertSame(FilterCodecReader.unwrap(r), reader.getSequentialSubReaders().get(0));
+        assertSame(r.getDelegate(), reader.getSequentialSubReaders().get(0));
+      }
+    }
   }
 
   private void implTestDeclaredMethodsOverridden(Class<?> superClass, Class<?> subClass) throws Exception {

@@ -458,11 +458,16 @@ public class GeoPolygonFactory {
       // Is it inside or outside?
       final Boolean isTestPointInside = isInsidePolygon(testPoint, points);
       if (isTestPointInside != null) {
-        // Legal pole
-        if (isTestPointInside == poleMustBeInside) {
-          return new GeoComplexPolygon(planetModel, pointsList, testPoint, isTestPointInside);
-        } else {
-          return new GeoComplexPolygon(planetModel, pointsList, new GeoPoint(-testPoint.x, -testPoint.y, -testPoint.z), !isTestPointInside);
+        try {
+          // Legal pole
+          if (isTestPointInside == poleMustBeInside) {
+            return new GeoComplexPolygon(planetModel, pointsList, testPoint, isTestPointInside);
+          } else {
+            return new GeoComplexPolygon(planetModel, pointsList, new GeoPoint(-testPoint.x, -testPoint.y, -testPoint.z), !isTestPointInside);
+          }
+        } catch (IllegalArgumentException e) {
+          // Probably bad choice of test point.
+          return null;
         }
       }
       // If pole choice was illegal, try another one

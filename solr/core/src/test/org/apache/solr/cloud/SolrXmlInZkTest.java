@@ -46,7 +46,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
   protected ZkTestServer zkServer;
 
-  protected String zkDir;
+  protected Path zkDir;
 
   private SolrZkClient zkClient;
 
@@ -67,12 +67,11 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
     System.setProperty("zkClientTimeout", "8000");
 
-    zkDir = tmpDir.resolve("zookeeper" + System.nanoTime()).resolve("server1").resolve("data").toString();
+    zkDir = tmpDir.resolve("zookeeper" + System.nanoTime()).resolve("server1").resolve("data");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(),
-        zkServer.getZkAddress(), "solrconfig.xml", "schema.xml");
+    zkServer.buildZooKeeper("solrconfig.xml", "schema.xml");
 
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
 

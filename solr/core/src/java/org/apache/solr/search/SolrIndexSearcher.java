@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -126,8 +127,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // list of all caches associated with this searcher.
   private final SolrCache[] cacheList;
 
-  private final FieldInfos fieldInfos;
-
   private DirectoryFactory directoryFactory;
 
   private final LeafReader leafReader;
@@ -157,24 +156,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader) throws IOException {
     assert reader != null;
     return ExitableDirectoryReader.wrap(
-        wrapUninvertingReaderPerSegment(core, reader),
+        UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper()),
         SolrQueryTimeoutImpl.getInstance());
   }
-
-  /**
-   * If docvalues are enabled or disabled after data has already been indexed for a field, such that
-   * only some segments have docvalues, uninverting on the top level reader will cause 
-   * IllegalStateException to be thrown when trying to use a field with such mixed data. This is because
-   * the {@link IndexSchema#getUninversionMap(IndexReader)} method decides to put a field 
-   * into the uninverteding map only if *NO* segment in the index contains docvalues for that field.
-   * 
-   * Therefore, this class provides a uninverting map per segment such that for any field, 
-   * DocValues are used from segments if they exist and uninversion of the field is performed on the rest
-   * of the segments.
-   */
-   private static DirectoryReader wrapUninvertingReaderPerSegment(SolrCore core, DirectoryReader reader) throws IOException {
-     return UninvertingReader.wrap(reader, r -> core.getLatestSchema().getUninversionMap(r));
-   }
 
   /**
    * Builds the necessary collector chain (via delegate wrapping) and executes the query against it. This method takes
@@ -278,7 +262,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.queryResultMaxDocsCached = solrConfig.queryResultMaxDocsCached;
     this.useFilterForSortedQuery = solrConfig.useFilterForSortedQuery;
 
-    this.fieldInfos = leafReader.getFieldInfos();
     this.docFetcher = new SolrDocumentFetcher(this, solrConfig, enableCache);
 
     this.cachingEnabled = enableCache;
@@ -334,7 +317,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   public FieldInfos getFieldInfos() {
-    return fieldInfos;
+    return leafReader.getFieldInfos();
   }
 
   /*
@@ -509,7 +492,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Returns a collection of all field names the index reader knows about.
    */
   public Iterable<String> getFieldNames() {
-    return Iterables.transform(fieldInfos, fieldInfo -> fieldInfo.name);
+    return Iterables.transform(getFieldInfos(), fieldInfo -> fieldInfo.name);
   }
 
   public SolrCache<Query,DocSet> getFilterCache() {
@@ -1731,7 +1714,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       set = DocSetUtil.getDocSet(setCollector, this);
 
       totalHits = topCollector.getTotalHits();
-      assert (totalHits == set.size());
+      assert (totalHits == set.size()) || qr.isPartialResults();
 
       TopDocs topDocs = topCollector.topDocs(0, len);
       if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
@@ -2299,6 +2282,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     manager.registerGauge(this, registry, () -> reader.toString(), tag, true, "reader", Category.SEARCHER.toString(), scope);
     manager.registerGauge(this, registry, () -> reader.directory().toString(), tag, true, "readerDir", Category.SEARCHER.toString(), scope);
     manager.registerGauge(this, registry, () -> reader.getVersion(), tag, true, "indexVersion", Category.SEARCHER.toString(), scope);
+    // size of the currently opened commit
+    manager.registerGauge(this, registry, () -> {
+      try {
+        Collection<String> files = reader.getIndexCommit().getFileNames();
+        long total = 0;
+        for (String file : files) {
+          total += DirectoryFactory.sizeOf(reader.directory(), file);
+        }
+        return total;
+      } catch (Exception e) {
+        return -1;
+      }
+    }, tag, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
 
   }
 
@@ -2326,6 +2322,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     @Override
     public String toString(String field) {
       return "SolrFilter";
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
     }
 
     private class FilterSet extends DocIdSet {

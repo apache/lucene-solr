@@ -43,6 +43,7 @@ def artifact = NamespaceBuilder.newInstance(ant, 'antlib:org.apache.maven.artifa
 
 task.log('Running Maven with props: ' + cmdlineProps.toString(), Project.MSG_INFO);
 artifact.mvn(pom: properties['maven-build-dir']+'/pom.xml', mavenVersion: properties['maven-version'], failonerror: true, fork: true) {
+  sysproperty(key: 'maven.multiModuleProjectDirectory', file: properties['maven-build-dir'])
   cmdlineProps.each{ k, v -> arg(value: '-D' + k + '=' + v) };
   arg(value: '-fae');
   arg(value: 'install');

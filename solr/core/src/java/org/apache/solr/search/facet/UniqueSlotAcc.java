@@ -148,5 +148,8 @@ abstract class UniqueSlotAcc extends SlotAcc {
   @Override
   public void resize(Resizer resizer) {
     arr = resizer.resize(arr, null);
+    if (counts != null) {
+      counts = resizer.resize(counts, 0);
+    }
   }
 }

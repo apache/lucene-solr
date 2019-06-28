@@ -34,7 +34,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /** Tests helper methods in DocValues */
 public class TestDocValues extends LuceneTestCase {
-  
+
   /** 
    * If the field doesn't exist, we return empty instances:
    * it can easily happen that a segment just doesn't have any docs with the field.
@@ -123,8 +123,8 @@ public class TestDocValues extends LuceneTestCase {
     iw.close();
     dir.close();
   }
-  
-  /** 
+
+  /**
    * field with binary docvalues
    */
   public void testBinaryField() throws Exception {

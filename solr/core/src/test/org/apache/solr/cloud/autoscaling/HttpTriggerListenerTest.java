@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.LogLevel;
@@ -41,8 +42,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 /**
  *
@@ -89,7 +88,7 @@ public class HttpTriggerListenerTest extends SolrCloudTestCase {
         "{'name':'test','class':'" + TestDummyAction.class.getName() + "'}" +
         "]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -107,37 +106,38 @@ public class HttpTriggerListenerTest extends SolrCloudTestCase {
         "'header.X-Foo' : '${config.name:invalid}'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    assertEquals(requests.toString(), 0, requests.size());
+    assertEquals(mockService.requests.toString(), 0, mockService.requests.size());
 
     cluster.startJettySolrRunner();
+    cluster.waitForAllNodes(30);
     boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
     assertTrue("The trigger did not fire at all", await);
 
     Thread.sleep(5000);
 
-    assertEquals(requests.toString(), 4, requests.size());
-    requests.forEach(s -> assertTrue(s.contains("Content-Type: application/json")));
-    requests.forEach(s -> assertTrue(s.contains("X-Foo: foo")));
-    requests.forEach(s -> assertTrue(s.contains("source=node_added_trigger")));
-    requests.forEach(s -> assertTrue(s.contains("type=NODEADDED")));
+    assertEquals(mockService.requests.toString(), 4, mockService.requests.size());
+    mockService.requests.forEach(s -> assertTrue(s.contains("Content-Type: application/json")));
+    mockService.requests.forEach(s -> assertTrue(s.contains("X-Foo: foo")));
+    mockService.requests.forEach(s -> assertTrue(s.contains("source=node_added_trigger")));
+    mockService.requests.forEach(s -> assertTrue(s.contains("type=NODEADDED")));
 
-    String request = requests.get(0);
+    String request = mockService.requests.get(0);
     assertTrue(request, request.startsWith("/foo/test/STARTED"));
     assertTrue(request, request.contains("actionName=,")); // empty actionName
 
-    request = requests.get(1);
+    request = mockService.requests.get(1);
     assertTrue(request, request.startsWith("/foo/test/BEFORE_ACTION"));
     assertTrue(request, request.contains("actionName=test,")); // actionName
 
-    request = requests.get(2);
+    request = mockService.requests.get(2);
     assertTrue(request, request.startsWith("/foo/test/AFTER_ACTION"));
     assertTrue(request, request.contains("actionName=test,")); // actionName
 
-    request = requests.get(3);
+    request = mockService.requests.get(3);
     assertTrue(request, request.startsWith("/foo/test/SUCCEEDED"));
     assertTrue(request, request.contains("actionName=,")); // empty actionName
   }
@@ -150,12 +150,10 @@ public class HttpTriggerListenerTest extends SolrCloudTestCase {
     }
   }
 
-
-  static List<String> requests = new ArrayList<>();
-
   private static class MockService extends Thread {
-    Server server;
-
+    public final List<String> requests = new ArrayList<>();
+    private Server server;
+    
     public void start() {
       server = new Server(new InetSocketAddress("localhost", 0));
       server.setHandler(new AbstractHandler() {

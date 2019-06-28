@@ -188,7 +188,7 @@ This implementation supports <<Context Filtering>>.
 
 ==== BlendedInfixLookupFactory
 
-An extension of the `AnalyzingInfixSuggester` which provides additional functionality to weight prefix matches across the matched documents. You can tell it to score higher if a hit is closer to the start of the suggestion or vice versa.
+An extension of the `AnalyzingInfixSuggester` which provides additional functionality to weight prefix matches across the matched documents. It scores higher if a hit is closer to the start of the suggestion.
 
 This implementation uses the following additional properties:
 
@@ -197,9 +197,11 @@ Used to calculate weight coefficient using the position of the first matching wo
 `position_linear`:::
 `weightFieldValue * (1 - 0.10*position)`: Matches to the start will be given a higher score. This is the default.
 `position_reciprocal`:::
-`weightFieldValue / (1 + position)`: Matches to the end will be given a higher score.
+`weightFieldValue / (1 + position)`: Matches to the start will be given a higher score. The score of matches positioned far from the start of the suggestion decays faster than linear.
+`position_exponential_reciprocal`:::
+`weightFieldValue / pow(1 + position,exponent)`: Matches to the start will be given a higher score. The score of matches positioned far from the start of the suggestion decays faster than reciprocal.
 `exponent`::::
-An optional configuration variable for `position_reciprocal` to control how fast the score will increase or decrease. Default `2.0`.
+An optional configuration variable for `position_exponential_reciprocal` to control how fast the score will decrease. Default `2.0`.
 
 `numFactor`::
 The factor to multiply the number of searched elements from which results will be pruned. Default is `10`.

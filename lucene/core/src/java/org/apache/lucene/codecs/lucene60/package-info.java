@@ -16,7 +16,7 @@
  */
 
 /**
- * Components from the Lucene 6.0 index format.  See {@link org.apache.lucene.codecs.lucene70}
+ * Components from the Lucene 6.0 index format.  See {@link org.apache.lucene.codecs.lucene80}
  * for an overview of the current index format.
  */
 package org.apache.lucene.codecs.lucene60;

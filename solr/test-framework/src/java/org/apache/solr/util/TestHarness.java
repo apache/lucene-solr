@@ -375,13 +375,6 @@ public class TestHarness extends BaseTestHarness {
    */
   public void close() {
     if (container != null) {
-      for (SolrCore c : container.getCores()) {
-        if (c.getOpenCount() > 1)
-          throw new RuntimeException("SolrCore.getOpenCount()=="+c.getOpenCount());
-      }      
-    }
-
-    if (container != null) {
       container.shutdown();
       container = null;
     }

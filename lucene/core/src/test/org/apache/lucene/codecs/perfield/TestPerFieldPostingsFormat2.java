@@ -120,10 +120,10 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     writer.commit();
     addDocs2(writer, 10);
     writer.commit();
-    assertEquals(30, writer.maxDoc());
+    assertEquals(30, writer.getDocStats().maxDoc);
     TestUtil.checkIndex(dir);
     writer.forceMerge(1);
-    assertEquals(30, writer.maxDoc());
+    assertEquals(30, writer.getDocStats().maxDoc);
     writer.close();
     dir.close();
   }
@@ -173,7 +173,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     addDocs2(writer, 10);
     writer.commit();
     codec = iwconf.getCodec();
-    assertEquals(30, writer.maxDoc());
+    assertEquals(30, writer.getDocStats().maxDoc);
     assertQuery(new Term("content", "bbb"), dir, 10);
     assertQuery(new Term("content", "ccc"), dir, 10);   ////
     assertQuery(new Term("content", "aaa"), dir, 10);
@@ -186,13 +186,13 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     assertQuery(new Term("content", "ccc"), dir, 10);
     assertQuery(new Term("content", "bbb"), dir, 20);
     assertQuery(new Term("content", "aaa"), dir, 10);
-    assertEquals(40, writer.maxDoc());
+    assertEquals(40, writer.getDocStats().maxDoc);
 
     if (VERBOSE) {
       System.out.println("TEST: now optimize");
     }
     writer.forceMerge(1);
-    assertEquals(40, writer.maxDoc());
+    assertEquals(40, writer.getDocStats().maxDoc);
     writer.close();
     assertQuery(new Term("content", "ccc"), dir, 10);
     assertQuery(new Term("content", "bbb"), dir, 20);
@@ -258,7 +258,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
         writer.forceMerge(1);
       }
       writer.commit();
-      assertEquals((i + 1) * docsPerRound, writer.maxDoc());
+      assertEquals((i + 1) * docsPerRound, writer.getDocStats().maxDoc);
       writer.close();
     }
     dir.close();

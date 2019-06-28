@@ -19,10 +19,8 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import com.carrotsearch.hppc.IntHashSet;
 import com.carrotsearch.hppc.IntObjectHashMap;
@@ -34,10 +32,6 @@ import com.carrotsearch.hppc.cursors.LongCursor;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.carrotsearch.hppc.cursors.ObjectCursor;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -85,7 +79,6 @@ import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
-import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
@@ -215,10 +208,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if(fieldType instanceof StrField) {
       //Get The Top Level SortedDocValues
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
-        Map<String, UninvertingReader.Type> mapping = new HashMap();
-        mapping.put(field, UninvertingReader.Type.SORTED);
         @SuppressWarnings("resource")
-        UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
+        LeafReader uninvertingReader = CollapsingQParserPlugin.getTopFieldCacheReader(searcher, field);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
         values = DocValues.getSorted(reader, field);
@@ -386,10 +377,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if(values != null) {
       //Get The Top Level SortedDocValues again so we can re-iterate:
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
-        Map<String, UninvertingReader.Type> mapping = new HashMap();
-        mapping.put(field, UninvertingReader.Type.SORTED);
         @SuppressWarnings("resource")
-        UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
+        LeafReader uninvertingReader = CollapsingQParserPlugin.getTopFieldCacheReader(searcher, field);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
         values = DocValues.getSorted(reader, field);
@@ -765,66 +754,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   @Override
   public Category getCategory() {
     return Category.QUERY;
-  }
-
-  // this reader alters the content of the given reader so it should not
-  // delegate the caching stuff
-  private static class ReaderWrapper extends FilterLeafReader {
-
-    private String field;
-
-    public ReaderWrapper(LeafReader leafReader, String field) {
-      super(leafReader);
-      this.field = field;
-    }
-
-    public SortedDocValues getSortedDocValues(String field) {
-      return null;
-    }
-
-    public FieldInfos getFieldInfos() {
-      Iterator<FieldInfo> it = in.getFieldInfos().iterator();
-      List<FieldInfo> newInfos = new ArrayList<>();
-      while(it.hasNext()) {
-        FieldInfo fieldInfo = it.next();
-
-        if(fieldInfo.name.equals(field)) {
-          FieldInfo f = new FieldInfo(fieldInfo.name,
-              fieldInfo.number,
-              fieldInfo.hasVectors(),
-              fieldInfo.hasNorms(),
-              fieldInfo.hasPayloads(),
-              fieldInfo.getIndexOptions(),
-              DocValuesType.NONE,
-              fieldInfo.getDocValuesGen(),
-              fieldInfo.attributes(),
-              fieldInfo.getPointDimensionCount(),
-              fieldInfo.getPointNumBytes(),
-              fieldInfo.isSoftDeletesField());
-          newInfos.add(f);
-
-        } else {
-          newInfos.add(fieldInfo);
-        }
-      }
-      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[newInfos.size()]));
-      return infos;
-    }
-
-    // NOTE: delegating the caches is wrong here as we are altering the content
-    // of the reader, this should ONLY be used under an uninvertingreader which
-    // will restore doc values back using uninversion, otherwise all sorts of
-    // crazy things could happen.
-
-    @Override
-    public CacheHelper getCoreCacheHelper() {
-      return in.getCoreCacheHelper();
-    }
-
-    @Override
-    public CacheHelper getReaderCacheHelper() {
-      return in.getReaderCacheHelper();
-    }
   }
 
 }

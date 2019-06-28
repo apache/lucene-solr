@@ -20,15 +20,46 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import java.io.Closeable;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
+
+import org.apache.http.HttpRequest;
+import org.apache.http.protocol.HttpContext;
+import org.eclipse.jetty.client.api.Request;
 
 /**
  * 
  * @lucene.experimental
  */
-public abstract class AuthenticationPlugin implements Closeable {
+public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, SolrMetricProducer {
 
   final public static String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
+  final public static String HTTP_HEADER_X_SOLR_AUTHDATA = "X-Solr-AuthData";
+
+  // Metrics
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private MetricRegistry registry;
+
+  protected String registryName;
+  protected SolrMetricManager metricManager;
+  protected Meter numErrors = new Meter();
+  protected Counter requests = new Counter();
+  protected Timer requestTimes = new Timer();
+  protected Counter totalTime = new Counter();
+  protected Counter numAuthenticated = new Counter();
+  protected Counter numPassThrough = new Counter();
+  protected Counter numWrongCredentials = new Counter();
+  protected Counter numMissingCredentials = new Counter();
 
   /**
    * This is called upon loading up of a plugin, used for setting it up.
@@ -52,11 +83,108 @@ public abstract class AuthenticationPlugin implements Closeable {
   public abstract boolean doAuthenticate(ServletRequest request, ServletResponse response,
       FilterChain filterChain) throws Exception;
 
+  /**
+   * This method is called by SolrDispatchFilter in order to initiate authentication.
+   * It does some standard metrics counting.
+   */
+  public final boolean authenticate(ServletRequest request, ServletResponse response, FilterChain filterChain) throws Exception {
+    Timer.Context timer = requestTimes.time();
+    requests.inc();
+    try {
+      return doAuthenticate(request, response, filterChain);
+    } catch(Exception e) {
+      numErrors.mark();
+      throw e;
+    } finally {
+      long elapsed = timer.stop();
+      totalTime.inc(elapsed);
+    }
+  }
 
+  /**
+   * Override this method to intercept internode requests. This allows your authentication
+   * plugin to decide on per-request basis whether it should handle inter-node requests or
+   * delegate to {@link PKIAuthenticationPlugin}. Return true to indicate that your plugin
+   * did handle the request, or false to signal that PKI plugin should handle it. This method
+   * will be called by {@link PKIAuthenticationPlugin}'s interceptor.
+   * 
+   * <p>
+   *   If not overridden, this method will return true for plugins implementing {@link HttpClientBuilderPlugin}.
+   *   This method can be overridden by subclasses e.g. to set HTTP headers, even if you don't use a clientBuilder. 
+   * </p>
+   * @param httpRequest the httpRequest that is about to be sent to another internal Solr node
+   * @param httpContext the context of that request.
+   * @return true if this plugin handled authentication for the request, else false
+   */
+  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
+    return this instanceof HttpClientBuilderPlugin;
+  }
+
+  /**
+   * Override this method to intercept internode requests. This allows your authentication
+   * plugin to decide on per-request basis whether it should handle inter-node requests or
+   * delegate to {@link PKIAuthenticationPlugin}. Return true to indicate that your plugin
+   * did handle the request, or false to signal that PKI plugin should handle it. This method
+   * will be called by {@link PKIAuthenticationPlugin}'s interceptor.
+   *
+   * <p>
+   *   If not overridden, this method will return true for plugins implementing {@link HttpClientBuilderPlugin}.
+   *   This method can be overridden by subclasses e.g. to set HTTP headers, even if you don't use a clientBuilder.
+   * </p>
+   * @param request the httpRequest that is about to be sent to another internal Solr node
+   * @return true if this plugin handled authentication for the request, else false
+   */
+  protected boolean interceptInternodeRequest(Request request) {
+    return this instanceof HttpClientBuilderPlugin;
+  }
+  
   /**
    * Cleanup any per request  data
    */
   public void closeRequest() {
   }
 
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, final String scope) {
+    this.metricManager = manager;
+    this.registryName = registryName;
+    // Metrics
+    registry = manager.registry(registryName);
+    numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope);
+    requests = manager.counter(this, registryName, "requests", getCategory().toString(), scope);
+    numAuthenticated = manager.counter(this, registryName, "authenticated", getCategory().toString(), scope);
+    numPassThrough = manager.counter(this, registryName, "passThrough", getCategory().toString(), scope);
+    numWrongCredentials = manager.counter(this, registryName, "failWrongCredentials", getCategory().toString(), scope);
+    numMissingCredentials = manager.counter(this, registryName, "failMissingCredentials", getCategory().toString(), scope);
+    requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
+    totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);
+    metricNames.addAll(Arrays.asList("errors", "requests", "authenticated", "passThrough",
+        "failWrongCredentials", "failMissingCredentials", "requestTimes", "totalTime"));
+  }
+  
+  @Override
+  public String getName() {
+    return this.getClass().getName();
+  }
+
+  @Override
+  public String getDescription() {
+    return "Authentication Plugin " + this.getClass().getName();
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.SECURITY;
+  }
+  
+  @Override
+  public Set<String> getMetricNames() {
+    return metricNames;
+  }
+
+  @Override
+  public MetricRegistry getMetricRegistry() {
+    return registry;
+  }
+  
 }

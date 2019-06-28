@@ -114,7 +114,7 @@ public final class AssertingPostingsFormat extends PostingsFormat {
     }
     
     @Override
-    public FieldsProducer getMergeInstance() throws IOException {
+    public FieldsProducer getMergeInstance() {
       return new AssertingFieldsProducer(in.getMergeInstance());
     }
 

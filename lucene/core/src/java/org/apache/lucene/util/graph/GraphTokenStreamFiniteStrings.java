@@ -211,26 +211,33 @@ public final class GraphTokenStreamFiniteStrings {
     int pos = -1;
     int prevIncr = 1;
     int state = -1;
+    int gap = 0;
     while (in.incrementToken()) {
       int currentIncr = posIncAtt.getPositionIncrement();
       if (pos == -1 && currentIncr < 1) {
         throw new IllegalStateException("Malformed TokenStream, start token can't have increment less than 1");
       }
 
-      // always use inc 1 while building, but save original increment
-      int incr = Math.min(1, currentIncr);
-      if (incr > 0) {
-        pos += incr;
+      if (currentIncr == 0) {
+        if (gap > 0) {
+          pos -= gap;
+        }
+      }
+      else {
+        pos++;
+        gap = currentIncr - 1;
       }
 
-      int endPos = pos + posLengthAtt.getPositionLength();
+      int endPos = pos + posLengthAtt.getPositionLength() + gap;
       while (state < endPos) {
         state = builder.createState();
       }
 
       BytesRef term = termBytesAtt.getBytesRef();
       int id = getTermID(currentIncr, prevIncr, term);
+      //System.out.println("Adding transition: " + term.utf8ToString() + "@" + pos + "->" + endPos);
       builder.addTransition(pos, endPos, id);
+      pos += gap;
 
       // only save last increment on non-zero increment in case we have multiple stacked tokens
       if (currentIncr > 0) {

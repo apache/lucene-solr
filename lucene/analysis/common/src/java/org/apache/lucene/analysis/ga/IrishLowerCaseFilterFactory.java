@@ -20,9 +20,6 @@ package org.apache.lucene.analysis.ga;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ga.IrishLowerCaseFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
@@ -35,8 +32,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
-public class IrishLowerCaseFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+public class IrishLowerCaseFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "irishLowerCase";
 
   /** Creates a new IrishLowerCaseFilterFactory */
   public IrishLowerCaseFilterFactory(Map<String,String> args) {
@@ -53,7 +54,7 @@ public class IrishLowerCaseFilterFactory extends TokenFilterFactory implements M
 
   // this will 'mostly work', except for special cases, just like most other filters
   @Override
-  public AbstractAnalysisFactory getMultiTermComponent() {
-    return this;
+  public TokenStream normalize(TokenStream input) {
+    return create(input);
   }
 }

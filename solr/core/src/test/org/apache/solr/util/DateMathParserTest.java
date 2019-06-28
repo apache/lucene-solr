@@ -26,14 +26,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 
 import static org.apache.solr.util.DateMathParser.UTC;
 
 /**
  * Tests that the functions in DateMathParser
  */
-public class DateMathParserTest extends LuceneTestCase {
+public class DateMathParserTest extends SolrTestCaseJ4 {
 
   /**
    * A formatter for specifying every last nuance of a Date for easy

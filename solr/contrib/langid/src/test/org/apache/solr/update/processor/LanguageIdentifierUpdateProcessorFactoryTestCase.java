@@ -17,16 +17,19 @@
 package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.servlet.SolrRequestParsers;
 
 public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends SolrTestCaseJ4 {
 
@@ -140,14 +143,14 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     liProcessor = createLangIdProcessor(parameters);
     
     doc = englishDoc();
-    assertEquals("en", liProcessor.process(doc).getFieldValue("language"));
-    assertEquals("en", liProcessor.process(doc).getFieldValue("languages"));
+    assertEquals("en", process(doc).getFieldValue("language"));
+    assertEquals("en", process(doc).getFieldValue("languages"));
     
     doc = englishDoc();
     doc.setField("language", "no");
-    assertEquals("no", liProcessor.process(doc).getFieldValue("language"));
-    assertEquals("no", liProcessor.process(doc).getFieldValue("languages"));
-    assertNotNull(liProcessor.process(doc).getFieldValue("text_no"));
+    assertEquals("no", process(doc).getFieldValue("language"));
+    assertEquals("no", process(doc).getFieldValue("languages"));
+    assertNotNull(process(doc).getFieldValue("text_no"));
   }
 
   /**
@@ -166,14 +169,14 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     liProcessor = createLangIdProcessor(parameters);
     
     doc = englishDoc();
-    assertEquals("en", liProcessor.process(doc).getFieldValue("language"));
-    assertEquals("en", liProcessor.process(doc).getFieldValue("languages"));
+    assertEquals("en", process(doc).getFieldValue("language"));
+    assertEquals("en", process(doc).getFieldValue("languages"));
     
     doc = englishDoc();
     doc.setField("language", "no");
-    assertEquals("no", liProcessor.process(doc).getFieldValue("language"));
-    assertEquals("no", liProcessor.process(doc).getFieldValue("languages"));
-    assertNotNull(liProcessor.process(doc).getFieldValue("text_multivalue_no"));
+    assertEquals("no", process(doc).getFieldValue("language"));
+    assertEquals("no", process(doc).getFieldValue("languages"));
+    assertNotNull(process(doc).getFieldValue("text_multivalue_no"));
   }
 
   /**
@@ -192,14 +195,14 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     liProcessor = createLangIdProcessor(parameters);
 
     doc = mixedEnglishRussianDoc();
-    assertEquals("en", liProcessor.process(doc).getFieldValue("language"));
-    assertEquals("en", liProcessor.process(doc).getFieldValue("languages"));
+    assertEquals("en", process(doc).getFieldValue("language"));
+    assertEquals("en", process(doc).getFieldValue("languages"));
 
     doc = mixedEnglishRussianDoc();
     doc.setField("language", "no");
-    assertEquals("no", liProcessor.process(doc).getFieldValue("language"));
-    assertEquals("no", liProcessor.process(doc).getFieldValue("languages"));
-    assertNotNull(liProcessor.process(doc).getFieldValue("text_multivalue_no"));
+    assertEquals("no", process(doc).getFieldValue("language"));
+    assertEquals("no", process(doc).getFieldValue("languages"));
+    assertNotNull(process(doc).getFieldValue("text_multivalue_no"));
   }
 
   @Test
@@ -212,7 +215,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     liProcessor = createLangIdProcessor(parameters);
     
     doc = tooShortDoc();
-    assertEquals("", liProcessor.process(doc).getFieldValue("language"));
+    assertEquals("", process(doc).getFieldValue("language"));
   }
 
   @Test
@@ -225,7 +228,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     liProcessor = createLangIdProcessor(parameters);
 
     doc = new SolrInputDocument();
-    assertEquals("", liProcessor.process(doc).getFieldValue("language"));
+    assertEquals("", process(doc).getFieldValue("language"));
   }
 
   @Test
@@ -242,11 +245,11 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     // Verify fallback to field fb (noop field does not exist and is skipped)
     doc = tooShortDoc();
     doc.addField("fb", "fbField");
-    assertEquals("fbField", liProcessor.process(doc).getFieldValue("language"));
+    assertEquals("fbField", process(doc).getFieldValue("language"));
 
     // Verify fallback to fallback value since no fallback fields exist
     doc = tooShortDoc();
-    assertEquals("fbVal", liProcessor.process(doc).getFieldValue("language"));  
+    assertEquals("fbVal", process(doc).getFieldValue("language"));  
   }
   
   @Test
@@ -272,6 +275,60 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertEquals("fallback", liProcessor.resolveLanguage(langs, "fallback"));    
   }
   
+  @Test
+  public void testKeepOrig() throws Exception {
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
+    parameters.set("langid.enforceSchema", "false");
+    parameters.set("langid.langField", "language");
+    parameters.set("langid.langsField", "languages");
+    parameters.set("langid.fl", "text");
+    parameters.set("langid.map", "true");
+    parameters.set("langid.map.keepOrig", "false");
+    liProcessor = createLangIdProcessor(parameters);
+
+    SolrInputDocument mappedNoOrig = process(englishDoc());
+    assertEquals("text_en", liProcessor.getMappedField("text", "en"));
+    assertEquals("en", mappedNoOrig.getFieldValue("language"));
+    assertTrue(mappedNoOrig.containsKey("text_en"));
+    assertFalse(mappedNoOrig.containsKey("text"));
+    
+    // keepOrig true
+    parameters.set("langid.map.keepOrig", "true");
+    liProcessor = createLangIdProcessor(parameters);
+
+    SolrInputDocument mappedKeepOrig = process(englishDoc());
+    assertTrue(mappedKeepOrig.containsKey("text_en"));
+    assertTrue(mappedKeepOrig.containsKey("text"));
+    assertEquals(englishDoc().getFieldValue("text"), mappedKeepOrig.getFieldValue("text_en"));
+    
+    // keepOrig and map individual
+    parameters.set("langid.map.individual", "true");
+    parameters.set("langid.fl", "text,text2");
+    liProcessor = createLangIdProcessor(parameters);
+
+    SolrInputDocument mappedIndividual = process(languagePerFieldDoc());
+    assertTrue(mappedIndividual.containsKey("text_en"));
+    assertTrue(mappedIndividual.containsKey("text"));
+    assertTrue(mappedIndividual.containsKey("text2_ru"));
+    assertTrue(mappedIndividual.containsKey("text2"));
+    assertEquals(languagePerFieldDoc().getFieldValue("text"), mappedIndividual.getFieldValue("text_en"));
+  }
+
+  @Test
+  public void testMapIndividual() throws Exception {
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
+    parameters.set("langid.enforceSchema", "false");
+    parameters.set("langid.langField", "language");
+    parameters.set("langid.langsField", "languages");
+    parameters.set("langid.fl", "text,text2");
+    parameters.set("langid.map", "true");
+    parameters.set("langid.map.individual", "true");
+    liProcessor = createLangIdProcessor(parameters);
+
+    SolrInputDocument mappedIndividual = process(languagePerFieldDoc());
+    assertTrue(mappedIndividual.containsKey("text_en"));
+    assertTrue(mappedIndividual.containsKey("text2_ru"));
+  }
   
   // Various utility methods
   
@@ -282,6 +339,12 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     return doc;
   }
 
+  private SolrInputDocument languagePerFieldDoc() {
+    SolrInputDocument doc = englishDoc();
+    doc.addField("text2", "The Apache Lucene — это свободная библиотека для высокоскоростного полнотекстового поиска, написанная на Java. Может быть использована для поиска в интернете и других областях компьютерной лингвистики (аналитическая философия).");
+    return doc;
+  }
+  
   /**
    * Construct document containing multi-value fields in different languages.
    * @return solr input document
@@ -307,7 +370,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     if(liProcessor == null)
       throw new Exception("Processor must be initialized before calling assertLang()");
     SolrInputDocument doc = sid(fieldsAndValues);
-    assertEquals(langCode, liProcessor.process(doc).getFieldValue(liProcessor.langField));
+    assertEquals(langCode, process(doc).getFieldValue(liProcessor.langField));
   }
   
   private SolrInputDocument sid(String... fieldsAndValues) {
@@ -316,5 +379,33 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
       doc.addField(fieldsAndValues[i], fieldsAndValues[i+1]);
     }
     return doc;
+  }
+  
+  /*
+  Utility test method to process a clone of a document
+   */
+  private SolrInputDocument process(SolrInputDocument origDoc) {
+    SolrInputDocument modifiedDoc = origDoc.deepCopy();
+    if (random().nextBoolean()) {
+      modifiedDoc.forEach((s, f) -> {
+        Object rawVal = f.getRawValue();
+        if (rawVal instanceof Collection) {
+          Collection rawValue = (Collection) rawVal;
+          ArrayList<Object> newVal = new ArrayList<>(rawValue.size());
+          for (Object o : rawValue) {
+            if (o instanceof String) {
+              newVal.add(new ByteArrayUtf8CharSequence((String) o));
+            } else {
+              newVal.add(rawVal);
+            }
+          }
+          f.setValue(newVal);
+        } else if (rawVal instanceof String) {
+          f.setValue(new ByteArrayUtf8CharSequence((String) rawVal));
+        }
+      });
+    }
+    liProcessor.process(modifiedDoc);
+    return modifiedDoc;
   }
 }
