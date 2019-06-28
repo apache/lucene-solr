@@ -860,6 +860,7 @@ public class TestBKD extends LuceneTestCase {
                   numberOfPoints++;
                 }
                 assertTrue(cost == numberOfPoints);
+                assertTrue(iterator.docID() == DocIdSetIterator.NO_MORE_DOCS);
                 assertTrue(iterator.nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
                 assertTrue(iterator.docID() == DocIdSetIterator.NO_MORE_DOCS);
               }
