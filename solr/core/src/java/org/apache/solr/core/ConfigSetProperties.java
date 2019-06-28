@@ -42,7 +42,7 @@ public class ConfigSetProperties {
    * Return the properties associated with the ConfigSet (e.g. immutable)
    *
    * @param loader the resource loader
-   * @param name the name of the config set properties file
+   * @param name   the name of the config set properties file
    * @return the properties in a NamedList
    */
   public static NamedList readFromResourceLoader(SolrResourceLoader loader, String name) {
@@ -70,7 +70,7 @@ public class ConfigSetProperties {
         final String objectClass = object == null ? "null" : object.getClass().getName();
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + objectClass + ", expected Map");
       }
-      return new NamedList((Map)object);
+      return new NamedList((Map) object);
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load ConfigSet properties", ex);
     } finally {

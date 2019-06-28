@@ -32,8 +32,12 @@ import org.apache.lucene.util.AttributeFactory;
  * @lucene.experimental
  *
  * @since 4.10.0
+ * @lucene.spi {@value #NAME}
  */
 public final class HMMChineseTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "hmmChinese";
 
   /** Creates a new HMMChineseTokenizerFactory */
   public HMMChineseTokenizerFactory(Map<String,String> args) {

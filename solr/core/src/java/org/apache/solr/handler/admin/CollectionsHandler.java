@@ -168,7 +168,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final CoreContainer coreContainer;
-  private final CollectionHandlerApi v2Handler ;
+  private final CollectionHandlerApi v2Handler;
 
   public CollectionsHandler() {
     super();
@@ -228,11 +228,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CoreContainer cores = getCoreContainer();
     if (cores == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Core container instance missing");
+          "Core container instance missing");
     }
 
     // Make sure that the core is ZKAware
-    if(!cores.isZooKeeperAware()) {
+    if (!cores.isZooKeeperAware()) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "Solr instance is not running in SolrCloud mode.");
     }
@@ -306,7 +306,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
    */
   private static final boolean CHECK_ASYNC_ID_BACK_COMPAT_LOCATIONS = true;
 
-  public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180*1000;
+  public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180 * 1000;
 
   public SolrResponse sendToOCPQueue(ZkNodeProps m) throws KeeperException, InterruptedException {
     return sendToOCPQueue(m, DEFAULT_COLLECTION_OP_TIMEOUT);
@@ -319,44 +319,44 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
     if (m.get(ASYNC) != null) {
 
-       String asyncId = m.getStr(ASYNC);
+      String asyncId = m.getStr(ASYNC);
 
-       if (asyncId.equals("-1")) {
-         throw new SolrException(ErrorCode.BAD_REQUEST, "requestid can not be -1. It is reserved for cleanup purposes.");
-       }
+      if (asyncId.equals("-1")) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "requestid can not be -1. It is reserved for cleanup purposes.");
+      }
 
-       NamedList<String> r = new NamedList<>();
+      NamedList<String> r = new NamedList<>();
 
-       if (CHECK_ASYNC_ID_BACK_COMPAT_LOCATIONS && (
-           coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId) ||
-           coreContainer.getZkController().getOverseerFailureMap().contains(asyncId) ||
-           coreContainer.getZkController().getOverseerRunningMap().contains(asyncId) ||
-           overseerCollectionQueueContains(asyncId))) {
-         // for back compatibility, check in the old places. This can be removed in Solr 9
-         r.add("error", "Task with the same requestid already exists.");
-       } else {
-         if (coreContainer.getZkController().claimAsyncId(asyncId)) {
-           boolean success = false;
-           try {
-             coreContainer.getZkController().getOverseerCollectionQueue()
-             .offer(Utils.toJSON(m));
-             success = true;
-           } finally {
-             if (!success) {
-               try {
-                 coreContainer.getZkController().clearAsyncId(asyncId);
-               } catch (Exception e) {
-                 // let the original exception bubble up
-                 log.error("Unable to release async ID={}", asyncId, e);
-                 SolrZkClient.checkInterrupted(e);
-               }
-             }
-           }
-         } else {
-           r.add("error", "Task with the same requestid already exists.");
-         }
-       }
-       r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
+      if (CHECK_ASYNC_ID_BACK_COMPAT_LOCATIONS && (
+          coreContainer.getZkController().getOverseerCompletedMap().contains(asyncId) ||
+              coreContainer.getZkController().getOverseerFailureMap().contains(asyncId) ||
+              coreContainer.getZkController().getOverseerRunningMap().contains(asyncId) ||
+              overseerCollectionQueueContains(asyncId))) {
+        // for back compatibility, check in the old places. This can be removed in Solr 9
+        r.add("error", "Task with the same requestid already exists.");
+      } else {
+        if (coreContainer.getZkController().claimAsyncId(asyncId)) {
+          boolean success = false;
+          try {
+            coreContainer.getZkController().getOverseerCollectionQueue()
+                .offer(Utils.toJSON(m));
+            success = true;
+          } finally {
+            if (!success) {
+              try {
+                coreContainer.getZkController().clearAsyncId(asyncId);
+              } catch (Exception e) {
+                // let the original exception bubble up
+                log.error("Unable to release async ID={}", asyncId, e);
+                SolrZkClient.checkInterrupted(e);
+              }
+            }
+          }
+        } else {
+          r.add("error", "Task with the same requestid already exists.");
+        }
+      }
+      r.add(CoreAdminParams.REQUESTID, (String) m.get(ASYNC));
 
       return new OverseerSolrResponse(r);
     }
@@ -393,12 +393,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
    * Copy prefixed params into a map.  There must only be one value for these parameters.
    *
    * @param params The source of params from which copies should be made
-   * @param props The map into which param names and values should be copied as keys and values respectively
+   * @param props  The map into which param names and values should be copied as keys and values respectively
    * @param prefix The prefix to select.
    * @return the map supplied in the props parameter, modified to contain the prefixed params.
    */
   private static Map<String, Object> copyPropertiesWithPrefix(SolrParams params, Map<String, Object> props, String prefix) {
-    Iterator<String> iter =  params.getParameterNamesIterator();
+    Iterator<String> iter = params.getParameterNamesIterator();
     while (iter.hasNext()) {
       String param = iter.next();
       if (param.startsWith(prefix)) {
@@ -665,7 +665,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       if (createCollParams.get(COLL_CONF) == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "We require an explicit " + COLL_CONF );
+            "We require an explicit " + COLL_CONF);
       }
       // note: could insist on a config name here as well.... or wait to throw at overseer
       createCollParams.add(NAME, "TMP_name_TMP_name_TMP"); // just to pass validation
@@ -699,7 +699,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         // the aliases themselves...
         rsp.getValues().add("aliases", aliases.getCollectionAliasMap());
         // Any properties for the above aliases.
-        Map<String,Map<String,String>> meta = new LinkedHashMap<>();
+        Map<String, Map<String, String>> meta = new LinkedHashMap<>();
         for (String alias : aliases.getCollectionAliasListMap().keySet()) {
           Map<String, String> collectionAliasProperties = aliases.getCollectionAliasProperties(alias);
           if (!collectionAliasProperties.isEmpty()) {
@@ -792,8 +792,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR,
           DELETE_METRICS_HISTORY,
-              COUNT_PROP, REPLICA_PROP,
-              SHARD_ID_PROP,
+          COUNT_PROP, REPLICA_PROP,
+          SHARD_ID_PROP,
           ONLY_IF_DOWN);
     }),
     MIGRATE_OP(MIGRATE, (req, rsp, h) -> {
@@ -877,11 +877,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         if (flush) {
           Collection<String> completed = zkController.getOverseerCompletedMap().keys();
           Collection<String> failed = zkController.getOverseerFailureMap().keys();
-          for (String asyncId:completed) {
+          for (String asyncId : completed) {
             zkController.getOverseerCompletedMap().remove(asyncId);
             zkController.clearAsyncId(asyncId);
           }
-          for (String asyncId:failed) {
+          for (String asyncId : failed) {
             zkController.getOverseerFailureMap().remove(asyncId);
             zkController.clearAsyncId(asyncId);
           }
@@ -1013,7 +1013,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     MODIFYCOLLECTION_OP(MODIFYCOLLECTION, (req, rsp, h) -> {
       Map<String, Object> m = copy(req.getParams(), null, CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES);
       copyPropertiesWithPrefix(req.getParams(), m, COLL_PROP_PREFIX);
-      if (m.isEmpty())  {
+      if (m.isEmpty()) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             formatString("no supported values provided {0}", CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES.toString()));
       }
@@ -1021,7 +1021,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       addMapObject(m, RULE);
       addMapObject(m, SNITCH);
       for (String prop : m.keySet()) {
-        if ("".equals(m.get(prop)))  {
+        if ("".equals(m.get(prop))) {
           // set to an empty string is equivalent to removing the property, see SOLR-12507
           m.put(prop, null);
         }
@@ -1224,17 +1224,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
      * all prefixed properties as the value. The sub-map keys have the prefix removed.
      *
      * @param params The solr params from which to extract prefixed properties.
-     * @param sink The map to add the properties too.
+     * @param sink   The map to add the properties too.
      * @param prefix The prefix to identify properties to be extracted
      * @return The sink map, or a new map if the sink map was null
      */
     private static Map<String, Object> convertPrefixToMap(SolrParams params, Map<String, Object> sink, String prefix) {
-      Map<String,Object> result = new LinkedHashMap<>();
-      Iterator<String> iter =  params.getParameterNamesIterator();
+      Map<String, Object> result = new LinkedHashMap<>();
+      Iterator<String> iter = params.getParameterNamesIterator();
       while (iter.hasNext()) {
         String param = iter.next();
         if (param.startsWith(prefix)) {
-          result.put(param.substring(prefix.length()+1), params.get(param));
+          result.put(param.substring(prefix.length() + 1), params.get(param));
         }
       }
       if (sink == null) {
@@ -1396,7 +1396,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       });
     } catch (TimeoutException | InterruptedException e) {
 
-      String  error = "Timeout waiting for active collection " + collectionName + " with timeout=" + seconds;
+      String error = "Timeout waiting for active collection " + collectionName + " with timeout=" + seconds;
       throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
     }
 
@@ -1462,7 +1462,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   // These "copy" methods were once SolrParams.getAll but were moved here as there is no universal way that
   //  a SolrParams can be represented in a Map; there are various choices.
 
-  /**Copy all params to the given map or if the given map is null create a new one */
+  /**
+   * Copy all params to the given map or if the given map is null create a new one
+   */
   static Map<String, Object> copy(SolrParams source, Map<String, Object> sink, Collection<String> paramNames) {
     if (sink == null) sink = new LinkedHashMap<>();
     for (String param : paramNames) {
@@ -1478,8 +1480,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return sink;
   }
 
-  /**Copy all params to the given map or if the given map is null create a new one */
-  static Map<String, Object> copy(SolrParams source, Map<String, Object> sink, String... paramNames){
+  /**
+   * Copy all params to the given map or if the given map is null create a new one
+   */
+  static Map<String, Object> copy(SolrParams source, Map<String, Object> sink, String... paramNames) {
     return copy(source, sink, paramNames == null ? Collections.emptyList() : Arrays.asList(paramNames));
   }
 

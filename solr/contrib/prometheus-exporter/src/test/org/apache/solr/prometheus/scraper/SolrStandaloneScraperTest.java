@@ -83,8 +83,14 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     IOUtils.closeQuietly(solrScraper);
     IOUtils.closeQuietly(solrClient);
     cleanUpHarness();
-    executor.shutdownNow();
-    jetty.stop();
+    if (null != executor) {
+      executor.shutdownNow();
+      executor = null;
+    }
+    if (null != jetty) {
+      jetty.stop();
+      jetty = null;
+    }
   }
 
   @Test

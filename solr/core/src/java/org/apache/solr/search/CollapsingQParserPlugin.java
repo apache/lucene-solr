@@ -286,8 +286,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       // if unknown field, this would fail fast
       SchemaField collapseFieldSf = request.getSchema().getField(this.collapseField);
-      // collapseFieldSf won't be null
-      if (collapseFieldSf.multiValued()) {
+      if (!(collapseFieldSf.isUninvertible() || collapseFieldSf.hasDocValues())) {
+        // uninvertible=false and docvalues=false
+        // field can't be indexed=false and uninvertible=true
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collapsing field '" + collapseField +
+            "' should be either docValues enabled or indexed with uninvertible enabled");
+      } else if (collapseFieldSf.multiValued()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collapsing not supported on multivalued fields");
       }
 

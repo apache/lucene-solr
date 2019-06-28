@@ -29,7 +29,7 @@ import org.apache.lucene.queryparser.classic.QueryParser.Operator;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery.TooManyClauses;
+import org.apache.lucene.search.IndexSearcher.TooManyClauses;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.QueryBuilder;
@@ -114,7 +114,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
       ParseException e = new ParseException("Cannot parse '" +query+ "': " + tme.getMessage());
       e.initCause(tme);
       throw e;
-    } catch (BooleanQuery.TooManyClauses tmc) {
+    } catch (TooManyClauses tmc) {
       ParseException e = new ParseException("Cannot parse '" +query+ "': too many boolean clauses");
       e.initCause(tmc);
       throw e;

@@ -349,8 +349,13 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   }
 
   protected void closeZk() throws Exception {
-    if (zkClient != null)
+    if (null != zkClient) {
       zkClient.close();
-    zkServer.shutdown();
+      zkClient = null;
+    }
+    if (null != zkServer) {
+      zkServer.shutdown();
+      zkServer = null;
+    }
   }
 }

@@ -153,9 +153,10 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    exe.shutdownNow();
-
-    exe = null;
+    if (null != exe) {
+      exe.shutdownNow();
+      exe = null;
+    }
     inputFactory = null;
   }
 
