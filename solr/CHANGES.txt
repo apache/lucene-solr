@@ -224,6 +224,8 @@ Other Changes
 
 * SOLR-13576: Factor out a TopGroupsShardResponseProcessor.fillResultIds method. (Christine Poerschke, Diego Ceccarelli)
 
+* SOLR-12364: Add test cases for edismax boost (David Smiley, Munendra S N)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
