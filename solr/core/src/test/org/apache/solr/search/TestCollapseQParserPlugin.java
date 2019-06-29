@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -970,19 +969,13 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void test64BitCollapseFieldException() {
-    ModifiableSolrParams doubleParams = new ModifiableSolrParams();
-    doubleParams.add("q", "*:*");
-    doubleParams.add("fq", "{!collapse field=group_d}");
-    expectThrows(RuntimeException.class, IOException.class, () -> h.query(req(doubleParams)));
+    assertQEx("Should Fail For collapsing on Long fields", "Collapsing field should be of either String, Int or Float type",
+        req("q", "*:*", "fq", "{!collapse field=group_l}"), SolrException.ErrorCode.BAD_REQUEST);
 
-    ModifiableSolrParams dateParams = new ModifiableSolrParams();
-    dateParams.add("q", "*:*");
-    dateParams.add("fq", "{!collapse field=group_dt}");
-    expectThrows(RuntimeException.class, IOException.class, () -> h.query(req(dateParams)));
+    assertQEx("Should Fail For collapsing on Double fields", "Collapsing field should be of either String, Int or Float type",
+        req("q", "*:*", "fq", "{!collapse field=group_d}"), SolrException.ErrorCode.BAD_REQUEST);
 
-    ModifiableSolrParams longParams = new ModifiableSolrParams();
-    longParams.add("q", "*:*");
-    longParams.add("fq", "{!collapse field=group_l}");
-    expectThrows(RuntimeException.class, IOException.class, () -> h.query(req(longParams)));
+    assertQEx("Should Fail For collapsing on Date fields", "Collapsing field should be of either String, Int or Float type",
+        req("q", "*:*", "fq", "{!collapse field=group_dt}"), SolrException.ErrorCode.BAD_REQUEST);
   }
 }
