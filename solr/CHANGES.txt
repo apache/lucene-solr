@@ -195,6 +195,9 @@ Bug Fixes
   
 * SOLR-13280: Strengthen ScheduledTrigger's preferredOperation parameter validation. (Christine Poerschke)
 
+* SOLR-9409: Improve error message for unsupported field types and return 400 error code on
+  unsupported values in collapsing (hossman, Munendra S N)
+
 Other Changes
 ----------------------
 
