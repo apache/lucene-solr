@@ -279,7 +279,7 @@ public class FSTTester<T> {
                                               allowRandomSuffixSharing ? TestUtil.nextInt(random, 1, 10) : Integer.MAX_VALUE,
                                               outputs,
                                               true,
-                                              15, true);
+                                              15);
 
     for(InputOutput<T> pair : pairs) {
       if (pair.output instanceof List) {

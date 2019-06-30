@@ -1084,7 +1084,7 @@ public final class OrdsSegmentTermsEnum extends BaseTermsEnum {
         result.grow(1+upto);
         fr.index.readFirstRealTargetArc(arc.target, arc, fstReader);
 
-        if (arc.bytesPerArc != 0) {
+        if (arc.bytesPerArc != 0 && arc.arcIdx > Integer.MIN_VALUE) {
           // System.out.println("  array arcs");
           int low = 0;
           int high = arc.numArcs-1;
