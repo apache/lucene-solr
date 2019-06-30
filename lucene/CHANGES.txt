@@ -52,6 +52,9 @@ API Changes
 
 New Features
 
+* LUCENE-8891: Snowball stemmer/analyzer for the Estonian language.
+ (Gert Morten Paimla via Tomoko Uchida)
+
 * LUCENE-8815: Provide a DoubleValues implementation for retrieving the value of features without
   requiring a separate numeric field. Note that as feature values are stored with only 8 bits of 
   mantissa the values returned may have a delta from the original values indexed.
