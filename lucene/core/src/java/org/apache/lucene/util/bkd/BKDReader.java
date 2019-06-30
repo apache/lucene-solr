@@ -786,7 +786,7 @@ public final class BKDReader extends PointValues implements Accountable {
     private int length;
     private int offset;
     private int docID;
-    int[] docIDs;
+    final int[] docIDs;
 
     public BKDReaderDocIDSetIterator(int maxPointsInLeafNode) {
       this.docIDs = new int[maxPointsInLeafNode];

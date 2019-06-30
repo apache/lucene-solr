@@ -851,18 +851,19 @@ public class TestBKD extends LuceneTestCase {
                 //check the default method is correct
                 IntersectVisitor.super.visit(iterator, packedValue);
               } else {
-                assertTrue(iterator.docID() == -1);
-                int cost = (int) iterator.cost();
+                assertEquals(iterator.docID(), -1);
+                int cost = Math.toIntExact(iterator.cost());
                 int numberOfPoints = 0;
                 int docID;
                 while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                  assertEquals(iterator.docID(), docID);
                   visit(docID, packedValue);
                   numberOfPoints++;
                 }
-                assertTrue(cost == numberOfPoints);
-                assertTrue(iterator.docID() == DocIdSetIterator.NO_MORE_DOCS);
-                assertTrue(iterator.nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
-                assertTrue(iterator.docID() == DocIdSetIterator.NO_MORE_DOCS);
+                assertEquals(cost,  numberOfPoints);
+                assertEquals(iterator.docID(), DocIdSetIterator.NO_MORE_DOCS);
+                assertEquals(iterator.nextDoc(), DocIdSetIterator.NO_MORE_DOCS);
+                assertEquals(iterator.docID(), DocIdSetIterator.NO_MORE_DOCS);
               }
           }
 
