@@ -17,9 +17,7 @@
 package org.apache.lucene.analysis.util;
 
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -83,21 +81,13 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       String originalName = null;
       Throwable cause = null;
       try {
-        // Lookup "NAME" field with appropriate modifiers.
-        // Also it must be a String class and declared in the service class.
-        final Field field = service.getField("NAME");
-        int modifier = field.getModifiers();
-        if (Modifier.isStatic(modifier) && Modifier.isFinal(modifier) &&
-            field.getType().equals(String.class) &&
-            Objects.equals(field.getDeclaringClass(), service)) {
-          originalName = ((String)field.get(null));
-          name = originalName.toLowerCase(Locale.ROOT);
-          if (!isValidName(originalName)) {
-            throw new ServiceConfigurationError("The name " + originalName + " for " + service.getName() +
-                " is invalid: Allowed characters are (English) alphabet, digits, and underscore. It should be started with an alphabet.");
-          }
+        originalName = AbstractAnalysisFactory.lookupSPIName(service);
+        name = originalName.toLowerCase(Locale.ROOT);
+        if (!isValidName(originalName)) {
+          throw new ServiceConfigurationError("The name " + originalName + " for " + service.getName() +
+              " is invalid: Allowed characters are (English) alphabet, digits, and underscore. It should be started with an alphabet.");
         }
-      } catch (NoSuchFieldException | IllegalAccessException e) {
+      } catch (NoSuchFieldException | IllegalAccessException | IllegalStateException e) {
         cause = e;
       }
       if (name == null) {
