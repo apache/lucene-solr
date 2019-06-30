@@ -780,6 +780,8 @@ public final class BKDReader extends PointValues implements Accountable {
     return nodeID >= leafNodeOffset;
   }
 
+  /**
+   * Reusable {@link DocIdSetIterator} to handle low cardinality leaves. */
   protected static class BKDReaderDocIDSetIterator extends DocIdSetIterator {
 
     private int idx;
