@@ -848,7 +848,7 @@ public class TestBKD extends LuceneTestCase {
           @Override
           public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
               if (random().nextBoolean()) {
-                //check the default method is correct
+                // check the default method is correct
                 IntersectVisitor.super.visit(iterator, packedValue);
               } else {
                 assertEquals(iterator.docID(), -1);
