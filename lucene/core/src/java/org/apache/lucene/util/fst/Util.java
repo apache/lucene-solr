@@ -105,6 +105,7 @@ public final class Util {
    *  For example, simple ordinals (0, 1,
    *  2, ...), or file offsets (when appending to a file)
    *  fit this. */
+  @Deprecated
   public static IntsRef getByOutput(FST<Long> fst, long targetOutput) throws IOException {
 
     final BytesReader in = fst.getBytesReader();
