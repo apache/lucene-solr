@@ -29,7 +29,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 
-public final class ConnectionCostsWriter {
+final class ConnectionCostsWriter {
   
   private final short[][] costs; // array is backward IDs first since get is called using the same backward ID consecutively. maybe doesn't matter.
   private final int forwardSize;

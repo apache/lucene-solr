@@ -37,7 +37,7 @@ import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 /**
  */
-public class TokenInfoDictionaryBuilder {
+class TokenInfoDictionaryBuilder {
 
   private final String encoding;
   private final Normalizer.Form normalForm;

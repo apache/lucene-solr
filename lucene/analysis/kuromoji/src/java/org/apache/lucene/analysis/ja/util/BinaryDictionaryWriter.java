@@ -34,7 +34,7 @@ import org.apache.lucene.util.ArrayUtil;
 
 import org.apache.lucene.analysis.ja.dict.BinaryDictionary;
 
-public abstract class BinaryDictionaryWriter {
+abstract class BinaryDictionaryWriter {
   private final static int ID_LIMIT = 8192;
 
   private final Class<? extends BinaryDictionary> implClazz;

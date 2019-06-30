@@ -325,7 +325,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         log.error("Error deleting SolrCore.");
       }
       
-      ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
+      if (null != testExecutor) {
+        ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
+      }
 
       resetExceptionIgnores();
 
@@ -1286,6 +1288,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @see #deleteByQueryAndGetVersion
    */
   public void clearIndex() {
+    if (null == h) {
+      // harness not initialized, treat as No-Op so safe to call in cleanup methods
+      // even if no tests run
+      return;
+    }
     try {
       deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE),
                                                DISTRIB_UPDATE_PARAM,DistribPhase.FROMLEADER.toString()));

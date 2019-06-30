@@ -20,10 +20,20 @@ package org.apache.lucene.analysis.ja.util;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 
+/**
+ * Tool to build dictionaries.
+ */
 public class DictionaryBuilder {
 
-  public enum DictionaryFormat { IPADIC, UNIDIC }
+  /** Format of the dictionary. */
+  public enum DictionaryFormat {
+    /** IPADIC format */
+    IPADIC,
+    /** UNIDIC format */
+    UNIDIC
+  }
 
   private DictionaryBuilder() {
   }
@@ -42,7 +52,7 @@ public class DictionaryBuilder {
   }
 
   public static void main(String[] args) throws IOException {
-    DictionaryFormat format = DictionaryFormat.valueOf(args[0].toUpperCase());
+    DictionaryFormat format = DictionaryFormat.valueOf(args[0].toUpperCase(Locale.ROOT));
     String inputDirName = args[1];
     String outputDirName = args[2];
     String inputEncoding = args[3];

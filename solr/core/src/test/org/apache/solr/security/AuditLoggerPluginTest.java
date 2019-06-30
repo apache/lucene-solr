@@ -107,7 +107,10 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
   @Override
   @After
   public void tearDown() throws Exception {
-    plugin.close();
+    if (null != plugin) {
+      plugin.close();
+      plugin = null;
+    }
     super.tearDown();
   }
 

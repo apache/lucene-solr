@@ -398,8 +398,13 @@ public final class ByteBlockPool implements Accountable {
   @Override
   public long ramBytesUsed() {
     long size = BASE_RAM_BYTES;
-    for (byte[] buffer : buffers) {
-      size += RamUsageEstimator.sizeOfObject(buffer);
+    size += RamUsageEstimator.sizeOfObject(buffer);
+    size += RamUsageEstimator.shallowSizeOf(buffers);
+    for (byte[] buf : buffers) {
+      if (buf == buffer) {
+        continue;
+      }
+      size += RamUsageEstimator.sizeOfObject(buf);
     }
     return size;
   }

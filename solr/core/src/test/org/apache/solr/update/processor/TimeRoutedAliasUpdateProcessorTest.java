@@ -90,7 +90,9 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
   @After
   public void doAfter() throws Exception {
-    solrClient.close();
+    if (null != solrClient) {
+      solrClient.close();
+    }
     shutdownCluster();
   }
 

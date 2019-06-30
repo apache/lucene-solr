@@ -47,7 +47,13 @@ API Changes
   and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
   Grand, Alan Woodward)
 
+* LUCENE-8856: Intervals queries have moved from the sandbox to the queries
+  module. (Alan Woodward)
+
 New Features
+
+* LUCENE-8891: Snowball stemmer/analyzer for the Estonian language.
+ (Gert Morten Paimla via Tomoko Uchida)
 
 * LUCENE-8815: Provide a DoubleValues implementation for retrieving the value of features without
   requiring a separate numeric field. Note that as feature values are stored with only 8 bits of 
@@ -130,6 +136,12 @@ Improvements
 
 * LUCENE-8793: Luke enhanced UI for CustomAnalyzer: show detailed analysis steps. (Jun Ohtani via Tomoko Uchida)
 
+* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
+
+* LUCENE-8855: Add Accountable to some Query implementations (ab, Adrien Grand)
+
+* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
+
 Optimizations
 
 * LUCENE-8796: Use exponential search instead of binary search in
@@ -164,11 +176,7 @@ Other
 
 * LUCENE-8879: Improve BKDRadixSelector tests. (Ignacio Vera)
 
-======================= Lucene 8.1.2 =======================
-
-Improvements
-
-* LUCENE-8855: Add Accountable to some Query implementations (ab, Adrien Grand)
+* LUCENE-8886: Fix TestMutablePointsReaderUtils tests. (Ignacio Vera)
 
 ======================= Lucene 8.1.1 =======================
 (No Changes)

@@ -342,7 +342,7 @@ public final class RamUsageEstimator {
       return size;
     }
     // assume array-backed collection and add per-object references
-    size += NUM_BYTES_ARRAY_HEADER * 2;
+    size += NUM_BYTES_ARRAY_HEADER + collection.size() * NUM_BYTES_OBJECT_REF;
     for (Object o : collection) {
       size += sizeOfObject(o, depth, defSize);
     }
@@ -350,29 +350,39 @@ public final class RamUsageEstimator {
   }
 
   private static final class RamUsageQueryVisitor extends QueryVisitor {
-    long total = 0;
+    long total;
     long defSize;
+    Query root;
 
-    RamUsageQueryVisitor(long defSize) {
+    RamUsageQueryVisitor(Query root, long defSize) {
+      this.root = root;
       this.defSize = defSize;
+      if (defSize > 0) {
+        total = defSize;
+      } else {
+        total = shallowSizeOf(root);
+      }
     }
 
     @Override
     public void consumeTerms(Query query, Term... terms) {
-      if (defSize > 0) {
-        total += defSize;
-      } else {
-        total += shallowSizeOf(query);
+      if (query != root) {
+        if (defSize > 0) {
+          total += defSize;
+        } else {
+          total += shallowSizeOf(query);
+        }
       }
       if (terms != null) {
-        for (Term t : terms) {
-          total += sizeOf(t);
-        }
+        total += sizeOf(terms);
       }
     }
 
     @Override
     public void visitLeaf(Query query) {
+      if (query == root) {
+        return;
+      }
       if (query instanceof Accountable) {
         total += ((Accountable)query).ramBytesUsed();
       } else {
@@ -407,9 +417,9 @@ public final class RamUsageEstimator {
     if (q instanceof Accountable) {
       return ((Accountable)q).ramBytesUsed();
     } else {
-      RamUsageQueryVisitor visitor = new RamUsageQueryVisitor(defSize);
+      RamUsageQueryVisitor visitor = new RamUsageQueryVisitor(q, defSize);
       q.visit(visitor);
-      return visitor.total;
+      return alignObjectSize(visitor.total);
     }
   }
 

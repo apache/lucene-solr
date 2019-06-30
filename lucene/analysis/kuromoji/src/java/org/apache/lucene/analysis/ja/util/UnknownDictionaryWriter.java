@@ -19,12 +19,11 @@ package org.apache.lucene.analysis.ja.util;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.apache.lucene.analysis.ja.dict.CharacterDefinition;
 import org.apache.lucene.analysis.ja.dict.UnknownDictionary;
 
-public class UnknownDictionaryWriter extends BinaryDictionaryWriter {
+class UnknownDictionaryWriter extends BinaryDictionaryWriter {
   private final CharacterDefinitionWriter characterDefinition = new CharacterDefinitionWriter();
   
   public UnknownDictionaryWriter(int size) {
