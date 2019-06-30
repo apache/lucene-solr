@@ -363,7 +363,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
 
       final Builder<Output> indexBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1,
                                                          0, 0, true, false, Integer.MAX_VALUE,
-                                                         FST_OUTPUTS, true, 15, false);
+                                                         FST_OUTPUTS, true, 15);
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}
