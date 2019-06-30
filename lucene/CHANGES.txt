@@ -138,6 +138,8 @@ Improvements
 
 * LUCENE-8855: Add Accountable to some Query implementations (ab, Adrien Grand)
 
+* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
+
 Optimizations
 
 * LUCENE-8796: Use exponential search instead of binary search in
