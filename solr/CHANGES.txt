@@ -200,6 +200,8 @@ Bug Fixes
 * SOLR-9409: Improve error message for unsupported field types and return 400 error code on
   unsupported values in collapsing (hossman, Munendra S N)
 
+* SOLR-13404: Support group.query in multi-shard environment when group.main=true or group.format=simple (Munendra S N)
+
 Other Changes
 ----------------------
 

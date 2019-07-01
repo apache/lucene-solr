@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.util.Utils;
@@ -99,7 +100,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             ,"//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author3']"
             ,"//arr[@name='groups']/lst[1]/result[@numFound='1']"
             ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='5']"
-            
+
             ,"//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author2']"
             ,"//arr[@name='groups']/lst[2]/result[@numFound='2']"
             ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='4']"
@@ -122,6 +123,18 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         , "//arr[@name='groups']/lst[2]/result[@numFound='3']"
         , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='5']"
     );
+
+    SolrException exception = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "title:title", "group", "true", "group.field", "group_i", "group.offset", "-1"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+    assertEquals("'group.offset' parameter cannot be negative", exception.getMessage());
+
+    // for group.main=true and group.format=simple, group.offset is not consumed
+    assertQ(req("q", "title:title", "group", "true", "group.field", "group_i",
+        "group.offset", "-1", "group.format", "simple"));
+    assertQ(req("q", "title:title", "group", "true", "group.field", "group_i",
+        "group.offset", "-1", "group.main", "true"));
   }
 
   @Test
