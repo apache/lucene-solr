@@ -76,7 +76,7 @@ public class TestLang extends SolrTestCase {
       "getAmplitude", "getPhase", "getAngularFrequency", "enclosingDisk", "getCenter", "getRadius",
       "getSupportPoints", "pairSort", "log10", "plist", "recip", "pivot", "ltrim", "rtrim", "export",
       "zplot", "natural", "repeat", "movingMAD", "hashRollup", "noop", "var", "stddev", "recNum", "isNull",
-      "notNull", "matches"};
+      "notNull", "matches", "projectToBorder"};
 
   @Test
   public void testLang() {
