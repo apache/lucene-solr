@@ -84,6 +84,8 @@ Bug Fixes
 * LUCENE-8853: FileSwitchDirectory now applies best effort to place tmp files in the same
   directory as the target files. (Simon Willnauer)
 
+* LUCENE-8892: Add missing closing parentheses in MultiBoolFunction's description() (Florian Diebold, Munendra S N)
+
 Improvements
 
 * LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
