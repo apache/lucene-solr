@@ -83,7 +83,8 @@ final public class Tessellator {
   public static final List<Triangle> tessellate(final Polygon polygon) {
     // Attempt to establish a doubly-linked list of the provided shell points (should be CCW, but this will correct);
     // then filter instances of intersections.
-    Node outerNode = createDoublyLinkedList(polygon, 0, WindingOrder.CW);
+    Node outerNode = createDoublyLinkedList(polygon.getPolyLons(), polygon.getPolyLats(),polygon.getWindingOrder(), true,
+        0, WindingOrder.CW);
     // If an outer node hasn't been detected, the shape is malformed. (must comply with OGC SFA specification)
     if(outerNode == null) {
       throw new IllegalArgumentException("Malformed shape detected in Tessellator!");
@@ -122,7 +123,8 @@ final public class Tessellator {
   public static final List<Triangle> tessellate(final XYPolygon polygon) {
     // Attempt to establish a doubly-linked list of the provided shell points (should be CCW, but this will correct);
     // then filter instances of intersections.
-    Node outerNode = createDoublyLinkedList(polygon, 0, WindingOrder.CW);
+    Node outerNode = createDoublyLinkedList(polygon.getPolyX(), polygon.getPolyY(), polygon.getWindingOrder(), false,
+        0, WindingOrder.CW);
     // If an outer node hasn't been detected, the shape is malformed. (must comply with OGC SFA specification)
     if(outerNode == null) {
       throw new IllegalArgumentException("Malformed shape detected in Tessellator!");
@@ -155,16 +157,6 @@ final public class Tessellator {
     }
 
     return result;
-  }
-
-  private static final Node createDoublyLinkedList(XYPolygon polygon, int startIndex, final WindingOrder windingOrder) {
-    return createDoublyLinkedList(polygon.getPolyX(), polygon.getPolyY(), polygon.getWindingOrder(), false,
-        startIndex, windingOrder);
-  }
-
-  private static final Node createDoublyLinkedList(Polygon polygon, int startIndex, final WindingOrder windingOrder) {
-    return createDoublyLinkedList(polygon.getPolyLons(), polygon.getPolyLats(),polygon.getWindingOrder(), true,
-        startIndex, windingOrder);
   }
 
   /** Creates a circular doubly linked list using polygon points. The order is governed by the specified winding order */
@@ -202,9 +194,6 @@ final public class Tessellator {
     for(int i = 0; i < polygon.numHoles(); ++i) {
       // create the doubly-linked hole list
       Node list = createDoublyLinkedList(holes[i].getPolyX(), holes[i].getPolyY(), holes[i].getWindingOrder(), false, nodeIndex, WindingOrder.CCW);
-      if (list == list.next) {
-        list.isSteiner = true;
-      }
       // Determine if the resulting hole polygon was successful.
       if(list != null) {
         // Add the leftmost vertex of the hole.

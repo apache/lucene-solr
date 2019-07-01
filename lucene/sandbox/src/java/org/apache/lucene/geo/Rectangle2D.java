@@ -18,6 +18,7 @@
 package org.apache.lucene.geo;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
@@ -37,14 +38,14 @@ import static org.apache.lucene.geo.GeoUtils.orient;
  * @lucene.internal
  */
 public class Rectangle2D {
-  final byte[] bbox;
-  final byte[] west;
-  final int minX;
-  final int maxX;
-  final int minY;
-  final int maxY;
+  protected final byte[] bbox;
+  private final byte[] west;
+  protected final int minX;
+  protected final int maxX;
+  protected final int minY;
+  protected final int maxY;
 
-  private Rectangle2D(double minLat, double maxLat, double minLon, double maxLon) {
+  protected Rectangle2D(double minLat, double maxLat, double minLon, double maxLon) {
     this.bbox = new byte[4 * BYTES];
     int minXenc = encodeLongitudeCeil(minLon);
     int maxXenc = encodeLongitude(maxLon);
@@ -74,6 +75,16 @@ public class Rectangle2D {
       this.maxX = maxXenc;
       encode(this.minX, this.maxX, this.minY, this.maxY, bbox);
     }
+  }
+
+  protected Rectangle2D(int minX, int maxX, int minY, int maxY) {
+    this.bbox = new byte[4 * BYTES];
+    this.west = null;
+    this.minX = minX;
+    this.maxX = maxX;
+    this.minY = minY;
+    this.maxY = maxY;
+    encode(this.minX, this.maxX, this.minY, this.maxY, bbox);
   }
 
   /** Builds a Rectangle2D from rectangle */
@@ -271,5 +282,26 @@ public class Rectangle2D {
   private static boolean boxesAreDisjoint(final int aMinX, final int aMaxX, final int aMinY, final int aMaxY,
                                          final int bMinX, final int bMaxX, final int bMinY, final int bMaxY) {
     return (aMaxX < bMinX || aMinX > bMaxX || aMaxY < bMinY || aMinY > bMaxY);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Rectangle2D)) return false;
+    Rectangle2D that = (Rectangle2D) o;
+    return minX == that.minX &&
+        maxX == that.maxX &&
+        minY == that.minY &&
+        maxY == that.maxY &&
+        Arrays.equals(bbox, that.bbox) &&
+        Arrays.equals(west, that.west);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(minX, maxX, minY, maxY);
+    result = 31 * result + Arrays.hashCode(bbox);
+    result = 31 * result + Arrays.hashCode(west);
+    return result;
   }
 }
