@@ -206,25 +206,42 @@ final class LatLonPointDistanceQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] packedValue) {
+            if (matches(packedValue) == true) {
+              visit(docID);
+            }
+          }
+
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+            if (matches(packedValue) == true) {
+              int docID;
+              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                visit(docID);
+              }
+            }
+          }
+
+          private boolean matches(byte[] packedValue) {
             // bounding box check
             if (Arrays.compareUnsigned(packedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
                 Arrays.compareUnsigned(packedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0) {
               // latitude out of bounding box range
-              return;
+              return false;
             }
 
             if ((Arrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
                 Arrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0)
                 && Arrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon2, 0, Integer.BYTES) < 0) {
               // longitude out of bounding box range
-              return;
+              return false;
             }
 
             int docLatitude = NumericUtils.sortableBytesToInt(packedValue, 0);
             int docLongitude = NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES);
             if (distancePredicate.test(docLatitude, docLongitude)) {
-              adder.add(docID);
+              return true;
             }
+            return false;
           }
 
           // algorithm: we create a bounding box (two bounding boxes if we cross the dateline).
@@ -271,30 +288,42 @@ final class LatLonPointDistanceQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] packedValue) {
+            if (matches(packedValue) == true) {
+              visit(docID);
+            }
+          }
+
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+            if (matches(packedValue) == true) {
+              int docID;
+              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                visit(docID);
+              }
+            }
+          }
+
+          private boolean matches(byte[] packedValue) {
             // bounding box check
             if (Arrays.compareUnsigned(packedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
                 Arrays.compareUnsigned(packedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0) {
               // latitude out of bounding box range
-              result.clear(docID);
-              cost[0]--;
-              return;
+              return true;
             }
 
             if ((Arrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
                 Arrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0)
                 && Arrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon2, 0, Integer.BYTES) < 0) {
               // longitude out of bounding box range
-              result.clear(docID);
-              cost[0]--;
-              return;
+              return true;
             }
 
             int docLatitude = NumericUtils.sortableBytesToInt(packedValue, 0);
             int docLongitude = NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES);
             if (!distancePredicate.test(docLatitude, docLongitude)) {
-              result.clear(docID);
-              cost[0]--;
+              return true;
             }
+            return false;
           }
 
           @Override

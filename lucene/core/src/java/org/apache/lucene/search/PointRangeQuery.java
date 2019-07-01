@@ -130,20 +130,34 @@ public abstract class PointRangeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] packedValue) {
+            if (matches(packedValue) == true) {
+              visit(docID);
+            }
+          }
+
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+            if (matches(packedValue) == true) {
+              int docID;
+              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                visit(docID);
+              }
+            }
+          }
+
+          private boolean matches(byte[] packedValue) {
             for(int dim=0;dim<numDims;dim++) {
               int offset = dim*bytesPerDim;
               if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
                 // Doc's value is too low, in this dimension
-                return;
+                return false;
               }
               if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0) {
                 // Doc's value is too high, in this dimension
-                return;
+                return false;
               }
             }
-
-            // Doc is in-bounds
-            adder.add(docID);
+            return true;
           }
 
           @Override
@@ -186,21 +200,34 @@ public abstract class PointRangeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] packedValue) {
+            if (matches(packedValue) == true) {
+              visit(docID);
+            }
+          }
+
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+            if (matches(packedValue) == true) {
+              int docID;
+              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                visit(docID);
+              }
+            }
+          }
+
+          private boolean matches(byte[] packedValue) {
             for(int dim=0;dim<numDims;dim++) {
               int offset = dim*bytesPerDim;
               if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
                 // Doc's value is too low, in this dimension
-                result.clear(docID);
-                cost[0]--;
-                return;
+                return true;
               }
               if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0) {
                 // Doc's value is too high, in this dimension
-                result.clear(docID);
-                cost[0]--;
-                return;
+                return true;
               }
             }
+            return false;
           }
 
           @Override

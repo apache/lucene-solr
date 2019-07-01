@@ -116,8 +116,18 @@ abstract class LatLonShapeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] t) throws IOException {
-            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS)) {
-              adder.add(docID);
+            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS) == true) {
+              visit(docID);
+            }
+          }
+
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS) == true) {
+              int docID;
+              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                visit(docID);
+              }
             }
           }
 
@@ -149,6 +159,19 @@ abstract class LatLonShapeQuery extends Query {
               intersect.set(docID);
             } else {
               disjoint.set(docID);
+            }
+          }
+
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+            boolean queryMatches = queryMatches(t, scratchTriangle, queryRelation);
+            int docID;
+            while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              if (queryMatches == true) {
+                intersect.set(docID);
+              } else {
+                disjoint.set(docID);
+              }
             }
           }
 
@@ -308,10 +331,20 @@ abstract class LatLonShapeQuery extends Query {
         @Override
         public void visit(int docID, byte[] packedTriangle) {
           if (query.queryMatches(packedTriangle, scratchTriangle, QueryRelation.INTERSECTS) == false) {
-            result.clear(docID);
-            cost[0]--;
+            visit(docID);
           }
         }
+
+        @Override
+        public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+          if (query.queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS) == false) {
+            int docID;
+            while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              visit(docID);
+            }
+          }
+        }
+
 
         @Override
         public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {

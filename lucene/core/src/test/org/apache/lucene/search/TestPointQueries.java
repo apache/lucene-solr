@@ -1727,34 +1727,98 @@ public class TestPointQueries extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(w);
     IndexSearcher s = newSearcher(r, false);
     assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 0)));
+    assertEquals(zeroCount, s.count(IntPoint.newRangeQuery("int", 0, 0)));
     assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 0, -7)));
     assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 7, 0)));
     assertEquals(10000-zeroCount, s.count(IntPoint.newSetQuery("int", 1)));
     assertEquals(0, s.count(IntPoint.newSetQuery("int", 2)));
 
     assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 0)));
+    assertEquals(zeroCount, s.count(LongPoint.newRangeQuery("long", 0, 0)));
     assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 0, -7)));
     assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 7, 0)));
     assertEquals(10000-zeroCount, s.count(LongPoint.newSetQuery("long", 1)));
     assertEquals(0, s.count(LongPoint.newSetQuery("long", 2)));
 
     assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 0)));
+    assertEquals(zeroCount, s.count(FloatPoint.newRangeQuery("float", 0, 0)));
     assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 0, -7)));
     assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 7, 0)));
     assertEquals(10000-zeroCount, s.count(FloatPoint.newSetQuery("float", 1)));
     assertEquals(0, s.count(FloatPoint.newSetQuery("float", 2)));
 
     assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 0)));
+    assertEquals(zeroCount, s.count(DoublePoint.newRangeQuery("double", 0, 0)));
     assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 0, -7)));
     assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 7, 0)));
     assertEquals(10000-zeroCount, s.count(DoublePoint.newSetQuery("double", 1)));
     assertEquals(0, s.count(DoublePoint.newSetQuery("double", 2)));
 
     assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0})));
+    assertEquals(zeroCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {0}, new byte[] {0})));
     assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0}, new byte[] {-7})));
     assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {7}, new byte[] {0})));
     assertEquals(10000-zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {1})));
     assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {2})));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testPointRangeQueryManyEqualValues() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    int cardinality = TestUtil.nextInt(random(), 2, 20);
+
+    int zeroCount = 0;
+    int oneCount = 0;
+    for(int i=0;i<10000;i++) {
+      int x = random().nextInt(cardinality);
+      if (x == 0) {
+        zeroCount++;
+      } else if (x == 1) {
+        oneCount++;
+      }
+      Document doc = new Document();
+      doc.add(new IntPoint("int", x));
+      doc.add(new LongPoint("long", (long) x));
+      doc.add(new FloatPoint("float", (float) x));
+      doc.add(new DoublePoint("double", (double) x));
+      doc.add(new BinaryPoint("bytes", new byte[] {(byte) x}));
+      w.addDocument(doc);
+    }
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r, false);
+
+    assertEquals(zeroCount, s.count(IntPoint.newRangeQuery("int", 0, 0)));
+    assertEquals(oneCount, s.count(IntPoint.newRangeQuery("int", 1, 1)));
+    assertEquals(zeroCount + oneCount, s.count(IntPoint.newRangeQuery("int", 0, 1)));
+    assertEquals(10000 - zeroCount - oneCount, s.count(IntPoint.newRangeQuery("int", 2, cardinality)));
+
+    assertEquals(zeroCount, s.count(LongPoint.newRangeQuery("long", 0, 0)));
+    assertEquals(oneCount, s.count(LongPoint.newRangeQuery("long", 1, 1)));
+    assertEquals(zeroCount + oneCount, s.count(LongPoint.newRangeQuery("long", 0, 1)));
+    assertEquals(10000 - zeroCount - oneCount, s.count(LongPoint.newRangeQuery("long", 2, cardinality)));
+
+    assertEquals(zeroCount, s.count(FloatPoint.newRangeQuery("float", 0, 0)));
+    assertEquals(oneCount, s.count(FloatPoint.newRangeQuery("float", 1, 1)));
+    assertEquals(zeroCount + oneCount, s.count(FloatPoint.newRangeQuery("float", 0, 1)));
+    assertEquals(10000 - zeroCount - oneCount, s.count(FloatPoint.newRangeQuery("float", 2, cardinality)));
+
+    assertEquals(zeroCount, s.count(DoublePoint.newRangeQuery("double", 0, 0)));
+    assertEquals(oneCount, s.count(DoublePoint.newRangeQuery("double", 1, 1)));
+    assertEquals(zeroCount + oneCount, s.count(DoublePoint.newRangeQuery("double", 0, 1)));
+    assertEquals(10000 - zeroCount - oneCount, s.count(DoublePoint.newRangeQuery("double", 2, cardinality)));
+
+    assertEquals(zeroCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {0}, new byte[] {0})));
+    assertEquals(oneCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {1}, new byte[] {1})));
+    assertEquals(zeroCount + oneCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {0}, new byte[] {1})));
+    assertEquals(10000 - zeroCount - oneCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {2}, new byte[] {(byte) cardinality})));
 
     w.close();
     r.close();
