@@ -200,14 +200,14 @@ public abstract class PointRangeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] packedValue) {
-            if (matches(packedValue) == true) {
+            if (matches(packedValue) == false) {
               visit(docID);
             }
           }
 
           @Override
           public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
-            if (matches(packedValue) == true) {
+            if (matches(packedValue) == false) {
               int docID;
               while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                 visit(docID);
@@ -220,14 +220,14 @@ public abstract class PointRangeQuery extends Query {
               int offset = dim*bytesPerDim;
               if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
                 // Doc's value is too low, in this dimension
-                return true;
+                return false;
               }
               if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0) {
                 // Doc's value is too high, in this dimension
-                return true;
+                return false;
               }
             }
-            return false;
+            return true;
           }
 
           @Override

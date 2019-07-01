@@ -288,14 +288,14 @@ final class LatLonPointDistanceQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] packedValue) {
-            if (matches(packedValue) == true) {
+            if (matches(packedValue) == false) {
               visit(docID);
             }
           }
 
           @Override
           public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
-            if (matches(packedValue) == true) {
+            if (matches(packedValue) == false) {
               int docID;
               while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                 visit(docID);
@@ -308,19 +308,19 @@ final class LatLonPointDistanceQuery extends Query {
             if (Arrays.compareUnsigned(packedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
                 Arrays.compareUnsigned(packedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0) {
               // latitude out of bounding box range
-              return true;
+              return false;
             }
 
             if ((Arrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
                 Arrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0)
                 && Arrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon2, 0, Integer.BYTES) < 0) {
               // longitude out of bounding box range
-              return true;
+              return false;
             }
 
             int docLatitude = NumericUtils.sortableBytesToInt(packedValue, 0);
             int docLongitude = NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES);
-            if (!distancePredicate.test(docLatitude, docLongitude)) {
+            if (distancePredicate.test(docLatitude, docLongitude)) {
               return true;
             }
             return false;
