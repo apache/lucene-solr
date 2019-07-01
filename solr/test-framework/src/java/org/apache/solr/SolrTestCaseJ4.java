@@ -557,6 +557,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("useCompoundFile", String.valueOf(iwc.getUseCompoundFile()));
 
     System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(iwc.getMaxBufferedDocs()));
+    System.setProperty("solr.tests.ramPerThreadHardLimitMB", String.valueOf(iwc.getRAMPerThreadHardLimitMB()));
     System.setProperty("solr.tests.ramBufferSizeMB", String.valueOf(iwc.getRAMBufferSizeMB()));
 
     String mergeSchedulerClass = iwc.getMergeScheduler().getClass().getName();
