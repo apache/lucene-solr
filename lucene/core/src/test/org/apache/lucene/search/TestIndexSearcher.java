@@ -253,7 +253,7 @@ public class TestIndexSearcher extends LuceneTestCase {
       protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
         ArrayList<LeafSlice> slices = new ArrayList<>();
         for (LeafReaderContext ctx : leaves) {
-          slices.add(new LeafSlice(Arrays.asList(ctx)));
+          slices.add(new LeafSlice(ctx));
         }
         return slices.toArray(new LeafSlice[0]);
       }
