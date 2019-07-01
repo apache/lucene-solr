@@ -148,6 +148,8 @@ New Features
 
 * SOLR-13569: AdminUI visual indication of prod/test/dev environment (janhoy)
 
+* SOLR-12554: Expose IndexWriterConfig's ramPerThreadHardLimitMB through solrconfig.xml (Ishan Chattopadhyaya, Munendra S N)
+
 Bug Fixes
 ----------------------
 
