@@ -1972,11 +1972,25 @@ public class TestPointQueries extends LuceneTestCase {
     assertFalse(q1.equals(IntPoint.newExactQuery("a", 1)));
     assertFalse(q1.equals(IntPoint.newExactQuery("b", 1000)));
 
+    assertTrue(q1 instanceof PointRangeQuery && q2 instanceof PointRangeQuery);
+    PointRangeQuery pq1 = (PointRangeQuery) q1;
+    PointRangeQuery pq2 = (PointRangeQuery) q2;
+
+    assertTrue(Arrays.equals(pq1.getLowerPoint(), pq2.getLowerPoint()));
+    assertTrue(Arrays.equals(pq1.getUpperPoint(), pq2.getUpperPoint()));
+
     q1 = LongPoint.newExactQuery("a", 1000);
     q2 = LongPoint.newExactQuery("a", 1000);
     assertEquals(q1, q2);
     assertEquals(q1.hashCode(), q2.hashCode());
     assertFalse(q1.equals(LongPoint.newExactQuery("a", 1)));
+
+    assertTrue(q1 instanceof PointRangeQuery && q2 instanceof PointRangeQuery);
+    pq1 = (PointRangeQuery) q1;
+    pq2 = (PointRangeQuery) q2;
+
+    assertTrue(Arrays.equals(pq1.getLowerPoint(), pq2.getLowerPoint()));
+    assertTrue(Arrays.equals(pq1.getUpperPoint(), pq2.getUpperPoint()));
 
     q1 = FloatPoint.newExactQuery("a", 1000);
     q2 = FloatPoint.newExactQuery("a", 1000);
@@ -1984,11 +1998,25 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(q1.hashCode(), q2.hashCode());
     assertFalse(q1.equals(FloatPoint.newExactQuery("a", 1)));
 
+    assertTrue(q1 instanceof PointRangeQuery && q2 instanceof PointRangeQuery);
+    pq1 = (PointRangeQuery) q1;
+    pq2 = (PointRangeQuery) q2;
+
+    assertTrue(Arrays.equals(pq1.getLowerPoint(), pq2.getLowerPoint()));
+    assertTrue(Arrays.equals(pq1.getUpperPoint(), pq2.getUpperPoint()));
+
     q1 = DoublePoint.newExactQuery("a", 1000);
     q2 = DoublePoint.newExactQuery("a", 1000);
     assertEquals(q1, q2);
     assertEquals(q1.hashCode(), q2.hashCode());
     assertFalse(q1.equals(DoublePoint.newExactQuery("a", 1)));
+
+    assertTrue(q1 instanceof PointRangeQuery && q2 instanceof PointRangeQuery);
+    pq1 = (PointRangeQuery) q1;
+    pq2 = (PointRangeQuery) q2;
+
+    assertTrue(Arrays.equals(pq1.getLowerPoint(), pq2.getLowerPoint()));
+    assertTrue(Arrays.equals(pq1.getUpperPoint(), pq2.getUpperPoint()));
 
     byte[] ones = new byte[5];
     Arrays.fill(ones, (byte) 0xff);
@@ -1999,6 +2027,13 @@ public class TestPointQueries extends LuceneTestCase {
     byte[] other = ones.clone();
     other[2] = (byte) 5;
     assertFalse(q1.equals(BinaryPoint.newExactQuery("a", other)));
+
+    assertTrue(q1 instanceof PointRangeQuery && q2 instanceof PointRangeQuery);
+    pq1 = (PointRangeQuery) q1;
+    pq2 = (PointRangeQuery) q2;
+
+    assertTrue(Arrays.equals(pq1.getLowerPoint(), pq2.getLowerPoint()));
+    assertTrue(Arrays.equals(pq1.getUpperPoint(), pq2.getUpperPoint()));
   }
 
   public void testPointInSetEquals() {

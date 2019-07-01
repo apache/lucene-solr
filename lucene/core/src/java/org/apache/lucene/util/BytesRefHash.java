@@ -45,9 +45,9 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 public final class BytesRefHash implements Accountable {
   private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(BytesRefHash.class) +
       // size of scratch1
-      RamUsageEstimator.shallowSizeOf(BytesRef.class) +
+      RamUsageEstimator.shallowSizeOfInstance(BytesRef.class) +
       // size of Counter
-      RamUsageEstimator.shallowSizeOf(Counter.class);
+      RamUsageEstimator.primitiveSizes.get(long.class);
 
   public static final int DEFAULT_CAPACITY = 16;
 

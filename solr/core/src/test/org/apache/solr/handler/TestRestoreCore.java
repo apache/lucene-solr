@@ -98,10 +98,14 @@ public class TestRestoreCore extends SolrJettyTestBase {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    masterClient.close();
-    masterClient  = null;
-    masterJetty.stop();
-    masterJetty = null;
+    if (null != masterClient) {
+      masterClient.close();
+      masterClient  = null;
+    }
+    if (null != masterJetty) {
+      masterJetty.stop();
+      masterJetty = null;
+    }
     master = null;
   }
 

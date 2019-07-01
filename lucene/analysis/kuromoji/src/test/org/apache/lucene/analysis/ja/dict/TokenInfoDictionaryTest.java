@@ -23,10 +23,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.apache.lucene.analysis.ja.util.DictionaryBuilder;
 import org.apache.lucene.analysis.ja.util.DictionaryBuilder.DictionaryFormat;
 import org.apache.lucene.analysis.ja.util.ToStringUtil;
-import org.apache.lucene.analysis.ja.util.TokenInfoDictionaryBuilder;
-import org.apache.lucene.analysis.ja.util.TokenInfoDictionaryWriter;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
@@ -68,9 +67,13 @@ public class TokenInfoDictionaryTest extends LuceneTestCase {
         printer.println(entry);
       }
     }
-    TokenInfoDictionaryBuilder builder = new TokenInfoDictionaryBuilder(DictionaryFormat.IPADIC, "utf-8", true);
-    TokenInfoDictionaryWriter writer = builder.build(dir);
-    writer.write(dir);
+    Files.createFile(dir.resolve("unk.def"));
+    Files.createFile(dir.resolve("char.def"));
+    try (OutputStream out = Files.newOutputStream(dir.resolve("matrix.def"));
+        PrintWriter printer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
+      printer.println("1 1");
+    }
+    DictionaryBuilder.build(DictionaryFormat.IPADIC, dir, dir, "utf-8", true);
     String dictionaryPath = TokenInfoDictionary.class.getName().replace('.', '/');
     // We must also load the other files (in BinaryDictionary) from the correct path
     return new TokenInfoDictionary(ResourceScheme.FILE, dir.resolve(dictionaryPath).toString());

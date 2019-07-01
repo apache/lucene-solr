@@ -54,7 +54,6 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
   
   @After
   public void teardownCollection() throws Exception {
-    cluster.deleteAllCollections();
     shutdownCluster();
   }
 

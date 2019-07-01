@@ -29,7 +29,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.ja.dict.CharacterDefinition;
 
-public class UnknownDictionaryBuilder {
+class UnknownDictionaryBuilder {
   private static final String NGRAM_DICTIONARY_ENTRY = "NGRAM,5,5,-32768,記号,一般,*,*,*,*,*,*,*";
 
   private final String encoding;

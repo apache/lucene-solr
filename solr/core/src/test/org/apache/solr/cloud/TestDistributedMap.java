@@ -48,8 +48,10 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
       zkServer.shutdown();
       zkServer = null;
     }
-    FileUtils.deleteDirectory(zkDir.toFile());
-    zkDir = null;
+    if (null != zkDir) {
+      FileUtils.deleteDirectory(zkDir.toFile());
+      zkDir = null;
+    }
   }
   
   public void testPut() throws KeeperException, InterruptedException {

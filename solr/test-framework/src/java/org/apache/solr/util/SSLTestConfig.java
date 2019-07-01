@@ -25,7 +25,8 @@ import java.security.SecureRandom;
 import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
 import java.util.Random;
-
+import java.util.regex.Pattern;
+  
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
@@ -43,6 +44,8 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+
 /**
  * An SSLConfig that provides {@link SSLConfig} and {@link SchemaRegistryProvider} for both clients and servers
  * that supports reading key/trust store information directly from resource files provided with the
@@ -56,8 +59,8 @@ public class SSLTestConfig {
   private final boolean checkPeerName;
   private final Resource keyStore;
   private final Resource trustStore;
-  private boolean useSsl;
-  private boolean clientAuth;
+  private final boolean useSsl;
+  private final boolean clientAuth;
   
   /** Creates an SSLTestConfig that does not use SSL or client authentication */
   public SSLTestConfig() {
@@ -99,15 +102,14 @@ public class SSLTestConfig {
    * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
    */
   public SSLTestConfig(boolean useSSL, boolean clientAuth, boolean checkPeerName) {
-    // @AwaitsFix: SOLR-12988 - ssl issues on Java 11/12
-    if (Constants.JRE_IS_MINIMUM_JAVA11) {
-      this.useSsl = false;
-    } else {
-      this.useSsl = useSSL;
-    }
+    this.useSsl = useSSL;
     this.clientAuth = clientAuth;
     this.checkPeerName = checkPeerName;
 
+    if (useSsl) {
+      assumeSslIsSafeToTest();
+    }
+    
     final String resourceName = checkPeerName
       ? TEST_KEYSTORE_LOCALHOST_RESOURCE : TEST_KEYSTORE_BOGUSHOST_RESOURCE;
     trustStore = keyStore = Resource.newClassPathResource(resourceName);
@@ -339,4 +341,44 @@ public class SSLTestConfig {
     synchronized public void setSeed(long seed) { /* NOOP */ }
     
   }
+
+  /**
+   * Helper method for sanity checking if it's safe to use SSL on this JVM
+   *
+   * @see <a href="https://issues.apache.org/jira/browse/SOLR-12988">SOLR-12988</a>
+   * @throws org.junit.internal.AssumptionViolatedException if this JVM is known to have SSL problems
+   */
+  public static void assumeSslIsSafeToTest() {
+    if (Constants.JVM_NAME.startsWith("OpenJDK") ||
+        Constants.JVM_NAME.startsWith("Java HotSpot(TM)")) {
+      RandomizedTest.assumeFalse("Test (or randomization for this seed) wants to use SSL, " +
+                                 "but SSL is known to fail on your JVM: " +
+                                 Constants.JVM_NAME + " / " + Constants.JVM_VERSION, 
+                                 isOpenJdkJvmVersionKnownToHaveProblems(Constants.JVM_VERSION));
+    }
+  }
+  
+  /** 
+   * package visibility for tests
+   * @see Constants#JVM_VERSION
+   * @lucene.internal
+   */
+  static boolean isOpenJdkJvmVersionKnownToHaveProblems(final String jvmVersion) {
+    // TODO: would be nice to replace with Runtime.Version once we don't have to
+    // worry about java8 support when backporting to branch_8x
+    return KNOWN_BAD_OPENJDK_JVMS.matcher(jvmVersion).matches();
+
+  }
+  private static final Pattern KNOWN_BAD_OPENJDK_JVMS
+    = Pattern.compile(// 11 to 11.0.2 were all definitely problematic
+                      // - https://bugs.openjdk.java.net/browse/JDK-8212885
+                      // - https://bugs.openjdk.java.net/browse/JDK-8213202
+                      "(^11(\\.0(\\.0|\\.1|\\.2)?)?($|(\\_|\\+|\\-).*$))|" +
+                      // early (pre-ea) "testing" builds of 11, 12, and 13 were also buggy
+                      // - https://bugs.openjdk.java.net/browse/JDK-8224829
+                      "(^(11|12|13).*-testing.*$)|" +
+                      // So far, all 13-ea builds (up to 13-ea-26) have been buggy
+                      // - https://bugs.openjdk.java.net/browse/JDK-8226338
+                      "(^13-ea.*$)"
+                      );
 }

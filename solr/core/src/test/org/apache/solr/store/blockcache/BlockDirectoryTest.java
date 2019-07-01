@@ -129,7 +129,10 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    directory.close();
+    if (null != directory) {
+      directory.close();
+      directory = null;
+    }
   }
 
   @Test

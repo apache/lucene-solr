@@ -62,8 +62,14 @@ public class CdcrWithNodesRestartsTest extends SolrTestCaseJ4 {
 
   @After
   public void after() throws Exception {
-    target.shutdown();
-    source.shutdown();
+    if (null != target) {
+      target.shutdown();
+      target = null;
+    }
+    if (null != source) {
+      source.shutdown();
+      source = null;
+    }
   }
 
   @Test
