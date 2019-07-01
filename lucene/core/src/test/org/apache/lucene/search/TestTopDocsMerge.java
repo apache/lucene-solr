@@ -77,14 +77,14 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
   public void testInconsistentTopDocsFail() {
     TopDocs[] topDocs = new TopDocs[] {
-        new TopDocs(new TotalHits(1, TotalHits.Relation.EQUAL_TO), new ScoreDoc[] { new ScoreDoc(1, 1.0f, 5) }),
+        new TopDocs(new TotalHits(1, TotalHits.Relation.EQUAL_TO), new ScoreDoc[] { new ScoreDoc(1, 1.0f) }),
         new TopDocs(new TotalHits(1, TotalHits.Relation.EQUAL_TO), new ScoreDoc[] { new ScoreDoc(1, 1.0f, -1) })
     };
     if (random().nextBoolean()) {
       ArrayUtil.swap(topDocs, 0, 1);
     }
     expectThrows(IllegalArgumentException.class, () -> {
-        TopDocs.merge(0, 2, topDocs);
+        TopDocs.merge(0, 1, topDocs, false);
     });
   }
 
@@ -114,7 +114,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
     // passing false here means TopDocs.merge uses the incoming ScoreDoc.shardIndex
     // that we already set, instead of the position of that TopDocs in the array:
-    TopDocs merge = TopDocs.merge(from, size, topDocs.toArray(new TopDocs[0]));
+    TopDocs merge = TopDocs.merge(from, size, topDocs.toArray(new TopDocs[0]), false);
     
     assertTrue(merge.scoreDocs.length > 0);
     for (ScoreDoc scoreDoc : merge.scoreDocs) {
@@ -133,7 +133,7 @@ public class TestTopDocsMerge extends LuceneTestCase {
 
     // now ensure merge is stable even if we use our own shard IDs
     Collections.shuffle(topDocs, random());
-    TopDocs merge2 = TopDocs.merge(from, size, topDocs.toArray(new TopDocs[0]));
+    TopDocs merge2 = TopDocs.merge(from, size, topDocs.toArray(new TopDocs[0]), false);
     assertArrayEquals(merge.scoreDocs, merge2.scoreDocs);
   }
 
@@ -335,10 +335,6 @@ public class TestTopDocsMerge extends LuceneTestCase {
           subHits = c.topDocs(0, numHits);
         }
 
-        for (int i = 0; i < subHits.scoreDocs.length; i++) {
-          subHits.scoreDocs[i].shardIndex = shardIDX;
-        }
-
         shardHits[shardIDX] = subHits;
         if (VERBOSE) {
           System.out.println("  shard=" + shardIDX + " " + subHits.totalHits.value + " totalHits hits=" + (subHits.scoreDocs == null ? "null" : subHits.scoreDocs.length));
@@ -354,9 +350,9 @@ public class TestTopDocsMerge extends LuceneTestCase {
       final TopDocs mergedHits;
       if (useFrom) {
         if (sort == null) {
-          mergedHits = TopDocs.merge(from, size, shardHits);
+          mergedHits = TopDocs.merge(from, size, shardHits, true);
         } else {
-          mergedHits = TopDocs.merge(sort, from, size, (TopFieldDocs[]) shardHits);
+          mergedHits = TopDocs.merge(sort, from, size, (TopFieldDocs[]) shardHits, true);
         }
       } else {
         if (sort == null) {
@@ -383,10 +379,10 @@ public class TestTopDocsMerge extends LuceneTestCase {
   }
 
   public void testMergeTotalHitsRelation() {
-    TopDocs topDocs1 = new TopDocs(new TotalHits(2, TotalHits.Relation.EQUAL_TO), new ScoreDoc[] { new ScoreDoc(42, 2f, 0) });
-    TopDocs topDocs2 = new TopDocs(new TotalHits(1, TotalHits.Relation.EQUAL_TO), new ScoreDoc[] { new ScoreDoc(42, 2f, 1) });
-    TopDocs topDocs3 = new TopDocs(new TotalHits(1, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), new ScoreDoc[] { new ScoreDoc(42, 2f, 2) });
-    TopDocs topDocs4 = new TopDocs(new TotalHits(3, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), new ScoreDoc[] { new ScoreDoc(42, 2f, 3) });
+    TopDocs topDocs1 = new TopDocs(new TotalHits(2, TotalHits.Relation.EQUAL_TO), new ScoreDoc[] { new ScoreDoc(42, 2f) });
+    TopDocs topDocs2 = new TopDocs(new TotalHits(1, TotalHits.Relation.EQUAL_TO), new ScoreDoc[] { new ScoreDoc(42, 2f) });
+    TopDocs topDocs3 = new TopDocs(new TotalHits(1, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), new ScoreDoc[] { new ScoreDoc(42, 2f) });
+    TopDocs topDocs4 = new TopDocs(new TotalHits(3, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), new ScoreDoc[] { new ScoreDoc(42, 2f) });
 
     TopDocs merged1 = TopDocs.merge(1, new TopDocs[] {topDocs1, topDocs2});
     assertEquals(new TotalHits(3, TotalHits.Relation.EQUAL_TO), merged1.totalHits);

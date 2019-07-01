@@ -347,10 +347,6 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           } else {
             shardHits[nodeID] = searchNode(nodeID, nodeVersions, query, null, numHits, null);
           }
-
-          for (int i = 0; i < shardHits[nodeID].scoreDocs.length; i++) {
-            shardHits[nodeID].scoreDocs[i].shardIndex = nodeID;
-          }
         }
 
         // Merge:
@@ -405,10 +401,6 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           } else {
             shardHits[nodeID] = searchNode(nodeID, nodeVersions, query, null, numHits, shardAfter);
           }
-
-          for (int i = 0; i < shardHits[nodeID].scoreDocs.length; i++) {
-            shardHits[nodeID].scoreDocs[i].shardIndex = nodeID;
-          }
           //System.out.println("  node=" + nodeID + " totHits=" + shardHits[nodeID].totalHits);
         }
 
@@ -431,10 +423,6 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
             shardHits[nodeID] = localSearch(query, numHits, sort);
           } else {
             shardHits[nodeID] = (TopFieldDocs) searchNode(nodeID, nodeVersions, query, sort, numHits, null);
-          }
-
-          for (int i = 0; i < shardHits[nodeID].scoreDocs.length; i++) {
-            shardHits[nodeID].scoreDocs[i].shardIndex = nodeID;
           }
         }
 
