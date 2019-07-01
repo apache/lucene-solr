@@ -407,7 +407,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "              e=getVertices(d)," +
         "              f=getArea(d)," +
         "              g=getBoundarySize(d)," +
-        "              h=getBaryCenter(d))";
+        "              h=getBaryCenter(d)," +
+        "              i=projectToBorder(d, matrix(array(99.11076410926444, 109.5441846957560))))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
     paramsLoc.set("qt", "/stream");
@@ -465,6 +466,11 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(baryCenter.size(), 2);
     assertEquals(baryCenter.get(0).doubleValue(), 101.3021125450865, 0.0);
     assertEquals(baryCenter.get(1).doubleValue(), 100.07343616615786, 0.0);
+
+    List<List<Number>> borderPoints = (List<List<Number>>)tuples.get(0).get("i");
+    assertEquals(borderPoints.get(0).get(0).doubleValue(), 100.31316833934775, 0);
+    assertEquals(borderPoints.get(0).get(1).doubleValue(), 115.6639686234851, 0);
+
 
   }
 
