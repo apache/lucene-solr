@@ -305,9 +305,9 @@ public class TopDocs {
           if (unsetShardIndex != (hit.shardIndex == -1)) {
             throw new IllegalArgumentException("Inconsistent order of shard indices");
           }
-      }
+        }
 
-      unsetShardIndex |= hit.shardIndex == -1;
+        unsetShardIndex |= hit.shardIndex == -1;
           
         if (hitUpto >= start) {
           hits[hitUpto - start] = hit;
