@@ -126,7 +126,10 @@ Optimizations
 
 * LUCENE-8868: New storing strategy for BKD tree leaves with low cardinality.
   It stores the distinct values once with the cardinality value reducing the
-  storage cost.
+  storage cost. (Ignacio Vera)
+
+* LUCENE-8885: Optimise BKD reader by exploiting cardinality information stored
+  on leaves. (Ignacio Vera)
 
 Test Framework
 
