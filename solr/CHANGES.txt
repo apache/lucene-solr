@@ -249,6 +249,8 @@ Bug Fixes
 
 * SOLR-13566: REINDEXCOLLECTION does not work with (basic) authentication. (Colvin Cowie, ab)
 
+* SOLR-13159: Fix atomic update encoding issue for UUID, enum, bool, and binary fields (Thomas Wockinger via Jason Gerlowski)
+
 ==================  8.1.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
