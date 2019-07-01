@@ -71,6 +71,10 @@ image::images/math-expressions/sterms.png[]
 
 image::images/math-expressions/text-analytics.png[]
 
+=== Clustering
+
+image::images/math-expressions/clusters.png[]
+
 === Convex Hulls
 
 image::images/math-expressions/convex.png[]
