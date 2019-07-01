@@ -26,54 +26,54 @@ public class TestCircle2D extends LuceneTestCase {
 
   public void testTriangleDisjoint() {
     Circle circle = new Circle(0, 0, 100);
-    Circle2D rectangle2D = Circle2D.create(circle);
+    Circle2D circle2D = Circle2D.create(circle);
     int ax = GeoEncodingUtils.encodeLongitude(4);
     int ay = GeoEncodingUtils.encodeLatitude(4);
     int bx = GeoEncodingUtils.encodeLongitude(5);
     int by = GeoEncodingUtils.encodeLatitude(5);
     int cx = GeoEncodingUtils.encodeLongitude(5);
     int cy = GeoEncodingUtils.encodeLatitude(4);
-    assertFalse(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-    assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(circle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
   }
 
   public void testTriangleIntersects() {
     Circle circle = new Circle(0, 0, 1000000);
-    Circle2D rectangle2D = Circle2D.create(circle);
+    Circle2D circle2D = Circle2D.create(circle);
     int ax = GeoEncodingUtils.encodeLongitude(-20);
     int ay = GeoEncodingUtils.encodeLatitude(1);
     int bx = GeoEncodingUtils.encodeLongitude(20);
     int by = GeoEncodingUtils.encodeLatitude(1);
     int cx = GeoEncodingUtils.encodeLongitude(0);
     int cy = GeoEncodingUtils.encodeLatitude(90);
-    assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-    assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    assertTrue(circle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
   }
 
   public void testTriangleContains() {
     Circle circle = new Circle(0, 0, 1000000);
-    Circle2D rectangle2D = Circle2D.create(circle);
+    Circle2D circle2D = Circle2D.create(circle);
     int ax = GeoEncodingUtils.encodeLongitude(0.25);
     int ay = GeoEncodingUtils.encodeLatitude(0.25);
     int bx = GeoEncodingUtils.encodeLongitude(0.5);
     int by = GeoEncodingUtils.encodeLatitude(0.5);
     int cx = GeoEncodingUtils.encodeLongitude(0.5);
     int cy = GeoEncodingUtils.encodeLatitude(0.25);
-    assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-    assertTrue(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    assertTrue(circle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
+    assertTrue(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
   }
 
   public void testTriangleWithin() {
     Circle circle = new Circle(0, 0, 1000);
-    Circle2D rectangle2D = Circle2D.create(circle);
+    Circle2D circle2D = Circle2D.create(circle);
     int ax = GeoEncodingUtils.encodeLongitude(-20);
     int ay = GeoEncodingUtils.encodeLatitude(-20);
     int bx = GeoEncodingUtils.encodeLongitude(20);
     int by = GeoEncodingUtils.encodeLatitude(-20);
     int cx = GeoEncodingUtils.encodeLongitude(20);
     int cy = GeoEncodingUtils.encodeLatitude(20);
-    assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-    assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    assertTrue(circle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
   }
 
   public void testRandomTriangles() {
