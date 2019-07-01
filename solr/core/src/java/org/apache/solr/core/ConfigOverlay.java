@@ -238,9 +238,9 @@ public class ConfigOverlay implements MapSerializable {
 
   public ConfigOverlay addNamedPlugin(Map<String, Object> info, String typ) {
     Map dataCopy = Utils.getDeepCopy(data, 4);
-    Map reqHandler = (Map) dataCopy.get(typ);
-    if (reqHandler == null) dataCopy.put(typ, reqHandler = new LinkedHashMap());
-    reqHandler.put(info.get(CoreAdminParams.NAME), info);
+    Map existing = (Map) dataCopy.get(typ);
+    if (existing == null) dataCopy.put(typ, existing = new LinkedHashMap());
+    existing.put(info.get(CoreAdminParams.NAME), info);
     return new ConfigOverlay(dataCopy, this.znodeVersion);
   }
 

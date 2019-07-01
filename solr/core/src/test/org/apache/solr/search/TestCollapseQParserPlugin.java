@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -814,8 +813,12 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // this is currently ok on fields that don't exist on any docs in the index
     for (String f : Arrays.asList("not_indexed_sS", "indexed_s_not_uninvert")) {
       for (String hint : Arrays.asList("", " hint=top_fc")) {
-        assertQ(req(params("q", "*:*", "fq", "{!collapse field="+f+hint+"}"))
-                , "*[count(//doc)=0]");
+        SolrException e = expectThrows(SolrException.class,
+            () -> h.query(req("q", "*:*", "fq", "{!collapse field="+f + hint +"}")));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue("unexpected Message: " + e.getMessage(),
+            e.getMessage().contains("Collapsing field '" + f + "' " +
+                "should be either docValues enabled or indexed with uninvertible enabled"));
       }
     }
   }
@@ -941,18 +944,24 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         req("q","*:*", "fq","{!collapse field=bleh}"), SolrException.ErrorCode.BAD_REQUEST);
 
     // if a field is uninvertible=false, it should behave the same as a field that is indexed=false ...
+    // this also tests docValues=false along with indexed=false or univertible=false
     for (String f : Arrays.asList("not_indexed_sS", "indexed_s_not_uninvert")) {
-      { // this currently propogates up the low level DocValues error in the common case...
-        Exception e = expectThrows(RuntimeException.class, IllegalStateException.class,
+      {
+        SolrException e = expectThrows(SolrException.class,
                                     () -> h.query(req(params("q", "*:*",
                                                              "fq", "{!collapse field="+f+"}"))));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
         assertTrue("unexpected Message: " + e.getMessage(),
-                   e.getMessage().contains("Re-index with correct docvalues type"));
+                   e.getMessage().contains("Collapsing field '" + f + "' " +
+                       "should be either docValues enabled or indexed with uninvertible enabled"));
       }
-      { // ... but in the case of hint=top_fc a bare NPE gets propogated up (SOLR-12979)...
-        expectThrows(RuntimeException.class, NullPointerException.class, 
-                     () -> h.query(req(params("q", "*:*",
-                                              "fq", "{!collapse field="+f+" hint=top_fc}"))));
+      {
+        SolrException e = expectThrows(SolrException.class,
+            () -> h.query(req("q", "*:*", "fq", "{!collapse field="+f+" hint=top_fc}")));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+        assertTrue("unexpected Message: " + e.getMessage(),
+            e.getMessage().contains("Collapsing field '" + f + "' " +
+                "should be either docValues enabled or indexed with uninvertible enabled"));
       }
       
     }
@@ -960,19 +969,13 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void test64BitCollapseFieldException() {
-    ModifiableSolrParams doubleParams = new ModifiableSolrParams();
-    doubleParams.add("q", "*:*");
-    doubleParams.add("fq", "{!collapse field=group_d}");
-    expectThrows(RuntimeException.class, IOException.class, () -> h.query(req(doubleParams)));
+    assertQEx("Should Fail For collapsing on Long fields", "Collapsing field should be of either String, Int or Float type",
+        req("q", "*:*", "fq", "{!collapse field=group_l}"), SolrException.ErrorCode.BAD_REQUEST);
 
-    ModifiableSolrParams dateParams = new ModifiableSolrParams();
-    dateParams.add("q", "*:*");
-    dateParams.add("fq", "{!collapse field=group_dt}");
-    expectThrows(RuntimeException.class, IOException.class, () -> h.query(req(dateParams)));
+    assertQEx("Should Fail For collapsing on Double fields", "Collapsing field should be of either String, Int or Float type",
+        req("q", "*:*", "fq", "{!collapse field=group_d}"), SolrException.ErrorCode.BAD_REQUEST);
 
-    ModifiableSolrParams longParams = new ModifiableSolrParams();
-    longParams.add("q", "*:*");
-    longParams.add("fq", "{!collapse field=group_l}");
-    expectThrows(RuntimeException.class, IOException.class, () -> h.query(req(longParams)));
+    assertQEx("Should Fail For collapsing on Date fields", "Collapsing field should be of either String, Int or Float type",
+        req("q", "*:*", "fq", "{!collapse field=group_dt}"), SolrException.ErrorCode.BAD_REQUEST);
   }
 }

@@ -158,10 +158,14 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   @AfterClass
   private static void afterClass() throws Exception {
     TestInjection.reset();
-    ExecutorUtil.shutdownAndAwaitTermination(EXEC_SERVICE);
-    EXEC_SERVICE = null;
-    IOUtils.closeQuietly(CLOUD_CLIENT);
-    CLOUD_CLIENT = null;
+    if (null != EXEC_SERVICE) {
+      ExecutorUtil.shutdownAndAwaitTermination(EXEC_SERVICE);
+      EXEC_SERVICE = null;
+    }
+    if (null != CLOUD_CLIENT) {
+      IOUtils.closeQuietly(CLOUD_CLIENT);
+      CLOUD_CLIENT = null;
+    }
     for (HttpSolrClient client : CLIENTS) {
       if (null == client) {
         log.error("CLIENTS contains a null SolrClient???");

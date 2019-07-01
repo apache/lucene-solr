@@ -22,16 +22,13 @@ API Changes
   byte[] that stores the UTF-8 bytes of the stored string.
   (Namgyu Kim via Adrien Grand)
 
+* LUCENE-8811: Deprecated BooleanQuery#setMaxClauseCount() and getMaxClauseCount
+  have been removed (Atri Sharma, Adrien Grand, Alan Woodward)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
-
-Improvements
-
-* LUCENE-8781: FST lookup performance has been improved in many cases by
-  encoding Arcs using full-sized arrays with gaps. The new encoding is
-  enabled for postings in the default codec and for suggesters. (Mike Sokolov)
 
 Other
 
@@ -39,9 +36,34 @@ Other
 
 ======================= Lucene 8.2.0 =======================
 
+API Changes
+
+* LUCENE-8865: IndexSearcher now uses Executor instead of ExecutorSerivce.
+  This change is fully backwards compatible since ExecutorService directly
+  implements Executor. (Simon Willnauer)
+
+* LUCENE-8811: BooleanQuery#setMaxClauseCount() and #getMaxClauseCount() have
+  moved to IndexSearcher. The checks are now implemented using a QueryVisitor
+  and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
+  Grand, Alan Woodward)
+
+* LUCENE-8856: Intervals queries have moved from the sandbox to the queries
+  module. (Alan Woodward)
+
+* LUCENE-8893: Intervals.wildcard() and Intervals.prefix() methods now take
+  BytesRef rather than String. (Alan Woodward)
+
 New Features
 
-* LUCENE-8803: Provide a FeatureSortfield to allow sorting search hits by descending value of a 
+* LUCENE-8891: Snowball stemmer/analyzer for the Estonian language.
+ (Gert Morten Paimla via Tomoko Uchida)
+
+* LUCENE-8815: Provide a DoubleValues implementation for retrieving the value of features without
+  requiring a separate numeric field. Note that as feature values are stored with only 8 bits of 
+  mantissa the values returned may have a delta from the original values indexed.
+  (Colin Goodheart-Smithe via Adrien Grand)
+
+* LUCENE-8803: Provide a FeatureSortfield to allow sorting search hits by descending value of a
   feature. This is exposed via the factory method FeatureField#newFeatureSort.
   (Colin Goodheart-Smithe via Adrien Grand)
 
@@ -49,9 +71,29 @@ New Features
   to false (defaults to true).
   (Namgyu Kim via Jim Ferenczi)
 
+* LUCENE-8812: Add new KoreanNumberFilter that can change Hangul character to number
+  and process decimal point. It is similar to the JapaneseNumberFilter.
+  (Namgyu Kim)
+
+* LUCENE-8362: Add doc-value support to range fields. (Atri Sharma via Adrien Grand)
+
+* LUCENE-8766: Add monitor subproject (previously Luwak monitoring library). This
+  allows a stream of documents to be matched against a set of registered queries
+  in an efficient manner, for use as a monitoring or classification tool.
+  (Alan Woodward)
+
+* LUCENE-7714: Add a numeric range query in sandbox that takes advantage of index sorting.
+  (Julie Tibshirani via Jim Ferenczi)
+
+* LUCENE-8859: The completion suggester's postings format now have an option to
+  load its internal FST off-heap. (Jim Ferenczi)
+
 Bug Fixes
 
 * LUCENE-8831: Fixed LatLonShapeBoundingBoxQuery .hashCode methods. (Ignacio Vera)
+
+* LUCENE-8775: Improve tessellator to handle better cases where a hole share a vertex
+  with the polygon. (Ignacio Vera)
 
 * LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
   This causes assertion errors and potentially broken field attributes in the IndexWriter when
@@ -59,6 +101,19 @@ Bug Fixes
 
 * LUCENE-8804: Forbid calls to putAttribute on frozen FieldType instances.
   (Vamshi Vijay Nakkirtha via Adrien Grand)
+
+* LUCENE-8828: Removes the buggy 'disallow overlaps' boolean from Intervals.unordered(),
+  and replaces it with a new Intervals.unorderedNoOverlaps() method (Alan Woodward)
+
+* LUCENE-8843: Don't ignore exceptions that are thrown when trying to open a
+  file in IOUtils#fsync. (Jason Tedor via Adrien Grand)
+
+* LUCENE-8835: FileSwitchDirectory now respects the file extension when listing directory
+  contents to ensure we don't expose pending deletes if both directory point to the same
+  underlying filesystem directory. (Simon Willnauer)
+
+* LUCENE-8853: FileSwitchDirectory now applies best effort to place tmp files in the same
+  directory as the target files. (Simon Willnauer)
 
 Improvements
 
@@ -72,8 +127,72 @@ Improvements
   multiple threads, IndexSearcher now groups small segments together, up to
   250k docs per slice. (Atri Sharma via Adrien Grand)
 
+* LUCENE-8818: Fix smokeTestRelease.py encoding bug (janhoy)
+
+* LUCENE-8845: Allow Intervals.prefix() and Intervals.wildcard() to specify
+  their maximum allowed expansions (Alan Woodward)
+
+* LUCENE-8848 LUCENE-7757 LUCENE-8492: The UnifiedHighlighter now detects that parts of the query are not understood by
+  it, and thus it should not make optimizations that result in no highlights or slow highlighting.  This generally works
+  best for WEIGHT_MATCHES mode.  Consequently queries produced by ComplexPhraseQueryParser and the surround QueryParser
+  will now highlight correctly. (David Smiley)
+
+* LUCENE-8793: Luke enhanced UI for CustomAnalyzer: show detailed analysis steps. (Jun Ohtani via Tomoko Uchida)
+
+* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
+
+* LUCENE-8855: Add Accountable to some Query implementations (ab, Adrien Grand)
+
+* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
+
+Optimizations
+
+* LUCENE-8796: Use exponential search instead of binary search in
+  IntArrayDocIdSet#advance method (Luca Cavanna via Adrien Grand)
+
+* LUCENE-8865: Use incoming thread for execution if IndexSearcher has an executor.
+  Now caller threads execute at least one search on an index even if there is
+  an executor provided to minimize thread context switching. (Simon Willnauer)
+
+* LUCENE-8868: New storing strategy for BKD tree leaves with low cardinality.
+  It stores the distinct values once with the cardinality value reducing the
+  storage cost. (Ignacio Vera)
+
+* LUCENE-8885: Optimise BKD reader by exploiting cardinality information stored
+  on leaves. (Ignacio Vera)
+
+Test Framework
+
+* LUCENE-8825: CheckHits now display the shard index in case of mismatch
+  between top hits. (Atri Sharma via Adrien Grand)
+
+Other
+
+* LUCENE-8847: Code Cleanup: Remove StringBuilder.append with concatenated
+  strings. (Koen De Groote via Uwe Schindler)
+
+* LUCENE-8861: Script to find open Github PRs that needs attention (janhoy)
+
+* LUCENE-8852: ReleaseWizard tool for release managers (janhoy)
+
+* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
+  (Tomoko Uchida, Uwe Schindler)
+
+* LUCENE-8838: Remove support for Steiner points on Tessellator. (Ignacio Vera)
+
+* LUCENE-8879: Improve BKDRadixSelector tests. (Ignacio Vera)
+
+* LUCENE-8886: Fix TestMutablePointsReaderUtils tests. (Ignacio Vera)
+
 ======================= Lucene 8.1.1 =======================
 (No Changes)
+
+Improvements
+
+* LUCENE-8781: FST lookup performance has been improved in many cases by
+  encoding Arcs using full-sized arrays with gaps. The new encoding is
+  enabled for postings in the default codec and for suggesters. (Mike Sokolov)
+
 
 ======================= Lucene 8.1.0 =======================
 
@@ -366,7 +485,7 @@ Changes in Runtime Behavior
 
 * LUCENE-8535: Highlighter and FVH doesn't support ToParent and ToChildBlockJoinQuery out of the
   box anymore. In order to highlight on Block-Join Queries a custom WeightedSpanTermExtractor / FieldQuery
-  should be used. (Simon Willnauer, Jim Ferenczi, Julie Tibshiran)
+  should be used. (Simon Willnauer, Jim Ferenczi, Julie Tibshirani)
 
 * LUCENE-8563: BM25 scores don't include the (k1+1) factor in their numerator
   anymore. This doesn't affect ordering as this is a constant factor which is
@@ -508,7 +627,7 @@ Bug fixes
 
 * LUCENE-8785: Ensure new threadstates are locked before retrieving the number of active threadstates.
   This causes assertion errors and potentially broken field attributes in the IndexWriter when
-  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer) 
+  IndexWriter#deleteAll is called while actively indexing. (Simon Willnauer)
 
 * LUCENE-8720: NameIntCacheLRU (in the facets module) had an int
   overflow bug that disabled cleaning of the cache (Russell A Brown)

@@ -126,7 +126,10 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
   public void doAfter() throws Exception {
     cluster.deleteAllCollections();
 
-    solrClient.close();
+    if (null != solrClient) {
+      solrClient.close();
+      solrClient = null;
+    }
   }
 
   private Map<String, Object> getSchemaField(String name, SchemaResponse schemaResponse) {

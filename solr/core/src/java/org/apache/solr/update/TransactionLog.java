@@ -102,6 +102,7 @@ public class TransactionLog implements Closeable {
   };
 
   public class LogCodec extends JavaBinCodec {
+
     public LogCodec(JavaBinCodec.ObjectResolver resolver) {
       super(resolver);
     }
@@ -128,7 +129,7 @@ public class TransactionLog implements Closeable {
     public CharSequence readExternString(DataInputInputStream fis) throws IOException {
       int idx = readSize(fis);
       if (idx != 0) {// idx != 0 is the index of the extern string
-      // no need to synchronize globalStringList - it's only updated before the first record is written to the log
+        // no need to synchronize globalStringList - it's only updated before the first record is written to the log
         return globalStringList.get(idx - 1);
       } else {// idx == 0 means it has a string value
         // this shouldn't happen with this codec subclass.
@@ -136,6 +137,25 @@ public class TransactionLog implements Closeable {
       }
     }
 
+    @Override
+    protected Object readObject(DataInputInputStream dis) throws IOException {
+      if (UUID == tagByte) {
+        return new java.util.UUID(dis.readLong(), dis.readLong());
+      }
+      return super.readObject(dis);
+    }
+
+    @Override
+    public boolean writePrimitive(Object val) throws IOException {
+      if (val instanceof java.util.UUID) {
+        java.util.UUID uuid = (java.util.UUID) val;
+        daos.writeByte(UUID);
+        daos.writeLong(uuid.getMostSignificantBits());
+        daos.writeLong(uuid.getLeastSignificantBits());
+        return true;
+      }
+      return super.writePrimitive(val);
+    }
   }
 
   TransactionLog(File tlogFile, Collection<String> globalStrings) {

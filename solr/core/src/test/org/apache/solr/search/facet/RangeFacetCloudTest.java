@@ -219,6 +219,15 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
       }
     }
   }
+
+  public void testStatsWithOmitHeader() throws Exception {
+    // SOLR-13509: no NPE should be thrown when only stats are specified with omitHeader=true
+    SolrQuery solrQuery = new SolrQuery("q", "*:*", "omitHeader", "true",
+        "json.facet", "{unique_foo:\"unique(" + STR_FIELD+ ")\"}");
+    final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+    // response shouldn't contain header as omitHeader is set to true
+    assertNull(rsp.getResponseHeader());
+  }
   
   public void testInclude_Upper() throws Exception {
     for (boolean doSubFacet : Arrays.asList(false, true)) {

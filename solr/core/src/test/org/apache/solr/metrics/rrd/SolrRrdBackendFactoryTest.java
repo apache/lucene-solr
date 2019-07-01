@@ -20,6 +20,7 @@ package org.apache.solr.metrics.rrd;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -29,6 +30,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.MockSearchableSolrClient;
+import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -86,16 +88,25 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
   public void testBasic() throws Exception {
     long startTime = 1000000000;
     RrdDb db = new RrdDb(createDef(startTime), factory);
+    long lastNumUpdates = solrClient.getNumUpdates();
     List<Pair<String, Long>> list = factory.list(100);
     assertEquals(list.toString(), 1, list.size());
     assertEquals(list.toString(), "foo", list.get(0).first());
+
     timeSource.sleep(4000);
+    lastNumUpdates = waitForUpdates(lastNumUpdates);
+
+    // wait until updates stop coming - the first update could have been partial
+    lastNumUpdates = waitForUpdatesToStop(lastNumUpdates);
+
     // there should be one sync data
     assertEquals(solrClient.docs.toString(), 1, solrClient.docs.size());
     String id = SolrRrdBackendFactory.ID_PREFIX + SolrRrdBackendFactory.ID_SEP + "foo";
     SolrInputDocument doc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     long timestamp = (Long)doc.getFieldValue("timestamp_l");
+
     timeSource.sleep(4000);
+
     SolrInputDocument newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertEquals(newDoc.toString(), newDoc, doc);
     // make sure the update doesn't race with the sampling boundaries
@@ -110,6 +121,8 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
       lastTime = lastTime + 60;
     }
     timeSource.sleep(3000);
+    lastNumUpdates = waitForUpdates(lastNumUpdates);
+
     newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertFalse(newDoc.toString(), newDoc.equals(doc));
     long newTimestamp = (Long)newDoc.getFieldValue("timestamp_l");
@@ -138,6 +151,8 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     assertEquals(list.toString(), 1, list.size());
     assertEquals(list.toString(), "foo", list.get(0).first());
 
+    lastNumUpdates = solrClient.getNumUpdates();
+
     // re-open read-write
     db = new RrdDb("solr:foo", factory);
     s = db.createSample();
@@ -146,6 +161,8 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     s.setValue("two", 100);
     s.update();
     timeSource.sleep(3000);
+    lastNumUpdates = waitForUpdates(lastNumUpdates);
+
     // should update
     timestamp = newTimestamp;
     doc = newDoc;
@@ -199,5 +216,41 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     map.put("data", fd.dump());
     return Utils.toJSONString(map);
   }
+
+  private long waitForUpdates(long lastNumUpdates) throws Exception {
+    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, timeSource);
+    while (!timeOut.hasTimedOut()) {
+      timeOut.sleep(1000);
+      if (solrClient.getNumUpdates() > lastNumUpdates) {
+        return solrClient.getNumUpdates();
+      }
+    }
+    if (solrClient.getNumUpdates() > lastNumUpdates) {
+      return solrClient.getNumUpdates();
+    }
+    throw new Exception("time out waiting for updates");
+  }
+
+
+  private long waitForUpdatesToStop(long lastNumUpdates) throws Exception {
+    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, timeSource);
+    int stopped = 0;
+    while (!timeOut.hasTimedOut()) {
+      timeOut.sleep(1000);
+      if (solrClient.getNumUpdates() > lastNumUpdates) {
+        stopped = 0;
+        lastNumUpdates = solrClient.getNumUpdates();
+        continue;
+      } else {
+        stopped++;
+        if (stopped > 2) {
+          return lastNumUpdates;
+        }
+      }
+      timeOut.sleep(1000);
+    }
+    throw new Exception("time out waiting for updates");
+  }
+
 
 }

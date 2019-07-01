@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class ZkFailoverTest extends SolrCloudTestCase {
@@ -37,16 +36,6 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
-  }
-
-  @AfterClass
-  public static void cleanUp() throws Exception {
-    System.clearProperty("waitForZk");
-
-    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
-      final JettySolrRunner runner = cluster.getJettySolrRunner(i);
-      runner.stop();
-    }
   }
 
   public void testRestartZkWhenClusterDown() throws Exception {

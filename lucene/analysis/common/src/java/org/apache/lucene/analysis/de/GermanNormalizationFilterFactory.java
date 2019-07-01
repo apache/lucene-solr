@@ -33,8 +33,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre> 
  * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
 public class GermanNormalizationFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "germanNormalization";
 
   /** Creates a new GermanNormalizationFilterFactory */
   public GermanNormalizationFilterFactory(Map<String,String> args) {

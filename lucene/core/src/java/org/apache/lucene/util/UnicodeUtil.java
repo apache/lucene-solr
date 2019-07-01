@@ -569,7 +569,7 @@ public final class UnicodeUtil {
           }
         }
         
-        sb.append("0x" + Integer.toHexString(ch));
+        sb.append("0x").append(Integer.toHexString(ch));
       }
     }
     return sb.toString();

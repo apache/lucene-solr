@@ -32,6 +32,7 @@ import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -457,18 +458,28 @@ public final class IOUtils {
   public static void fsync(Path fileToSync, boolean isDir) throws IOException {
     // If the file is a directory we have to open read-only, for regular files we must open r/w for the fsync to have an effect.
     // See http://blog.httrack.com/blog/2013/11/15/everything-you-always-wanted-to-know-about-fsync/
-    try (final FileChannel file = FileChannel.open(fileToSync, isDir ? StandardOpenOption.READ : StandardOpenOption.WRITE)) {
-      file.force(true);
-    } catch (IOException ioe) {
-      if (isDir) {
-        assert (Constants.LINUX || Constants.MAC_OS_X) == false :
-            "On Linux and MacOSX fsyncing a directory should not throw IOException, "+
-                "we just don't want to rely on that in production (undocumented). Got: " + ioe;
-        // Ignore exception if it is a directory
-        return;
+    if (isDir && Constants.WINDOWS) {
+      // opening a directory on Windows fails, directories can not be fsynced there
+      if (Files.exists(fileToSync) == false) {
+        // yet do not suppress trying to fsync directories that do not exist
+        throw new NoSuchFileException(fileToSync.toString());
       }
-      // Throw original exception
-      throw ioe;
+      return;
+    }
+    try (final FileChannel file = FileChannel.open(fileToSync, isDir ? StandardOpenOption.READ : StandardOpenOption.WRITE)) {
+      try {
+        file.force(true);
+      } catch (final IOException e) {
+        if (isDir) {
+          assert (Constants.LINUX || Constants.MAC_OS_X) == false :
+              "On Linux and MacOSX fsyncing a directory should not throw IOException, " +
+                  "we just don't want to rely on that in production (undocumented). Got: " + e;
+          // Ignore exception if it is a directory
+          return;
+        }
+        // Throw original exception
+        throw e;
+      }
     }
   }
 

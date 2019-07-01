@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.IOUtils;
@@ -31,11 +32,17 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.mockito.Mockito.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class BlobRepositoryMockingTest {
 
@@ -55,6 +62,8 @@ public class BlobRepositoryMockingTest {
   ByteBuffer blobData = ByteBuffer.wrap(BLOBSTR.getBytes(UTF8));
   boolean blobFetched = false;
   String blobKey = "";
+  String url = null;
+  ByteBuffer filecontent = null;
   
   @BeforeClass
   public static void beforeClass() {
@@ -72,6 +81,14 @@ public class BlobRepositoryMockingTest {
         blobKey = key;
         blobFetched = true;
         return blobData;
+      }
+
+      @Override
+      ByteBuffer fetchFromUrl(String key, String url) {
+        if(!Objects.equals(url, BlobRepositoryMockingTest.this.url)) return null;
+        blobKey = key;
+        blobFetched = true;
+        return filecontent;
       }
 
       @Override
@@ -105,6 +122,31 @@ public class BlobRepositoryMockingTest {
     verify(mockContainer).isZooKeeperAware();
     verify(mapMock).get("foo!");
     verify(mapMock).put(eq("foo!"), any(BlobRepository.BlobContent.class));
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testGetBlobIncrRefByUrl() throws Exception{
+    when(mockContainer.isZooKeeperAware()).thenReturn(true);
+    filecontent = TestDynamicLoading.getFileContent("runtimecode/runtimelibs_v2.jar.bin");
+    url = "http://localhost:8080/myjar/location.jar";
+    BlobRepository.BlobContentRef ref = repository.getBlobIncRef( "filefoo",null,url,
+        "bc5ce45ad281b6a08fb7e529b1eb475040076834816570902acb6ebdd809410e31006efdeaa7f78a6c35574f3504963f5f7e4d92247d0eb4db3fc9abdda5d417");
+    assertTrue("filefoo".equals(blobKey));
+    assertTrue(blobFetched);
+    assertNotNull(ref.blob);
+    assertEquals(filecontent, ref.blob.get());
+    verify(mockContainer).isZooKeeperAware();
+    try {
+      repository.getBlobIncRef( "filefoo",null,url,
+          "WRONG-SHA512-KEY");
+      fail("expected exception");
+    } catch (Exception e) {
+      assertTrue(e.getMessage().contains(" expected sha512 hash : WRONG-SHA512-KEY , actual :"));
+    }
+
+    url = null;
+    filecontent = null;
   }
 
   @SuppressWarnings("unchecked")

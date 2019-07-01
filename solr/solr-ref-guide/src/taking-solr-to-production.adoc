@@ -239,6 +239,15 @@ SOLR_HOST=solr1.example.com
 
 Setting the hostname of the Solr server is recommended, especially when running in SolrCloud mode, as this determines the address of the node when it registers with ZooKeeper.
 
+=== Environment banner in Admin UI
+
+To guard against accidentally doing changes to the wrong cluster, you may configure a visual indication in the Admin UI of whether you currently work with a production environment or not. To do this, edit your `solr.in.sh` or `solr.in.cmd` file with a `-Dsolr.environment=prod` setting, or set the cluster property named `environment`. To specify label and/or color, use a comma delimited format as below. The `+` character can be used instead of space to avoid quoting. Colors may be valid CSS colors or numeric e.g. `#ff0000` for bright red. Examples of valid environment configs:
+
+* `prod`
+* `test,label=Functional+test`
+* `dev,label=MyDev,color=blue`
+* `dev,color=blue`
+
 === Override Settings in solrconfig.xml
 
 Solr allows configuration properties to be overridden using Java system properties passed at startup using the `-Dproperty=value` syntax. For instance, in `solrconfig.xml`, the default auto soft commit settings are set to:

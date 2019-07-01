@@ -344,10 +344,10 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     buf.append('"');
     buf.append(":{");
     buf.append("\"type\":\"range\"");
-    buf.append(",\"field\":\""+field+"\"");
-    buf.append(",\"start\":\""+start+"\"");
-    buf.append(",\"end\":\""+end+"\"");
-    buf.append(",\"gap\":\""+gap+"\"");
+    buf.append(",\"field\":\"").append(field).append('"');
+    buf.append(",\"start\":\"").append(start).append('"');
+    buf.append(",\"end\":\"").append(end).append('"');
+    buf.append(",\"gap\":\"").append(gap).append('"');
 
     buf.append(",\"facet\":{");
     int metricCount = 0;
@@ -357,7 +357,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
         if(metricCount>0) {
           buf.append(",");
         }
-        buf.append("\"facet_" + metricCount + "\":\"" +identifier+"\"");
+        buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
         ++metricCount;
       }
     }

@@ -224,7 +224,10 @@ public class AbstractAnalyticsFieldTest extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void closeSearcher() throws IOException {
-    ref.decref();
+    if (null != ref) {
+      ref.decref();
+      ref = null;
+    }
   }
   
   protected <T> void checkSingleFieldValues(Map<String,T> expected, Map<String,T> found, Set<String> missing) {

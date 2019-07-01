@@ -107,10 +107,12 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   
   @AfterClass
   public static void tearDownCluster() throws Exception {
-    for (SocketProxy proxy:proxies.values()) {
-      proxy.close();
+    if (null != proxies) {
+      for (SocketProxy proxy : proxies.values()) {
+        proxy.close();
+      }
+      proxies = null;
     }
-    proxies = null;
     jettys = null;
     TestInjection.reset();
   }

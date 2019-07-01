@@ -108,7 +108,10 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
   public void doAfter() throws Exception {
     cluster.deleteAllCollections(); // deletes aliases too
 
-    solrClient.close();
+    if (null != solrClient) {
+      solrClient.close();
+      solrClient = null;
+    }
 
     TestInjection.reset();
   }

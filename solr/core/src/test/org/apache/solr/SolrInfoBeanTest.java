@@ -69,9 +69,9 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
           }
           
           //System.out.println( info.getClass() );
-          assertNotNull( info.getName() );
-          assertNotNull( info.getDescription() );
-          assertNotNull( info.getCategory() );
+          assertNotNull( info.getClass().getCanonicalName(), info.getName() );
+          assertNotNull( info.getClass().getCanonicalName(), info.getDescription() );
+          assertNotNull( info.getClass().getCanonicalName(), info.getCategory() );
           
           if( info instanceof LRUCache ) {
             continue;

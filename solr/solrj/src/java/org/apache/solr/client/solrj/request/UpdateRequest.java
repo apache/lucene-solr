@@ -486,7 +486,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
     boolean deleteQ = deleteQuery != null && deleteQuery.size() > 0;
     if (deleteI || deleteQ) {
       if (commitWithin > 0) {
-        writer.append("<delete commitWithin=\"" + commitWithin + "\">");
+        writer.append("<delete commitWithin=\"").append(String.valueOf(commitWithin)).append("\">");
       } else {
         writer.append("<delete>");
       }
@@ -498,11 +498,11 @@ public class UpdateRequest extends AbstractUpdateRequest {
             Long version = (Long) map.get(VER);
             String route = (String)map.get(_ROUTE_);
             if (version != null) {
-              writer.append(" version=\"" + version + "\"");
+              writer.append(" version=\"").append(String.valueOf(version)).append('"');
             }
             
             if (route != null) {
-              writer.append(" _route_=\"" + route + "\"");
+              writer.append(" _route_=\"").append(route).append('"');
             }
           }
           writer.append(">");
