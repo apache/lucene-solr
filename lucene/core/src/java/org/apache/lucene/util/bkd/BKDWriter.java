@@ -291,10 +291,10 @@ public class BKDWriter implements Closeable {
             return false;
           }
           //System.out.println("  new block @ fp=" + state.in.getFilePointer());
-          docsInBlock = bkd.readDocIDs(state.in, state.in.getFilePointer(), state.scratchDocIDs);
+          docsInBlock = bkd.readDocIDs(state.in, state.in.getFilePointer(), state.scratchIterator);
           assert docsInBlock > 0;
           docBlockUpto = 0;
-          bkd.visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchDocIDs, docsInBlock, new IntersectVisitor() {
+          bkd.visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, docsInBlock, new IntersectVisitor() {
             int i = 0;
 
             @Override
@@ -304,7 +304,7 @@ public class BKDWriter implements Closeable {
 
             @Override
             public void visit(int docID, byte[] packedValue) {
-              assert docID == state.scratchDocIDs[i];
+              assert docID == state.scratchIterator.docIDs[i];
               System.arraycopy(packedValue, 0, packedValues, i * bkd.packedBytesLength, bkd.packedBytesLength);
               i++;
             }
@@ -320,7 +320,7 @@ public class BKDWriter implements Closeable {
         }
 
         final int index = docBlockUpto++;
-        int oldDocID = state.scratchDocIDs[index];
+        int oldDocID = state.scratchIterator.docIDs[index];
 
         int mappedDocID;
         if (docMap == null) {
