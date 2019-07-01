@@ -17,8 +17,7 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
-import java.math.RoundingMode;
-import java.text.NumberFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,10 +36,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.hamcrest.core.IsInstanceOf;
-import org.hamcrest.core.IsEqual;
-import org.hamcrest.core.IsNot;
-
-import static org.junit.Assume.assumeThat;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
@@ -291,12 +286,16 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   }
 
   public void testParseIntNonRootLocale() throws Exception {
+    final DecimalFormatSymbols ru_RU = DecimalFormatSymbols.getInstance(new Locale("ru","RU"));
+    final char groupChar = ru_RU.getGroupingSeparator();
+    
+    int value = 1089883491;
+    String intString1 = "1089883491";
+    String intString2 = "1"+groupChar+"089"+groupChar+"883"+groupChar+"491";
+    
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("int_i")); // should match dynamic field "*_i"
     assertNull(schema.getFieldOrNull("not_in_schema"));
-    int value = 1089883491;
-    String intString1 = "1089883491";
-    String intString2 = "1 089 883 491"; // no-break space U+00A0
     SolrInputDocument d = processAdd("parse-int-russian-no-run-processor",
         doc(f("id", "113"), f("int_i", intString1), f("not_in_schema", intString2)));
     assertNotNull(d);
@@ -389,20 +388,16 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   }
 
   public void testParseLongNonRootLocale() throws Exception {
-    {
-      final NumberFormat sanityCheck = NumberFormat.getInstance(new Locale("fr","FR"));
-      sanityCheck.setParseIntegerOnly(false);
-      sanityCheck.setRoundingMode(RoundingMode.CEILING);
-      assumeThat("Your JVM appears to have NumberFormat parse bugs using U+00A0 in the fr_FR Locale",
-                 sanityCheck.parse("10 898"), new IsNot(new IsEqual(10L)));
-    }
+    final DecimalFormatSymbols ru_RU = DecimalFormatSymbols.getInstance(new Locale("ru","RU"));
+    final char groupChar = ru_RU.getGroupingSeparator();
+    
+    long value = 1089883491L;
+    String longString1 = "1089883491";
+    String longString2 = "1"+groupChar+"089"+groupChar+"883"+groupChar+"491";
     
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("long_l")); // should match dynamic field "*_l"
     assertNull(schema.getFieldOrNull("not_in_schema"));
-    long value = 1089883491L;
-    String longString1 = "1089883491";
-    String longString2 = "1 089 883 491"; // no-break space U+00A0
     SolrInputDocument d = processAdd("parse-long-russian-no-run-processor",
                                      doc(f("id", "113"), f("long_l", longString1), f("not_in_schema", longString2)));
     assertNotNull(d);
@@ -480,17 +475,14 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   }
 
   public void testParseFloatNonRootLocale() throws Exception {
-    {
-      final NumberFormat sanityCheck = NumberFormat.getInstance(new Locale("fr","FR"));
-      sanityCheck.setParseIntegerOnly(false);
-      sanityCheck.setRoundingMode(RoundingMode.CEILING);
-      assumeThat("Your JVM appears to have NumberFormat parse bugs using U+00A0 in the fr_FR Locale",
-                 sanityCheck.parse("10 898"), new IsNot(new IsEqual(10L)));
-    }
+    final DecimalFormatSymbols fr_FR = DecimalFormatSymbols.getInstance(new Locale("fr","FR"));
+    final char groupChar = fr_FR.getGroupingSeparator();
+    final char decimalChar = fr_FR.getDecimalSeparator();
 
-    float value = 10898.83491f;
-    String floatString1 = "10898,83491";
-    String floatString2 = "10 898,83491"; // no-break space: U+00A0
+    float value = 10898.83491F;
+    String floatString1 = "10898"+decimalChar+"83491";
+    String floatString2 = "10"+groupChar+"898"+decimalChar+"83491";
+    
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("float_f")); // should match dynamic field "*_f"
     assertNull(schema.getFieldOrNull("not_in_schema"));
@@ -590,19 +582,17 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   }
 
   public void testParseDoubleNonRootLocale() throws Exception {
-    {
-      final NumberFormat sanityCheck = NumberFormat.getInstance(new Locale("fr","FR"));
-      sanityCheck.setParseIntegerOnly(false);
-      sanityCheck.setRoundingMode(RoundingMode.CEILING);
-      assumeThat("Your JVM appears to have NumberFormat parse bugs using U+00A0 in the fr_FR Locale",
-                 sanityCheck.parse("10 898"), new IsNot(new IsEqual(10L)));
-    }
+    final DecimalFormatSymbols fr_FR = DecimalFormatSymbols.getInstance(new Locale("fr","FR"));
+    final char groupChar = fr_FR.getGroupingSeparator();
+    final char decimalChar = fr_FR.getDecimalSeparator();
+
+    double value = 10898.83491D;
+    String doubleString1 = "10898"+decimalChar+"83491";
+    String doubleString2 = "10"+groupChar+"898"+decimalChar+"83491";
+    
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("double_d")); // should match dynamic field "*_d"
     assertNull(schema.getFieldOrNull("not_in_schema"));
-    double value = 10898.83491;
-    String doubleString1 = "10898,83491";
-    String doubleString2 = "10 898,83491"; // no-break space: U+00A0
     SolrInputDocument d = processAdd("parse-double-french-no-run-processor",
                                      doc(f("id", "140"), f("double_d", doubleString1), 
                                          f("not_in_schema", doubleString2)));

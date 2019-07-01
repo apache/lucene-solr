@@ -25,6 +25,10 @@ API Changes
 * LUCENE-8811: Deprecated BooleanQuery#setMaxClauseCount() and getMaxClauseCount
   have been removed (Atri Sharma, Adrien Grand, Alan Woodward)
 
+* LUCENE-8857: Introduce Custom Tiebreakers in TopDocs.merge for tie breaking on
+  docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
+  indices (Atri Sharma, Adrien Grand, Simon Willnauer)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -47,7 +51,16 @@ API Changes
   and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
   Grand, Alan Woodward)
 
+* LUCENE-8856: Intervals queries have moved from the sandbox to the queries
+  module. (Alan Woodward)
+
+* LUCENE-8893: Intervals.wildcard() and Intervals.prefix() methods now take
+  BytesRef rather than String. (Alan Woodward)
+
 New Features
+
+* LUCENE-8891: Snowball stemmer/analyzer for the Estonian language.
+ (Gert Morten Paimla via Tomoko Uchida)
 
 * LUCENE-8815: Provide a DoubleValues implementation for retrieving the value of features without
   requiring a separate numeric field. Note that as feature values are stored with only 8 bits of 
@@ -130,6 +143,12 @@ Improvements
 
 * LUCENE-8793: Luke enhanced UI for CustomAnalyzer: show detailed analysis steps. (Jun Ohtani via Tomoko Uchida)
 
+* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
+
+* LUCENE-8855: Add Accountable to some Query implementations (ab, Adrien Grand)
+
+* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
+
 Optimizations
 
 * LUCENE-8796: Use exponential search instead of binary search in
@@ -141,7 +160,10 @@ Optimizations
 
 * LUCENE-8868: New storing strategy for BKD tree leaves with low cardinality.
   It stores the distinct values once with the cardinality value reducing the
-  storage cost.
+  storage cost. (Ignacio Vera)
+
+* LUCENE-8885: Optimise BKD reader by exploiting cardinality information stored
+  on leaves. (Ignacio Vera)
 
 Test Framework
 
@@ -165,12 +187,6 @@ Other
 * LUCENE-8879: Improve BKDRadixSelector tests. (Ignacio Vera)
 
 * LUCENE-8886: Fix TestMutablePointsReaderUtils tests. (Ignacio Vera)
-
-======================= Lucene 8.1.2 =======================
-
-Improvements
-
-* LUCENE-8855: Add Accountable to some Query implementations (ab, Adrien Grand)
 
 ======================= Lucene 8.1.1 =======================
 (No Changes)
