@@ -66,7 +66,6 @@ public class TestFSTsMisc extends LuceneTestCase {
       for(int inputMode=0;inputMode<2;inputMode++) {
         final int numWords = random.nextInt(maxNumWords+1);
         Set<IntsRef> termsSet = new HashSet<>();
-        IntsRef[] terms = new IntsRef[numWords];
         while(termsSet.size() < numWords) {
           final String term = getRandomString(random);
           termsSet.add(toIntsRef(term, inputMode));
@@ -109,15 +108,15 @@ public class TestFSTsMisc extends LuceneTestCase {
         }
         pairs.add(new FSTTester.InputOutput<>(terms[idx], output));
       }
-      new FSTTester<Object>(random(), dir, inputMode, pairs, outputs, false) {
+      new FSTTester<Object>(random(), dir, inputMode, pairs, outputs) {
         @Override
         protected boolean outputsEqual(Object output1, Object output2) {
           if (output1 instanceof TwoLongs && output2 instanceof List) {
             TwoLongs twoLongs1 = (TwoLongs) output1;
-            return Arrays.asList(new Long[] {twoLongs1.first, twoLongs1.second}).equals(output2);
+            return Arrays.asList(twoLongs1.first, twoLongs1.second).equals(output2);
           } else if (output2 instanceof TwoLongs && output1 instanceof List) {
             TwoLongs twoLongs2 = (TwoLongs) output2;
-            return Arrays.asList(new Long[] {twoLongs2.first, twoLongs2.second}).equals(output1);
+            return Arrays.asList(twoLongs2.first, twoLongs2.second).equals(output1);
           }
           return output1.equals(output2);
         }
@@ -157,7 +156,7 @@ public class TestFSTsMisc extends LuceneTestCase {
 
         pairs.add(new FSTTester.InputOutput<>(terms[idx], output));
       }
-      new FSTTester<>(random(), dir, inputMode, pairs, outputs, false).doTest(false);
+      new FSTTester<>(random(), dir, inputMode, pairs, outputs).doTest(false);
     }
   }
 
