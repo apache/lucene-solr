@@ -168,6 +168,9 @@ Optimizations
 * LUCENE-8896: Override default implementation of IntersectVisitor#visit(DocIDSetBuilder, byte[])
   for several queries. (Ignacio Vera)
 
+* LUCENE-8901: Load frequencies lazily only when needed in BlockDocsEnum and
+  BlockImpactsEverythingEnum (Mayya Sharipova).
+
 Test Framework
 
 * LUCENE-8825: CheckHits now display the shard index in case of mismatch
