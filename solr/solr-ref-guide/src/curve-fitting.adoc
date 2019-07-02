@@ -124,7 +124,7 @@ image::images/math-expressions/harmfit.png[]
 
 
 The output of `harmfit` is a model that can be used by the `predict` function to interpolate and exptrapolate
-the sine wave. In the example below the natural function creates an *x* axis from 0 to 127
+the sine wave. In the example below the `natural` function creates an *x* axis from 0 to 127
 used to predict results for the model. This extrapolates the sine wave out to 128 points, when
 the original model curve had only 19 control points.
 
