@@ -24,9 +24,11 @@ import java.util.List;
 import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -37,7 +39,9 @@ import org.apache.lucene.util.UnicodeUtil;
  *
  * @lucene.experimental
  */
-public class CompiledAutomaton {
+public class CompiledAutomaton implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(CompiledAutomaton.class);
+
   /**
    * Automata are compiled into different internal forms for the
    * most efficient execution depending upon the language they accept.
@@ -461,4 +465,15 @@ public class CompiledAutomaton {
 
     return true;
   }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(automaton) +
+        RamUsageEstimator.sizeOfObject(commonSuffixRef) +
+        RamUsageEstimator.sizeOfObject(runAutomaton) +
+        RamUsageEstimator.sizeOfObject(term) +
+        RamUsageEstimator.sizeOfObject(transition);
+  }
+
 }

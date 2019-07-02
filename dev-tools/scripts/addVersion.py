@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -174,7 +176,7 @@ def check_solr_version_tests():
   print('ok')
 
 def read_config(current_version):
-  parser = argparse.ArgumentParser(description='Add a new version')
+  parser = argparse.ArgumentParser(description='Add a new version to CHANGES, to Version.java, lucene/version.properties and solrconfig.xml files')
   parser.add_argument('version', type=Version.parse)
   newconf = parser.parse_args()
 
@@ -209,6 +211,8 @@ def get_solr_init_changes():
     ''' % parse_properties_file('lucene/ivy-versions.properties'))
   
 def main():
+  if not os.path.exists('lucene/version.properties'):
+    sys.exit("Tool must be run from the root of a source checkout.")
   current_version = Version.parse(find_current_version())
   newconf = read_config(current_version)
 

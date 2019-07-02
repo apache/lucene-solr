@@ -295,9 +295,9 @@ final class LongRangeCounter {
       indent(sb, depth);
       if (left == null) {
         assert right == null;
-        sb.append("leaf: " + start + " to " + end);
+        sb.append("leaf: ").append(start).append(" to ").append(end);
       } else {
-        sb.append("node: " + start + " to " + end);
+        sb.append("node: ").append(start).append(" to ").append(end);
       }
       if (outputs != null) {
         sb.append(" outputs=");

@@ -147,7 +147,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void teardown() throws Exception {
-    if (!realCluster) {
+    if (cloudManager != null && !realCluster) {
       cloudManager.close();
     }
     solrClient = null;

@@ -214,11 +214,18 @@ public class TestRerankBase extends RestTestBase {
   }
 
   protected static void aftertest() throws Exception {
-    restTestHarness.close();
-    restTestHarness = null;
-    jetty.stop();
-    jetty = null;
-    FileUtils.deleteDirectory(tmpSolrHome);
+    if (null != restTestHarness) {
+      restTestHarness.close();
+      restTestHarness = null;
+    }
+    if (null != jetty) {
+      jetty.stop();
+      jetty = null;
+    }
+    if (null != tmpSolrHome) {
+      FileUtils.deleteDirectory(tmpSolrHome);
+      tmpSolrHome = null;
+    }
     System.clearProperty("managed.schema.mutable");
     // System.clearProperty("enable.update.log");
     unchooseDefaultFeatureFormat();

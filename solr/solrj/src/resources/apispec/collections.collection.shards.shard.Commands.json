@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html",
+  "documentation": "https://lucene.apache.org/solr/guide/shard-management.html",
   "description": "Commands to force leader election and synchronize shards.",
   "methods": [
     "POST",
@@ -13,7 +13,7 @@
   },
   "commands": {
     "force-leader": {
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#forceleader",
+      "documentation": "https://lucene.apache.org/solr/guide/shard-management.html#forceleader",
       "description": "In the unlikely event of a shard losing its leader, this command can be invoked to force the election of a new leader",
       "type": "object"
     },

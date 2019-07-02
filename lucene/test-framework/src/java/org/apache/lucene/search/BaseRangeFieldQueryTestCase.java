@@ -17,6 +17,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -38,6 +39,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Abstract class to do basic tests for a RangeField query. Testing rigor inspired by {@code BaseGeoPointTestCase}
@@ -77,6 +79,33 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
 
   public void testMultiValued() throws Exception {
     doTestRandom(10000, true);
+  }
+
+  public void testAllEqual() throws Exception {
+    int numDocs = atLeast(10000);
+    int dimensions = dimension();
+    Range[][] ranges = new Range[numDocs][];
+    Range[] theRange =  new Range[] {nextRange(dimensions)};
+    Arrays.fill(ranges, theRange);
+    verify(ranges);
+  }
+
+  // Force low cardinality leaves
+  public void testLowCardinality() throws Exception {
+    int numDocs = atLeast(10000);
+    int dimensions = dimension();
+
+    int cardinality = TestUtil.nextInt(random(), 2, 20);
+    Range[][] diffRanges =  new Range[cardinality][];
+    for (int i = 0; i < cardinality; i++) {
+      diffRanges[i] =  new Range[] {nextRange(dimensions)};
+    }
+
+    Range[][] ranges = new Range[numDocs][];
+    for (int i = 0; i < numDocs; i++) {
+      ranges[i] =  diffRanges[random().nextInt(cardinality)];
+    }
+    verify(ranges);
   }
 
   private void doTestRandom(int count, boolean multiValued) throws Exception {
@@ -272,20 +301,20 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
 
         if (hits.get(docID) != expected) {
           StringBuilder b = new StringBuilder();
-          b.append("FAIL (iter " + iter + "): ");
+          b.append("FAIL (iter ").append(iter).append("): ");
           if (expected == true) {
-            b.append("id=" + id + (ranges[id].length > 1 ? " (MultiValue) " : " ") + "should match but did not\n");
+            b.append("id=").append(id).append(ranges[id].length > 1 ? " (MultiValue) " : " ").append("should match but did not\n");
           } else {
-            b.append("id=" + id + " should not match but did\n");
+            b.append("id=").append(id).append(" should not match but did\n");
           }
-          b.append(" queryRange=" + queryRange + "\n");
-          b.append(" box" + ((ranges[id].length > 1) ? "es=" : "=" ) + ranges[id][0]);
+          b.append(" queryRange=").append(queryRange).append("\n");
+          b.append(" box").append((ranges[id].length > 1) ? "es=" : "=").append(ranges[id][0]);
           for (int n=1; n<ranges[id].length; ++n) {
             b.append(", ");
             b.append(ranges[id][n]);
           }
-          b.append("\n queryType=" + queryType + "\n");
-          b.append(" deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("\n queryType=").append(queryType).append("\n");
+          b.append(" deleted?=").append(liveDocs != null && liveDocs.get(docID) == false);
           fail("wrong hit (first of possibly more):\n\n" + b);
         }
       }

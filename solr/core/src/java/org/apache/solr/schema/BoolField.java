@@ -207,6 +207,13 @@ public class BoolField extends PrimitiveFieldType {
     return Collections.singletonList(fval);
   }
 
+  @Override
+  public Object toNativeType(Object val) {
+    if (val instanceof CharSequence) {
+      return Boolean.valueOf(val.toString());
+    }
+    return super.toNativeType(val);
+  }
 }
 
 // TODO - this can be much more efficient - use FixedBitSet or Bits

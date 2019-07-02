@@ -100,7 +100,7 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("Polygon(" + polygons[0].toGeoJSON() + ")");
+    sb.append("Polygon(").append(polygons[0].toGeoJSON()).append(')');
     return sb.toString();
   }
 

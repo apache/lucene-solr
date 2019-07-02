@@ -436,7 +436,7 @@ final class NumericFacets {
       if (valuesDocID == doc - ctx.docBase) {
         long l = longs.nextValue(); // This document must have at least one value
         hashTable.add(l, 1);
-        for (int i = 1; i < longs.docValueCount(); i++) {
+        for (int i = 1, count = longs.docValueCount(); i < count; i++) {
           long lnew = longs.nextValue();
           if (lnew > l) { // Skip the value if it's equal to the last one, we don't want to double-count it
             hashTable.add(lnew, 1);

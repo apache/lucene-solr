@@ -150,6 +150,17 @@ public class SystemInfoHandler extends RequestHandlerBase
     if (solrCloudMode) {
       rsp.add("node", getCoreContainer(req, core).getZkController().getNodeName());
     }
+    SolrEnvironment env = SolrEnvironment.getFromSyspropOrClusterprop(solrCloudMode ?
+        getCoreContainer(req, core).getZkController().zkStateReader : null);
+    if (env.isDefined()) {
+      rsp.add("environment", env.getCode());
+      if (env.getLabel() != null) {
+        rsp.add("environment_label", env.getLabel());
+      }
+      if (env.getColor() != null) {
+        rsp.add("environment_color", env.getColor());
+      }
+    }
   }
 
   private CoreContainer getCoreContainer(SolrQueryRequest req, SolrCore core) {

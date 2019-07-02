@@ -65,7 +65,7 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
         (s) -> false,
         new MatchAllDocsQuery(), new BytesRef[0],
         PhraseHelper.NONE,
-        new CharacterRunAutomaton[0], Collections.emptySet())) {
+        new CharacterRunAutomaton[0], false, Collections.emptySet())) {
       @Override
       public UnifiedHighlighter.OffsetSource getOffsetSource() {
         return offsetSource;
@@ -152,22 +152,18 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
       @Override
       protected FieldHighlighter getFieldHighlighter(String field, Query query, Set<Term> allTerms, int maxPassages) {
         // THIS IS A COPY of the superclass impl; but use CustomFieldHighlighter
-        Predicate<String> fieldMatcher = getFieldMatcher(field);
-        BytesRef[] terms = filterExtractedTerms(fieldMatcher, allTerms);
-        Set<HighlightFlag> highlightFlags = getFlags(field);
-        PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
-        CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
-        OffsetSource offsetSource = getOptimizedOffsetSource(field, terms, phraseHelper, automata);
+        UHComponents components = getHighlightComponents(field, query, allTerms);
+        OffsetSource offsetSource = getOptimizedOffsetSource(components);
 
-        UHComponents components = new UHComponents(field, fieldMatcher, query, terms, phraseHelper, automata, highlightFlags);
         // test all is accessible
-        components.getAutomata();
-        components.getPhraseHelper();
-        components.getTerms();
         components.getField();
-        components.getHighlightFlags();
-        components.getQuery();
         components.getFieldMatcher();
+        components.getQuery();
+        components.getTerms();
+        components.getPhraseHelper();
+        components.getAutomata();
+        components.hasUnrecognizedQueryPart();
+        components.getHighlightFlags();
 
         return new CustomFieldHighlighter(field,
             getOffsetStrategy(offsetSource, components),
@@ -176,6 +172,17 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
             maxPassages,
             getMaxNoHighlightPassages(field),
             getFormatter(field));
+      }
+
+      @Override
+      protected UHComponents getHighlightComponents(String field, Query query, Set<Term> allTerms) {
+        Predicate<String> fieldMatcher = getFieldMatcher(field);
+        BytesRef[] terms = filterExtractedTerms(fieldMatcher, allTerms);
+        Set<HighlightFlag> highlightFlags = getFlags(field);
+        PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
+        CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
+        boolean queryHasUnrecognizedPart = false;
+        return new UHComponents(field, fieldMatcher, query, terms, phraseHelper, automata, queryHasUnrecognizedPart, highlightFlags);
       }
 
       @Override

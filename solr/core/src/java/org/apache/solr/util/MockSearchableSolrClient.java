@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -40,6 +41,9 @@ import org.apache.solr.common.util.NamedList;
  */
 public class MockSearchableSolrClient extends SolrClient {
   public Map<String, Map<String, SolrInputDocument>> docs = new ConcurrentHashMap<>();
+
+  private AtomicLong numUpdates = new AtomicLong();
+  private AtomicLong numQueries = new AtomicLong();
 
   public void clear() {
     docs.clear();
@@ -64,6 +68,7 @@ public class MockSearchableSolrClient extends SolrClient {
           String id = (String) doc.getFieldValue("id");
           Objects.requireNonNull(id, doc.toString());
           docs.computeIfAbsent(collection, c -> new LinkedHashMap<>()).put(id, doc);
+          numUpdates.incrementAndGet();
         });
       }
     } else if (request instanceof QueryRequest) {
@@ -75,6 +80,7 @@ public class MockSearchableSolrClient extends SolrClient {
       final SolrDocumentList lst = new SolrDocumentList();
       if (query != null) {
         if (query.startsWith("{!term f=id}") || query.startsWith("id:")) {
+          numQueries.incrementAndGet();
           String id;
           if (query.startsWith("{!")) {
             id = query.substring(12);
@@ -92,6 +98,7 @@ public class MockSearchableSolrClient extends SolrClient {
             }
           }
         } else if (query.equals("*:*")) {
+          numQueries.incrementAndGet();
           Map<String, SolrInputDocument> collDocs = docs.get(collection);
           if (collDocs != null) {
             lst.setNumFound(collDocs.size());
@@ -108,6 +115,14 @@ public class MockSearchableSolrClient extends SolrClient {
       throw new UnsupportedOperationException("Unsupported request type: " + request.getClass() + ":" + request);
     }
     return res;
+  }
+
+  public long getNumUpdates() {
+    return numUpdates.get();
+  }
+
+  public long getNumQueries() {
+    return numQueries.get();
   }
 
   @Override

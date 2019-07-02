@@ -109,7 +109,7 @@ public class IntRange extends Field {
   /**
    * Encodes the min, max ranges into a byte array
    */
-  private static byte[] encode(int[] min, int[] max) {
+  static byte[] encode(int[] min, int[] max) {
     checkArgs(min, max);
     byte[] b = new byte[BYTES*2*min.length];
     verifyAndEncode(min, max, b);

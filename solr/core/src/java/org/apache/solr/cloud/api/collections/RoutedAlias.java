@@ -35,10 +35,25 @@ public interface RoutedAlias {
 
   /**
    * Types supported. Every entry here must have a case in the switch statement in {@link #fromProps(String, Map)}
+   *
+   * Routed Alias collections have a naming pattern of XYZ where X is the alias name, Y is the separator prefix and
+   * Z is the data driven value distinguishing the bucket.
    */
   enum SupportedRouterTypes {
-    TIME,
-    CATEGORY
+    TIME {
+      @Override
+      public String getSeparatorPrefix() {
+        return "__TRA__";
+      }
+    },
+    CATEGORY {
+      @Override
+      public String getSeparatorPrefix() {
+        return "__CRA__";
+      }
+    };
+    public abstract String getSeparatorPrefix();
+
   }
 
   String ROUTER_TYPE_NAME = ROUTER_PREFIX + "name";

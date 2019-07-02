@@ -92,7 +92,7 @@ By default all replicas serve queries. See the section <<distributed-requests.ad
 
 == Document Routing
 
-Solr offers the ability to specify the router implementation used by a collection by specifying the `router.name` parameter when <<collections-api.adoc#create,creating your collection>>.
+Solr offers the ability to specify the router implementation used by a collection by specifying the `router.name` parameter when <<collection-management.adoc#create,creating your collection>>.
 
 If you use the `compositeId` router (the default), you can send documents with a prefix in the document ID which will be used to calculate the hash Solr uses to determine the shard a document is sent to for indexing. The prefix can be anything you'd like it to be (it doesn't have to be the shard name, for example), but it must be consistent so Solr behaves consistently.
 
@@ -116,7 +116,7 @@ When you create a collection in SolrCloud, you decide on the initial number shar
 
 The ability to split shards is in the Collections API. It currently allows splitting a shard into two pieces. The existing shard is left as-is, so the split action effectively makes two copies of the data as new shards. You can delete the old shard at a later time when you're ready.
 
-More details on how to use shard splitting is in the section on the Collection API's <<collections-api.adoc#splitshard,SPLITSHARD command>>.
+More details on how to use shard splitting is in the section on the Collection API's <<shard-management.adoc#splitshard,SPLITSHARD command>>.
 
 == Ignoring Commits from Client Applications in SolrCloud
 

@@ -33,7 +33,7 @@
  * <h2>Search Basics</h2>
  * <p>
  * Lucene offers a wide variety of {@link org.apache.lucene.search.Query} implementations, most of which are in
- * this package, its subpackage ({@link org.apache.lucene.search.spans spans},
+ * this package, its subpackage ({@link org.apache.lucene.search.spans spans}),
  * or the <a href="{@docRoot}/../queries/overview-summary.html">queries module</a>. These implementations can be combined in a wide 
  * variety of ways to provide complex querying capabilities along with information about where matches took place in the document 
  * collection. The <a href="#query">Query Classes</a> section below highlights some of the more important Query classes. For details 
@@ -108,7 +108,7 @@
  *     </ol>
  *     Boolean queries are constructed by adding two or more
  *     {@link org.apache.lucene.search.BooleanClause BooleanClause}
- *     instances. If too many clauses are added, a {@link org.apache.lucene.search.BooleanQuery.TooManyClauses TooManyClauses}
+ *     instances. If too many clauses are added, a {@link org.apache.lucene.search.IndexSearcher.TooManyClauses TooManyClauses}
  *     exception will be thrown during searching. This most often occurs
  *     when a {@link org.apache.lucene.search.Query Query}
  *     is rewritten into a {@link org.apache.lucene.search.BooleanQuery BooleanQuery} with many
@@ -116,7 +116,7 @@
  *     for example by {@link org.apache.lucene.search.WildcardQuery WildcardQuery}.
  *     The default setting for the maximum number
  *     of clauses is 1024, but this can be changed via the
- *     static method {@link org.apache.lucene.search.BooleanQuery#setMaxClauseCount(int)}.
+ *     static method {@link org.apache.lucene.search.IndexSearcher#setMaxClauseCount(int)}.
  * 
  * <h3>Phrases</h3>
  * 

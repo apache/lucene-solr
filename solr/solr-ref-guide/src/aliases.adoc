@@ -32,18 +32,18 @@ rejected with an error since there is no logic by which to distribute documents 
 
 == Standard Aliases
 
-Standard aliases are created and updated using the <<collections-api.adoc#createalias,CREATEALIAS>> command.
+Standard aliases are created and updated using the <<collection-aliasing.adoc#createalias,CREATEALIAS>> command.
 
 The current list of collections that are members of an alias can be verified via the
-  <<collections-api.adoc#clusterstatus,CLUSTERSTATUS>> command.
+  <<cluster-node-management.adoc#clusterstatus,CLUSTERSTATUS>> command.
 
 The full definition of all aliases including metadata about that alias (in the case of routed aliases, see below)
-  can be verified via the <<collections-api.adoc#listaliases,LISTALIASES>> command.
+  can be verified via the <<collection-aliasing.adoc#listaliases,LISTALIASES>> command.
 
 Alternatively this information is available by checking `/aliases.json` in ZooKeeper with either the native ZooKeeper
   client or in the <<cloud-screens.adoc#tree-view,tree page>> of the cloud menu in the admin UI.
 
-Aliases may be deleted via the <<collections-api.adoc#deletealias,DELETEALIAS>> command.
+Aliases may be deleted via the <<collection-aliasing.adoc#deletealias,DELETEALIAS>> command.
 When deleting an alias, underlying collections are *unaffected*.
 
 TIP: Any alias (standard or routed) that references multiple collections may complicate relevancy.
@@ -99,9 +99,9 @@ If you need to store a lot of timestamped data in Solr, such as logs or IoT sens
 
 ==== How It Works
 
-First you create a time routed aliases using the <<collections-api.adoc#createalias,CREATEALIAS>> command with the
+First you create a time routed aliases using the <<collection-aliasing.adoc#createalias,CREATEALIAS>> command with the
 desired router settings.
-Most of the settings are editable at a later time using the <<collections-api.adoc#aliasprop,ALIASPROP>> command.
+Most of the settings are editable at a later time using the <<collection-aliasing.adoc#aliasprop,ALIASPROP>> command.
 
 The first collection will be created automatically, along with an alias pointing to it.
 Each underlying Solr "core" in a collection that is a member of a TRA has a special core property referencing the alias.
@@ -137,7 +137,7 @@ Each time a new collection is added, the oldest collections in the TRA are exami
 All this happens synchronously, potentially adding seconds to the update request and indexing latency.
 +
 If `router.preemptiveCreateMath` is configured and if the document arrives within this window then it will occur
-asynchronously. See <<collections-api.adoc#time-routed-alias-parameters,Time Routed Alias Parameters>> for more information.
+asynchronously. See <<collection-aliasing.adoc#time-routed-alias-parameters,Time Routed Alias Parameters>> for more information.
 
 Any other type of update like a commit or delete is routed by RAUP to all collections.
 Generally speaking, this is not a performance concern. When Solr receives a delete or commit wherein nothing is deleted
@@ -171,9 +171,9 @@ that must be segregated into collections for cluster management or security reas
 
 ==== How It Works
 
-First you create a category routed alias using the <<collections-api.adoc#createalias,CREATEALIAS>> command with the
+First you create a category routed alias using the <<collection-aliasing.adoc#createalias,CREATEALIAS>> command with the
 desired router settings.
- Most of the settings are editable at a later time using the <<collections-api.adoc#aliasprop,ALIASPROP>> command.
+ Most of the settings are editable at a later time using the <<collection-aliasing.adoc#aliasprop,ALIASPROP>> command.
 
 The alias will be created with a special place-holder collection which will always be named
  `myAlias\__CRA__NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA\__TEMP`. The first document indexed into the CRA
@@ -182,7 +182,7 @@ The alias will be created with a special place-holder collection which will alwa
  a new value for the field is encountered.
 
 CAUTION: To guard against runaway collection creation options for limiting the total number of categories, and for
-rejecting values that don't match, a regular expression parameter is provided (see <<collections-api.adoc#category-routed-alias-parameters,Category Routed Alias Parameters>> for
+rejecting values that don't match, a regular expression parameter is provided (see <<collection-aliasing.adoc#category-routed-alias-parameters,Category Routed Alias Parameters>> for
 details).
 +
 Note that by providing very large or very permissive values for these options you are accepting the risk that
@@ -283,7 +283,7 @@ Starting with version 8.1 SolrCloud supports using alias names in collection com
 collection name is expected. This works only when the following criteria are satisfied:
 
 * an alias must not refer to more than one collection
-* an alias must not refer to a <<Routed Aliases,Routed Alias>> (see below)
+* an alias must not refer to a <<Routed Aliases,Routed Alias>>
 
 If all criteria are satisfied then the command will resolve alias names and operate on the collections the aliases
 refer to as if it was invoked with the collection names instead. Otherwise the command will not be executed and

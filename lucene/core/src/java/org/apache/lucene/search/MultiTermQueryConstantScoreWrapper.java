@@ -115,7 +115,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
        *  terms could be collected. If {@code false} is returned, the enum is
        *  left positioned on the next term. */
       private boolean collectTerms(LeafReaderContext context, TermsEnum termsEnum, List<TermAndState> terms) throws IOException {
-        final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, BooleanQuery.getMaxClauseCount());
+        final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
         for (int i = 0; i < threshold; ++i) {
           final BytesRef term = termsEnum.next();
           if (term == null) {

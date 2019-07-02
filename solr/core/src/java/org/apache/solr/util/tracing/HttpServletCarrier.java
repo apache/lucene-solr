@@ -32,7 +32,7 @@ public class HttpServletCarrier implements TextMap {
   private Iterator<Map.Entry<String, String>> it;
 
   public HttpServletCarrier(HttpServletRequest request) {
-    this.it = new Iterator<Map.Entry<String, String>>() {
+    this.it = new Iterator<>() {
 
       Enumeration<String> headerNameIt = request.getHeaderNames();
       String headerName = null;
@@ -61,7 +61,7 @@ public class HttpServletCarrier implements TextMap {
         String key = headerName;
         String val = headerValue.nextElement();
 
-        return new Map.Entry<String, String>() {
+        return new Map.Entry<>() {
           @Override
           public String getKey() {
             return key;

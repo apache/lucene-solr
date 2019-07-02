@@ -31,6 +31,7 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.mockfile.ExtrasFS;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.CorruptingIndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -614,6 +615,29 @@ public class TestBKD extends LuceneTestCase {
     verify(docValues, null, numDataDims, numIndexDims, numBytesPerDim);
   }
 
+  // this should trigger low cardinality leaves
+  public void testRandomFewDifferentValues() throws Exception {
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
+    int numIndexDims = TestUtil.nextInt(random(), 1, 8);
+    int numDataDims = TestUtil.nextInt(random(), numIndexDims, 8);
+
+    int numDocs = atLeast(10000);
+    int cardinality = TestUtil.nextInt(random(), 2, 100);
+    byte[][][] values = new byte[cardinality][numDataDims][numBytesPerDim];
+    for (int i = 0; i < cardinality; i++) {
+      for (int j = 0; j < numDataDims; j++) {
+        random().nextBytes(values[i][j]);
+      }
+    }
+
+    byte[][][] docValues = new byte[numDocs][][];
+    for(int docID = 0; docID < numDocs; docID++) {
+      docValues[docID] = values[random().nextInt(cardinality)];
+    }
+
+    verify(docValues, null, numDataDims, numIndexDims, numBytesPerDim);
+  }
+
   public void testMultiValued() throws Exception {
     int numBytesPerDim = TestUtil.nextInt(random(), 2, 30);
     int numDataDims = TestUtil.nextInt(random(), 1, 5);
@@ -821,7 +845,29 @@ public class TestBKD extends LuceneTestCase {
               hits.set(docID);
             }
 
-            @Override
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+              if (random().nextBoolean()) {
+                // check the default method is correct
+                IntersectVisitor.super.visit(iterator, packedValue);
+              } else {
+                assertEquals(iterator.docID(), -1);
+                int cost = Math.toIntExact(iterator.cost());
+                int numberOfPoints = 0;
+                int docID;
+                while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                  assertEquals(iterator.docID(), docID);
+                  visit(docID, packedValue);
+                  numberOfPoints++;
+                }
+                assertEquals(cost,  numberOfPoints);
+                assertEquals(iterator.docID(), DocIdSetIterator.NO_MORE_DOCS);
+                assertEquals(iterator.nextDoc(), DocIdSetIterator.NO_MORE_DOCS);
+                assertEquals(iterator.docID(), DocIdSetIterator.NO_MORE_DOCS);
+              }
+          }
+
+          @Override
             public Relation compare(byte[] minPacked, byte[] maxPacked) {
               boolean crosses = false;
               for(int dim=0;dim<numIndexDims;dim++) {

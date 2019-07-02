@@ -99,12 +99,18 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   
   @AfterClass
   public static void destroyThings() throws Exception {
-    collection1.close();
-    collection2.close();
-    collection1 = null;
-    collection2 = null;
-    jetty.stop();
-    jetty=null;
+    if (null != collection1) {
+      collection1.close();
+      collection1 = null;
+    }
+    if (null != collection2) {
+      collection2.close();
+      collection2 = null;
+    }
+    if (null != jetty) {
+      jetty.stop();
+      jetty=null;
+    }
     resetExceptionIgnores();
     systemClearPropertySolrDisableShardsWhitelist();
   }

@@ -27,3 +27,5 @@ pom.xml
 /nb-build
 .pydevproject
 __pycache__
+/dev-tools/scripts/scripts.iml
+

@@ -107,7 +107,7 @@ public class LongRange extends Field {
   }
 
   /** Encodes the min, max ranges into a byte array */
-  private static byte[] encode(long[] min, long[] max) {
+  static byte[] encode(long[] min, long[] max) {
     checkArgs(min, max);
     byte[] b = new byte[BYTES*2*min.length];
     verifyAndEncode(min, max, b);

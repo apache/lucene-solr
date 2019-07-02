@@ -387,7 +387,7 @@ public class SimCloudManager implements SolrCloudManager {
     sb.append("#######################################\n");
     sb.append("############ CLUSTER STATE ############\n");
     sb.append("#######################################\n");
-    sb.append("## Live nodes:\t\t" + getLiveNodesSet().size() + "\n");
+    sb.append("## Live nodes:\t\t").append(getLiveNodesSet().size()).append("\n");
     int emptyNodes = 0;
     int maxReplicas = 0;
     int minReplicas = Integer.MAX_VALUE;
@@ -414,37 +414,37 @@ public class SimCloudManager implements SolrCloudManager {
     if (minReplicas == Integer.MAX_VALUE) {
       minReplicas = 0;
     }
-    sb.append("## Empty nodes:\t" + emptyNodes + "\n");
+    sb.append("## Empty nodes:\t").append(emptyNodes).append("\n");
     Set<String> deadNodes = getSimNodeStateProvider().simGetDeadNodes();
-    sb.append("## Dead nodes:\t\t" + deadNodes.size() + "\n");
-    deadNodes.forEach(n -> sb.append("##\t\t" + n + "\n"));
+    sb.append("## Dead nodes:\t\t").append(deadNodes.size()).append("\n");
+    deadNodes.forEach(n -> sb.append("##\t\t").append(n).append("\n"));
     sb.append("## Collections:\n");
       clusterStateProvider.simGetCollectionStats().forEach((coll, stats) -> {
         sb.append("##  * ").append(coll).append('\n');
         stats.forEach((k, v) -> {
-          sb.append("##    " + k + "\t" + v + "\n");
+          sb.append("##    ").append(k).append("\t").append(v).append("\n");
         });
       });
     if (withCollections) {
       ClusterState state = clusterStateProvider.getClusterState();
-      state.forEachCollection(coll -> sb.append(coll.toString() + "\n"));
+      state.forEachCollection(coll -> sb.append(coll.toString()).append("\n"));
     }
-    sb.append("## Max replicas per node:\t" + maxReplicas + "\n");
-    sb.append("## Min replicas per node:\t" + minReplicas + "\n");
-    sb.append("## Total replicas:\t\t" + numReplicas + "\n");
+    sb.append("## Max replicas per node:\t").append(maxReplicas).append("\n");
+    sb.append("## Min replicas per node:\t").append(minReplicas).append("\n");
+    sb.append("## Total replicas:\t\t").append(numReplicas).append("\n");
     replicaStates.forEach((c, map) -> {
       AtomicInteger repCnt = new AtomicInteger();
       map.forEach((s, cnt) -> repCnt.addAndGet(cnt.get()));
-      sb.append("## * " + c + "\t\t" + repCnt.get() + "\n");
-      map.forEach((s, cnt) -> sb.append("##\t\t- " + String.format(Locale.ROOT, "%-12s  %4d", s, cnt.get()) + "\n"));
+      sb.append("## * ").append(c).append("\t\t").append(repCnt.get()).append("\n");
+      map.forEach((s, cnt) -> sb.append("##\t\t- ").append(String.format(Locale.ROOT, "%-12s  %4d", s, cnt.get())).append("\n"));
     });
     sb.append("######### Solr op counts ##########\n");
-    simGetOpCounts().forEach((k, cnt) -> sb.append("##\t\t- " + String.format(Locale.ROOT, "%-14s  %4d", k, cnt.get()) + "\n"));
+    simGetOpCounts().forEach((k, cnt) -> sb.append("##\t\t- ").append(String.format(Locale.ROOT, "%-14s  %4d", k, cnt.get())).append("\n"));
     sb.append("######### Autoscaling event counts ###########\n");
     Map<String, Map<String, AtomicInteger>> counts = simGetEventCounts();
     counts.forEach((trigger, map) -> {
-      sb.append("## * Trigger: " + trigger + "\n");
-      map.forEach((s, cnt) -> sb.append("##\t\t- " + String.format(Locale.ROOT, "%-11s  %4d", s, cnt.get()) + "\n"));
+      sb.append("## * Trigger: ").append(trigger).append("\n");
+      map.forEach((s, cnt) -> sb.append("##\t\t- ").append(String.format(Locale.ROOT, "%-11s  %4d", s, cnt.get())).append("\n"));
     });
     return sb.toString();
   }
