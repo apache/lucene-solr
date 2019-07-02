@@ -21,6 +21,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 
 /**
  * Base IndexInput implementation that uses an array
@@ -490,5 +491,15 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     protected ByteBufferIndexInput buildSlice(String sliceDescription, long ofs, long length) {
       return super.buildSlice(sliceDescription, this.offset + ofs, length);
     }
+  }
+
+  @Override
+  public boolean load() {
+    for (ByteBuffer buffer : buffers) {
+      if (buffer instanceof MappedByteBuffer) {
+        ((MappedByteBuffer) buffer).load();
+      }
+    }
+    return true;
   }
 }
