@@ -81,7 +81,7 @@ a list of tuples with statistics about each bin. In the example the `col` functi
 used to return a vector with the `N` column for each bin, which is the count of
 observations in the
 bin. If the residuals are normally distributed we would expect the bin counts
-to roughly follow a gaussian curve to the data.
+to roughly follow a gaussian curve.
 
 The bin count vector is then passed to `gaussfit` as the *y* axis. `gaussfit` generates
 a sequence for the *x* axis and then fits the gaussian curve to data.
