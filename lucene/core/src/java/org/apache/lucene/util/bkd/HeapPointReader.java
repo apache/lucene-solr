@@ -27,16 +27,16 @@ public final class HeapPointReader implements PointReader {
   private int curRead;
   final byte[] block;
   final int packedBytesLength;
-  final int[] docIDs;
+  final int packedBytesDocIDLength;
   final int end;
   private final HeapPointValue pointValue;
 
-  public HeapPointReader(byte[] block, int packedBytesLength, int[] docIDs, int start, int end) {
+  public HeapPointReader(byte[] block, int packedBytesLength, int start, int end) {
     this.block = block;
-    this.docIDs = docIDs;
     curRead = start-1;
     this.end = end;
     this.packedBytesLength = packedBytesLength;
+    this.packedBytesDocIDLength = packedBytesLength + Integer.BYTES;
     if (start < end) {
       this.pointValue = new HeapPointValue(block, packedBytesLength);
     } else {
@@ -53,7 +53,7 @@ public final class HeapPointReader implements PointReader {
 
   @Override
   public PointValue pointValue() {
-    pointValue.setValue(curRead * packedBytesLength, docIDs[curRead]);
+    pointValue.setOffset(curRead * packedBytesDocIDLength);
     return pointValue;
   }
 
@@ -67,22 +67,21 @@ public final class HeapPointReader implements PointReader {
   static class HeapPointValue implements PointValue {
 
     final BytesRef packedValue;
-    final BytesRef packedValueDocIDBytes;
+    final BytesRef packedValueDocID;
     final int packedValueLength;
-    int docID;
 
-    public HeapPointValue(byte[] value, int packedValueLength) {
+    HeapPointValue(byte[] value, int packedValueLength) {
       this.packedValueLength = packedValueLength;
       this.packedValue = new BytesRef(value, 0, packedValueLength);
-      this.packedValueDocIDBytes = new BytesRef(new byte[packedValueLength + Integer.BYTES]);
+      this.packedValueDocID = new BytesRef(value, 0, packedValueLength + Integer.BYTES);
     }
 
     /**
-     * Sets a new value by changing the offset and docID.
+     * Sets a new value by changing the offset.
      */
-    public void setValue(int offset, int docID) {
-      this.docID = docID;
-      this.packedValue.offset = offset;
+    public void setOffset(int offset) {
+      packedValue.offset = offset;
+      packedValueDocID.offset = offset;
     }
 
     @Override
@@ -92,18 +91,14 @@ public final class HeapPointReader implements PointReader {
 
     @Override
     public int docID() {
-      return docID;
+      int position = packedValueDocID.offset + packedValueLength;
+      return ((packedValueDocID.bytes[position] & 0xFF) << 24) | ((packedValueDocID.bytes[++position] & 0xFF) << 16)
+          | ((packedValueDocID.bytes[++position] & 0xFF) <<  8) |  (packedValueDocID.bytes[++position] & 0xFF);
     }
 
     @Override
     public BytesRef packedValueDocIDBytes() {
-      System.arraycopy(packedValue.bytes, packedValue.offset,  packedValueDocIDBytes.bytes, 0, packedValueLength);
-      int position = packedValueLength;
-      packedValueDocIDBytes.bytes[position] = (byte) (docID >> 24);
-      packedValueDocIDBytes.bytes[++position] = (byte) (docID >> 16);
-      packedValueDocIDBytes.bytes[++position] = (byte) (docID >> 8);
-      packedValueDocIDBytes.bytes[++position] = (byte) (docID >> 0);
-      return packedValueDocIDBytes;
+      return packedValueDocID;
     }
   }
 }

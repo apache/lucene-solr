@@ -785,7 +785,8 @@ public class BKDWriter implements Closeable {
             minPackedValue, maxPackedValue,
             parentSplits,
             splitPackedValues,
-            leafBlockFPs);
+            leafBlockFPs,
+            new int[maxPointsInLeafNode]);
       assert Arrays.equals(parentSplits, new int[numIndexDims]);
 
       // If no exception, we should have cleaned everything up:
@@ -1465,7 +1466,8 @@ public class BKDWriter implements Closeable {
                      byte[] minPackedValue, byte[] maxPackedValue,
                      int[] parentSplits,
                      byte[] splitPackedValues,
-                     long[] leafBlockFPs) throws IOException {
+                     long[] leafBlockFPs,
+                     int[] spareDocIds) throws IOException {
 
     if (nodeID >= leafNodeOffset) {
 
@@ -1525,7 +1527,13 @@ public class BKDWriter implements Closeable {
       // loading the values:
       int count = to - from;
       assert count > 0: "nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset;
-      writeLeafBlockDocs(out, heapSource.docIDs, from, count);
+      assert count <= spareDocIds.length : "count=" + count + " > length=" + spareDocIds.length;
+      // Write doc IDs
+      int[] docIDs = spareDocIds;
+      for (int i = 0; i < count; i++) {
+        docIDs[i] = heapSource.getPackedValueSlice(from + i).docID();
+      }
+      writeLeafBlockDocs(out, docIDs, 0, count);
 
       // TODO: minor opto: we don't really have to write the actual common prefixes, because BKDReader on recursing can regenerate it for us
       // from the index, much like how terms dict does so from the FST:
@@ -1548,7 +1556,7 @@ public class BKDWriter implements Closeable {
         }
       };
       assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
-          heapSource.docIDs, from);
+          docIDs, 0);
       writeLeafBlockPackedValues(out, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality);
 
     } else {
@@ -1595,12 +1603,12 @@ public class BKDWriter implements Closeable {
       // Recurse on left tree:
       build(2 * nodeID, leafNodeOffset, slices[0],
           out, radixSelector, minPackedValue, maxSplitPackedValue,
-          parentSplits, splitPackedValues, leafBlockFPs);
+          parentSplits, splitPackedValues, leafBlockFPs, spareDocIds);
 
       // Recurse on right tree:
       build(2 * nodeID + 1, leafNodeOffset, slices[1],
           out, radixSelector, minSplitPackedValue, maxPackedValue
-          , parentSplits, splitPackedValues, leafBlockFPs);
+          , parentSplits, splitPackedValues, leafBlockFPs, spareDocIds);
 
       parentSplits[splitDim]--;
     }

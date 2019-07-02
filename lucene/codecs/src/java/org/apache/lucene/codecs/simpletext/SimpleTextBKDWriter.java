@@ -604,7 +604,7 @@ final class SimpleTextBKDWriter implements Closeable {
 
       build(1, numLeaves, points, out,
           radixSelector, minPackedValue, maxPackedValue,
-            splitPackedValues, leafBlockFPs);
+            splitPackedValues, leafBlockFPs, new int[maxPointsInLeafNode]);
 
 
       // If no exception, we should have cleaned everything up:
@@ -950,7 +950,8 @@ final class SimpleTextBKDWriter implements Closeable {
                      BKDRadixSelector radixSelector,
                      byte[] minPackedValue, byte[] maxPackedValue,
                      byte[] splitPackedValues,
-                     long[] leafBlockFPs) throws IOException {
+                     long[] leafBlockFPs,
+                     int[] spareDocIds) throws IOException {
 
     if (nodeID >= leafNodeOffset) {
 
@@ -1009,7 +1010,12 @@ final class SimpleTextBKDWriter implements Closeable {
       // loading the values:
       int count = to - from;
       assert count > 0: "nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset;
-      writeLeafBlockDocs(out, heapSource.docIDs, from, count);
+      // Write doc IDs
+      int[] docIDs = spareDocIds;
+      for (int i = 0; i < count; i++) {
+        docIDs[i] = heapSource.getPackedValueSlice(from + i).docID();
+      }
+      writeLeafBlockDocs(out, spareDocIds, 0, count);
 
       // TODO: minor opto: we don't really have to write the actual common prefixes, because BKDReader on recursing can regenerate it for us
       // from the index, much like how terms dict does so from the FST:
@@ -1029,7 +1035,7 @@ final class SimpleTextBKDWriter implements Closeable {
         }
       };
       assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
-          heapSource.docIDs, from);
+          docIDs, 0);
       writeLeafBlockPackedValues(out, commonPrefixLengths, count, sortedDim, packedValues);
 
     } else {
@@ -1074,12 +1080,12 @@ final class SimpleTextBKDWriter implements Closeable {
 
       // Recurse on left tree:
       build(2*nodeID, leafNodeOffset, pathSlices[0], out, radixSelector,
-            minPackedValue, maxSplitPackedValue, splitPackedValues, leafBlockFPs);
+            minPackedValue, maxSplitPackedValue, splitPackedValues, leafBlockFPs, spareDocIds);
 
       // TODO: we could "tail recurse" here?  have our parent discard its refs as we recurse right?
       // Recurse on right tree:
       build(2*nodeID+1, leafNodeOffset, pathSlices[1], out, radixSelector,
-            minSplitPackedValue, maxPackedValue, splitPackedValues, leafBlockFPs);
+            minSplitPackedValue, maxPackedValue, splitPackedValues, leafBlockFPs, spareDocIds);
     }
   }
 
