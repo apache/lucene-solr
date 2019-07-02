@@ -276,20 +276,34 @@ abstract class RangeFieldQuery extends Query {
       private IntersectVisitor getIntersectVisitor(DocIdSetBuilder result) {
         return new IntersectVisitor() {
           DocIdSetBuilder.BulkAdder adder;
+
           @Override
           public void grow(int count) {
             adder = result.grow(count);
           }
+
           @Override
           public void visit(int docID) throws IOException {
             adder.add(docID);
           }
+
           @Override
           public void visit(int docID, byte[] leaf) throws IOException {
             if (queryType.matches(ranges, leaf, numDims, bytesPerDim)) {
-              adder.add(docID);
+              visit(docID);
             }
           }
+
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] leaf) throws IOException {
+            if (queryType.matches(ranges, leaf, numDims, bytesPerDim)) {
+              int docID;
+              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                visit(docID);
+              }
+            }
+          }
+
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
             return queryType.compare(ranges, minPackedValue, maxPackedValue, numDims, bytesPerDim);

@@ -114,6 +114,44 @@ public abstract class PointRangeQuery extends Query {
 
     return new ConstantScoreWeight(this, boost) {
 
+      private boolean matches(byte[] packedValue) {
+        for(int dim=0;dim<numDims;dim++) {
+          int offset = dim*bytesPerDim;
+          if (FutureArrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
+            // Doc's value is too low, in this dimension
+            return false;
+          }
+          if (FutureArrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0) {
+            // Doc's value is too high, in this dimension
+            return false;
+          }
+        }
+        return true;
+      }
+
+      private Relation relate(byte[] minPackedValue, byte[] maxPackedValue) {
+
+        boolean crosses = false;
+
+        for(int dim=0;dim<numDims;dim++) {
+          int offset = dim*bytesPerDim;
+
+          if (FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0 ||
+              FutureArrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
+            return Relation.CELL_OUTSIDE_QUERY;
+          }
+
+          crosses |= FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0 ||
+              FutureArrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0;
+        }
+
+        if (crosses) {
+          return Relation.CELL_CROSSES_QUERY;
+        } else {
+          return Relation.CELL_INSIDE_QUERY;
+        }
+      }
+
       private IntersectVisitor getIntersectVisitor(DocIdSetBuilder result) {
         return new IntersectVisitor() {
 
@@ -131,44 +169,24 @@ public abstract class PointRangeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] packedValue) {
-            for(int dim=0;dim<numDims;dim++) {
-              int offset = dim*bytesPerDim;
-              if (FutureArrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
-                // Doc's value is too low, in this dimension
-                return;
-              }
-              if (FutureArrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0) {
-                // Doc's value is too high, in this dimension
-                return;
+            if (matches(packedValue)) {
+              visit(docID);
+            }
+          }
+
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+            if (matches(packedValue)) {
+              int docID;
+              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                visit(docID);
               }
             }
-
-            // Doc is in-bounds
-            adder.add(docID);
           }
 
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-
-            boolean crosses = false;
-
-            for(int dim=0;dim<numDims;dim++) {
-              int offset = dim*bytesPerDim;
-
-              if (FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0 ||
-                  FutureArrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
-                return Relation.CELL_OUTSIDE_QUERY;
-              }
-
-              crosses |= FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0 ||
-                  FutureArrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0;
-            }
-
-            if (crosses) {
-              return Relation.CELL_CROSSES_QUERY;
-            } else {
-              return Relation.CELL_INSIDE_QUERY;
-            }
+            return relate(minPackedValue, maxPackedValue);
           }
         };
       }
@@ -187,45 +205,33 @@ public abstract class PointRangeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] packedValue) {
-            for(int dim=0;dim<numDims;dim++) {
-              int offset = dim*bytesPerDim;
-              if (FutureArrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
-                // Doc's value is too low, in this dimension
-                result.clear(docID);
-                cost[0]--;
-                return;
-              }
-              if (FutureArrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0) {
-                // Doc's value is too high, in this dimension
-                result.clear(docID);
-                cost[0]--;
-                return;
+            if (matches(packedValue) == false) {
+              visit(docID);
+            }
+          }
+
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+            if (matches(packedValue) == false) {
+              int docID;
+              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                visit(docID);
               }
             }
           }
 
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-
-            boolean crosses = false;
-
-            for(int dim=0;dim<numDims;dim++) {
-              int offset = dim*bytesPerDim;
-
-              if (FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0 ||
-                  FutureArrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
-                // This dim is not in the range
+            Relation relation = relate(minPackedValue, maxPackedValue);
+            switch (relation) {
+              case CELL_INSIDE_QUERY:
+                // all points match, skip this subtree
+                return Relation.CELL_OUTSIDE_QUERY;
+              case CELL_OUTSIDE_QUERY:
+                // none of the points match, clear all documents
                 return Relation.CELL_INSIDE_QUERY;
-              }
-
-              crosses |= FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0 ||
-                  FutureArrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0;
-            }
-
-            if (crosses) {
-              return Relation.CELL_CROSSES_QUERY;
-            } else {
-              return Relation.CELL_OUTSIDE_QUERY;
+              default:
+                return relation;
             }
           }
         };

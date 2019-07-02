@@ -132,6 +132,9 @@ Optimizations
 * LUCENE-8885: Optimise BKD reader by exploiting cardinality information stored
   on leaves. (Ignacio Vera)
 
+* LUCENE-8896: Override default implementation of IntersectVisitor#visit(DocIDSetBuilder, byte[])
+  for several queries. (Ignacio Vera)
+
 Test Framework
 
 * LUCENE-8825: CheckHits now display the shard index in case of mismatch

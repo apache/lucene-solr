@@ -207,13 +207,27 @@ public abstract class PointInSetQuery extends Query implements Accountable {
 
     @Override
     public void visit(int docID, byte[] packedValue) {
+     if (matches(packedValue)) {
+       visit(docID);
+     }
+    }
+
+    @Override
+    public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+      if (matches(packedValue)) {
+        int docID;
+        while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          visit(docID);
+        }
+      }
+    }
+
+    private boolean matches(byte[] packedValue) {
       scratch.bytes = packedValue;
       while (nextQueryPoint != null) {
         int cmp = nextQueryPoint.compareTo(scratch);
         if (cmp == 0) {
-          // Query point equals index point, so collect and return
-          adder.add(docID);
-          break;
+          return true;
         } else if (cmp < 0) {
           // Query point is before index point, so we move to next query point
           nextQueryPoint = iterator.next();
@@ -222,6 +236,7 @@ public abstract class PointInSetQuery extends Query implements Accountable {
           break;
         }
       }
+      return false;
     }
 
     @Override
@@ -288,7 +303,19 @@ public abstract class PointInSetQuery extends Query implements Accountable {
       assert packedValue.length == pointBytes.length;
       if (Arrays.equals(packedValue, pointBytes)) {
         // The point for this doc matches the point we are querying on
-        adder.add(docID);
+        visit(docID);
+      }
+    }
+
+    @Override
+    public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+      assert packedValue.length == pointBytes.length;
+      if (Arrays.equals(packedValue, pointBytes)) {
+        // The point for this set of docs matches the point we are querying on
+        int docID;
+        while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          visit(docID);
+        }
       }
     }
 
