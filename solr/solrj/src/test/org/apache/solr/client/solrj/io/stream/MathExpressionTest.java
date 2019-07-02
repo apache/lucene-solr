@@ -19,8 +19,11 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -1561,6 +1564,35 @@ public class MathExpressionTest extends SolrCloudTestCase {
         }
       }
     }
+
+    cexpr = "let(a=sample(normalDistribution(40, 1.5), 700)," +
+        "        b=sample(normalDistribution(40, 1.5), 700)," +
+        "        c=transpose(matrix(a, b)),"+
+        "        d=kmeans(c, 5),"+
+        "        zplot(clusters=d))";
+
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 700);
+
+    Set clusters = new HashSet();
+    for(Tuple tup : tuples) {
+      assertNotNull(tup.get("x"));
+      assertNotNull(tup.get("y"));
+      clusters.add(tup.getString("cluster"));
+    }
+
+    assertEquals(clusters.size(), 5);
+    assertTrue(clusters.contains("cluster1"));
+    assertTrue(clusters.contains("cluster2"));
+    assertTrue(clusters.contains("cluster3"));
+    assertTrue(clusters.contains("cluster4"));
+    assertTrue(clusters.contains("cluster5"));
   }
 
 
