@@ -118,6 +118,7 @@ public class TestRamUsageEstimator extends LuceneTestCase {
     assertEquals((double)actual, (double)estimated, (double)actual * 0.1);
   }
 
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8898")
   public void testMap() {
     Map<String, Object> map = new HashMap<>();
     map.put("primitive", 1234L);
