@@ -113,6 +113,44 @@ public abstract class PointRangeQuery extends Query {
 
     return new ConstantScoreWeight(this, boost) {
 
+      private boolean matches(byte[] packedValue) {
+        for(int dim=0;dim<numDims;dim++) {
+          int offset = dim*bytesPerDim;
+          if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
+            // Doc's value is too low, in this dimension
+            return false;
+          }
+          if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0) {
+            // Doc's value is too high, in this dimension
+            return false;
+          }
+        }
+        return true;
+      }
+
+      private Relation relate(byte[] minPackedValue, byte[] maxPackedValue) {
+
+        boolean crosses = false;
+
+        for(int dim=0;dim<numDims;dim++) {
+          int offset = dim*bytesPerDim;
+
+          if (Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0 ||
+              Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
+            return Relation.CELL_OUTSIDE_QUERY;
+          }
+
+          crosses |= Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0 ||
+              Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0;
+        }
+
+        if (crosses) {
+          return Relation.CELL_CROSSES_QUERY;
+        } else {
+          return Relation.CELL_INSIDE_QUERY;
+        }
+      }
+
       private IntersectVisitor getIntersectVisitor(DocIdSetBuilder result) {
         return new IntersectVisitor() {
 
@@ -145,43 +183,9 @@ public abstract class PointRangeQuery extends Query {
             }
           }
 
-          private boolean matches(byte[] packedValue) {
-            for(int dim=0;dim<numDims;dim++) {
-              int offset = dim*bytesPerDim;
-              if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
-                // Doc's value is too low, in this dimension
-                return false;
-              }
-              if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0) {
-                // Doc's value is too high, in this dimension
-                return false;
-              }
-            }
-            return true;
-          }
-
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-
-            boolean crosses = false;
-
-            for(int dim=0;dim<numDims;dim++) {
-              int offset = dim*bytesPerDim;
-
-              if (Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0 ||
-                  Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
-                return Relation.CELL_OUTSIDE_QUERY;
-              }
-
-              crosses |= Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0 ||
-                  Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0;
-            }
-
-            if (crosses) {
-              return Relation.CELL_CROSSES_QUERY;
-            } else {
-              return Relation.CELL_INSIDE_QUERY;
-            }
+            return relate(minPackedValue, maxPackedValue);
           }
         };
       }
@@ -215,43 +219,18 @@ public abstract class PointRangeQuery extends Query {
             }
           }
 
-          private boolean matches(byte[] packedValue) {
-            for(int dim=0;dim<numDims;dim++) {
-              int offset = dim*bytesPerDim;
-              if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
-                // Doc's value is too low, in this dimension
-                return false;
-              }
-              if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0) {
-                // Doc's value is too high, in this dimension
-                return false;
-              }
-            }
-            return true;
-          }
-
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-
-            boolean crosses = false;
-
-            for(int dim=0;dim<numDims;dim++) {
-              int offset = dim*bytesPerDim;
-
-              if (Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0 ||
-                  Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0) {
-                // This dim is not in the range
+             Relation relation = relate(minPackedValue, maxPackedValue);
+            switch (relation) {
+              case CELL_INSIDE_QUERY:
+                // all points match, skip this subtree
+                return Relation.CELL_OUTSIDE_QUERY;
+              case CELL_OUTSIDE_QUERY:
+                // none of the points match, clear all documents
                 return Relation.CELL_INSIDE_QUERY;
-              }
-
-              crosses |= Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, lowerPoint, offset, offset + bytesPerDim) < 0 ||
-                  Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, upperPoint, offset, offset + bytesPerDim) > 0;
-            }
-
-            if (crosses) {
-              return Relation.CELL_CROSSES_QUERY;
-            } else {
-              return Relation.CELL_OUTSIDE_QUERY;
+              default:
+                return relation;
             }
           }
         };
