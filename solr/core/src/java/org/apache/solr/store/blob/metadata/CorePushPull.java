@@ -5,13 +5,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.Future;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
@@ -91,7 +94,6 @@ public class CorePushPull {
      *                only used for logging purposes 
      */
     public BlobCoreMetadata pushToBlobStore(long requestQueuedTimeMs, int attempt) throws Exception {
-      boolean isSuccess = false;
       long startTimeMs = System.currentTimeMillis();
       try {
         SolrCore solrCore = container.getCore(pushPullData.getCoreName());
@@ -126,24 +128,24 @@ public class CorePushPull {
           String tempIndexDirName = solrCore.getDataDir() + "index.push." + System.nanoTime();
           Directory tempIndexDir = solrCore.getDirectoryFactory().get(tempIndexDirName, DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
           try {
-              Directory indexDir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
-              try {
-                  // copy index files to the temp directory
-                  for (CoreFileData cfd : resolvedMetadataResult.getFilesToPush()) {
-                      copyFileToDirectory(indexDir, cfd.fileName, tempIndexDir);
-                  }
-              } finally {
-                  solrCore.getDirectoryFactory().release(indexDir);
-              }
-              // Directory's javadoc says: "Java's i/o APIs not used directly, but rather all i/o is through this API"
-              // But this is untrue/totally false/misleading. SnapPuller has File all over.
+            Directory indexDir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
+            try {
+              // copy index files to the temp directory
               for (CoreFileData cfd : resolvedMetadataResult.getFilesToPush()) {
-                  // Sanity check that we're talking about the same file (just sanity, Solr doesn't update files so should never be different)
-                  assert cfd.fileSize == tempIndexDir.fileLength(cfd.fileName);
-    
-                  String blobPath = pushFileToBlobStore(coreStorageClient, tempIndexDir, cfd.fileName, cfd.fileSize);
-                  bcmBuilder.addFile(new BlobCoreMetadata.BlobFile(cfd.fileName, blobPath, cfd.fileSize));
+                copyFileToDirectory(indexDir, cfd.fileName, tempIndexDir);
               }
+            } finally {
+              solrCore.getDirectoryFactory().release(indexDir);
+            }
+            // Directory's javadoc says: "Java's i/o APIs not used directly, but rather all i/o is through this API"
+            // But this is untrue/totally false/misleading. SnapPuller has File all over.
+            for (CoreFileData cfd : resolvedMetadataResult.getFilesToPush()) {
+              // Sanity check that we're talking about the same file (just sanity, Solr doesn't update files so should never be different)
+              assert cfd.fileSize == tempIndexDir.fileLength(cfd.fileName);
+
+              String blobPath = pushFileToBlobStore(coreStorageClient, tempIndexDir, cfd.fileName, cfd.fileSize);
+              bcmBuilder.addFile(new BlobCoreMetadata.BlobFile(cfd.fileName, blobPath, cfd.fileSize));
+            }
           } finally {
             removeTempDirectory(solrCore, tempIndexDirName, tempIndexDir);
           }
@@ -152,191 +154,158 @@ public class CorePushPull {
 
           String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(pushPullData.getNewMetadataSuffix());          
           coreStorageClient.pushCoreMetadata(blobMetadata.getSharedBlobName(), blobCoreMetadataName, newBcm);
-          isSuccess = true;
           return newBcm;
         } finally {
-            solrCore.close();
+          solrCore.close();
         }
       } finally {
         long filesAffected = resolvedMetadataResult.getFilesToPush().size();
         long bytesTransferred = resolvedMetadataResult.getFilesToPush().stream().mapToLong(cfd -> cfd.fileSize).sum();
         
         // todo correctness stuff
-        logBlobAction("PUSH", filesAffected, bytesTransferred, requestQueuedTimeMs, attempt, startTimeMs, isSuccess);
+        logBlobAction("PUSH", filesAffected, bytesTransferred, requestQueuedTimeMs, attempt, startTimeMs);
       }
     }
-//
-//    /**
-//     * Calls {@link #pullUpdateFromBlob(long, boolean, int)}  with current epoch time and attempt no. 0.
-//     * @param waitForSearcher <code>true</code> if this call should wait until the index searcher is created (so that any query
-//     *                     after the return from this method sees the new pulled content) or <code>false</code> if we request
-//     *                     a new index searcher to be eventually created but do not wait for it to be created (a query
-//     *                     following the return from this call might see the old core content).
-//     */
-//    public void pullUpdateFromBlob(boolean waitForSearcher) throws Exception {
-//         pullUpdateFromBlob(System.currentTimeMillis(), waitForSearcher, 0);
-//    }
 
-//    /**
-//     * We're doing here what replication does in {@link org.apache.solr.handler.IndexFetcher#fetchLatestIndex}.<p>
-//     *     TODO: check changes in Solr.7's IndexFetcher. Core reloading needed?
-//     *
-//     * This method will work in 2 cases:
-//     * <ol>
-//     * <li>Local core needs to fetch an update from Blob</li>
-//     * <li>Local core did not exist (was created empty before calling this method) and is fetched from Blob</li>
-//     * </ol>
-//     * 
-//     * @param requestQueuedTimeMs epoch time in milliseconds when the pull request was queued(meaningful in case of async pushing)
-//     *                            only used for logging purposes
-//     * @param waitForSearcher <code>true</code> if this call should wait until the index searcher is created (so that any query
-//     *                     after the return from this method sees the new pulled content) or <code>false</code> if we request
-//     *                     a new index searcher to be eventually created but do not wait for it to be created (a query
-//     *                     following the return from this call might see the old core content).
-//     * @param attempt 0 based attempt number (meaningful in case of pushing with retry mechanism in case of failure)
-//     *                only used for logging purposes 
-//     *
-//     * @throws Exception    In the context of the PoC and first runs, we ignore errors such as Blob Server not available
-//     *                      or network issues. We therefore consider all exceptions thrown by this method as a sign that
-//     *                      it is durably not possible to pull the core from the Blob Store.
-//     *                      TODO This has to be revisited before going to real prod, as environemnt issues can cause massive reindexing with this strategy
-//     */
-//    public void pullUpdateFromBlob(long requestQueuedTimeMs, boolean waitForSearcher, int attempt) throws Exception {
-//        assert Action.PULL.equals(resolver.getAction());
-//
-//        boolean isSuccess = false;
-//        long startTimeMs = System.currentTimeMillis();
-//        try {
-//
-//            SolrCore solrCore = container.getCore(pushPullData.getCoreName());
-//
-//            if (solrCore == null) {
-//                throw new Exception("Can't find core " + pushPullData.getCoreName());
-//            }
-//
-//            try {
-//                // We're here because we identified no conflicts in downloading from the Blob store the files missing locally.
-//                // In order to make sure there still are no conflicts (local Solr server on which we run might have updated the
-//                // core since we checked or might do so as we download files shortly), we'll download the needed files to a temp
-//                // dir and before moving them to the core directory, we will check the directory hasn't changed locally.
-//
-//                // Create temp directory (within the core local folder).
-//                String tmpIdxDirName = solrCore.getDataDir() + "index.pull." + System.nanoTime();
-//                Directory tmpIndexDir = solrCore.getDirectoryFactory().get(tmpIdxDirName, DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
-//
-//                try {
-//                    downloadFilesFromBlob(tmpIndexDir, resolver.getFilesToPull().values());
-//
-//                    String indexDir = solrCore.getIndexDir();
-//                    Directory dir = solrCore.getDirectoryFactory().get(indexDir, DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
-//
-//                    try {
-//                        // Close the index writer to stop changes to this core
-//                        solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
-//
-//                        boolean thrownException = false;
-//                        try {
-//
-//                            // Make sure Solr core directory content hasn't changed since we decided what we want to pull from Blob
-//                            if (!solrServerMetadata.isSameDirectoryContent(dir)) {
-//                                // Maybe return something less agressive than trowing an exception? TBD once we end up calling this method :)
-//                                throw new Exception("Local Directory content " + indexDir + " has changed since Blob pull started. Aborting pull.");
-//                            }
-//
-//                            // Copy all files into the Solr directory (there are no naming conflicts since we're doing an Action.PULL)
-//                            // Move the segments_N file last once all other are ok.
-//                            String segmentsN = null;
-//                            for (BlobShardIndexMetadata.BlobFile bf : resolver.getFilesToPull().values()) {
-//                                if (resolver.isSegmentsNFilename(bf)) {
-//                                    assert segmentsN == null;
-//                                    segmentsN = bf.getSolrFileName();
-//                                } else {
-//                                    // Copy all non segments_N files
-//                                    moveFileToDirectory(solrCore, tmpIndexDir, bf.getSolrFileName(), dir);
-//                                }
-//                            }
-//
-//                            assert segmentsN != null;
-//
-//                            // Copy segments_N file. From this point on the local core might be accessed and is up to date with Blob content
-//                            moveFileToDirectory(solrCore, tmpIndexDir, segmentsN, dir);
-//                        } catch (Exception e) {
-//                            // Used in the finally below to not mask an exception thrown from the try block above
-//                            thrownException = true;
-//                            throw e;
-//                        } finally {
-//                            try {
-//                                // The closed index writer must be opened back (in the finally bloc)
-//                                // TODO this has been observed to throw org.apache.lucene.index.CorruptIndexException on certain types of corruptions in Blob Store. We need to handle this correctly (maybe we already do).
-//                                solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(solrCore);
-//                            } catch (IOException ioe) {
-//                                // CorruptCoreHandler.notifyBlobPullFailure(container, coreName, blobMetadata);
-//                                if (!thrownException) {
-//                                    // Do not mask a previous exception with a more recent one so only throw the new one if none was thrown previously
-//                                    throw ioe;
-//                                }
-//                            }
-//                        }
-//                    } finally {
-//                        solrCore.getDirectoryFactory().release(dir);
-//                    }
-//                } finally {
-//                    removeTempDirectory(solrCore, tmpIdxDirName, tmpIndexDir);
-//                }
-//
-//                // at this point we are done with pulling indexing files
-//                // now pull config files if any
-//                if(!resolver.getConfigFilesToPull().isEmpty()) {
-//                    pullConfigFiles(solrCore);
-//                    try {
-//                        // Following SnapPuller.reloadCore(): when config files are updated it reloads the core.
-//                        // Unlike SnapPuller this is done on current thread. I am not sure if there is a need to do otherwise.
-//                        // The assumption here is if there is any async need then the caller of current method would have already taken care of that.
-//                        container.reload(solrCore.getName());
-//                    } catch (Exception ex){
-//                        // TODO: W-5433771 handle corrupt config files. Today, if loading of core SynonymDataHandler#inform(SolrCore) 
-//                        // runs into exception we remove all the synonym files. Make sure we do not run into cycles with that.
-//                        logger.warn(String.format(
-//                                "Core reloading failed after pulling new config files from blob core=%s", pushPullData.getCoreName()), ex);
-//                        throw ex;
-//                    }
-//                }
-//
-//                // so far we have decided not to push config changes if we are pulling changes
-//                if(!resolver.getConfigFilesToPush().isEmpty()) {
-//                    logger.info(String.format("Lost opportunity: we could have pushed config changes when pulling core=%s", pushPullData.getCoreName()));
-//                }
-//
-//                try {
-//                    if (waitForSearcher) {
-//                        // Open and register a new searcher, we don't need it but we wait for it to be open.
-//                        Future[] waitSearcher = new Future[1];
-//                        solrCore.getSearcher(true, false, waitSearcher, true);
-//                        if (waitSearcher[0] == null) {
-//                            throw new Exception("Can't wait for index searcher to be created. Future queries might misbehave for core=" + pushPullData.getCoreName());
-//                        } else {
-//                            waitSearcher[0].get();
-//                        }
-//
-//                    } else {
-//                        // Open and register a new searcher, but don't wait and we don't need it either.
-//                        solrCore.getSearcher(true, false, null, true);
-//                    }
-//                } catch (SolrException se) {
-//                    // CorruptCoreHandler.notifyBlobPullFailure(container, coreName, blobMetadata);
-//                    throw se;
-//                }
-//                isSuccess = true;
-//            } finally {
-//                solrCore.close();
-//            }
-//        } finally {
-//            long filesAffected = resolver.getFilesToPull().size() + resolver.getConfigFilesToPull().size();
-//            long bytesTransferred = resolver.getFilesToPull().values().stream().mapToLong(cfd -> cfd.getFileSize()).sum() + 
-//                    resolver.getConfigFilesToPull().values().stream().mapToLong(cfd -> cfd.getFileSize()).sum();
-//            logBlobAction(resolver.getAction(), filesAffected, bytesTransferred, requestQueuedTimeMs, attempt, startTimeMs, isSuccess);
-//        }
-//    }
+    /**
+     * Calls {@link #pullUpdateFromBlob(long, boolean, int)}  with current epoch time and attempt no. 0.
+     * @param waitForSearcher <code>true</code> if this call should wait until the index searcher is created (so that any query
+     *                     after the return from this method sees the new pulled content) or <code>false</code> if we request
+     *                     a new index searcher to be eventually created but do not wait for it to be created (a query
+     *                     following the return from this call might see the old core content).
+     */
+    public void pullUpdateFromBlob(boolean waitForSearcher) throws Exception {
+         pullUpdateFromBlob(System.currentTimeMillis(), waitForSearcher, 0);
+    }
+
+    /**
+     * We're doing here what replication does in {@link org.apache.solr.handler.IndexFetcher#fetchLatestIndex}.<p>
+     *     TODO: check changes in Solr.7's IndexFetcher. Core reloading needed?
+     *
+     * This method will work in 2 cases:
+     * <ol>
+     * <li>Local core needs to fetch an update from Blob</li>
+     * <li>Local core did not exist (was created empty before calling this method) and is fetched from Blob</li>
+     * </ol>
+     * 
+     * @param requestQueuedTimeMs epoch time in milliseconds when the pull request was queued(meaningful in case of async pushing)
+     *                            only used for logging purposes
+     * @param waitForSearcher <code>true</code> if this call should wait until the index searcher is created (so that any query
+     *                     after the return from this method sees the new pulled content) or <code>false</code> if we request
+     *                     a new index searcher to be eventually created but do not wait for it to be created (a query
+     *                     following the return from this call might see the old core content).
+     * @param attempt 0 based attempt number (meaningful in case of pushing with retry mechanism in case of failure)
+     *                only used for logging purposes 
+     *
+     * @throws Exception    In the context of the PoC and first runs, we ignore errors such as Blob Server not available
+     *                      or network issues. We therefore consider all exceptions thrown by this method as a sign that
+     *                      it is durably not possible to pull the core from the Blob Store.
+     *                      TODO This has to be revisited before going to real prod, as environemnt issues can cause massive reindexing with this strategy
+     */
+    public void pullUpdateFromBlob(long requestQueuedTimeMs, boolean waitForSearcher, int attempt) throws Exception {
+        long startTimeMs = System.currentTimeMillis();
+        try {
+          SolrCore solrCore = container.getCore(pushPullData.getCoreName());
+          if (solrCore == null) {
+            throw new Exception("Can't find core " + pushPullData.getCoreName());
+          }
+
+          try {
+            // We're here because we identified no conflicts in downloading from the Blob store the files missing locally.
+            // In order to make sure there still are no conflicts (local Solr server on which we run might have updated the
+            // core since we checked or might do so as we download files shortly), we'll download the needed files to a temp
+            // dir and before moving them to the core directory, we will check the directory hasn't changed locally.
+
+            // Create temp directory (within the core local folder).
+            String tmpIdxDirName = solrCore.getDataDir() + "index.pull." + System.nanoTime();
+            Directory tmpIndexDir = solrCore.getDirectoryFactory().get(tmpIdxDirName, DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
+            try {
+              downloadFilesFromBlob(tmpIndexDir, resolvedMetadataResult.getFilesToPull());
+
+              String indexDir = solrCore.getIndexDir();
+              Directory dir = solrCore.getDirectoryFactory().get(indexDir, DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
+              
+              try {
+                // Close the index writer to stop changes to this core
+                solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
+
+                boolean thrownException = false;
+                try {
+                  // Make sure Solr core directory content hasn't changed since we decided what we want to pull from Blob
+                  if (!solrServerMetadata.isSameDirectoryContent(dir)) {
+                    // Maybe return something less aggressive than throwing an exception? TBD once we end up calling this method :)
+                    throw new Exception("Local Directory content " + indexDir + " has changed since Blob pull started. Aborting pull.");
+                  }
+
+                  // Copy all files into the Solr directory (there are no naming conflicts since we're doing an Action.PULL)
+                  // Move the segments_N file last once all other are ok.
+                  String segmentsN = null;
+                  for (BlobCoreMetadata.BlobFile bf : resolvedMetadataResult.getFilesToPull()) {
+                    if (SharedStoreResolutionUtil.isSegmentsNFilename(bf)) {
+                      assert segmentsN == null;
+                      segmentsN = bf.getSolrFileName();
+                    } else {
+                      // Copy all non segments_N files
+                      moveFileToDirectory(solrCore, tmpIndexDir, bf.getSolrFileName(), dir);
+                    }
+                  }
+                  assert segmentsN != null;
+                  // Copy segments_N file. From this point on the local core might be accessed and is up to date with Blob content
+                  moveFileToDirectory(solrCore, tmpIndexDir, segmentsN, dir);
+                } catch (Exception e) {
+                  // Used in the finally below to not mask an exception thrown from the try block above
+                  thrownException = true;
+                  throw e;
+                } finally {
+                  try {
+                    // The closed index writer must be opened back (in the finally bloc)
+                    // TODO this has been observed to throw org.apache.lucene.index.CorruptIndexException on certain types of corruptions in Blob Store. We need to handle this correctly (maybe we already do).
+                    solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(solrCore);
+                  } catch (IOException ioe) {
+                    // TODO corrupt core handling happened here
+                    // CorruptCoreHandler.notifyBlobPullFailure(container, coreName, blobMetadata);
+                    if (!thrownException) {
+                      // Do not mask a previous exception with a more recent one so only throw the new one if none was thrown previously
+                      throw ioe;
+                    }
+                  }
+                }
+              } finally {
+                  solrCore.getDirectoryFactory().release(dir);
+              }
+            } finally {
+                removeTempDirectory(solrCore, tmpIdxDirName, tmpIndexDir);
+            }
+            
+            try {
+              if (waitForSearcher) {
+                // Open and register a new searcher, we don't need it but we wait for it to be open.
+                Future[] waitSearcher = new Future[1];
+                solrCore.getSearcher(true, false, waitSearcher, true);
+                if (waitSearcher[0] == null) {
+                  throw new Exception("Can't wait for index searcher to be created. Future queries might misbehave for core=" + pushPullData.getCoreName());
+                } else {
+                  waitSearcher[0].get();
+                }
+              } else {
+                // Open and register a new searcher, but don't wait and we don't need it either.
+                solrCore.getSearcher(true, false, null, true);
+              }
+            } catch (SolrException se) {
+              // TODO corrupt core handling happened here
+              // CorruptCoreHandler.notifyBlobPullFailure(container, coreName, blobMetadata);
+              throw se;
+            }
+          } finally {
+            solrCore.close();
+          }
+        } finally {
+          long filesAffected = resolvedMetadataResult.getFilesToPull().size();
+          long bytesTransferred = resolvedMetadataResult.getFilesToPull().stream().mapToLong(bf -> bf.getFileSize()).sum();
+          
+          logBlobAction("PULL", filesAffected, bytesTransferred, requestQueuedTimeMs, attempt, startTimeMs);
+        }
+    }
 
     /**
      * Pushes a local file to blob store and returns a unique path to newly created blob  
@@ -371,16 +340,16 @@ public class CorePushPull {
      * Do we want to change that? If yes, then in case of pull is downloading of files locally to temp folder is considered
      * transfer or moving from temp dir to final destination. One option could be to just make them -1 in case of failure.
      */
-    private void logBlobAction(String action, long filesAffected, long bytesTransferred, long requestQueuedTimeMs, int attempt, long startTimeMs, boolean isSuccess) throws Exception {
-        long now = System.currentTimeMillis();
-        long runTime = now - startTimeMs;
-        long startLatency = now - requestQueuedTimeMs;
-   
-        String message = String.format("PushPullData=[%s] action=%s storageProvider=%s bucketRegion=%s bucketName=%s "
-                + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s filesAffected=%s isSuccess=%s",
-                pushPullData.toString(), action, coreStorageClient.getStorageProvider().name(), coreStorageClient.getBucketRegion(), 
-                coreStorageClient.getBucketName(), runTime, startLatency, bytesTransferred, attempt, filesAffected, isSuccess);
-        logger.info(message);
+    private void logBlobAction(String action, long filesAffected, long bytesTransferred, long requestQueuedTimeMs, int attempt, long startTimeMs) throws Exception {
+      long now = System.currentTimeMillis();
+      long runTime = now - startTimeMs;
+      long startLatency = now - requestQueuedTimeMs;
+ 
+      String message = String.format("PushPullData=[%s] action=%s storageProvider=%s bucketRegion=%s bucketName=%s "
+        + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s filesAffected=%s",
+        pushPullData.toString(), action, coreStorageClient.getStorageProvider().name(), coreStorageClient.getBucketRegion(), 
+        coreStorageClient.getBucketName(), runTime, startLatency, bytesTransferred, attempt, filesAffected);
+      logger.info(message);
     }
 
     /**
@@ -388,33 +357,35 @@ public class CorePushPull {
      * @param destDir (temporary) directory into which files should be downloaded.
      * @param filesToDownload blob files to be downloaded
      */
-    private void downloadFilesFromBlob(Directory destDir, Collection<? extends BlobFile> filesToDownload) throws Exception {
-        // Synchronously download all Blob blobs (remember we're running on an async thread, so no need to be async twice unless
-        // we eventually want to parallelize downloads of multiple blobs, but for the PoC we don't :)
-        for (BlobFile bf: filesToDownload) {
-            logger.info("About to create " + bf.getSolrFileName() + " for core " + pushPullData.getCoreName());
-            IndexOutput io = destDir.createOutput(bf.getSolrFileName(), DirectoryFactory.IOCONTEXT_NO_CACHE);
+    @VisibleForTesting
+    protected void downloadFilesFromBlob(Directory destDir, Collection<? extends BlobFile> filesToDownload) throws Exception {
+      // Synchronously download all Blob blobs (remember we're running on an async thread, so no need to be async twice unless
+      // we eventually want to parallelize downloads of multiple blobs, but for the PoC we don't :)
+      for (BlobFile bf: filesToDownload) {
+        logger.info("About to create " + bf.getSolrFileName() + " for core " + pushPullData.getCoreName() +
+            " from index on blob " + pushPullData.getSharedStoreName());
+        IndexOutput io = destDir.createOutput(bf.getSolrFileName(), DirectoryFactory.IOCONTEXT_NO_CACHE);
 
-            try (OutputStream outStream = new IndexOutputStream(io);
-                InputStream bis = coreStorageClient.pullStream(bf.getBlobName())) {
-                IOUtils.copy(bis, outStream);
-            }
+        try (OutputStream outStream = new IndexOutputStream(io);
+          InputStream bis = coreStorageClient.pullStream(bf.getBlobName())) {
+          IOUtils.copy(bis, outStream);
         }
+      }
     }
 
     /**
      * Copies {@code fileName} from {@code fromDir} to {@code toDir}
      */
     private void copyFileToDirectory(Directory fromDir, String fileName, Directory toDir) throws IOException {
-        toDir.copyFrom(fromDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+      toDir.copyFrom(fromDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
 
     /**
      * Moves {@code fileName} from {@code fromDir} to {@code toDir}
      */
     private void moveFileToDirectory(SolrCore solrCore, Directory fromDir, String fileName, Directory toDir) throws IOException {
-        // We don't need to keep the original files so we move them over.
-        solrCore.getDirectoryFactory().move(fromDir, toDir, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+      // We don't need to keep the original files so we move them over.
+      solrCore.getDirectoryFactory().move(fromDir, toDir, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
 
     /**
@@ -427,26 +398,26 @@ public class CorePushPull {
      * Performance is likely lower using this class than doing direct file manipulations. To keep in mind if we have streaming perf issues.
      */
     static class IndexInputStream extends InputStream {
-        private final IndexInput indexInput;
+      private final IndexInput indexInput;
 
-        IndexInputStream(IndexInput indexInput) {
-            this.indexInput = indexInput;
-        }
+      IndexInputStream(IndexInput indexInput) {
+        this.indexInput = indexInput;
+      }
 
-        @Override
-        public int read() throws IOException {
-            try {
-                return indexInput.readByte() & 0xff;
-            } catch (EOFException e) {
-                return -1;
-            }
+      @Override
+      public int read() throws IOException {
+        try {
+          return indexInput.readByte() & 0xff;
+        } catch (EOFException e) {
+          return -1;
         }
+      }
 
-        @Override
-        public void close() throws IOException {
-            super.close();
-            indexInput.close();
-        }
+      @Override
+      public void close() throws IOException {
+        super.close();
+        indexInput.close();
+      }
     }
 
     /**
@@ -458,21 +429,21 @@ public class CorePushPull {
      * Performance is likely lower using this class than doing direct file manipulations. To keep in mind if we have streaming perf issues.
      */
     static class IndexOutputStream extends OutputStream {
-        private final IndexOutput indexOutput;
+      private final IndexOutput indexOutput;
 
-        IndexOutputStream(IndexOutput indexOutput) {
-            this.indexOutput = indexOutput;
-        }
+      IndexOutputStream(IndexOutput indexOutput) {
+        this.indexOutput = indexOutput;
+      }
 
-        @Override
-        public void write(int b) throws IOException {
-            indexOutput.writeByte((byte) b);
-        }
+      @Override
+      public void write(int b) throws IOException {
+        indexOutput.writeByte((byte) b);
+      }
 
-        @Override
-        public void close() throws IOException {
-            super.close();
-            indexOutput.close();
-        }
+      @Override
+      public void close() throws IOException {
+        super.close();
+        indexOutput.close();
+      }
     }
 }
