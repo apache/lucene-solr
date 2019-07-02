@@ -144,7 +144,7 @@ Optimizations
   storage cost.
 
 * LUCENE-8901: Load frequencies lazily only when needed in BlockDocsEnum and
-  BlockImpactsEverythingEnum.
+  BlockImpactsEverythingEnum (Mayya Sharipova).
 
 Test Framework
 
