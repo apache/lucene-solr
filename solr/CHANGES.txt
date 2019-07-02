@@ -148,6 +148,8 @@ New Features
 
 * SOLR-13569: AdminUI visual indication of prod/test/dev environment (janhoy)
 
+* SOLR-12554: Expose IndexWriterConfig's ramPerThreadHardLimitMB through solrconfig.xml (Ishan Chattopadhyaya, Munendra S N)
+
 Bug Fixes
 ----------------------
 
@@ -197,6 +199,8 @@ Bug Fixes
 
 * SOLR-9409: Improve error message for unsupported field types and return 400 error code on
   unsupported values in collapsing (hossman, Munendra S N)
+
+* SOLR-13404: Support group.query in multi-shard environment when group.main=true or group.format=simple (Munendra S N)
 
 Other Changes
 ----------------------
@@ -248,6 +252,8 @@ Bug Fixes
   Reminder: if you don't need nested docs then remove both _root_ and _nest_path_ !  (David Smiley)
 
 * SOLR-13566: REINDEXCOLLECTION does not work with (basic) authentication. (Colvin Cowie, ab)
+
+* SOLR-13159: Fix atomic update encoding issue for UUID, enum, bool, and binary fields (Thomas Wockinger via Jason Gerlowski)
 
 ==================  8.1.1 ==================
 

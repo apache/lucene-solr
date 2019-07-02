@@ -146,7 +146,7 @@ public final class Intervals {
    *
    * @throws IllegalStateException if the prefix expands to more than 128 terms
    */
-  public static IntervalsSource prefix(String prefix) {
+  public static IntervalsSource prefix(BytesRef prefix) {
     return prefix(prefix, 128);
   }
 
@@ -161,9 +161,9 @@ public final class Intervals {
    *
    * @throws IllegalStateException if the prefix expands to more than {@code maxExpansions} terms
    */
-  public static IntervalsSource prefix(String prefix, int maxExpansions) {
-    CompiledAutomaton ca = new CompiledAutomaton(PrefixQuery.toAutomaton(new BytesRef(prefix)));
-    return new MultiTermIntervalsSource(ca, maxExpansions, prefix + "*");
+  public static IntervalsSource prefix(BytesRef prefix, int maxExpansions) {
+    CompiledAutomaton ca = new CompiledAutomaton(PrefixQuery.toAutomaton(prefix));
+    return new MultiTermIntervalsSource(ca, maxExpansions, prefix.utf8ToString() + "*");
   }
 
   /**
@@ -173,7 +173,7 @@ public final class Intervals {
    *
    * @see WildcardQuery for glob format
    */
-  public static IntervalsSource wildcard(String wildcard) {
+  public static IntervalsSource wildcard(BytesRef wildcard) {
     return wildcard(wildcard, 128);
   }
 
@@ -190,9 +190,9 @@ public final class Intervals {
    *
    * @see WildcardQuery for glob format
    */
-  public static IntervalsSource wildcard(String wildcard, int maxExpansions) {
+  public static IntervalsSource wildcard(BytesRef wildcard, int maxExpansions) {
     CompiledAutomaton ca = new CompiledAutomaton(WildcardQuery.toAutomaton(new Term("", wildcard)));
-    return new MultiTermIntervalsSource(ca, maxExpansions, wildcard);
+    return new MultiTermIntervalsSource(ca, maxExpansions, wildcard.utf8ToString());
   }
 
   /**

@@ -1761,6 +1761,65 @@ public class TestPointQueries extends LuceneTestCase {
     dir.close();
   }
 
+  public void testPointRangeQueryManyEqualValues() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    int cardinality = TestUtil.nextInt(random(), 2, 20);
+
+    int zeroCount = 0;
+    int oneCount = 0;
+    for(int i=0;i<10000;i++) {
+      int x = random().nextInt(cardinality);
+      if (x == 0) {
+        zeroCount++;
+      } else if (x == 1) {
+        oneCount++;
+      }
+      Document doc = new Document();
+      doc.add(new IntPoint("int", x));
+      doc.add(new LongPoint("long", (long) x));
+      doc.add(new FloatPoint("float", (float) x));
+      doc.add(new DoublePoint("double", (double) x));
+      doc.add(new BinaryPoint("bytes", new byte[] {(byte) x}));
+      w.addDocument(doc);
+    }
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r, false);
+
+    assertEquals(zeroCount, s.count(IntPoint.newRangeQuery("int", 0, 0)));
+    assertEquals(oneCount, s.count(IntPoint.newRangeQuery("int", 1, 1)));
+    assertEquals(zeroCount + oneCount, s.count(IntPoint.newRangeQuery("int", 0, 1)));
+    assertEquals(10000 - zeroCount - oneCount, s.count(IntPoint.newRangeQuery("int", 2, cardinality)));
+
+    assertEquals(zeroCount, s.count(LongPoint.newRangeQuery("long", 0, 0)));
+    assertEquals(oneCount, s.count(LongPoint.newRangeQuery("long", 1, 1)));
+    assertEquals(zeroCount + oneCount, s.count(LongPoint.newRangeQuery("long", 0, 1)));
+    assertEquals(10000 - zeroCount - oneCount, s.count(LongPoint.newRangeQuery("long", 2, cardinality)));
+
+    assertEquals(zeroCount, s.count(FloatPoint.newRangeQuery("float", 0, 0)));
+    assertEquals(oneCount, s.count(FloatPoint.newRangeQuery("float", 1, 1)));
+    assertEquals(zeroCount + oneCount, s.count(FloatPoint.newRangeQuery("float", 0, 1)));
+    assertEquals(10000 - zeroCount - oneCount, s.count(FloatPoint.newRangeQuery("float", 2, cardinality)));
+
+    assertEquals(zeroCount, s.count(DoublePoint.newRangeQuery("double", 0, 0)));
+    assertEquals(oneCount, s.count(DoublePoint.newRangeQuery("double", 1, 1)));
+    assertEquals(zeroCount + oneCount, s.count(DoublePoint.newRangeQuery("double", 0, 1)));
+    assertEquals(10000 - zeroCount - oneCount, s.count(DoublePoint.newRangeQuery("double", 2, cardinality)));
+
+    assertEquals(zeroCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {0}, new byte[] {0})));
+    assertEquals(oneCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {1}, new byte[] {1})));
+    assertEquals(zeroCount + oneCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {0}, new byte[] {1})));
+    assertEquals(10000 - zeroCount - oneCount, s.count(BinaryPoint.newRangeQuery("bytes", new byte[] {2}, new byte[] {(byte) cardinality})));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
   public void testPointInSetQueryManyEqualValuesWithBigGap() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();

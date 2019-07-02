@@ -25,6 +25,12 @@ API Changes
 * LUCENE-8811: Deprecated BooleanQuery#setMaxClauseCount() and getMaxClauseCount
   have been removed (Atri Sharma, Adrien Grand, Alan Woodward)
 
+Improvements
+
+* LUCENE-8757: When provided with an ExecutorService to run queries across
+  multiple threads, IndexSearcher now groups small segments together, up to
+  250k docs per slice. (Atri Sharma via Adrien Grand)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -49,6 +55,9 @@ API Changes
 
 * LUCENE-8856: Intervals queries have moved from the sandbox to the queries
   module. (Alan Woodward)
+
+* LUCENE-8893: Intervals.wildcard() and Intervals.prefix() methods now take
+  BytesRef rather than String. (Alan Woodward)
 
 New Features
 
@@ -112,6 +121,8 @@ Bug Fixes
 * LUCENE-8853: FileSwitchDirectory now applies best effort to place tmp files in the same
   directory as the target files. (Simon Willnauer)
 
+* LUCENE-8892: Add missing closing parentheses in MultiBoolFunction's description() (Florian Diebold, Munendra S N)
+
 Improvements
 
 * LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
@@ -119,10 +130,6 @@ Improvements
 
 * LUCENE-8770: BlockMaxConjunctionScorer now leverages two-phase iterators in order to avoid
   executing the second phase when scorers don't intersect. (Adrien Grand, Jim Ferenczi)
-
-* LUCENE-8757: When provided with an ExecutorService to run queries across
-  multiple threads, IndexSearcher now groups small segments together, up to
-  250k docs per slice. (Atri Sharma via Adrien Grand)
 
 * LUCENE-8818: Fix smokeTestRelease.py encoding bug (janhoy)
 
@@ -157,6 +164,9 @@ Optimizations
 
 * LUCENE-8885: Optimise BKD reader by exploiting cardinality information stored
   on leaves. (Ignacio Vera)
+
+* LUCENE-8896: Override default implementation of IntersectVisitor#visit(DocIDSetBuilder, byte[])
+  for several queries. (Ignacio Vera)
 
 Test Framework
 

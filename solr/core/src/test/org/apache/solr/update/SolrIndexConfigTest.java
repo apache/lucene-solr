@@ -179,6 +179,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
     ++mSizeExpected; assertTrue(m.get("ramBufferSizeMB") instanceof Double);
 
+    ++mSizeExpected; assertTrue(m.get("ramPerThreadHardLimitMB") instanceof Integer);
+
     ++mSizeExpected; assertTrue(m.get("writeLockTimeout") instanceof Integer);
 
     ++mSizeExpected; assertTrue(m.get("lockType") instanceof String);
