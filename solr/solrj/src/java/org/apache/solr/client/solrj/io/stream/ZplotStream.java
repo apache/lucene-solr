@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.geometry.Point;
 import org.apache.commons.math3.ml.clustering.CentroidCluster;
 import org.apache.commons.math3.random.EmpiricalDistribution;
 import org.apache.commons.math3.stat.Frequency;
