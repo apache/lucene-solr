@@ -368,7 +368,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       return doc;
     }
     
-    private void refillDocs(boolean isToReadFreqs) throws IOException {
+    private void refillDocs() throws IOException {
       // Check if we skipped reading the previous block of freqs, and if yes, position docIn after it
       if (isFreqsRead == false) {
         forUtil.skipBlock(docIn);
@@ -383,11 +383,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
         if (indexHasFreq) {
           if (needsFreq) {
-            if (isToReadFreqs) {
-              forUtil.readBlock(docIn, encoded, freqBuffer);
-            } else {
-              isFreqsRead = false; // the only case when isFreqsRead results in false from refillDocs
-            }
+            isFreqsRead = false;
           } else {
             forUtil.skipBlock(docIn); // skip over freqs if we don't need them at all
           }
@@ -408,7 +404,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         return doc = NO_MORE_DOCS;
       }
       if (docBufferUpto == BLOCK_SIZE) {
-        refillDocs(true);
+        refillDocs(); // we don't need to load freqs for now (will be loaded later if necessary)
       }
 
       accum += docDeltaBuffer[docBufferUpto];
@@ -469,7 +465,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         return doc = NO_MORE_DOCS;
       }
       if (docBufferUpto == BLOCK_SIZE) {
-        refillDocs(false); // we don't need to load freqs for now (will be loaded later if necessary)
+        refillDocs();
       }
 
       // Now scan... this is an inlined/pared down version
@@ -571,8 +567,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     public boolean canReuse(IndexInput docIn, FieldInfo fieldInfo) {
       return docIn == startDocIn &&
-          indexHasOffsets == (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) &&
-          indexHasPayloads == fieldInfo.hasPayloads();
+        indexHasOffsets == (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) &&
+        indexHasPayloads == fieldInfo.hasPayloads();
     }
 
     public PostingsEnum reset(IntBlockTermState termState) throws IOException {
@@ -944,8 +940,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     public boolean canReuse(IndexInput docIn, FieldInfo fieldInfo) {
       return docIn == startDocIn &&
-          indexHasOffsets == (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) &&
-          indexHasPayloads == fieldInfo.hasPayloads();
+        indexHasOffsets == (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0) &&
+        indexHasPayloads == fieldInfo.hasPayloads();
     }
 
     public EverythingEnum reset(IntBlockTermState termState, int flags) throws IOException {

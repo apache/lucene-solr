@@ -143,6 +143,9 @@ Optimizations
   It stores the distinct values once with the cardinality value reducing the
   storage cost.
 
+* LUCENE-8901: Load frequencies lazily only when needed in BlockDocsEnum and
+  BlockImpactsEverythingEnum.
+
 Test Framework
 
 * LUCENE-8825: CheckHits now display the shard index in case of mismatch
