@@ -168,14 +168,14 @@ public abstract class PointRangeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] packedValue) {
-            if (matches(packedValue) == true) {
+            if (matches(packedValue)) {
               visit(docID);
             }
           }
 
           @Override
           public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
-            if (matches(packedValue) == true) {
+            if (matches(packedValue)) {
               int docID;
               while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                 visit(docID);

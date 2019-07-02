@@ -116,14 +116,14 @@ abstract class LatLonShapeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] t) throws IOException {
-            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS) == true) {
+            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS)) {
               visit(docID);
             }
           }
 
           @Override
           public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
-            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS) == true) {
+            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS)) {
               int docID;
               while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                 visit(docID);
@@ -167,7 +167,7 @@ abstract class LatLonShapeQuery extends Query {
             boolean queryMatches = queryMatches(t, scratchTriangle, queryRelation);
             int docID;
             while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-              if (queryMatches == true) {
+              if (queryMatches) {
                 intersect.set(docID);
               } else {
                 disjoint.set(docID);

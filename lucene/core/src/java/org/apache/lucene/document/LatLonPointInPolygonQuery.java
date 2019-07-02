@@ -142,7 +142,7 @@ final class LatLonPointInPolygonQuery extends Query {
                            @Override
                            public void visit(int docID, byte[] packedValue) {
                              if (polygonPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
-                                                       NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES)) == true) {
+                                                       NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
                                visit(docID);
                              }
                            }
@@ -150,7 +150,7 @@ final class LatLonPointInPolygonQuery extends Query {
                            @Override
                            public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
                              if (polygonPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
-                                                       NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES)) == true) {
+                                                       NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
                                int docID;
                                while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                                  visit(docID);
