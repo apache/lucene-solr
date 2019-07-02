@@ -286,8 +286,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       // if unknown field, this would fail fast
       SchemaField collapseFieldSf = request.getSchema().getField(this.collapseField);
-      // collapseFieldSf won't be null
-      if (collapseFieldSf.multiValued()) {
+      if (!(collapseFieldSf.isUninvertible() || collapseFieldSf.hasDocValues())) {
+        // uninvertible=false and docvalues=false
+        // field can't be indexed=false and uninvertible=true
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collapsing field '" + collapseField +
+            "' should be either docValues enabled or indexed with uninvertible enabled");
+      } else if (collapseFieldSf.multiValued()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collapsing not supported on multivalued fields");
       }
 
@@ -385,10 +389,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                              boostDocsMap,
                                              searcher);
 
-      } catch (SolrException e) {
-        // handle SolrException separately
-        throw e;
-      } catch (Exception e) {
+      } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
@@ -969,7 +970,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } else {
         NumberType numType = fieldType.getNumberType();
         if (null == numType) {
-          throw new IOException("min/max must be either Int/Long/Float based field types");
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "min/max must be either Int/Long/Float based field types");
         }
         switch (numType) {
           case INTEGER: {
@@ -985,7 +986,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             break;
           }
           default: {
-            throw new IOException("min/max must be either Int/Long/Float field types");
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "min/max must be either Int/Long/Float field types");
           }
         }
       }
@@ -1166,7 +1167,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             break;
           }
           default: {
-            throw new IOException("min/max must be Int or Float field types when collapsing on numeric fields");
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "min/max must be Int or Float field types when collapsing on numeric fields");
           }
         }
       }
@@ -1310,7 +1312,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       } else {
         if(HINT_TOP_FC.equals(hint)) {
-          throw new IOException("top_fc hint is only supported when collapsing on String Fields");
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "top_fc hint is only supported when collapsing on String Fields");
         }
       }
 
@@ -1320,16 +1323,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         if (text.indexOf("(") == -1) {
           minMaxFieldType = searcher.getSchema().getField(text).getType();
         } else {
-          LocalSolrQueryRequest request = null;
-          try {
-            SolrParams params = new ModifiableSolrParams();
-            request = new LocalSolrQueryRequest(searcher.getCore(), params);
+          SolrParams params = new ModifiableSolrParams();
+          try (SolrQueryRequest request = new LocalSolrQueryRequest(searcher.getCore(), params)) {
             FunctionQParser functionQParser = new FunctionQParser(text, null, null,request);
             funcQuery = (FunctionQuery)functionQParser.parse();
-          } catch (Exception e) {
-            throw new IOException(e);
-          } finally {
-            request.close();
+          } catch (SyntaxError e) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
         }
       }
@@ -1363,7 +1362,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           return new IntScoreCollector(maxDoc, leafCount, nullValue, nullPolicy, size, collapseField, boostDocs);
 
         } else {
-          throw new IOException("64 bit numeric collapse fields are not supported");
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Collapsing field should be of either String, Int or Float type");
         }
         
       } else { // min, max, sort, etc.. something other then just "score"
@@ -1415,7 +1415,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                             funcQuery,
                                             searcher);
         } else {
-          throw new IOException("64 bit numeric collapse fields are not supported");
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Collapsing field should be of either String, Int or Float type");
         }
         
       }

@@ -208,6 +208,16 @@ public abstract class PointValues {
      *  docID order. */
     void visit(int docID, byte[] packedValue) throws IOException;
 
+    /** Similar to {@link IntersectVisitor#visit(int, byte[])} but in this case the packedValue
+     * can have more than one docID associated to it. The provided iterator should not escape the
+     * scope of this method so that implementations of PointValues are free to reuse it,*/
+    default void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+      int docID;
+      while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        visit(docID, packedValue);
+      }
+    }
+
     /** Called for non-leaf cells to test how the cell relates to the query, to
      *  determine how to further recurse down the tree. */
     Relation compare(byte[] minPackedValue, byte[] maxPackedValue);

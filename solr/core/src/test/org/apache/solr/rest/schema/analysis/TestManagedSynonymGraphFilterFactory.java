@@ -63,9 +63,13 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
 
   @After
   private void after() throws Exception {
-    jetty.stop();
-    jetty = null;
-    FileUtils.deleteDirectory(tmpSolrHome);
+    if (null != jetty) {
+      jetty.stop();
+      jetty = null;
+    }
+    if (null != tmpSolrHome) {
+      FileUtils.deleteDirectory(tmpSolrHome);
+    }
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
 

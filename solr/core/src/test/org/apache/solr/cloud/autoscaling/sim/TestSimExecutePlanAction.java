@@ -70,6 +70,11 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
 
   @After
   public void printState() throws Exception {
+    if (null == cluster) {
+      // test didn't init, nothing to do
+      return;
+    }
+                          
     log.info("-------------_ FINAL STATE --------------");
     log.info("* Node values: " + Utils.toJSONString(cluster.getSimNodeStateProvider().simGetAllNodeValues()));
     log.info("* Live nodes: " + cluster.getClusterStateProvider().getLiveNodes());

@@ -95,10 +95,14 @@ public class TestLegacyFieldCache extends SolrTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    reader.close();
-    reader = null;
-    directory.close();
-    directory = null;
+    if (null != reader) {
+      reader.close();
+      reader = null;
+    }
+    if (null != directory) {
+      directory.close();
+      directory = null;
+    }
   }
 
   public void test() throws IOException {

@@ -1362,11 +1362,11 @@ public class TestUnifiedHighlighter extends LuceneTestCase {
   }
 
   public void testNotReanalyzed() throws Exception {
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
-
     if (fieldType == UHTestHelper.reanalysisType) {
       return; // we're testing the *other* cases
     }
+
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
 
     Field body = new Field("body", "", fieldType);
     Document doc = new Document();

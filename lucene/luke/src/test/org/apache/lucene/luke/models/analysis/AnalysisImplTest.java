@@ -165,12 +165,12 @@ public class AnalysisImplTest extends LuceneTestCase {
     assertNotNull(result);
     assertNotNull(result.getCharfilteredTexts());
     assertEquals(1,result.getCharfilteredTexts().size());
-    assertEquals("org.apache.lucene.analysis.charfilter.HTMLStripCharFilter", result.getCharfilteredTexts().get(0).getName());
+    assertEquals("htmlStrip", result.getCharfilteredTexts().get(0).getName());
 
     assertNotNull(result.getNamedTokens());
     assertEquals(2, result.getNamedTokens().size());
     //FIXME check each namedTokensList
-    assertEquals("org.apache.lucene.analysis.core.KeywordTokenizer", result.getNamedTokens().get(0).getName());
-    assertEquals("org.apache.lucene.analysis.core.LowerCaseFilter", result.getNamedTokens().get(1).getName());
+    assertEquals("keyword", result.getNamedTokens().get(0).getName());
+    assertEquals("lowercase", result.getNamedTokens().get(1).getName());
   }
 }

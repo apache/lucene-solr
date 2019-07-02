@@ -58,7 +58,9 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   
   @After
   public void tearDownCluster() throws Exception {
-    executor.shutdown();
+    if (null != executor) {
+      executor.shutdown();
+    }
     shutdownCluster();
     executor = null;
   }

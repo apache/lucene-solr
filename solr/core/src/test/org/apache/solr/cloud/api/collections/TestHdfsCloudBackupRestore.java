@@ -26,8 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
-
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -65,7 +63,6 @@ import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12866")
 public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   public static final String SOLR_XML = "<solr>\n" +
       "\n" +

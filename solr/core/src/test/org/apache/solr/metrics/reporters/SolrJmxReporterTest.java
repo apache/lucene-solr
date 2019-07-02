@@ -118,6 +118,9 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
   @After
   public void afterTest() throws Exception {
+    if (null == metricManager) {
+      return; // test failed to init, nothing to cleanup
+    }
     metricManager.closeReporters(coreMetricManager.getRegistryName());
     Set<ObjectInstance> objects =
         mBeanServer.queryMBeans(ObjectName.getInstance(domain + ":*"), null);

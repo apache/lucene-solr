@@ -109,6 +109,10 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
   @After
   public void afterTest() throws Exception {
+    if (null == metricManager) {
+      return; // test failed to init, nothing to cleanup
+    }
+      
     SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
 

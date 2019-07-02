@@ -16,15 +16,15 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.search.IndexSearcher;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Abstract {@link ValueSource} implementation which wraps multiple ValueSources
@@ -68,6 +68,7 @@ public abstract class MultiBoolFunction extends BoolFunction {
           }
           sb.append(dv.toString(doc));
         }
+        sb.append(')');
         return sb.toString();
       }
     };
@@ -86,6 +87,7 @@ public abstract class MultiBoolFunction extends BoolFunction {
       }
       sb.append(source.description());
     }
+    sb.append(')');
     return sb.toString();
   }
 
