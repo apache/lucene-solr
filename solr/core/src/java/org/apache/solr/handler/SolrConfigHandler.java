@@ -62,9 +62,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
-import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
+import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -526,13 +526,13 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       op.getMap(PluginInfo.INVARIANTS, null);
       op.getMap(PluginInfo.APPENDS, null);
       if (op.hasError()) return overlay;
-      if(info.clazz == PluginBag.RuntimeLib.class) {
-        if(!PluginBag.RuntimeLib.isEnabled()){
+      if(info.clazz == RuntimeLib.class) {
+        if(!RuntimeLib.isEnabled()){
           op.addError("Solr not started with -Denable.runtime.lib=true");
           return overlay;
         }
         try {
-          new PluginBag.RuntimeLib(req.getCore()).init(new PluginInfo(info.tag, op.getDataMap()));
+          new RuntimeLib(req.getCore().getCoreContainer()).init(new PluginInfo(info.tag, op.getDataMap()));
         } catch (Exception e) {
           op.addError(e.getMessage());
           log.error("can't load this plugin ", e);

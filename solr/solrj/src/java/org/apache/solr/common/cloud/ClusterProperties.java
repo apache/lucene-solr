@@ -105,6 +105,12 @@ public class ClusterProperties {
     }
   }
 
+  /**This applies the new map over the existing map. it's a merge operation, not an overwrite
+   * This applies the changes atomically over an existing object tree even if multiple nodes are
+   * trying to update this simultaneously
+   *
+   * @param properties The partial Object tree that needs to be applied
+   */
   public void setClusterProperties(Map<String, Object> properties) throws IOException, KeeperException, InterruptedException {
     client.atomicUpdate(ZkStateReader.CLUSTER_PROPS, zkData -> {
       if (zkData == null) return Utils.toJSON(convertCollectionDefaultsToNestedFormat(properties));

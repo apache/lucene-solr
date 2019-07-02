@@ -966,7 +966,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       this.codec = initCodec(solrConfig, this.schema);
 
       memClassLoader = new MemClassLoader(
-          PluginBag.RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(PluginBag.RuntimeLib.class.getName())),
+          RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(RuntimeLib.class.getName())),
           getResourceLoader());
       initIndex(prev != null, reload);
 
