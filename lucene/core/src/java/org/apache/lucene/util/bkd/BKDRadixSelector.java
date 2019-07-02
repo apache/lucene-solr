@@ -348,8 +348,8 @@ public final class BKDRadixSelector {
 
       @Override
       protected Selector getFallbackSelector(int d) {
-        int skypedBytes = d + commonPrefixLength;
-        final int start = dim * bytesPerDim + skypedBytes;
+        final int skypedBytes = d + commonPrefixLength;
+        final int dimStart = dim * bytesPerDim + skypedBytes;
         final int dimEnd =  dim * bytesPerDim + bytesPerDim;
         final int startDataDim = numIndexDims * bytesPerDim;
         final int lengthDataDims = (numDataDims - numIndexDims) * bytesPerDim;
@@ -378,8 +378,8 @@ public final class BKDRadixSelector {
             if (skypedBytes < bytesPerDim) {
               int iOffset = i * packedBytesLength;
               int jOffset = j * packedBytesLength;
-              int cmp = Arrays.compareUnsigned(points.block, iOffset + start, iOffset + dimEnd,
-                  points.block, jOffset + start, jOffset + dimEnd);
+              int cmp = Arrays.compareUnsigned(points.block, iOffset + dimStart, iOffset + dimEnd,
+                  points.block, jOffset + dimStart, jOffset + dimEnd);
               if (cmp != 0) {
                 return cmp;
               }
@@ -401,7 +401,7 @@ public final class BKDRadixSelector {
             if (skypedBytes < bytesPerDim) {
               int jOffset = j * packedBytesLength;
               int cmp = Arrays.compareUnsigned(scratch, skypedBytes, bytesPerDim,
-                  points.block, jOffset + start, jOffset + dimEnd);
+                  points.block, jOffset + dimStart, jOffset + dimEnd);
               if (cmp != 0) {
                 return cmp;
               }
@@ -459,9 +459,9 @@ public final class BKDRadixSelector {
 
       @Override
       protected Sorter getFallbackSorter(int k) {
-        int skypedBytes = k + commonPrefixLength;
-        final int start = dim * bytesPerDim + skypedBytes;
-        final int end =  dim * bytesPerDim + bytesPerDim;
+        final int skypedBytes = k + commonPrefixLength;
+        final int dimStart = dim * bytesPerDim + skypedBytes;
+        final int dimEnd =  dim * bytesPerDim + bytesPerDim;
         final int startDataDim = numIndexDims * bytesPerDim;
         final int lengthDataDims = (numDataDims - numIndexDims) * bytesPerDim;
         return new IntroSorter() {
@@ -489,8 +489,8 @@ public final class BKDRadixSelector {
             if (skypedBytes < bytesPerDim) {
               int iOffset = i * packedBytesLength;
               int jOffset = j * packedBytesLength;
-              int cmp = Arrays.compareUnsigned(points.block, iOffset + start, iOffset + end,
-                  points.block, jOffset + start, jOffset + end);
+              int cmp = Arrays.compareUnsigned(points.block, iOffset + dimStart, iOffset + dimEnd,
+                  points.block, jOffset + dimStart, jOffset + dimEnd);
               if (cmp != 0) {
                 return cmp;
               }
@@ -512,7 +512,7 @@ public final class BKDRadixSelector {
             if (skypedBytes < bytesPerDim) {
               int jOffset = j * packedBytesLength;
               int cmp = Arrays.compareUnsigned(scratch, skypedBytes, bytesPerDim,
-                  points.block, jOffset + start, jOffset + end);
+                  points.block, jOffset + dimStart, jOffset + dimEnd);
               if (cmp != 0) {
                 return cmp;
               }
