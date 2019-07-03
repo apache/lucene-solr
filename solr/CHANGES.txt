@@ -54,6 +54,9 @@ Upgrade Notes
   for existing TRA's will use the new format. Solr will handle this invisibly, but any external code that attempted to
   predict collection names in TRA's will probably need adjustment.
 
+* SOLR-13507: Support for "addr" parameter from the "/solr/admin/zookeeper" endpoint has now been removed and will no
+  longer be supported.
+
 New Features
 ----------------------
 
@@ -202,6 +205,8 @@ Other Changes
 * SOLR-12364: Add test cases for edismax boost (David Smiley, Munendra S N)
 
 * SOLR-13603: Remove usage of GroupingSpecification's deprecated methods (Munendra S N)
+
+* SOLR-13507: Remove support for "addr" parameter from the "/solr/admin/zookeeper" endpoint. (janhoy, Anshum Gupta)
 
 ==================  8.1.2 ==================
 
