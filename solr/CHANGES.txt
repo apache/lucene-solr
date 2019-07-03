@@ -260,6 +260,9 @@ Bug Fixes
 
 * SOLR-13159: Fix atomic update encoding issue for UUID, enum, bool, and binary fields (Thomas Wockinger via Jason Gerlowski)
 
+* SOLR-13583: Impossible to delete a collection with the same name as an existing alias. This fixes also a bug in
+  REINDEXCOLLECTION when used with removeSource=true which could lead to a data loss. (ab)
+
 Improvements
 ----------------------
 
