@@ -288,8 +288,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   @SuppressWarnings("resource")
   protected ByteBufferIndexInput newCloneInstance(String newResourceDescription, ByteBuffer[] newBuffers, int offset, long length) {
     if (newBuffers.length == 1) {
-      newBuffers[0].position(offset);
-      return new SingleBufferImpl(newResourceDescription, newBuffers[0].slice(), length, chunkSizePower, this.guard);
+      return new SingleBufferImpl(newResourceDescription, newBuffers[0], length, chunkSizePower, this.guard);
     } else {
       return new MultiBufferImpl(newResourceDescription, newBuffers, offset, length, chunkSizePower, guard);
     }
@@ -313,6 +312,13 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
 
     // set the last buffer's limit for the sliced view.
     slices[slices.length - 1].limit((int) (sliceEnd & chunkSizeMask));
+    if (slices.length == 1) {
+      slices[0].position((int) (offset & chunkSizeMask));
+      slices[0] = slices[0].slice();
+    } else {
+      slices[slices.length - 1].position(0);
+      slices[slices.length - 1] = slices[slices.length - 1].slice();
+    }
     
     return slices;
   }
@@ -500,10 +506,6 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
           if (i == 0) {
             ByteBuffer duplicate = buffer.duplicate();
             duplicate.position(offset);
-            ((MappedByteBuffer) duplicate.slice()).load();
-          } else if (i == buffers.length - 1){
-            ByteBuffer duplicate = buffer.duplicate();
-            duplicate.position(0);
             ((MappedByteBuffer) duplicate.slice()).load();
           } else {
             ((MappedByteBuffer) buffer).load();
