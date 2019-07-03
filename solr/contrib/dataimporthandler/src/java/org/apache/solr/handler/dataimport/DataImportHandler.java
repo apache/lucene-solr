@@ -80,6 +80,9 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private static final String PARAM_WRITER_IMPL = "writerImpl";
   private static final String DEFAULT_WRITER_NAME = "SolrWriter";
+  static final String ENABLE_DIH_DATA_CONFIG_PARAM = "enable.dih.dataConfigParam";
+
+  final boolean dataConfigParam_enabled = Boolean.getBoolean(ENABLE_DIH_DATA_CONFIG_PARAM);
 
   public DataImporter getImporter() {
     return this.importer;
@@ -134,7 +137,7 @@ public class DataImportHandler extends RequestHandlerBase implements
     
     if (DataImporter.SHOW_CONF_CMD.equals(command)) {    
       String dataConfigFile = params.get("config");
-      String dataConfig = params.get("dataConfig");
+      String dataConfig = params.get("dataConfig"); // needn't check dataConfigParam_enabled; we don't execute it
       if(dataConfigFile != null) {
         dataConfig = SolrWriter.getResourceAsString(req.getCore().getResourceLoader().openResource(dataConfigFile));
       }
@@ -149,6 +152,12 @@ public class DataImportHandler extends RequestHandlerBase implements
         rsp.add(RawResponseWriter.CONTENT, content);
       }
       return;
+    }
+
+    if (params.get("dataConfig") != null && dataConfigParam_enabled == false) {
+      throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
+          "Use of the dataConfig param (DIH debug mode) requires the system property " +
+              ENABLE_DIH_DATA_CONFIG_PARAM + " because it's a security risk.");
     }
 
     rsp.add("initArgs", initArgs);
