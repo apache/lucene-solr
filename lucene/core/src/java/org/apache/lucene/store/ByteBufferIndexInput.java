@@ -491,6 +491,27 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     protected ByteBufferIndexInput buildSlice(String sliceDescription, long ofs, long length) {
       return super.buildSlice(sliceDescription, this.offset + ofs, length);
     }
+
+    @Override
+    public boolean load() {
+      for (int i = 0; i < buffers.length; i++) {
+        ByteBuffer buffer = buffers[i];
+        if (buffer instanceof MappedByteBuffer) {
+          if (i == 0) {
+            ByteBuffer duplicate = buffer.duplicate();
+            duplicate.position(offset);
+            ((MappedByteBuffer) duplicate.slice()).load();
+          } else if (i == buffers.length - 1){
+            ByteBuffer duplicate = buffer.duplicate();
+            duplicate.position(0);
+            ((MappedByteBuffer) duplicate.slice()).load();
+          } else {
+            ((MappedByteBuffer) buffer).load();
+          }
+        }
+      }
+      return true;
+    }
   }
 
   @Override

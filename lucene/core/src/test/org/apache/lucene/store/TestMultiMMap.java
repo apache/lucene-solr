@@ -40,7 +40,16 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
 
   @Override
   protected Directory getDirectory(Path path) throws IOException {
-    return new MMapDirectory(path, 1<<TestUtil.nextInt(random(), 10, 28));
+    return new MMapDirectory(path, 1<<TestUtil.nextInt(random(), 10, 28)) {
+      @Override
+      public IndexInput openInput(String name, IOContext context) throws IOException {
+        IndexInput indexInput = super.openInput(name, context);
+        if (random().nextBoolean()) {
+          assert indexInput.load();
+        }
+        return indexInput;
+      }
+    };
   }
   
   @Override
