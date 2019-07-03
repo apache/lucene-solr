@@ -166,6 +166,11 @@ Bug Fixes
 
 * SOLR-13404: Support group.query in multi-shard environment when group.main=true or group.format=simple (Munendra S N)
 
+Improvements
+----------------------
+
+* SOLR-13003: Query Result Cache does not honour maxRamBytes parameter. (ab, Brian Ecker)
+
 Other Changes
 ----------------------
 

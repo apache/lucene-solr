@@ -207,6 +207,16 @@ public final class RamUsageEstimator {
     STRING_SIZE = (int) shallowSizeOfInstance(String.class);
   }
 
+  /** Approximate memory usage that we assign to a Hashtable / HashMap entry. */
+  public static final long HASHTABLE_RAM_BYTES_PER_ENTRY =
+      2 * NUM_BYTES_OBJECT_REF // key + value
+          * 2; // hash tables need to be oversized to avoid collisions, assume 2x capacity
+
+  /** Approximate memory usage that we assign to a LinkedHashMap entry. */
+  public static final long LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY =
+      HASHTABLE_RAM_BYTES_PER_ENTRY
+          + 2 * NUM_BYTES_OBJECT_REF; // previous & next references
+
   /** 
    * Aligns an object size to be the next multiple of {@link #NUM_BYTES_OBJECT_ALIGNMENT}. 
    */

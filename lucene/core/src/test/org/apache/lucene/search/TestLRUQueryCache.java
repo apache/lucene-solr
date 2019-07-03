@@ -63,6 +63,10 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
 
+import static org.apache.lucene.util.RamUsageEstimator.HASHTABLE_RAM_BYTES_PER_ENTRY;
+import static org.apache.lucene.util.RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
+import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
+
 public class TestLRUQueryCache extends LuceneTestCase {
 
   private static final QueryCachingPolicy ALWAYS_CACHE = new QueryCachingPolicy() {
@@ -291,7 +295,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
           return ((DocIdSet) o).ramBytesUsed();
         }
         if (o instanceof Query) {
-          return LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
+          return QUERY_DEFAULT_RAM_BYTES_USED;
         }
         if (o instanceof IndexReader || o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
           // do not take readers or core cache keys into account
@@ -302,8 +306,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
           queue.addAll(map.keySet());
           queue.addAll(map.values());
           final long sizePerEntry = o instanceof LinkedHashMap
-              ? LRUQueryCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY
-              : LRUQueryCache.HASHTABLE_RAM_BYTES_PER_ENTRY;
+              ? LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY
+              : HASHTABLE_RAM_BYTES_PER_ENTRY;
           return sizePerEntry * map.size();
         }
         // follow links to other objects, but ignore their memory usage
@@ -417,7 +421,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
           return ((DocIdSet) o).ramBytesUsed();
         }
         if (o instanceof Query) {
-          return LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
+          return QUERY_DEFAULT_RAM_BYTES_USED;
         }
         if (o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
           // do not follow references to core cache keys
@@ -753,7 +757,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     assertEquals(segmentCount2, missCount2.longValue());
 
     // check that the recomputed stats are the same as those reported by the cache
-    assertEquals(queryCache.ramBytesUsed(), (segmentCount1 + segmentCount2) * LRUQueryCache.HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsage.longValue());
+    assertEquals(queryCache.ramBytesUsed(), (segmentCount1 + segmentCount2) * HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsage.longValue());
     assertEquals(queryCache.getCacheSize(), cacheSize.longValue());
 
     reader1.close();
