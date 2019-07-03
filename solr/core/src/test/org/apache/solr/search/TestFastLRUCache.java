@@ -16,6 +16,10 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.MetricsMap;
@@ -292,6 +296,34 @@ public class TestFastLRUCache extends SolrTestCase {
     cache.destroy();
 
     System.out.println("time=" + timer.getTime() + ", minSize="+minSize+",maxSize="+maxSize);
+  }
+
+  public void testAccountable() {
+    FastLRUCache<Query, DocSet> sc = new FastLRUCache<>();
+    try {
+      sc.initializeMetrics(metricManager, registry, "foo", scope);
+      Map l = new HashMap();
+      l.put("size", "100");
+      l.put("initialSize", "10");
+      l.put("autowarmCount", "25");
+      CacheRegenerator cr = new NoOpRegenerator();
+      Object o = sc.init(l, null, cr);
+      sc.setState(SolrCache.State.LIVE);
+      long initialBytes = sc.ramBytesUsed();
+      WildcardQuery q = new WildcardQuery(new Term("foo", "bar"));
+      DocSet docSet = new BitDocSet();
+      sc.put(q, docSet);
+      long updatedBytes = sc.ramBytesUsed();
+      assertTrue(updatedBytes > initialBytes);
+      long estimated = initialBytes + q.ramBytesUsed() + docSet.ramBytesUsed() + ConcurrentLRUCache.CacheEntry.BASE_RAM_BYTES_USED
+          + RamUsageEstimator.HASHTABLE_RAM_BYTES_PER_ENTRY;
+      assertEquals(estimated, updatedBytes);
+      sc.clear();
+      long clearedBytes = sc.ramBytesUsed();
+      assertEquals(initialBytes, clearedBytes);
+    } finally {
+      sc.close();
+    }
   }
 
   /***
