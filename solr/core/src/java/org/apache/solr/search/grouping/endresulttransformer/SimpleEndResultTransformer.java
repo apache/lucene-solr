@@ -49,7 +49,7 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
           command.add("ngroups", topGroups.totalGroupCount);
         }
         SolrDocumentList docList = new SolrDocumentList();
-        docList.setStart(rb.getGroupingSpec().getOffset());
+        docList.setStart(rb.getGroupingSpec().getGroupSortSpec().getOffset());
         docList.setNumFound(topGroups.totalHitCount);
 
         float maxScore = Float.NEGATIVE_INFINITY;
@@ -76,7 +76,7 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
 
         TopDocs topDocs = queryCommandResult.getTopDocs();
         SolrDocumentList docList = new SolrDocumentList();
-        docList.setStart(rb.getGroupingSpec().getOffset());
+        docList.setStart(rb.getGroupingSpec().getGroupSortSpec().getOffset());
         docList.setNumFound(topDocs.totalHits.value);
 
         if (!Float.isNaN(queryCommandResult.getMaxScore())) {

@@ -194,6 +194,8 @@ Other Changes
 
 * SOLR-12364: Add test cases for edismax boost (David Smiley, Munendra S N)
 
+* SOLR-13603: Remove usage of GroupingSpecification's deprecated methods (Munendra S N)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

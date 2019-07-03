@@ -40,6 +40,7 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.Grouping;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.TopGroupsResultTransformer;
@@ -52,10 +53,11 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
   @Override
   @SuppressWarnings("unchecked")
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
-    Sort groupSort = rb.getGroupingSpec().getGroupSort();
+    Sort groupSort = rb.getGroupingSpec().getGroupSortSpec().getSort();
     String[] fields = rb.getGroupingSpec().getFields();
     String[] queries = rb.getGroupingSpec().getQueries();
-    Sort withinGroupSort = rb.getGroupingSpec().getSortWithinGroup();
+    SortSpec withinGroupSortSpec = rb.getGroupingSpec().getWithinGroupSortSpec();
+    Sort withinGroupSort = withinGroupSortSpec.getSort();
     assert withinGroupSort != null;
 
     boolean simpleOrMain = rb.getGroupingSpec().getResponseFormat() == Grouping.Format.simple ||
@@ -66,18 +68,18 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     if (simpleOrMain) {
       groupOffsetDefault = 0;
     } else {
-      groupOffsetDefault = rb.getGroupingSpec().getWithinGroupOffset();
+      groupOffsetDefault = withinGroupSortSpec.getOffset();
     }
-    int docsPerGroupDefault = rb.getGroupingSpec().getWithinGroupLimit();
+    int docsPerGroupDefault = withinGroupSortSpec.getCount();
 
     Map<String, List<TopGroups<BytesRef>>> commandTopGroups = new HashMap<>();
     for (String field : fields) {
-      commandTopGroups.put(field, new ArrayList<TopGroups<BytesRef>>());
+      commandTopGroups.put(field, new ArrayList<>());
     }
 
     Map<String, List<QueryCommandResult>> commandTopDocs = new HashMap<>();
     for (String query : queries) {
-      commandTopDocs.put(query, new ArrayList<QueryCommandResult>());
+      commandTopDocs.put(query, new ArrayList<>());
     }
 
     TopGroupsResultTransformer serializer = new TopGroupsResultTransformer(rb);
