@@ -165,8 +165,8 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
     cluster.waitForJettyToStop(jetty2);
     
     waitForNodeLeave(lostNodeName);
-    waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 4), 45, TimeUnit.SECONDS);
-    waitForState("Waiting for collection " + COLLECTION2, COLLECTION2, clusterShape(2, 4), 45, TimeUnit.SECONDS);
+    waitForState("Waiting for collection " + COLLECTION1, COLLECTION1, clusterShape(2, 4), 90, TimeUnit.SECONDS);
+    waitForState("Waiting for collection " + COLLECTION2, COLLECTION2, clusterShape(2, 4), 90, TimeUnit.SECONDS);
     checkSharedFsReplicasMovedCorrectly(replacedHdfsReplicas, zkStateReader, COLLECTION2);
 
     // overseer failover test..
