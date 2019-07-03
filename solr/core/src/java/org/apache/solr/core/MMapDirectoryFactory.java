@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *  <li>unmap -- See {@link MMapDirectory#setUseUnmap(boolean)}</li>
  *  <li>preload -- Set to {@code true} to ask mapped pages to be loaded into physical memory on init.
- *  he behavior is best-effort and operating system dependent.</li>
+ *  The behavior is best-effort and operating system dependent.</li>
  *  <li>maxChunkSize -- The Max chunk size.  See {@link MMapDirectory#MMapDirectory(Path, LockFactory, int)}</li>
  * </ul>
  *

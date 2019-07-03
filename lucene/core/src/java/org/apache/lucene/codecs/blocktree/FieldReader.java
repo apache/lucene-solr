@@ -97,7 +97,7 @@ public final class FieldReader extends Terms implements Accountable {
           isFSTOffHeap = ((this.docCount != this.sumDocFreq) || openedFromWriter == false);
           break;
         case AUTO:
-          isFSTOffHeap = ((this.docCount != this.sumDocFreq) || openedFromWriter == false) &&  indexIn.load(); // NOCOMMIT - should we do this should we do it all the time?
+          isFSTOffHeap = ((this.docCount != this.sumDocFreq) || openedFromWriter == false) && indexIn.load();
           break;
         default:
           throw new IllegalStateException("unknown enum constant: " + fstLoadMode);
