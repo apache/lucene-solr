@@ -257,6 +257,12 @@ Bug Fixes
 
 * SOLR-13159: Fix atomic update encoding issue for UUID, enum, bool, and binary fields (Thomas Wockinger via Jason Gerlowski)
 
+Improvements
+----------------------
+
+* SOLR-13158: DataImportHandler: Added enable.dih.dataConfigParam system property to toggle whether the dataConfig param
+  is permitted. (David Smiley, janhoy, Tomás Fernández Löbbe)
+
 ==================  8.1.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
