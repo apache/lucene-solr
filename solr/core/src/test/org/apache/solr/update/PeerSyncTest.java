@@ -94,14 +94,14 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertSync(client1, numVersions, true, shardsArr[0]);
     // TODO: test that updates weren't necessary
 
-    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*"), client0, client1);
+    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*","sort","_version_ desc"), client0, client1);
 
     add(client0, seenLeader, addRandFields(sdoc("id","2","_version_",++v)));
 
     // now client1 has the context to sync
     assertSync(client1, numVersions, true, shardsArr[0]);
 
-    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*"), client0, client1);
+    client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*","sort","_version_ desc"), client0, client1);
 
     add(client0, seenLeader, addRandFields(sdoc("id","3","_version_",++v)));
     add(client0, seenLeader, addRandFields(sdoc("id","4","_version_",++v)));
