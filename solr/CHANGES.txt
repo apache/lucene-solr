@@ -55,6 +55,8 @@ Upgrade Notes
   regardless of distrib, terms.list, terms.ttf parameters. This affects JSON based response format but not others
   (Munendra S N, Mikhail Khludnev)
 
+* SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
