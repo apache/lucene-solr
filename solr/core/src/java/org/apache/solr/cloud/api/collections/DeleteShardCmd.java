@@ -20,6 +20,7 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -65,7 +66,13 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
     String extCollectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
-    String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String collectionName;
+    if (followAliases) {
+      collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+    } else {
+      collectionName = extCollectionName;
+    }
 
     log.info("Delete shard invoked");
     Slice slice = clusterState.getCollection(collectionName).getSlice(sliceId);

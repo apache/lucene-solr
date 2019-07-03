@@ -142,8 +142,16 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     assertEquals("copied num docs", NUM_DOCS, queryResponse.getResults().getNumFound());
   }
 
+  @Test
   public void testSameTargetReindexing() throws Exception {
-    final String sourceCollection = "sameTargetReindexing";
+    doTestSameTargetReindexing(false, false);
+    doTestSameTargetReindexing(false, true);
+    doTestSameTargetReindexing(true, false);
+    doTestSameTargetReindexing(true, true);
+  }
+
+  private void doTestSameTargetReindexing(boolean sourceRemove, boolean followAliases) throws Exception {
+    final String sourceCollection = "sameTargetReindexing_" + sourceRemove + "_" + followAliases;
     final String targetCollection = sourceCollection;
 
     createCollection(sourceCollection, "conf1", 2, 2);
@@ -152,6 +160,8 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.ReindexCollection req = CollectionAdminRequest.reindexCollection(sourceCollection)
         .setTarget(targetCollection);
+    req.setRemoveSource(sourceRemove);
+    req.setFollowAliases(followAliases);
     req.process(solrClient);
 
     String realTargetCollection = null;
@@ -175,9 +185,16 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
       ReindexCollectionCmd.State state = ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
       return ReindexCollectionCmd.State.FINISHED == state;
     });
+
+    solrClient.getZkStateReader().aliasesManager.update();
+
     // verify the target docs exist
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
     assertEquals("copied num docs", NUM_DOCS, rsp.getResults().getNumFound());
+    ClusterState state = solrClient.getClusterStateProvider().getClusterState();
+    if (sourceRemove) {
+      assertFalse("source collection still present", state.hasCollection(sourceCollection));
+    }
   }
 
   @Test

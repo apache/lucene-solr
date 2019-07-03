@@ -141,6 +141,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
@@ -540,11 +541,20 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           .getColStatus(rsp.getValues());
       return null;
     }),
-    DELETE_OP(DELETE, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
+    DELETE_OP(DELETE, (req, rsp, h) -> {
+      Map<String, Object> map = copy(req.getParams().required(), null, NAME);
+      return copy(req.getParams(), map, FOLLOW_ALIASES);
+    }),
+    // XXX should this command support followAliases?
+    RELOAD_OP(RELOAD, (req, rsp, h) -> {
+      Map<String, Object> map = copy(req.getParams().required(), null, NAME);
+      return copy(req.getParams(), map);
+    }),
 
-    RELOAD_OP(RELOAD, (req, rsp, h) -> copy(req.getParams().required(), null, NAME)),
-
-    RENAME_OP(RENAME, (req, rsp, h) -> copy(req.getParams().required(), null, NAME, CollectionAdminParams.TARGET)),
+    RENAME_OP(RENAME, (req, rsp, h) -> {
+      Map<String, Object> map = copy(req.getParams().required(), null, NAME, CollectionAdminParams.TARGET);
+      return copy(req.getParams(), map, FOLLOW_ALIASES);
+    }),
 
     REINDEXCOLLECTION_OP(REINDEXCOLLECTION, (req, rsp, h) -> {
       Map<String, Object> m = copy(req.getParams().required(), null, NAME);
@@ -567,7 +577,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           STATE_FORMAT,
           CommonParams.ROWS,
           CommonParams.Q,
-          CommonParams.FL);
+          CommonParams.FL,
+          FOLLOW_ALIASES);
       if (req.getParams().get("collection." + ZkStateReader.CONFIGNAME_PROP) != null) {
         m.put(ZkStateReader.CONFIGNAME_PROP, req.getParams().get("collection." + ZkStateReader.CONFIGNAME_PROP));
       }
@@ -744,7 +755,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           TIMING,
           SPLIT_METHOD,
           NUM_SUB_SHARDS,
-          SPLIT_FUZZ);
+          SPLIT_FUZZ,
+          FOLLOW_ALIASES);
       return copyPropertiesWithPrefix(req.getParams(), map, COLL_PROP_PREFIX);
     }),
     DELETESHARD_OP(DELETESHARD, (req, rsp, h) -> {
@@ -755,7 +767,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DELETE_INDEX,
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR,
-          DELETE_METRICS_HISTORY);
+          DELETE_METRICS_HISTORY,
+          FOLLOW_ALIASES);
       return map;
     }),
     FORCELEADER_OP(FORCELEADER, (req, rsp, h) -> {
@@ -768,7 +781,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           SHARD_ID_PROP);
       ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
       final String newShardName = SolrIdentifierValidator.validateShardName(req.getParams().get(SHARD_ID_PROP));
-      if (!ImplicitDocRouter.NAME.equals(((Map) clusterState.getCollection(req.getParams().get(COLLECTION_PROP)).get(DOC_ROUTER)).get(NAME)))
+      boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
+      String extCollectionName = req.getParams().get(COLLECTION_PROP);
+      String collectionName = followAliases ? h.coreContainer.getZkController().getZkStateReader()
+          .getAliases().resolveSimpleAlias(extCollectionName) : extCollectionName;
+      if (!ImplicitDocRouter.NAME.equals(((Map) clusterState.getCollection(collectionName).get(DOC_ROUTER)).get(NAME)))
         throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections");
       copy(req.getParams(), map,
           REPLICATION_FACTOR,
@@ -776,7 +793,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           TLOG_REPLICAS,
           PULL_REPLICAS,
           CREATE_NODE_SET,
-          WAIT_FOR_FINAL_STATE);
+          WAIT_FOR_FINAL_STATE,
+          FOLLOW_ALIASES);
       return copyPropertiesWithPrefix(req.getParams(), map, COLL_PROP_PREFIX);
     }),
     DELETEREPLICA_OP(DELETEREPLICA, (req, rsp, h) -> {
@@ -788,13 +806,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DELETE_DATA_DIR,
           DELETE_INSTANCE_DIR,
           DELETE_METRICS_HISTORY,
-              COUNT_PROP, REPLICA_PROP,
-              SHARD_ID_PROP,
-          ONLY_IF_DOWN);
+          COUNT_PROP, REPLICA_PROP,
+          SHARD_ID_PROP,
+          ONLY_IF_DOWN,
+          FOLLOW_ALIASES);
     }),
     MIGRATE_OP(MIGRATE, (req, rsp, h) -> {
       Map<String, Object> map = copy(req.getParams().required(), null, COLLECTION_PROP, "split.key", "target.collection");
-      return copy(req.getParams(), map, "forward.timeout");
+      return copy(req.getParams(), map, "forward.timeout", FOLLOW_ALIASES);
     }),
     ADDROLE_OP(ADDROLE, (req, rsp, h) -> {
       Map<String, Object> map = copy(req.getParams().required(), null, "role", "node");
@@ -914,7 +933,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           NRT_REPLICAS,
           TLOG_REPLICAS,
           PULL_REPLICAS,
-          CREATE_NODE_SET);
+          CREATE_NODE_SET,
+          FOLLOW_ALIASES);
       return copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
     }),
     OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> (Map) new LinkedHashMap<>()),
@@ -976,6 +996,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       return map;
     }),
+    // XXX should this command support followAliases?
     DELETEREPLICAPROP_OP(DELETEREPLICAPROP, (req, rsp, h) -> {
       Map<String, Object> map = copy(req.getParams().required(), null,
           COLLECTION_PROP,
@@ -984,6 +1005,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           REPLICA_PROP);
       return copy(req.getParams(), map, PROPERTY_PROP);
     }),
+    // XXX should this command support followAliases?
     BALANCESHARDUNIQUE_OP(BALANCESHARDUNIQUE, (req, rsp, h) -> {
       Map<String, Object> map = copy(req.getParams().required(), null,
           COLLECTION_PROP,
@@ -1006,6 +1028,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       new RebalanceLeaders(req, rsp, h).execute();
       return null;
     }),
+    // XXX should this command support followAliases?
     MODIFYCOLLECTION_OP(MODIFYCOLLECTION, (req, rsp, h) -> {
       Map<String, Object> m = copy(req.getParams(), null, CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES);
       copyPropertiesWithPrefix(req.getParams(), m, COLL_PROP_PREFIX);
@@ -1035,8 +1058,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       req.getParams().required().check(NAME, COLLECTION_PROP);
 
       String extCollectionName = req.getParams().get(COLLECTION_PROP);
-      String collectionName = h.coreContainer.getZkController().getZkStateReader()
-          .getAliases().resolveSimpleAlias(extCollectionName);
+      boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
+      String collectionName = followAliases ? h.coreContainer.getZkController().getZkStateReader()
+          .getAliases().resolveSimpleAlias(extCollectionName) : extCollectionName;
       ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
       if (!clusterState.hasCollection(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
@@ -1072,7 +1096,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown index backup strategy " + strategy);
       }
 
-      Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
+      Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP, FOLLOW_ALIASES, CoreAdminParams.COMMIT_NAME);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
       params.put(CollectionAdminParams.INDEX_BACKUP_STRATEGY, strategy);
       return params;
@@ -1139,8 +1163,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       req.getParams().required().check(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
 
       String extCollectionName = req.getParams().get(COLLECTION_PROP);
-      String collectionName = h.coreContainer.getZkController().getZkStateReader()
-          .getAliases().resolveSimpleAlias(extCollectionName);
+      boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
+      String collectionName = followAliases ? h.coreContainer.getZkController().getZkStateReader()
+          .getAliases().resolveSimpleAlias(extCollectionName) : extCollectionName;
       String commitName = req.getParams().get(CoreAdminParams.COMMIT_NAME);
       ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
       if (!clusterState.hasCollection(collectionName)) {
@@ -1154,7 +1179,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                 + collectionName + "', no action taken.");
       }
 
-      Map<String, Object> params = copy(req.getParams(), null, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
+      Map<String, Object> params = copy(req.getParams(), null, COLLECTION_PROP, FOLLOW_ALIASES, CoreAdminParams.COMMIT_NAME);
       return params;
     }),
     DELETESNAPSHOT_OP(DELETESNAPSHOT, (req, rsp, h) -> {
@@ -1168,7 +1193,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
       }
 
-      Map<String, Object> params = copy(req.getParams(), null, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
+      Map<String, Object> params = copy(req.getParams(), null, COLLECTION_PROP, FOLLOW_ALIASES, CoreAdminParams.COMMIT_NAME);
       return params;
     }),
     LISTSNAPSHOTS_OP(LISTSNAPSHOTS, (req, rsp, h) -> {
@@ -1211,7 +1236,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           WAIT_FOR_FINAL_STATE,
           IN_PLACE_MOVE,
           "replica",
-          "shard");
+          "shard",
+          FOLLOW_ALIASES);
     }),
     DELETENODE_OP(DELETENODE, (req, rsp, h) -> copy(req.getParams().required(), null, "node"));
 

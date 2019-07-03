@@ -246,6 +246,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   protected abstract static class AsyncCollectionSpecificAdminRequest extends AsyncCollectionAdminRequest {
 
     protected String collection;
+    protected Boolean followAliases;
 
     public AsyncCollectionSpecificAdminRequest(CollectionAction action, String collection) {
       super(action);
@@ -256,10 +257,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return collection;
     }
 
+    public void setFollowAliases(Boolean followAliases) {
+      this.followAliases = followAliases;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
       params.set(CoreAdminParams.NAME, collection);
+      params.setNonNull(CollectionAdminParams.FOLLOW_ALIASES, followAliases);
       return params;
     }
   }

@@ -282,9 +282,15 @@ As always, patches and pull requests are welcome!
 Starting with version 8.1 SolrCloud supports using alias names in collection commands where normally a
 collection name is expected. This works only when the following criteria are satisfied:
 
+* a request parameter `followAliases=true` is used
 * an alias must not refer to more than one collection
 * an alias must not refer to a <<Routed Aliases,Routed Alias>> (see below)
 
-If all criteria are satisfied then the command will resolve alias names and operate on the collections the aliases
+If all criteria are satisfied then the command will resolve all alias names and operate on the collections the aliases
 refer to as if it was invoked with the collection names instead. Otherwise the command will not be executed and
 an exception will be thrown.
+
+The `followAliases=true` parameter should be used with care so that the resolved targets are indeed the intended ones.
+In case of multi-level aliases or shadow aliases (an alias with the same name as an existing collection but pointing
+to other collections) the use of this option is strongly discouraged because effects may be difficult to
+predict correctly.
