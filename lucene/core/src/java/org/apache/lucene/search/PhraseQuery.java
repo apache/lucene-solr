@@ -24,17 +24,20 @@ import java.util.List;
 
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
+import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
@@ -296,12 +299,14 @@ public class PhraseQuery extends Query {
 
   static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
     final PostingsEnum postings;
+    final ImpactsEnum impacts;
     final int position;
     final Term[] terms;
     final int nTerms; // for faster comparisons
 
-    public PostingsAndFreq(PostingsEnum postings, int position, Term... terms) {
+    public PostingsAndFreq(PostingsEnum postings, ImpactsEnum impacts, int position, Term... terms) {
       this.postings = postings;
+      this.impacts = impacts;
       this.position = position;
       nTerms = terms==null ? 0 : terms.length;
       if (nTerms>0) {
@@ -430,7 +435,7 @@ public class PhraseQuery extends Query {
       }
 
       @Override
-      protected PhraseMatcher getPhraseMatcher(LeafReaderContext context, boolean exposeOffsets) throws IOException {
+      protected PhraseMatcher getPhraseMatcher(LeafReaderContext context, SimScorer scorer, boolean exposeOffsets) throws IOException {
         assert terms.length > 0;
         final LeafReader reader = context.reader();
         PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.length];
@@ -456,18 +461,25 @@ public class PhraseQuery extends Query {
             return null;
           }
           te.seekExact(t.bytes(), state);
-          PostingsEnum postingsEnum = te.postings(null, exposeOffsets ? PostingsEnum.ALL : PostingsEnum.POSITIONS);
-          postingsFreqs[i] = new PostingsAndFreq(postingsEnum, positions[i], t);
+          PostingsEnum postingsEnum;
+          ImpactsEnum impactsEnum;
+          if (scoreMode == ScoreMode.TOP_SCORES) {
+            postingsEnum = impactsEnum = te.impacts(exposeOffsets ? PostingsEnum.OFFSETS : PostingsEnum.POSITIONS);
+          } else {
+            postingsEnum = te.postings(null, exposeOffsets ? PostingsEnum.OFFSETS : PostingsEnum.POSITIONS);
+            impactsEnum = new SlowImpactsEnum(postingsEnum);
+          }
+          postingsFreqs[i] = new PostingsAndFreq(postingsEnum, impactsEnum, positions[i], t);
           totalMatchCost += termPositionsCost(te);
         }
 
         // sort by increasing docFreq order
         if (slop == 0) {
           ArrayUtil.timSort(postingsFreqs);
-          return new ExactPhraseMatcher(postingsFreqs, totalMatchCost);
+          return new ExactPhraseMatcher(postingsFreqs, scoreMode, scorer, totalMatchCost);
         }
         else {
-          return new SloppyPhraseMatcher(postingsFreqs, slop, totalMatchCost, exposeOffsets);
+          return new SloppyPhraseMatcher(postingsFreqs, slop, scoreMode, scorer, totalMatchCost, exposeOffsets);
         }
       }
     };
