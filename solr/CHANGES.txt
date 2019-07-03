@@ -111,6 +111,8 @@ New Features
 
 * SOLR-13589: Allow zplot to visualize 2D clusters and convex hulls (Joel Bernstein)
 
+* SOLR-13602: Add a field type for Estonian language to default managed_schema (Tomoko Uchida)
+
 Bug Fixes
 ----------------------
 
