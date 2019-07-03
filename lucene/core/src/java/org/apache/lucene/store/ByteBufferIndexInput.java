@@ -500,18 +500,23 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
 
     @Override
     public boolean load() {
+      long loaded = 0;
       for (int i = 0; i < buffers.length; i++) {
         ByteBuffer buffer = buffers[i];
         if (buffer instanceof MappedByteBuffer) {
+          MappedByteBuffer slice;
           if (i == 0) {
             ByteBuffer duplicate = buffer.duplicate();
             duplicate.position(offset);
-            ((MappedByteBuffer) duplicate.slice()).load();
+            slice = (MappedByteBuffer) duplicate.slice();
           } else {
-            ((MappedByteBuffer) buffer).load();
+            slice = ((MappedByteBuffer) buffer);
           }
+          loaded += slice.limit();
+          slice.load();
         }
       }
+      assert loaded == length : " loaded != length (" + loaded +" != " + length + ")";
       return true;
     }
   }

@@ -308,6 +308,9 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
   private void assertSlice(byte[] bytes, IndexInput slicer, int outerSliceStart, int sliceStart, int sliceLength) throws IOException {
     byte slice[] = new byte[sliceLength];
     IndexInput input = slicer.slice("bytesSlice", sliceStart, slice.length);
+    if (random().nextBoolean()) {
+      assertTrue(input.load());
+    }
     input.readBytes(slice, 0, slice.length);
     input.close();
     assertEquals(new BytesRef(bytes, outerSliceStart + sliceStart, sliceLength), new BytesRef(slice));
