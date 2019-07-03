@@ -5,9 +5,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.store.Directory;
@@ -22,8 +25,11 @@ import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.BlobCoreMetadata.BlobFile;
 import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
 import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.blob.client.ToFromJson;
 import org.apache.solr.store.blob.metadata.ServerSideMetadata.CoreFileData;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil.SharedMetadataResolutionResult;
+import org.apache.solr.store.blob.process.BlobDeleteManager;
+import org.apache.solr.store.blob.provider.BlobStorageProvider;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,14 +55,16 @@ public class CorePushPull {
     private final ServerSideMetadata solrServerMetadata;
     private final BlobCoreMetadata blobMetadata;
     private final CoreContainer container;
-
+    private final BlobDeleteManager deleteManager;
 
     /**
      * Creates an instance allowing pushing and pulling local core content to/from blob store.
      */
-    public CorePushPull(CoreStorageClient client, PushPullData data, SharedMetadataResolutionResult resolvedMetadataResult, 
+    public CorePushPull(CoreStorageClient client, BlobDeleteManager deleteManager,
+        PushPullData data, SharedMetadataResolutionResult resolvedMetadataResult, 
         ServerSideMetadata solrServerMetadata, BlobCoreMetadata blobMetadata) {
       this.coreStorageClient = client;
+      this.deleteManager = deleteManager;
       this.container = getContainerFromServerMetadata(solrServerMetadata);  
       this.pushPullData = data;
       this.resolvedMetadataResult = resolvedMetadataResult;
@@ -137,6 +145,43 @@ public class CorePushPull {
             } finally {
               solrCore.getDirectoryFactory().release(indexDir);
             }
+            
+            /*
+             * Removing from the core metadata the files that should no longer be there.
+             * 
+             * TODO
+             * This is a little confusing: This is equivalent to what we were doing in first-party 
+             * where the files to delete for a push were just the files that we determined were 
+             * missing locally but on blob (filesToPull) for a push. This operates on the assumption
+             * that the core locally was refreshed with what was in blob before this update (both in
+             * first party and Solr Cloud). 
+             * 
+             * SharedMetadataResolutionResult makes no distinction between what action is being taken 
+             * (push or pull) hence the confusing method naming but leaving this for now while we reach
+             * blob feature parity.
+             * 
+             * The deletion logic will move out of this class in the future and make this less confusing. 
+             */
+            for (BlobCoreMetadata.BlobFile d : resolvedMetadataResult.getFilesToPull()) {
+                bcmBuilder.removeFile(d);
+                BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete(d, System.currentTimeMillis());
+                bcmBuilder.addFileToDelete(bftd);
+            }
+            
+            // add the old core.metadata file to delete
+            if (!pushPullData.getLastReadMetadataSuffix().equals("-1")) {
+              // TODO This may be inefficient but we'll likely remove this when CorePushPull is refactored to have deletion elsewhere
+              ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
+              String json = converter.toJson(blobMetadata);
+              int bcmSize = json.getBytes().length;
+              
+              String blobCoreMetadataName = BlobStorageProvider.CORE_METADATA_BLOB_FILENAME + "." +
+                  pushPullData.getLastReadMetadataSuffix();
+              String coreMetadataPath = blobMetadata.getSharedBlobName() + "/" + blobCoreMetadataName;
+              BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, System.currentTimeMillis());
+              bcmBuilder.addFileToDelete(bftd);
+            }
+            
             // Directory's javadoc says: "Java's i/o APIs not used directly, but rather all i/o is through this API"
             // But this is untrue/totally false/misleading. SnapPuller has File all over.
             for (CoreFileData cfd : resolvedMetadataResult.getFilesToPush()) {
@@ -149,6 +194,9 @@ public class CorePushPull {
           } finally {
             removeTempDirectory(solrCore, tempIndexDirName, tempIndexDir);
           }
+          
+          // delete what we need
+          enqueueForHardDelete(bcmBuilder);
           
           BlobCoreMetadata newBcm = bcmBuilder.build();
 
@@ -386,6 +434,42 @@ public class CorePushPull {
     private void moveFileToDirectory(SolrCore solrCore, Directory fromDir, String fileName, Directory toDir) throws IOException {
       // We don't need to keep the original files so we move them over.
       solrCore.getDirectoryFactory().move(fromDir, toDir, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+    }
+    
+    @VisibleForTesting
+    void enqueueForHardDelete(BlobCoreMetadataBuilder bcmBuilder) throws Exception {
+      Iterator<BlobCoreMetadata.BlobFileToDelete> it = bcmBuilder.getDeletedFilesIterator();
+      Set<BlobCoreMetadata.BlobFileToDelete> filesToDelete = new HashSet<>();
+      while (it.hasNext()) {
+        BlobCoreMetadata.BlobFileToDelete ftd = it.next();
+        if (okForHardDelete(ftd)) {
+          filesToDelete.add(ftd);
+        }
+      }        
+
+      if (enqueueForDelete(bcmBuilder.getSharedBlobName(), filesToDelete)) {
+        bcmBuilder.removeFilesFromDeleted(filesToDelete);
+      }
+    }
+    
+    /**
+     * Returns true if a deleted blob file (i.e. a file marked for delete but not deleted yet) can be hard deleted now.
+     */
+    @VisibleForTesting
+    protected boolean okForHardDelete(BlobCoreMetadata.BlobFileToDelete file) {
+      // For now we only check how long ago the file was marked for delete.
+      return System.currentTimeMillis() - file.getDeletedAt() >= deleteManager.getDeleteDelayMs();
+    }
+    
+    @VisibleForTesting
+    protected boolean enqueueForDelete(String coreName, Set<BlobCoreMetadata.BlobFileToDelete> blobFiles) {
+      if (blobFiles == null || blobFiles.isEmpty()) {
+        return false;
+      }
+      Set<String> blobNames = blobFiles.stream()
+                                .map(blobFile -> blobFile.getBlobName())
+                                .collect(Collectors.toCollection(HashSet::new));
+      return deleteManager.enqueueForDelete(coreName, blobNames);
     }
 
     /**

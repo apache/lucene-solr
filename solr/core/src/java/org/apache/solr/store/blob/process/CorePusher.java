@@ -42,6 +42,7 @@ public class CorePusher {
   static void pushCoreToBlob(PushPullData pushPullData) throws Exception {
     BlobStorageProvider blobProvider = coreContainer.getZkController().getBlobStorageProvider(); 
     CoreStorageClient blobClient = blobProvider.getDefaultClient(); // TODO, use a real client
+    BlobDeleteManager deleteManager = coreContainer.getZkController().getBlobDeleteManager(); // TODO, use a real client
         
     BlobCoreMetadata blobCoreMetadata = null;
     logger.info("Push to shared store initiating with PushPullData= " + pushPullData.toString());
@@ -72,7 +73,7 @@ public class CorePusher {
           localShardMetadata, blobCoreMetadata);
       
       // begin the push process 
-      CorePushPull pushPull = new CorePushPull(blobClient, pushPullData, resolutionResult, localShardMetadata, blobCoreMetadata);
+      CorePushPull pushPull = new CorePushPull(blobClient, deleteManager, pushPullData, resolutionResult, localShardMetadata, blobCoreMetadata);
       pushPull.pushToBlobStore();
       
       // at this point we've pushed the new metadata file with the newMetadataSuffix and now need to write to zookeeper

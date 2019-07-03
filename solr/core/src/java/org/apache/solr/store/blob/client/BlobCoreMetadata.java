@@ -1,6 +1,9 @@
 package org.apache.solr.store.blob.client;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Object defining metadata stored in blob store for a Shared Collection shard and its builders.  
@@ -42,25 +45,28 @@ public class BlobCoreMetadata {
     private final BlobFile[] blobFiles;
 
     /**
-     * The array of config files that are associated with the core. 
+     * Files marked for delete but not yet removed from the Blob store. Each such file contains information indicating when
+     * it was marked for delete so we can actually remove the corresponding blob (and the entry from this array in the metadata)
+     * when it's safe to do so even if there are (unexpected) conflicting updates to the blob store by multiple solr servers...
+     * TODO: we might want to separate the metadata blob with the deletes as it's not required to always fetch the delete list when checking freshness of local core...
      */
-    private final BlobConfigFile[] blobConfigFiles;
+    private final BlobFileToDelete[] blobFilesToDelete;
 
     /**
      * This is the constructor called by {@link BlobCoreMetadataBuilder}.
      * It always builds non "isCorrupt" and non "isDeleted" metadata. 
      * The only way to build an instance of "isCorrupt" metadata is to use {@link #getCorruptOf} and for "isDeleted" use {@link #getDeletedOf()}
      */
-    BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobConfigFile[] blobConfigFiles) {
-        this(sharedBlobName, blobFiles, blobConfigFiles, UUID.randomUUID().toString(), false,
+    BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobFileToDelete[] blobFilesToDelete) {
+        this(sharedBlobName, blobFiles, blobFilesToDelete, UUID.randomUUID().toString(), false,
                 false);
     }
 
-    private BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobConfigFile[] blobConfigFiles, 
+    private BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobFileToDelete[] blobFilesToDelete, 
         String uniqueIdentifier, boolean isCorrupt, boolean isDeleted) {
         this.sharedBlobName = sharedBlobName;
         this.blobFiles = blobFiles;
-        this.blobConfigFiles = blobConfigFiles;
+        this.blobFilesToDelete = blobFilesToDelete;
         this.uniqueIdentifier = uniqueIdentifier;
         this.isCorrupt = isCorrupt;
         this.isDeleted = isDeleted;
@@ -72,7 +78,7 @@ public class BlobCoreMetadata {
      */
     public BlobCoreMetadata getCorruptOf() {
         assert !isCorrupt;
-        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobConfigFiles, uniqueIdentifier, true, isDeleted);
+        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobFilesToDelete, uniqueIdentifier, true, isDeleted);
     }
 
     /**
@@ -82,7 +88,7 @@ public class BlobCoreMetadata {
      */
     public BlobCoreMetadata getDeletedOf() {
         assert !isDeleted;
-        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobConfigFiles, uniqueIdentifier, isCorrupt, true);
+        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobFilesToDelete, uniqueIdentifier, isCorrupt, true);
     }
 
     /**
@@ -121,8 +127,8 @@ public class BlobCoreMetadata {
         return blobFiles;
     }
 
-    public BlobConfigFile[] getBlobConfigFiles() {
-        return blobConfigFiles;
+    public BlobFileToDelete[] getBlobFilesToDelete() {
+        return blobFilesToDelete;
     }
 
     @Override
@@ -143,10 +149,9 @@ public class BlobCoreMetadata {
         if (!thisFiles.equals(thatFiles)) return false;
 
         // same for the conf files
-        Set<BlobConfigFile> thisConfigFiles = new HashSet<>(Arrays.asList(this.blobConfigFiles));
-        Set<BlobConfigFile> thatConfigFiles = new HashSet<>(Arrays.asList(that.blobConfigFiles));
-        if (!thisConfigFiles.equals(thatConfigFiles)) return false;
-        return true;
+        Set<BlobFileToDelete> thisFilesToDelete = new HashSet<>(Arrays.asList(this.blobFilesToDelete));
+        Set<BlobFileToDelete> thatFilesToDelete = new HashSet<>(Arrays.asList(that.blobFilesToDelete));
+        return thisFilesToDelete.equals(thatFilesToDelete);
     }
 
     @Override
@@ -155,7 +160,7 @@ public class BlobCoreMetadata {
         result = 31 * result + uniqueIdentifier.hashCode();
         // The array of files is not ordered so need to compare as a set
         result = 31 * result + new HashSet<>(Arrays.asList(this.blobFiles)).hashCode();
-        result = 31 * result + new HashSet<>(Arrays.asList(this.blobConfigFiles)).hashCode();
+        result = 31 * result + new HashSet<>(Arrays.asList(this.blobFilesToDelete)).hashCode();
         result = 31 * result + (isCorrupt ? 1 : 0);
         result = 31 * result + (isDeleted ? 1 : 0);
         return result;
@@ -227,87 +232,53 @@ public class BlobCoreMetadata {
     }
 
     /**
-     * A file (or blob) representing config file stored in the blob store.
-     */
-    public static class BlobConfigFile extends BlobFile {
-        /** Last updated time of the config file */
-        private final long updatedAt;
-
-        public BlobConfigFile(String solrFileName, String blobName, long fileSize, long updatedAt) {
-            super(solrFileName, blobName, fileSize);
-            this.updatedAt = updatedAt;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            if (!super.equals(o)) return false;
-            BlobConfigFile that = (BlobConfigFile) o;
-            return updatedAt == that.updatedAt;
-        }
-
-        @Override
-        public int hashCode() {
-            int result = super.hashCode();
-            result = 31 * result + (int) (updatedAt ^ (updatedAt >>> 32));
-            return result;
-        }
-
-        public long getUpdatedAt() {
-            return this.updatedAt;
-        }
-    }
-
-    /**
      * A file (or blob) stored in the blob store that should be deleted (after a certain "delay" to make sure it's not used
      * by a conflicting update to the core metadata on the Blob...).
      */
     public static class BlobFileToDelete extends BlobFile {
 
-        // TODO using the delete timestamp for now but likely need something else:
-        // deleted sequence number allows letting multiple sequence numbers to pass before deleting, whereas
-        // an old delete (as told by its timestamp) might still be the latest update to the core if not a lot of indexing
-        // activity, so hard to judge a delete is safe based on this. Possibly delete sequence and delete timestamp are
-        // the safest bet, covering both cases of very high indexing activity cores (we might want to wait until timestamp
-        // ages a bit given sequence number can increase quickly yet we could have a race with a server doing a slow update)
-        // as well as slowly updating cores (if delete date is a week ago, even if sequence number hasn't changed, the
-        // likelyhood of a really really slow update by another server causing a race is low).
-        private final long deletedAt;
+      // TODO using the delete timestamp for now but likely need something else:
+      // deleted sequence number allows letting multiple sequence numbers to pass before deleting, whereas
+      // an old delete (as told by its timestamp) might still be the latest update to the core if not a lot of indexing
+      // activity, so hard to judge a delete is safe based on this. Possibly delete sequence and delete timestamp are
+      // the safest bet, covering both cases of very high indexing activity cores (we might want to wait until timestamp
+      // ages a bit given sequence number can increase quickly yet we could have a race with a server doing a slow update)
+      // as well as slowly updating cores (if delete date is a week ago, even if sequence number hasn't changed, the
+      // likelyhood of a really really slow update by another server causing a race is low).
+      private final long deletedAt;
 
-        public BlobFileToDelete(String solrFileName, String blobName, long fileSize, long deletedAt) {
-            super(solrFileName, blobName, fileSize);
+      public BlobFileToDelete(String solrFileName, String blobName, long fileSize, long deletedAt) {
+        super(solrFileName, blobName, fileSize);
 
-            this.deletedAt = deletedAt;
-        }
+        this.deletedAt = deletedAt;
+      }
 
-        public BlobFileToDelete(BlobFile bf, long deletedAt) {
-            super(bf.solrFileName, bf.blobName, bf.fileSize);
+      public BlobFileToDelete(BlobFile bf, long deletedAt) {
+        super(bf.solrFileName, bf.blobName, bf.fileSize);
 
-            this.deletedAt = deletedAt;
-        }
+        this.deletedAt = deletedAt;
+      }
 
+      @Override
+      public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            if (!super.equals(o)) return false;
+        BlobFileToDelete that = (BlobFileToDelete) o;
 
-            BlobFileToDelete that = (BlobFileToDelete) o;
+        return deletedAt == that.deletedAt;
+      }
 
-            return deletedAt == that.deletedAt;
-        }
+      @Override
+      public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (int) (deletedAt ^ (deletedAt >>> 32));
+        return result;
+      }
 
-        @Override
-        public int hashCode() {
-            int result = super.hashCode();
-            result = 31 * result + (int) (deletedAt ^ (deletedAt >>> 32));
-            return result;
-        }
-
-        public long getDeletedAt() {
-            return this.deletedAt;
-        }
+      public long getDeletedAt() {
+        return this.deletedAt;
+      }
     }
 }

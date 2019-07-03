@@ -31,6 +31,7 @@ import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
 import org.apache.solr.store.blob.client.BlobstoreProviderType;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil.SharedMetadataResolutionResult;
+import org.apache.solr.store.blob.process.BlobDeleteManager;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -42,6 +43,7 @@ import org.mockito.Mockito;
 public class CorePushPullTest extends SolrTestCaseJ4 {
   
   private static CoreStorageClient client = Mockito.mock(CoreStorageClient.class);
+  private static BlobDeleteManager deleteManager = Mockito.mock(BlobDeleteManager.class);
   
   private String sharedBlobName = "collectionTest_shardTest";
   private String collectionName = "collectionTest";
@@ -79,7 +81,12 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
     
     // We can pass null values here because we don't expect those arguments to be interacted with.
     // If they are, a bug is introduced and should be addressed
-    CorePushPull pushPull = new CorePushPull(client, null, null, solrServerMetadata, blobMetadata);
+    CorePushPull pushPull = new CorePushPull(client, deleteManager, null, null, solrServerMetadata, blobMetadata) {
+      @Override
+      void enqueueForHardDelete(BlobCoreMetadataBuilder bcmBuilder) throws Exception {
+        return;
+      }
+    };
     
     // verify an exception is thrown
     try {
@@ -122,11 +129,16 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
     
     // the returned BCM is what is pushed to blob store so we should verify the push
     // was made with the correct data
-    CorePushPull pushPull = new CorePushPull(client, ppd, resResult, solrServerMetadata, bcm) {
+    CorePushPull pushPull = new CorePushPull(client, deleteManager, ppd, resResult, solrServerMetadata, bcm) {
       @Override
       protected String pushFileToBlobStore(CoreStorageClient blob, Directory dir, 
           String fileName, long fileSize) throws Exception {
        return UUID.randomUUID().toString();
+      }
+      
+      @Override
+      void enqueueForHardDelete(BlobCoreMetadataBuilder bcmBuilder) throws Exception {
+        return;
       }
     };
     BlobCoreMetadata returnedBcm = pushPull.pushToBlobStore();
