@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -37,6 +36,8 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.lucene.util.RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
+import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
 
 /**
  *
@@ -45,21 +46,6 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(LRUCache.class);
-
-  ///  Copied from Lucene's LRUQueryCache
-
-  // memory usage of a simple term query
-  public static final long DEFAULT_RAM_BYTES_USED = 192;
-
-  public static final long HASHTABLE_RAM_BYTES_PER_ENTRY =
-      2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // key + value
-          * 2; // hash tables need to be oversized to avoid collisions, assume 2x capacity
-
-  static final long LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY =
-      HASHTABLE_RAM_BYTES_PER_ENTRY
-          + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF; // previous & next references
-
-  /// End copied code
 
   /* An instance of this class will be shared across multiple instances
    * of an LRUCache at the same time.  Make sure everything is thread safe.
@@ -89,8 +75,6 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
-  private SolrMetricManager metricManager;
-  private String registryName;
 
   private long maxRamBytes = Long.MAX_VALUE;
   // The synchronization used for the map will be used to update this,
@@ -119,11 +103,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
               do {
                 Map.Entry<K, V> entry = iterator.next();
                 if (entry.getKey() != null) {
-                  if (entry.getKey() instanceof Accountable) {
-                    bytesToDecrement += ((Accountable) entry.getKey()).ramBytesUsed();
-                  } else  {
-                    bytesToDecrement += DEFAULT_RAM_BYTES_USED;
-                  }
+                  bytesToDecrement += RamUsageEstimator.sizeOfObject(entry.getKey(), QUERY_DEFAULT_RAM_BYTES_USED);
                 }
                 if (entry.getValue() != null) {
                   bytesToDecrement += ((Accountable) entry.getValue()).ramBytesUsed();
@@ -197,10 +177,10 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       inserts++;
 
       // important to calc and add new ram bytes first so that removeEldestEntry can compare correctly
-      long keySize = DEFAULT_RAM_BYTES_USED;
       if (maxRamBytes != Long.MAX_VALUE) {
-        if (key != null && key instanceof Accountable) {
-          keySize = ((Accountable) key).ramBytesUsed();
+        long keySize = 0;
+        if (key != null) {
+          keySize = RamUsageEstimator.sizeOfObject(key, QUERY_DEFAULT_RAM_BYTES_USED);
         }
         long valueSize = 0;
         if (value != null) {
@@ -221,12 +201,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
         // the key existed in the map but we added its size before the put, so let's back out
         bytesToDecrement += LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
         if (key != null) {
-          if (key instanceof Accountable) {
-            Accountable aKey = (Accountable) key;
-            bytesToDecrement += aKey.ramBytesUsed();
-          } else {
-            bytesToDecrement += DEFAULT_RAM_BYTES_USED;
-          }
+          bytesToDecrement += RamUsageEstimator.sizeOfObject(key, QUERY_DEFAULT_RAM_BYTES_USED);
         }
         ramBytesUsed -= bytesToDecrement;
       }
@@ -334,8 +309,6 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    this.metricManager = manager;
-    this.registryName = registryName;
     registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, res) -> {
       synchronized (map) {
@@ -389,12 +362,8 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public Collection<Accountable> getChildResources() {
-    if (maxRamBytes != Long.MAX_VALUE)  {
-      synchronized (map)  {
-        return Accountables.namedAccountables(getName(), (Map<?, ? extends Accountable>) map);
-      }
-    } else  {
-      return Collections.emptyList();
+    synchronized (map)  {
+      return Accountables.namedAccountables(getName(), (Map<?, ? extends Accountable>) map);
     }
   }
 }

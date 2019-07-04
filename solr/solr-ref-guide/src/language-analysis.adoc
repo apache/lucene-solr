@@ -587,6 +587,7 @@ These factories are each designed to work with specific languages. The languages
 * <<Danish>>
 
 * <<Dutch>>
+* <<Estonian>>
 * <<Finnish>>
 * <<French>>
 * <<Galician>>
@@ -915,6 +916,33 @@ Solr can stem Dutch using the Snowball Porter Stemmer with an argument of `langu
 *Tokenizer to Filter:* "kanaal", "kanalen"
 
 *Out:* "kanal", "kanal"
+
+=== Estonian
+
+Solr can stem Estonian using the Snowball Porter Stemmer with an argument of `language="Estonian"`.
+
+*Factory class:* `solr.SnowballPorterFilterFactory`
+
+*Arguments:*
+
+`language`:: (required) stemmer language, "Estonian" in this case
+
+*Example:*
+
+[source,xml]
+----
+<analyzer type="index">
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.LowerCaseFilterFactory"/>
+  <filter class="solr.SnowballPorterFilterFactory" language="Estonian"/>
+</analyzer>
+----
+
+*In:* "Taevani tõustes"
+
+*Tokenizer to Filter:* "Taevani", "tõustes"
+
+*Out:* "taevani", "tõus"
 
 === Finnish
 

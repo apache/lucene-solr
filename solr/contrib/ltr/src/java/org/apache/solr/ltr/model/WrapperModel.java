@@ -131,6 +131,11 @@ public abstract class WrapperModel extends AdapterModel {
   }
 
   @Override
+  public long ramBytesUsed() {
+    return model.ramBytesUsed();
+  }
+
+  @Override
   public float score(float[] modelFeatureValuesNormalized) {
     return model.score(modelFeatureValuesNormalized);
   }
