@@ -15,6 +15,6 @@ public interface ResourceManagerPlugin {
   Collection<String> getMonitoredTags();
   Collection<String> getControlledTags();
 
-  void manage(ResourceManagerPool pool);
+  void manage(ResourceManagerPool pool) throws Exception;
 
 }

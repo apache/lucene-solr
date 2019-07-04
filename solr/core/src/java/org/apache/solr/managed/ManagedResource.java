@@ -16,7 +16,7 @@ public interface ManagedResource {
   /**
    * Unique name of this resource.
    */
-  String getName();
+  String getResourceName();
 
   /**
    * Returns types of management schemes supported by this resource. This always
@@ -37,7 +37,7 @@ public interface ManagedResource {
         setManagedLimit(key, value);
       } catch (Exception e) {
         log.warn("Exception setting managed limit on {}: key={}, value={}, exception={}",
-            getName(), key, value, e);
+            getResourceName(), key, value, e);
       }
     });
   }
@@ -59,5 +59,5 @@ public interface ManagedResource {
    * @param tags value names
    * @return map of names to current values.
    */
-  Map<String, Float> getManagedValues(Collection<String> tags);
+  Map<String, Float> getManagedValues(Collection<String> tags) throws Exception;
 }

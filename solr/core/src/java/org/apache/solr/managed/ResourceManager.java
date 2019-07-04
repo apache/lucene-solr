@@ -17,7 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Base class for resource management. It represents a flat model where there are named
+ * resource pools of a given type, each pool with its own defined limits. Resources can be added
+ * to a pool for management of a specific aspect of that resource using {@link ResourceManagerPlugin}.
  */
 public abstract class ResourceManager implements SolrCloseable, PluginInfoInitialized {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -63,20 +65,20 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
 
   protected abstract void doInit() throws Exception;
 
-  public abstract void createPool(String name, String type, Map<String, Float> limits, Map<String, Object> params) throws Exception;
+  public abstract void createPool(String name, String type, Map<String, Float> poolLimits, Map<String, Object> params) throws Exception;
 
-  public abstract void modifyPoolLimits(String name, Map<String, Float> limits) throws Exception;
+  public abstract void modifyPoolLimits(String name, Map<String, Float> poolLimits) throws Exception;
 
   public abstract void removePool(String name) throws Exception;
 
-  public void addResources(String pool, Collection<ManagedResource> managedResource) {
+  public void addResources(String pool, Collection<ManagedResource> managedResource) throws Exception {
     ensureNotClosed();
     for (ManagedResource resource : managedResource) {
       addResource(pool, resource);
     }
   }
 
-  public abstract void addResource(String pool, ManagedResource managedResource);
+  public abstract void addResource(String pool, ManagedResource managedResource) throws Exception;
 
   protected void ensureNotClosed() {
     if (isClosed()) {

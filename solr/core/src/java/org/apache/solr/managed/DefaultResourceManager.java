@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Default implementation of {@link ResourceManager}.
  */
 public class DefaultResourceManager extends ResourceManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -75,7 +75,7 @@ public class DefaultResourceManager extends ResourceManager {
   }
 
   @Override
-  public void createPool(String name, String type, Map<String, Float> limits, Map<String, Object> params) throws Exception {
+  public void createPool(String name, String type, Map<String, Float> poolLimits, Map<String, Object> params) throws Exception {
     ensureNotClosed();
     if (resourcePools.containsKey(name)) {
       throw new IllegalArgumentException("Pool '" + name + "' already exists.");
@@ -83,7 +83,7 @@ public class DefaultResourceManager extends ResourceManager {
     if (resourcePools.size() >= maxNumPools) {
       throw new IllegalArgumentException("Maximum number of pools (" + maxNumPools + ") reached.");
     }
-    ResourceManagerPool newPool = new ResourceManagerPool(name, type, resourceManagerPluginFactory, limits, params);
+    ResourceManagerPool newPool = new ResourceManagerPool(name, type, resourceManagerPluginFactory, poolLimits, params);
     newPool.scheduleDelaySeconds = Integer.parseInt(String.valueOf(params.getOrDefault(SCHEDULE_DELAY_SECONDS_PARAM, DEFAULT_SCHEDULE_DELAY_SECONDS)));
     resourcePools.putIfAbsent(name, newPool);
     newPool.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(newPool, 0,
@@ -92,13 +92,13 @@ public class DefaultResourceManager extends ResourceManager {
   }
 
   @Override
-  public void modifyPoolLimits(String name, Map<String, Float> limits) throws Exception {
+  public void modifyPoolLimits(String name, Map<String, Float> poolLimits) throws Exception {
     ensureNotClosed();
     ResourceManagerPool pool = resourcePools.get(name);
     if (pool == null) {
       throw new IllegalArgumentException("Pool '" + name + "' doesn't exist.");
     }
-    pool.setLimits(limits);
+    pool.setPoolLimits(poolLimits);
   }
 
   @Override
@@ -118,6 +118,17 @@ public class DefaultResourceManager extends ResourceManager {
     if (pool == null) {
       throw new IllegalArgumentException("Pool '" + name + "' doesn't exist.");
     }
+    String type = pool.getType();
+    resourcePools.forEach((poolName, otherPool) -> {
+      if (otherPool == pool) {
+        return;
+      }
+      if (otherPool.getType().equals(type)) {
+        throw new IllegalArgumentException("Resource " + managedResource.getResourceName() +
+            " is already managed in another pool (" +
+            otherPool.getName() + ") of the same type " + type);
+      }
+    });
     pool.addResource(managedResource);
   }
 

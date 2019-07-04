@@ -1,5 +1,6 @@
 package org.apache.solr.managed.plugins;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -7,11 +8,15 @@ import java.util.Map;
 
 import org.apache.solr.managed.AbstractResourceManagerPlugin;
 import org.apache.solr.managed.ResourceManagerPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static String TYPE = "cache";
 
   public static final String SIZE_TAG = "size";
@@ -58,36 +63,44 @@ public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
   }
 
   @Override
-  public void manage(ResourceManagerPool pool) {
+  public void manage(ResourceManagerPool pool) throws Exception {
     Map<String, Map<String, Float>> currentValues = pool.getCurrentValues();
     Map<String, Float> totalValues = pool.getTotalValues();
-    pool.getLimits().forEach((poolLimitName, poolLimitValue) -> {
+    // pool limits are defined using controlled tags
+    pool.getPoolLimits().forEach((poolLimitName, poolLimitValue) -> {
+      if (poolLimitValue == null || poolLimitValue <= 0) {
+        return;
+      }
       String monitoredTag = controlledToMonitored.get(poolLimitName);
       if (monitoredTag == null) {
         return;
       }
       Float totalValue = totalValues.get(monitoredTag);
-      if (totalValue == null) {
+      if (totalValue == null || totalValue <= 0.0f) {
         return;
       }
       float totalDelta = poolLimitValue - totalValue;
+
+      // 10% hysteresis to avoid thrashing
+      // TODO: make the threshold configurable
+      if (Math.abs(totalDelta / poolLimitValue) < 0.1f) {
+        return;
+      }
+
+      float changeRatio = poolLimitValue / totalValue;
+      // modify current limits by the changeRatio
       pool.getResources().forEach((name, resource) -> {
-        Map<String, Float> current = currentValues.get(name);
-        if (current == null) {
+        Map<String, Float> resourceLimits = resource.getManagedLimits();
+        Float currentResourceLimit = resourceLimits.get(poolLimitName);
+        if (currentResourceLimit == null || currentResourceLimit <= 0) {
           return;
         }
-        Map<String, Float> limits = resource.getManagedLimits();
-        Float managedSize = limits.get(SIZE_TAG);
-        Float resMaxRamMB = limits.get(MAX_RAM_MB_TAG);
-        Float currentSize = current.get(SIZE_TAG);
-        Float currentHitratio = current.get(HIT_RATIO_TAG);
-        Float ramBytesUsed = current.get(RAM_BYTES_USED_TAG);
-
-        // logic to adjust per-resource controlled limits
-        if (poolLimitName.equals(MAX_RAM_MB_TAG)) {
-          // adjust per-resource maxRamMB
-        } else if (poolLimitName.equals(SIZE_TAG)) {
-          // adjust per-resource size
+        float newLimit = currentResourceLimit * changeRatio;
+        try {
+          resource.setManagedLimit(poolLimitName, newLimit);
+        } catch (Exception e) {
+          log.warn("Failed to set managed limit " + poolLimitName +
+              " from " + currentResourceLimit + " to " + newLimit + " on " + resource.getResourceName(), e);
         }
       });
     });
