@@ -161,8 +161,7 @@ abstract class FSTEnum<T> {
     int arcOffset = targetLabel - firstLabel;
     if (arcOffset >= arc.numArcs()) {
       // target is beyond the last arc
-      arc.nextArc(arc.posArcsStart() - (arc.numArcs() - 1) * arc.bytesPerArc());
-      fst.readNextRealArc(arc, in);
+      fst.readArcAtPosition(arc, in, arc.posArcsStart() - (arc.numArcs() - 1) * arc.bytesPerArc());
       assert arc.isLast();
       // Dead end (target is after the last arc);
       // rollback to last fork then push
@@ -182,12 +181,13 @@ abstract class FSTEnum<T> {
       }
     } else {
       // TODO: if firstLabel == targetLabel
+      long pos;
       if (arcOffset >= 0) {
-        arc.nextArc(arc.posArcsStart() - (arc.bytesPerArc() * arcOffset));
+        pos = arc.posArcsStart() - (arc.bytesPerArc() * arcOffset);
       } else {
-        arc.nextArc(arc.posArcsStart());
+        pos = arc.posArcsStart();
       }
-      fst.readNextRealArc(arc, in);
+      fst.readArcAtPosition(arc, in, pos);
       if (arc.label() == targetLabel) {
         // found -- copy pasta from below
         output[upto] = fst.outputs.add(output[upto-1], arc.output());
@@ -234,8 +234,7 @@ abstract class FSTEnum<T> {
     // the outer else clause):
     if (found) {
       // Match
-      arc.arcIdx(mid - 1);
-      fst.readNextRealArc(arc, in);
+      fst.readArcByIndex(arc, in, mid);
       assert arc.arcIdx() == mid;
       assert arc.label() == targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel + " mid=" + mid;
       output[upto] = fst.outputs.add(output[upto-1], arc.output());
@@ -247,8 +246,7 @@ abstract class FSTEnum<T> {
       return fst.readFirstTargetArc(arc, getArc(upto), fstReader);
     } else if (low == arc.numArcs()) {
       // Dead end
-      arc.arcIdx(arc.numArcs() - 2);
-      fst.readNextRealArc(arc, in);
+      fst.readArcByIndex(arc, in, arc.numArcs() - 1);
       assert arc.isLast();
       // Dead end (target is after the last arc);
       // rollback to last fork then push
@@ -267,8 +265,7 @@ abstract class FSTEnum<T> {
         upto--;
       }
     } else {
-      arc.arcIdx(low - 1);
-      fst.readNextRealArc(arc, in);
+      fst.readArcByIndex(arc, in, low);
       assert arc.label() > targetLabel;
       pushFirst();
       return null;
@@ -386,15 +383,13 @@ abstract class FSTEnum<T> {
       }
     } else {
       if (targetOffset >= arc.numArcs()) {
-        arc.nextArc(arc.posArcsStart() - arc.bytesPerArc() * (arc.numArcs() - 1));
-        fst.readNextRealArc(arc, in);
+        fst.readArcAtPosition(arc, in, arc.posArcsStart() - arc.bytesPerArc() * (arc.numArcs() - 1));
         assert arc.isLast();
         assert arc.label() < targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel;
         pushLast();
         return null;
       }
-      arc.nextArc(arc.posArcsStart() - arc.bytesPerArc() * targetOffset);
-      fst.readNextRealArc(arc, in);
+      fst.readArcAtPosition(arc, in, arc.posArcsStart() - arc.bytesPerArc() * targetOffset);
       if (arc.label() == targetLabel) {
         // found -- copy pasta from below
         output[upto] = fst.outputs.add(output[upto-1], arc.output());
@@ -408,8 +403,7 @@ abstract class FSTEnum<T> {
       // Scan backwards to find a floor arc that is not missing
       for (long arcOffset = arc.posArcsStart() - targetOffset * arc.bytesPerArc(); arcOffset <= arc.posArcsStart(); arcOffset += arc.bytesPerArc()) {
         // TODO: we can do better here by skipping missing arcs
-        arc.nextArc(arcOffset);
-        fst.readNextRealArc(arc, in);
+        fst.readArcAtPosition(arc, in, arcOffset);
         if (arc.label() < targetLabel) {
           assert arc.isLast() || fst.readNextArcLabel(arc, in) > targetLabel;
           pushLast();
@@ -451,8 +445,7 @@ abstract class FSTEnum<T> {
     if (found) {
       // Match -- recurse
       //System.out.println("  match!  arcIdx=" + mid);
-      arc.arcIdx(mid - 1);
-      fst.readNextRealArc(arc, in);
+      fst.readArcByIndex(arc, in, mid);
       assert arc.arcIdx() == mid;
       assert arc.label() == targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel + " mid=" + mid;
       output[upto] = fst.outputs.add(output[upto-1], arc.output());
@@ -491,8 +484,7 @@ abstract class FSTEnum<T> {
       }
     } else {
       // There is a floor arc:
-      arc.arcIdx(high - 1);
-      fst.readNextRealArc(arc, in);
+      fst.readArcByIndex(arc, in, high);
       assert arc.isLast() || fst.readNextArcLabel(arc, in) > targetLabel;
       assert arc.label() < targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel;
       pushLast();

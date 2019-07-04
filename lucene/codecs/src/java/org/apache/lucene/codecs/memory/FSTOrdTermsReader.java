@@ -65,7 +65,7 @@ import org.apache.lucene.util.fst.Util;
  * FST-based terms dictionary reader.
  *
  * The FST index maps each term and its ord, and during seek 
- * the ord is used fetch metadata from a single block.
+ * the ord is used to fetch metadata from a single block.
  * The term dictionary is fully memory resident.
  *
  * @lucene.experimental
@@ -305,7 +305,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
     }
 
     // Only wraps common operations for PBF interact
-    abstract class BaseTermsEnum extends org.apache.lucene.index.BaseTermsEnum {
+    abstract class  BaseTermsEnum extends org.apache.lucene.index.BaseTermsEnum {
 
       /* Current term's ord, starts from 0 */
       long ord;
@@ -563,6 +563,8 @@ public class FSTOrdTermsReader extends FieldsProducer {
         /* fst stats */
         FST.Arc<Long> arc;
 
+        Long output;
+
         /* automaton stats */
         int state;
 
@@ -620,9 +622,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
 
       @Override
       void decodeStats() throws IOException {
-        final FST.Arc<Long> arc = topFrame().arc;
-        assert arc.nextFinalOutput() == fstOutputs.getNoOutput();
-        ord = arc.output();
+        ord = topFrame().output;
         super.decodeStats();
       }
 
@@ -704,8 +704,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
 
       /** Virtual frame, never pop */
       Frame loadVirtualFrame(Frame frame) {
-        frame.arc.output(fstOutputs.getNoOutput());
-        frame.arc.nextFinalOutput(fstOutputs.getNoOutput());
+        frame.output = fstOutputs.getNoOutput();
         frame.state = -1;
         return frame;
       }
@@ -713,6 +712,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
       /** Load frame for start arc(node) on fst */
       Frame loadFirstFrame(Frame frame) {
         frame.arc = fst.getFirstArc(frame.arc);
+        frame.output = frame.arc.output();
         frame.state = 0;
         return frame;
       }
@@ -724,6 +724,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
         }
         frame.arc = fst.readFirstRealTargetArc(top.arc.target(), frame.arc, fstReader);
         frame.state = fsa.step(top.state, frame.arc.label());
+        frame.output = frame.arc.output();
         //if (TEST) System.out.println(" loadExpand frame="+frame);
         if (frame.state == -1) {
           return loadNextFrame(top, frame);
@@ -738,6 +739,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
         }
         while (!frame.arc.isLast()) {
           frame.arc = fst.readNextRealArc(frame.arc, fstReader);
+          frame.output = frame.arc.output();
           frame.state = fsa.step(top.state, frame.arc.label());
           if (frame.state != -1) {
             break;
@@ -763,6 +765,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
         if (frame.state == -1) {
           return loadNextFrame(top, frame);
         }
+        frame.output = arc.output();
         return frame;
       }
 
@@ -781,7 +784,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
 
       void pushFrame(Frame frame) {
         final FST.Arc<Long> arc = frame.arc;
-        arc.output(fstOutputs.add(topFrame().arc.output(), arc.output()));
+        frame.output = fstOutputs.add(topFrame().output, frame.output);
         term = grow(arc.label());
         level++;
         assert frame == stack[level];

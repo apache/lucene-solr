@@ -191,8 +191,7 @@ public final class Util {
             idx = low - 1;
           }
 
-          arc.arcIdx(idx - 1);
-          fst.readNextRealArc(arc, in);
+          fst.readArcByIndex(arc, in, idx);
           result.setIntAt(upto++, arc.label());
           output += arc.output();
 
@@ -934,20 +933,7 @@ public final class Util {
    */
   public static <T> Arc<T> readCeilArc(int label, FST<T> fst, Arc<T> follow, Arc<T> arc, BytesReader in) throws IOException {
     if (label == FST.END_LABEL) {
-      if (follow.isFinal()) {
-        if (follow.target() <= 0) {
-          arc.flags((byte) FST.BIT_LAST_ARC);
-        } else {
-          arc.flags((byte) 0);
-          // NOTE: nextArc is a node (not an address!) in this case:
-          arc.nextArc(follow.target());
-        }
-        arc.output(follow.nextFinalOutput());
-        arc.label(FST.END_LABEL);
-        return arc;
-      } else {
-        return null;
-      }
+      return FST.readEndArc(follow, arc);
     }
     if (!FST.targetHasArcs(follow)) {
       return null;
@@ -962,8 +948,7 @@ public final class Util {
         } else if (offset < 0) {
           return arc;
         } else {
-          arc.nextArc(arc.posArcsStart() - offset * arc.bytesPerArc());
-          return fst.readNextRealArc(arc, in);
+          return fst.readArcAtPosition(arc, in, arc.posArcsStart() - offset * arc.bytesPerArc());
         }
       }
       // Arcs are packed array -- use binary search to find
@@ -987,16 +972,14 @@ public final class Util {
         } else if (cmp > 0) {
           high = mid - 1;
         } else {
-          arc.arcIdx(mid - 1);
-          return fst.readNextRealArc(arc, in);
+          return fst.readArcByIndex(arc, in, mid);
         }
       }
       if (low == arc.numArcs()) {
         // DEAD END!
         return null;
       }
-      arc.arcIdx(high + 1);
-      return fst.readNextRealArc(arc, in );
+      return fst.readArcByIndex(arc, in , high + 1);
     }
 
     // Linear scan
