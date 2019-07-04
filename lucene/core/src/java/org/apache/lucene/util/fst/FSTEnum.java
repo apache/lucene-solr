@@ -24,7 +24,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 /** Can next() and advance() through the terms in an FST
  *
-  * @lucene.experimental
+ * @lucene.experimental
 */
 
 abstract class FSTEnum<T> {
@@ -207,36 +207,12 @@ abstract class FSTEnum<T> {
 
   private FST.Arc<T> doSeekCeilArrayPacked(final FST.Arc<T> arc, final int targetLabel, final FST.BytesReader in) throws IOException {
     // The array is packed -- use binary search to find the target.
-
-    int low = arc.arcIdx();
-    int high = arc.numArcs() -1;
-    int mid = 0;
-    //System.out.println("do arc array low=" + low + " high=" + high + " targetLabel=" + targetLabel);
-    boolean found = false;
-    while (low <= high) {
-      mid = (low + high) >>> 1;
-      in.setPosition(arc.posArcsStart());
-      in.skipBytes(arc.bytesPerArc() * mid + 1);
-      final int midLabel = fst.readLabel(in);
-      final int cmp = midLabel - targetLabel;
-      //System.out.println("  cycle low=" + low + " high=" + high + " mid=" + mid + " midLabel=" + midLabel + " cmp=" + cmp);
-      if (cmp < 0)
-        low = mid + 1;
-      else if (cmp > 0)
-        high = mid - 1;
-      else {
-        found = true;
-        break;
-      }
-    }
-
-    // NOTE: this code is dup'd w/ the code below (in
-    // the outer else clause):
-    if (found) {
+    int idx = Util.binarySearch(fst, arc, targetLabel);
+    if (idx >= 0) {
       // Match
-      fst.readArcByIndex(arc, in, mid);
-      assert arc.arcIdx() == mid;
-      assert arc.label() == targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel + " mid=" + mid;
+      fst.readArcByIndex(arc, in, idx);
+      assert arc.arcIdx() == idx;
+      assert arc.label() == targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel + " mid=" + idx;
       output[upto] = fst.outputs.add(output[upto-1], arc.output());
       if (targetLabel == FST.END_LABEL) {
         return null;
@@ -244,9 +220,11 @@ abstract class FSTEnum<T> {
       setCurrentLabel(arc.label());
       incr();
       return fst.readFirstTargetArc(arc, getArc(upto), fstReader);
-    } else if (low == arc.numArcs()) {
+    }
+    idx = -1 - idx;
+    if (idx == arc.numArcs()) {
       // Dead end
-      fst.readArcByIndex(arc, in, arc.numArcs() - 1);
+      fst.readArcByIndex(arc, in, idx - 1);
       assert arc.isLast();
       // Dead end (target is after the last arc);
       // rollback to last fork then push
@@ -265,7 +243,8 @@ abstract class FSTEnum<T> {
         upto--;
       }
     } else {
-      fst.readArcByIndex(arc, in, low);
+      // Ceiling - arc with least higher label
+      fst.readArcByIndex(arc, in, idx);
       assert arc.label() > targetLabel;
       pushFirst();
       return null;
@@ -314,7 +293,7 @@ abstract class FSTEnum<T> {
   // Todo: should we return a status here (SEEK_FOUND / SEEK_NOT_FOUND /
   // SEEK_END)?  saves the eq check above?
   /** Seeks to largest term that's &lt;= target. */
-  protected void doSeekFloor() throws IOException {
+  void doSeekFloor() throws IOException {
 
     // TODO: possibly caller could/should provide common
     // prefix length?  ie this work may be redundant if
@@ -417,37 +396,14 @@ abstract class FSTEnum<T> {
 
   private FST.Arc<T> doSeekFloorArrayPacked(FST.Arc<T> arc, int targetLabel, final FST.BytesReader in) throws IOException {
     // Arcs are fixed array -- use binary search to find the target.
+    int idx = Util.binarySearch(fst, arc, targetLabel);
 
-    int low = arc.arcIdx();
-    int high = arc.numArcs() -1;
-    int mid = 0;
-    //System.out.println("do arc array low=" + low + " high=" + high + " targetLabel=" + targetLabel);
-    boolean found = false;
-    while (low <= high) {
-      mid = (low + high) >>> 1;
-      in.setPosition(arc.posArcsStart());
-      in.skipBytes(arc.bytesPerArc() * mid + 1);
-      final int midLabel = fst.readLabel(in);
-      final int cmp = midLabel - targetLabel;
-      //System.out.println("  cycle low=" + low + " high=" + high + " mid=" + mid + " midLabel=" + midLabel + " cmp=" + cmp);
-      if (cmp < 0) {
-        low = mid + 1;
-      } else if (cmp > 0) {
-        high = mid - 1;
-      } else {
-        found = true;
-        break;
-      }
-    }
-
-    // NOTE: this code is dup'd w/ the code below (in
-    // the outer else clause):
-    if (found) {
+    if (idx >= 0) {
       // Match -- recurse
-      //System.out.println("  match!  arcIdx=" + mid);
-      fst.readArcByIndex(arc, in, mid);
-      assert arc.arcIdx() == mid;
-      assert arc.label() == targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel + " mid=" + mid;
+      //System.out.println("  match!  arcIdx=" + idx);
+      fst.readArcByIndex(arc, in, idx);
+      assert arc.arcIdx() == idx;
+      assert arc.label() == targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel + " mid=" + idx;
       output[upto] = fst.outputs.add(output[upto-1], arc.output());
       if (targetLabel == FST.END_LABEL) {
         return null;
@@ -455,7 +411,7 @@ abstract class FSTEnum<T> {
       setCurrentLabel(arc.label());
       incr();
       return fst.readFirstTargetArc(arc, getArc(upto), fstReader);
-    } else if (high == -1) {
+    } else if (idx == -1) {
       //System.out.println("  before first");
       // Very first arc is after our target
       // TODO: if each arc could somehow read the arc just
@@ -483,8 +439,8 @@ abstract class FSTEnum<T> {
         arc = getArc(upto);
       }
     } else {
-      // There is a floor arc:
-      fst.readArcByIndex(arc, in, high);
+      // There is a floor arc; idx will be {@code -1 - (floor + 1)}.
+      fst.readArcByIndex(arc, in, -2 - idx);
       assert arc.isLast() || fst.readNextArcLabel(arc, in) > targetLabel;
       assert arc.label() < targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel;
       pushLast();
@@ -652,4 +608,5 @@ abstract class FSTEnum<T> {
     }
     return arcs[idx];
   }
+
 }
