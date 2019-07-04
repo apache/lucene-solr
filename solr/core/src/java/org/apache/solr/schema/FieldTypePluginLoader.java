@@ -267,7 +267,6 @@ public final class FieldTypePluginLoader
         if (Objects.nonNull(className)) {
           factory = loader.newInstance(className, CharFilterFactory.class, getDefaultPackages(), new Class[]{Map.class}, new Object[]{params});
         } else {
-          params.remove("class");
           factory = CharFilterFactory.forName(name, params);
         }
         factory.setExplicitLuceneMatchVersion(null != configuredVersion);
