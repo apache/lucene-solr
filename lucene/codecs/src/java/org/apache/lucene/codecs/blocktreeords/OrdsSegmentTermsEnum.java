@@ -1115,10 +1115,7 @@ public final class OrdsSegmentTermsEnum extends BaseTermsEnum {
             }
           }
 
-          if (found) {
-              // Keep recursing
-              arc.arcIdx(mid - 1);
-          } else {
+          if (found == false) {
             result.setLength(bestUpto);
             InputOutput io = new InputOutput();
             io.input = result.get();
@@ -1127,9 +1124,8 @@ public final class OrdsSegmentTermsEnum extends BaseTermsEnum {
             return io;
           }
 
-          fr.index.readNextRealArc(arc, fstReader);
-
           // Recurse on this arc:
+          fr.index.readArcByIndex(arc, fstReader, mid);
           result.setIntAt(upto++, arc.label());
           output = OrdsBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output());
 

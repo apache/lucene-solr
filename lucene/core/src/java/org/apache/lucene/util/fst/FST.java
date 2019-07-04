@@ -186,7 +186,7 @@ public final class FST<T> implements Accountable {
     }
     
     boolean flag(int flag) {
-      return FST.flag(flags(), flag);
+      return FST.flag(flags, flag);
     }
 
     public boolean isLast() {
@@ -230,16 +230,8 @@ public final class FST<T> implements Accountable {
       return label;
     }
 
-    public void label(int label) {
-      this.label = label;
-    }
-
     public T output() {
       return output;
-    }
-
-    public void output(T output) { 
-      this.output = output;
     }
 
     /** To node (ord or address) */
@@ -251,28 +243,12 @@ public final class FST<T> implements Accountable {
       return flags;
     }
 
-    public void flags(byte flags) {
-      this.flags = flags;
-    }
-
     public T nextFinalOutput() {
       return nextFinalOutput;
     }
 
-    public void nextFinalOutput(T output) {
-      nextFinalOutput = output;
-    }
-
     long nextArc() {
       return nextArc;
-    }
-
-    /**
-     * Set the position of the next arc to read
-     * @param nextArc the position to set
-     */
-    public void nextArc(long nextArc) {
-      this.nextArc = nextArc;
     }
 
     /** Where the first arc in the array starts; only valid if
@@ -296,14 +272,6 @@ public final class FST<T> implements Accountable {
      */
     public int arcIdx() {
       return arcIdx;
-    }
-
-    /**
-     * Set the arcIdx
-     * @param idx the value to set
-     */
-    public void arcIdx(int idx) {
-      arcIdx = idx;
     }
 
     /** How many arc, if bytesPerArc == 0. Otherwise, the size of the arc array. If the array is
@@ -818,7 +786,7 @@ public final class FST<T> implements Accountable {
       arc.flags = BIT_FINAL_ARC | BIT_LAST_ARC;
       arc.nextFinalOutput = emptyOutput;
       if (emptyOutput != NO_OUTPUT) {
-        arc.flags |= BIT_ARC_HAS_FINAL_OUTPUT;
+        arc.flags = (byte) (arc.flags() | BIT_ARC_HAS_FINAL_OUTPUT);
       }
     } else {
       arc.flags = BIT_LAST_ARC;
@@ -1033,6 +1001,27 @@ public final class FST<T> implements Accountable {
     return readLabel(in);
   }
 
+  public Arc<T> readArcAtPosition(Arc<T> arc, final BytesReader in, long pos) throws IOException {
+    in.setPosition(pos);
+    arc.flags = in.readByte();
+    arc.nextArc = pos;
+    while (flag(arc.flags(), BIT_MISSING_ARC)) {
+      // skip empty arcs
+      arc.nextArc -= arc.bytesPerArc();
+      in.skipBytes(arc.bytesPerArc() - 1);
+      arc.flags = in.readByte();
+    }
+    return readArc(arc, in);
+  }
+
+  public Arc<T> readArcByIndex(Arc<T> arc, final BytesReader in, int idx) throws IOException {
+    arc.arcIdx = idx;
+    assert arc.arcIdx() < arc.numArcs();
+    in.setPosition(arc.posArcsStart() - arc.arcIdx() * arc.bytesPerArc());
+    arc.flags = in.readByte();
+    return readArc(arc, in);
+  }
+
   /** Never returns null, but you should never call this if
    *  arc.isLast() is true. */
   public Arc<T> readNextRealArc(Arc<T> arc, final BytesReader in) throws IOException {
@@ -1064,7 +1053,10 @@ public final class FST<T> implements Accountable {
       in.setPosition(arc.nextArc());
       arc.flags = in.readByte();
     }
+    return readArc(arc, in);
+  }
 
+  private Arc<T> readArc(Arc<T> arc, BytesReader in) throws IOException {
     arc.label = readLabel(in);
 
     if (arc.flag(BIT_ARC_HAS_OUTPUT)) {
@@ -1116,6 +1108,23 @@ public final class FST<T> implements Accountable {
       }
     }
     return arc;
+  }
+
+  static <T> Arc<T> readEndArc(Arc<T> follow, Arc<T> arc) {
+    if (follow.isFinal()) {
+      if (follow.target() <= 0) {
+        arc.flags = FST.BIT_LAST_ARC;
+      } else {
+        arc.flags = 0;
+        // NOTE: nextArc is a node (not an address!) in this case:
+        arc.nextArc = follow.target();
+      }
+      arc.output = follow.nextFinalOutput();
+      arc.label = FST.END_LABEL;
+      return arc;
+    } else {
+      return null;
+    }
   }
 
   // LUCENE-5152: called only from asserts, to validate that the
