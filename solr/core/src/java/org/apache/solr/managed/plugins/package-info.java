@@ -14,10 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.managed;
 
 /**
- *
+ * Implementations of {@link org.apache.solr.managed.ResourceManagerPlugin}.
  */
-public abstract class AbstractResourceManagerPlugin implements ResourceManagerPlugin {
-}
+package org.apache.solr.managed.plugins;
