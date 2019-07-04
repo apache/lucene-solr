@@ -1109,8 +1109,10 @@ public abstract class FieldType extends FieldProperties {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<>();
         for (CharFilterFactory charFilterFactory : charFilterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
-          props.add(CLASS_NAME, charFilterFactory.getClassArg());
           factoryArgs = charFilterFactory.getOriginalArgs();
+          if (!factoryArgs.containsKey("name")) {
+            props.add(CLASS_NAME, charFilterFactory.getClassArg());
+          }
           if (null != factoryArgs) {
             for (String key : factoryArgs.keySet()) {
               if ( ! CLASS_NAME.equals(key)) {
@@ -1131,8 +1133,10 @@ public abstract class FieldType extends FieldProperties {
 
       SimpleOrderedMap<Object> tokenizerProps = new SimpleOrderedMap<>();
       TokenizerFactory tokenizerFactory = tokenizerChain.getTokenizerFactory();
-      tokenizerProps.add(CLASS_NAME, tokenizerFactory.getClassArg());
       factoryArgs = tokenizerFactory.getOriginalArgs();
+      if (!factoryArgs.containsKey("name")) {
+        tokenizerProps.add(CLASS_NAME, tokenizerFactory.getClassArg());
+      }
       if (null != factoryArgs) {
         for (String key : factoryArgs.keySet()) {
           if ( ! CLASS_NAME.equals(key)) {
@@ -1153,8 +1157,10 @@ public abstract class FieldType extends FieldProperties {
         List<SimpleOrderedMap<Object>> filterProps = new ArrayList<>();
         for (TokenFilterFactory filterFactory : filterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
-          props.add(CLASS_NAME, filterFactory.getClassArg());
           factoryArgs = filterFactory.getOriginalArgs();
+          if (!factoryArgs.containsKey("name")) {
+            props.add(CLASS_NAME, filterFactory.getClassArg());
+          }
           if (null != factoryArgs) {
             for (String key : factoryArgs.keySet()) {
               if ( ! CLASS_NAME.equals(key)) {
