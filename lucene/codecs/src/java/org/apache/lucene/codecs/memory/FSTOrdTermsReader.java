@@ -621,8 +621,8 @@ public class FSTOrdTermsReader extends FieldsProducer {
       @Override
       void decodeStats() throws IOException {
         final FST.Arc<Long> arc = topFrame().arc;
-        assert arc.nextFinalOutput == fstOutputs.getNoOutput();
-        ord = arc.output;
+        assert arc.nextFinalOutput() == fstOutputs.getNoOutput();
+        ord = arc.output();
         super.decodeStats();
       }
 
@@ -675,7 +675,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
           frame = newFrame();
           label = target.bytes[upto] & 0xff;
           frame = loadCeilFrame(label, topFrame(), frame);
-          if (frame == null || frame.arc.label != label) {
+          if (frame == null || frame.arc.label() != label) {
             break;
           }
           assert isValid(frame);  // target must be fetched from automaton
@@ -703,15 +703,15 @@ public class FSTOrdTermsReader extends FieldsProducer {
       }
 
       /** Virtual frame, never pop */
-      Frame loadVirtualFrame(Frame frame) throws IOException {
-        frame.arc.output = fstOutputs.getNoOutput();
-        frame.arc.nextFinalOutput = fstOutputs.getNoOutput();
+      Frame loadVirtualFrame(Frame frame) {
+        frame.arc.output(fstOutputs.getNoOutput());
+        frame.arc.nextFinalOutput(fstOutputs.getNoOutput());
         frame.state = -1;
         return frame;
       }
 
       /** Load frame for start arc(node) on fst */
-      Frame loadFirstFrame(Frame frame) throws IOException {
+      Frame loadFirstFrame(Frame frame) {
         frame.arc = fst.getFirstArc(frame.arc);
         frame.state = 0;
         return frame;
@@ -722,8 +722,8 @@ public class FSTOrdTermsReader extends FieldsProducer {
         if (!canGrow(top)) {
           return null;
         }
-        frame.arc = fst.readFirstRealTargetArc(top.arc.target, frame.arc, fstReader);
-        frame.state = fsa.step(top.state, frame.arc.label);
+        frame.arc = fst.readFirstRealTargetArc(top.arc.target(), frame.arc, fstReader);
+        frame.state = fsa.step(top.state, frame.arc.label());
         //if (TEST) System.out.println(" loadExpand frame="+frame);
         if (frame.state == -1) {
           return loadNextFrame(top, frame);
@@ -738,7 +738,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
         }
         while (!frame.arc.isLast()) {
           frame.arc = fst.readNextRealArc(frame.arc, fstReader);
-          frame.state = fsa.step(top.state, frame.arc.label);
+          frame.state = fsa.step(top.state, frame.arc.label());
           if (frame.state != -1) {
             break;
           }
@@ -758,7 +758,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
         if (arc == null) {
           return null;
         }
-        frame.state = fsa.step(top.state, arc.label);
+        frame.state = fsa.step(top.state, arc.label());
         //if (TEST) System.out.println(" loadCeil frame="+frame);
         if (frame.state == -1) {
           return loadNextFrame(top, frame);
@@ -781,8 +781,8 @@ public class FSTOrdTermsReader extends FieldsProducer {
 
       void pushFrame(Frame frame) {
         final FST.Arc<Long> arc = frame.arc;
-        arc.output = fstOutputs.add(topFrame().arc.output, arc.output);
-        term = grow(arc.label);
+        arc.output(fstOutputs.add(topFrame().arc.output(), arc.output()));
+        term = grow(arc.label());
         level++;
         assert frame == stack[level];
       }
@@ -836,7 +836,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
     queue.add(startArc);
     while (!queue.isEmpty()) {
       final FST.Arc<T> arc = queue.remove(0);
-      final long node = arc.target;
+      final long node = arc.target();
       //System.out.println(arc);
       if (FST.targetHasArcs(arc) && !seen.get((int) node)) {
         seen.set((int) node);

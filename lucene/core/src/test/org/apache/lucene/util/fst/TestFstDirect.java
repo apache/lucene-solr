@@ -79,9 +79,9 @@ public class TestFstDirect extends LuceneTestCase {
     BytesRefFSTEnum<BytesRef> fstEnum = new BytesRefFSTEnum<>(fst);
     int sparseArrayArcCount = 0, directArrayArcCount = 0, listArcCount = 0;
     while(fstEnum.next() != null) {
-      if (fstEnum.arcs[fstEnum.upto].bytesPerArc == 0) {
+      if (fstEnum.arcs[fstEnum.upto].bytesPerArc() == 0) {
         listArcCount ++;
-      } else if (fstEnum.arcs[fstEnum.upto].arcIdx == Integer.MIN_VALUE) {
+      } else if (fstEnum.arcs[fstEnum.upto].arcIdx() == Integer.MIN_VALUE) {
         directArrayArcCount ++;
       } else {
         sparseArrayArcCount ++;
