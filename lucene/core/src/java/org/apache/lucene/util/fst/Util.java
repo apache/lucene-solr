@@ -951,35 +951,17 @@ public final class Util {
           return fst.readArcAtPosition(arc, in, arc.posArcsStart() - offset * arc.bytesPerArc());
         }
       }
-      // Arcs are packed array -- use binary search to find
-      // the target.
-
-      int low = arc.arcIdx();
-      int mid = 0;
-      int high = arc.numArcs() - 1;
-      // System.out.println("do arc array low=" + low + " high=" + high +
-      // " targetLabel=" + targetLabel);
-      while (low <= high) {
-        mid = (low + high) >>> 1;
-        in.setPosition(arc.posArcsStart());
-        in.skipBytes(arc.bytesPerArc() * mid + 1);
-        final int midLabel = fst.readLabel(in);
-        final int cmp = midLabel - label;
-        // System.out.println("  cycle low=" + low + " high=" + high + " mid=" +
-        // mid + " midLabel=" + midLabel + " cmp=" + cmp);
-        if (cmp < 0) {
-          low = mid + 1;
-        } else if (cmp > 0) {
-          high = mid - 1;
-        } else {
-          return fst.readArcByIndex(arc, in, mid);
-        }
+      // Arcs are packed array -- use binary search to find the target.
+      int idx = binarySearch(fst, arc, label);
+      if (idx >= 0) {
+        return fst.readArcByIndex(arc, in, idx);
       }
-      if (low == arc.numArcs()) {
+      idx = -1 - idx;
+      if (idx == arc.numArcs()) {
         // DEAD END!
         return null;
       }
-      return fst.readArcByIndex(arc, in , high + 1);
+      return fst.readArcByIndex(arc, in , idx);
     }
 
     // Linear scan
@@ -1001,4 +983,36 @@ public final class Util {
     }
   }
 
+  /**
+   * Perform a binary search of Arcs encoded as a packed array
+   * @param fst the FST from which to read
+   * @param arc the starting arc; sibling arcs greater than this will be searched. Usually the first arc in the array.
+   * @param targetLabel the label to search for
+   * @param <T> the output type of the FST
+   * @return the index of the Arc having the target label, or if no Arc has the matching label, {@code -1 - idx)},
+   * where {@code idx} is the index of the Arc with the next highest label, or the total number of arcs
+   * if the target label exceeds the maximum.
+   * @throws IOException when the FST reader does
+   */
+  static <T> int binarySearch(FST<T> fst, FST.Arc<T> arc, int targetLabel) throws IOException {
+    BytesReader in = fst.getBytesReader();
+    int low = arc.arcIdx();
+    int mid = 0;
+    int high = arc.numArcs() -1;
+    while (low <= high) {
+      mid = (low + high) >>> 1;
+      in.setPosition(arc.posArcsStart());
+      in.skipBytes(arc.bytesPerArc() * mid + 1);
+      final int midLabel = fst.readLabel(in);
+      final int cmp = midLabel - targetLabel;
+      if (cmp < 0) {
+        low = mid + 1;
+      } else if (cmp > 0) {
+        high = mid - 1;
+      } else {
+        return mid;
+      }
+    }
+    return -1 - low;
+  }
 }
