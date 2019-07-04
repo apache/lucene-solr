@@ -117,7 +117,7 @@ public class TestBKDRadixSort extends LuceneTestCase {
   private void verifySort(HeapPointWriter points, int dataDimensions, int indexDimensions, int start, int end, int bytesPerDim) throws IOException{
     int packedBytesLength = dataDimensions * bytesPerDim;
     Directory dir = newDirectory();
-    BKDRadixSelector radixSelector = new BKDRadixSelector(dataDimensions, bytesPerDim, 1000, dir, "test");
+    BKDRadixSelector radixSelector = new BKDRadixSelector(dataDimensions, indexDimensions, bytesPerDim, 1000, dir, "test");
     // we check for each dimension
     for (int splitDim = 0; splitDim < dataDimensions; splitDim++) {
       radixSelector.heapRadixSort(points, start, end, splitDim, getRandomCommonPrefix(points, start, end, bytesPerDim, splitDim));
@@ -130,6 +130,11 @@ public class TestBKDRadixSort extends LuceneTestCase {
         BytesRef value = pointValue.packedValue();
         int cmp = FutureArrays.compareUnsigned(value.bytes, value.offset + dimOffset, value.offset + dimOffset + bytesPerDim, previous, dimOffset, dimOffset + bytesPerDim);
         assertTrue(cmp >= 0);
+        if (cmp == 0) {
+          int dataOffset = indexDimensions * bytesPerDim;
+          cmp = FutureArrays.compareUnsigned(value.bytes, value.offset + dataOffset, value.offset + packedBytesLength, previous, dataOffset, packedBytesLength);
+          assertTrue(cmp >= 0);
+        }
         if (cmp == 0) {
           assertTrue(pointValue.docID() >= previousDocId);
         }

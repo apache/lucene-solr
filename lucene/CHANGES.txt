@@ -138,6 +138,9 @@ Optimizations
 * LUCENE-8901: Load frequencies lazily only when needed in BlockDocsEnum and
   BlockImpactsEverythingEnum (Mayya Sharipova).
 
+* LUCENE-8888: Optimize distribution of points with data dimensions in
+  BKD tree leaves. (Ignacio Vera)
+
 Test Framework
 
 * LUCENE-8825: CheckHits now display the shard index in case of mismatch
