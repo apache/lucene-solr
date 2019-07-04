@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -45,8 +47,10 @@ import java.util.concurrent.TimeUnit;
  * @see org.apache.solr.search.SolrCache
  * @since solr 1.4
  */
-public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> {
+public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>, Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FastLRUCache.class);
 
   // contains the statistics objects for all open caches of the same type
   private List<ConcurrentLRUCache.Stats> statsList;
@@ -62,8 +66,6 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
-  private SolrMetricManager metricManager;
-  private String registryName;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -101,7 +103,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
     str = (String) args.get("maxRamMB");
     this.maxRamBytes = str == null ? Long.MAX_VALUE : (long) (Double.parseDouble(str) * 1024L * 1024L);
     if (maxRamBytes != Long.MAX_VALUE)  {
-      int ramLowerWatermark = (int) (maxRamBytes * 0.8);
+      long ramLowerWatermark = Math.round(maxRamBytes * 0.8);
       description = generateDescription(maxRamBytes, ramLowerWatermark, newThread);
       cache = new ConcurrentLRUCache<K, V>(ramLowerWatermark, maxRamBytes, newThread, null);
     } else  {
@@ -229,8 +231,6 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    this.metricManager = manager;
-    this.registryName = registryName;
     registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
@@ -300,6 +300,12 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> 
     return name() + (cacheMap != null ? cacheMap.getValue().toString() : "");
   }
 
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES_USED +
+        RamUsageEstimator.sizeOfObject(cache) +
+        RamUsageEstimator.sizeOfObject(statsList);
+  }
 }
 
 

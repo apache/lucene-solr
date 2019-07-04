@@ -31,6 +31,10 @@ Improvements
   multiple threads, IndexSearcher now groups small segments together, up to
   250k docs per slice. (Atri Sharma via Adrien Grand)
 
+* LUCENE-8857: Introduce Custom Tiebreakers in TopDocs.merge for tie breaking on
+  docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
+  indices (Atri Sharma, Adrien Grand, Simon Willnauer)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -167,6 +171,9 @@ Optimizations
 
 * LUCENE-8896: Override default implementation of IntersectVisitor#visit(DocIDSetBuilder, byte[])
   for several queries. (Ignacio Vera)
+
+* LUCENE-8901: Load frequencies lazily only when needed in BlockDocsEnum and
+  BlockImpactsEverythingEnum (Mayya Sharipova).
 
 Test Framework
 

@@ -1306,7 +1306,7 @@ public class QueryComponent extends SearchComponent
     for (String field : groupingSpec.getFields()) {
       topsGroupsActionBuilder.addCommandField(new SearchGroupsFieldCommand.Builder()
           .setField(schema.getField(field))
-          .setGroupSort(groupingSpec.getGroupSort())
+          .setGroupSort(groupingSpec.getGroupSortSpec().getSort())
           .setTopNGroups(cmd.getOffset() + cmd.getLen())
           .setIncludeGroupCount(groupingSpec.isIncludeGroupCount())
           .build()
@@ -1342,7 +1342,8 @@ public class QueryComponent extends SearchComponent
         .setTruncateGroups(groupingSpec.isTruncateGroups() && groupingSpec.getFields().length > 0)
         .setSearcher(searcher);
 
-    int docsToCollect = Grouping.getMax(groupingSpec.getWithinGroupOffset(), groupingSpec.getWithinGroupLimit(), searcher.maxDoc());
+    SortSpec withinGroupSortSpec = groupingSpec.getWithinGroupSortSpec();
+    int docsToCollect = Grouping.getMax(withinGroupSortSpec.getOffset(), withinGroupSortSpec.getCount(), searcher.maxDoc());
     docsToCollect = Math.max(docsToCollect, 1);
 
     for (String field : groupingSpec.getFields()) {
@@ -1367,8 +1368,8 @@ public class QueryComponent extends SearchComponent
           new TopGroupsFieldCommand.Builder()
               .setQuery(cmd.getQuery())
               .setField(schemaField)
-              .setGroupSort(groupingSpec.getGroupSort())
-              .setSortWithinGroup(groupingSpec.getSortWithinGroup())
+              .setGroupSort(groupingSpec.getGroupSortSpec().getSort())
+              .setSortWithinGroup(withinGroupSortSpec.getSort())
               .setFirstPhaseGroups(topGroups)
               .setMaxDocPerGroup(docsToCollect)
               .setNeedScores(needScores)
@@ -1420,13 +1421,15 @@ public class QueryComponent extends SearchComponent
     int limitDefault = cmd.getLen(); // this is normally from "rows"
     Grouping grouping =
         new Grouping(searcher, result, cmd, cacheSecondPassSearch, maxDocsPercentageToCache, groupingSpec.isMain());
-    grouping.setGroupSort(groupingSpec.getGroupSort())
-        .setWithinGroupSort(groupingSpec.getSortWithinGroup())
+
+    SortSpec withinGroupSortSpec = groupingSpec.getWithinGroupSortSpec();
+    grouping.setGroupSort(groupingSpec.getGroupSortSpec().getSort())
+        .setWithinGroupSort(withinGroupSortSpec.getSort())
         .setDefaultFormat(groupingSpec.getResponseFormat())
         .setLimitDefault(limitDefault)
         .setDefaultTotalCount(defaultTotalCount)
-        .setDocsPerGroupDefault(groupingSpec.getWithinGroupLimit())
-        .setGroupOffsetDefault(groupingSpec.getWithinGroupOffset())
+        .setDocsPerGroupDefault(withinGroupSortSpec.getCount())
+        .setGroupOffsetDefault(withinGroupSortSpec.getOffset())
         .setGetGroupedDocSet(groupingSpec.isTruncateGroups());
 
     if (groupingSpec.getFields() != null) {

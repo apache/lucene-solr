@@ -55,6 +55,8 @@ Upgrade Notes
   regardless of distrib, terms.list, terms.ttf parameters. This affects JSON based response format but not others
   (Munendra S N, Mikhail Khludnev)
 
+* SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -92,6 +94,9 @@ Upgrade Notes
   collections with the old format will not be altered and will continue to work, but any new TRA's or new collections
   for existing TRA's will use the new format. Solr will handle this invisibly, but any external code that attempted to
   predict collection names in TRA's will probably need adjustment.
+
+* SOLR-13507: Support for "addr" parameter from the "/solr/admin/zookeeper" endpoint has now been removed and will no
+  longer be supported.
 
 New Features
 ----------------------
@@ -150,6 +155,11 @@ New Features
 
 * SOLR-12554: Expose IndexWriterConfig's ramPerThreadHardLimitMB through solrconfig.xml (Ishan Chattopadhyaya, Munendra S N)
 
+* SOLR-13589: Allow zplot to visualize 2D clusters and convex hulls (Joel Bernstein)
+
+* SOLR-13602 SOLR-13588: Add a field type for Estonian language to default managed_schema,
+  document about Estonian language analysis in Solr Ref Guide (Tomoko Uchida)
+
 Bug Fixes
 ----------------------
 
@@ -202,6 +212,11 @@ Bug Fixes
 
 * SOLR-13404: Support group.query in multi-shard environment when group.main=true or group.format=simple (Munendra S N)
 
+Improvements
+----------------------
+
+* SOLR-13003: Query Result Cache does not honour maxRamBytes parameter. (ab, Brian Ecker)
+
 Other Changes
 ----------------------
 
@@ -230,6 +245,10 @@ Other Changes
 
 * SOLR-12364: Add test cases for edismax boost (David Smiley, Munendra S N)
 
+* SOLR-13603: Remove usage of GroupingSpecification's deprecated methods (Munendra S N)
+
+* SOLR-13507: Remove support for "addr" parameter from the "/solr/admin/zookeeper" endpoint. (janhoy, Anshum Gupta)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -254,6 +273,15 @@ Bug Fixes
 * SOLR-13566: REINDEXCOLLECTION does not work with (basic) authentication. (Colvin Cowie, ab)
 
 * SOLR-13159: Fix atomic update encoding issue for UUID, enum, bool, and binary fields (Thomas Wockinger via Jason Gerlowski)
+
+* SOLR-13583: Impossible to delete a collection with the same name as an existing alias. This fixes also a bug in
+  REINDEXCOLLECTION when used with removeSource=true which could lead to a data loss. (ab)
+
+Improvements
+----------------------
+
+* SOLR-13158: DataImportHandler: Added enable.dih.dataConfigParam system property to toggle whether the dataConfig param
+  is permitted. (David Smiley, janhoy, Tomás Fernández Löbbe)
 
 ==================  8.1.1 ==================
 

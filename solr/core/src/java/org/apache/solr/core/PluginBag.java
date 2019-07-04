@@ -519,7 +519,7 @@ public class PluginBag<T> implements AutoCloseable {
     }
 
     public static boolean isEnabled() {
-      return "true".equals(System.getProperty("enable.runtime.lib"));
+      return Boolean.getBoolean("enable.runtime.lib");
     }
 
     public String getName() {
