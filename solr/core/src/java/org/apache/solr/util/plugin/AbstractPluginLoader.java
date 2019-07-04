@@ -19,6 +19,7 @@ package org.apache.solr.util.plugin;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -85,7 +86,7 @@ public abstract class AbstractPluginLoader<T>
    * @param node - the XML node defining this plugin
    */
   @SuppressWarnings("unchecked")
-  protected T create( SolrResourceLoader loader, String name, String className, Node node ) throws Exception
+  protected T create( SolrResourceLoader loader, String name, String className, String spiName, Node node ) throws Exception
   {
     return loader.newInstance(className, pluginClassType, getDefaultPackages());
   }
@@ -146,10 +147,15 @@ public abstract class AbstractPluginLoader<T>
         String name = null;
         try {
           name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
-          String className  = DOMUtil.getAttr(node,"class", type);
+          String className  = DOMUtil.getAttr(node,"class", null);
+          String spiName = DOMUtil.getAttr(node, "spi", null);
           String defaultStr = DOMUtil.getAttr(node,"default", null );
-            
-          T plugin = create(loader, name, className, node );
+
+          if (Objects.isNull(className) && Objects.isNull(spiName)) {
+            throw new RuntimeException(type + ": missing mandatory attribute 'class' or 'spi'");
+          }
+
+          T plugin = create(loader, name, className, spiName, node );
           log.debug("created " + ((name != null) ? name : "") + ": " + plugin.getClass().getName());
           
           // Either initialize now or wait till everything has been registered
@@ -225,7 +231,7 @@ public abstract class AbstractPluginLoader<T>
     try {
       String name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
       String className = DOMUtil.getAttr(node, "class", type);
-      plugin = create(loader, name, className, node);
+      plugin = create(loader, name, className, null, node);
       log.debug("created " + name + ": " + plugin.getClass().getName());
 
       // Either initialize now or wait till everything has been registered
