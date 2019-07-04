@@ -415,7 +415,7 @@ public class FSTTermsReader extends FieldsProducer {
       /* True when there is pending term when calling next() */
       boolean pending;
 
-      /* stack to record how current term is constructed, 
+      /* stack to record how current term is constructed,
        * used to accumulate metadata or rewind term:
        *   level == term.length + 1,
        *         == 0 when term is null */
@@ -501,19 +501,19 @@ public class FSTTermsReader extends FieldsProducer {
       }
 
       /** Lazily accumulate meta data, when we got a accepted term */
-      void loadMetaData() throws IOException {
+      void loadMetaData() {
         FST.Arc<FSTTermOutputs.TermData> last, next;
         last = stack[metaUpto].fstArc;
         while (metaUpto != level) {
           metaUpto++;
           next = stack[metaUpto].fstArc;
-          next.output = fstOutputs.add(next.output, last.output);
+          next.output(fstOutputs.add(next.output(), last.output()));
           last = next;
         }
         if (last.isFinal()) {
-          meta = fstOutputs.add(last.output, last.nextFinalOutput);
+          meta = fstOutputs.add(last.output(), last.nextFinalOutput());
         } else {
-          meta = last.output;
+          meta = last.output();
         }
         state.docFreq = meta.docFreq;
         state.totalTermFreq = meta.totalTermFreq;
@@ -575,7 +575,7 @@ public class FSTTermsReader extends FieldsProducer {
           frame = newFrame();
           label = target.bytes[upto] & 0xff;
           frame = loadCeilFrame(label, topFrame(), frame);
-          if (frame == null || frame.fstArc.label != label) {
+          if (frame == null || frame.fstArc.label() != label) {
             break;
           }
           assert isValid(frame);  // target must be fetched from automaton
@@ -603,9 +603,9 @@ public class FSTTermsReader extends FieldsProducer {
       }
 
       /** Virtual frame, never pop */
-      Frame loadVirtualFrame(Frame frame) throws IOException {
-        frame.fstArc.output = fstOutputs.getNoOutput();
-        frame.fstArc.nextFinalOutput = fstOutputs.getNoOutput();
+      Frame loadVirtualFrame(Frame frame) {
+        frame.fstArc.output(fstOutputs.getNoOutput());
+        frame.fstArc.nextFinalOutput(fstOutputs.getNoOutput());
         frame.fsaState = -1;
         return frame;
       }
@@ -622,8 +622,8 @@ public class FSTTermsReader extends FieldsProducer {
         if (!canGrow(top)) {
           return null;
         }
-        frame.fstArc = fst.readFirstRealTargetArc(top.fstArc.target, frame.fstArc, fstReader);
-        frame.fsaState = fsa.step(top.fsaState, frame.fstArc.label);
+        frame.fstArc = fst.readFirstRealTargetArc(top.fstArc.target(), frame.fstArc, fstReader);
+        frame.fsaState = fsa.step(top.fsaState, frame.fstArc.label());
         //if (TEST) System.out.println(" loadExpand frame="+frame);
         if (frame.fsaState == -1) {
           return loadNextFrame(top, frame);
@@ -638,7 +638,7 @@ public class FSTTermsReader extends FieldsProducer {
         }
         while (!frame.fstArc.isLast()) {
           frame.fstArc = fst.readNextRealArc(frame.fstArc, fstReader);
-          frame.fsaState = fsa.step(top.fsaState, frame.fstArc.label);
+          frame.fsaState = fsa.step(top.fsaState, frame.fstArc.label());
           if (frame.fsaState != -1) {
             break;
           }
@@ -658,7 +658,7 @@ public class FSTTermsReader extends FieldsProducer {
         if (arc == null) {
           return null;
         }
-        frame.fsaState = fsa.step(top.fsaState, arc.label);
+        frame.fsaState = fsa.step(top.fsaState, arc.label());
         //if (TEST) System.out.println(" loadCeil frame="+frame);
         if (frame.fsaState == -1) {
           return loadNextFrame(top, frame);
@@ -680,7 +680,7 @@ public class FSTTermsReader extends FieldsProducer {
       }
 
       void pushFrame(Frame frame) {
-        term = grow(frame.fstArc.label);
+        term = grow(frame.fstArc.label());
         level++;
         //if (TEST) System.out.println("  term=" + term + " level=" + level);
       }
@@ -737,7 +737,7 @@ public class FSTTermsReader extends FieldsProducer {
     queue.add(startArc);
     while (!queue.isEmpty()) {
       final FST.Arc<T> arc = queue.remove(0);
-      final long node = arc.target;
+      final long node = arc.target();
       //System.out.println(arc);
       if (FST.targetHasArcs(arc) && !seen.get((int) node)) {
         seen.set((int) node);

@@ -800,12 +800,12 @@ public final class JapaneseTokenizer extends Tokenizer {
           if (userFST.findTargetArc(ch, arc, arc, posAhead == posData.pos, userFSTReader) == null) {
             break;
           }
-          output += arc.output.intValue();
+          output += arc.output().intValue();
           if (arc.isFinal()) {
             if (VERBOSE) {
               System.out.println("    USER word " + new String(buffer.get(pos, posAhead - pos + 1)) + " toPos=" + (posAhead + 1));
             }
-            add(userDictionary, posData, posAhead+1, output + arc.nextFinalOutput.intValue(), Type.USER, false);
+            add(userDictionary, posData, posAhead+1, output + arc.nextFinalOutput().intValue(), Type.USER, false);
             anyMatches = true;
           }
         }
@@ -831,7 +831,7 @@ public final class JapaneseTokenizer extends Tokenizer {
             break;
           }
 
-          output += arc.output.intValue();
+          output += arc.output().intValue();
 
           // Optimization: for known words that are too-long
           // (compound), we should pre-compute the 2nd
@@ -840,7 +840,7 @@ public final class JapaneseTokenizer extends Tokenizer {
           // match is found.
 
           if (arc.isFinal()) {
-            dictionary.lookupWordIds(output + arc.nextFinalOutput.intValue(), wordIdRef);
+            dictionary.lookupWordIds(output + arc.nextFinalOutput().intValue(), wordIdRef);
             if (VERBOSE) {
               System.out.println("    KNOWN word " + new String(buffer.get(pos, posAhead - pos + 1)) + " toPos=" + (posAhead + 1) + " " + wordIdRef.length + " wordIDs");
             }

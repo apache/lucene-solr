@@ -39,12 +39,12 @@ abstract class FSTEnum<T> {
   protected final FST.Arc<T> scratchArc = new FST.Arc<>();
 
   protected int upto;
-  protected int targetLength;
+  int targetLength;
 
   /** doFloor controls the behavior of advance: if it's true
    *  doFloor is true, advance positions to the biggest
    *  term before target.  */
-  protected FSTEnum(FST<T> fst) {
+  FSTEnum(FST<T> fst) {
     this.fst = fst;
     fstReader = fst.getBytesReader();
     NO_OUTPUT = fst.outputs.getNoOutput();
@@ -60,7 +60,7 @@ abstract class FSTEnum<T> {
 
   /** Rewinds enum state to match the shared prefix between
    *  current term and target term */
-  protected final void rewindPrefix() throws IOException {
+  private void rewindPrefix() throws IOException {
     if (upto == 0) {
       //System.out.println("  init");
       upto = 1;
@@ -138,10 +138,10 @@ abstract class FSTEnum<T> {
     while(arc != null) {
       int targetLabel = getTargetLabel();
       //System.out.println("  cycle upto=" + upto + " arc.label=" + arc.label + " (" + (char) arc.label + ") vs targetLabel=" + targetLabel);
-      if (arc.bytesPerArc != 0 && arc.label != -1) {
+      if (arc.bytesPerArc() != 0 && arc.label() != -1) {
         // Arcs are in an array
         final FST.BytesReader in = fst.getBytesReader();
-        if (arc.arcIdx == Integer.MIN_VALUE) {
+        if (arc.arcIdx() == Integer.MIN_VALUE) {
           arc = doSeekCeilArrayWithGaps(arc, targetLabel, in);
         } else {
           arc = doSeekCeilArrayPacked(arc, targetLabel, in);
@@ -155,13 +155,13 @@ abstract class FSTEnum<T> {
   private FST.Arc<T> doSeekCeilArrayWithGaps(final FST.Arc<T> arc, final int targetLabel, final FST.BytesReader in) throws IOException {
     // The array is addressed directly by label and may contain holes.
 
-    in.setPosition(arc.posArcsStart);
+    in.setPosition(arc.posArcsStart());
     in.skipBytes(1);
     int firstLabel = fst.readLabel(in);
     int arcOffset = targetLabel - firstLabel;
-    if (arcOffset >= arc.numArcs) {
+    if (arcOffset >= arc.numArcs()) {
       // target is beyond the last arc
-      arc.nextArc = arc.posArcsStart - (arc.numArcs - 1) * arc.bytesPerArc;
+      arc.nextArc(arc.posArcsStart() - (arc.numArcs() - 1) * arc.bytesPerArc());
       fst.readNextRealArc(arc, in);
       assert arc.isLast();
       // Dead end (target is after the last arc);
@@ -183,23 +183,23 @@ abstract class FSTEnum<T> {
     } else {
       // TODO: if firstLabel == targetLabel
       if (arcOffset >= 0) {
-        arc.nextArc = arc.posArcsStart - (arc.bytesPerArc * arcOffset);
+        arc.nextArc(arc.posArcsStart() - (arc.bytesPerArc() * arcOffset));
       } else {
-        arc.nextArc = arc.posArcsStart;
+        arc.nextArc(arc.posArcsStart());
       }
       fst.readNextRealArc(arc, in);
-      if (arc.label == targetLabel) {
+      if (arc.label() == targetLabel) {
         // found -- copy pasta from below
-        output[upto] = fst.outputs.add(output[upto-1], arc.output);
+        output[upto] = fst.outputs.add(output[upto-1], arc.output());
         if (targetLabel == FST.END_LABEL) {
           return null;
         }
-        setCurrentLabel(arc.label);
+        setCurrentLabel(arc.label());
         incr();
         return fst.readFirstTargetArc(arc, getArc(upto), fstReader);
       }
       // not found, return the next highest
-      assert arc.label > targetLabel;
+      assert arc.label() > targetLabel;
       pushFirst();
       return null;
     }
@@ -208,15 +208,15 @@ abstract class FSTEnum<T> {
   private FST.Arc<T> doSeekCeilArrayPacked(final FST.Arc<T> arc, final int targetLabel, final FST.BytesReader in) throws IOException {
     // The array is packed -- use binary search to find the target.
 
-    int low = arc.arcIdx;
-    int high = arc.numArcs-1;
+    int low = arc.arcIdx();
+    int high = arc.numArcs() -1;
     int mid = 0;
     //System.out.println("do arc array low=" + low + " high=" + high + " targetLabel=" + targetLabel);
     boolean found = false;
     while (low <= high) {
       mid = (low + high) >>> 1;
-      in.setPosition(arc.posArcsStart);
-      in.skipBytes(arc.bytesPerArc * mid + 1);
+      in.setPosition(arc.posArcsStart());
+      in.skipBytes(arc.bytesPerArc() * mid + 1);
       final int midLabel = fst.readLabel(in);
       final int cmp = midLabel - targetLabel;
       //System.out.println("  cycle low=" + low + " high=" + high + " mid=" + mid + " midLabel=" + midLabel + " cmp=" + cmp);
@@ -234,20 +234,20 @@ abstract class FSTEnum<T> {
     // the outer else clause):
     if (found) {
       // Match
-      arc.arcIdx = mid-1;
+      arc.arcIdx(mid - 1);
       fst.readNextRealArc(arc, in);
-      assert arc.arcIdx == mid;
-      assert arc.label == targetLabel: "arc.label=" + arc.label + " vs targetLabel=" + targetLabel + " mid=" + mid;
-      output[upto] = fst.outputs.add(output[upto-1], arc.output);
+      assert arc.arcIdx() == mid;
+      assert arc.label() == targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel + " mid=" + mid;
+      output[upto] = fst.outputs.add(output[upto-1], arc.output());
       if (targetLabel == FST.END_LABEL) {
         return null;
       }
-      setCurrentLabel(arc.label);
+      setCurrentLabel(arc.label());
       incr();
       return fst.readFirstTargetArc(arc, getArc(upto), fstReader);
-    } else if (low == arc.numArcs) {
+    } else if (low == arc.numArcs()) {
       // Dead end
-      arc.arcIdx = arc.numArcs-2;
+      arc.arcIdx(arc.numArcs() - 2);
       fst.readNextRealArc(arc, in);
       assert arc.isLast();
       // Dead end (target is after the last arc);
@@ -267,9 +267,9 @@ abstract class FSTEnum<T> {
         upto--;
       }
     } else {
-      arc.arcIdx = (low > high ? low : high)-1;
+      arc.arcIdx(low - 1);
       fst.readNextRealArc(arc, in);
-      assert arc.label > targetLabel;
+      assert arc.label() > targetLabel;
       pushFirst();
       return null;
     }
@@ -277,16 +277,16 @@ abstract class FSTEnum<T> {
 
   private FST.Arc<T> doSeekCeilList(final FST.Arc<T> arc, final int targetLabel) throws IOException {
     // Arcs are not array'd -- must do linear scan:
-    if (arc.label == targetLabel) {
+    if (arc.label() == targetLabel) {
       // recurse
-      output[upto] = fst.outputs.add(output[upto-1], arc.output);
+      output[upto] = fst.outputs.add(output[upto-1], arc.output());
       if (targetLabel == FST.END_LABEL) {
         return null;
       }
-      setCurrentLabel(arc.label);
+      setCurrentLabel(arc.label());
       incr();
       return fst.readFirstTargetArc(arc, getArc(upto), fstReader);
-    } else if (arc.label > targetLabel) {
+    } else if (arc.label() > targetLabel) {
       pushFirst();
       return null;
     } else if (arc.isLast()) {
@@ -340,10 +340,10 @@ abstract class FSTEnum<T> {
       //System.out.println("  cycle upto=" + upto + " arc.label=" + arc.label + " (" + (char) arc.label + ") targetLabel=" + targetLabel + " isLast?=" + arc.isLast() + " bba=" + arc.bytesPerArc);
       int targetLabel = getTargetLabel();
 
-      if (arc.bytesPerArc != 0 && arc.label != FST.END_LABEL) {
+      if (arc.bytesPerArc() != 0 && arc.label() != FST.END_LABEL) {
         // Arcs are in an array
         final FST.BytesReader in = fst.getBytesReader();
-        if (arc.arcIdx == Integer.MIN_VALUE) {
+        if (arc.arcIdx() == Integer.MIN_VALUE) {
           arc = doSeekFloorArrayWithGaps(arc, targetLabel, in);
         } else {
           arc = doSeekFloorArrayPacked(arc, targetLabel, in);
@@ -356,7 +356,7 @@ abstract class FSTEnum<T> {
 
   private FST.Arc<T> doSeekFloorArrayWithGaps(FST.Arc<T> arc, int targetLabel, final FST.BytesReader in) throws IOException {
     // The array is addressed directly by label and may contain holes.
-    in.setPosition(arc.posArcsStart);
+    in.setPosition(arc.posArcsStart());
     in.skipBytes(1);
     int firstLabel = fst.readLabel(in);
     int targetOffset = targetLabel - firstLabel;
@@ -368,7 +368,7 @@ abstract class FSTEnum<T> {
         // First, walk backwards until we find a first arc
         // that's before our target label:
         fst.readFirstTargetArc(getArc(upto-1), arc, fstReader);
-        if (arc.label < targetLabel) {
+        if (arc.label() < targetLabel) {
           // Then, scan forwards to the arc just before
           // the targetLabel:
           while(!arc.isLast() && fst.readNextArcLabel(arc, in) < targetLabel) {
@@ -385,39 +385,38 @@ abstract class FSTEnum<T> {
         arc = getArc(upto);
       }
     } else {
-      if (targetOffset >= arc.numArcs) {
-        arc.nextArc = arc.posArcsStart - arc.bytesPerArc * (arc.numArcs - 1);
+      if (targetOffset >= arc.numArcs()) {
+        arc.nextArc(arc.posArcsStart() - arc.bytesPerArc() * (arc.numArcs() - 1));
         fst.readNextRealArc(arc, in);
         assert arc.isLast();
-        assert arc.label < targetLabel: "arc.label=" + arc.label + " vs targetLabel=" + targetLabel;
+        assert arc.label() < targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel;
         pushLast();
         return null;
       }
-      arc.nextArc = arc.posArcsStart - arc.bytesPerArc * targetOffset;
+      arc.nextArc(arc.posArcsStart() - arc.bytesPerArc() * targetOffset);
       fst.readNextRealArc(arc, in);
-      if (arc.label == targetLabel) {
+      if (arc.label() == targetLabel) {
         // found -- copy pasta from below
-        output[upto] = fst.outputs.add(output[upto-1], arc.output);
+        output[upto] = fst.outputs.add(output[upto-1], arc.output());
         if (targetLabel == FST.END_LABEL) {
           return null;
         }
-        setCurrentLabel(arc.label);
+        setCurrentLabel(arc.label());
         incr();
         return fst.readFirstTargetArc(arc, getArc(upto), fstReader);
       }
       // Scan backwards to find a floor arc that is not missing
-      for (long arcOffset = arc.posArcsStart - targetOffset * arc.bytesPerArc; arcOffset <= arc.posArcsStart; arcOffset += arc.bytesPerArc) {
+      for (long arcOffset = arc.posArcsStart() - targetOffset * arc.bytesPerArc(); arcOffset <= arc.posArcsStart(); arcOffset += arc.bytesPerArc()) {
         // TODO: we can do better here by skipping missing arcs
-        arc.nextArc = arcOffset;
-        //System.out.println(" hasFloor arcIdx=" + (arc.arcIdx+1));
+        arc.nextArc(arcOffset);
         fst.readNextRealArc(arc, in);
-        if (arc.label < targetLabel) {
+        if (arc.label() < targetLabel) {
           assert arc.isLast() || fst.readNextArcLabel(arc, in) > targetLabel;
           pushLast();
           return null;
         }
       }
-      assert false: "arc.label=" + arc.label + " vs targetLabel=" + targetLabel;
+      assert false: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel;
       return arc;               // unreachable
     }
   }
@@ -425,15 +424,15 @@ abstract class FSTEnum<T> {
   private FST.Arc<T> doSeekFloorArrayPacked(FST.Arc<T> arc, int targetLabel, final FST.BytesReader in) throws IOException {
     // Arcs are fixed array -- use binary search to find the target.
 
-    int low = arc.arcIdx;
-    int high = arc.numArcs-1;
+    int low = arc.arcIdx();
+    int high = arc.numArcs() -1;
     int mid = 0;
     //System.out.println("do arc array low=" + low + " high=" + high + " targetLabel=" + targetLabel);
     boolean found = false;
     while (low <= high) {
       mid = (low + high) >>> 1;
-      in.setPosition(arc.posArcsStart);
-      in.skipBytes(arc.bytesPerArc*mid+1);
+      in.setPosition(arc.posArcsStart());
+      in.skipBytes(arc.bytesPerArc() * mid + 1);
       final int midLabel = fst.readLabel(in);
       final int cmp = midLabel - targetLabel;
       //System.out.println("  cycle low=" + low + " high=" + high + " mid=" + mid + " midLabel=" + midLabel + " cmp=" + cmp);
@@ -452,15 +451,15 @@ abstract class FSTEnum<T> {
     if (found) {
       // Match -- recurse
       //System.out.println("  match!  arcIdx=" + mid);
-      arc.arcIdx = mid-1;
+      arc.arcIdx(mid - 1);
       fst.readNextRealArc(arc, in);
-      assert arc.arcIdx == mid;
-      assert arc.label == targetLabel: "arc.label=" + arc.label + " vs targetLabel=" + targetLabel + " mid=" + mid;
-      output[upto] = fst.outputs.add(output[upto-1], arc.output);
+      assert arc.arcIdx() == mid;
+      assert arc.label() == targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel + " mid=" + mid;
+      output[upto] = fst.outputs.add(output[upto-1], arc.output());
       if (targetLabel == FST.END_LABEL) {
         return null;
       }
-      setCurrentLabel(arc.label);
+      setCurrentLabel(arc.label());
       incr();
       return fst.readFirstTargetArc(arc, getArc(upto), fstReader);
     } else if (high == -1) {
@@ -474,7 +473,7 @@ abstract class FSTEnum<T> {
         // First, walk backwards until we find a first arc
         // that's before our target label:
         fst.readFirstTargetArc(getArc(upto-1), arc, fstReader);
-        if (arc.label < targetLabel) {
+        if (arc.label() < targetLabel) {
           // Then, scan forwards to the arc just before
           // the targetLabel:
           while(!arc.isLast() && fst.readNextArcLabel(arc, in) < targetLabel) {
@@ -492,27 +491,26 @@ abstract class FSTEnum<T> {
       }
     } else {
       // There is a floor arc:
-      arc.arcIdx = (low > high ? high : low)-1;
-      //System.out.println(" hasFloor arcIdx=" + (arc.arcIdx+1));
+      arc.arcIdx(high - 1);
       fst.readNextRealArc(arc, in);
       assert arc.isLast() || fst.readNextArcLabel(arc, in) > targetLabel;
-      assert arc.label < targetLabel: "arc.label=" + arc.label + " vs targetLabel=" + targetLabel;
+      assert arc.label() < targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel;
       pushLast();
       return null;
     }        
   }
 
   private FST.Arc<T> doSeekFloorList(FST.Arc<T> arc, int targetLabel) throws IOException {
-    if (arc.label == targetLabel) {
+    if (arc.label() == targetLabel) {
       // Match -- recurse
-      output[upto] = fst.outputs.add(output[upto-1], arc.output);
+      output[upto] = fst.outputs.add(output[upto-1], arc.output());
       if (targetLabel == FST.END_LABEL) {
         return null;
       }
-      setCurrentLabel(arc.label);
+      setCurrentLabel(arc.label());
       incr();
       return fst.readFirstTargetArc(arc, getArc(upto), fstReader);
-    } else if (arc.label > targetLabel) {
+    } else if (arc.label() > targetLabel) {
       // TODO: if each arc could somehow read the arc just
       // before, we can save this re-scan.  The ceil case
       // doesn't need this because it reads the next arc
@@ -521,7 +519,7 @@ abstract class FSTEnum<T> {
         // First, walk backwards until we find a first arc
         // that's before our target label:
         fst.readFirstTargetArc(getArc(upto-1), arc, fstReader);
-        if (arc.label < targetLabel) {
+        if (arc.label() < targetLabel) {
           // Then, scan forwards to the arc just before
           // the targetLabel:
           while(!arc.isLast() && fst.readNextArcLabel(arc, fstReader) < targetLabel) {
@@ -553,7 +551,7 @@ abstract class FSTEnum<T> {
   }
 
   /** Seeks to exactly target term. */
-  protected boolean doSeekExact() throws IOException {
+  boolean doSeekExact() throws IOException {
 
     // TODO: possibly caller could/should provide common
     // prefix length?  ie this work may be redundant if
@@ -584,7 +582,7 @@ abstract class FSTEnum<T> {
         return false;
       }
       // Match -- recurse:
-      output[upto] = fst.outputs.add(output[upto-1], nextArc.output);
+      output[upto] = fst.outputs.add(output[upto-1], nextArc.output());
       if (targetLabel == FST.END_LABEL) {
         //System.out.println("  return found; upto=" + upto + " output=" + output[upto] + " nextArc=" + nextArc.isLast());
         return true;
@@ -621,13 +619,13 @@ abstract class FSTEnum<T> {
     assert arc != null;
 
     while (true) {
-      output[upto] = fst.outputs.add(output[upto-1], arc.output);
-      if (arc.label == FST.END_LABEL) {
+      output[upto] = fst.outputs.add(output[upto-1], arc.output());
+      if (arc.label() == FST.END_LABEL) {
         // Final node
         break;
       }
       //System.out.println("  pushFirst label=" + (char) arc.label + " upto=" + upto + " output=" + fst.outputs.outputToString(output[upto]));
-      setCurrentLabel(arc.label);
+      setCurrentLabel(arc.label());
       incr();
       
       final FST.Arc<T> nextArc = getArc(upto);
@@ -644,9 +642,9 @@ abstract class FSTEnum<T> {
     assert arc != null;
 
     while (true) {
-      setCurrentLabel(arc.label);
-      output[upto] = fst.outputs.add(output[upto-1], arc.output);
-      if (arc.label == FST.END_LABEL) {
+      setCurrentLabel(arc.label());
+      output[upto] = fst.outputs.add(output[upto-1], arc.output());
+      if (arc.label() == FST.END_LABEL) {
         // Final node
         break;
       }
