@@ -86,7 +86,7 @@ public abstract class AbstractPluginLoader<T>
    * @param node - the XML node defining this plugin
    */
   @SuppressWarnings("unchecked")
-  protected T create( SolrResourceLoader loader, String name, String className, String spiName, Node node ) throws Exception
+  protected T create( SolrResourceLoader loader, String name, String className, Node node ) throws Exception
   {
     return loader.newInstance(className, pluginClassType, getDefaultPackages());
   }
@@ -148,14 +148,13 @@ public abstract class AbstractPluginLoader<T>
         try {
           name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
           String className  = DOMUtil.getAttr(node,"class", null);
-          String spiName = DOMUtil.getAttr(node, "spi", null);
           String defaultStr = DOMUtil.getAttr(node,"default", null );
 
-          if (Objects.isNull(className) && Objects.isNull(spiName)) {
-            throw new RuntimeException(type + ": missing mandatory attribute 'class' or 'spi'");
+          if (Objects.isNull(className) && Objects.isNull(name)) {
+            throw new RuntimeException(type + ": missing mandatory attribute 'class' or 'name'");
           }
 
-          T plugin = create(loader, name, className, spiName, node );
+          T plugin = create(loader, name, className, node);
           log.debug("created " + ((name != null) ? name : "") + ": " + plugin.getClass().getName());
           
           // Either initialize now or wait till everything has been registered
@@ -231,7 +230,7 @@ public abstract class AbstractPluginLoader<T>
     try {
       String name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
       String className = DOMUtil.getAttr(node, "class", type);
-      plugin = create(loader, name, className, null, node);
+      plugin = create(loader, name, className, node);
       log.debug("created " + name + ": " + plugin.getClass().getName());
 
       // Either initialize now or wait till everything has been registered

@@ -81,7 +81,6 @@ public final class FieldTypePluginLoader
   protected FieldType create( SolrResourceLoader loader, 
                               String name, 
                               String className,
-                              String spiName,
                               Node node ) throws Exception {
 
     FieldType ft = loader.newInstance(className, FieldType.class);
@@ -258,15 +257,15 @@ public final class FieldTypePluginLoader
       ("[schema.xml] analyzer/charFilter", CharFilterFactory.class, false, false) {
 
       @Override
-      protected CharFilterFactory create(SolrResourceLoader loader, String name, String className, String spiName, Node node) throws Exception {
-        final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(), "spi");
+      protected CharFilterFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
+        final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(), "name");
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, CharFilterFactory.class.getSimpleName()).toString());
         CharFilterFactory factory;
         if (Objects.nonNull(className)) {
           factory = loader.newInstance(className, CharFilterFactory.class, getDefaultPackages(), new Class[]{Map.class}, new Object[]{params});
         } else {
-          factory = CharFilterFactory.forName(spiName, params);
+          factory = CharFilterFactory.forName(name, params);
         }
         factory.setExplicitLuceneMatchVersion(null != configuredVersion);
         return factory;
@@ -299,15 +298,15 @@ public final class FieldTypePluginLoader
       ("[schema.xml] analyzer/tokenizer", TokenizerFactory.class, false, false) {
       
       @Override
-      protected TokenizerFactory create(SolrResourceLoader loader, String name, String className, String spiName, Node node) throws Exception {
-        final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(), "spi");
+      protected TokenizerFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
+        final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(), "name");
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, TokenizerFactory.class.getSimpleName()).toString());
         TokenizerFactory factory;
         if (Objects.nonNull(className)) {
           factory = loader.newInstance(className, TokenizerFactory.class, getDefaultPackages(), new Class[]{Map.class}, new Object[]{params});
         } else {
-          factory = TokenizerFactory.forName(spiName, params);
+          factory = TokenizerFactory.forName(name, params);
         }
         factory.setExplicitLuceneMatchVersion(null != configuredVersion);
         return factory;
@@ -344,15 +343,15 @@ public final class FieldTypePluginLoader
       new AbstractPluginLoader<TokenFilterFactory>("[schema.xml] analyzer/filter", TokenFilterFactory.class, false, false)
     {
       @Override
-      protected TokenFilterFactory create(SolrResourceLoader loader, String name, String className, String spiName, Node node) throws Exception {
-        final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(), "spi");
+      protected TokenFilterFactory create(SolrResourceLoader loader, String name, String className, Node node) throws Exception {
+        final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(), "name");
         String configuredVersion = params.remove(LUCENE_MATCH_VERSION_PARAM);
         params.put(LUCENE_MATCH_VERSION_PARAM, parseConfiguredVersion(configuredVersion, TokenFilterFactory.class.getSimpleName()).toString());
         TokenFilterFactory factory;
         if (Objects.nonNull(className)) {
           factory = loader.newInstance(className, TokenFilterFactory.class, getDefaultPackages(), new Class[]{Map.class}, new Object[]{params});
         } else {
-          factory = TokenFilterFactory.forName(spiName, params);
+          factory = TokenFilterFactory.forName(name, params);
         }
         factory.setExplicitLuceneMatchVersion(null != configuredVersion);
         return factory;
