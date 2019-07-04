@@ -147,6 +147,11 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     return LatLonShape.newBoxQuery(field, queryRelation, minLat, maxLat, minLon, maxLon);
   }
 
+  /** factory method to create a new bounding box query */
+  protected Query newPointQuery(String field, QueryRelation queryRelation, double lat, double lon) {
+    return LatLonShape.newPointQuery(field, queryRelation, lat, lon);
+  }
+
   public void testBoxQueryEqualsAndHashcode() {
     Rectangle rectangle = GeoTestUtil.nextBox();
     QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
@@ -339,6 +344,8 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     verifyRandomLineQueries(reader, shapes);
     // test random polygon queries
     verifyRandomPolygonQueries(reader, shapes);
+    // test random point queries
+    verifyRandomPointQueries(reader, shapes);
 
     IOUtils.close(w, reader, dir);
   }
@@ -457,7 +464,103 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
             b.append("  shape=" + shapes[id] + "\n");
           }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  rect=Rectangle(lat=" + quantizeLatCeil(rect.minLat) + " TO " + quantizeLat(rect.maxLat) + " lon=" + qMinLon + " TO " + quantizeLon(rect.maxLon) + ")\n");          if (true) {
+          b.append("  rect=Rectangle(lat=" + quantizeLatCeil(rect.minLat) + " TO " + quantizeLat(rect.maxLat) + " lon=" + qMinLon + " TO " + quantizeLon(rect.maxLon) + ")\n");
+          if (true) {
+            fail("wrong hit (first of possibly more):\n\n" + b);
+          } else {
+            System.out.println(b.toString());
+            fail = true;
+          }
+        }
+      }
+      if (fail) {
+        fail("some hits were wrong");
+      }
+    }
+  }
+
+  /** test random generated bounding boxes */
+  protected void verifyRandomPointQueries(IndexReader reader, Object... shapes) throws Exception {
+    IndexSearcher s = newSearcher(reader);
+
+    final int iters = scaledIterationCount(shapes.length);
+
+    Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
+    int maxDoc = s.getIndexReader().maxDoc();
+
+    for (int iter = 0; iter < iters; ++iter) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + (iter+1) + " of " + iters + " s=" + s);
+      }
+
+      // Point
+      double lat = nextLatitude();
+      double lon = nextLongitude();
+      QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+      Query query = newPointQuery(FIELD_NAME, queryRelation, lat, lon);
+
+      if (VERBOSE) {
+        System.out.println("  query=" + query + ", relation=" + queryRelation);
+      }
+
+      final FixedBitSet hits = new FixedBitSet(maxDoc);
+      s.search(query, new SimpleCollector() {
+
+        private int docBase;
+
+        @Override
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE_NO_SCORES;
+        }
+
+        @Override
+        protected void doSetNextReader(LeafReaderContext context) throws IOException {
+          docBase = context.docBase;
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+          hits.set(docBase+doc);
+        }
+      });
+
+      boolean fail = false;
+      NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
+      for (int docID = 0; docID < maxDoc; ++docID) {
+        assertEquals(docID, docIDToID.nextDoc());
+        int id = (int) docIDToID.longValue();
+        boolean expected;
+        double qMinLon = quantizeLon(lon);
+        double qMaxLon = quantizeLon(lon);
+        double qMinLat = quantizeLat(lat);
+        double qMaxLat = quantizeLat(lat);
+        if (liveDocs != null && liveDocs.get(docID) == false) {
+          // document is deleted
+          expected = false;
+        } else if (shapes[id] == null) {
+          expected = false;
+        } else {
+          expected = getValidator(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, qMaxLon, shapes[id]);
+        }
+
+        if (hits.get(docID) != expected) {
+          StringBuilder b = new StringBuilder();
+
+          if (expected) {
+            b.append("FAIL: id=" + id + " should match but did not\n");
+          } else {
+            b.append("FAIL: id=" + id + " should not match but did\n");
+          }
+          b.append("  relation=" + queryRelation + "\n");
+          b.append("  query=" + query + " docID=" + docID + "\n");
+          if (shapes[id] instanceof Object[]) {
+            b.append("  shape=" + Arrays.toString((Object[]) shapes[id]) + "\n");
+          } else {
+            b.append("  shape=" + shapes[id] + "\n");
+          }
+          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("  rect=Point(lat=" + quantizeLat(lat)  + " lon=" + quantizeLon(lon) + ")\n");
+          if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {
             System.out.println(b.toString());
