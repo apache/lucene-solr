@@ -47,7 +47,7 @@ public final class BKDRadixSelector {
   private final int bytesSorted;
   //data dimensions size
   private final int packedBytesLength;
-
+  // data dimensions plus docID size
   private final int packedBytesDocIDLength;
   //flag to when we are moving to sort on heap
   private final int maxPointsSortInHeap;
@@ -79,8 +79,8 @@ public final class BKDRadixSelector {
     // we tie-break on the docID. Here we account for all bytes used in the process.
     this.bytesSorted = bytesPerDim  + (numDataDims - numIndexDims) * bytesPerDim + Integer.BYTES;
     this.maxPointsSortInHeap = maxPointsSortInHeap;
-    int numberOfPointsOffline  = MAX_SIZE_OFFLINE_BUFFER / (packedBytesLength + Integer.BYTES);
-    this.offlineBuffer = new byte[numberOfPointsOffline * (packedBytesLength + Integer.BYTES)];
+    int numberOfPointsOffline  = MAX_SIZE_OFFLINE_BUFFER / packedBytesDocIDLength;
+    this.offlineBuffer = new byte[numberOfPointsOffline * packedBytesDocIDLength];
     this.partitionBucket = new int[bytesSorted];
     this.histogram = new long[HISTOGRAM_SIZE];
     this.scratch = new byte[bytesSorted];
