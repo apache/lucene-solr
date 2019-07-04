@@ -350,6 +350,7 @@ public final class BKDRadixSelector {
         final int dimStart = dim * bytesPerDim + skypedBytes;
         final int dimEnd =  dim * bytesPerDim + bytesPerDim;
         final int dataOffset = numIndexDims * bytesPerDim;
+        // data length is composed by the data dimensions plus the docID
         final int dataLength = (numDataDims - numIndexDims) * bytesPerDim + Integer.BYTES;
         return new IntroSelector() {
 
@@ -434,6 +435,7 @@ public final class BKDRadixSelector {
         final int dimStart = dim * bytesPerDim + skypedBytes;
         final int dimEnd =  dim * bytesPerDim + bytesPerDim;
         final int dataOffset = numIndexDims * bytesPerDim;
+        // data length is composed by the data dimensions plus the docID
         final int dataLength = (numDataDims - numIndexDims) * bytesPerDim + Integer.BYTES;
         return new IntroSorter() {
 
