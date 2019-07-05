@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -46,7 +47,8 @@ public class TestFeatureSort extends LuceneTestCase {
 
   public void testFeature() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     doc.add(new FeatureField("field", "name", 30.1F));
     doc.add(newStringField("value", "30.1", Field.Store.YES));
@@ -78,7 +80,8 @@ public class TestFeatureSort extends LuceneTestCase {
 
   public void testFeatureMissing() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
@@ -108,7 +111,8 @@ public class TestFeatureSort extends LuceneTestCase {
 
   public void testFeatureMissingFieldInSegment() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     writer.addDocument(doc);
     writer.commit();
@@ -139,7 +143,8 @@ public class TestFeatureSort extends LuceneTestCase {
 
   public void testFeatureMissingFeatureNameInSegment() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     doc.add(new FeatureField("field", "different_name", 0.5F));
     writer.addDocument(doc);
@@ -171,7 +176,8 @@ public class TestFeatureSort extends LuceneTestCase {
 
   public void testFeatureMultipleMissing() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
