@@ -212,6 +212,8 @@ Bug Fixes
 
 * SOLR-13404: Support group.query in multi-shard environment when group.main=true or group.format=simple (Munendra S N)
 
+* SOLR-13538: toNativeType () TrieDate & EnumField do not handle CharSequence properly (Munendra S N)
+
 Improvements
 ----------------------
 
