@@ -1,5 +1,5 @@
 = Math Expressions
-:page-children: visualization, math-start, scalar-math, vector-math, variables, matrix-math, search-sample, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning, computational-geometry
+:page-children: visualization, math-start, search-sample, transform, scalar-math, vector-math, variables, matrix-math, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning, computational-geometry
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -31,11 +31,13 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<search-sample.adoc#search-sample,Searching, Sampling and Aggregation>>*: Searching, sampling and aggregation Streaming Expressions and visualization.
 
+*<<transform.adoc#transforming-data,Transforming Data>>*: Transforming and filtering result sets.
+
 *<<scalar-math.adoc#scalar-math,Scalar Math>>*: Math functions and visualization applied to numbers.
 
 *<<vector-math.adoc#vector-math,Vector Math>>*: Vector math, manipulation and visualization.
 
-*<<variables.adoc#variables,Variables and Caching>>*: Assigning, visualizing and caching variables.
+*<<variables.adoc#variables, Variables, Vectorization and Caching>>*: Vectorizing result sets and assigning, visualizing and caching variables.
 
 *<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix math and manipulation.
 
