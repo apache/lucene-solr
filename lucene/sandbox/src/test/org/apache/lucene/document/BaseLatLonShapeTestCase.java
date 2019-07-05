@@ -147,7 +147,7 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     return LatLonShape.newBoxQuery(field, queryRelation, minLat, maxLat, minLon, maxLon);
   }
 
-  /** factory method to create a new bounding box query */
+  /** factory method to create a new point query */
   protected Query newPointQuery(String field, QueryRelation queryRelation, double lat, double lon) {
     return LatLonShape.newPointQuery(field, queryRelation, lat, lon);
   }
