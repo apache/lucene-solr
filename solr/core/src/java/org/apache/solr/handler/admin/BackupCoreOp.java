@@ -37,6 +37,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
     String cname = params.required().get(CoreAdminParams.CORE);
     String name = params.required().get(NAME);
+    boolean incremental = params.getBool(CoreAdminParams.BACKUP_INCREMENTAL, false);
 
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
     BackupRepository repository = it.handler.coreContainer.newBackupRepository(Optional.ofNullable(repoName));
@@ -53,7 +54,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
     URI locationUri = repository.createURI(location);
     try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-      SnapShooter snapShooter = new SnapShooter(repository, core, locationUri, name, commitName);
+      SnapShooter snapShooter = new SnapShooter(repository, core, locationUri, name, commitName, incremental);
       // validateCreateSnapshot will create parent dirs instead of throw; that choice is dubious.
       //  But we want to throw. One reason is that
       //  this dir really should, in fact must, already exist here if triggered via a collection backup on a shared

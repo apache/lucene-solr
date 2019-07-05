@@ -121,6 +121,11 @@ public abstract class CoreAdminParams
   public static final String BACKUP_LOCATION = "location";
 
   /**
+   * A parameter to specify whether incremental backup is used
+   */
+  public static final String BACKUP_INCREMENTAL = "incremental";
+
+  /**
    * A parameter to specify the name of the commit to be stored during the backup operation.
    */
   public static final String COMMIT_NAME = "commitName";

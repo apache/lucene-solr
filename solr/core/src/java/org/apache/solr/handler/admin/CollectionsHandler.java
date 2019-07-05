@@ -1085,6 +1085,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
       }
 
+      boolean incremental = req.getParams().getBool(CoreAdminParams.BACKUP_INCREMENTAL, false);
       // Check if the specified location is valid for this repository.
       URI uri = repository.createURI(location);
       try {
@@ -1099,10 +1100,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (!CollectionAdminParams.INDEX_BACKUP_STRATEGIES.contains(strategy)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown index backup strategy " + strategy);
       }
-
-      Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP, FOLLOW_ALIASES, CoreAdminParams.COMMIT_NAME);
+      
+      Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP, FOLLOW_ALIASES, CoreAdminParams.COMMIT_NAME, CoreAdminParams.BACKUP_REPOSITORY);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
       params.put(CollectionAdminParams.INDEX_BACKUP_STRATEGY, strategy);
+      params.put(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
       return params;
     }),
     RESTORE_OP(RESTORE, (req, rsp, h) -> {

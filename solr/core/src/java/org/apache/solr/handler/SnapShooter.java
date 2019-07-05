@@ -22,15 +22,19 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.SolrException;
@@ -62,8 +66,10 @@ public class SnapShooter {
   private URI snapshotDirPath = null;
   private BackupRepository backupRepo = null;
   private String commitName; // can be null
+  private final boolean incremental;
 
   @Deprecated
+  // Deprecated since 8.2.0
   public SnapShooter(SolrCore core, String location, String snapshotName) {
     String snapDirStr = null;
     // Note - This logic is only applicable to the usecase where a shared file-system is exposed via
@@ -74,10 +80,16 @@ public class SnapShooter {
     } else {
       snapDirStr = core.getCoreDescriptor().getInstanceDir().resolve(location).normalize().toString();
     }
+    this.incremental = false;
     initialize(new LocalFileSystemRepository(), core, Paths.get(snapDirStr).toUri(), snapshotName, null);
   }
 
   public SnapShooter(BackupRepository backupRepo, SolrCore core, URI location, String snapshotName, String commitName) {
+    this(backupRepo, core, location, snapshotName, commitName, false);
+  }
+
+  public SnapShooter(BackupRepository backupRepo, SolrCore core, URI location, String snapshotName, String commitName, boolean incremental) {
+    this.incremental = incremental;
     initialize(backupRepo, core, location, snapshotName, commitName);
   }
 
@@ -142,7 +154,7 @@ public class SnapShooter {
           " Directory does not exist: " + snapshotDirPath);
     }
 
-    if (backupRepo.exists(snapshotDirPath)) {
+    if (!incremental && backupRepo.exists(snapshotDirPath)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Snapshot directory already exists: " + snapshotDirPath);
     }
@@ -234,8 +246,12 @@ public class SnapShooter {
       Collection<String> files = indexCommit.getFileNames();
       Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
       try {
-        for(String fileName : files) {
-          backupRepo.copyFileFrom(dir, fileName, snapshotDirPath);
+        if (incremental) {
+          incrementalCopy(indexCommit, files, dir);
+        } else {
+          for(String fileName : files) {
+            backupRepo.copyFileFrom(dir, fileName, snapshotDirPath);
+          }
         }
       } finally {
         solrCore.getDirectoryFactory().release(dir);
@@ -258,6 +274,54 @@ public class SnapShooter {
         }
       }
     }
+  }
+
+  private void incrementalCopy(IndexCommit indexCommit, Collection<String> indexFiles, Directory dir) throws IOException {
+    Set<String> existedFiles = new HashSet<>(Arrays.asList(backupRepo.listAllOrEmpty(snapshotDirPath)));
+
+    // Files in destination with same name as files in indexCommit but with different checksum or length should be deleted first
+    List<String> corruptedFiles = new ArrayList<>();
+    List<String> filesNeedCopyOver = new ArrayList<>();
+
+    for(String fileName : indexFiles) {
+      if (existedFiles.contains(fileName)) {
+        BackupRepository.Checksum originalFileCS = backupRepo.checksum(dir, fileName);
+        try {
+          BackupRepository.Checksum existedFileCS = backupRepo.checksum(snapshotDirPath, fileName);
+          if (Objects.equals(originalFileCS, existedFileCS)) {
+            continue;
+          }
+        } catch (CorruptIndexException e) {
+          log.info("Found a corrupted file in backup repository {}", fileName);
+        }
+
+        corruptedFiles.add(fileName);
+      }
+
+      filesNeedCopyOver.add(fileName);
+    }
+
+    backupRepo.delete(snapshotDirPath, corruptedFiles);
+
+    boolean copySegmentsFile = false;
+    for (String fileName : filesNeedCopyOver) {
+      if (fileName.equals(indexCommit.getSegmentsFileName())) {
+        copySegmentsFile = true;
+        continue;
+      }
+
+      backupRepo.copyFileFrom(dir, fileName, snapshotDirPath);
+    }
+
+    if (copySegmentsFile) {
+      // copy segments_N last, in case of failures on copy new files, the backup still work
+      backupRepo.copyFileFrom(dir, indexCommit.getSegmentsFileName(), snapshotDirPath);
+    }
+
+    // finally delete unused files
+    //TODO keeping multiple indexCommit
+    existedFiles.removeAll(indexFiles);
+    backupRepo.delete(snapshotDirPath, existedFiles);
   }
 
   private void deleteOldBackups(int numberToKeep) throws IOException {
@@ -301,6 +365,14 @@ public class SnapShooter {
     }
 
     replicationHandler.snapShootDetails = details;
+  }
+
+  private static String[] listAllOrEmpty(BackupRepository repo, URI dir) {
+    try {
+      return repo.listAll(dir);
+    } catch (IOException e) {
+      return new String[0];
+    }
   }
 
   public static final String DATE_FMT = "yyyyMMddHHmmssSSS";

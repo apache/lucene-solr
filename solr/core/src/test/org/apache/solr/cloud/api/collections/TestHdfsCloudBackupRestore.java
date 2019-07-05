@@ -88,6 +88,9 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
       "  </solrcloud>\n" +
       "  \n" +
       "  <backup>\n" +
+      "    <repository name=\"trackingBackupRepo\" default=\"true\" class=\"org.apache.solr.core.TrackingBackupRepository\"> \n" +
+      "      <str name=\"delegateRepoName\">hdfs</str>\n" +
+      "    </repository>\n" +
       "    <repository  name=\"hdfs\" class=\"org.apache.solr.core.backup.repository.HdfsBackupRepository\"> \n" +
       "      <str name=\"location\">${solr.hdfs.default.backup.path}</str>\n" +
       "      <str name=\"solr.hdfs.home\">${solr.hdfs.home:}</str>\n" +
@@ -162,11 +165,6 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
   }
 
   @Override
-  public String getBackupRepoName() {
-    return "hdfs";
-  }
-
-  @Override
   public String getBackupLocation() {
     return null;
   }
@@ -186,17 +184,17 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
 
     HdfsBackupRepository repo = new HdfsBackupRepository();
     repo.init(new NamedList<>(params));
-    BackupManager mgr = new BackupManager(repo, solrClient.getZkStateReader());
 
     URI baseLoc = repo.createURI("/backup");
 
-    Properties props = mgr.readBackupProperties(baseLoc, backupName);
+    BackupManager mgr = BackupManager.forRestore(repo, solrClient.getZkStateReader(), baseLoc, backupName);
+    Properties props = mgr.readBackupProperties();
     assertNotNull(props);
     assertEquals(collectionName, props.getProperty(COLLECTION_NAME_PROP));
     assertEquals(backupName, props.getProperty(BACKUP_NAME_PROP));
     assertEquals(configName, props.getProperty(COLL_CONF));
 
-    DocCollection collectionState = mgr.readCollectionState(baseLoc, backupName, collectionName);
+    DocCollection collectionState = mgr.readCollectionState(collectionName);
     assertNotNull(collectionState);
     assertEquals(collectionName, collectionState.getName());
 

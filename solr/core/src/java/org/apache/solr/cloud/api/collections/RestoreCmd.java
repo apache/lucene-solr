@@ -103,12 +103,12 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     URI location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
     URI backupPath = repository.resolve(location, backupName);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-    BackupManager backupMgr = new BackupManager(repository, zkStateReader);
+    BackupManager backupMgr = BackupManager.forRestore(repository, zkStateReader, location, backupName);
 
-    Properties properties = backupMgr.readBackupProperties(location, backupName);
+    Properties properties = backupMgr.readBackupProperties();
     String backupCollection = properties.getProperty(BackupManager.COLLECTION_NAME_PROP);
     String backupCollectionAlias = properties.getProperty(BackupManager.COLLECTION_ALIAS_PROP);
-    DocCollection backupCollectionState = backupMgr.readCollectionState(location, backupName, backupCollection);
+    DocCollection backupCollectionState = backupMgr.readCollectionState(backupCollection);
 
     // Get the Solr nodes to restore a collection.
     final List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(
@@ -149,7 +149,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       //TODO add overwrite option?
     } else {
       log.info("Uploading config {}", restoreConfigName);
-      backupMgr.uploadConfigDir(location, backupName, configName, restoreConfigName);
+      backupMgr.uploadConfigDir(configName, restoreConfigName);
     }
 
     log.info("Starting restore into collection={} with backup_name={} at location={}", restoreCollectionName, backupName,
@@ -209,7 +209,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     // Restore collection properties
-    backupMgr.uploadCollectionProperties(location, backupName, restoreCollectionName);
+    backupMgr.uploadCollectionProperties(restoreCollectionName);
 
     DocCollection restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
 

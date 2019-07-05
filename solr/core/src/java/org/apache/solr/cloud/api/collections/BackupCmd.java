@@ -77,29 +77,32 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
+    boolean incremental = message.getBool(CoreAdminParams.BACKUP_INCREMENTAL, false);
 
     Instant startTime = Instant.now();
 
     CoreContainer cc = ocmh.overseer.getCoreContainer();
     BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
-    BackupManager backupMgr = new BackupManager(repository, ocmh.zkStateReader);
 
     // Backup location
     URI location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
     URI backupPath = repository.resolve(location, backupName);
 
+    BackupManager backupMgr = BackupManager.forBackup(repository, ocmh.zkStateReader, location, backupName);
+
     //Validating if the directory already exists.
     if (repository.exists(backupPath)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The backup directory already exists: " + backupPath);
+      if (!incremental)
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The backup directory already exists: " + backupPath);
+    } else {
+      // Create a directory to store backup details.
+      repository.createDirectory(backupPath);
     }
-
-    // Create a directory to store backup details.
-    repository.createDirectory(backupPath);
 
     String strategy = message.getStr(CollectionAdminParams.INDEX_BACKUP_STRATEGY, CollectionAdminParams.COPY_FILES_STRATEGY);
     switch (strategy) {
       case CollectionAdminParams.COPY_FILES_STRATEGY: {
-        copyIndexFiles(backupPath, collectionName, message, results);
+        copyIndexFiles(backupPath, collectionName, message, results, incremental);
         break;
       }
       case CollectionAdminParams.NO_INDEX_BACKUP_STRATEGY: {
@@ -111,15 +114,16 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
     //Download the configs
     String configName = ocmh.zkStateReader.readConfigName(collectionName);
-    backupMgr.downloadConfigDir(location, backupName, configName);
+    backupMgr.downloadConfigDir(configName);
 
     //Save the collection's state. Can be part of the monolithic clusterstate.json or a individual state.json
     //Since we don't want to distinguish we extract the state and back it up as a separate json
     DocCollection collectionState = ocmh.zkStateReader.getClusterState().getCollection(collectionName);
-    backupMgr.writeCollectionState(location, backupName, collectionName, collectionState);
+    backupMgr.writeCollectionState(collectionName, collectionState);
+    backupMgr.downloadCollectionProperties(collectionName);
 
+    // We should write the properties last, the exist of file guarantee that the backup success
     Properties properties = new Properties();
-
     properties.put(BackupManager.BACKUP_NAME_PROP, backupName);
     properties.put(BackupManager.COLLECTION_NAME_PROP, collectionName);
     properties.put(BackupManager.COLLECTION_ALIAS_PROP, extCollectionName);
@@ -130,9 +134,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     //if they are not the same then we can throw an error or have an 'overwriteConfig' flag
     //TODO save numDocs for the shardLeader. We can use it to sanity check the restore.
 
-    backupMgr.writeBackupProperties(location, backupName, properties);
-
-    backupMgr.downloadCollectionProperties(location, backupName, collectionName);
+    backupMgr.writeBackupProperties(properties);
 
     log.info("Completed backing up ZK data for backupName={}", backupName);
   }
@@ -142,7 +144,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     // If that is not possible, we choose any other replica for the given shard.
     Collection<CoreSnapshotMetaData> snapshots = snapshotMeta.getReplicaSnapshotsForShard(slice.getName());
 
-    Optional<CoreSnapshotMetaData> leaderCore = snapshots.stream().filter(x -> x.isLeader()).findFirst();
+    Optional<CoreSnapshotMetaData> leaderCore = snapshots.stream().filter(CoreSnapshotMetaData::isLeader).findFirst();
     if (leaderCore.isPresent()) {
       log.info("Replica {} was the leader when snapshot {} was created.", leaderCore.get().getCoreName(), snapshotMeta.getName());
       Replica r = slice.getReplica(leaderCore.get().getCoreName());
@@ -155,7 +157,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
                                .filter(x -> x.getState() != State.DOWN && snapshotMeta.isSnapshotExists(slice.getName(), x))
                                .findFirst();
 
-    if (!r.isPresent()) {
+    if (r.isEmpty()) {
       throw new SolrException(ErrorCode.SERVER_ERROR,
           "Unable to find any live replica with a snapshot named " + snapshotMeta.getName() + " for shard " + slice.getName());
     }
@@ -163,7 +165,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     return r.get();
   }
 
-  private void copyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request, NamedList results) throws Exception {
+  private void copyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request, NamedList results, boolean incremental) throws Exception {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
@@ -174,7 +176,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     if (commitName != null) {
       SolrZkClient zkClient = ocmh.zkStateReader.getZkClient();
       snapshotMeta = SolrSnapshotManager.getCollectionLevelSnapshot(zkClient, collectionName, commitName);
-      if (!snapshotMeta.isPresent()) {
+      if (snapshotMeta.isEmpty()) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Snapshot with name " + commitName
             + " does not exist for collection " + collectionName);
       }
@@ -194,7 +196,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
     final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getActiveSlices()) {
-      Replica replica = null;
+      Replica replica;
 
       if (snapshotMeta.isPresent()) {
         if (!shardsToConsider.contains(slice.getName())) {
@@ -219,9 +221,8 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
       params.set(CoreAdminParams.BACKUP_REPOSITORY, repoName);
       params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString()); // note: index dir will be here then the "snapshot." + slice name
       params.set(CORE_NAME_PROP, coreName);
-      if (snapshotMeta.isPresent()) {
-        params.set(CoreAdminParams.COMMIT_NAME, snapshotMeta.get().getName());
-      }
+      params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
+      snapshotMeta.ifPresent(collectionSnapshotMetaData -> params.set(CoreAdminParams.COMMIT_NAME, collectionSnapshotMetaData.getName()));
 
       shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
       log.debug("Sent backup request to core={} for backupName={}", coreName, backupName);

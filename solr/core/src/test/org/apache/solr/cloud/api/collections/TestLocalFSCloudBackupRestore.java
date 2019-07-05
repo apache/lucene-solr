@@ -17,7 +17,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -27,8 +26,40 @@ import org.junit.Test;
  * Solr backup/restore still requires a "shared" file-system. Its just that in this case such file-system would be
  * exposed via local file-system API.
  */
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12866")
 public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
+  public static final String SOLR_XML = "<solr>\n" +
+      "\n" +
+      "  <str name=\"shareSchema\">${shareSchema:false}</str>\n" +
+      "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n" +
+      "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n" +
+      "\n" +
+      "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"HttpShardHandlerFactory\">\n" +
+      "    <str name=\"urlScheme\">${urlScheme:}</str>\n" +
+      "    <int name=\"socketTimeout\">${socketTimeout:90000}</int>\n" +
+      "    <int name=\"connTimeout\">${connTimeout:15000}</int>\n" +
+      "  </shardHandlerFactory>\n" +
+      "\n" +
+      "  <solrcloud>\n" +
+      "    <str name=\"host\">127.0.0.1</str>\n" +
+      "    <int name=\"hostPort\">${hostPort:8983}</int>\n" +
+      "    <str name=\"hostContext\">${hostContext:solr}</str>\n" +
+      "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n" +
+      "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n" +
+      "    <int name=\"leaderVoteWait\">10000</int>\n" +
+      "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n" +
+      "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n" +
+      "  </solrcloud>\n" +
+      "  \n" +
+      "  <backup>\n" +
+      "    <repository name=\"trackingBackupRepo\" class=\"org.apache.solr.core.TrackingBackupRepository\"> \n" +
+      "      <str name=\"delegateRepoName\">localfs</str>\n" +
+      "    </repository>\n" +
+      "    <repository name=\"localfs\" class=\"org.apache.solr.core.backup.repository.LocalFileSystemRepository\"> \n" +
+      "    </repository>\n" +
+      "  </backup>\n" +
+      "  \n" +
+      "</solr>\n";
+
   private static String backupLocation;
 
   @BeforeClass
@@ -36,6 +67,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
     configureCluster(NUM_SHARDS)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withSolrXml(SOLR_XML)
         .configure();
     cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1, true);
 
@@ -50,11 +82,6 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
   @Override
   public String getCollectionNamePrefix() {
     return "backuprestore";
-  }
-
-  @Override
-  public String getBackupRepoName() {
-    return null;
   }
 
   @Override

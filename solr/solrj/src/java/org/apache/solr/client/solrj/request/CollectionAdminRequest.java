@@ -1008,6 +1008,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String location;
     protected Optional<String> commitName = Optional.empty();
     protected Optional<String> indexBackupStrategy = Optional.empty();
+    protected boolean incremental = false;
 
     public Backup(String collection, String name) {
       super(CollectionAction.BACKUP, collection);
@@ -1051,6 +1052,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public Backup setIncremental(boolean incremental) {
+      this.incremental = incremental;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1066,6 +1072,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (indexBackupStrategy.isPresent()) {
         params.set(CollectionAdminParams.INDEX_BACKUP_STRATEGY, indexBackupStrategy.get());
       }
+      params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
       return params;
     }
 

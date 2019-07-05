@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.Objects;
 
 import com.google.common.base.Preconditions;
@@ -194,6 +195,21 @@ public class HdfsBackupRepository implements BackupRepository {
     try (HdfsDirectory dir = new HdfsDirectory(new Path(sourceRepo), NoLockFactory.INSTANCE,
         hdfsConfig, copyBufferSize)) {
       dest.copyFrom(dir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+    }
+  }
+
+  @Override
+  public void delete(URI path, Collection<String> files) throws IOException {
+    for (String file : files) {
+      fileSystem.delete(new Path(new Path(path), file), true);
+    }
+  }
+
+  @Override
+  public Checksum checksum(URI repo, String fileName) throws IOException {
+    try (HdfsDirectory dir = new HdfsDirectory(new Path(repo), NoLockFactory.INSTANCE,
+        hdfsConfig, copyBufferSize)) {
+      return checksum(dir, fileName);
     }
   }
 }

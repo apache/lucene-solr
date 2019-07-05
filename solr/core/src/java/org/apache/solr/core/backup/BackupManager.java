@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 
 import com.google.common.base.Preconditions;
@@ -70,9 +71,61 @@ public class BackupManager {
   protected final ZkStateReader zkStateReader;
   protected final BackupRepository repository;
 
-  public BackupManager(BackupRepository repository, ZkStateReader zkStateReader) {
+  // Multiple generations of a backup can coexist under a backupId
+  protected FileGeneration propertiesFile;
+  // In case of generation > 0, all zk related files are stored under this subFolder
+  // If generation = 0, value of subFolder will be ignored to maintain backward compatibility
+  protected final String subFolder;
+  protected final URI backupPath;
+
+  private BackupManager(BackupRepository repository,
+                       ZkStateReader zkStateReader,
+                       URI backupPath,
+                       FileGeneration propertiesFile) {
     this.repository = Objects.requireNonNull(repository);
     this.zkStateReader = Objects.requireNonNull(zkStateReader);
+    this.backupPath = backupPath;
+    this.propertiesFile = propertiesFile;
+    this.subFolder = "gen-" + propertiesFile.gen;
+  }
+
+  public static BackupManager forBackup(BackupRepository repository,
+                                        ZkStateReader stateReader,
+                                        URI backupLoc,
+                                        String backupId) throws IOException{
+    Objects.requireNonNull(repository);
+    Objects.requireNonNull(stateReader);
+
+    URI backupPath = repository.resolve(backupLoc, backupId);
+
+    Optional<FileGeneration> opFileGen = FileGeneration.findMostRecent(BACKUP_PROPS_FILE,
+        repository.listAllOrEmpty(backupPath));
+    if (opFileGen.isPresent()) {
+      return new BackupManager(repository, stateReader, backupPath, opFileGen.get().nextGen());
+    } else {
+      return new BackupManager(repository, stateReader, backupPath, FileGeneration.zeroGen(BACKUP_PROPS_FILE));
+    }
+  }
+
+  public static BackupManager forRestore(BackupRepository repository,
+                                         ZkStateReader stateReader,
+                                         URI backupLoc,
+                                         String backupId) throws IOException {
+    Objects.requireNonNull(repository);
+    Objects.requireNonNull(stateReader);
+
+    URI backupPath = repository.resolve(backupLoc, backupId);
+    if (!repository.exists(backupPath)) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't restore since doesn't exist: " + backupPath);
+    }
+
+    Optional<FileGeneration> opFileGen = FileGeneration.findMostRecent(BACKUP_PROPS_FILE,
+        repository.listAll(repository.resolve(backupLoc, backupId)));
+    if (opFileGen.isPresent()) {
+      return new BackupManager(repository, stateReader, backupPath, opFileGen.get());
+    } else {
+      throw new IllegalStateException("No " + BACKUP_PROPS_FILE + " was found, the backup does not exist or not complete");
+    }
   }
 
   /**
@@ -85,24 +138,13 @@ public class BackupManager {
   /**
    * This method returns the configuration parameters for the specified backup.
    *
-   * @param backupLoc The base path used to store the backup data.
-   * @param backupId  The unique name for the backup whose configuration params are required.
    * @return the configuration parameters for the specified backup.
    * @throws IOException In case of errors.
    */
-  public Properties readBackupProperties(URI backupLoc, String backupId) throws IOException {
-    Objects.requireNonNull(backupLoc);
-    Objects.requireNonNull(backupId);
-
-    // Backup location
-    URI backupPath = repository.resolve(backupLoc, backupId);
-    if (!repository.exists(backupPath)) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't restore since doesn't exist: " + backupPath);
-    }
-
+  public Properties readBackupProperties() throws IOException {
     Properties props = new Properties();
     try (Reader is = new InputStreamReader(new PropertiesInputStream(
-        repository.openInput(backupPath, BACKUP_PROPS_FILE, IOContext.DEFAULT)), StandardCharsets.UTF_8)) {
+        repository.openInput(backupPath, propertiesFile.getFileName(), IOContext.DEFAULT)), StandardCharsets.UTF_8)) {
       props.load(is);
       return props;
     }
@@ -111,13 +153,11 @@ public class BackupManager {
   /**
    * This method stores the backup properties at the specified location in the repository.
    *
-   * @param backupLoc  The base path used to store the backup data.
-   * @param backupId  The unique name for the backup whose configuration params are required.
    * @param props The backup properties
    * @throws IOException in case of I/O error
    */
-  public void writeBackupProperties(URI backupLoc, String backupId, Properties props) throws IOException {
-    URI dest = repository.resolve(backupLoc, backupId, BACKUP_PROPS_FILE);
+  public void writeBackupProperties(Properties props) throws IOException {
+    URI dest = repository.resolve(backupPath, propertiesFile.getFileName());
     try (Writer propsWriter = new OutputStreamWriter(repository.createOutput(dest), StandardCharsets.UTF_8)) {
       props.store(propsWriter, "Backup properties file");
     }
@@ -126,16 +166,14 @@ public class BackupManager {
   /**
    * This method reads the meta-data information for the backed-up collection.
    *
-   * @param backupLoc The base path used to store the backup data.
-   * @param backupId The unique name for the backup.
    * @param collectionName The name of the collection whose meta-data is to be returned.
    * @return the meta-data information for the backed-up collection.
    * @throws IOException in case of errors.
    */
-  public DocCollection readCollectionState(URI backupLoc, String backupId, String collectionName) throws IOException {
+  public DocCollection readCollectionState(String collectionName) throws IOException {
     Objects.requireNonNull(collectionName);
 
-    URI zkStateDir = repository.resolve(backupLoc, backupId, ZK_STATE_DIR);
+    URI zkStateDir = getUriUnderSubFolder(ZK_STATE_DIR);
     try (IndexInput is = repository.openInput(zkStateDir, COLLECTION_PROPS_FILE, IOContext.DEFAULT)) {
       byte[] arr = new byte[(int) is.length()]; // probably ok since the json file should be small.
       is.readBytes(arr, 0, (int) is.length());
@@ -144,18 +182,32 @@ public class BackupManager {
     }
   }
 
+  private URI getUriUnderSubFolder(String... files) {
+    if (propertiesFile.gen == 0) {
+      if (files.length == 0) {
+        return backupPath;
+      }
+
+      return repository.resolve(backupPath, files);
+    } else {
+      URI subFolderURI = repository.resolve(backupPath, subFolder);
+      if (files.length == 0) {
+        return subFolderURI;
+      }
+      return repository.resolve(subFolderURI, files);
+    }
+  }
+
   /**
    * This method writes the collection meta-data to the specified location in the repository.
    *
-   * @param backupLoc The base path used to store the backup data.
-   * @param backupId  The unique name for the backup.
    * @param collectionName The name of the collection whose meta-data is being stored.
    * @param collectionState The collection meta-data to be stored.
    * @throws IOException in case of I/O errors.
    */
-  public void writeCollectionState(URI backupLoc, String backupId, String collectionName,
+  public void writeCollectionState(String collectionName,
                                    DocCollection collectionState) throws IOException {
-    URI dest = repository.resolve(backupLoc, backupId, ZK_STATE_DIR, COLLECTION_PROPS_FILE);
+    URI dest = getUriUnderSubFolder(ZK_STATE_DIR, COLLECTION_PROPS_FILE);
     try (OutputStream collectionStateOs = repository.createOutput(dest)) {
       collectionStateOs.write(Utils.toJSON(Collections.singletonMap(collectionName, collectionState)));
     }
@@ -164,15 +216,13 @@ public class BackupManager {
   /**
    * This method uploads the Solr configuration files to the desired location in Zookeeper.
    *
-   * @param backupLoc  The base path used to store the backup data.
-   * @param backupId  The unique name for the backup.
    * @param sourceConfigName The name of the config to be copied
    * @param targetConfigName  The name of the config to be created.
    * @throws IOException in case of I/O errors.
    */
-  public void uploadConfigDir(URI backupLoc, String backupId, String sourceConfigName, String targetConfigName)
+  public void uploadConfigDir(String sourceConfigName, String targetConfigName)
       throws IOException {
-    URI source = repository.resolve(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR, sourceConfigName);
+    URI source = getUriUnderSubFolder(ZK_STATE_DIR, CONFIG_STATE_DIR, sourceConfigName);
     String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + targetConfigName;
     uploadToZk(zkStateReader.getZkClient(), source, zkPath);
   }
@@ -180,22 +230,24 @@ public class BackupManager {
   /**
    * This method stores the contents of a specified Solr config at the specified location in repository.
    *
-   * @param backupLoc  The base path used to store the backup data.
-   * @param backupId  The unique name for the backup.
    * @param configName The name of the config to be saved.
    * @throws IOException in case of I/O errors.
    */
-  public void downloadConfigDir(URI backupLoc, String backupId, String configName) throws IOException {
-    URI dest = repository.resolve(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR, configName);
-    repository.createDirectory(repository.resolve(backupLoc, backupId, ZK_STATE_DIR));
-    repository.createDirectory(repository.resolve(backupLoc, backupId, ZK_STATE_DIR, CONFIG_STATE_DIR));
+  public void downloadConfigDir(String configName) throws IOException {
+    URI generationFolder = getUriUnderSubFolder();
+    if (!repository.exists(generationFolder))
+      repository.createDirectory(generationFolder);
+
+    URI dest = repository.resolve(generationFolder, ZK_STATE_DIR, CONFIG_STATE_DIR, configName);
+    repository.createDirectory(repository.resolve(generationFolder, ZK_STATE_DIR));
+    repository.createDirectory(repository.resolve(generationFolder, ZK_STATE_DIR, CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
     downloadFromZK(zkStateReader.getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + "/" + configName, dest);
   }
 
-  public void uploadCollectionProperties(URI backupLoc, String backupId, String collectionName) throws IOException {
-    URI sourceDir = repository.resolve(backupLoc, backupId, ZK_STATE_DIR);
+  public void uploadCollectionProperties(String collectionName) throws IOException {
+    URI sourceDir = getUriUnderSubFolder(ZK_STATE_DIR);
     URI source = repository.resolve(sourceDir, ZkStateReader.COLLECTION_PROPS_ZKNODE);
     if (!repository.exists(source)) {
       // No collection properties to restore
@@ -213,8 +265,8 @@ public class BackupManager {
     }
   }
 
-  public void downloadCollectionProperties(URI backupLoc, String backupId, String collectionName) throws IOException {
-    URI dest = repository.resolve(backupLoc, backupId, ZK_STATE_DIR, ZkStateReader.COLLECTION_PROPS_ZKNODE);
+  public void downloadCollectionProperties(String collectionName) throws IOException {
+    URI dest = getUriUnderSubFolder(ZK_STATE_DIR, ZkStateReader.COLLECTION_PROPS_ZKNODE);
     String zkPath = ZkStateReader.COLLECTIONS_ZKNODE + '/' + collectionName + '/' + ZkStateReader.COLLECTION_PROPS_ZKNODE;
 
 

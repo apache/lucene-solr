@@ -20,8 +20,12 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.Collection;
+import java.util.Objects;
 import java.util.Optional;
 
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -181,4 +185,77 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    *           in case of errors.
    */
   void copyFileTo(URI sourceRepo, String fileName, Directory dest) throws IOException;
+
+  /**
+   * Delete {@code files} at {@code path}
+   * @since 8.2.0
+   */
+  default void delete(URI path, Collection<String> files) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Get checksum of {@code fileName} at {@code path}
+   * This method only be called on Lucene index files
+   * @since 8.2.0
+   */
+  default Checksum checksum(URI path, String fileName) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Get checksum of {@code fileName} at {@code dir}.
+   * This method only be called on Lucene index files
+   * @since 8.2.0
+   */
+  default Checksum checksum(Directory dir, String fileName) throws IOException {
+    try (IndexInput in = dir.openChecksumInput(fileName, IOContext.READONCE)) {
+      final long length = in.length();
+      if (length < CodecUtil.footerLength()) {
+        throw new CorruptIndexException("File: " + fileName + " is corrupted, its length must be >= " +
+            CodecUtil.footerLength() + " but was: " + in.length(), in);
+      }
+
+      return new BackupRepository.Checksum(fileName, String.valueOf(CodecUtil.retrieveChecksum(in)), in.length());
+    }
+  }
+
+  /**
+   * List all files or directories directly under {@code path}.
+   * @return an empty array in case of IOException
+   */
+  default String[] listAllOrEmpty(URI path) {
+    try {
+      return this.listAll(path);
+    } catch (IOException e) {
+      return new String[0];
+    }
+  }
+
+  class Checksum {
+    public final String fileName;
+    public final String checksum;
+    public final long size;
+
+    Checksum(String fileName, String checksum, long size) {
+      this.fileName = fileName;
+      this.checksum = checksum;
+      this.size = size;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      Checksum checksum = (Checksum) o;
+      return size == checksum.size &&
+          Objects.equals(fileName, checksum.fileName) &&
+          Objects.equals(this.checksum, checksum.checksum);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(fileName, checksum, size);
+    }
+  }
 }

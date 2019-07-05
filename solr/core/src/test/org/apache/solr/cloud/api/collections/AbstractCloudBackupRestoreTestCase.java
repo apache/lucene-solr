@@ -16,19 +16,27 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.not;
-
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -36,6 +44,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -44,13 +53,22 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.TrackingBackupRepository;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.core.TrackingBackupRepository.copiedFiles;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.not;
 
 /**
  * This class implements the logic required to test Solr cloud backup/restore capability.
@@ -80,11 +98,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   public abstract String getCollectionNamePrefix();
 
   /**
-   * @return The name of the backup repository to use.
-   */
-  public abstract String getBackupRepoName();
-
-  /**
    * @return The absolute path for the backup location.
    *         Could return null.
    */
@@ -104,9 +117,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     setTestSuffix("testok");
     boolean isImplicit = random().nextBoolean();
     boolean doSplitShardOperation = !isImplicit && random().nextBoolean();
-    replFactor = TestUtil.nextInt(random(), 1, 2);
-    numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
-    numPullReplicas = TestUtil.nextInt(random(), 0, 1);
+    randomizeReplicaTypes();
     int backupReplFactor = replFactor + numPullReplicas + numTlogReplicas;
 
     CollectionAdminRequest.Create create = isImplicit ?
@@ -162,11 +173,86 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   }
 
   @Test
+  @Slow
+  public void testBackupIncremental() throws Exception {
+    TrackingBackupRepository.clear();
+
+    setTestSuffix("testbackupinc");
+    randomizeReplicaTypes();
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    CollectionAdminRequest
+        .createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas)
+        .setMaxShardsPerNode(-1)
+        .process(solrClient);
+
+    indexDocs(getCollectionName(), false);
+
+    String backupName = BACKUPNAME_PREFIX + testSuffix;
+    try (BackupRepository repository = cluster.getJettySolrRunner(0).getCoreContainer()
+        .newBackupRepository(Optional.of(getBackupRepoName()))) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      IncrementalBackupVerifier verifier = new IncrementalBackupVerifier(repository, backupLocation, backupName);
+      backupRestoreCorruptBackupFilesThenCheck(solrClient, verifier, backupLocation, backupName);
+
+      indexDocs(getCollectionName(), false);
+      backupRestoreCorruptBackupFilesThenCheck(solrClient, verifier, backupLocation, backupName);
+
+      for (int i = 0; i < 15; i++) {
+        indexDocs(getCollectionName(), 5,false);
+      }
+
+      backupRestoreCorruptBackupFilesThenCheck(solrClient, verifier, backupLocation, backupName);
+
+      new UpdateRequest()
+          .deleteByQuery("*:*")
+          .commit(cluster.getSolrClient(), getCollectionName());
+
+      backupRestoreCorruptBackupFilesThenCheck(solrClient, verifier, backupLocation, backupName);
+
+      indexDocs(getCollectionName(), false);
+      backupRestoreCorruptBackupFilesThenCheck(solrClient, verifier, backupLocation, backupName);
+    }
+  }
+
+  private void backupRestoreCorruptBackupFilesThenCheck(CloudSolrClient solrClient,
+                                                        IncrementalBackupVerifier verifier,
+                                                        String backupLocation,
+                                                        String backupName) throws Exception {
+    verifier.incrementalBackupThenVerify();
+
+    if( random().nextBoolean() )
+      simpleRestoreAndCheckDocCount(solrClient, backupLocation, backupName);
+
+    if ( random().nextBoolean() )
+      verifier.corruptBackupFiles();
+  }
+
+  private void simpleRestoreAndCheckDocCount(CloudSolrClient solrClient, String backupLocation, String backupName) throws Exception{
+    Map<String, Integer> origShardToDocCount = getShardToDocCountMap(solrClient, getCollectionState(getCollectionName()));
+
+    String restoreCollectionName = getCollectionName() + "_restored";
+    CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+        .setLocation(backupLocation).setRepositoryName(getBackupRepoName()).process(solrClient);
+
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
+
+    // check num docs are the same
+    assertEquals(origShardToDocCount, getShardToDocCountMap(solrClient, getCollectionState(restoreCollectionName)));
+
+    // this methods may get invoked multiple times, collection must be cleanup
+    CollectionAdminRequest.deleteCollection(restoreCollectionName).process(solrClient);
+  }
+
+  protected String getBackupRepoName() {
+    return "trackingBackupRepo";
+  }
+
+  @Test
   public void testRestoreFailure() throws Exception {
     setTestSuffix("testfailure");
-    replFactor = TestUtil.nextInt(random(), 1, 2);
-    numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
-    numPullReplicas = TestUtil.nextInt(random(), 0, 1);
+    randomizeReplicaTypes();
 
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
@@ -211,6 +297,12 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       assertThat("Failed collection is still in the clusterstate: " + cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollectionOrNull(restoreCollectionName), 
           CollectionAdminRequest.listCollections(solrClient), not(hasItem(restoreCollectionName)));
     }
+  }
+
+  private void randomizeReplicaTypes() {
+    replFactor = TestUtil.nextInt(random(), 1, 2);
+    numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
+    numPullReplicas = TestUtil.nextInt(random(), 0, 1);
   }
 
   /**
@@ -266,18 +358,13 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     return cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices().size();
   }
 
-  private int indexDocs(String collectionName, boolean useUUID) throws Exception {
-    Random random = new Random(docsSeed);// use a constant seed for the whole test run so that we can easily re-index.
-    int numDocs = random.nextInt(100);
-    if (numDocs == 0) {
-      log.info("Indexing ZERO test docs");
-      return 0;
-    }
+  private void indexDocs(String collectionName, int numDocs, boolean useUUID) throws Exception {
+    Random random = new Random(docsSeed);
 
     List<SolrInputDocument> docs = new ArrayList<>(numDocs);
     for (int i=0; i<numDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", ((useUUID == true) ? java.util.UUID.randomUUID().toString() : i));
+      doc.addField("id", (useUUID ? java.util.UUID.randomUUID().toString() : i));
       doc.addField("shard_s", "shard" + (1 + random.nextInt(NUM_SHARDS))); // for implicit router
       docs.add(doc);
     }
@@ -287,7 +374,17 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     client.commit(collectionName);
 
     log.info("Indexed {} docs to collection: {}", numDocs, collectionName);
+  }
 
+  private int indexDocs(String collectionName, boolean useUUID) throws Exception {
+    Random random = new Random(docsSeed);// use a constant seed for the whole test run so that we can easily re-index.
+    int numDocs = random.nextInt(100);
+    if (numDocs == 0) {
+      log.info("Indexing ZERO test docs");
+      return 0;
+    }
+
+    indexDocs(collectionName, numDocs, useUUID);
     return numDocs;
   }
 
@@ -373,7 +470,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     props.setProperty("customKey", "customVal");
     restore.setProperties(props);
 
-    if (sameConfig==false) {
+    if (!sameConfig) {
       restore.setConfigName("customConfigName");
     }
     if (random().nextBoolean()) {
@@ -450,5 +547,133 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       }
     }
     return shardToDocCount;
+  }
+
+  private class IncrementalBackupVerifier {
+    private BackupRepository repository;
+    private String backupLocation;
+    private String backupName;
+    private Map<String, Collection<String>> lastShardCommitToBackupFiles = new HashMap<>();
+    private List<URI> corruptedFiles = new ArrayList<>();
+
+    IncrementalBackupVerifier(BackupRepository repository, String backupLocation, String backupName) {
+      this.repository = repository;
+      this.backupLocation = backupLocation;
+      this.backupName = backupName;
+    }
+
+    private void corruptBackupFiles() throws Exception {
+      for(Slice slice : getCollectionState(getCollectionName()).getSlices()) {
+        Replica leader = slice.getLeader();
+
+        try (SolrCore solrCore = cluster.getReplicaJetty(leader).getCoreContainer().getCore(leader.getCoreName())) {
+          Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
+          try {
+            URI snapshotDirPath = repository.resolve(repository.createURI(backupLocation), backupName, "snapshot." + slice.getName());
+
+            String[] listFiles = repository.listAll(snapshotDirPath);
+            for (String file : listFiles) {
+              if (random().nextBoolean())
+                continue;
+
+              repository.delete(snapshotDirPath, Collections.singleton(file));
+              try (OutputStream os = repository.createOutput(repository.resolve(snapshotDirPath, file))) {
+                byte[] corruptedData = new byte[random().nextInt(30) + 1];
+                random().nextBytes(corruptedData);
+                os.write(corruptedData);
+              }
+              corruptedFiles.add(repository.resolve(snapshotDirPath, file));
+            }
+          } finally {
+            solrCore.getDirectoryFactory().release(dir);
+          }
+        }
+      }
+    }
+
+    private void backupThenWait() throws SolrServerException, IOException {
+      CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(getCollectionName(), backupName)
+          .setLocation(backupLocation).setIncremental(true).setRepositoryName(getBackupRepoName());
+      assertEquals(0, backup.process(cluster.getSolrClient()).getStatus());
+    }
+
+    void incrementalBackupThenVerify() throws IOException, SolrServerException {
+      int numCopiedFiles = copiedFiles().size();
+      backupThenWait();
+      List<URI> newFilesCopiedOver = copiedFiles().subList(numCopiedFiles, copiedFiles().size());
+      verify(newFilesCopiedOver, corruptedFiles);
+
+      // these corrupted files are no longer valid for the next check since they are healed by the last backup
+      corruptedFiles.clear();
+    }
+
+    public void verify(List<URI> newFilesCopiedOver, List<URI> corruptedFiles) throws IOException {
+      //TODO Datcm verify each backup will reupload config files
+
+      // verify indexes file
+      for(Slice slice : getCollectionState(getCollectionName()).getSlices()) {
+        Replica leader = slice.getLeader();
+
+        try (SolrCore solrCore = cluster.getReplicaJetty(leader).getCoreContainer().getCore(leader.getCoreName())) {
+          Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
+          try {
+
+            URI snapshotDirPath = repository.resolve(repository.createURI(backupLocation), backupName, "snapshot." + slice.getName());
+            IndexCommit lastCommit = solrCore.getDeletionPolicy().getLatestCommit();
+            Collection<URI> newFilesInIndex = newFilesComparedToLastBackup(slice.getName(), lastCommit)
+                .stream()
+                .map(f -> repository.resolve(snapshotDirPath, f))
+                .collect(Collectors.toList());
+
+            String[] listFiles = repository.listAll(snapshotDirPath);
+
+            lastCommit.getFileNames().forEach(
+                f -> {
+                  URI remoteURI = repository.resolve(snapshotDirPath, f);
+                  if (newFilesInIndex.contains(remoteURI) || corruptedFiles.contains(remoteURI)) {
+                    assertTrue(newFilesCopiedOver.contains(remoteURI));
+                  } else {
+                    assertFalse(newFilesCopiedOver.contains(remoteURI));
+                  }
+                }
+            );
+
+            assertEquals("Incremental backup stored more files than needed stored: " + Arrays.toString(listFiles) +
+                " commit-files: " + lastCommit.getFileNames(),lastCommit.getFileNames().size(), listFiles.length);
+
+            Set<String> allChecksums = new HashSet<>();
+            // assert checksum are same
+            Arrays.stream(listFiles)
+                .forEach(f -> {
+                  try {
+                    BackupRepository.Checksum localChecksum = repository.checksum(dir, f);
+                    BackupRepository.Checksum remoteChecksum = repository.checksum(snapshotDirPath, f);
+                    allChecksums.add(localChecksum.checksum);
+                    allChecksums.add(remoteChecksum.checksum);
+                    assertEquals(repository.checksum(dir, f), repository.checksum(snapshotDirPath, f));
+                  } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                  }
+                });
+
+            if (listFiles.length > 7) {
+              assertNotEquals("All files have same checksum, this likely be a bug in checksum implementation",1, allChecksums.size());
+            }
+          } finally {
+            solrCore.getDirectoryFactory().release(dir);
+          }
+        }
+      }
+    }
+
+    private Collection<String> newFilesComparedToLastBackup(String shardName, IndexCommit currentCommit) throws IOException {
+      Collection<String> oldFiles = lastShardCommitToBackupFiles.put(shardName, currentCommit.getFileNames());
+      if (oldFiles == null)
+        oldFiles = new ArrayList<>();
+
+      List<String> newFiles = new ArrayList<>(currentCommit.getFileNames());
+      newFiles.removeAll(oldFiles);
+      return newFiles;
+    }
   }
 }

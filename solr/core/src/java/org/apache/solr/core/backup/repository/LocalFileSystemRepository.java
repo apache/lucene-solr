@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collection;
 import java.util.Objects;
 
 import org.apache.lucene.store.Directory;
@@ -129,6 +130,12 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public String[] listAll(URI dirPath) throws IOException {
+    // It is better to check the existence of the directory first since
+    // creating a FSDirectory will create a corresponds folder if the directory does not exist
+    if (!exists(dirPath)) {
+      return new String[0];
+    }
+
     try (FSDirectory dir = new SimpleFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
       return dir.listAll();
     }
@@ -150,6 +157,25 @@ public class LocalFileSystemRepository implements BackupRepository {
   public void copyFileTo(URI sourceDir, String fileName, Directory dest) throws IOException {
     try (FSDirectory dir = new SimpleFSDirectory(Paths.get(sourceDir), NoLockFactory.INSTANCE)) {
       dest.copyFrom(dir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+    }
+  }
+
+  @Override
+  public Checksum checksum(URI repo, String fileName) throws IOException {
+    try (FSDirectory dir = new SimpleFSDirectory(Paths.get(repo), NoLockFactory.INSTANCE)) {
+      return checksum(dir, fileName);
+    }
+  }
+
+  @Override
+  public void delete(URI path, Collection<String> files) throws IOException {
+    if (files.isEmpty())
+      return;
+
+    try (FSDirectory dir = new SimpleFSDirectory(Paths.get(path), NoLockFactory.INSTANCE)) {
+      for (String file : files) {
+        dir.deleteFile(file);
+      }
     }
   }
 
