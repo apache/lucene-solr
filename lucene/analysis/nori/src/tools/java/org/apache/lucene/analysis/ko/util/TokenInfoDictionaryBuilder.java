@@ -84,8 +84,7 @@ public class TokenInfoDictionaryBuilder {
         String[] entry = CSVUtil.parse(line);
 
         if(entry.length < 12) {
-          System.out.println("Entry in CSV is not valid: " + line);
-          continue;
+          throw new IllegalArgumentException("Entry in CSV is not valid (12 field values expected): " + line);
         }
 
         // NFKC normalize dictionary entry

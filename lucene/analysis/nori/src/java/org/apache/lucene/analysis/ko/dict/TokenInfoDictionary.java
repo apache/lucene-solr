@@ -34,11 +34,20 @@ public final class TokenInfoDictionary extends BinaryDictionary {
   public static final String FST_FILENAME_SUFFIX = "$fst.dat";
 
   private final TokenInfoFST fst;
-  
+
   private TokenInfoDictionary() throws IOException {
-    super();
+    this(ResourceScheme.CLASSPATH, null);
+  }
+
+  /**
+   * @param resourceScheme - scheme for loading resources (FILE or CLASSPATH).
+   * @param resourcePath - where to load resources (dictionaries) from. If null, with CLASSPATH scheme only, use
+   * this class's name as the path.
+   */
+  TokenInfoDictionary(ResourceScheme resourceScheme, String resourcePath) throws IOException {
+    super(resourceScheme, resourcePath);
     InputStream is = null;
-    FST<Long> fst = null;
+    FST<Long> fst;
     boolean success = false;
     try {
       is = getResource(FST_FILENAME_SUFFIX);
