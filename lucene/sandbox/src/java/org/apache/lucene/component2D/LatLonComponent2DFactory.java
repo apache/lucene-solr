@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
@@ -32,13 +33,17 @@ import org.apache.lucene.geo.Rectangle;
 
 public class LatLonComponent2DFactory {
 
-  /** Builds a Component2D from multi-point */
+  /** Builds a Component2D from multi-point on the form [Lat, Lon] */
   public static Component2D create(double[]... points) {
     if (points.length == 1) {
+      GeoUtils.checkLatitude(points[0][0]);
+      GeoUtils.checkLongitude(points[0][1]);
       return PointComponent2D.createComponent(GeoEncodingUtils.encodeLongitude(points[0][1]), GeoEncodingUtils.encodeLatitude(points[0][0]));
     }
     Component2D components[] = new Component2D[points.length];
     for (int i = 0; i < components.length; i++) {
+      GeoUtils.checkLatitude(points[i][0]);
+      GeoUtils.checkLongitude(points[i][1]);
       components[i] = PointComponent2D.createComponent(GeoEncodingUtils.encodeLongitude(points[i][1]), GeoEncodingUtils.encodeLatitude(points[i][0]));
     }
     return Component2DTree.create(components);
@@ -130,11 +135,13 @@ public class LatLonComponent2DFactory {
     } else if (shape instanceof Rectangle) {
       return create((Rectangle) shape);
     } else {
-      throw new IllegalArgumentException("Unkomn shape");
+      throw new IllegalArgumentException("Unknown shape type: " + shape.getClass());
     }
   }
 
-  /** Builds a Component2D  from multiple components in a tree structure */
+  /** Builds a Component2D from an array of shape descriptors. Current descriptors supported are:
+   *  {@link Polygon}, {@link Line}, {@link Rectangle} and double[] ([Lat, Lon] point).
+   * */
   public static Component2D create(Object... shapes) {
     if (shapes.length == 1) {
       return createComponent(shapes[0]);
