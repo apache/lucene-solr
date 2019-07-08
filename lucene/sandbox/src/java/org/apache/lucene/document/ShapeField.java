@@ -37,7 +37,7 @@ import org.apache.lucene.util.NumericUtils;
  *
  * @lucene.experimental
  */
-public abstract class ShapeField {
+public final class ShapeField {
   /** vertex coordinates are encoded as 4 byte integers */
   static final int BYTES = Integer.BYTES;
 
@@ -46,6 +46,10 @@ public abstract class ShapeField {
   static {
     TYPE.setDimensions(7, 4, BYTES);
     TYPE.freeze();
+  }
+
+  // no instance:
+  private ShapeField() {
   }
 
   /** polygons are decomposed into tessellated triangles using {@link org.apache.lucene.geo.Tessellator}

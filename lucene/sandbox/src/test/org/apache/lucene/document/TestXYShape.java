@@ -48,7 +48,7 @@ public class TestXYShape extends LuceneTestCase {
   }
 
   protected Query newRectQuery(String field, double minX, double maxX, double minY, double maxY) {
-    return XYShape.newBoxQuery(field, QueryRelation.INTERSECTS, minX, maxX, minY, maxY);
+    return XYShape.newBoxQuery(field, QueryRelation.INTERSECTS, (float)minX, (float)maxX, (float)minY, (float)maxY);
   }
 
   /** test we can search for a point with a standard number of vertices*/

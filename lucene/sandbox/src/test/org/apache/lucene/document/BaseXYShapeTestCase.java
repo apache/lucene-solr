@@ -42,7 +42,7 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   /** factory method to create a new bounding box query */
   @Override
   protected Query newRectQuery(String field, QueryRelation queryRelation, double minX, double maxX, double minY, double maxY) {
-    return XYShape.newBoxQuery(field, queryRelation, minX, maxX, minY, maxY);
+    return XYShape.newBoxQuery(field, queryRelation, (float)minX, (float)maxX, (float)minY, (float)maxY);
   }
 
   /** factory method to create a new line query */

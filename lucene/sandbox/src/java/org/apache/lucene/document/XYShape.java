@@ -36,7 +36,7 @@ import static org.apache.lucene.geo.XYEncodingUtils.encode;
  * <ul>
  *   <li>{@link #createIndexableFields(String, XYPolygon)} for indexing a cartesian polygon.
  *   <li>{@link #createIndexableFields(String, XYLine)} for indexing a cartesian linestring.
- *   <li>{@link #createIndexableFields(String, double, double)} for indexing a x, y cartesian point.
+ *   <li>{@link #createIndexableFields(String, float, float)} for indexing a x, y cartesian point.
  *   <li>{@link #newBoxQuery newBoxQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a bounding box.
  *   <li>{@link #newBoxQuery newLineQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a linestring.
  *   <li>{@link #newBoxQuery newPolygonQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a polygon.
@@ -81,13 +81,13 @@ public class XYShape {
   }
 
   /** create indexable fields for cartesian point geometry */
-  public static Field[] createIndexableFields(String fieldName, double x, double y) {
+  public static Field[] createIndexableFields(String fieldName, float x, float y) {
     return new Field[] {new Triangle(fieldName,
         encode(x), encode(y), encode(x), encode(y), encode(x), encode(y))};
   }
 
   /** create a query to find all cartesian shapes that intersect a defined bounding box **/
-  public static Query newBoxQuery(String field, QueryRelation queryRelation, double minX, double maxX, double minY, double maxY) {
+  public static Query newBoxQuery(String field, QueryRelation queryRelation, float minX, float maxX, float minY, float maxY) {
     return new XYShapeBoundingBoxQuery(field, queryRelation, minX, maxX, minY, maxY);
   }
 

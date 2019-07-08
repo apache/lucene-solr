@@ -197,7 +197,9 @@ final public class Tessellator {
       // Determine if the resulting hole polygon was successful.
       if(list != null) {
         // Add the leftmost vertex of the hole.
-        holeList.add(fetchLeftmost(list));
+        Node leftMost = fetchLeftmost(list);
+        holeList.add(leftMost);
+        holeListPolygons.put(leftMost, holes[i]);
       }
       nodeIndex += holes[i].numPoints();
     }
@@ -231,7 +233,7 @@ final public class Tessellator {
     return eliminateHoles(holeList, holeListPolygons, outerNode);
   }
 
-  private static final Node eliminateHoles(List<Node> holeList, final Map holeListPolygons, Node outerNode) {
+  private static final Node eliminateHoles(List<Node> holeList, final Map<Node, ?> holeListPolygons, Node outerNode) {
     // Sort the hole vertices by x coordinate
     holeList.sort((Node pNodeA, Node pNodeB) ->
     {
