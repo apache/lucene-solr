@@ -19,14 +19,14 @@ package org.apache.lucene.document;
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.EdgeTree;
-import org.apache.lucene.geo.GeoTestUtil;
-import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
-import org.apache.lucene.geo.Polygon2D;
+import org.apache.lucene.geo.ShapeTestUtil;
+import org.apache.lucene.geo.XYLine;
+import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 
-/** random bounding box, line, and polygon query tests for random generated {@code latitude, longitude} points */
-public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
+/** random cartesian bounding box, line, and polygon query tests for random generated {@code x, y} points */
+public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
 
   @Override
   protected ShapeType getShapeType() {
@@ -34,26 +34,26 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  protected Line randomQueryLine(Object... shapes) {
+  protected XYLine randomQueryLine(Object... shapes) {
     if (random().nextInt(100) == 42) {
       // we want to ensure some cross, so randomly generate lines that share vertices with the indexed point set
       int maxBound = (int)Math.floor(shapes.length * 0.1d);
       if (maxBound < 2) {
         maxBound = shapes.length;
       }
-      double[] lats = new double[RandomNumbers.randomIntBetween(random(), 2, maxBound)];
-      double[] lons = new double[lats.length];
-      for (int i = 0, j = 0; j < lats.length && i < shapes.length; ++i, ++j) {
+      float[] x = new float[RandomNumbers.randomIntBetween(random(), 2, maxBound)];
+      float[] y = new float[x.length];
+      for (int i = 0, j = 0; j < x.length && i < shapes.length; ++i, ++j) {
         Point p = (Point) (shapes[i]);
         if (random().nextBoolean() && p != null) {
-          lats[j] = p.lat;
-          lons[j] = p.lon;
+          x[j] = p.x;
+          y[j] = p.y;
         } else {
-          lats[j] = GeoTestUtil.nextLatitude();
-          lons[j] = GeoTestUtil.nextLongitude();
+          x[j] = (float)ShapeTestUtil.nextDouble();
+          y[j] = (float)ShapeTestUtil.nextDouble();
         }
       }
-      return new Line(lats, lons);
+      return new XYLine(x, y);
     }
     return nextLine();
   }
@@ -61,7 +61,7 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
   @Override
   protected Field[] createIndexableFields(String field, Object point) {
     Point p = (Point)point;
-    return LatLonShape.createIndexableFields(field, p.lat, p.lon);
+    return XYShape.createIndexableFields(field, p.x, p.y);
   }
 
   @Override
@@ -77,8 +77,8 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Point p = (Point)shape;
-      double lat = encoder.quantizeY(p.lat);
-      double lon = encoder.quantizeX(p.lon);
+      double lat = encoder.quantizeY(p.y);
+      double lon = encoder.quantizeX(p.x);
       boolean isDisjoint = lat < minLat || lat > maxLat;
 
       isDisjoint = isDisjoint || ((minLon > maxLon)
@@ -97,12 +97,12 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testPolygonQuery(Object poly2d, Object shape) {
-      return testPoint((Polygon2D)poly2d, (Point) shape);
+      return testPoint((XYPolygon2D)poly2d, (Point) shape);
     }
 
     private boolean testPoint(EdgeTree tree, Point p) {
-      double lat = encoder.quantizeY(p.lat);
-      double lon = encoder.quantizeX(p.lon);
+      double lat = encoder.quantizeY(p.y);
+      double lon = encoder.quantizeX(p.x);
       // for consistency w/ the query we test the point as a triangle
       Relation r = tree.relateTriangle(lon, lat, lon, lat, lon, lat);
       if (queryRelation == QueryRelation.WITHIN) {

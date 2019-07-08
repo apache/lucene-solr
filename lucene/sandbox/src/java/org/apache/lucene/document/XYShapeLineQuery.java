@@ -19,19 +19,19 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.GeoEncodingUtils;
-import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
+import static org.apache.lucene.geo.XYEncodingUtils.decode;
+
 /**
- * Finds all previously indexed geo shapes that intersect the specified arbitrary {@code Line}.
+ * Finds all previously indexed cartesian shapes that intersect the specified arbitrary {@code XYLine}.
  * <p>
  * Note:
  * <ul>
  *    <li>{@code QueryRelation.WITHIN} queries are not yet supported</li>
- *    <li>Dateline crossing is not yet supported</li>
  * </ul>
  * <p>
  * todo:
@@ -39,19 +39,19 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>Add distance support for buffered queries</li>
  * </ul>
  * <p>The field must be indexed using
- * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
+ * {@link org.apache.lucene.document.XYShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
-final class LatLonShapeLineQuery extends ShapeQuery {
-  final Line[] lines;
+final class XYShapeLineQuery extends ShapeQuery {
+  final XYLine[] lines;
   final private Line2D line2D;
 
-  public LatLonShapeLineQuery(String field, QueryRelation queryRelation, Line... lines) {
+  public XYShapeLineQuery(String field, QueryRelation queryRelation, XYLine... lines) {
     super(field, queryRelation);
     /** line queries do not support within relations, only intersects and disjoint */
     if (queryRelation == QueryRelation.WITHIN) {
-      throw new IllegalArgumentException("LatLonShapeLineQuery does not support " + QueryRelation.WITHIN + " queries");
+      throw new IllegalArgumentException("XYShapeLineQuery does not support " + QueryRelation.WITHIN + " queries");
     }
 
     if (lines == null) {
@@ -63,8 +63,10 @@ final class LatLonShapeLineQuery extends ShapeQuery {
     for (int i = 0; i < lines.length; ++i) {
       if (lines[i] == null) {
         throw new IllegalArgumentException("line[" + i + "] must not be null");
-      } else if (lines[i].minLon > lines[i].maxLon) {
-        throw new IllegalArgumentException("LatLonShapeLineQuery does not currently support querying across dateline.");
+      } else if (lines[i].minX > lines[i].maxX) {
+        throw new IllegalArgumentException("XYShapeLineQuery: minX cannot be greater than maxX.");
+      } else if (lines[i].minY > lines[i].maxY) {
+        throw new IllegalArgumentException("XYShapeLineQuery: minY cannot be greater than maxY.");
       }
     }
     this.lines = lines.clone();
@@ -73,11 +75,11 @@ final class LatLonShapeLineQuery extends ShapeQuery {
 
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
-                                                        int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    double minLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
-    double minLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
-    double maxLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
-    double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+                                            int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    double minLat = decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    double minLon = decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    double maxLat = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    double maxLon = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
     return line2D.relate(minLat, maxLat, minLon, maxLon);
@@ -87,12 +89,12 @@ final class LatLonShapeLineQuery extends ShapeQuery {
   protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle[0]);
-    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle[1]);
-    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle[2]);
-    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle[3]);
-    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle[4]);
-    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle[5]);
+    double alat = decode(scratchTriangle[0]);
+    double alon = decode(scratchTriangle[1]);
+    double blat = decode(scratchTriangle[2]);
+    double blon = decode(scratchTriangle[3]);
+    double clat = decode(scratchTriangle[4]);
+    double clon = decode(scratchTriangle[5]);
 
     if (queryRelation == QueryRelation.WITHIN) {
       return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
@@ -111,13 +113,13 @@ final class LatLonShapeLineQuery extends ShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("Line(").append(lines[0].toGeoJSON()).append(')');
+    sb.append("XYLine(").append(lines[0].toGeoJSON()).append(")");
     return sb.toString();
   }
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && Arrays.equals(lines, ((LatLonShapeLineQuery)o).lines);
+    return super.equalsTo(o) && Arrays.equals(lines, ((XYShapeLineQuery)o).lines);
   }
 
   @Override

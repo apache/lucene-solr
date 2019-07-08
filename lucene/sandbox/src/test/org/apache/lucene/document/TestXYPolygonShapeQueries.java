@@ -21,15 +21,15 @@ import java.util.List;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.geo.Line2D;
-import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
-import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.geo.XYPolygon;
+import org.apache.lucene.geo.XYPolygon2D;
+import org.apache.lucene.geo.XYRectangle;
+import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
 
-/** random bounding box, line, and polygon query tests for random indexed {@link Polygon} types */
-public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
+/** random cartesian bounding box, line, and polygon query tests for random indexed {@link XYPolygon} types */
+public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
 
   @Override
   protected ShapeType getShapeType() {
@@ -37,11 +37,11 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  protected Polygon nextShape() {
-    Polygon p;
+  protected XYPolygon nextShape() {
+    XYPolygon p;
     while (true) {
       // if we can't tessellate; then random polygon generator created a malformed shape
-      p = (Polygon)getShapeType().nextShape();
+      p = (XYPolygon)getShapeType().nextShape();
       try {
         Tessellator.tessellate(p);
         return p;
@@ -53,7 +53,7 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override
   protected Field[] createIndexableFields(String field, Object polygon) {
-    return LatLonShape.createIndexableFields(field, (Polygon)polygon);
+    return XYShape.createIndexableFields(field, (XYPolygon)polygon);
   }
 
   @Override
@@ -67,9 +67,9 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Polygon p = (Polygon)shape;
-      Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(minLat, maxLat, minLon, maxLon));
+    public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
+      XYPolygon p = (XYPolygon)shape;
+      XYRectangle2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(p);
       for (Tessellator.Triangle t : tessellation) {
         int[] decoded = encoder.encodeDecodeTriangle(t.getX(0), t.getY(0), t.getX(1), t.getY(1), t.getX(2), t.getY(2));
@@ -88,15 +88,15 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testLineQuery(Line2D query, Object shape) {
-      return testPolygon(query, (Polygon) shape);
+      return testPolygon(query, (XYPolygon) shape);
     }
 
     @Override
     public boolean testPolygonQuery(Object query, Object shape) {
-      return testPolygon((Polygon2D)query, (Polygon) shape);
+      return testPolygon((XYPolygon2D)query, (XYPolygon) shape);
     }
 
-    private boolean testPolygon(EdgeTree tree, Polygon shape) {
+    private boolean testPolygon(EdgeTree tree, XYPolygon shape) {
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
       for (Tessellator.Triangle t : tessellation) {
         double[] qTriangle = encoder.quantizeTriangle(t.getX(0), t.getY(0), t.getX(1), t.getY(1), t.getX(2), t.getY(2));
@@ -118,4 +118,5 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
   public void testRandomBig() throws Exception {
     doTestRandom(25000);
   }
+
 }
