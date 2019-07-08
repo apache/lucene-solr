@@ -85,6 +85,8 @@ New Features
 
 * SOLR-13440: Support saving/restoring autoscaling state for repeatable simulations. (ab)
 
+* SOLR-13257: Support deterministic replica routing preferences for better cache usage (Michael Gibney)
+
 Other Changes
 ----------------------
 
