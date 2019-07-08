@@ -95,6 +95,9 @@ Improvements
 * LUCENE-8845: Allow Intervals.prefix() and Intervals.wildcard() to specify
   their maximum allowed expansions (Alan Woodward)
 
+* LUCENE-8875: Introduce a Collector optimized for use cases when large
+  number of hits are requested (Atri Sharma)
+
 Test Framework
 
 * LUCENE-8825: CheckHits now display the shard index in case of mismatch
