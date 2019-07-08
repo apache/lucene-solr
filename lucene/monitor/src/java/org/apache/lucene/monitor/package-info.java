@@ -73,7 +73,7 @@
  *
  * For query sets that contain many conjunctions, it can be useful to extract and index different
  * minimal term combinations.  For example, a phrase query on 'the quick brown fox' could index
- * both 'quick' and 'brown', and avoid being run againt documents that contain only one of these
+ * both 'quick' and 'brown', and avoid being run against documents that contain only one of these
  * terms.  The {@link org.apache.lucene.monitor.MultipassTermFilteredPresearcher} allows this sort
  * of indexing, taking a minimum term weight so that very common terms such as 'the' can be avoided.
  *
