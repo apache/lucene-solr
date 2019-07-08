@@ -72,7 +72,7 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
       XYRectangle2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(p);
       for (Tessellator.Triangle t : tessellation) {
-        int[] decoded = encoder.encodeDecodeTriangle(t.getLon(0), t.getLat(0), t.getLon(1), t.getLat(1), t.getLon(2), t.getLat(2));
+        int[] decoded = encoder.encodeDecodeTriangle(t.getX(0), t.getY(0), t.getX(1), t.getY(1), t.getX(2), t.getY(2));
         if (queryRelation == QueryRelation.WITHIN) {
           if (rectangle2D.containsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == false) {
             return false;
@@ -99,7 +99,7 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
     private boolean testPolygon(EdgeTree tree, XYPolygon shape) {
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
       for (Tessellator.Triangle t : tessellation) {
-        double[] qTriangle = encoder.quantizeTriangle(t.getLon(0), t.getLat(0), t.getLon(1), t.getLat(1), t.getLon(2), t.getLat(2));
+        double[] qTriangle = encoder.quantizeTriangle(t.getX(0), t.getY(0), t.getX(1), t.getY(1), t.getX(2), t.getY(2));
         Relation r = tree.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
         if (queryRelation == QueryRelation.DISJOINT) {
           if (r != Relation.CELL_OUTSIDE_QUERY) return false;

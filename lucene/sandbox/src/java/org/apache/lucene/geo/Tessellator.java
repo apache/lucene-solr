@@ -282,7 +282,7 @@ final public class Tessellator {
     // Attempt to find a common point between the HoleNode and OuterNode.
     Node next = outerNode;
     do {
-      if (Rectangle.containsPoint(next.getLat(), next.getLon(), holeMinY, holeMaxY, holeMinX, holeMaxX)) {
+      if (Rectangle.containsPoint(next.getY(), next.getX(), holeMinY, holeMaxY, holeMinX, holeMaxX)) {
         Node sharedVertex = getSharedVertex(holeNode, next);
         if (sharedVertex != null) {
           // Split the resulting polygon.
@@ -633,7 +633,7 @@ final public class Tessellator {
     double windingSum = 0;
     do {
       // compute signed area
-      windingSum += area(next.getLon(), next.getLat(), next.next.getLon(), next.next.getLat(), end.getLon(), end.getLat());
+      windingSum += area(next.getX(), next.getY(), next.next.getX(), next.next.getY(), end.getX(), end.getY());
       next = next.next;
     } while (next.next != end);
     //The polygon must be CW
@@ -960,16 +960,6 @@ final public class Tessellator {
       return polyY[vrtxIdx];
     }
 
-    /** get the longitude value */
-    public final double getLon() {
-      return polyX[vrtxIdx];
-    }
-
-    /** get the latitude value */
-    public final double getLat() {
-      return polyY[vrtxIdx];
-    }
-
     @Override
     public String toString() {
       StringBuilder builder = new StringBuilder();
@@ -1004,22 +994,22 @@ final public class Tessellator {
       return this.vertex[vertex].y;
     }
 
-    /** get latitude value for the given vertex */
-    public double getLat(int vertex) {
-      return this.vertex[vertex].getLat();
+    /** get y value for the given vertex */
+    public double getY(int vertex) {
+      return this.vertex[vertex].getY();
     }
 
-    /** get longitude value for the given vertex */
-    public double getLon(int vertex) {
-      return this.vertex[vertex].getLon();
+    /** get x value for the given vertex */
+    public double getX(int vertex) {
+      return this.vertex[vertex].getX();
     }
 
     /** utility method to compute whether the point is in the triangle */
     protected boolean containsPoint(double lat, double lon) {
       return pointInTriangle(lon, lat,
-          vertex[0].getLon(), vertex[0].getLat(),
-          vertex[1].getLon(), vertex[1].getLat(),
-          vertex[2].getLon(), vertex[2].getLat());
+          vertex[0].getX(), vertex[0].getY(),
+          vertex[1].getX(), vertex[1].getY(),
+          vertex[2].getX(), vertex[2].getY());
     }
 
     /** pretty print the triangle vertices */
