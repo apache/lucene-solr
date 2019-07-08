@@ -221,26 +221,28 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   private void initReplicaListTransformers(NamedList args) {
-    NamedList routingConfig = (NamedList)args.get("replicaRouting");
     String defaultRouting = null;
-    if (routingConfig != null && routingConfig.size() > 0) {
-      Iterator<Entry<String,?>> iter = routingConfig.iterator();
-      do {
-        Entry<String, ?> e = iter.next();
-        String key = e.getKey();
-        switch (key) {
-          case ShardParams.REPLICA_RANDOM:
-            defaultRouting = checkDefaultReplicaListTransformer(getNamedList(e.getValue()), key, defaultRouting);
-            break;
-          case ShardParams.REPLICA_STABLE:
-            NamedList<?> c = getNamedList(e.getValue());
-            defaultRouting = checkDefaultReplicaListTransformer(c, key, defaultRouting);
-            this.stableRltFactory = new AffinityReplicaListTransformerFactory(c);
-            break;
-          default:
-            throw new IllegalArgumentException("invalid replica routing spec name: " + key);
-        }
-      } while (iter.hasNext());
+    if (args != null) {
+      NamedList routingConfig = (NamedList)args.get("replicaRouting");
+      if (routingConfig != null && routingConfig.size() > 0) {
+        Iterator<Entry<String,?>> iter = routingConfig.iterator();
+        do {
+          Entry<String, ?> e = iter.next();
+          String key = e.getKey();
+          switch (key) {
+            case ShardParams.REPLICA_RANDOM:
+              defaultRouting = checkDefaultReplicaListTransformer(getNamedList(e.getValue()), key, defaultRouting);
+              break;
+            case ShardParams.REPLICA_STABLE:
+              NamedList<?> c = getNamedList(e.getValue());
+              defaultRouting = checkDefaultReplicaListTransformer(c, key, defaultRouting);
+              this.stableRltFactory = new AffinityReplicaListTransformerFactory(c);
+              break;
+            default:
+              throw new IllegalArgumentException("invalid replica routing spec name: " + key);
+          }
+        } while (iter.hasNext());
+      }
     }
     if (this.stableRltFactory == null) {
       this.stableRltFactory = new AffinityReplicaListTransformerFactory();
