@@ -65,6 +65,9 @@ API Changes
 
 New Features
 
+* LUCENE-8632: New XYShape Field and Queries for indexing and searching general cartesian
+  geometries. (Nick Knize)
+
 * LUCENE-8891: Snowball stemmer/analyzer for the Estonian language.
  (Gert Morten Paimla via Tomoko Uchida)
 
