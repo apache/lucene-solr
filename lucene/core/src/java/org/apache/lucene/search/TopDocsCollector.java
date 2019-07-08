@@ -136,12 +136,9 @@ public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector 
     // pq.size() or totalHits.
     int size = topDocsSize();
 
-    // Don't bother to throw an exception, just return an empty TopDocs in case
-    // the parameters are invalid or out of range.
-    // TODO: shouldn't we throw IAE if apps give bad params here so they dont
-    // have sneaky silent bugs?
+
     if (start < 0 || start >= size || howMany <= 0) {
-      return newTopDocs(null, start);
+      throw new IllegalArgumentException("Illegal arguments when requesting top docs");
     }
 
     // We know that start < pqsize, so just fix howMany. 

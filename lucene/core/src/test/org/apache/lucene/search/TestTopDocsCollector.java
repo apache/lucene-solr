@@ -209,6 +209,22 @@ public class TestTopDocsCollector extends LuceneTestCase {
     // get the last 5 only.
     assertEquals(5, tdc.topDocs(10).scoreDocs.length);
   }
+
+  public void testIllegalArguments() throws Exception {
+    final TopDocsCollector<ScoreDoc> tdc = doSearch(15);
+
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      tdc.topDocs(20);
+    });
+
+    assertEquals(expected.getMessage(), "Illegal arguments when requesting top docs");
+
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      tdc.topDocs(-1);
+    });
+
+    assertEquals(expected.getMessage(), "Illegal arguments when requesting top docs");
+  }
   
   // This does not test the PQ's correctness, but whether topDocs()
   // implementations return the results in decreasing score order.
