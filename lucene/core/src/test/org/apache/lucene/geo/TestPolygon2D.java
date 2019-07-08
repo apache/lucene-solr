@@ -114,6 +114,9 @@ public class TestPolygon2D extends LuceneTestCase {
       
       for (int j = 0; j < 100; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
+        while(rectangle.minLat == rectangle.maxLat || rectangle.minLon == rectangle.maxLon) {
+          rectangle = GeoTestUtil.nextBoxNear(polygon);
+        }
         // allowed to conservatively return false
         if (impl.relate(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == Relation.CELL_INSIDE_QUERY) {
           for (int k = 0; k < 500; k++) {
@@ -151,6 +154,9 @@ public class TestPolygon2D extends LuceneTestCase {
 
       for (int j = 0; j < 10; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
+        while(rectangle.minLat == rectangle.maxLat || rectangle.minLon == rectangle.maxLon) {
+          rectangle = GeoTestUtil.nextBoxNear(polygon);
+        }
         // allowed to conservatively return false
         if (impl.relate(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == Relation.CELL_INSIDE_QUERY) {
           for (int k = 0; k < 100; k++) {
@@ -187,6 +193,9 @@ public class TestPolygon2D extends LuceneTestCase {
       
       for (int j = 0; j < 100; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
+        while(rectangle.minLat == rectangle.maxLat || rectangle.minLon == rectangle.maxLon) {
+          rectangle = GeoTestUtil.nextBoxNear(polygon);
+        }
         // allowed to conservatively return true.
         if (impl.relate(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == Relation.CELL_OUTSIDE_QUERY) {
           for (int k = 0; k < 1000; k++) {
@@ -224,6 +233,9 @@ public class TestPolygon2D extends LuceneTestCase {
 
       for (int j = 0; j < 10; j++) {
         Rectangle rectangle = GeoTestUtil.nextBoxNear(polygon);
+        while(rectangle.minLat == rectangle.maxLat || rectangle.minLon == rectangle.maxLon) {
+          rectangle = GeoTestUtil.nextBoxNear(polygon);
+        }
         // allowed to conservatively return false.
         if (impl.relate(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == Relation.CELL_OUTSIDE_QUERY) {
           for (int k = 0; k < 100; k++) {

@@ -33,6 +33,7 @@ import org.apache.lucene.geo.GeoUtils.WindingOrder;
  *   <li>The polygon must not be self-crossing, otherwise may result in unexpected behavior.
  *   <li>All latitude/longitude values must be in decimal degrees.
  *   <li>Polygons cannot cross the 180th meridian. Instead, use two polygons: one on each side.
+ *   <li>The polygon area must be bigger than 0.
  *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
  * </ol>
  * @lucene.experimental
@@ -52,6 +53,8 @@ public final class Polygon {
   public final double maxLon;
   /** winding order of the vertices */
   private final WindingOrder windingOrder;
+  /** Area of the polygon */
+  private final double area;
 
   /**
    * Creates a new Polygon from the supplied latitude/longitude array, and optionally any holes.
@@ -96,32 +99,48 @@ public final class Polygon {
     this.holes = holes.clone();
 
     // compute bounding box
-    double minLat = polyLats[0];
-    double maxLat = polyLats[0];
-    double minLon = polyLons[0];
-    double maxLon = polyLons[0];
+    double minLat = Double.POSITIVE_INFINITY;
+    double maxLat = Double.NEGATIVE_INFINITY;
+    double minLon = Double.POSITIVE_INFINITY;
+    double maxLon = Double.NEGATIVE_INFINITY;
 
     double windingSum = 0d;
     final int numPts = polyLats.length - 1;
-    for (int i = 1, j = 0; i < numPts; j = i++) {
+    for (int i = 0; i < numPts; i++) {
       minLat = Math.min(polyLats[i], minLat);
       maxLat = Math.max(polyLats[i], maxLat);
       minLon = Math.min(polyLons[i], minLon);
       maxLon = Math.max(polyLons[i], maxLon);
       // compute signed area
-      windingSum += (polyLons[j] - polyLons[numPts])*(polyLats[i] - polyLats[numPts])
-          - (polyLats[j] - polyLats[numPts])*(polyLons[i] - polyLons[numPts]);
+      windingSum += polyLons[i] * polyLats[i + 1] - polyLats[i] * polyLons[i + 1];
+    }
+    if (windingSum == 0) {
+      throw new IllegalArgumentException("Cannot compute the polygon / hole orientation.");
     }
     this.minLat = minLat;
     this.maxLat = maxLat;
     this.minLon = minLon;
     this.maxLon = maxLon;
     this.windingOrder = (windingSum < 0) ? GeoUtils.WindingOrder.CCW : GeoUtils.WindingOrder.CW;
+    double area = Math.abs(windingSum / 2d);
+    for (Polygon hole : holes) {
+      area -= hole.getArea();
+    }
+    if (area <= 0) {
+      throw new IllegalArgumentException("Polygon has an invalid area (area = " + area + ").");
+    }
+    this.area = area;
+
   }
 
   /** returns the number of vertex points */
   public int numPoints() {
     return polyLats.length;
+  }
+
+  /** returns the area of the polygon */
+  protected double getArea() {
+    return area;
   }
 
   /** Returns a copy of the internal latitude array */
