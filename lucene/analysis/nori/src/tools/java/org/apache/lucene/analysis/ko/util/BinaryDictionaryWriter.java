@@ -143,13 +143,16 @@ public abstract class BinaryDictionaryWriter {
       throw new IllegalArgumentException("leftId >= " + ID_LIMIT + ": " + leftId);
     }
     if (posType.ordinal() >= 4) {
-      throw new IllegalArgumentException("posType.ordinal() >= " + 4 + ": " + posType.ordinal());
+      throw new IllegalArgumentException("posType.ordinal() >= " + 4 + ": " + posType.name());
     }
     buffer.putShort((short)(leftId << 2 | posType.ordinal()));
     buffer.putShort((short) (rightId << 2 | flags));
     buffer.putShort(wordCost);
 
     if (posType == POS.Type.MORPHEME) {
+      if (leftPOS != rightPOS) {
+        throw new IllegalArgumentException("leftPOS != rightPOS: " + leftPOS + " " + rightPOS);
+      }
       if (reading.length() > 0) {
         writeString(reading);
       }
