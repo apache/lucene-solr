@@ -21,12 +21,15 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /*
  * Test for sorting using a feature from a FeatureField.
@@ -214,6 +217,53 @@ public class TestFeatureSort extends LuceneTestCase {
     assertNull(searcher.doc(td.scoreDocs[6].doc).get("value"));
 
     ir.close();
+    dir.close();
+  }
+
+  // This duel gives compareBottom and compareTop some coverage
+  public void testDuelFloat() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    int numDocs = atLeast(100);
+    for (int d = 0; d < numDocs; ++d) {
+      Document doc = new Document();
+      if (random().nextBoolean()) {
+        float f;
+        do {
+          int freq = TestUtil.nextInt(random(), 1, (1 << 16) - 1);
+          f = FeatureField.decodeFeatureValue(freq);
+        } while (f < Float.MIN_NORMAL);
+        doc.add(new NumericDocValuesField("float", Float.floatToIntBits(f)));
+        doc.add(new FeatureField("feature", "foo", f));
+      }
+      w.addDocument(doc);
+    }
+
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(r);
+
+    TopDocs topDocs = null;
+    TopDocs featureTopDocs = null;
+    do {
+      if (topDocs == null) {
+        topDocs = searcher.search(new MatchAllDocsQuery(), 10,
+            new Sort(new SortField("float", SortField.Type.FLOAT, true)));
+        featureTopDocs = searcher.search(new MatchAllDocsQuery(), 10,
+            new Sort(FeatureField.newFeatureSort("feature", "foo")));
+      } else {
+        topDocs = searcher.searchAfter(topDocs.scoreDocs[topDocs.scoreDocs.length - 1],
+            new MatchAllDocsQuery(), 10,
+            new Sort(new SortField("float", SortField.Type.FLOAT, true)));
+        featureTopDocs = searcher.searchAfter(featureTopDocs.scoreDocs[featureTopDocs.scoreDocs.length - 1],
+            new MatchAllDocsQuery(), 10,
+            new Sort(FeatureField.newFeatureSort("feature", "foo")));
+      }
+
+      CheckHits.checkEqual(new MatchAllDocsQuery(), topDocs.scoreDocs, featureTopDocs.scoreDocs);
+    } while (topDocs.scoreDocs.length > 0);
+
+    r.close();
     dir.close();
   }
 }
