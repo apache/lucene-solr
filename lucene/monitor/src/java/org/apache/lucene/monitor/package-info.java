@@ -24,7 +24,7 @@
  * To use, instantiate a {@link org.apache.lucene.monitor.Monitor} object,
  * register queries with it via
  * {@link org.apache.lucene.monitor.Monitor#register(org.apache.lucene.monitor.MonitorQuery...)},
- * and then match documents against it either invidually via
+ * and then match documents against it either individually via
  * {@link org.apache.lucene.monitor.Monitor#match(org.apache.lucene.document.Document, org.apache.lucene.monitor.MatcherFactory)}
  * or in batches via
  * {@link org.apache.lucene.monitor.Monitor#match(org.apache.lucene.document.Document[], org.apache.lucene.monitor.MatcherFactory)}
