@@ -16,51 +16,50 @@
  */
 package org.apache.lucene.document;
 
-import org.apache.lucene.geo.GeoEncodingUtils;
-import org.apache.lucene.geo.GeoTestUtil;
-import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
+import org.apache.lucene.geo.ShapeTestUtil;
+import org.apache.lucene.geo.XYEncodingUtils;
+import org.apache.lucene.geo.XYPolygon;
+import org.apache.lucene.geo.XYPolygon2D;
 
-/** Test case for LatLonShape encoding */
-public class TestLatLonShapeEncoding extends BaseShapeEncodingTestCase {
-
+/** tests XYShape encoding */
+public class TestXYShapeEncoding extends BaseShapeEncodingTestCase {
   @Override
   protected int encodeX(double x) {
-    return GeoEncodingUtils.encodeLongitude(x);
+    return XYEncodingUtils.encode(x);
   }
 
   @Override
   protected int encodeY(double y) {
-    return GeoEncodingUtils.encodeLatitude(y);
+    return XYEncodingUtils.encode(y);
   }
 
   @Override
   protected double decodeX(int xEncoded) {
-    return GeoEncodingUtils.decodeLongitude(xEncoded);
+    return XYEncodingUtils.decode(xEncoded);
   }
 
   @Override
   protected double decodeY(int yEncoded) {
-    return GeoEncodingUtils.decodeLatitude(yEncoded);
+    return XYEncodingUtils.decode(yEncoded);
   }
 
   @Override
   protected double nextX() {
-    return GeoTestUtil.nextLongitude();
+    return ShapeTestUtil.nextDouble();
   }
 
   @Override
   protected double nextY() {
-    return GeoTestUtil.nextLatitude();
+    return ShapeTestUtil.nextDouble();
   }
 
   @Override
-  protected Polygon nextPolygon() {
-    return GeoTestUtil.nextPolygon();
+  protected XYPolygon nextPolygon() {
+    return ShapeTestUtil.nextPolygon();
   }
 
   @Override
-  protected Polygon2D createPolygon2D(Object polygon) {
-    return Polygon2D.create((Polygon)polygon);
+  protected XYPolygon2D createPolygon2D(Object polygon) {
+    return XYPolygon2D.create((XYPolygon)polygon);
   }
 }

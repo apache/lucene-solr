@@ -22,9 +22,8 @@ import java.util.List;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Line2D;
 
-/** random bounding box, line, and polygon query tests for random indexed arrays of {@code latitude, longitude} points */
-public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
-
+/** random cartesian bounding box, line, and polygon query tests for random indexed arrays of {@code x, y} points */
+public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
   @Override
   protected ShapeType getShapeType() {
     return ShapeType.POINT;
@@ -45,7 +44,7 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
     Point[] points = (Point[]) o;
     List<Field> allFields = new ArrayList<>();
     for (Point point : points) {
-      Field[] fields = LatLonShape.createIndexableFields(name, point.lat, point.lon);
+      Field[] fields = XYShape.createIndexableFields(name, point.x, point.y);
       for (Field field : fields) {
         allFields.add(field);
       }
@@ -59,10 +58,10 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   protected class MultiPointValidator extends Validator {
-    TestLatLonPointShapeQueries.PointValidator POINTVALIDATOR;
+    TestXYPointShapeQueries.PointValidator POINTVALIDATOR;
     MultiPointValidator(Encoder encoder) {
       super(encoder);
-      POINTVALIDATOR = new TestLatLonPointShapeQueries.PointValidator(encoder);
+      POINTVALIDATOR = new TestXYPointShapeQueries.PointValidator(encoder);
     }
 
     @Override

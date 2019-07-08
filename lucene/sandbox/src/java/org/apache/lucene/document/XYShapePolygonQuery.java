@@ -19,33 +19,29 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.GeoEncodingUtils;
-import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
+import org.apache.lucene.geo.XYEncodingUtils;
+import org.apache.lucene.geo.XYPolygon;
+import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 /**
- * Finds all previously indexed geo shapes that intersect the specified arbitrary.
- * <p>
- * Note:
- * <ul>
- *    <li>Dateline crossing is not yet supported. Polygons should be cut at the dateline and provided as a multipolygon query</li>
- * </ul>
+ * Finds all previously indexed cartesian shapes that intersect the specified arbitrary cartesian {@link XYPolygon}.
  *
  * <p>The field must be indexed using
- * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
+ * {@link org.apache.lucene.document.XYShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
-final class LatLonShapePolygonQuery extends ShapeQuery {
-  final Polygon[] polygons;
+final class XYShapePolygonQuery extends ShapeQuery {
+  final XYPolygon[] polygons;
   final private Polygon2D poly2D;
 
   /**
    * Creates a query that matches all indexed shapes to the provided polygons
    */
-  public LatLonShapePolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
+  public XYShapePolygonQuery(String field, QueryRelation queryRelation, XYPolygon... polygons) {
     super(field, queryRelation);
     if (polygons == null) {
       throw new IllegalArgumentException("polygons must not be null");
@@ -56,22 +52,24 @@ final class LatLonShapePolygonQuery extends ShapeQuery {
     for (int i = 0; i < polygons.length; i++) {
       if (polygons[i] == null) {
         throw new IllegalArgumentException("polygon[" + i + "] must not be null");
-      } else if (polygons[i].minLon > polygons[i].maxLon) {
-        throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
+      } else if (polygons[i].minX > polygons[i].maxX) {
+        throw new IllegalArgumentException("XYShapePolygonQuery: minX cannot be greater than maxX.");
+      } else if (polygons[i].minY > polygons[i].maxY) {
+        throw new IllegalArgumentException("XYShapePolygonQuery: minY cannot be greater than maxY.");
       }
     }
     this.polygons = polygons.clone();
-    this.poly2D = Polygon2D.create(polygons);
+    this.poly2D = XYPolygon2D.create(polygons);
   }
 
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
 
-    double minLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
-    double minLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
-    double maxLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
-    double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+    double minLat = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    double minLon = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    double maxLat = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    double maxLon = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
     return poly2D.relate(minLat, maxLat, minLon, maxLon);
@@ -81,12 +79,12 @@ final class LatLonShapePolygonQuery extends ShapeQuery {
   protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle[0]);
-    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle[1]);
-    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle[2]);
-    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle[3]);
-    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle[4]);
-    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle[5]);
+    double alat = XYEncodingUtils.decode(scratchTriangle[0]);
+    double alon = XYEncodingUtils.decode(scratchTriangle[1]);
+    double blat = XYEncodingUtils.decode(scratchTriangle[2]);
+    double blon = XYEncodingUtils.decode(scratchTriangle[3]);
+    double clat = XYEncodingUtils.decode(scratchTriangle[4]);
+    double clon = XYEncodingUtils.decode(scratchTriangle[5]);
 
     if (queryRelation == QueryRelation.WITHIN) {
       return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
@@ -105,13 +103,13 @@ final class LatLonShapePolygonQuery extends ShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("Polygon(").append(polygons[0].toGeoJSON()).append(')');
+    sb.append("XYPolygon(").append(polygons[0].toGeoJSON()).append(")");
     return sb.toString();
   }
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && Arrays.equals(polygons, ((LatLonShapePolygonQuery)o).polygons);
+    return super.equalsTo(o) && Arrays.equals(polygons, ((XYShapePolygonQuery)o).polygons);
   }
 
   @Override
