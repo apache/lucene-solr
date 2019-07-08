@@ -17,7 +17,7 @@
 package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
@@ -235,11 +235,11 @@ public class TestLatLonShape extends LuceneTestCase {
 
     Tessellator.Triangle t = Tessellator.tessellate(poly).get(0);
 
-    byte[] encoded = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(encoded, encodeLatitude(t.getLat(0)), encodeLongitude(t.getLon(0)),
-        encodeLatitude(t.getLat(1)), encodeLongitude(t.getLon(1)), encodeLatitude(t.getLat(2)), encodeLongitude(t.getLon(2)));
+    byte[] encoded = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(encoded, encodeLatitude(t.getY(0)), encodeLongitude(t.getX(0)),
+        encodeLatitude(t.getY(1)), encodeLongitude(t.getX(1)), encodeLatitude(t.getY(2)), encodeLongitude(t.getX(2)));
     int[] decoded = new int[6];
-    LatLonShape.decodeTriangle(encoded, decoded);
+    ShapeField.decodeTriangle(encoded, decoded);
 
     int expected =rectangle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) ? 0 : 1;
 

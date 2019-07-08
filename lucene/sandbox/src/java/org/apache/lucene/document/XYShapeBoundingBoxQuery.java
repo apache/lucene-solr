@@ -17,31 +17,30 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.geo.Rectangle2D;
-import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.geo.XYRectangle;
+import org.apache.lucene.geo.XYRectangle2D;
+import org.apache.lucene.index.PointValues;
 
 /**
- * Finds all previously indexed geo shapes that intersect the specified bounding box.
+ * Finds all previously indexed cartesian shapes that intersect the specified bounding box.
  *
  * <p>The field must be indexed using
- * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
+ * {@link org.apache.lucene.document.XYShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
-final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
-  final Rectangle rectangle;
-  final Rectangle2D rectangle2D;
+public class XYShapeBoundingBoxQuery extends ShapeQuery {
+  final XYRectangle2D rectangle2D;
 
-  public LatLonShapeBoundingBoxQuery(String field, QueryRelation queryRelation, double minLat, double maxLat, double minLon, double maxLon) {
+  public XYShapeBoundingBoxQuery(String field, QueryRelation queryRelation, double minX, double maxX, double minY, double maxY) {
     super(field, queryRelation);
-    this.rectangle = new Rectangle(minLat, maxLat, minLon, maxLon);
-    this.rectangle2D = Rectangle2D.create(this.rectangle);
+    XYRectangle rectangle = new XYRectangle(minX, maxX, minY, maxY);
+    this.rectangle2D = XYRectangle2D.create(rectangle);
   }
 
   @Override
-  protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
-                                            int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+  protected PointValues.Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
+                                                        int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     return rectangle2D.relateRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
   }
 
@@ -71,13 +70,13 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && rectangle.equals(((LatLonShapeBoundingBoxQuery)o).rectangle);
+    return super.equalsTo(o) && rectangle2D.equals(((XYShapeBoundingBoxQuery)o).rectangle2D);
   }
 
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash = 31 * hash + rectangle.hashCode();
+    hash = 31 * hash + rectangle2D.hashCode();
     return hash;
   }
 
@@ -91,7 +90,7 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append(rectangle.toString());
+    sb.append(rectangle2D.toString());
     return sb.toString();
   }
 }

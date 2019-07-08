@@ -19,16 +19,12 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
-import org.apache.lucene.geo.Polygon2D;
 
-/** random bounding box and polygon query tests for random indexed arrays of {@link Line} types */
+/** random bounding box, line, and polygon query tests for random indexed arrays of {@link Line} types */
 public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
-
-  protected final MultiLineValidator VALIDATOR = new MultiLineValidator();
-  protected final TestLatLonLineShapeQueries.LineValidator LINEVALIDATOR = new TestLatLonLineShapeQueries.LineValidator();
 
   @Override
   protected ShapeType getShapeType() {
@@ -59,13 +55,24 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  protected Validator getValidator(QueryRelation relation) {
-    VALIDATOR.setRelation(relation);
-    LINEVALIDATOR.setRelation(relation);
-    return VALIDATOR;
+  public Validator getValidator() {
+    return new MultiLineValidator(ENCODER);
   }
 
   protected class MultiLineValidator extends Validator {
+    TestLatLonLineShapeQueries.LineValidator LINEVALIDATOR;
+    MultiLineValidator(Encoder encoder) {
+      super(encoder);
+      LINEVALIDATOR = new TestLatLonLineShapeQueries.LineValidator(encoder);
+    }
+
+    @Override
+    public Validator setRelation(QueryRelation relation) {
+      super.setRelation(relation);
+      LINEVALIDATOR.queryRelation = relation;
+      return this;
+    }
+
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Line[] lines = (Line[])shape;
@@ -99,7 +106,7 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testPolygonQuery(Polygon2D query, Object shape) {
+    public boolean testPolygonQuery(Object query, Object shape) {
       Line[] lines = (Line[])shape;
       for (Line l : lines) {
         boolean b = LINEVALIDATOR.testPolygonQuery(query, l);
