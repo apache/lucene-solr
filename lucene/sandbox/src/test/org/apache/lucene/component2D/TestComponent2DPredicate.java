@@ -76,7 +76,7 @@ public class TestComponent2DPredicate extends LuceneTestCase {
       }
     }
   }
-  //-Dtests.seed=FA5F5CA075BE46E2
+
   public void testRandomPoint() {
     Component2D component = LatLonComponent2DFactory.create(new double[] {GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude()});
     Component2DPredicate predicate = Component2DPredicate.createComponentPredicate(component);
