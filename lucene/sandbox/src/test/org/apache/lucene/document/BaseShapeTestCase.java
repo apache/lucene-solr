@@ -43,6 +43,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
@@ -75,6 +76,24 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
     Object[] shapes = new Object[numShapes];
     Arrays.fill(shapes, theShape);
+
+    verify(shapes);
+  }
+
+  // Force low cardinality leaves
+  public void testLowCardinalityShapeManyTimes() throws Exception {
+    int numShapes = atLeast(500);
+    int cardinality = TestUtil.nextInt(random(), 2, 20);
+
+    Object[] diffShapes = new Object[cardinality];
+    for (int i = 0; i < cardinality; i++) {
+      diffShapes[i] = nextShape();
+    }
+
+    Object[] shapes = new Object[numShapes];
+    for (int i = 0; i < numShapes; i++) {
+      shapes[i] =  diffShapes[random().nextInt(cardinality)];
+    }
 
     verify(shapes);
   }

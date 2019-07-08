@@ -27,6 +27,8 @@ import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FeatureException;
@@ -76,7 +78,8 @@ import org.apache.solr.util.SolrPluginUtils;
  * implement the {@link #score(float[])} and
  * {@link #explain(LeafReaderContext, int, float, List)} methods.
  */
-public abstract class LTRScoringModel {
+public abstract class LTRScoringModel implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(LTRScoringModel.class);
 
   protected final String name;
   private final String featureStoreName;
@@ -238,6 +241,17 @@ public abstract class LTRScoringModel {
 
 
     return true;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(allFeatures, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+        RamUsageEstimator.sizeOfObject(features, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+        RamUsageEstimator.sizeOfObject(featureStoreName) +
+        RamUsageEstimator.sizeOfObject(name) +
+        RamUsageEstimator.sizeOfObject(norms) +
+        RamUsageEstimator.sizeOfObject(params);
   }
 
   public Collection<Feature> getAllFeatures() {

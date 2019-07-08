@@ -28,6 +28,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.request.SolrQueryRequest;
@@ -56,7 +58,8 @@ import org.apache.solr.util.SolrPluginUtils;
  * the {@link #validate()} function, and must implement the {@link #paramsToMap()}
  * and createWeight() methods.
  */
-public abstract class Feature extends Query {
+public abstract class Feature extends Query implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(Feature.class);
 
   final protected String name;
   private int index = -1;
@@ -145,6 +148,13 @@ public abstract class Feature extends Query {
   @Override
   public boolean equals(Object o) {
     return sameClassAs(o) &&  equalsTo(getClass().cast(o));
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(name) +
+        RamUsageEstimator.sizeOfObject(params);
   }
 
   @Override

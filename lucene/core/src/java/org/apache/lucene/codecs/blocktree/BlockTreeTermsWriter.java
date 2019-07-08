@@ -456,7 +456,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
       final Builder<BytesRef> indexBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1,
                                                            0, 0, true, false, Integer.MAX_VALUE,
-                                                           outputs, true, 15, true);
+                                                           outputs, true, 15);
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}

@@ -125,8 +125,18 @@ abstract class ShapeQuery extends Query {
 
           @Override
           public void visit(int docID, byte[] t) throws IOException {
-            if (queryMatches(t, scratchTriangle, ShapeField.QueryRelation.INTERSECTS)) {
-              adder.add(docID);
+            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS)) {
+              visit(docID);
+            }
+          }
+
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS)) {
+              int docID;
+              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                visit(docID);
+              }
             }
           }
 
@@ -158,6 +168,19 @@ abstract class ShapeQuery extends Query {
               intersect.set(docID);
             } else {
               disjoint.set(docID);
+            }
+          }
+
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+            boolean queryMatches = queryMatches(t, scratchTriangle, queryRelation);
+            int docID;
+            while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              if (queryMatches) {
+                intersect.set(docID);
+              } else {
+                disjoint.set(docID);
+              }
             }
           }
 
@@ -316,11 +339,21 @@ abstract class ShapeQuery extends Query {
 
         @Override
         public void visit(int docID, byte[] packedTriangle) {
-          if (query.queryMatches(packedTriangle, scratchTriangle, ShapeField.QueryRelation.INTERSECTS) == false) {
-            result.clear(docID);
-            cost[0]--;
+          if (query.queryMatches(packedTriangle, scratchTriangle, QueryRelation.INTERSECTS) == false) {
+            visit(docID);
           }
         }
+
+        @Override
+        public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+          if (query.queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS) == false) {
+            int docID;
+            while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              visit(docID);
+            }
+          }
+        }
+
 
         @Override
         public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
