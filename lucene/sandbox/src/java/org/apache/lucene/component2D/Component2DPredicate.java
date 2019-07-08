@@ -65,7 +65,7 @@ public class Component2DPredicate {
   public boolean test(int x, int y) {
     final int y2 = ((y - Integer.MIN_VALUE) >>> latShift);
     if (y2 < latBase || y2 >= latBase + maxLatDelta) {
-      //not sure about this but it fails in some cases for point components
+      // not sure about this but it fails in some cases for point components
       return (y2 == Integer.MAX_VALUE) ? component.contains(x, y) : false;
     }
     int x2 = ((x - Integer.MIN_VALUE) >>> lonShift);
