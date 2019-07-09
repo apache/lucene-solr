@@ -35,15 +35,15 @@ import static org.apache.lucene.search.TopDocsCollector.EMPTY_TOPDOCS;
  * score.
  */
 public final class LargeNumHitsTopDocsCollector implements Collector {
-  private final int numHits;
+  private final int requestedHitCount;
   private List<ScoreDoc> hits = new ArrayList<>();
   // package private for testing
   HitQueue pq;
   ScoreDoc pqTop;
   int totalHits;
 
-  public LargeNumHitsTopDocsCollector(int numHits) {
-    this.numHits = numHits;
+  public LargeNumHitsTopDocsCollector(int requestedHitCount) {
+    this.requestedHitCount = requestedHitCount;
     this.totalHits = 0;
   }
 
@@ -71,18 +71,18 @@ public final class LargeNumHitsTopDocsCollector implements Collector {
         // This collector relies on the fact that scorers produce positive values:
         assert score >= 0; // NOTE: false for NaN
 
-        if (totalHits < numHits) {
+        if (totalHits < requestedHitCount) {
           hits.add(new ScoreDoc(doc, score));
           totalHits++;
           return;
-        } else if (totalHits == numHits) {
+        } else if (totalHits == requestedHitCount) {
           // Convert the list to a priority queue
 
           // We should get here only when priority queue
           // has not been built
           assert pq == null;
           assert pqTop == null;
-          pq = new HitQueue(numHits, false);
+          pq = new HitQueue(requestedHitCount, false);
 
           for (ScoreDoc scoreDoc : hits) {
             pq.add(scoreDoc);
@@ -123,15 +123,15 @@ public final class LargeNumHitsTopDocsCollector implements Collector {
    */
   protected void populateResults(ScoreDoc[] results, int howMany) {
     if (pq != null) {
-      assert totalHits >= numHits;
+      assert totalHits >= requestedHitCount;
       for (int i = howMany - 1; i >= 0; i--) {
         results[i] = pq.pop();
       }
       return;
     }
 
-    // Total number of hits collected were less than numHits
-    assert totalHits < numHits;
+    // Total number of hits collected were less than requestedHitCount
+    assert totalHits < requestedHitCount;
     Collections.sort(hits, Comparator.comparing((ScoreDoc scoreDoc) ->
         scoreDoc.score).reversed().thenComparing(scoreDoc -> scoreDoc.doc));
 
@@ -152,6 +152,6 @@ public final class LargeNumHitsTopDocsCollector implements Collector {
 
   /** Returns the top docs that were collected by this collector. */
   public TopDocs topDocs() {
-    return topDocs(Math.min(totalHits, numHits));
+    return topDocs(Math.min(totalHits, requestedHitCount));
   }
 }
