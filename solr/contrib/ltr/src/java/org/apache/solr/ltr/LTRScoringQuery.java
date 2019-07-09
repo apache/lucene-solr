@@ -42,6 +42,8 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.request.SolrQueryRequest;
@@ -52,9 +54,11 @@ import org.slf4j.LoggerFactory;
  * The ranking query that is run, reranking results using the
  * LTRScoringModel algorithm
  */
-public class LTRScoringQuery extends Query {
+public class LTRScoringQuery extends Query implements Accountable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(LTRScoringQuery.class);
 
   // contains a description of the model
   final private LTRScoringModel ltrScoringModel;
@@ -303,6 +307,14 @@ public class LTRScoringQuery extends Query {
   @Override
   public String toString(String field) {
     return field;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(efi) +
+        RamUsageEstimator.sizeOfObject(ltrScoringModel) +
+        RamUsageEstimator.sizeOfObject(originalQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   public static class FeatureInfo {

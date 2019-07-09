@@ -55,7 +55,7 @@ public class Test2BFST extends LuceneTestCase {
         Outputs<Object> outputs = NoOutputs.getSingleton();
         Object NO_OUTPUT = outputs.getNoOutput();
         final Builder<Object> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
-                                                true, 15, true);
+                                                true, 15);
 
         int count = 0;
         Random r = new Random(seed);
@@ -137,7 +137,7 @@ public class Test2BFST extends LuceneTestCase {
         System.out.println("\nTEST: 3 GB size; outputs=bytes");
         Outputs<BytesRef> outputs = ByteSequenceOutputs.getSingleton();
         final Builder<BytesRef> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
-                                                  true, 15, true);
+                                                  true, 15);
 
         byte[] outputBytes = new byte[20];
         BytesRef output = new BytesRef(outputBytes);
@@ -217,7 +217,7 @@ public class Test2BFST extends LuceneTestCase {
         System.out.println("\nTEST: 3 GB size; outputs=long");
         Outputs<Long> outputs = PositiveIntOutputs.getSingleton();
         final Builder<Long> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs,
-                                              true, 15, true);
+                                              true, 15);
 
         long output = 1;
 

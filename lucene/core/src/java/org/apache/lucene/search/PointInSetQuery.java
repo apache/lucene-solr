@@ -31,10 +31,12 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Abstract query class to find all documents whose single or multi-dimensional point values, previously indexed with e.g. {@link IntPoint},
@@ -48,13 +50,16 @@ import org.apache.lucene.util.DocIdSetBuilder;
  * @see PointValues
  * @lucene.experimental */
 
-public abstract class PointInSetQuery extends Query {
+public abstract class PointInSetQuery extends Query implements Accountable {
+  protected static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(PointInSetQuery.class);
+
   // A little bit overkill for us, since all of our "terms" are always in the same field:
   final PrefixCodedTerms sortedPackedPoints;
   final int sortedPackedPointsHashCode;
   final String field;
   final int numDims;
   final int bytesPerDim;
+  final long ramBytesUsed; // cache
   
   /** 
    * Iterator of encoded point values.
@@ -102,6 +107,10 @@ public abstract class PointInSetQuery extends Query {
     }
     sortedPackedPoints = builder.finish();
     sortedPackedPointsHashCode = sortedPackedPoints.hashCode();
+    ramBytesUsed = BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(field) +
+        RamUsageEstimator.sizeOfObject(sortedPackedPoints);
+
   }
 
   @Override
@@ -197,13 +206,27 @@ public abstract class PointInSetQuery extends Query {
 
     @Override
     public void visit(int docID, byte[] packedValue) {
+     if (matches(packedValue)) {
+       visit(docID);
+     }
+    }
+
+    @Override
+    public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+      if (matches(packedValue)) {
+        int docID;
+        while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          visit(docID);
+        }
+      }
+    }
+
+    private boolean matches(byte[] packedValue) {
       scratch.bytes = packedValue;
       while (nextQueryPoint != null) {
         int cmp = nextQueryPoint.compareTo(scratch);
         if (cmp == 0) {
-          // Query point equals index point, so collect and return
-          adder.add(docID);
-          break;
+          return true;
         } else if (cmp < 0) {
           // Query point is before index point, so we move to next query point
           nextQueryPoint = iterator.next();
@@ -212,6 +235,7 @@ public abstract class PointInSetQuery extends Query {
           break;
         }
       }
+      return false;
     }
 
     @Override
@@ -278,7 +302,19 @@ public abstract class PointInSetQuery extends Query {
       assert packedValue.length == pointBytes.length;
       if (Arrays.equals(packedValue, pointBytes)) {
         // The point for this doc matches the point we are querying on
-        adder.add(docID);
+        visit(docID);
+      }
+    }
+
+    @Override
+    public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+      assert packedValue.length == pointBytes.length;
+      if (Arrays.equals(packedValue, pointBytes)) {
+        // The point for this set of docs matches the point we are querying on
+        int docID;
+        while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          visit(docID);
+        }
       }
     }
 
@@ -422,4 +458,9 @@ public abstract class PointInSetQuery extends Query {
    * @return human readable value for debugging
    */
   protected abstract String toString(byte[] value);
+
+  @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed;
+  }
 }

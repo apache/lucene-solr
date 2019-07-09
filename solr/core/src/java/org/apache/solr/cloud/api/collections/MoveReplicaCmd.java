@@ -48,6 +48,7 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
 import static org.apache.solr.common.params.CommonAdminParams.TIMEOUT;
@@ -80,7 +81,13 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
     String async = message.getStr(ASYNC);
 
-    String collection = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollection);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String collection;
+    if (followAliases) {
+      collection = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollection);
+    } else {
+      collection = extCollection;
+    }
 
     DocCollection coll = clusterState.getCollection(collection);
     if (coll == null) {

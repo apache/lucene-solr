@@ -30,7 +30,7 @@ import org.apache.lucene.util.Version;
 public class TestAnalysisSPILoader extends LuceneTestCase {
   
   private Map<String,String> versionArgOnly() {
-    return new HashMap<String,String>() {{
+    return new HashMap<String, String>() {{
       put("luceneMatchVersion", Version.LATEST.toString());
     }};
   }
@@ -113,7 +113,7 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   
   public void testAvailableTokenFilters() {
     assertTrue(TokenFilterFactory.availableTokenFilters().contains("lowercase"));
-    assertTrue(TokenFilterFactory.availableTokenFilters().contains("removeduplicates"));
+    assertTrue(TokenFilterFactory.availableTokenFilters().contains("removeDuplicates"));
   }
   
   public void testLookupCharFilter() {
@@ -149,6 +149,6 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
   
   public void testAvailableCharFilters() {
-    assertTrue(CharFilterFactory.availableCharFilters().contains("htmlstrip"));
+    assertTrue(CharFilterFactory.availableCharFilters().contains("htmlStrip"));
   }
 }

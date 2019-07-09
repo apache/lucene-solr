@@ -138,7 +138,7 @@ public final class FeatureField extends Field {
     }
     if (featureValue < Float.MIN_NORMAL) {
       throw new IllegalArgumentException("featureValue must be a positive normal float, got: " +
-          featureValue + "for feature " + fieldsData + " on field " + name +
+          featureValue + " for feature " + fieldsData + " on field " + name +
           " which is less than the minimum positive normal float: " + Float.MIN_NORMAL);
     }
     this.featureValue = featureValue;

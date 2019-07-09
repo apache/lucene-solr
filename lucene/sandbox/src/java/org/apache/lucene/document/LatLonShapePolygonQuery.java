@@ -18,7 +18,7 @@ package org.apache.lucene.document;
 
 import java.util.Arrays;
 
-import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
@@ -26,14 +26,19 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 /**
- * Finds all previously indexed shapes that intersect the specified arbitrary.
+ * Finds all previously indexed geo shapes that intersect the specified arbitrary.
+ * <p>
+ * Note:
+ * <ul>
+ *    <li>Dateline crossing is not yet supported. Polygons should be cut at the dateline and provided as a multipolygon query</li>
+ * </ul>
  *
  * <p>The field must be indexed using
  * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
-final class LatLonShapePolygonQuery extends LatLonShapeQuery {
+final class LatLonShapePolygonQuery extends ShapeQuery {
   final Polygon[] polygons;
   final private Polygon2D poly2D;
 
@@ -74,7 +79,7 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
 
   @Override
   protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
-    LatLonShape.decodeTriangle(t, scratchTriangle);
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
     double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle[0]);
     double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle[1]);

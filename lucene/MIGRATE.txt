@@ -178,3 +178,15 @@ by the LegacyBM25Similarity class which can be found in the lucene-misc jar.
 IndexWriter#getDocStats() should be used instead of #maxDoc() / #numDocs() which offers a consistent 
 view on document stats. Previously calling two methods in order ot get point in time stats was subject
 to concurrent changes.
+
+## maxClausesCount moved from BooleanQuery To IndexSearcher (LUCENE-8811) ##
+IndexSearcher now performs max clause count checks on all types of queries (including BooleanQueries).
+This led to a logical move of the clauses count from BooleanQuery to IndexSearcher.
+
+## TopDocs.merge shall no longer allow setting of shard indices ##
+
+TopDocs.merge's API has been changed to stop allowing passing in a parameter to indicate if it should
+set shard indices for hits as they are seen during the merge process. This is done to simplify the API
+to be more dynamic in terms of passing in custom tie breakers.
+If shard indices are to be used for tie breaking docs with equal scores during TopDocs.merge, then it is
+mandatory that the input ScoreDocs have their shard indices set to valid values prior to calling TopDocs.merge

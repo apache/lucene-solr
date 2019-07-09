@@ -60,7 +60,7 @@ public class TestLine2D extends LuceneTestCase {
   }
 
   public void testRandomTriangles() {
-    Line line = TestLatLonLineShapeQueries.nextLine();
+    Line line = TestLatLonLineShapeQueries.getNextLine();
     Line2D line2D = Line2D.create(line);
 
     for (int i =0; i < 100; i++) {

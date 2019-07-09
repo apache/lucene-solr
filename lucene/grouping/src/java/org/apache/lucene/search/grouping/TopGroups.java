@@ -169,6 +169,11 @@ public class TopGroups<T> {
               shardGroupDocs.scoreDocs,
               docSort.getSort());
         }
+
+        for (int i = 0; i < shardTopDocs[shardIDX].scoreDocs.length; i++) {
+          shardTopDocs[shardIDX].scoreDocs[i].shardIndex = shardIDX;
+        }
+
         maxScore = Math.max(maxScore, shardGroupDocs.maxScore);
         assert shardGroupDocs.totalHits.relation == Relation.EQUAL_TO;
         totalHits += shardGroupDocs.totalHits.value;

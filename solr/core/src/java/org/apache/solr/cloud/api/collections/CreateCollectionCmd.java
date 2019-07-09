@@ -112,7 +112,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
-    if (clusterState.hasCollection(collectionName) || aliases.hasAlias(collectionName)) {
+    if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
     if (aliases.hasAlias(collectionName)) {
@@ -321,7 +321,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             CollectionAdminParams.COLOCATED_WITH, collectionName);
         ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
         try {
-          zkStateReader.waitForState(withCollection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionName.equals(collectionState.getStr(COLOCATED_WITH)));
+          zkStateReader.waitForState(withCollection, 5, TimeUnit.SECONDS, (collectionState) -> collectionName.equals(collectionState.getStr(COLOCATED_WITH)));
         } catch (TimeoutException e) {
           log.warn("Timed out waiting to see the " + COLOCATED_WITH + " property set on collection: " + withCollection);
           // maybe the overseer queue is backed up, we don't want to fail the create request

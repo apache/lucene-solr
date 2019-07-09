@@ -132,5 +132,45 @@ public class AnalysisImplTest extends LuceneTestCase {
     analysis.analyze(text);
   }
 
+  @Test(expected = LukeException.class)
+  public void testAnalyzeStepByStep_preset() {
+    AnalysisImpl analysis = new AnalysisImpl();
+    String analyzerType = "org.apache.lucene.analysis.standard.StandardAnalyzer";
+    Analyzer analyzer = analysis.createAnalyzerFromClassName(analyzerType);
+    assertEquals(analyzerType, analyzer.getClass().getName());
 
+    String text = "This test must fail.";
+    analysis.analyzeStepByStep(text);
+  }
+
+  @Test
+  public void testAnalyzeStepByStep_custom() {
+    AnalysisImpl analysis = new AnalysisImpl();
+    Map<String, String> tkParams = new HashMap<>();
+    tkParams.put("maxTokenLen", "128");
+    CustomAnalyzerConfig.Builder builder = new CustomAnalyzerConfig.Builder("keyword", tkParams)
+        .addTokenFilterConfig("lowercase", Collections.emptyMap())
+        .addCharFilterConfig("htmlstrip", Collections.emptyMap());
+    CustomAnalyzer analyzer = (CustomAnalyzer) analysis.buildCustomAnalyzer(builder.build());
+    assertEquals("org.apache.lucene.analysis.custom.CustomAnalyzer", analyzer.getClass().getName());
+    assertEquals("org.apache.lucene.analysis.charfilter.HTMLStripCharFilterFactory",
+        analyzer.getCharFilterFactories().get(0).getClass().getName());
+    assertEquals("org.apache.lucene.analysis.core.KeywordTokenizerFactory",
+        analyzer.getTokenizerFactory().getClass().getName());
+    assertEquals("org.apache.lucene.analysis.core.LowerCaseFilterFactory",
+        analyzer.getTokenFilterFactories().get(0).getClass().getName());
+
+    String text = "Apache Lucene";
+    Analysis.StepByStepResult result = analysis.analyzeStepByStep(text);
+    assertNotNull(result);
+    assertNotNull(result.getCharfilteredTexts());
+    assertEquals(1,result.getCharfilteredTexts().size());
+    assertEquals("htmlStrip", result.getCharfilteredTexts().get(0).getName());
+
+    assertNotNull(result.getNamedTokens());
+    assertEquals(2, result.getNamedTokens().size());
+    //FIXME check each namedTokensList
+    assertEquals("keyword", result.getNamedTokens().get(0).getName());
+    assertEquals("lowercase", result.getNamedTokens().get(1).getName());
+  }
 }

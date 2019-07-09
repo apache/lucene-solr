@@ -92,8 +92,8 @@ public final class SynonymQuery extends Query {
         throw new IllegalArgumentException("boost must be a positive float between 0 (exclusive) and 1 (inclusive)");
       }
       terms.add(new TermAndBoost(term, boost));
-      if (terms.size() > BooleanQuery.getMaxClauseCount()) {
-        throw new BooleanQuery.TooManyClauses();
+      if (terms.size() > IndexSearcher.getMaxClauseCount()) {
+        throw new IndexSearcher.TooManyClauses();
       }
       return this;
     }

@@ -47,8 +47,8 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
    *  MultiTermQuery#CONSTANT_SCORE_REWRITE} instead.
    *
    *  <p><b>NOTE</b>: This rewrite method will hit {@link
-   *  BooleanQuery.TooManyClauses} if the number of terms
-   *  exceeds {@link BooleanQuery#getMaxClauseCount}.
+   *  IndexSearcher.TooManyClauses} if the number of terms
+   *  exceeds {@link IndexSearcher#getMaxClauseCount}.
    *
    *  @see MultiTermQuery#setRewriteMethod */
   public final static ScoringRewrite<BooleanQuery.Builder> SCORING_BOOLEAN_REWRITE = new ScoringRewrite<BooleanQuery.Builder>() {
@@ -71,8 +71,8 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
     
     @Override
     protected void checkMaxClauseCount(int count) {
-      if (count > BooleanQuery.getMaxClauseCount())
-        throw new BooleanQuery.TooManyClauses();
+      if (count > IndexSearcher.getMaxClauseCount())
+        throw new IndexSearcher.TooManyClauses();
     }
   };
   
@@ -82,8 +82,8 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
    *  query's boost.
    * 
    *  <p><b>NOTE</b>: This rewrite method will hit {@link
-   *  BooleanQuery.TooManyClauses} if the number of terms
-   *  exceeds {@link BooleanQuery#getMaxClauseCount}.
+   *  IndexSearcher.TooManyClauses} if the number of terms
+   *  exceeds {@link IndexSearcher#getMaxClauseCount}.
    *
    *  @see MultiTermQuery#setRewriteMethod */
   public final static RewriteMethod CONSTANT_SCORE_BOOLEAN_REWRITE = new RewriteMethod() {

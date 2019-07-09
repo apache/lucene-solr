@@ -336,6 +336,27 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testUpdateWithValueNull() throws Exception {
+    long doc = addAndGetVersion(sdoc("id", "1", "title_s", "first", "inplace_updatable_float", 42), null);
+    assertU(commit("softCommit", "false"));
+
+    assertQ(req("q", "*:*", "fq", "inplace_updatable_float:[* TO *]"), "//*[@numFound='1']");
+    // RTG before update
+    assertJQ(req("qt","/get", "id","1", "fl","id,inplace_updatable_float,title_s"),
+        "=={'doc':{'id':'1', 'inplace_updatable_float':" + 42.0 + ",'title_s':" + "first" + "}}");
+
+    // set the value to null
+    doc = addAndAssertVersion(doc, "id", "1", "inplace_updatable_float", map("set", null));
+    assertU(commit("softCommit", "false"));
+
+    // numProducts should be 0
+    assertQ(req("q", "*:*", "fq", "inplace_updatable_float:[* TO *]"), "//*[@numFound='0']");
+    // after update
+    assertJQ(req("qt","/get", "id","1", "fl","id,inplace_updatable_float,title_s"),
+        "=={'doc':{'id':'1','title_s':first}}");
+  }
+
+  @Test
   public void testDVUpdatesWithDBQofUpdatedValue() throws Exception {
     long version1 = addAndGetVersion(sdoc("id", "1", "title_s", "first", "inplace_updatable_float", "0"), null);
     assertU(commit());

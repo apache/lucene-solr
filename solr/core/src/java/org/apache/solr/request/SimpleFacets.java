@@ -261,7 +261,7 @@ public class SimpleFacets {
     DocSet base = searcher.getDocSet(qlist);
     if (rb.grouping() && rb.getGroupingSpec().isTruncateGroups()) {
       Grouping grouping = new Grouping(searcher, null, rb.createQueryCommand(), false, 0, false);
-      grouping.setWithinGroupSort(rb.getGroupingSpec().getSortWithinGroup());
+      grouping.setWithinGroupSort(rb.getGroupingSpec().getWithinGroupSortSpec().getSort());
       if (rb.getGroupingSpec().getFields().length > 0) {
         grouping.addFieldCommand(rb.getGroupingSpec().getFields()[0], req);
       } else if (rb.getGroupingSpec().getFunctions().length > 0) {

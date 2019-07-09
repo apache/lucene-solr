@@ -1,0 +1,27 @@
+{"clusterstate":{"test_empty_collection":{
+  "pullReplicas":0,
+  "replicationFactor":1,
+  "shards":{
+    "shard2":{
+      "range":"0-7fffffff",
+      "state":"active",
+      "replicas":{}},
+    "shard1_1":{
+      "range":"c0000000-ffffffff",
+      "state":"active",
+      "replicas":{},
+      "stateTimestamp":"1540603288721383849"},
+    "shard1_0":{
+      "range":"80000000-bfffffff",
+      "state":"active",
+      "replicas":{},
+      "stateTimestamp":"1540603288721468797"}},
+  "router":{
+    "name":"compositeId",
+    "field":"shard_s"},
+  "maxShardsPerNode":"-1",
+  "autoAddReplicas":"false",
+  "nrtReplicas":1,
+  "tlogReplicas":0}},
+
+  "replicaInfo":{}}

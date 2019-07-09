@@ -32,6 +32,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.suggest.document.CompletionPostingsFormat.FSTLoadMode;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -71,7 +72,7 @@ final class CompletionFieldsProducer extends FieldsProducer {
     this.readers = readers;
   }
 
-  CompletionFieldsProducer(SegmentReadState state) throws IOException {
+  CompletionFieldsProducer(SegmentReadState state, FSTLoadMode fstLoadMode) throws IOException {
     String indexFile = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, INDEX_EXTENSION);
     delegateFieldsProducer = null;
     boolean success = false;
@@ -101,7 +102,7 @@ final class CompletionFieldsProducer extends FieldsProducer {
         byte type = index.readByte();
         FieldInfo fieldInfo = state.fieldInfos.fieldInfo(fieldNumber);
         // we don't load the FST yet
-        readers.put(fieldInfo.name, new CompletionsTermsReader(dictIn, offset, minWeight, maxWeight, type));
+        readers.put(fieldInfo.name, new CompletionsTermsReader(dictIn, offset, minWeight, maxWeight, type, fstLoadMode));
       }
       CodecUtil.checkFooter(index);
       success = true;

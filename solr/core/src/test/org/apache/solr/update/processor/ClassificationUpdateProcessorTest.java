@@ -73,9 +73,18 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    reader.close();
-    directory.close();
-    analyzer.close();
+    if (null != reader) {
+      reader.close();
+      reader = null;
+    }
+    if (null != directory) {
+      directory.close();
+      directory = null;
+    }
+    if (null != analyzer) {
+      analyzer.close();
+      analyzer = null;
+    }
     super.tearDown();
   }
 

@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
@@ -79,8 +80,16 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     String extTargetCollectionName = message.getStr("target.collection");
     int timeout = message.getInt("forward.timeout", 10 * 60) * 1000;
 
-    String sourceCollectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extSourceCollectionName);
-    String targetCollectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extTargetCollectionName);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String sourceCollectionName;
+    String targetCollectionName;
+    if (followAliases) {
+      sourceCollectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extSourceCollectionName);
+      targetCollectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extTargetCollectionName);
+    } else {
+      sourceCollectionName = extSourceCollectionName;
+      targetCollectionName = extTargetCollectionName;
+    }
 
     DocCollection sourceCollection = clusterState.getCollection(sourceCollectionName);
     if (sourceCollection == null) {

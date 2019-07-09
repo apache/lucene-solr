@@ -26,7 +26,6 @@
   <!-- currently whether rat detects this as binary or not
        is platform dependent?! -->
   <property name="rat.excludes" value="**/*.txt,**/bocchan.utf-8"/>
-  <property name="rat.additional-includes" value="src/tools/**"/>
 
   <!-- we don't want to pull in ipadic/naist etc -->
   <property name="ivy.default.configuration" value="default"/>
@@ -52,6 +51,9 @@
   <available type="dir" file="${build.dir}/${ipadic.version}" property="dict.available"/>
 
   <path id="classpath">
+    <dirset dir="${build.dir}">
+      <include name="classes/java"/>
+    </dirset>
     <pathelement path="${analyzers-common.jar}"/>
     <path refid="base.classpath"/>
   </path>
@@ -69,33 +71,14 @@
            originalfile="${dict.src.dir}/Noun.proper.csv"/>
   </target>
 
-  <path id="tools.dependencies">
-    <fileset dir="../icu/lib"/>
-  </path>
-
-  <path id="tools.classpath">
-    <path refid="classpath"/>
-    <path refid="tools.dependencies"/>
-    <pathelement location="${build.dir}/classes/java"/>
-    <pathelement location="${build.dir}/classes/tools"/>
-  </path>
-
-  <path id="tools.test.classpath">
-    <path refid="tools.classpath"/>
-    <path refid="test.base.classpath"/>
-    <pathelement location="${build.dir}/classes/tools-test"/>
-  </path>
-
-  <target name="build-dict" depends="compile-tools, patch-dict">
+  <target name="build-dict" depends="compile, patch-dict">
     <sequential>
       <delete verbose="true">
         <fileset dir="${resources.dir}/org/apache/lucene/analysis/ja/dict" includes="**/*"/>
       </delete>
       <!-- TODO: optimize the dictionary construction a bit so that you don't need 1G -->
       <java fork="true" failonerror="true" maxmemory="1g" classname="org.apache.lucene.analysis.ja.util.DictionaryBuilder">
-        <classpath>
-          <path refid="tools.classpath"/>
-        </classpath>
+        <classpath refid="classpath"/>
         <assertions>
           <enable package="org.apache.lucene"/>
         </assertions>
@@ -108,41 +91,7 @@
     </sequential>
   </target>
 
-   <!-- we don't actually need to compile this thing, we just want its lib -->
-   <target name="resolve-icu">
-     <ant dir="../icu/" target="resolve" inheritAll="false">
-       <propertyset refid="uptodate.and.compiled.properties"/>
-     </ant>
-   </target>
-
-  <target name="compile-tools" depends="resolve-icu, compile-core, common.compile-tools">
-    <compile
-      srcdir="src/tools/java"
-      destdir="${build.dir}/classes/tools">
-      <classpath>
-        <path refid="tools.classpath"/>
-      </classpath>
-    </compile>
-  </target>
-
-  <target name="compile-tools-tests" depends="compile-tools">
-    <compile
-      srcdir="src/tools/test"
-      destdir="${build.dir}/classes/tools-test">
-      <classpath>
-        <path refid="tools.test.classpath"/>
-        <pathelement path="src/tools/test"/>
-      </classpath>
-     </compile>
-  </target>
-
-  <target name="test-tools" depends="compile-tools-tests">
-    <test-macro dataDir="src/tools/test" junit.classpath="tools.test.classpath"/>
-  </target>
-
-  <target name="compile-test" depends="module-build.compile-test, compile-tools-tests"/>
-  <!-- TODO: not until we properly make 'test-tools' work with clover etc
-  <target name="test" depends="module-build.test, test-tools"/> -->
+  <target name="compile-test" depends="module-build.compile-test"/>
 
   <target name="regenerate" depends="build-dict"/>
 

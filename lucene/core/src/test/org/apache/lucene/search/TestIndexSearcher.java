@@ -18,11 +18,14 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -30,6 +33,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -236,5 +240,29 @@ public class TestIndexSearcher extends LuceneTestCase {
     assertTrue(slices[0].leaves[0] == r.leaves().get(0));
     service.shutdown();
     IOUtils.close(r, dir);
+  }
+
+  public void testOneSegmentExecutesOnTheCallerThread() throws IOException {
+    List<LeafReaderContext> leaves = reader.leaves();
+    AtomicInteger numExecutions = new AtomicInteger(0);
+    IndexSearcher searcher = new IndexSearcher(reader, task -> {
+      numExecutions.incrementAndGet();
+      task.run();
+    }) {
+      @Override
+      protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
+        ArrayList<LeafSlice> slices = new ArrayList<>();
+        for (LeafReaderContext ctx : leaves) {
+          slices.add(new LeafSlice(Arrays.asList(ctx)));
+        }
+        return slices.toArray(new LeafSlice[0]);
+      }
+    };
+    searcher.search(new MatchAllDocsQuery(), 10);
+    if (leaves.size() <= 1) {
+      assertEquals(0, numExecutions.get());
+    } else {
+      assertEquals(leaves.size() - 1, numExecutions.get());
+    }
   }
 }
