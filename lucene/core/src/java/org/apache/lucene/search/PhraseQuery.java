@@ -367,7 +367,7 @@ public class PhraseQuery extends Query {
   /** A guess of
    * the average number of simple operations for the initial seek and buffer refill
    * per document for the positions of a term.
-   * See also {@link Lucene50PostingsReader.BlockPostingsEnum#nextPosition()}.
+   * See also {@link Lucene50PostingsReader.BlockImpactsPostingsEnum#nextPosition()}.
    * <p>
    * Aside: Instead of being constant this could depend among others on
    * {@link Lucene50PostingsFormat#BLOCK_SIZE},
@@ -379,7 +379,7 @@ public class PhraseQuery extends Query {
    */
   private static final int TERM_POSNS_SEEK_OPS_PER_DOC = 128;
 
-  /** Number of simple operations in {@link Lucene50PostingsReader.BlockPostingsEnum#nextPosition()}
+  /** Number of simple operations in {@link Lucene50PostingsReader.BlockImpactsPostingsEnum#nextPosition()}
    *  when no seek or buffer refill is done.
    */
   private static final int TERM_OPS_PER_POS = 7;
