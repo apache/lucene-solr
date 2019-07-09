@@ -74,7 +74,7 @@ real distributions.
 The probability distribution framework has the following functions
 which support well known discrete probability distributions:
 
-* `poissonDistribution`: Creates a Poisson distribution function.
+==== `poissonDistribution`: Creates a Poisson distribution function.
 
 The visualization below shows a Poisson distribution with a `mean` of 15.
 
