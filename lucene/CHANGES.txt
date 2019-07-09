@@ -144,6 +144,8 @@ Optimizations
 * LUCENE-8888: Optimize distribution of points with data dimensions in
   BKD tree leaves. (Ignacio Vera)
 
+* LUCENE-8311: Phrase queries now leverage impacts. (Adrien Grand)
+
 Test Framework
 
 * LUCENE-8825: CheckHits now display the shard index in case of mismatch
