@@ -98,7 +98,7 @@ public class TestComponent2DTree extends LuceneTestCase {
       case 0 : return new double[] {GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude()};
       case 1 : return GeoTestUtil.nextBox();
       case 2 : return GeoTestUtil.nextPolygon();
-      case 3 : return BaseLatLonShapeTestCase.nextLine();
+      case 3 : return BaseLatLonShapeTestCase.getNextLine();
       default: throw new IllegalArgumentException("Unreachable code");
     }
 

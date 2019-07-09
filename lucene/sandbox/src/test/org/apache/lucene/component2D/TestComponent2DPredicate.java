@@ -18,6 +18,7 @@
 package org.apache.lucene.component2D;
 
 import org.apache.lucene.document.BaseLatLonShapeTestCase;
+import org.apache.lucene.document.BaseShapeTestCase;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
@@ -62,7 +63,7 @@ public class TestComponent2DPredicate extends LuceneTestCase {
   }
 
   public void testRandomLine() {
-    Line line = BaseLatLonShapeTestCase.nextLine();
+    Line line = BaseLatLonShapeTestCase.getNextLine();
     Component2D component = LatLonComponent2DFactory.create(line);
     Component2DPredicate predicate = Component2DPredicate.createComponentPredicate(component);
     for (int i =0; i < 1000; i++) {

@@ -29,12 +29,12 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestLineComponent2D extends LuceneTestCase {
 
   public void testEqualsAndHashcode() {
-    Line line = TestLatLonLineShapeQueries.nextLine();
+    Line line = TestLatLonLineShapeQueries.getNextLine();
     Component2D component1 = LatLonComponent2DFactory.create(line);
     Component2D component2 = LatLonComponent2DFactory.create(line);
     assertEquals(component1, component2);
     assertEquals(component1.hashCode(), component2.hashCode());
-    Line otherLine = TestLatLonLineShapeQueries.nextLine();
+    Line otherLine = TestLatLonLineShapeQueries.getNextLine();
     Component2D component3 = LatLonComponent2DFactory.create(otherLine);
     if (line.equals(otherLine)) {
       assertEquals(component1, component3);
@@ -82,7 +82,7 @@ public class TestLineComponent2D extends LuceneTestCase {
   }
 
   public void testRandomTriangles() {
-    Line line = TestLatLonLineShapeQueries.nextLine();
+    Line line = TestLatLonLineShapeQueries.getNextLine();
     Component2D component = LatLonComponent2DFactory.create(line);
 
     for (int i =0; i < 100; i++) {
