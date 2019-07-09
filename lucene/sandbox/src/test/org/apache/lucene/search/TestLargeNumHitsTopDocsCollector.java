@@ -117,6 +117,30 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
     assertNotEquals(largeCollector.pqTop, null);
   }
 
+  public void testNoPQHitsOrder() throws IOException {
+    IndexSearcher searcher = newSearcher(reader);
+    LargeNumHitsTopDocsCollector largeCollector = new LargeNumHitsTopDocsCollector(250_000);
+    TopScoreDocCollector regularCollector = TopScoreDocCollector.create(250_000, null, Integer.MAX_VALUE);
+
+    searcher.search(testQuery, largeCollector);
+    searcher.search(testQuery, regularCollector);
+
+    assertEquals(largeCollector.totalHits, regularCollector.totalHits);
+
+    assertEquals(largeCollector.pq, null);
+    assertEquals(largeCollector.pqTop, null);
+
+    TopDocs topDocs = largeCollector.topDocs();
+
+    if (topDocs.scoreDocs.length > 0) {
+      float preScore = topDocs.scoreDocs[0].score;
+      for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+        assert scoreDoc.score <= preScore;
+        preScore = scoreDoc.score;
+      }
+    }
+  }
+
   private void runNumHits(int numHits) throws IOException {
     IndexSearcher searcher = newSearcher(reader);
     LargeNumHitsTopDocsCollector largeCollector = new LargeNumHitsTopDocsCollector(numHits);
