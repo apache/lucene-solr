@@ -74,12 +74,8 @@ class PointComponent2D implements Component2D {
 
   @Override
   public int hashCode() {
-    int result;
-    long temp;
-    temp = Integer.hashCode(x);
-    result = (int) (temp ^ (temp >>> 32));
-    temp = Integer.hashCode(y);
-    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    int result =  Integer.hashCode(x);
+    result = 31 * result + Integer.hashCode(y);
     return result;
   }
 

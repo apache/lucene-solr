@@ -17,29 +17,23 @@
 
 package org.apache.lucene.component2D;
 
-import java.util.Arrays;
-
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.index.PointValues;
-import org.apache.lucene.util.LuceneTestCase;
 
-public class TestPointComponent2D extends LuceneTestCase {
+public class TestLatLonPointComponent2D extends TestBaseLatLonComponent2D {
 
-  public void testEqualsAndHashcode() {
-    double[] point = new double[]{GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude()};
-    Component2D component1 = LatLonComponent2DFactory.create(point);
-    Component2D component2 = LatLonComponent2DFactory.create(point);
-    assertEquals(component1, component2);
-    assertEquals(component1.hashCode(), component2.hashCode());
-    double[] otherPoint = new double[]{GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude()};
-    Component2D component3 = LatLonComponent2DFactory.create(otherPoint);
-    if (Arrays.equals(point, otherPoint)) {
-      assertEquals(component1, component3);
-      assertEquals(component1.hashCode(), component3.hashCode());
+  @Override
+  protected Object nextShape() {
+    return new double[] {GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude()};
+  }
+
+  @Override
+  protected Component2D getComponent(Object shape) {
+    if (random().nextBoolean()) {
+      return LatLonComponent2DFactory.create(shape);
     } else {
-      assertNotEquals(component1, component3);
-      assertNotEquals(component1.hashCode(), component3.hashCode());
+      return LatLonComponent2DFactory.create((double[]) shape);
     }
   }
 
@@ -109,34 +103,5 @@ public class TestPointComponent2D extends LuceneTestCase {
     int minY = GeoEncodingUtils.encodeLongitude(-1);
     int maxY = GeoEncodingUtils.encodeLatitude(2);
     assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, component.relate(minX, maxX, minY, maxY));
-  }
-
-  public void testRandomTriangles() {
-    double[] point = new double[]{GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude()};
-    Component2D component = LatLonComponent2DFactory.create(point);
-
-    for (int i =0; i < 100; i++) {
-      int ax = GeoEncodingUtils.encodeLongitude(GeoTestUtil.nextLongitude());
-      int ay = GeoEncodingUtils.encodeLatitude(GeoTestUtil.nextLatitude());
-      int bx = GeoEncodingUtils.encodeLongitude(GeoTestUtil.nextLongitude());
-      int by = GeoEncodingUtils.encodeLatitude(GeoTestUtil.nextLatitude());
-      int cx = GeoEncodingUtils.encodeLongitude(GeoTestUtil.nextLongitude());
-      int cy = GeoEncodingUtils.encodeLatitude(GeoTestUtil.nextLatitude());
-
-      int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
-      int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
-      int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
-      int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
-
-      PointValues.Relation r = component.relate(tMinX, tMaxX, tMinY, tMaxY);
-      if (r == PointValues.Relation.CELL_OUTSIDE_QUERY) {
-        assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, component.relateTriangle(ax, ay, bx, by , cx, cy));
-      }
-      else if (r == PointValues.Relation.CELL_INSIDE_QUERY) {
-        assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, component.relateTriangle(ax, ay, bx, by , cx, cy));
-      } else {
-        assertNotEquals(PointValues.Relation.CELL_INSIDE_QUERY, component.relateTriangle(ax, ay, bx, by , cx, cy));
-      }
-    }
   }
 }

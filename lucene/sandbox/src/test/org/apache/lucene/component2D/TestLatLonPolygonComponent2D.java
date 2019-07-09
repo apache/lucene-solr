@@ -21,9 +21,7 @@ import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.geo.GeoTestUtil.createRegularPolygon;
@@ -33,38 +31,35 @@ import static org.apache.lucene.geo.GeoTestUtil.nextPointNear;
 import static org.apache.lucene.geo.GeoTestUtil.nextPolygon;
 
 /** Test Polygon2D impl */
-public class TestPolygonComponent2D extends LuceneTestCase {
+public class TestLatLonPolygonComponent2D extends TestBaseLatLonComponent2D {
 
-  public void testEqualsAndHashcode() {
-    Polygon polygon = GeoTestUtil.nextPolygon();
-    Component2D component1 = LatLonComponent2DFactory.create(polygon);
-    Component2D component2 = LatLonComponent2DFactory.create(polygon);
-    assertEquals(component1, component2);
-    assertEquals(component1.hashCode(), component2.hashCode());
-    Polygon otherPolygon =  GeoTestUtil.nextPolygon();
-    Component2D component3 = LatLonComponent2DFactory.create(otherPolygon);
-    if (polygon.equals(otherPolygon)) {
-      assertEquals(component1, component3);
-      assertEquals(component1.hashCode(), component3.hashCode());
+  @Override
+  protected Object nextShape() {
+    return GeoTestUtil.nextPolygon();
+  }
+
+  @Override
+  protected Component2D getComponent(Object shape) {
+    if (random().nextBoolean()) {
+      return LatLonComponent2DFactory.create(shape);
     } else {
-      assertNotEquals(component1, component3);
-      assertNotEquals(component1.hashCode(), component3.hashCode());
+      return LatLonComponent2DFactory.create((Polygon) shape);
     }
   }
-  
+
   /** Three boxes, an island inside a hole inside a shape */
   public void testMultiPolygon() {
     Polygon hole = new Polygon(new double[] { -10, -10, 10, 10, -10 }, new double[] { -10, 10, 10, -10, -10 });
     Polygon outer = new Polygon(new double[] { -50, -50, 50, 50, -50 }, new double[] { -50, 50, 50, -50, -50 }, hole);
     Polygon island = new Polygon(new double[] { -5, -5, 5, 5, -5 }, new double[] { -5, 5, 5, -5, -5 } );
     Component2D polygon = LatLonComponent2DFactory.create(outer, island);
-    
+
     // contains(point)
     assertTrue(polygon.contains(GeoEncodingUtils.encodeLongitude(2), GeoEncodingUtils.encodeLatitude(-2))); // on the island
     assertFalse(polygon.contains(GeoEncodingUtils.encodeLongitude(6), GeoEncodingUtils.encodeLatitude(-6))); // in the hole
     assertTrue(polygon.contains(GeoEncodingUtils.encodeLongitude(25), GeoEncodingUtils.encodeLatitude(-25))); // on the mainland
     assertFalse(polygon.contains(GeoEncodingUtils.encodeLongitude(51), GeoEncodingUtils.encodeLatitude(-51))); // in the ocean
-    
+
     // relate(box): this can conservatively return CELL_CROSSES_QUERY
     assertEquals(Relation.CELL_INSIDE_QUERY, polygon.relate(GeoEncodingUtils.encodeLongitude(-2), GeoEncodingUtils.encodeLongitude(2), GeoEncodingUtils.encodeLatitude(-2), GeoEncodingUtils.encodeLatitude(2))); // on the island
     assertEquals(Relation.CELL_OUTSIDE_QUERY, polygon.relate(GeoEncodingUtils.encodeLongitude(6), GeoEncodingUtils.encodeLongitude(7), GeoEncodingUtils.encodeLatitude(6), GeoEncodingUtils.encodeLatitude(7))); // in the hole
@@ -99,7 +94,7 @@ public class TestPolygonComponent2D extends LuceneTestCase {
       assertEquals(c1, c2);
     }
   }
-  
+
   public void testPacMan() throws Exception {
     // pacman
     double[] px = {0, 10, 10, 0, -8, -10, -8, 0, 10, 10, 0};
@@ -115,7 +110,7 @@ public class TestPolygonComponent2D extends LuceneTestCase {
     Component2D polygon = LatLonComponent2DFactory.create(new Polygon(py, px));
     assertEquals(Relation.CELL_CROSSES_QUERY, polygon.relate(xMin, xMax, yMin, yMax));
   }
-  
+
   public void testBoundingBox() throws Exception {
     for (int i = 0; i < 100; i++) {
       Component2D impl = LatLonComponent2DFactory.create(nextPolygon());
@@ -130,13 +125,13 @@ public class TestPolygonComponent2D extends LuceneTestCase {
       }
     }
   }
-  
+
   // targets the bounding box directly
   public void testBoundingBoxEdgeCases() throws Exception {
     for (int i = 0; i < 100; i++) {
       Polygon polygon = nextPolygon();
       Component2D impl = LatLonComponent2DFactory.create(polygon);
-      
+
       for (int j = 0; j < 100; j++) {
         double point[] = GeoTestUtil.nextPointNear(polygon);
         int x = GeoEncodingUtils.encodeLatitude(point[0]);
@@ -149,7 +144,7 @@ public class TestPolygonComponent2D extends LuceneTestCase {
       }
     }
   }
-  
+
   /** If polygon.contains(box) returns true, then any point in that box should return true as well */
   public void testContainsRandom() throws Exception {
     int iters = atLeast(50);
@@ -190,7 +185,7 @@ public class TestPolygonComponent2D extends LuceneTestCase {
       }
     }
   }
-  
+
   /** If polygon.contains(box) returns true, then any point in that box should return true as well */
   // different from testContainsRandom in that its not a purely random test. we iterate the vertices of the polygon
   // and generate boxes near each one of those to try to be more efficient.
@@ -231,7 +226,7 @@ public class TestPolygonComponent2D extends LuceneTestCase {
       }
     }
   }
-  
+
   /** If polygon.intersects(box) returns false, then any point in that box should return false as well */
   public void testIntersectRandom() {
     int iters = atLeast(10);
@@ -270,7 +265,7 @@ public class TestPolygonComponent2D extends LuceneTestCase {
       }
     }
   }
-  
+
   /** If polygon.intersects(box) returns false, then any point in that box should return false as well */
   // different from testIntersectsRandom in that its not a purely random test. we iterate the vertices of the polygon
   // and generate boxes near each one of those to try to be more efficient.
@@ -312,7 +307,7 @@ public class TestPolygonComponent2D extends LuceneTestCase {
       }
     }
   }
-  
+
   /** Tests edge case behavior with respect to insideness */
   public void testEdgeInsideness() {
     Component2D poly = LatLonComponent2DFactory.create(new Polygon(new double[] { -2, -2, 2, 2, -2 }, new double[] { -2, 2, 2, -2, -2 }));
@@ -424,85 +419,85 @@ public class TestPolygonComponent2D extends LuceneTestCase {
     Polygon polygon = new Polygon(new double[] {-14.448264200949083, 0, 0, -14.448264200949083, -14.448264200949083},
         new double[] {0.9999999403953552, 0.9999999403953552, 124.50086371762484, 124.50086371762484, 0.9999999403953552});
     Component2D component = LatLonComponent2DFactory.create(polygon);
-    PointValues.Relation rel = component.relateTriangle(
+    Relation rel = component.relateTriangle(
         GeoEncodingUtils.encodeLongitude(alon), GeoEncodingUtils.encodeLatitude(blat),
         GeoEncodingUtils.encodeLongitude(blon), GeoEncodingUtils.encodeLatitude(blat),
         GeoEncodingUtils.encodeLongitude(alon), GeoEncodingUtils.encodeLatitude(alat));
 
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertEquals(Relation.CELL_CROSSES_QUERY, rel);
 
     rel = component.relateTriangle(
         GeoEncodingUtils.encodeLongitude(alon), GeoEncodingUtils.encodeLatitude(blat),
         GeoEncodingUtils.encodeLongitude(alon), GeoEncodingUtils.encodeLatitude(alat),
         GeoEncodingUtils.encodeLongitude(blon), GeoEncodingUtils.encodeLatitude(blat));
 
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertEquals(Relation.CELL_CROSSES_QUERY, rel);
   }
 
   public void testTriangleTouchingEdges() {
     Polygon p = new Polygon(new double[] {0, 0, 1, 1, 0}, new double[] {0, 1, 1, 0, 0});
     Component2D component = LatLonComponent2DFactory.create(p);
     //3 shared points
-    PointValues.Relation rel = component.relateTriangle(
+    Relation rel = component.relateTriangle(
         GeoEncodingUtils.encodeLongitude(0.5), GeoEncodingUtils.encodeLatitude(0),
         GeoEncodingUtils.encodeLongitude(1), GeoEncodingUtils.encodeLatitude(0.5),
         GeoEncodingUtils.encodeLongitude(0.5), GeoEncodingUtils.encodeLatitude(1));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    assertEquals(Relation.CELL_INSIDE_QUERY, rel);
     //2 shared points
     rel = component.relateTriangle(
         GeoEncodingUtils.encodeLongitude(0.5), GeoEncodingUtils.encodeLatitude(0),
         GeoEncodingUtils.encodeLongitude(1), GeoEncodingUtils.encodeLatitude(0.5),
         GeoEncodingUtils.encodeLongitude(0.5), GeoEncodingUtils.encodeLatitude(0.75));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    assertEquals(Relation.CELL_INSIDE_QUERY, rel);
     //1 shared point
     rel = component.relateTriangle(
         GeoEncodingUtils.encodeLongitude(0.5), GeoEncodingUtils.encodeLatitude(0.5),
         GeoEncodingUtils.encodeLongitude(0.5), GeoEncodingUtils.encodeLatitude(0),
         GeoEncodingUtils.encodeLongitude(0.75), GeoEncodingUtils.encodeLatitude(0.75));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    assertEquals(Relation.CELL_INSIDE_QUERY, rel);
     // 1 shared point but out
     rel = component.relateTriangle(
         GeoEncodingUtils.encodeLongitude(1), GeoEncodingUtils.encodeLatitude(0.5),
         GeoEncodingUtils.encodeLongitude(2), GeoEncodingUtils.encodeLatitude(0),
         GeoEncodingUtils.encodeLongitude(2), GeoEncodingUtils.encodeLatitude(2));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertEquals(Relation.CELL_CROSSES_QUERY, rel);
     // 1 shared point but crossing
     rel = component.relateTriangle(
         GeoEncodingUtils.encodeLongitude(0.5), GeoEncodingUtils.encodeLatitude(0),
         GeoEncodingUtils.encodeLongitude(2), GeoEncodingUtils.encodeLatitude(0.5),
         GeoEncodingUtils.encodeLongitude(0.5), GeoEncodingUtils.encodeLatitude(1));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertEquals(Relation.CELL_CROSSES_QUERY, rel);
     //share one edge
     rel = component.relateTriangle(
         GeoEncodingUtils.encodeLongitude(0), GeoEncodingUtils.encodeLatitude(0),
         GeoEncodingUtils.encodeLongitude(0), GeoEncodingUtils.encodeLatitude(1),
         GeoEncodingUtils.encodeLongitude(0.5), GeoEncodingUtils.encodeLatitude(0.5));
-    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    assertEquals(Relation.CELL_INSIDE_QUERY, rel);
     //share one edge outside
     rel = component.relateTriangle(
         GeoEncodingUtils.encodeLongitude(0), GeoEncodingUtils.encodeLatitude(1),
         GeoEncodingUtils.encodeLongitude(1.5), GeoEncodingUtils.encodeLatitude(1.5),
         GeoEncodingUtils.encodeLongitude(1), GeoEncodingUtils.encodeLatitude(1));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertEquals(Relation.CELL_CROSSES_QUERY, rel);
   }
 
   public void testTriangleCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, 0, -5, -10, -5, 0}, new double[] {-1, 1, 5, 0, -5, -1});
     Component2D component = LatLonComponent2DFactory.create(p);
-    PointValues.Relation rel = component.relateTriangle(
+    Relation rel = component.relateTriangle(
         GeoEncodingUtils.encodeLongitude(-5), GeoEncodingUtils.encodeLatitude(0),
         GeoEncodingUtils.encodeLongitude(10), GeoEncodingUtils.encodeLatitude(0),
         GeoEncodingUtils.encodeLongitude(-5), GeoEncodingUtils.encodeLatitude(-15));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertEquals(Relation.CELL_CROSSES_QUERY, rel);
   }
 
   public void testLineCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
     Component2D component = LatLonComponent2DFactory.create(p);
-    PointValues.Relation rel = component.relateTriangle(
+    Relation rel = component.relateTriangle(
         GeoEncodingUtils.encodeLongitude(-1.5), GeoEncodingUtils.encodeLatitude(0),
         GeoEncodingUtils.encodeLongitude(1.5), GeoEncodingUtils.encodeLatitude(0),
         GeoEncodingUtils.encodeLongitude(-1.5), GeoEncodingUtils.encodeLatitude(0));
-    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertEquals(Relation.CELL_CROSSES_QUERY, rel);
   }
 }
