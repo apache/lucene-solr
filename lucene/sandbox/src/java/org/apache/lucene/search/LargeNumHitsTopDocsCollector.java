@@ -81,7 +81,7 @@ public final class LargeNumHitsTopDocsCollector implements Collector {
           // Convert the list to a priority queue
 
           // We should get here only when priority queue
-          // has been built
+          // has not been built
           assert pq == null;
           assert pqTop == null;
           pq = new HitQueue(numHits, false);

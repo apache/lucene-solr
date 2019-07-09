@@ -40,7 +40,7 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    for (int i = 0; i < 200_000; i++) {
+    for (int i = 0; i < 100; i++) {
       if (random().nextBoolean()) {
         Document doc = new Document();
         doc.add(newStringField("field", "5", Field.Store.NO));
@@ -60,15 +60,15 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
     dir = null;
     super.tearDown();
   }
-  public void testLargeNumAndSparseHits() throws Exception {
-    runNumHits(100_000);
+  public void testRequestMoreHitsThanCollected() throws Exception {
+    runNumHits(150);
   }
 
   public void testSingleNumHit() throws Exception {
     runNumHits(1);
   }
 
-  public void testLowNumberOfHits() throws Exception {
+  public void testRequestLessHitsThanCollected() throws Exception {
     runNumHits(25);
   }
 
@@ -105,8 +105,8 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
 
   public void testPQBuild() throws IOException {
     IndexSearcher searcher = newSearcher(reader);
-    LargeNumHitsTopDocsCollector largeCollector = new LargeNumHitsTopDocsCollector(100_000);
-    TopScoreDocCollector regularCollector = TopScoreDocCollector.create(100_000, null, Integer.MAX_VALUE);
+    LargeNumHitsTopDocsCollector largeCollector = new LargeNumHitsTopDocsCollector(50);
+    TopScoreDocCollector regularCollector = TopScoreDocCollector.create(50, null, Integer.MAX_VALUE);
 
     searcher.search(testQuery, largeCollector);
     searcher.search(testQuery, regularCollector);
