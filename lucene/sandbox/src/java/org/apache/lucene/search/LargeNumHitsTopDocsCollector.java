@@ -72,7 +72,7 @@ public final class LargeNumHitsTopDocsCollector implements Collector {
         assert score >= 0; // NOTE: false for NaN
 
         if (totalHits < requestedHitCount) {
-          hits.add(new ScoreDoc(doc, score));
+          hits.add(new ScoreDoc(doc + docBase, score));
           totalHits++;
           return;
         } else if (totalHits == requestedHitCount) {

@@ -40,14 +40,11 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    for (int i = 0; i < 100; i++) {
-      if (random().nextBoolean()) {
-        Document doc = new Document();
-        doc.add(newStringField("field", "5", Field.Store.NO));
-        writer.addDocument(doc);
-      } else {
-        writer.addDocument(new Document());
-      }
+    for (int i = 0; i < 1_000; i++) {
+      Document doc = new Document();
+      doc.add(newStringField("field", "5", Field.Store.NO));
+      writer.addDocument(doc);
+      writer.addDocument(new Document());
     }
     reader = writer.getReader();
     writer.close();
