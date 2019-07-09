@@ -72,13 +72,15 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
       Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(minLat, maxLat, minLon, maxLon));
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(p);
       for (Tessellator.Triangle t : tessellation) {
-        int[] decoded = encoder.encodeDecodeTriangle(t.getX(0), t.getY(0), t.getX(1), t.getY(1), t.getX(2), t.getY(2));
+        ShapeField.EncodedTriangle decoded = encoder.encodeDecodeTriangle(t.getX(0), t.getY(0), t.fromPolygon(0),
+                                                                          t.getX(1), t.getY(1), t.fromPolygon(1),
+                                                                          t.getX(2), t.getY(2), t.fromPolygon(2));
         if (queryRelation == QueryRelation.WITHIN) {
-          if (rectangle2D.containsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == false) {
+          if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
             return false;
           }
         } else {
-          if (rectangle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == true) {
+          if (rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
             return queryRelation == QueryRelation.INTERSECTS;
           }
         }
@@ -99,7 +101,9 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     private boolean testPolygon(EdgeTree tree, Polygon shape) {
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
       for (Tessellator.Triangle t : tessellation) {
-        double[] qTriangle = encoder.quantizeTriangle(t.getX(0), t.getY(0), t.getX(1), t.getY(1), t.getX(2), t.getY(2));
+        double[] qTriangle = encoder.quantizeTriangle(t.getX(0), t.getY(0), t.fromPolygon(0),
+                                                      t.getX(1), t.getY(1), t.fromPolygon(1),
+                                                      t.getX(2), t.getY(2), t.fromPolygon(2));
         Relation r = tree.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
         if (queryRelation == QueryRelation.DISJOINT) {
           if (r != Relation.CELL_OUTSIDE_QUERY) return false;

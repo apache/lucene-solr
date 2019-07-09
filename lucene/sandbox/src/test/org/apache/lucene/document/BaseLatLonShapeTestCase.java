@@ -264,18 +264,18 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
       }
 
       @Override
-      double[] quantizeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-        int[] decoded = encodeDecodeTriangle(ax, ay, bx, by, cx, cy);
-        return new double[]{decodeLatitude(decoded[0]), decodeLongitude(decoded[1]), decodeLatitude(decoded[2]), decodeLongitude(decoded[3]), decodeLatitude(decoded[4]), decodeLongitude(decoded[5])};
+      double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+        ShapeField.EncodedTriangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+        return new double[]{decodeLatitude(decoded.aY), decodeLongitude(decoded.aX), decodeLatitude(decoded.bY), decodeLongitude(decoded.bX), decodeLatitude(decoded.cY), decodeLongitude(decoded.cX)};
       }
 
       @Override
-      int[] encodeDecodeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+      ShapeField.EncodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
         byte[] encoded = new byte[7 * ShapeField.BYTES];
-        ShapeField.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), encodeLatitude(by), encodeLongitude(bx), encodeLatitude(cy), encodeLongitude(cx));
-        int[] decoded = new int[6];
-        ShapeField.decodeTriangle(encoded, decoded);
-        return decoded;
+        ShapeField.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), ab, encodeLatitude(by), encodeLongitude(bx), bc, encodeLatitude(cy), encodeLongitude(cx), ca);
+        ShapeField.EncodedTriangle triangle  = new ShapeField.EncodedTriangle();
+        ShapeField.decodeTriangle(encoded, triangle);
+        return triangle;
       }
     };
   }

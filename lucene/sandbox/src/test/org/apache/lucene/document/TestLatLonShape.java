@@ -236,12 +236,13 @@ public class TestLatLonShape extends LuceneTestCase {
     Tessellator.Triangle t = Tessellator.tessellate(poly).get(0);
 
     byte[] encoded = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(encoded, encodeLatitude(t.getY(0)), encodeLongitude(t.getX(0)),
-        encodeLatitude(t.getY(1)), encodeLongitude(t.getX(1)), encodeLatitude(t.getY(2)), encodeLongitude(t.getX(2)));
-    int[] decoded = new int[6];
+    ShapeField.encodeTriangle(encoded, encodeLatitude(t.getY(0)), encodeLongitude(t.getX(0)), t.fromPolygon(0),
+                                       encodeLatitude(t.getY(1)), encodeLongitude(t.getX(1)), t.fromPolygon(1),
+                                       encodeLatitude(t.getY(2)), encodeLongitude(t.getX(2)), t.fromPolygon(2));
+    ShapeField.EncodedTriangle decoded = new ShapeField.EncodedTriangle();
     ShapeField.decodeTriangle(encoded, decoded);
 
-    int expected =rectangle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) ? 0 : 1;
+    int expected =rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) ? 0 : 1;
 
     Document document = new Document();
     addPolygonsToDoc(FIELDNAME, document, poly);

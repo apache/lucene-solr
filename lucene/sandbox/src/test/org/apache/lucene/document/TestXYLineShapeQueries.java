@@ -81,13 +81,13 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
       XYLine line = (XYLine)shape;
       XYRectangle2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        int[] decoded = encoder.encodeDecodeTriangle(line.getX(i), line.getY(i), line.getX(j), line.getY(j), line.getX(i), line.getY(i));
+        ShapeField.EncodedTriangle decoded = encoder.encodeDecodeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
         if (queryRelation == QueryRelation.WITHIN) {
-          if (rectangle2D.containsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == false) {
+          if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
             return false;
           }
         } else {
-          if (rectangle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == true) {
+          if (rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
             return queryRelation == QueryRelation.INTERSECTS;
           }
         }
@@ -108,7 +108,7 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
     private boolean testLine(EdgeTree queryPoly, XYLine line) {
 
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), line.getX(j), line.getY(j), line.getX(i), line.getY(i));
+        double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
         Relation r = queryPoly.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
         if (queryRelation == QueryRelation.DISJOINT) {
           if (r != Relation.CELL_OUTSIDE_QUERY) return false;

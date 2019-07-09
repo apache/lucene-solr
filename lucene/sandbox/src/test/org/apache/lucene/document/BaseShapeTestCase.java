@@ -545,8 +545,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     abstract double quantizeXCeil(double raw);
     abstract double quantizeY(double raw);
     abstract double quantizeYCeil(double raw);
-    abstract double[] quantizeTriangle(double ax, double ay, double bx, double by, double cx, double cy);
-    abstract int[] encodeDecodeTriangle(double ax, double ay, double bx, double by, double cx, double cy);
+    abstract double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
+    abstract ShapeField.EncodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
   }
 
   private int scaledIterationCount(int shapes) {
