@@ -28,12 +28,25 @@ and <<Enumerated Distributions,enumerated>> distributions that model real world 
 The probability distribution framework also includes a set of functions that use the probability distributions
 to support probability calculations and sampling.
 
+
+== Visualization
+
+All supported univariate probability distributions can be visualized in Zeppelin-Solr using the
+`zplot` function with the `dist` parameter. Examples visualizations are shown with each
+distribution below.
+
 === Real Distributions
 
 The probability distribution framework has the following functions
 which support well known real probability distributions:
 
 * `normalDistribution`: Creates a normal distribution function.
+
+The visualization below shows a normal distribution with a `mean` of 0 and `standard
+deviation` of 1.
+
+image::images/math-expressions/dist.png[]
+
 
 * `logNormalDistribution`: Creates a log normal distribution function.
 
@@ -63,13 +76,43 @@ which support well known discrete probability distributions:
 
 * `poissonDistribution`: Creates a Poisson distribution function.
 
+The visualization below shows a Poisson distribution with a `mean` of 15.
+
+image::images/math-expressions/poisson.png[]
+
+
 * `binomialDistribution`: Creates a binomial distribution function.
+
+The visualization below shows a binomial distribution with a 100 trials and .15
+probability of success.
+
+image::images/math-expressions/binomial.png[]
+
 
 * `uniformIntegerDistribution`: Creates a uniform integer distribution function.
 
+The visualization below shows a uniform integer distribution between 0 and 10.
+probability of success.
+
+image::images/math-expressions/uniform.png[]
+
+
 * `geometricDistribution`: Creates a geometric distribution function.
 
+The visualization below shows a geometric distribution probability of success of
+.25.
+
+image::images/math-expressions/geometric.png[]
+
+
 * `zipFDistribution`: Creates a Zipf distribution function.
+
+The visualization below shows a ZipF distribution with a size of 50 and exponent of 1.
+
+image::images/math-expressions/zipf.png[]
+
+
+
 
 === Enumerated Distributions
 
