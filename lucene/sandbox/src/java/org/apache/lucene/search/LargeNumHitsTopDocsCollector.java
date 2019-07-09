@@ -37,8 +37,6 @@ import static org.apache.lucene.search.TopDocsCollector.EMPTY_TOPDOCS;
 public final class LargeNumHitsTopDocsCollector implements Collector {
   private final int numHits;
   private List<ScoreDoc> hits = new ArrayList<>();
-  /** Whether {@link #totalHits} is exact or a lower bound. */
-  private TotalHits.Relation totalHitsRelation = TotalHits.Relation.EQUAL_TO;
   // package private for testing
   HitQueue pq;
   ScoreDoc pqTop;
@@ -149,7 +147,7 @@ public final class LargeNumHitsTopDocsCollector implements Collector {
    * topDocs were invalid.
    */
   protected TopDocs newTopDocs(ScoreDoc[] results) {
-    return results == null ? EMPTY_TOPDOCS : new TopDocs(new TotalHits(totalHits, totalHitsRelation), results);
+    return results == null ? EMPTY_TOPDOCS : new TopDocs(new TotalHits(totalHits, TotalHits.Relation.EQUAL_TO), results);
   }
 
   /** Returns the top docs that were collected by this collector. */
