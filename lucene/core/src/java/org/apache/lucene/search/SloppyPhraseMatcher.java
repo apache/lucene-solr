@@ -20,13 +20,19 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.apache.lucene.index.Impact;
+import org.apache.lucene.index.Impacts;
+import org.apache.lucene.index.ImpactsSource;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
@@ -56,6 +62,9 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
   private final PhraseQueue pq; // for advancing min position
   private final boolean captureLeadMatch;
 
+  private final DocIdSetIterator approximation;
+  private final ImpactsDISI impactsApproximation;
+
   private int end; // current largest phrase position
 
   private int leadPosition;
@@ -72,8 +81,8 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
   private boolean positioned;
   private int matchLength;
 
-  SloppyPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, int slop, float matchCost, boolean captureLeadMatch) {
-    super(approximation(postings), matchCost);
+  SloppyPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, int slop, ScoreMode scoreMode, SimScorer scorer, float matchCost, boolean captureLeadMatch) {
+    super(matchCost);
     this.slop = slop;
     this.numPostings = postings.length;
     this.captureLeadMatch = captureLeadMatch;
@@ -82,14 +91,49 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
     for (int i = 0; i < postings.length; ++i) {
       phrasePositions[i] = new PhrasePositions(postings[i].postings, postings[i].position, i, postings[i].terms);
     }
+
+    approximation = ConjunctionDISI.intersectIterators(Arrays.stream(postings).map(p -> p.postings).collect(Collectors.toList()));
+    // What would be a good upper bound of the sloppy frequency? A sum of the
+    // sub frequencies would be correct, but it is usually so much higher than
+    // the actual sloppy frequency that it doesn't help skip irrelevant
+    // documents. As a consequence for now, sloppy phrase queries use dummy
+    // impacts:
+    final ImpactsSource impactsSource = new ImpactsSource() {
+      @Override
+      public Impacts getImpacts() throws IOException {
+        return new Impacts() {
+
+          @Override
+          public int numLevels() {
+            return 1;
+          }
+
+          @Override
+          public List<Impact> getImpacts(int level) {
+            return Collections.singletonList(new Impact(Integer.MAX_VALUE, 1L));
+          }
+
+          @Override
+          public int getDocIdUpTo(int level) {
+            return DocIdSetIterator.NO_MORE_DOCS;
+          }
+        };
+      }
+
+      @Override
+      public void advanceShallow(int target) throws IOException {}
+    };
+    impactsApproximation = new ImpactsDISI(approximation, impactsSource, scorer);
   }
 
-  private static DocIdSetIterator approximation(PhraseQuery.PostingsAndFreq[] postings) {
-    List<DocIdSetIterator> iterators = new ArrayList<>();
-    for (PhraseQuery.PostingsAndFreq posting : postings) {
-      iterators.add(posting.postings);
-    }
-    return ConjunctionDISI.intersectIterators(iterators);
+  @Override
+  DocIdSetIterator approximation() {
+    return approximation;
+  }
+
+  @Override
+  ImpactsDISI impactsApproximation() {
+    return impactsApproximation;
   }
 
   @Override
