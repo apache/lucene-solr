@@ -217,13 +217,19 @@ public class TestTopDocsCollector extends LuceneTestCase {
       tdc.topDocs(20);
     });
 
-    assertEquals(expected.getMessage(), "Illegal arguments when requesting top docs");
+    assertEquals("Expected value of starting position is between 0 and 15, got 20", expected.getMessage());
 
     expected = expectThrows(IllegalArgumentException.class, () -> {
       tdc.topDocs(-1);
     });
 
-    assertEquals(expected.getMessage(), "Illegal arguments when requesting top docs");
+    assertEquals("Expected value of starting position is between 0 and 15, got -1", expected.getMessage());
+
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      tdc.topDocs(9, -1);
+    });
+
+    assertEquals("Number of hits requested must be greater than 0", expected.getMessage());
   }
   
   // This does not test the PQ's correctness, but whether topDocs()
