@@ -40,7 +40,7 @@ distribution below.
 The probability distribution framework has the following functions
 which support well known real probability distributions:
 
-* `normalDistribution`: Creates a normal distribution function.
+==== `normalDistribution`: Creates a normal distribution function.
 
 The visualization below shows a normal distribution with a `mean` of 0 and `standard
 deviation` of 1.
@@ -48,19 +48,19 @@ deviation` of 1.
 image::images/math-expressions/dist.png[]
 
 
-* `logNormalDistribution`: Creates a log normal distribution function.
+==== `logNormalDistribution`: Creates a log normal distribution function.
 
-* `gammaDistribution`: Creates a gamma distribution function.
+==== `gammaDistribution`: Creates a gamma distribution function.
 
-* `betaDistribution`: Creates a beta distribution function.
+==== `betaDistribution`: Creates a beta distribution function.
 
-* `uniformDistribution`: Creates a uniform real distribution function.
+==== `uniformDistribution`: Creates a uniform real distribution function.
 
-* `weibullDistribution`: Creates a Weibull distribution function.
+==== `weibullDistribution`: Creates a Weibull distribution function.
 
-* `triangularDistribution`: Creates a triangular distribution function.
+==== `triangularDistribution`: Creates a triangular distribution function.
 
-* `constantDistribution`: Creates constant real distribution function.
+==== `constantDistribution`: Creates constant real distribution function.
 
 === Empirical Distribution
 
@@ -81,7 +81,7 @@ The visualization below shows a Poisson distribution with a `mean` of 15.
 image::images/math-expressions/poisson.png[]
 
 
-* `binomialDistribution`: Creates a binomial distribution function.
+==== `binomialDistribution`: Creates a binomial distribution function.
 
 The visualization below shows a binomial distribution with a 100 trials and .15
 probability of success.
@@ -89,7 +89,7 @@ probability of success.
 image::images/math-expressions/binomial.png[]
 
 
-* `uniformIntegerDistribution`: Creates a uniform integer distribution function.
+==== `uniformIntegerDistribution`: Creates a uniform integer distribution function.
 
 The visualization below shows a uniform integer distribution between 0 and 10.
 probability of success.
@@ -97,7 +97,7 @@ probability of success.
 image::images/math-expressions/uniform.png[]
 
 
-* `geometricDistribution`: Creates a geometric distribution function.
+==== `geometricDistribution`: Creates a geometric distribution function.
 
 The visualization below shows a geometric distribution probability of success of
 .25.
@@ -105,7 +105,7 @@ The visualization below shows a geometric distribution probability of success of
 image::images/math-expressions/geometric.png[]
 
 
-* `zipFDistribution`: Creates a Zipf distribution function.
+==== `zipFDistribution`: Creates a Zipf distribution function.
 
 The visualization below shows a ZipF distribution with a size of 50 and exponent of 1.
 
