@@ -24,7 +24,7 @@ import org.apache.lucene.index.PointValues;
  *
  *  @lucene.internal
  * */
-class RectangleComponent2D implements Component2D {
+public class RectangleComponent2D implements Component2D {
   /** maximum X value */
   public final int minX;
   /** minimum X value */
