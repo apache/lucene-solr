@@ -54,13 +54,26 @@ image::images/math-expressions/dist.png[]
 
 ==== `betaDistribution`: Creates a beta distribution function.
 
-==== `uniformDistribution`: Creates a uniform real distribution function.
+==== `uniformDistribution`: Creates a uniform real distribution function.'
+
+The visualization below shows a uniform distribution between 0 and 10.
+
+image::images/math-expressions/uniformr.png[]
 
 ==== `weibullDistribution`: Creates a Weibull distribution function.
 
 ==== `triangularDistribution`: Creates a triangular distribution function.
 
+The visualization below shows a triangular distribution with a low of 5 a mode of 10
+and a high value of 20.
+
+image::images/math-expressions/triangular.png[]
+
 ==== `constantDistribution`: Creates constant real distribution function.
+
+The visualization below shows a constant distribution of 10.5.
+
+image::images/math-expressions/constant.png[]
 
 === Empirical Distribution
 
