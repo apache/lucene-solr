@@ -34,14 +34,15 @@ import static org.apache.lucene.search.TopDocsCollector.EMPTY_TOPDOCS;
  * and starts filtering further hits based on the minimum competitive
  * score.
  */
-public class LargeNumHitsTopDocsCollector implements Collector {
+public final class LargeNumHitsTopDocsCollector implements Collector {
   private final int numHits;
   private List<ScoreDoc> hits = new ArrayList<>();
+  /** Whether {@link #totalHits} is exact or a lower bound. */
+  private TotalHits.Relation totalHitsRelation = TotalHits.Relation.EQUAL_TO;
+  // package private for testing
   HitQueue pq;
   ScoreDoc pqTop;
   int totalHits;
-  /** Whether {@link #totalHits} is exact or a lower bound. */
-  protected TotalHits.Relation totalHitsRelation = TotalHits.Relation.EQUAL_TO;
 
   public LargeNumHitsTopDocsCollector(int numHits) {
     this.numHits = numHits;
@@ -151,6 +152,7 @@ public class LargeNumHitsTopDocsCollector implements Collector {
     return results == null ? EMPTY_TOPDOCS : new TopDocs(new TotalHits(totalHits, totalHitsRelation), results);
   }
 
+  /** Returns the top docs that were collected by this collector. */
   public TopDocs topDocs() {
     return topDocs(Math.min(totalHits, numHits));
   }

@@ -45,8 +45,7 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
         Document doc = new Document();
         doc.add(newStringField("field", "5", Field.Store.NO));
         writer.addDocument(doc);
-      }
-      else {
+      } else {
         writer.addDocument(new Document());
       }
     }
@@ -74,13 +73,12 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
   }
 
   public void testIllegalArguments() throws IOException {
-    Query q = new MatchAllDocsQuery();
     IndexSearcher searcher = newSearcher(reader);
     LargeNumHitsTopDocsCollector largeCollector = new LargeNumHitsTopDocsCollector(15);
     TopScoreDocCollector regularCollector = TopScoreDocCollector.create(15, null, Integer.MAX_VALUE);
 
-    searcher.search(q, largeCollector);
-    searcher.search(q, regularCollector);
+    searcher.search(testQuery, largeCollector);
+    searcher.search(testQuery, regularCollector);
 
     assertEquals(largeCollector.totalHits, regularCollector.totalHits);
 
@@ -92,13 +90,12 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
   }
 
   public void testNoPQBuild() throws IOException {
-    Query q = new MatchAllDocsQuery();
     IndexSearcher searcher = newSearcher(reader);
     LargeNumHitsTopDocsCollector largeCollector = new LargeNumHitsTopDocsCollector(250_000);
     TopScoreDocCollector regularCollector = TopScoreDocCollector.create(250_000, null, Integer.MAX_VALUE);
 
-    searcher.search(q, largeCollector);
-    searcher.search(q, regularCollector);
+    searcher.search(testQuery, largeCollector);
+    searcher.search(testQuery, regularCollector);
 
     assertEquals(largeCollector.totalHits, regularCollector.totalHits);
 
@@ -107,13 +104,12 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
   }
 
   public void testPQBuild() throws IOException {
-    Query q = new MatchAllDocsQuery();
     IndexSearcher searcher = newSearcher(reader);
     LargeNumHitsTopDocsCollector largeCollector = new LargeNumHitsTopDocsCollector(100_000);
     TopScoreDocCollector regularCollector = TopScoreDocCollector.create(100_000, null, Integer.MAX_VALUE);
 
-    searcher.search(q, largeCollector);
-    searcher.search(q, regularCollector);
+    searcher.search(testQuery, largeCollector);
+    searcher.search(testQuery, regularCollector);
 
     assertEquals(largeCollector.totalHits, regularCollector.totalHits);
 
