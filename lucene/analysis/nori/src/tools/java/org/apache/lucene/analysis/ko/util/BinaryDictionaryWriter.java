@@ -150,9 +150,7 @@ public abstract class BinaryDictionaryWriter {
     buffer.putShort(wordCost);
 
     if (posType == POS.Type.MORPHEME) {
-      if (leftPOS != rightPOS) {
-        throw new IllegalArgumentException("leftPOS != rightPOS: " + leftPOS + " " + rightPOS);
-      }
+      assert leftPOS == rightPOS;
       if (reading.length() > 0) {
         writeString(reading);
       }
