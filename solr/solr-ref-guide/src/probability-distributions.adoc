@@ -32,7 +32,7 @@ to support probability calculations and sampling.
 
 Probability distributions can be visualized with Zeppelin-Solr using the
 `zplot` function with the `dist` parameter, which visualizes the
-probability density function (PDF) for the distribution.
+probability density function (PDF) of the distribution.
 
 Example visualizations are shown with each distribution below.
 
