@@ -23,4 +23,11 @@
 
   <import file="../module-build.xml"/>
 
+  <path id="classpath">
+    <pathelement path="${queries.jar}"/>
+    <path refid="base.classpath"/>
+  </path>
+
+  <target name="compile-core" depends="jar-queries,common.compile-core"/>
+
 </project>
