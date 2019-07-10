@@ -106,6 +106,9 @@ Improvements
 * LUCENE-8845: Allow Intervals.prefix() and Intervals.wildcard() to specify
   their maximum allowed expansions (Alan Woodward)
 
+* LUCENE-8875: Introduce a Collector optimized for use cases when large
+  number of hits are requested (Atri Sharma)
+
 * LUCENE-8848 LUCENE-7757 LUCENE-8492: The UnifiedHighlighter now detects that parts of the query are not understood by
   it, and thus it should not make optimizations that result in no highlights or slow highlighting.  This generally works
   best for WEIGHT_MATCHES mode.  Consequently queries produced by ComplexPhraseQueryParser and the surround QueryParser
