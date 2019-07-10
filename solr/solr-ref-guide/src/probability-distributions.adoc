@@ -40,7 +40,7 @@ distribution below.
 The probability distribution framework has the following functions
 which support well known real probability distributions:
 
-==== Empirical Distribution
+==== empiricalDistribution
 
 The `empiricalDistribution` function creates a real probability
 distribution from actual data.
@@ -94,19 +94,22 @@ The probability distribution framework has the following functions
 which support well known discrete probability distributions:
 
 
-==== Enumerated Distributions
+==== enumeratedDistribution
 
 The `enumeratedDistribution` function creates a discrete
 distribution function
 from an enumerated list of values and probabilities or
 from data set of discrete values
 
+The visualization below shows an enumerated distribution created from a list of
+discrete values and probabilities.
 
 image::images/math-expressions/enum1.png[]
 
+The visualization below shows an enumerated distribution generated from a random
+sample from a field of discrete integers.
+
 image::images/math-expressions/enum2.png[]
-
-
 
 ==== poissonDistribution
 
