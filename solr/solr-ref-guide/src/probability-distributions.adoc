@@ -149,7 +149,6 @@ image::images/math-expressions/binomial.png[]
 ==== uniformIntegerDistribution
 
 The visualization below shows a uniform integer distribution between 0 and 10.
-probability of success.
 
 image::images/math-expressions/uniform.png[]
 
