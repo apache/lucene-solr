@@ -88,11 +88,25 @@ image::images/math-expressions/constant.png[]
 
 
 
-
 === Discrete
 
 The probability distribution framework has the following functions
 which support well known discrete probability distributions:
+
+
+==== Enumerated Distributions
+
+The `enumeratedDistribution` function creates a discrete
+distribution function
+from an enumerated list of values and probabilities or
+from data set of discrete values
+
+
+image::images/math-expressions/enum1.png[]
+
+image::images/math-expressions/enum2.png[]
+
+
 
 ==== poissonDistribution
 
@@ -132,14 +146,6 @@ The visualization below shows a ZipF distribution with a size of 50 and exponent
 image::images/math-expressions/zipf.png[]
 
 
-=== Enumerated Distributions
-
-The `enumeratedDistribution` function creates a discrete
-distribution function from a data set of discrete values,
-or from and enumerated list of values and probabilities.
-
-Enumerated distribution functions can be used interchangeably
-with any of the theoretical discrete distributions.
 
 === Cumulative Probability
 
