@@ -105,17 +105,9 @@ New Features
 
 * SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
 
-* SOLR-13049: Make contrib/ltr Feature.defaultValue configurable. (Stanislav Livotov, Christine Poerschke)
-
 * SOLR-13047: Add facet2D Streaming Expression (Nazerke Seidan, Joel Bernstein)
 
 * SOLR-13494: Add DeepRandomStream implementation (Joel Bernstein)
-
-* SOLR-13504: In autoscaling policies, use an explicit 'nodeset' attribute for filtering
-  nodes instead of using them directly at the toplevel (noble)
-
-* SOLR-13329: In autoscaling policies, use an explicit 'put : on-each-node'
-  to specify the the rules is applied on each node  (noble)
 
 * SOLR-13434: OpenTracing support for Solr (Cao Manh Dat)
 
@@ -136,6 +128,8 @@ New Features
 Improvements
 ----------------------
 
+* SOLR-13049: Make contrib/ltr Feature.defaultValue configurable. (Stanislav Livotov, Christine Poerschke)
+
 * SOLR-13306: Add a request parameter to execute a streaming expression locally
 
 * SOLR-13440: Support saving/restoring autoscaling state for repeatable simulations. (ab)
@@ -151,6 +145,12 @@ Improvements
 * SOLR-13484: autoscaling/diagnostics API should be able to give diagnostics output from config sent as a payload (noble)
 
 * SOLR-13493: /autoscaling/suggestions to be able to filter by type (noble)
+
+* SOLR-13504: In autoscaling policies, use an explicit 'nodeset' attribute for filtering
+  nodes instead of using them directly at the toplevel (noble)
+
+* SOLR-13329: In autoscaling policies, use an explicit 'put : on-each-node'
+  to specify the the rules is applied on each node  (noble)
 
 * SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
 
