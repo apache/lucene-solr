@@ -76,7 +76,7 @@ import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.store.blob.util.BlobStoreBootstrapper;
+import org.apache.solr.store.blob.process.BlobProcessUtil;
 import org.apache.solr.util.SolrFileCleaningTracker;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
@@ -107,6 +107,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private SolrMetricManager metricManager;
   private String registryName;
   private volatile boolean closeOnDestroy = true;
+  
+  private BlobProcessUtil blobProcessUtil;
 
   /**
    * Enum to define action that needs to be processed.
@@ -177,7 +179,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
                                        extraProperties);
       
       // sfdc blob change - this shouldn't happen here when writing blob replica type
-      BlobStoreBootstrapper.init(coresInit);
+      blobProcessUtil = new BlobProcessUtil();
+      blobProcessUtil.init(coresInit);
       
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
@@ -308,6 +311,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
   
   public void close() {
+    blobProcessUtil.shutdown();
     CoreContainer cc = cores;
     cores = null;
     try {

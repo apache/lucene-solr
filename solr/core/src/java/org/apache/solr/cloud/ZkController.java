@@ -210,7 +210,7 @@ public class ZkController implements Closeable {
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
   private CloudSolrClient cloudSolrClient;
-  private SharedShardMetadataController shardSharedMetadataController;
+  private SharedShardMetadataController sharedShardMetadataController;
   private BlobStorageProvider blobStorageProvider;
   private BlobDeleteManager blobDeleteManager;
 
@@ -747,12 +747,12 @@ public class ZkController implements Closeable {
     return cloudManager;
   }
   
-  public SharedShardMetadataController getShardSharedMetadataController() {
-    if (shardSharedMetadataController != null) {
-      return shardSharedMetadataController;
+  public SharedShardMetadataController getSharedShardMetadataController() {
+    if (sharedShardMetadataController != null) {
+      return sharedShardMetadataController;
     }
-    shardSharedMetadataController = new SharedShardMetadataController(getSolrCloudManager());
-    return shardSharedMetadataController;
+    sharedShardMetadataController = new SharedShardMetadataController(getSolrCloudManager());
+    return sharedShardMetadataController;
   }
   
   /*

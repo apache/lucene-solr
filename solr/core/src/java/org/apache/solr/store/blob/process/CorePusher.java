@@ -77,7 +77,7 @@ public class CorePusher {
       pushPull.pushToBlobStore();
       
       // at this point we've pushed the new metadata file with the newMetadataSuffix and now need to write to zookeeper
-      SharedShardMetadataController shardSharedMetadataController = coreContainer.getZkController().getShardSharedMetadataController(); 
+      SharedShardMetadataController shardSharedMetadataController = coreContainer.getZkController().getSharedShardMetadataController(); 
       shardSharedMetadataController.updateMetadataValueWithVersion(pushPullData.getCollectionName(), pushPullData.getShardName(),
           pushPullData.getNewMetadataSuffix(), pushPullData.getZkVersion());
       logger.info("Successfully pushed to shared store");

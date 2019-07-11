@@ -103,6 +103,7 @@ import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
+import org.apache.solr.store.blob.process.CorePullTracker;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TimeOut;
@@ -279,10 +280,16 @@ public class HttpSolrCall {
 
         boolean isPreferLeader = (path.endsWith("/update") || path.contains("/update/"));
 
+        DocCollection collection = getCollection(collectionName);
         core = getCoreByCollection(collectionName, isPreferLeader); // find a local replica/core for the collection
         if (core != null) {
           if (idx > 0) {
             path = path.substring(idx);
+          }
+
+          // TODO: limit the number of pulls we do
+          if (collection != null && collection.getSharedIndex()) {
+            CorePullTracker.get().enqueueForPullIfNecessary(req, core, collectionName, cores);
           }
         } else {
           // if we couldn't find it locally, look on other nodes
@@ -873,6 +880,13 @@ public class HttpSolrCall {
       }
     }
     return result;
+  }
+  
+  protected DocCollection getCollection(String collectionName) {
+    ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
+
+    ClusterState clusterState = zkStateReader.getClusterState();
+    return clusterState.getCollectionOrNull(collectionName, true);
   }
 
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {

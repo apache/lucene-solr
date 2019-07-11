@@ -16,7 +16,6 @@
  */
 package org.apache.solr.store.blob.util;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.store.blob.process.BlobProcessUtil;
  /**
  * THROWAWAY CLASS
  * 
@@ -37,7 +36,7 @@ public class BlobStoreBootstrapper {
   
   public static void init(CoreContainer cores) throws Exception {
     //BlobStorageProvider.init();
-    BlobProcessUtil.init(cores);
+    //BlobProcessUtil.init(cores);
   }
    public static String getLocalBlobDir() {
     return localBlobDir;
