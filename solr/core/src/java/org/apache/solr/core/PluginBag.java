@@ -186,9 +186,6 @@ public class PluginBag<T> implements AutoCloseable {
     return old == null ? null : old.get();
   }
 
-  void put(String name, PluginHolder<T> plugin, boolean closeOld) {
-
-  }
   PluginHolder<T> put(String name, PluginHolder<T> plugin) {
     Boolean registerApi = null;
     Boolean disableHandler = null;
@@ -251,14 +248,6 @@ public class PluginBag<T> implements AutoCloseable {
     return def;
   }
 
-  void remove(String name, boolean close) {
-    PluginHolder<T> removed = registry.remove(name);
-    try {
-      if(removed != null) removed.close();
-    } catch (Exception e) {
-
-    }
-  }
   T remove(String name) {
     PluginHolder<T> removed = registry.remove(name);
     return removed == null ? null : removed.get();
