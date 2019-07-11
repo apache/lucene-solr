@@ -204,7 +204,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     if (val instanceof NamedList) {
       return (NamedList<?>)val;
     } else {
-      throw new IllegalArgumentException("Invalid config for replicaRouting: " + val);
+      throw new IllegalArgumentException("Invalid config for replicaRouting; expected NamedList, but got " + val);
     }
   }
 
@@ -222,9 +222,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   private void initReplicaListTransformers(NamedList args) {
     String defaultRouting = null;
-    if (args != null) {
-      NamedList routingConfig = (NamedList)args.get("replicaRouting");
-      if (routingConfig != null && routingConfig.size() > 0) {
+    Object routingConfigObj;
+    if (args != null && (routingConfigObj = args.get("replicaRouting")) != null) {
+      NamedList routingConfig = getNamedList(routingConfigObj);
+      if (routingConfig.size() > 0) {
         Iterator<Entry<String,?>> iter = routingConfig.iterator();
         do {
           Entry<String, ?> e = iter.next();
