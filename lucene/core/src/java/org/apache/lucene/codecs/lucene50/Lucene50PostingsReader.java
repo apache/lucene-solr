@@ -234,7 +234,9 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     final boolean indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     final boolean indexHasPayloads = fieldInfo.hasPayloads();
 
-    if (indexHasPositions &&
+   if (indexHasPositions == false || PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS) == false) {
+      return new BlockImpactsDocsEnum(fieldInfo, (IntBlockTermState) state);
+    } else if (indexHasPositions &&
         PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS) &&
         (indexHasOffsets == false || PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS) == false) &&
         (indexHasPayloads == false || PostingsEnum.featureRequested(flags, PostingsEnum.PAYLOADS) == false)) {
@@ -1759,6 +1761,198 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       return docFreq;
     }
 
+  }
+
+  final class BlockImpactsDocsEnum extends ImpactsEnum {
+
+    private final byte[] encoded;
+
+    private final int[] docDeltaBuffer = new int[MAX_DATA_SIZE];
+    private final int[] freqBuffer = new int[MAX_DATA_SIZE];
+
+    private int docBufferUpto;
+
+    private final Lucene50ScoreSkipReader skipper;
+
+    final IndexInput docIn;
+
+    final boolean indexHasPos;
+    final boolean indexHasOffsets;
+    final boolean indexHasPayloads;
+    final boolean indexHasFreq;
+
+    private int docFreq;                              // number of docs in this posting list
+    private int docUpto;                              // how many docs we've read
+    private int doc;                                  // doc we last read
+    private int accum;                                // accumulator for doc deltas
+    private int freq;                                 // freq we last read
+
+    // Where this term's postings start in the .doc file:
+    private long docTermStartFP;
+
+    // Where this term's postings start in the .pos file:
+    private long posTermStartFP;
+
+    // Where this term's payloads/offsets start in the .pay
+    // file:
+    private long payTermStartFP;
+
+    private int nextSkipDoc = -1;
+
+    private long seekTo = -1;
+
+    public BlockImpactsDocsEnum(FieldInfo fieldInfo, IntBlockTermState termState) throws IOException {
+      indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      indexHasPayloads = fieldInfo.hasPayloads();
+      indexHasPos = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+      indexHasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+
+      this.docIn = Lucene50PostingsReader.this.docIn.clone();
+
+      encoded = new byte[MAX_ENCODED_SIZE];
+
+      docFreq = termState.docFreq;
+      docTermStartFP = termState.docStartFP;
+      posTermStartFP = termState.posStartFP;
+      payTermStartFP = termState.payStartFP;
+      docIn.seek(docTermStartFP);
+
+      doc = -1;
+      accum = 0;
+      docUpto = 0;
+      docBufferUpto = BLOCK_SIZE;
+
+      if (indexHasFreq == false) {
+        Arrays.fill(freqBuffer, 1);
+      }
+
+      skipper = new Lucene50ScoreSkipReader(version,
+          docIn.clone(),
+          MAX_SKIP_LEVELS,
+          indexHasPos,
+          indexHasOffsets,
+          indexHasPayloads);
+      skipper.init(docTermStartFP+termState.skipOffset, docTermStartFP, posTermStartFP, payTermStartFP, docFreq);
+    }
+
+    @Override
+    public int freq() {
+      return freq;
+    }
+
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    private void refillDocs() throws IOException {
+      final int left = docFreq - docUpto;
+      assert left > 0;
+
+      if (left >= BLOCK_SIZE) {
+        forUtil.readBlock(docIn, encoded, docDeltaBuffer);
+        if (indexHasFreq) {
+          forUtil.readBlock(docIn, encoded, freqBuffer);
+        }
+      } else {
+        readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, indexHasFreq);
+      }
+      docBufferUpto = 0;
+    }
+
+    @Override
+    public void advanceShallow(int target) throws IOException {
+      if (target > nextSkipDoc) {
+        // always plus one to fix the result, since skip position in Lucene50SkipReader
+        // is a little different from MultiLevelSkipListReader
+        final int newDocUpto = skipper.skipTo(target) + 1;
+
+        if (newDocUpto > docUpto) {
+          // Skipper moved
+          assert newDocUpto % BLOCK_SIZE == 0 : "got " + newDocUpto;
+          docUpto = newDocUpto;
+
+          // Force to read next block
+          docBufferUpto = BLOCK_SIZE;
+          accum = skipper.getDoc();
+          seekTo = skipper.getDocPointer();       // delay the seek
+        }
+        // next time we call advance, this is used to
+        // foresee whether skipper is necessary.
+        nextSkipDoc = skipper.getNextSkipDoc();
+      }
+      assert nextSkipDoc >= target;
+    }
+
+    @Override
+    public Impacts getImpacts() throws IOException {
+      advanceShallow(doc);
+      return skipper.getImpacts();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return advance(doc + 1);
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      if (target > nextSkipDoc) {
+        advanceShallow(target);
+      }
+      if (docUpto == docFreq) {
+        return doc = NO_MORE_DOCS;
+      }
+      if (docBufferUpto == BLOCK_SIZE) {
+        if (seekTo >= 0) {
+          docIn.seek(seekTo);
+          seekTo = -1;
+        }
+        refillDocs();
+      }
+
+      // Now scan:
+      while (true) {
+        accum += docDeltaBuffer[docBufferUpto];
+        freq = freqBuffer[docBufferUpto];
+        docBufferUpto++;
+        docUpto++;
+
+        if (accum >= target) {
+          break;
+        }
+        if (docUpto == docFreq) {
+          return doc = NO_MORE_DOCS;
+        }
+      }
+
+      return doc = accum;
+    }
+
+    @Override
+    public int nextPosition() {
+      return -1;
+    }
+
+    @Override
+    public int startOffset() {
+      return -1;
+    }
+
+    @Override
+    public int endOffset() {
+      return -1;
+    }
+
+    @Override
+    public BytesRef getPayload() {
+      return null;
+    }
+
+    @Override
+    public long cost() {
+      return docFreq;
+    }
   }
 
   @Override
