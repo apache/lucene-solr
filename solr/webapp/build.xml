@@ -24,7 +24,8 @@
   <import file="../common-build.xml"/>
 
   <property name="exclude.from.webapp" value="*slf4j*,log4j-*,*javax.servlet*" />
-  
+  <property name="exclude.full.js" value="*full.js" />
+ 
   <!-- this module has no javadocs -->
   <target name="javadocs"/>
 
@@ -44,7 +45,7 @@
     <mkdir dir="${server.dir}/solr-webapp/webapp"/>
     <copy todir="${server.dir}/solr-webapp/webapp">
       <fileset dir="web" excludes="${exclude.from.webapp}"/>
-      <fileset dir="${dest}/web" excludes="${exclude.from.war}"/> <!-- contribs' additions -->
+      <fileset dir="${dest}/web" excludes="${exclude.from.war},${exclude.full.js}"/> <!-- contribs' additions -->
     </copy>
     <mkdir dir="${server.dir}/solr-webapp/webapp/WEB-INF/lib"/>
     <copy todir="${server.dir}/solr-webapp/webapp/WEB-INF/lib">
