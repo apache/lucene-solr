@@ -565,7 +565,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     private boolean verifyClass(CommandOperation op, String clz, Class expected) {
       if (clz == null) return true;
-      if (!"true".equals(String.valueOf(op.getStr("runtimeLib", null)))) {
+      if (!"true".equals(String.valueOf(op.getStr(RuntimeLib.TYPE, null)))) {
         //this is not dynamically loaded so we can verify the class right away
         try {
           req.getCore().createInitInstance(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()), expected, clz, "");

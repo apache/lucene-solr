@@ -42,6 +42,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * This represents a Runtime Jar. A jar requires two details , name and version
  */
 public class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
+  public static final String TYPE = "runtimeLib";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
   private String name, version, sig, sha512, url;
@@ -128,6 +129,10 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
   public String getSig() {
     return sig;
 
+  }
+
+  public String getSha512(){
+    return sha512;
   }
 
   public ByteBuffer getFileContent(String entryName) throws IOException {

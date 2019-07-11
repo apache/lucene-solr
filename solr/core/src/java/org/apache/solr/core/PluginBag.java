@@ -116,7 +116,7 @@ public class PluginBag<T> implements AutoCloseable {
   }
 
   public PluginHolder<T> createPlugin(PluginInfo info) {
-    if ("true".equals(String.valueOf(info.attributes.get("runtimeLib")))) {
+    if ("true".equals(String.valueOf(info.attributes.get(RuntimeLib.TYPE)))) {
       log.debug(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
       LazyPluginHolder<T> holder = new LazyPluginHolder<>(meta, info, core, RuntimeLib.isEnabled() ?
           core.getMemClassLoader() :
@@ -186,6 +186,9 @@ public class PluginBag<T> implements AutoCloseable {
     return old == null ? null : old.get();
   }
 
+  void put(String name, PluginHolder<T> plugin, boolean closeOld) {
+
+  }
   PluginHolder<T> put(String name, PluginHolder<T> plugin) {
     Boolean registerApi = null;
     Boolean disableHandler = null;
@@ -248,6 +251,14 @@ public class PluginBag<T> implements AutoCloseable {
     return def;
   }
 
+  void remove(String name, boolean close) {
+    PluginHolder<T> removed = registry.remove(name);
+    try {
+      if(removed != null) removed.close();
+    } catch (Exception e) {
+
+    }
+  }
   T remove(String name) {
     PluginHolder<T> removed = registry.remove(name);
     return removed == null ? null : removed.get();

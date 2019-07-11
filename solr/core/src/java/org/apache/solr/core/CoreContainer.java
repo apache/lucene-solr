@@ -33,7 +33,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -73,7 +72,6 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -132,9 +130,7 @@ import static org.apache.solr.common.params.CommonParams.METRICS_HISTORY_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
-import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
-import static org.apache.solr.schema.FieldType.CLASS_NAME;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 /**
@@ -343,7 +339,40 @@ public class CoreContainer {
             cfg.getReplayUpdatesThreads(),
             new DefaultSolrThreadFactory("replayUpdatesExecutor")));
   }
-  private Map<String, PluginInfo> runtimeHandlers = new HashMap<>();
+
+  private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
+    authorizationConf = Utils.getDeepCopy(authorizationConf, 4);
+    int newVersion = readVersion(authorizationConf);
+    //Initialize the Authorization module
+    SecurityPluginHolder<AuthorizationPlugin> old = authorizationPlugin;
+    SecurityPluginHolder<AuthorizationPlugin> authorizationPlugin = null;
+    if (authorizationConf != null) {
+      String klas = (String) authorizationConf.get("class");
+      if (klas == null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "class is required for authorization plugin");
+      }
+      if (old != null && old.getZnodeVersion() == newVersion && newVersion > 0) {
+        log.debug("Authorization config not modified");
+        return;
+      }
+      log.info("Initializing authorization plugin: " + klas);
+      authorizationPlugin = new SecurityPluginHolder<>(newVersion,
+          getResourceLoader().newInstance(klas, AuthorizationPlugin.class));
+
+      // Read and pass the authorization context to the plugin
+      authorizationPlugin.plugin.init(authorizationConf);
+    } else {
+      log.debug("Security conf doesn't exist. Skipping setup for authorization module.");
+    }
+    this.authorizationPlugin = authorizationPlugin;
+    if (old != null) {
+      try {
+        old.plugin.close();
+      } catch (Exception e) {
+        log.error("Exception while attempting to close old authorization plugin", e);
+      }
+    }
+  }
 
   private void initializeAuditloggerPlugin(Map<String, Object> auditConf) {
     auditConf = Utils.getDeepCopy(auditConf, 4);
@@ -378,39 +407,6 @@ public class CoreContainer {
     }
   }
 
-  private synchronized void initializeAuthorizationPlugin(Map<String, Object> authorizationConf) {
-    authorizationConf = Utils.getDeepCopy(authorizationConf, 4);
-    int newVersion = readVersion(authorizationConf);
-    //Initialize the Authorization module
-    SecurityPluginHolder<AuthorizationPlugin> old = authorizationPlugin;
-    SecurityPluginHolder<AuthorizationPlugin> authorizationPlugin = null;
-    if (authorizationConf != null) {
-      String klas = (String) authorizationConf.get("class");
-      if (klas == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "class is required for authorization plugin");
-      }
-      if (old != null && old.getZnodeVersion() == newVersion && newVersion > 0) {
-        log.debug("Authorization config not modified");
-        return;
-      }
-      log.info("Initializing authorization plugin: " + klas);
-      authorizationPlugin = new SecurityPluginHolder<>(newVersion,
-          createInstance(klas, AuthorizationPlugin.class));
-
-      // Read and pass the authorization context to the plugin
-      authorizationPlugin.plugin.init(authorizationConf);
-    } else {
-      log.debug("Security conf doesn't exist. Skipping setup for authorization module.");
-    }
-    this.authorizationPlugin = authorizationPlugin;
-    if (old != null) {
-      try {
-        old.plugin.close();
-      } catch (Exception e) {
-        log.error("Exception while attempting to close old authorization plugin", e);
-      }
-    }
-  }
 
   private synchronized void initializeAuthenticationPlugin(Map<String, Object> authenticationConfig) {
     authenticationConfig = Utils.getDeepCopy(authenticationConfig, 4);
@@ -445,7 +441,11 @@ public class CoreContainer {
     if (pluginClassName != null) {
       log.info("Initializing authentication plugin: " + pluginClassName);
       authenticationPlugin = new SecurityPluginHolder<>(newVersion,
-          createInstance(pluginClassName, AuthenticationPlugin.class));
+          getResourceLoader().newInstance(pluginClassName,
+              AuthenticationPlugin.class,
+              null,
+              new Class[]{CoreContainer.class},
+              new Object[]{this}));
     }
     if (authenticationPlugin != null) {
       authenticationPlugin.plugin.init(authenticationConfig);
@@ -459,7 +459,6 @@ public class CoreContainer {
     }
 
   }
-
 
   private void setupHttpClientForAuthPlugin(Object authcPlugin) {
     if (authcPlugin instanceof HttpClientBuilderPlugin) {
@@ -580,39 +579,6 @@ public class CoreContainer {
   // Initialization / Cleanup
   //-------------------------------------------------------------------
 
-  public <T> T createInstance(String cName, Class<T> expectedType) {
-    try {
-      return getResourceLoader().newInstance(cName, expectedType, null, new Class[]{CoreContainer.class}, new Object[]{this});
-    } catch (SolrException e) {
-      // try with memclassloader
-      MemClassLoader memClassLoader = clusterPropertiesListener.memClassLoader;
-      if (memClassLoader != null) {
-        try {
-          Class<? extends T> klas = memClassLoader.findClass(cName, expectedType);
-          try {
-            return klas.getConstructor(CoreContainer.class).newInstance(this);
-
-          } catch (NoSuchMethodException ex) {
-            return klas.getConstructor(null).newInstance(null);
-          }
-
-        } catch (Exception ex) {
-          if (!memClassLoader.getErrors().isEmpty()) {
-            //may be this class was supposed to be loaded from a runtime lib
-            throw new SolrException(ErrorCode.SERVER_ERROR, "error loading class from runtime library " + StrUtils.join(memClassLoader.getErrors(), ','), ex);
-          } else {
-            throw new SolrException(ErrorCode.SERVER_ERROR, "error loading class from runtime library", ex);
-
-          }
-        }
-      } else {
-        throw e;
-      }
-
-    }
-
-  }
-
   /**
    * Load the cores defined for this CoreContainer
    */
@@ -658,7 +624,7 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
-//      getZkController().getZkStateReader().registerClusterPropertiesListener(clusterPropertiesListener);
+      getZkController().getZkStateReader().registerClusterPropertiesListener(clusterPropertiesListener);
       pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
@@ -670,10 +636,13 @@ public class CoreContainer {
     reloadSecurityProperties();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
+    containerHandlers.put("/ext", clusterPropertiesListener.extHandler);
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
-
-    initConfigurableHandlers(null);
+    collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
+    infoHandler = createHandler(INFO_HANDLER_PATH, cfg.getInfoHandlerClass(), InfoHandler.class);
+    coreAdminHandler = createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
+    configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
 
     // metricsHistoryHandler uses metricsHandler, so create it first
     metricsHandler = new MetricsHandler(this);
@@ -844,15 +813,49 @@ public class CoreContainer {
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
   }
 
-  private void initConfigurableHandlers(Set<String> handlers) {
-    if(handlers == null || handlers.contains(COLLECTIONS_HANDLER_PATH))
-      collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
-    if(handlers == null || handlers.contains(INFO_HANDLER_PATH))
-      infoHandler = createHandler(INFO_HANDLER_PATH, cfg.getInfoHandlerClass(), InfoHandler.class);
-    if(handlers == null || handlers.contains(CORES_HANDLER_PATH))
-      coreAdminHandler = createHandler(CORES_HANDLER_PATH, cfg.getCoreAdminHandlerClass(), CoreAdminHandler.class);
-    if(handlers == null || handlers.contains(CORES_HANDLER_PATH))
-      configSetsHandler = createHandler(CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
+  // MetricsHistoryHandler supports both cloud and standalone configs
+  private void createMetricsHistoryHandler() {
+    PluginInfo plugin = cfg.getMetricsConfig().getHistoryHandler();
+    Map<String, Object> initArgs;
+    if (plugin != null && plugin.initArgs != null) {
+      initArgs = plugin.initArgs.asMap(5);
+      initArgs.put(MetricsHistoryHandler.ENABLE_PROP, plugin.isEnabled());
+    } else {
+      initArgs = new HashMap<>();
+    }
+    String name;
+    SolrCloudManager cloudManager;
+    SolrClient client;
+    if (isZooKeeperAware()) {
+      name = getZkController().getNodeName();
+      cloudManager = getZkController().getSolrCloudManager();
+      client = new CloudSolrClient.Builder(Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
+          .withSocketTimeout(30000).withConnectionTimeout(15000)
+          .withHttpClient(updateShardHandler.getDefaultHttpClient()).build();
+    } else {
+      name = getNodeConfig().getNodeName();
+      if (name == null || name.isEmpty()) {
+        name = "localhost";
+      }
+      cloudManager = null;
+      client = new EmbeddedSolrServer(this, CollectionAdminParams.SYSTEM_COLL) {
+        @Override
+        public void close() throws IOException {
+          // do nothing - we close the container ourselves
+        }
+      };
+      // enable local metrics unless specifically set otherwise
+      if (!initArgs.containsKey(MetricsHistoryHandler.ENABLE_NODES_PROP)) {
+        initArgs.put(MetricsHistoryHandler.ENABLE_NODES_PROP, true);
+      }
+      if (!initArgs.containsKey(MetricsHistoryHandler.ENABLE_REPLICAS_PROP)) {
+        initArgs.put(MetricsHistoryHandler.ENABLE_REPLICAS_PROP, true);
+      }
+    }
+    metricsHistoryHandler = new MetricsHistoryHandler(name, metricsHandler,
+        client, cloudManager, initArgs);
+    containerHandlers.put(METRICS_HISTORY_PATH, metricsHistoryHandler);
+    metricsHistoryHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, METRICS_HISTORY_PATH);
   }
 
   public void securityNodeChanged() {
@@ -1771,64 +1774,23 @@ public class CoreContainer {
 
   // ---------------- CoreContainer request handlers --------------
 
-  // MetricsHistoryHandler supports both cloud and standalone configs
-  private void createMetricsHistoryHandler() {
-    PluginInfo plugin = cfg.getMetricsConfig().getHistoryHandler();
-    Map<String, Object> initArgs;
-    if (plugin != null && plugin.initArgs != null) {
-      initArgs = plugin.initArgs.asMap(5);
-      initArgs.put(MetricsHistoryHandler.ENABLE_PROP, plugin.isEnabled());
-    } else {
-      initArgs = new HashMap<>();
-    }
-    String name;
-    SolrCloudManager cloudManager;
-    SolrClient client;
-    if (isZooKeeperAware()) {
-      name = getZkController().getNodeName();
-      cloudManager = getZkController().getSolrCloudManager();
-      client = new CloudSolrClient.Builder(Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
-          .withSocketTimeout(30000).withConnectionTimeout(15000)
-          .withHttpClient(updateShardHandler.getDefaultHttpClient()).build();
-    } else {
-      name = getNodeConfig().getNodeName();
-      if (name == null || name.isEmpty()) {
-        name = "localhost";
-      }
-      cloudManager = null;
-      client = new EmbeddedSolrServer(this, CollectionAdminParams.SYSTEM_COLL) {
-        @Override
-        public void close() throws IOException {
-          // do nothing - we close the container ourselves
-        }
-      };
-      // enable local metrics unless specifically set otherwise
-      if (!initArgs.containsKey(MetricsHistoryHandler.ENABLE_NODES_PROP)) {
-        initArgs.put(MetricsHistoryHandler.ENABLE_NODES_PROP, true);
-      }
-      if (!initArgs.containsKey(MetricsHistoryHandler.ENABLE_REPLICAS_PROP)) {
-        initArgs.put(MetricsHistoryHandler.ENABLE_REPLICAS_PROP, true);
-      }
-    }
-    MetricsHistoryHandler metricsHistoryHandler = new MetricsHistoryHandler(name, metricsHandler,
-        client, cloudManager, initArgs);
-    containerHandlers.put(METRICS_HISTORY_PATH, metricsHistoryHandler);
-    metricsHistoryHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, METRICS_HISTORY_PATH);
-  }
-
   protected <T> T createHandler(String path, String handlerClass, Class<T> clazz) {
-    T handler = createInstance(handlerClass, clazz);
+    T handler = loader.newInstance(handlerClass, clazz, null, new Class[]{CoreContainer.class}, new Object[]{this});
     if (handler instanceof SolrRequestHandler) {
       containerHandlers.put(path, (SolrRequestHandler) handler);
-      if (handler.getClass().getClassLoader() instanceof MemClassLoader) {
-        runtimeHandlers.put(path, new PluginInfo(SolrRequestHandler.TYPE,
-            Utils.makeMap(NAME,path, CLASS_NAME, handlerClass)));
-      }
     }
     if (handler instanceof SolrMetricProducer) {
       ((SolrMetricProducer) handler).initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, path);
     }
     return handler;
+  }
+
+  public PluginBag<SolrRequestHandler> getContainerHandlers() {
+    return containerHandlers;
+  }
+
+  public LibListener getClusterPropertiesListener(){
+    return clusterPropertiesListener;
   }
 
   public CoreAdminHandler getMultiCoreHandler() {
@@ -2045,18 +2007,6 @@ public class CoreContainer {
   public void runAsync(Runnable r) {
     coreContainerAsyncTaskExecutor.submit(r);
   }
-
-  synchronized void reloadAllComponents() {
-    if(runtimeHandlers.isEmpty()) return;
-    initConfigurableHandlers(runtimeHandlers.keySet());
-    boolean reloadSecurity = false;
-    if(authenticationPlugin != null && auditloggerPlugin.getClass().getClassLoader() instanceof MemClassLoader) reloadSecurity = true;
-    if(authorizationPlugin != null && authorizationPlugin.getClass().getClassLoader() instanceof MemClassLoader) reloadSecurity = true;
-    if(reloadSecurity){
-      reloadSecurityProperties();
-    }
-  }
-
 }
 
 class CloserThread extends Thread {

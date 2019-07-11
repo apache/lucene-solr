@@ -277,10 +277,7 @@ public class ZkStateReader implements SolrCloseable {
       DEFAULT_SHARD_PREFERENCES,
       MAX_CORES_PER_NODE,
       SAMPLE_PERCENTAGE,
-      CollectionAdminParams.DEFAULTS,
-      "requestHandler",
-      "runtimeLib"
-      )));
+      CollectionAdminParams.DEFAULTS)));
 
   /**
    * Returns config set name for collection.

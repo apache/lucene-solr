@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.handler.admin.CollectionsHandler.CollectionOperation;
@@ -82,10 +83,10 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     //The following APIs have only V2 implementations
     addApi(apiMapping, Meta.GET_NODES, CollectionHandlerApi::getNodes);
     addApi(apiMapping, Meta.SET_CLUSTER_PROPERTY_OBJ, CollectionHandlerApi::setClusterObj);
-    addApi(apiMapping, Meta.ADD_RUNTIME_LIB, CollectionHandlerApi::addUpdateRuntimeLib);
-    addApi(apiMapping, Meta.UPDATE_RUNTIME_LIB, CollectionHandlerApi::addUpdateRuntimeLib);
-    addApi(apiMapping, Meta.ADD_REQ_HANDLER, CollectionHandlerApi::addRequestHandler);
-    addApi(apiMapping, Meta.DELETE_REQ_HANDLER, CollectionHandlerApi::deleteReqHandler);
+    addApi(apiMapping, Meta.ADD_RUNTIME_LIB, wrap(CollectionHandlerApi::addUpdateRuntimeLib));
+    addApi(apiMapping, Meta.UPDATE_RUNTIME_LIB, wrap(CollectionHandlerApi::addUpdateRuntimeLib));
+    addApi(apiMapping, Meta.ADD_REQ_HANDLER, wrap(CollectionHandlerApi::addRequestHandler));
+    addApi(apiMapping, Meta.DELETE_REQ_HANDLER, wrap(CollectionHandlerApi::deleteReqHandler));
 
     for (Meta meta : Meta.values()) {
       if (apiMapping.get(meta) == null) {
@@ -95,6 +96,20 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
 
     return apiMapping.values();
   }
+
+  static Command wrap(Command cmd) {
+    return info -> {
+      try {
+        cmd.call(info);
+      } finally {
+        CoreContainer cc = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
+        cc.getClusterPropertiesListener()
+            .onChange(new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties());
+      }
+    };
+  }
+
+
 
   private static void getNodes(ApiInfo params) {
     params.rsp.add("nodes", ((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getClusterState().getLiveNodes());
@@ -116,7 +131,8 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
   private static void addRequestHandler(ApiInfo params) throws Exception {
     Map data = params.op.getDataMap();
     String name = (String) data.get("name");
-    ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
+    CoreContainer coreContainer = ((CollectionHandlerApi) params.apiHandler).handler.coreContainer;
+    ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
     Map<String, Object> map = clusterProperties.getClusterProperties();
     if (Utils.getObjectByPath(map, false, asList(SolrRequestHandler.TYPE, name)) != null) {
       params.op.addError("A requestHandler already exists with the said name");
@@ -127,30 +143,28 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     clusterProperties.setClusterProperties(m);
   }
 
-  private static CommandOperation getFirstCommand(ApiInfo params) {
-    List<CommandOperation> commands = params.req.getCommands(true);
-    if (commands == null || commands.size() != 1)
-      throw new SolrException(ErrorCode.BAD_REQUEST, "should have exactly one command");
-    return commands.get(0);
-  }
-
   private static void addUpdateRuntimeLib(ApiInfo params) throws Exception {
+    if(!RuntimeLib.isEnabled()){
+      params.op.addError("node not started with enable.runtime.lib=true");
+      return;
+    }
+
     CollectionHandlerApi handler = (CollectionHandlerApi) params.apiHandler;
     RuntimeLib lib = new RuntimeLib(handler.handler.coreContainer);
     CommandOperation op = params.op;
     String name = op.getStr("name");
     ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
     Map<String, Object> props = clusterProperties.getClusterProperties();
-    List<String> pathToLib = asList("runtimeLib", name);
+    List<String> pathToLib = asList(RuntimeLib.TYPE, name);
     Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
-    if( Meta.ADD_RUNTIME_LIB.commandName.equals(op.name)){
-      if(existing != null){
-        op.addError(StrUtils.formatString("The jar with a name ''{0}'' already exists",name));
+    if (Meta.ADD_RUNTIME_LIB.commandName.equals(op.name)) {
+      if (existing != null) {
+        op.addError(StrUtils.formatString("The jar with a name ''{0}'' already exists", name));
         return;
       }
     } else {
-      if(existing == null){
-        op.addError(StrUtils.formatString("The jar with a name ''{0}'' doesn not exist",name));
+      if (existing == null) {
+        op.addError(StrUtils.formatString("The jar with a name ''{0}'' doesn not exist", name));
         return;
       }
     }
@@ -188,7 +202,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       @Override
       public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
         CommandOperation op = null;
-        if(metaInfo.method == SolrRequest.METHOD.POST) {
+        if (metaInfo.method == SolrRequest.METHOD.POST) {
           List<CommandOperation> commands = req.getCommands(true);
           if (commands == null || commands.size() != 1)
             throw new SolrException(ErrorCode.BAD_REQUEST, "should have exactly one command");
@@ -196,8 +210,8 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
         }
 
         fun.call(new ApiInfo(req, rsp, apiHandler, op));
-        if(op!= null && op.hasError()){
-         throw new ApiBag.ExceptionWithErrObject(ErrorCode.BAD_REQUEST,"error processing commands", captureErrors(singletonList(op)));
+        if (op != null && op.hasError()) {
+          throw new ApiBag.ExceptionWithErrObject(ErrorCode.BAD_REQUEST, "error processing commands", captureErrors(singletonList(op)));
         }
       }
     });
