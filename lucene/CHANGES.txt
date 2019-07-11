@@ -35,6 +35,10 @@ Improvements
   docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
   indices (Atri Sharma, Adrien Grand, Simon Willnauer)
 
+* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
+
+* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -43,6 +47,10 @@ Bug fixes
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
+
+* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
+  (Tomoko Uchida, Uwe Schindler)
+
 
 ======================= Lucene 8.2.0 =======================
 
@@ -153,11 +161,7 @@ Improvements
 
 * LUCENE-8793: Luke enhanced UI for CustomAnalyzer: show detailed analysis steps. (Jun Ohtani via Tomoko Uchida)
 
-* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
-
 * LUCENE-8855: Add Accountable to some Query implementations (ab, Adrien Grand)
-
-* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
 
 Optimizations
 
@@ -199,9 +203,6 @@ Other
 * LUCENE-8861: Script to find open Github PRs that needs attention (janhoy)
 
 * LUCENE-8852: ReleaseWizard tool for release managers (janhoy)
-
-* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
-  (Tomoko Uchida, Uwe Schindler)
 
 * LUCENE-8838: Remove support for Steiner points on Tessellator. (Ignacio Vera)
 
