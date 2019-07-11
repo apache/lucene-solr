@@ -40,13 +40,9 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
  * &lt;/fieldType&gt;</pre>
  *
  * @since Solr 1.4
- * @lucene.spi {@value #NAME}
  */
 public class MappingCharFilterFactory extends CharFilterFactory implements
     ResourceLoaderAware {
-
-  /** SPI name */
-  public static final String NAME = "mapping";
 
   protected NormalizeCharMap normMap;
   private final String mapping;
