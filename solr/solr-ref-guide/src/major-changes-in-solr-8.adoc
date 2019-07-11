@@ -337,7 +337,7 @@ A default policy is now in place for all users, which will sort nodes by the num
 . It removes the restriction against using `maxShardsPerNode` when an autoscaling policy is in place. This parameter can now always be set when creating a collection.
 . It removes the default setting of `maxShardsPerNode=1` when an autoscaling policy is in place. It will be set correctly (if required) regardless of whether an autoscaling policy is in place or not.
 +
-The default value of `maxShardsPerNode` is still `1`. It can be set to `-1` if the old behavior of unlimited `maxSharedsPerNode` is desired.
+The default value of `maxShardsPerNode` is still `1`. It can be set to `-1` if the old behavior of unlimited `maxShardsPerNode` is desired.
 
 *DirectoryFactory*
 
