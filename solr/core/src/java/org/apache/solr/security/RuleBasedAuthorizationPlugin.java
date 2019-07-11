@@ -30,6 +30,7 @@ import java.util.function.Function;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.common.util.CommandOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,7 +112,7 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
 
   private MatchStatus checkPathPerm(List<Permission> permissions, AuthorizationContext context) {
     if (permissions == null || permissions.isEmpty()) return MatchStatus.NO_PERMISSIONS_FOUND;
-    Principal principal = context.getUserPrincipal();
+    Principal principal = getUserPrincipal(context);
 
     final Permission governingPermission = findFirstGoverningPermission(permissions, context);
     if (governingPermission == null) {
@@ -120,6 +121,49 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
     }
 
     return determineIfPermissionPermitsPrincipal(principal, governingPermission);
+  }
+
+  private Principal getUserPrincipal(AuthorizationContext context) {
+    Principal principal = context.getUserPrincipal();
+
+    // If principal is an admin user, i.e. has ALL permissions (e.g. request coming from Solr
+    // node), and "originalUserPrincipal" is specified, then set originalUserPrincipal
+    // as the principal. This is typically the case in forwarded/remote requests
+    // through KerberosPlugin. This is needed because the original node that received
+    // this request did not perform any authorization, and hence we are the first ones
+    // to authorize the request (and we need the original user principal to do so).
+    if (context.getHttpHeader("originalUserPrincipal") != null) {
+      Set<String> roles = usersVsRoles.get(principal.getName());
+      if (roles != null) {
+        for (String role: roles) {
+          if (mapping.get(null) == null) continue;
+          List<Permission> permissions = mapping.get(null).get(null);
+          if (permissions != null) {
+            for (Permission p: permissions) {
+              if (PermissionNameProvider.Name.ALL.equals(p.wellknownName) && p.role.contains(role)) {
+                // The role for the principal has ALL permissions
+                String originalUserRequest = context.getHttpHeader(HttpSolrCall.ORIGINAL_USER_PRINCIPAL_HEADER);
+                log.info("Principal: " + principal + ", original user principal: " + originalUserRequest);
+                principal = new Principal() {
+                  @Override
+                  public String getName() {
+                    return originalUserRequest;
+                  }
+
+                  @Override
+                  public String toString() {
+                    return originalUserRequest;
+                  }
+                };
+                return principal;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return principal;
   }
 
   private Permission findFirstGoverningPermission(List<Permission> permissions, AuthorizationContext context) {
