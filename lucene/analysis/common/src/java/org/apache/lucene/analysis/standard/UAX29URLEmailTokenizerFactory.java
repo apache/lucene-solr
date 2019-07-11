@@ -32,13 +32,8 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre> 
  *
  * @since 3.1
- * @lucene.spi {@value #NAME}
  */
 public class UAX29URLEmailTokenizerFactory extends TokenizerFactory {
-
-  /** SPI name */
-  public static final String NAME = "uaX29UrlEmail";
-
   private final int maxTokenLength;
 
   /** Creates a new UAX29URLEmailTokenizerFactory */

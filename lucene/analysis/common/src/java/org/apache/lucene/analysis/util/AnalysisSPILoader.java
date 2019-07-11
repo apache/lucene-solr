@@ -18,15 +18,14 @@ package org.apache.lucene.analysis.util;
 
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.ServiceConfigurationError;
-import java.util.regex.Pattern;
 
 import org.apache.lucene.util.SPIClassIterator;
 
@@ -37,17 +36,24 @@ import org.apache.lucene.util.SPIClassIterator;
 public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
 
   private volatile Map<String,Class<? extends S>> services = Collections.emptyMap();
-  private volatile Set<String> originalNames = Collections.emptySet();
   private final Class<S> clazz;
-
-  private static final Pattern SERVICE_NAME_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_]+$");
-
+  private final String[] suffixes;
+  
   public AnalysisSPILoader(Class<S> clazz) {
-    this(clazz, null);
+    this(clazz, new String[] { clazz.getSimpleName() });
   }
 
-  public AnalysisSPILoader(Class<S> clazz, ClassLoader classloader) {
+  public AnalysisSPILoader(Class<S> clazz, ClassLoader loader) {
+    this(clazz, new String[] { clazz.getSimpleName() }, loader);
+  }
+
+  public AnalysisSPILoader(Class<S> clazz, String[] suffixes) {
+    this(clazz, suffixes, null);
+  }
+  
+  public AnalysisSPILoader(Class<S> clazz, String[] suffixes, ClassLoader classloader) {
     this.clazz = clazz;
+    this.suffixes = suffixes;
     // if clazz' classloader is not a parent of the given one, we scan clazz's classloader, too:
     final ClassLoader clazzClassloader = clazz.getClassLoader();
     if (classloader == null) {
@@ -58,7 +64,7 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
     }
     reload(classloader);
   }
-
+  
   /** 
    * Reloads the internal SPI list from the given {@link ClassLoader}.
    * Changes to the service list are visible after the method ends, all
@@ -72,27 +78,22 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
    */
   public synchronized void reload(ClassLoader classloader) {
     Objects.requireNonNull(classloader, "classloader");
-    final LinkedHashMap<String,Class<? extends S>> services = new LinkedHashMap<>(this.services);
-    final LinkedHashSet<String> originalNames = new LinkedHashSet<>(this.originalNames);
+    final LinkedHashMap<String,Class<? extends S>> services =
+      new LinkedHashMap<>(this.services);
     final SPIClassIterator<S> loader = SPIClassIterator.get(clazz, classloader);
     while (loader.hasNext()) {
       final Class<? extends S> service = loader.next();
+      final String clazzName = service.getSimpleName();
       String name = null;
-      String originalName = null;
-      Throwable cause = null;
-      try {
-        originalName = AbstractAnalysisFactory.lookupSPIName(service);
-        name = originalName.toLowerCase(Locale.ROOT);
-        if (!isValidName(originalName)) {
-          throw new ServiceConfigurationError("The name " + originalName + " for " + service.getName() +
-              " is invalid: Allowed characters are (English) alphabet, digits, and underscore. It should be started with an alphabet.");
+      for (String suffix : suffixes) {
+        if (clazzName.endsWith(suffix)) {
+          name = clazzName.substring(0, clazzName.length() - suffix.length()).toLowerCase(Locale.ROOT);
+          break;
         }
-      } catch (NoSuchFieldException | IllegalAccessException | IllegalStateException e) {
-        cause = e;
       }
       if (name == null) {
         throw new ServiceConfigurationError("The class name " + service.getName() +
-            " has no service name field: [public static final String NAME]", cause);
+          " has wrong suffix, allowed are: " + Arrays.toString(suffixes));
       }
       // only add the first one for each name, later services will be ignored
       // this allows to place services before others in classpath to make 
@@ -104,26 +105,11 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       // When changing this be careful to allow reload()!
       if (!services.containsKey(name)) {
         services.put(name, service);
-        // preserve (case-sensitive) original name for reference
-        originalNames.add(originalName);
       }
     }
-
-    // make sure that the number of lookup keys is same to the number of original names.
-    // in fact this constraint should be met in existence checks of the lookup map key,
-    // so this is more like an assertion rather than a status check.
-    if (services.keySet().size() != originalNames.size()) {
-      throw new ServiceConfigurationError("Service lookup key set is inconsistent with original name set!");
-    }
-
     this.services = Collections.unmodifiableMap(services);
-    this.originalNames = Collections.unmodifiableSet(originalNames);
   }
-
-  private boolean isValidName(String name) {
-    return SERVICE_NAME_PATTERN.matcher(name).matches();
-  }
-
+  
   public S newInstance(String name, Map<String,String> args) {
     final Class<? extends S> service = lookupClass(name);
     return newFactoryClassInstance(service, args);
@@ -141,7 +127,7 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
   }
 
   public Set<String> availableServices() {
-    return originalNames;
+    return services.keySet();
   }  
   
   /** Creates a new instance of the given {@link AbstractAnalysisFactory} by invoking the constructor, passing the given argument map. */
