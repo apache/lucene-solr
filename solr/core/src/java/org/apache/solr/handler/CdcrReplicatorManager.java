@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
@@ -426,18 +427,35 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
         if (slice.getLeader().getCoreName().equals(replica.getCoreName())) {
           continue; // no need to request recovery for leader
         }
-        sendRequestRecoveryToFollower(state.getClient(), replica.getCoreName());
+        sendRequestRecoveryToFollower(replica.getBaseUrl(), replica.getCoreName());
         log.info("RequestRecovery cmd is issued by core: " + replica.getCoreName() + " of shard: " + slice.getName() +
             "for target: " + state.getTargetCollection());
       }
     }
   }
 
-  private NamedList sendRequestRecoveryToFollower(SolrClient client, String coreName) throws SolrServerException, IOException {
+  private HttpSolrClient createStandaloneSolrClient(String solrHost) {
+    NoOpResponseParser responseParser = new NoOpResponseParser();
+    responseParser.setWriterType("json");
+
+    HttpSolrClient.Builder standaloneBuilder = new HttpSolrClient.Builder();
+
+    standaloneBuilder.withBaseSolrUrl(solrHost);
+
+    HttpSolrClient httpSolrClient = standaloneBuilder.build();
+    httpSolrClient.setParser(responseParser);
+
+    return httpSolrClient;
+  }
+
+  private NamedList sendRequestRecoveryToFollower(String solrHost, String coreName) throws SolrServerException, IOException {
+    SolrClient client =  createStandaloneSolrClient(solrHost);
     CoreAdminRequest.RequestRecovery recoverRequestCmd = new CoreAdminRequest.RequestRecovery();
     recoverRequestCmd.setAction(CoreAdminParams.CoreAdminAction.REQUESTRECOVERY);
     recoverRequestCmd.setCoreName(coreName);
-    return client.request(recoverRequestCmd);
+    NamedList namedList = client.request(recoverRequestCmd);
+    client.close();
+    return namedList;
   }
 
 
