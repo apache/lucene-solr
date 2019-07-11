@@ -219,6 +219,8 @@ Bug Fixes
 
 * SOLR-13538: toNativeType () TrieDate & EnumField do not handle CharSequence properly (Munendra S N)
 
+* SOLR-13532: Fix http timeout and error logging bugs in RecoveryStrategy. (Suril Shah, hossman)
+
 Other Changes
 ----------------------
 
