@@ -259,7 +259,7 @@ public final class ShapeField {
 
   /** Decode a triangle encoded by {@link ShapeField#encodeTriangle(byte[], int, int, boolean, int, int, boolean, int, int, boolean)}.
    */
-  public static void decodeTriangle(byte[] t, EncodedTriangle triangle) {
+  public static void decodeTriangle(byte[] t, DecodedTriangle triangle) {
     final int aX, aY, bX, bY, cX, cY;
     final boolean ab, bc, ca;
     int bits = NumericUtils.sortableBytesToInt(t, 6 * BYTES);
@@ -342,15 +342,15 @@ public final class ShapeField {
   }
 
   /**
-   * Represents a encoded triangle using {@link ShapeField#decodeTriangle(byte[], EncodedTriangle)}.
+   * Represents a encoded triangle using {@link ShapeField#decodeTriangle(byte[], DecodedTriangle)}.
    */
-  public static class EncodedTriangle {
+  public static class DecodedTriangle {
     //Triangle vertices
     public int aX, aY, bX, bY, cX, cY;
     //Represent if edges belongs to original shape
     public boolean ab, bc, ca;
 
-    public EncodedTriangle() {
+    public DecodedTriangle() {
     }
 
     private void setValues(int aX, int aY, boolean ab, int bX, int bY, boolean bc, int cX, int cY, boolean ca) {
@@ -372,7 +372,7 @@ public final class ShapeField {
 
     @Override
     public boolean equals(Object o) {
-      EncodedTriangle other  = (EncodedTriangle) o;
+      DecodedTriangle other  = (DecodedTriangle) o;
       return aX == other.aX && bX == other.bX && cX == other.cX
           && aY == other.aY && bY == other.bY && cY == other.cY
           && ab == other.ab && bc == other.bc && ca == other.ca;
