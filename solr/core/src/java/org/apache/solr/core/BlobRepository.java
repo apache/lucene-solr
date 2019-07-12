@@ -221,6 +221,7 @@ public class BlobRepository {
         b = SimplePostTool.inputStreamToByteArray(is, MAX_JAR_SIZE);
       }
     } catch (Exception e) {
+      log.error("Error loading resource "+ url, e);
       if (e instanceof SolrException) {
         throw (SolrException) e;
       } else {

@@ -45,11 +45,13 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 
 public class TestCoreContainerReqHandler extends SolrCloudTestCase {
+
   @BeforeClass
-  public static void enableRuntimeLib() throws Exception {
+  public static void setupCluster() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
-    configureCluster(1).configure();
+    configureCluster(4).configure();
   }
+
 
   public static Pair<Server,Integer> runHttpServer(Map<String, Object> jars) throws Exception {
     int port = 0;
@@ -99,7 +101,7 @@ public class TestCoreContainerReqHandler extends SolrCloudTestCase {
         .withMethod(SolrRequest.METHOD.GET)
         .withParams(new MapSolrParams((Map)Utils.makeMap("testkey", "testval")))
         .build().process(cluster.getSolrClient());
-    assertEquals( "testval", rsp._getStr("parama/testkey",null));
+    assertEquals( "testval", rsp._getStr("params/testkey",null));
 
     new V2Request.Builder("/cluster")
         .withPayload("{delete-requesthandler: 'foo'}")
@@ -131,7 +133,7 @@ public class TestCoreContainerReqHandler extends SolrCloudTestCase {
             .build().process(cluster.getSolrClient());
         fail("Expected error");
       } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-        assertTrue( e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("expected sha512 hash :"));
+        assertTrue( "actual output : "+ Utils.toJSONString(e.getMetaData()), e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("expected sha512 hash :"));
       }
 
       try {
@@ -143,7 +145,7 @@ public class TestCoreContainerReqHandler extends SolrCloudTestCase {
             .build().process(cluster.getSolrClient());
         fail("Expected error");
       } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-        assertTrue( e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("no such resource available: foo"));
+        assertTrue("Actual output : "+ Utils.toJSONString(e.getMetaData()), e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("no such resource available: foo"));
       }
 
       payload = "{add-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar1.jar', " +
