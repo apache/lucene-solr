@@ -92,7 +92,10 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
   public void tearDown() throws Exception {
     super.tearDown();
     IOUtils.closeQuietly(solrCloudScraper);
-    executor.shutdownNow();
+    if (null != executor) {
+      executor.shutdownNow();
+      executor = null;
+    }
   }
 
   @Test

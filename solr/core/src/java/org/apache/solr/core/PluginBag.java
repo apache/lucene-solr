@@ -451,7 +451,6 @@ public class PluginBag<T> implements AutoCloseable {
 
   }
 
-
   public Api v2lookup(String path, String method, Map<String, String> parts) {
     if (apiBag == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "this should not happen, looking up for v2 API at the wrong place");

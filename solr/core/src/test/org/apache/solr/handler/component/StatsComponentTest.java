@@ -1682,7 +1682,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertNull(HllOptions.parseHllOptions(params(), field_l));
     assertNull(HllOptions.parseHllOptions(params("cardinality","false"), field_l));
 
-    // sanity check, future proof againts the HLL library changing stuff on us
+    // sanity check, future proof against the HLL library changing stuff on us
     assertEquals("HLL Changed definition min for log2m, " + 
                  "need to note in upgrade instructions and maybe adjust accuracy hueristic",
                  4, HLL.MINIMUM_LOG2M_PARAM);

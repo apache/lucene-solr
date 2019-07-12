@@ -108,7 +108,7 @@
  *     </ol>
  *     Boolean queries are constructed by adding two or more
  *     {@link org.apache.lucene.search.BooleanClause BooleanClause}
- *     instances. If too many clauses are added, a {@link org.apache.lucene.search.BooleanQuery.TooManyClauses TooManyClauses}
+ *     instances. If too many clauses are added, a {@link org.apache.lucene.search.IndexSearcher.TooManyClauses TooManyClauses}
  *     exception will be thrown during searching. This most often occurs
  *     when a {@link org.apache.lucene.search.Query Query}
  *     is rewritten into a {@link org.apache.lucene.search.BooleanQuery BooleanQuery} with many
@@ -116,7 +116,7 @@
  *     for example by {@link org.apache.lucene.search.WildcardQuery WildcardQuery}.
  *     The default setting for the maximum number
  *     of clauses is 1024, but this can be changed via the
- *     static method {@link org.apache.lucene.search.BooleanQuery#setMaxClauseCount(int)}.
+ *     static method {@link org.apache.lucene.search.IndexSearcher#setMaxClauseCount(int)}.
  * 
  * <h3>Phrases</h3>
  * 

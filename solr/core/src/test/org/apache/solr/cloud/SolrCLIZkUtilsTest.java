@@ -55,7 +55,11 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void closeConn() {
-    zkClient.close();
+    if (null != zkClient) {
+      zkClient.close();
+      zkClient = null;
+    }
+    zkAddr = null;
   }
 
   private static String zkAddr;

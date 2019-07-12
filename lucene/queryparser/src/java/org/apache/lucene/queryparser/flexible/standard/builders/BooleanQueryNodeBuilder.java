@@ -28,8 +28,9 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.standard.parser.EscapeQuerySyntaxImpl;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanQuery.TooManyClauses;
+import org.apache.lucene.search.IndexSearcher.TooManyClauses;
 
 /**
  * Builds a {@link BooleanQuery} object from a {@link BooleanQueryNode} object.
@@ -67,7 +68,7 @@ public class BooleanQueryNodeBuilder implements StandardQueryBuilder {
           } catch (TooManyClauses ex) {
 
             throw new QueryNodeException(new MessageImpl(
-                QueryParserMessages.TOO_MANY_BOOLEAN_CLAUSES, BooleanQuery
+                QueryParserMessages.TOO_MANY_BOOLEAN_CLAUSES, IndexSearcher
                     .getMaxClauseCount(), queryNode
                     .toQueryString(new EscapeQuerySyntaxImpl())), ex);
 

@@ -55,6 +55,8 @@ Upgrade Notes
   regardless of distrib, terms.list, terms.ttf parameters. This affects JSON based response format but not others
   (Munendra S N, Mikhail Khludnev)
 
+* SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -93,32 +95,19 @@ Upgrade Notes
   for existing TRA's will use the new format. Solr will handle this invisibly, but any external code that attempted to
   predict collection names in TRA's will probably need adjustment.
 
+* SOLR-13507: Support for "addr" parameter from the "/solr/admin/zookeeper" endpoint has now been removed and will no
+  longer be supported.
+
 New Features
 ----------------------
 
 * SOLR-13320: add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
-
-* SOLR-13306: Add a request parameter to execute a streaming expression locally
 
 * SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
 
 * SOLR-13049: Make contrib/ltr Feature.defaultValue configurable. (Stanislav Livotov, Christine Poerschke)
 
 * SOLR-13047: Add facet2D Streaming Expression (Nazerke Seidan, Joel Bernstein)
-
-* SOLR-13440: Support saving/restoring autoscaling state for repeatable simulations. (ab)
-
-* SOLR-11558: It would be nice if the Graph section of the Cloud tab in the Admin UI could give some more
-  information about the replicas of a collection (Erick Erickson)
-
-* SOLR-13468: autoscaling/suggestions should be able to give suggestions from config sent as a payload (noble)
-
-* SOLR-12304: The MoreLikeThisComponent now supports the mlt.interestingTerms parameter.  Previously this option was
-  unique to the MLT handler.   (Alessandro Benedetti via David Smiley)
-
-* SOLR-13484: autoscaling/diagnostics API should be able to give diagnostics output from config sent as a payload (noble)
-
-* SOLR-13493: /autoscaling/suggestions to be able to filter by type (noble)
 
 * SOLR-13494: Add DeepRandomStream implementation (Joel Bernstein)
 
@@ -136,15 +125,45 @@ New Features
 
 * SOLR-13552: Add recNum Stream Evaluator (Joel Bernstein)
 
-* SOLR-13534 : Dynamic loading to support loading jars from a URL (noble)
-
-* SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
+* SOLR-13534: Dynamic loading to support loading jars from a URL (noble)
 
 * SOLR-13560: Add isNull and notNull Stream Evaluators (Joel Bernstein)
 
 * SOLR-10291: Add matches Stream Evaluator to support regex matching (Joel Bernstein)
 
+* SOLR-13589: Allow zplot to visualize 2D clusters and convex hulls (Joel Bernstein)
+
+Improvements
+----------------------
+
+* SOLR-13306: Add a request parameter to execute a streaming expression locally
+
+* SOLR-13440: Support saving/restoring autoscaling state for repeatable simulations. (ab)
+
+* SOLR-11558: It would be nice if the Graph section of the Cloud tab in the Admin UI could give some more
+  information about the replicas of a collection (Erick Erickson)
+
+* SOLR-13468: autoscaling/suggestions should be able to give suggestions from config sent as a payload (noble)
+
+* SOLR-12304: The MoreLikeThisComponent now supports the mlt.interestingTerms parameter.  Previously this option was
+  unique to the MLT handler.   (Alessandro Benedetti via David Smiley)
+
+* SOLR-13484: autoscaling/diagnostics API should be able to give diagnostics output from config sent as a payload (noble)
+
+* SOLR-13493: /autoscaling/suggestions to be able to filter by type (noble)
+
+* SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
+
 * SOLR-13367: Highlighting: Range queries will now highlight in hl.method=unified mode. (David Smiley)
+
+* SOLR-13569: Admin UI visual indication of prod/test/dev environment (janhoy)
+
+* SOLR-12554: Expose IndexWriterConfig's ramPerThreadHardLimitMB through solrconfig.xml (Ishan Chattopadhyaya, Munendra S N)
+
+* SOLR-13602 SOLR-13588: Add a field type for Estonian language to default managed_schema,
+  document about Estonian language analysis in Solr Ref Guide (Tomoko Uchida)
+
+* SOLR-13003: Query Result Cache does not honour maxRamBytes parameter. (ab, Brian Ecker)
 
 Bug Fixes
 ----------------------
@@ -187,6 +206,20 @@ Bug Fixes
 
 * SOLR-12979: Improve error message and change error code to 400 when collapse field is non-docValued and
   non-uninvertible (hossman, Munendra S N)
+  
+* SOLR-13574: Fix many test and test-framework classes to not fail on After/AfterClass cleanup if
+  assumptions fail in Before/BeforeClass setup (hossman)
+  
+* SOLR-13280: Strengthen ScheduledTrigger's preferredOperation parameter validation. (Christine Poerschke)
+
+* SOLR-9409: Improve error message for unsupported field types and return 400 error code on
+  unsupported values in collapsing (hossman, Munendra S N)
+
+* SOLR-13404: Support group.query in multi-shard environment when group.main=true or group.format=simple (Munendra S N)
+
+* SOLR-13538: toNativeType () TrieDate & EnumField do not handle CharSequence properly (Munendra S N)
+
+* SOLR-13532: Fix http timeout and error logging bugs in RecoveryStrategy. (Suril Shah, hossman)
 
 Other Changes
 ----------------------
@@ -206,6 +239,19 @@ Other Changes
 
 * SOLR-13511: Add SearchHandler.newResponseBuilder method to facilitate custom plugins' maintenance
   of per-request state in a custom ResponseBuilder. (Ramsey Haddad, Christine Poerschke)
+  
+* SOLR-12988: SSLTestConfig has been changed to throw AssumptionViolatedException when tests/seeds
+  request SSL but the JVM appears to be an OpenJDK version known to have SSL bugs (hossman, Cao Manh Dat)
+
+* SOLR-13279: Clarify ScheduledTrigger's "every parameter missing" error response. (Christine Poerschke)
+
+* SOLR-13576: Factor out a TopGroupsShardResponseProcessor.fillResultIds method. (Christine Poerschke, Diego Ceccarelli)
+
+* SOLR-12364: Add test cases for edismax boost (David Smiley, Munendra S N)
+
+* SOLR-13603: Remove usage of GroupingSpecification's deprecated methods (Munendra S N)
+
+* SOLR-13507: Remove support for "addr" parameter from the "/solr/admin/zookeeper" endpoint. (janhoy, Anshum Gupta)
 
 ==================  8.1.2 ==================
 
@@ -227,6 +273,19 @@ Bug Fixes
 * SOLR-13523: In 8.1, Atomic Updates were broken (NPE) when the schema declared the new _nest_path_ field even if you
   weren't using nested docs.  In-place updates were not affected (worked).
   Reminder: if you don't need nested docs then remove both _root_ and _nest_path_ !  (David Smiley)
+
+* SOLR-13566: REINDEXCOLLECTION does not work with (basic) authentication. (Colvin Cowie, ab)
+
+* SOLR-13159: Fix atomic update encoding issue for UUID, enum, bool, and binary fields (Thomas Wockinger via Jason Gerlowski)
+
+* SOLR-13583: Impossible to delete a collection with the same name as an existing alias. This fixes also a bug in
+  REINDEXCOLLECTION when used with removeSource=true which could lead to a data loss. (ab)
+
+Improvements
+----------------------
+
+* SOLR-13158: DataImportHandler: Added enable.dih.dataConfigParam system property to toggle whether the dataConfig param
+  is permitted. (David Smiley, janhoy, Tomás Fernández Löbbe)
 
 ==================  8.1.1 ==================
 

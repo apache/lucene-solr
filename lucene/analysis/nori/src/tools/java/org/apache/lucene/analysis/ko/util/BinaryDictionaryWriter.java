@@ -38,6 +38,8 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.analysis.ko.dict.BinaryDictionary;
 
 public abstract class BinaryDictionaryWriter {
+  private final static int ID_LIMIT = 8192;
+
   protected final Class<? extends BinaryDictionary> implClazz;
   protected ByteBuffer buffer;
   private int targetMapEndOffset = 0, lastWordId = -1, lastSourceId = -1;
@@ -116,7 +118,7 @@ public abstract class BinaryDictionaryWriter {
     if (posType != POS.Type.MORPHEME && expression.length() > 0) {
       String[] exprTokens = expression.split("\\+");
       for (int i = 0; i < exprTokens.length; i++) {
-        String[] tokenSplit = exprTokens[i].split("\\/");
+        String[] tokenSplit = exprTokens[i].split("/");
         assert tokenSplit.length == 3;
         String surfaceForm = tokenSplit[0].trim();
         if (surfaceForm.isEmpty() == false) {
@@ -137,8 +139,12 @@ public abstract class BinaryDictionaryWriter {
       flags |= BinaryDictionary.HAS_READING;
     }
 
-    assert leftId < 8192; // there are still unused bits
-    assert posType.ordinal() < 4;
+    if (leftId >= ID_LIMIT) {
+      throw new IllegalArgumentException("leftId >= " + ID_LIMIT + ": " + leftId);
+    }
+    if (posType.ordinal() >= 4) {
+      throw new IllegalArgumentException("posType.ordinal() >= " + 4 + ": " + posType.name());
+    }
     buffer.putShort((short)(leftId << 2 | posType.ordinal()));
     buffer.putShort((short) (rightId << 2 | flags));
     buffer.putShort(wordCost);
@@ -178,16 +184,17 @@ public abstract class BinaryDictionaryWriter {
   }
 
   public void addMapping(int sourceId, int wordId) {
-    assert wordId > lastWordId : "words out of order: " + wordId + " vs lastID: " + lastWordId;
+    if (wordId <= lastWordId) {
+      throw new IllegalStateException("words out of order: " + wordId + " vs lastID: " + lastWordId);
+    }
 
     if (sourceId > lastSourceId) {
-      assert sourceId > lastSourceId : "source ids out of order: lastSourceId=" + lastSourceId + " vs sourceId=" + sourceId;
       targetMapOffsets = ArrayUtil.grow(targetMapOffsets, sourceId + 1);
       for (int i = lastSourceId + 1; i <= sourceId; i++) {
         targetMapOffsets[i] = targetMapEndOffset;
       }
-    } else {
-      assert sourceId == lastSourceId;
+    } else if (sourceId != lastSourceId) {
+      throw new IllegalStateException("source ids not in increasing order: lastSourceId=" + lastSourceId + " vs sourceId=" + sourceId);
     }
 
     targetMap = ArrayUtil.grow(targetMap, targetMapEndOffset + 1);
@@ -236,7 +243,9 @@ public abstract class BinaryDictionaryWriter {
         }
         prev += delta;
       }
-      assert sourceId == numSourceIds : "sourceId:"+sourceId+" != numSourceIds:"+numSourceIds;
+      if (sourceId != numSourceIds) {
+        throw new IllegalStateException("sourceId:" + sourceId + " != numSourceIds:" + numSourceIds);
+      }
     } finally {
       os.close();
     }
@@ -254,8 +263,10 @@ public abstract class BinaryDictionaryWriter {
         if (s == null) {
           out.writeByte((byte) POS.Tag.UNKNOWN.ordinal());
         } else {
-          String data[] = CSVUtil.parse(s);
-          assert data.length == 2 : "malformed pos/semanticClass: " + s;
+          String[] data = CSVUtil.parse(s);
+          if (data.length != 2) {
+            throw new IllegalArgumentException("Malformed pos/inflection: " + s + "; expected 2 characters");
+          }
           out.writeByte((byte) POS.Tag.valueOf(data[0]).ordinal());
         }
       }

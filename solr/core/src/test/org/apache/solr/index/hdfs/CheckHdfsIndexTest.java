@@ -87,7 +87,9 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
   @After
   public void tearDown() throws Exception {
     try {
-      directory.close();
+      if (null != directory) {
+        directory.close();
+      }
     } finally {
       try(FileSystem fs = FileSystem.get(HdfsTestUtil.getClientConfiguration(dfsCluster))) {
         fs.delete(path, true);

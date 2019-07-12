@@ -28,6 +28,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
@@ -367,7 +368,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     
   @Test
   public void testManyClauses_Lucene() throws Exception {
-    final int numZ = BooleanQuery.getMaxClauseCount();
+    final int numZ = IndexSearcher.getMaxClauseCount();
     
     final String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
     final StringBuilder sb = new StringBuilder("id:(");
@@ -391,7 +392,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertEquals(SyntaxError.class, e.getCause().getClass());
     
     assertNotNull(e.getCause().getCause());
-    assertEquals(BooleanQuery.TooManyClauses.class, e.getCause().getCause().getClass());
+    assertEquals(IndexSearcher.TooManyClauses.class, e.getCause().getCause().getClass());
 
     // but should still work as a filter query since TermsQuery can be used...
     assertJQ(req("q","*:*", "fq", way_too_long)

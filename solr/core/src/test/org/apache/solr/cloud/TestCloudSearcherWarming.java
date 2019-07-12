@@ -75,9 +75,12 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     coreNodeNameRef.set(null);
     sleepTime.set(-1);
     
-    cluster.deleteAllCollections();
-    cluster.deleteAllConfigSets();
-    cluster.shutdown();
+    if (null != cluster) {
+      cluster.deleteAllCollections();
+      cluster.deleteAllConfigSets();
+      cluster.shutdown();
+      cluster = null;
+    }
     TestInjection.wrongIndexFingerprint = null;
     
     super.tearDown();

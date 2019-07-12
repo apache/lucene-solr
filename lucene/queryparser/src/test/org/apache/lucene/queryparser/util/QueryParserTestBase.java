@@ -138,7 +138,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    originalMaxClauses = BooleanQuery.getMaxClauseCount();
+    originalMaxClauses = IndexSearcher.getMaxClauseCount();
   }
 
   public abstract CommonQueryParserConfiguration getParserConfig(Analyzer a) throws Exception;
@@ -960,7 +960,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
   }
 
   public void testBooleanQuery() throws Exception {
-    BooleanQuery.setMaxClauseCount(2);
+    IndexSearcher.setMaxClauseCount(2);
     Analyzer purWhitespaceAnalyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
     assertParseException("one two three", purWhitespaceAnalyzer);
   }
@@ -1121,7 +1121,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    BooleanQuery.setMaxClauseCount(originalMaxClauses);
+    IndexSearcher.setMaxClauseCount(originalMaxClauses);
     super.tearDown();
   }
 
