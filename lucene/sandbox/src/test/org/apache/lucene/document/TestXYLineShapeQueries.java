@@ -81,7 +81,7 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
       XYLine line = (XYLine)shape;
       XYRectangle2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        ShapeField.EncodedTriangle decoded = encoder.encodeDecodeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
+        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
         if (queryRelation == QueryRelation.WITHIN) {
           if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
             return false;

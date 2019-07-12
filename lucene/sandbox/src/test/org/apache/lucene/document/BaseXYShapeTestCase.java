@@ -145,15 +145,15 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
 
       @Override
       double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-        ShapeField.EncodedTriangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+        ShapeField.DecodedTriangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
         return new double[]{decode(decoded.aY), decode(decoded.aX), decode(decoded.bY), decode(decoded.bX), decode(decoded.cY), decode(decoded.cX)};
       }
 
       @Override
-      ShapeField.EncodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+      ShapeField.DecodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
         byte[] encoded = new byte[7 * ShapeField.BYTES];
         ShapeField.encodeTriangle(encoded, encode(ay), encode(ax), ab, encode(by), encode(bx), bc, encode(cy), encode(cx), ca);
-        ShapeField.EncodedTriangle triangle  = new ShapeField.EncodedTriangle();
+        ShapeField.DecodedTriangle triangle  = new ShapeField.DecodedTriangle();
         ShapeField.decodeTriangle(encoded, triangle);
         return triangle;
       }

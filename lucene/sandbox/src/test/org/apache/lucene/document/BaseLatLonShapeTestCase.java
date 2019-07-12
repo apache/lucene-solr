@@ -265,15 +265,15 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
 
       @Override
       double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-        ShapeField.EncodedTriangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+        ShapeField.DecodedTriangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
         return new double[]{decodeLatitude(decoded.aY), decodeLongitude(decoded.aX), decodeLatitude(decoded.bY), decodeLongitude(decoded.bX), decodeLatitude(decoded.cY), decodeLongitude(decoded.cX)};
       }
 
       @Override
-      ShapeField.EncodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+      ShapeField.DecodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
         byte[] encoded = new byte[7 * ShapeField.BYTES];
         ShapeField.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), ab, encodeLatitude(by), encodeLongitude(bx), bc, encodeLatitude(cy), encodeLongitude(cx), ca);
-        ShapeField.EncodedTriangle triangle  = new ShapeField.EncodedTriangle();
+        ShapeField.DecodedTriangle triangle  = new ShapeField.DecodedTriangle();
         ShapeField.decodeTriangle(encoded, triangle);
         return triangle;
       }

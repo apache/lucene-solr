@@ -46,7 +46,7 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
 
   /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t, ShapeField.EncodedTriangle scratchTriangle, QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
     // decode indexed triangle
     ShapeField.decodeTriangle(t, scratchTriangle);
 

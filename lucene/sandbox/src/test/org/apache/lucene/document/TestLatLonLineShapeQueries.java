@@ -83,7 +83,7 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
       Line line = (Line)shape;
       Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(minLat, maxLat, minLon, maxLon));
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        ShapeField.EncodedTriangle decoded = encoder.encodeDecodeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
+        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
         if (queryRelation == QueryRelation.WITHIN) {
           if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
             return false;

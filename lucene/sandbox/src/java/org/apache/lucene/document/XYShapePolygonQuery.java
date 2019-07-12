@@ -78,7 +78,7 @@ final class XYShapePolygonQuery extends ShapeQuery {
   }
 
   @Override
-  protected boolean queryMatches(byte[] t, ShapeField.EncodedTriangle scratchTriangle, QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
     double alat = decode(scratchTriangle.aY);

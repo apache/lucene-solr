@@ -239,7 +239,7 @@ public class TestLatLonShape extends LuceneTestCase {
     ShapeField.encodeTriangle(encoded, encodeLatitude(t.getY(0)), encodeLongitude(t.getX(0)), t.fromPolygon(0),
                                        encodeLatitude(t.getY(1)), encodeLongitude(t.getX(1)), t.fromPolygon(1),
                                        encodeLatitude(t.getY(2)), encodeLongitude(t.getX(2)), t.fromPolygon(2));
-    ShapeField.EncodedTriangle decoded = new ShapeField.EncodedTriangle();
+    ShapeField.DecodedTriangle decoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(encoded, decoded);
 
     int expected =rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) ? 0 : 1;

@@ -72,7 +72,7 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
       XYRectangle2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(p);
       for (Tessellator.Triangle t : tessellation) {
-        ShapeField.EncodedTriangle decoded = encoder.encodeDecodeTriangle(t.getX(0), t.getY(0), t.fromPolygon(0),
+        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(t.getX(0), t.getY(0), t.fromPolygon(0),
                                                                           t.getX(1), t.getY(1), t.fromPolygon(1),
                                                                           t.getX(2), t.getY(2), t.fromPolygon(2));
         if (queryRelation == QueryRelation.WITHIN) {
