@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -43,7 +44,7 @@ import org.junit.Test;
 
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
-
+@SolrTestCaseJ4.SuppressSSL
 public class TestCoreContainerReqHandler extends SolrCloudTestCase {
 
   @BeforeClass
