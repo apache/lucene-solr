@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -357,5 +358,22 @@ public abstract class AbstractAnalysisFactory {
       return ((String) field.get(null));
       }
     throw new IllegalStateException("No SPI name defined.");
+  }
+
+  /**
+   * Generate legacy SPI name derived from the class name.
+   * @return the SPI name
+   */
+  @Deprecated
+  static String generateLegacySPIName(Class<? extends AbstractAnalysisFactory> service, String[] suffixes) {
+    final String clazzName = service.getSimpleName();
+    String name = null;
+    for (String suffix : suffixes) {
+      if (clazzName.endsWith(suffix)) {
+        name = clazzName.substring(0, clazzName.length() - suffix.length()).toLowerCase(Locale.ROOT);
+        break;
+      }
+    }
+    return name;
   }
 }

@@ -39,6 +39,10 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
     assertSame(WhitespaceTokenizerFactory.class, TokenizerFactory.forName("Whitespace", versionArgOnly()).getClass());
     assertSame(WhitespaceTokenizerFactory.class, TokenizerFactory.forName("WHITESPACE", versionArgOnly()).getClass());
     assertSame(WhitespaceTokenizerFactory.class, TokenizerFactory.forName("whitespace", versionArgOnly()).getClass());
+
+    assertSame(MockNameLackingTokenizerFactory.class, TokenizerFactory.forName("mocknamelacking", versionArgOnly()).getClass());
+    assertSame(MockNameMismatchedTokenizerFactory.class, TokenizerFactory.forName("mocknamemismatched", versionArgOnly()).getClass());
+    assertSame(MockNameMismatchedTokenizerFactory.class, TokenizerFactory.forName("mock", versionArgOnly()).getClass());
   }
   
   public void testBogusLookupTokenizer() {
@@ -55,6 +59,10 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
     assertSame(WhitespaceTokenizerFactory.class, TokenizerFactory.lookupClass("Whitespace"));
     assertSame(WhitespaceTokenizerFactory.class, TokenizerFactory.lookupClass("WHITESPACE"));
     assertSame(WhitespaceTokenizerFactory.class, TokenizerFactory.lookupClass("whitespace"));
+
+    assertSame(MockNameLackingTokenizerFactory.class, TokenizerFactory.lookupClass("mocknamelacking"));
+    assertSame(MockNameMismatchedTokenizerFactory.class, TokenizerFactory.lookupClass("mocknamemismatched"));
+    assertSame(MockNameMismatchedTokenizerFactory.class, TokenizerFactory.lookupClass("mock"));
   }
   
   public void testBogusLookupTokenizerClass() {
@@ -69,6 +77,10 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   
   public void testAvailableTokenizers() {
     assertTrue(TokenizerFactory.availableTokenizers().contains("whitespace"));
+
+    assertTrue(TokenizerFactory.availableTokenizers().contains("mocknamelacking"));
+    assertTrue(TokenizerFactory.availableTokenizers().contains("mocknamemismatched"));
+    assertTrue(TokenizerFactory.availableTokenizers().contains("mock"));
   }
   
   public void testLookupTokenFilter() {
@@ -79,6 +91,10 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
     assertSame(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.forName("RemoveDuplicates", versionArgOnly()).getClass());
     assertSame(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.forName("REMOVEDUPLICATES", versionArgOnly()).getClass());
     assertSame(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.forName("removeduplicates", versionArgOnly()).getClass());
+
+    assertSame(MockNameLackingFilterFactory.class, TokenFilterFactory.forName("mocknamelacking", versionArgOnly()).getClass());
+    assertSame(MockNameMismatchedFilterFactory.class, TokenFilterFactory.forName("mocknamemismatched", versionArgOnly()).getClass());
+    assertSame(MockNameMismatchedFilterFactory.class, TokenFilterFactory.forName("mock", versionArgOnly()).getClass());
   }
   
   public void testBogusLookupTokenFilter() {
@@ -99,6 +115,10 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
     assertSame(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.lookupClass("RemoveDuplicates"));
     assertSame(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.lookupClass("REMOVEDUPLICATES"));
     assertSame(RemoveDuplicatesTokenFilterFactory.class, TokenFilterFactory.lookupClass("removeduplicates"));
+
+    assertSame(MockNameLackingFilterFactory.class, TokenFilterFactory.lookupClass("mocknamelacking"));
+    assertSame(MockNameMismatchedFilterFactory.class, TokenFilterFactory.lookupClass("mocknamemismatched"));
+    assertSame(MockNameMismatchedFilterFactory.class, TokenFilterFactory.lookupClass("mock"));
   }
   
   public void testBogusLookupTokenFilterClass() {
@@ -114,12 +134,20 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   public void testAvailableTokenFilters() {
     assertTrue(TokenFilterFactory.availableTokenFilters().contains("lowercase"));
     assertTrue(TokenFilterFactory.availableTokenFilters().contains("removeDuplicates"));
+
+    assertTrue(TokenFilterFactory.availableTokenFilters().contains("mocknamelacking"));
+    assertTrue(TokenFilterFactory.availableTokenFilters().contains("mocknamemismatched"));
+    assertTrue(TokenFilterFactory.availableTokenFilters().contains("mock"));
   }
   
   public void testLookupCharFilter() {
     assertSame(HTMLStripCharFilterFactory.class, CharFilterFactory.forName("HTMLStrip", versionArgOnly()).getClass());
     assertSame(HTMLStripCharFilterFactory.class, CharFilterFactory.forName("HTMLSTRIP", versionArgOnly()).getClass());
     assertSame(HTMLStripCharFilterFactory.class, CharFilterFactory.forName("htmlstrip", versionArgOnly()).getClass());
+
+    assertSame(MockNameLackingCharFilterFactory.class, CharFilterFactory.forName("mocknamelacking", versionArgOnly()).getClass());
+    assertSame(MockNameMismatchedCharFilterFactory.class, CharFilterFactory.forName("mocknamemismatched", versionArgOnly()).getClass());
+    assertSame(MockNameMismatchedCharFilterFactory.class, CharFilterFactory.forName("mock", versionArgOnly()).getClass());
   }
   
   public void testBogusLookupCharFilter() {
@@ -136,6 +164,10 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
     assertSame(HTMLStripCharFilterFactory.class, CharFilterFactory.lookupClass("HTMLStrip"));
     assertSame(HTMLStripCharFilterFactory.class, CharFilterFactory.lookupClass("HTMLSTRIP"));
     assertSame(HTMLStripCharFilterFactory.class, CharFilterFactory.lookupClass("htmlstrip"));
+
+    assertSame(MockNameLackingCharFilterFactory.class, CharFilterFactory.lookupClass("mocknamelacking"));
+    assertSame(MockNameMismatchedCharFilterFactory.class, CharFilterFactory.lookupClass("mocknamemismatched"));
+    assertSame(MockNameMismatchedCharFilterFactory.class, CharFilterFactory.lookupClass("mock"));
   }
   
   public void testBogusLookupCharFilterClass() {
@@ -150,5 +182,9 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   
   public void testAvailableCharFilters() {
     assertTrue(CharFilterFactory.availableCharFilters().contains("htmlStrip"));
+
+    assertTrue(CharFilterFactory.availableCharFilters().contains("mocknamelacking"));
+    assertTrue(CharFilterFactory.availableCharFilters().contains("mocknamemismatched"));
+    assertTrue(CharFilterFactory.availableCharFilters().contains("mock"));
   }
 }
