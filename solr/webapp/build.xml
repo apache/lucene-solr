@@ -19,7 +19,6 @@
   <description>Solr webapp</description>
 
   <property name="rat.additional-includes" value="**"/>
-  <property name="rat.additional-excludes" value="web/img/**,*full*"/>
 
   <import file="../common-build.xml"/>
 
@@ -43,7 +42,7 @@
     <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-webapp"/>
     <mkdir dir="${server.dir}/solr-webapp/webapp"/>
     <copy todir="${server.dir}/solr-webapp/webapp">
-      <fileset dir="web" excludes="${exclude.from.webapp}"/>
+      <fileset dir="web" excludes="${exclude.from.webapp},*full.js"/>
       <fileset dir="${dest}/web" excludes="${exclude.from.war}"/> <!-- contribs' additions -->
     </copy>
     <mkdir dir="${server.dir}/solr-webapp/webapp/WEB-INF/lib"/>
