@@ -33,8 +33,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class ClassicFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "classic";
   
   /** Creates a new ClassicFilterFactory */
   public ClassicFilterFactory(Map<String,String> args) {

@@ -39,8 +39,13 @@ import java.util.Set;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
 public class TypeTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "type";
+
   private final boolean useWhitelist;
   private final String stopTypesFiles;
   private Set<String> stopTypes;

@@ -247,7 +247,7 @@ public final class AnalysisImpl implements Analysis {
           Reader readerForWriteOut = new StringReader(charFilteredSource);
           readerForWriteOut = charFilterFactory.create(readerForWriteOut);
           charFilteredSource = writeCharStream(readerForWriteOut);
-          charfilteredTexts.add(new CharfilteredText(readerForWriteOut.getClass().getName(), charFilteredSource));
+          charfilteredTexts.add(new CharfilteredText(CharFilterFactory.findSPIName(charFilterFactory.getClass()), charFilteredSource));
         }
         reader = cs;
       }
@@ -259,13 +259,14 @@ public final class AnalysisImpl implements Analysis {
       ((Tokenizer)tokenStream).setReader(reader);
       List<Token> tokens = new ArrayList<>();
       List<AttributeSource> attributeSources = analyzeTokenStream(tokenStream, tokens);
-      namedTokens.add(new NamedTokens(tokenStream.getClass().getName(), tokens));
+      namedTokens.add(new NamedTokens(TokenizerFactory.findSPIName(tokenizerFactory.getClass()), tokens));
+
       ListBasedTokenStream listBasedTokenStream = new ListBasedTokenStream(tokenStream, attributeSources);
       for (TokenFilterFactory tokenFilterFactory : tokenFilterFactories) {
         tokenStream = tokenFilterFactory.create(listBasedTokenStream);
         tokens = new ArrayList<>();
         attributeSources = analyzeTokenStream(tokenStream, tokens);
-        namedTokens.add(new NamedTokens(tokenStream.getClass().getName(), tokens));
+        namedTokens.add(new NamedTokens(TokenFilterFactory.findSPIName(tokenFilterFactory.getClass()), tokens));
         try {
           listBasedTokenStream.close();
         } catch (IOException e) {
