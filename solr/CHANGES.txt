@@ -212,6 +212,10 @@ Other Changes
 
 * SOLR-13507: Remove support for "addr" parameter from the "/solr/admin/zookeeper" endpoint. (janhoy, Anshum Gupta)
 
+* SOLR-13588: Document Estonian analyzer in Solr Ref Guide (Tomoko Uchida)
+
+* SOLR-13602: Add a field type for Estonian language to default managed_schema (Tomoko Uchida)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
