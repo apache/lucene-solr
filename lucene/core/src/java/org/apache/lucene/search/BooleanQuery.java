@@ -481,23 +481,27 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       builder.setMinimumNumberShouldMatch(minimumNumberShouldMatch);
       boolean actuallyRewritten = false;
-      for (BooleanClause clause : clauses) {
-        if (clause.getOccur() == Occur.SHOULD && clause.getQuery() instanceof BooleanQuery) {
-          BooleanQuery innerQuery = (BooleanQuery) clause.getQuery();
-          if (innerQuery.isPureDisjunction()) {
-            actuallyRewritten = true;
-            for (BooleanClause innerClause : innerQuery.clauses()) {
-              builder.add(innerClause);
+      try {
+        for (BooleanClause clause : clauses) {
+          if (clause.getOccur() == Occur.SHOULD && clause.getQuery() instanceof BooleanQuery) {
+            BooleanQuery innerQuery = (BooleanQuery) clause.getQuery();
+            if (innerQuery.isPureDisjunction()) {
+              actuallyRewritten = true;
+              for (BooleanClause innerClause : innerQuery.clauses()) {
+                builder.add(innerClause);
+              }
+            } else {
+              builder.add(clause);
             }
           } else {
             builder.add(clause);
           }
-        } else {
-          builder.add(clause);
         }
-      }
-      if (actuallyRewritten) {
-        return builder.build();
+        if (actuallyRewritten) {
+          return builder.build();
+        }
+      } catch (TooManyClauses exception) {
+        // No-op : Do not flatten when the new query will violate max clause count
       }
     }
 

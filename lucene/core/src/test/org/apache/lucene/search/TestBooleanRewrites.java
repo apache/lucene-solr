@@ -598,4 +598,19 @@ public class TestBooleanRewrites extends LuceneTestCase {
     w.close();
     dir.close();
   }
+
+  public void testFlattenInnerDisjunctionsWithMoreThan1024Terms() throws IOException {
+    IndexSearcher searcher = newSearcher(new MultiReader());
+
+    BooleanQuery.Builder builder1024 = new BooleanQuery.Builder();
+    for(int i = 0; i < 1024; i++) {
+      builder1024.add(new TermQuery(new Term("foo", "bar-" + i)), Occur.SHOULD);
+    }
+    Query inner = builder1024.build();
+    Query query = new BooleanQuery.Builder()
+        .add(inner, Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)
+        .build();
+    assertSame(query, searcher.rewrite(query));
+  }
 }
