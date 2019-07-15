@@ -40,6 +40,8 @@ Bug fixes
 
 * SOLR-13828: Improve ExecutePlanAction error handling.
 
+* SOLR-13472: Forwarded requests should skip authorization on receiving nodes (Ishan Chattopadhyaya)
+
 ==================  7.7.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

@@ -448,6 +448,26 @@ public class HttpSolrCall {
     }
   }
 
+  Action authorize() throws IOException {
+    AuthorizationContext context = getAuthCtx();
+    log.debug("AuthorizationContext : {}", context);
+    AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);
+    if (authResponse.statusCode == AuthorizationResponse.PROMPT.statusCode) {
+      Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
+      if (headers != null) {
+        for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
+      }
+      log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
+    }
+    if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
+      log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);
+      sendError(authResponse.statusCode,
+          "Unauthorized request, Response code: " + authResponse.statusCode);
+      return RETURN;
+    }
+    return null;
+  }
+  
   /**
    * This method processes the request.
    */
@@ -467,27 +487,20 @@ public class HttpSolrCall {
 
     try {
       init();
-      /* Authorize the request if
-       1. Authorization is enabled, and
-       2. The requested resource is not a known static file
-        */
-      if (cores.getAuthorizationPlugin() != null && shouldAuthorize()) {
-        AuthorizationContext context = getAuthCtx();
-        log.debug("AuthorizationContext : {}", context);
-        AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);
-        if (authResponse.statusCode == AuthorizationResponse.PROMPT.statusCode) {
-          Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
-          if (headers != null) {
-            for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
-          }
-          log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
-        }
-        if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
-          log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);
-          sendError(authResponse.statusCode,
-              "Unauthorized request, Response code: " + authResponse.statusCode);
-          return RETURN;
-        }
+
+      // Perform authorization here, if:
+      //    (a) Authorization is enabled, and
+      //    (b) The requested resource is not a known static file
+      //    (c) And this request should be handled by this node (see NOTE below)
+      // NOTE: If the query is to be handled by another node, then let that node do the authorization.
+      // In case of authentication using BasicAuthPlugin, for example, the internode request
+      // is secured using PKI authentication and the internode request here will contain the
+      // original user principal as a payload/header, using which the receiving node should be
+      // able to perform the authorization.
+      if (cores.getAuthorizationPlugin() != null && shouldAuthorize()
+          && !(action == REMOTEQUERY || action == FORWARD)) {
+        Action authorizationAction = authorize();
+        if (authorizationAction != null) return authorizationAction;
       }
 
       HttpServletResponse resp = response;
