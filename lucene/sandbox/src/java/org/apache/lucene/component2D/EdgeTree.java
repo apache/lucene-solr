@@ -34,20 +34,20 @@ import static org.apache.lucene.geo.GeoUtils.orient;
  * @lucene.internal
  */
 class EdgeTree {
-  final int x1, x2;
-  final int y1, y2;
+  final double x1, x2;
+  final double y1, y2;
 
   /** min of this edge */
-  final int low;
+  final double low;
   /** max latitude of this edge or any children */
-  int max;
+  double max;
 
   /** left child edge, or null */
   EdgeTree left;
   /** right child edge, or null */
   EdgeTree right;
 
-  protected EdgeTree(final int x1, final int y1, final int x2, final int y2, final int low, final int max) {
+  protected EdgeTree(final double x1, final double y1, final double x2, final double y2, final double low, final double max) {
     this.x1 = x1;
     this.y1 = y1;
     this.x2 = x2;
@@ -86,7 +86,7 @@ class EdgeTree {
   // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
   // CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
   // IN THE SOFTWARE.
-  public boolean contains(int x, int y, AtomicBoolean isOnEdge) {
+  public boolean contains(double x, double y, AtomicBoolean isOnEdge) {
     // crossings algorithm is an odd-even algorithm, so we descend the tree xor'ing results along our path
     boolean res = false;
     if (isOnEdge.get() == false && y <= max) {
@@ -99,7 +99,7 @@ class EdgeTree {
           isOnEdge.set(true);
           return true;
         } else if (y1 > y != y2 > y) {
-          res = test(x, y, x1, y1, x2, y2);
+          res = x < (x2 - x1) * (y - y1) / (y2 - y1) + x1;
         }
       }
       if (left != null) {
@@ -113,16 +113,12 @@ class EdgeTree {
     return isOnEdge.get() || res;
   }
 
-  private static boolean test(double x, double y, double x1, double y1, double x2, double y2) {
-    return x < (x2 - x1) * (y - y1) / (y2 - y1) + x1;
-  }
-
-  boolean crossesTriangle(int minX, int maxX, int minY, int maxY, int aX, int aY, int bX, int bY, int cX, int cY) {
+  boolean crossesTriangle(double minX, double maxX, double minY, double maxY, double aX, double aY, double bX, double bY, double cX, double cY) {
     if (minY <= max) {
-      int dX = x1;
-      int dY = y1;
-      int eX = x2;
-      int eY = y2;
+      double dX = x1;
+      double dY = y1;
+      double eX = x2;
+      double eY = y2;
 
       // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
       // if not, don't waste our time trying more complicated stuff
@@ -151,8 +147,13 @@ class EdgeTree {
     return false;
   }
 
+  /** returns true if this {@link RectangleComponent2D} contains the encoded lat lon point */
+  private static  boolean containsPoint(final double x, final double y, final double minX, final double maxX, final double minY, final double maxY)  {
+    return x >= minX && x <= maxX && y >= minY && y <= maxY;
+  }
+
   /** Returns true if the box crosses any edge in this edge subtree */
-  boolean crossesBox(int minX, int maxX, int minY, int maxY, boolean includeBoundary) {
+  boolean crossesBox(double minX, double maxX, double minY, double maxY, boolean includeBoundary) {
     // we just have to cross one edge to answer the question, so we descend the tree and return when we do.
     if (minY <= max) {
       // we compute line intersections of every polygon edge with every box line.
@@ -160,14 +161,14 @@ class EdgeTree {
       // for each box line (AB):
       //   for each poly line (CD):
       //     intersects = orient(C,D,A) * orient(C,D,B) <= 0 && orient(A,B,C) * orient(A,B,D) <= 0
-      int cX = x1;
-      int cY = y1;
-      int dX = x2;
-      int dY = y2;
+      double cX = x1;
+      double cY = y1;
+      double dX = x2;
+      double dY = y2;
 
       // optimization: see if either end of the line segment is contained by the rectangle
-      if (RectangleComponent2D.containsPoint(cX, cY, minX, maxX, minY, maxY) ||
-          RectangleComponent2D.containsPoint(dX, dY, minX, maxX, minY, maxY)) {
+      if (containsPoint(cX, cY, minX, maxX, minY, maxY) ||
+          containsPoint(dX, dY, minX, maxX, minY, maxY)) {
         return true;
       }
 
@@ -207,17 +208,17 @@ class EdgeTree {
   }
 
   /** Returns true if the line crosses any edge in this edge subtree */
-  boolean crossesLine(int a2X, int a2Y, int b2X, int b2Y) {
+  boolean crossesLine(double a2X, double a2Y, double b2X, double b2Y) {
     double minY = StrictMath.min(a2Y, b2Y);
     double maxY = StrictMath.max(a2Y, b2Y);
     if (minY <= max) {
-      int a1X = x1;
-      int a1Y = y1;
-      int b1X = x2;
-      int b1Y = y2;
+      double a1X = x1;
+      double a1Y = y1;
+      double b1X = x2;
+      double b1Y = y2;
 
-      int minX = StrictMath.min(a2X, b2X);
-      int maxX = StrictMath.max(a2X, b2X);
+      double minX = StrictMath.min(a2X, b2X);
+      double maxX = StrictMath.max(a2X, b2X);
 
       boolean outside = (a1Y < minY && b1Y < minY) ||
           (a1Y > maxY && b1Y > maxY) ||
@@ -238,13 +239,13 @@ class EdgeTree {
   }
 
   /** returns true if the provided x, y point lies on any of the edges */
-  boolean pointInEdge(int x, int y) {
+  boolean pointInEdge(double x, double y) {
     if (y <= max) {
-      int minY = StrictMath.min(y1, y2);
-      int maxY = StrictMath.max(y1, y2);
-      int minX = StrictMath.min(x1, x2);
-      int maxX = StrictMath.max(x1, x2);
-      if (RectangleComponent2D.containsPoint(x, y, minX, maxX, minY, maxY) &&
+      double minY = StrictMath.min(y1, y2);
+      double maxY = StrictMath.max(y1, y2);
+      double minX = StrictMath.min(x1, x2);
+      double maxX = StrictMath.max(x1, x2);
+      if (containsPoint(x, y, minX, maxX, minY, maxY) &&
           orient(x1, y1, x2, y2, x, y) == 0) {
         return true;
       }
@@ -262,21 +263,21 @@ class EdgeTree {
    * Creates an edge interval tree from a set of geometry vertices.
    * @return root node of the tree.
    */
-  public static EdgeTree createTree(int[] Xs, int[] Ys) {
+  public static EdgeTree createTree(double[] Xs, double[] Ys) {
     EdgeTree edges[] = new EdgeTree[Ys.length - 1];
     for (int i = 1; i < Ys.length; i++) {
-      int x1 = Xs[i-1];
-      int y1 = Ys[i-1];
-      int x2 = Xs[i];
-      int y2 = Ys[i];
+      double x1 = Xs[i-1];
+      double y1 = Ys[i-1];
+      double x2 = Xs[i];
+      double y2 = Ys[i];
 
       edges[i - 1] = new EdgeTree(x1, y1, x2, y2, Math.min(y1, y2), Math.max(y1, y2));
     }
     // sort the edges then build a balanced tree from them
     Arrays.sort(edges, (left, right) -> {
-      int ret = Integer.compare(left.low, right.low);
+      int ret = Double.compare(left.low, right.low);
       if (ret == 0) {
-        ret = Integer.compare(left.max, right.max);
+        ret = Double.compare(left.max, right.max);
       }
       return ret;
     });

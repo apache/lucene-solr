@@ -21,7 +21,7 @@ import org.apache.lucene.document.TestXYLineShapeQueries;;
 import org.apache.lucene.geo.XYLine;
 
 
-public class TestXYLineComponent2D extends TestBaseLatLonComponent2D {
+public class TestXYLineComponent2D extends TestBaseXYComponent2D {
 
   @Override
   protected Object nextShape() {

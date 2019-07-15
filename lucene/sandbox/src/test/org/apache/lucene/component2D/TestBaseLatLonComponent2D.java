@@ -47,5 +47,19 @@ public abstract class TestBaseLatLonComponent2D extends TestBaseComponent2D {
     return GeoEncodingUtils.encodeLatitude(GeoTestUtil.nextLatitude());
   }
 
-
+  public void testComponentPredicate() {
+    Object shape = nextShape();
+    Component2D component = getComponent(shape);
+    Component2DPredicate predicate = LatLonComponent2DFactory.createComponentPredicate(component);
+    for (int i =0; i < 1000; i++) {
+      int x = nextEncodedX();
+      int y = nextEncodedY();
+      assertEquals(component.contains(x, y), predicate.test(x, y));
+      if (component.contains(x, y)) {
+        assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, component.relateTriangle(x, y, x, y, x, y));
+      } else {
+        assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, component.relateTriangle(x, y, x, y, x, y));
+      }
+    }
+  }
 }

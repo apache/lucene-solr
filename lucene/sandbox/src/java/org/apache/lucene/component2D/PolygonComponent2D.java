@@ -19,6 +19,7 @@ package org.apache.lucene.component2D;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.document.ShapeField;
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
@@ -28,9 +29,9 @@ import org.apache.lucene.index.PointValues.Relation;
  */
 final class PolygonComponent2D implements Component2D {
   /** X values, used for equality and hashcode */
-  private final int[] Xs;
+  private final double[] Xs;
   /** Y values, used for equality and hashcode */
-  private final int[] Ys;
+  private final double[] Ys;
   /** edge tree representing the polygon */
   private final EdgeTree tree;
   /** bounding box of the polygon */
@@ -40,20 +41,23 @@ final class PolygonComponent2D implements Component2D {
   /** keeps track if points lies on polygon boundary */
   private final AtomicBoolean containsBoundary = new AtomicBoolean(false);
 
+  private final ShapeField.Decoder decoder;
 
-  protected PolygonComponent2D(int[] Xs, int[] Ys, RectangleComponent2D box, Component2D holes) {
+
+  protected PolygonComponent2D(double[] Xs, double[] Ys, RectangleComponent2D box, Component2D holes, ShapeField.Decoder decoder) {
     this.Xs = Xs;
     this.Ys = Ys;
     this.holes = holes;
     this.tree = EdgeTree.createTree(Xs, Ys);
     this.box = box;
+    this.decoder = decoder;
   }
   
   @Override
   public boolean contains(int x, int y) {
     if (box.contains(x, y)) {
       containsBoundary.set(false);
-      if (tree.contains(x, y, containsBoundary)) {
+      if (tree.contains(decoder.decodeX(x), decoder.decodeY(y), containsBoundary)) {
         if (holes != null && holes.contains(x, y)) {
           return false;
         }
@@ -83,18 +87,27 @@ final class PolygonComponent2D implements Component2D {
     // check each corner: if < 4 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfCorners(minX, maxX, minY, maxY);
     if (numCorners == 4) {
-      if (tree.crossesBox(minX, maxX, minY, maxY, false)) {
+      if (tree.crossesBox(decoder.decodeX(minX), decoder.decodeX(maxX), decoder.decodeY(minY), decoder.decodeY(maxY), false)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
     }  else if (numCorners == 0) {
-      if (RectangleComponent2D.containsPoint(tree.x1, tree.y1, minX, maxX, minY, maxY) ||
-          tree.crossesBox(minX, maxX, minY, maxY, false)) {
+      if (crossesBox(decoder.decodeX(minX), decoder.decodeX(maxX), decoder.decodeY(minY), decoder.decodeY(maxY))) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
     }
     return Relation.CELL_CROSSES_QUERY;
+  }
+
+  private boolean crossesBox(double minX, double maxX, double minY, double maxY) {
+    return containsPoint(tree.x1, tree.y1, minX, maxX, minY, maxY) ||
+        tree.crossesBox(minX, maxX, minY, maxY, false);
+  }
+
+  /** returns true if this {@link RectangleComponent2D} contains the encoded lat lon point */
+  public static  boolean containsPoint(final double x, final double y, final double minX, final double maxX, final double minY, final double maxY)  {
+    return x >= minX && x <= maxX && y >= minY && y <= maxY;
   }
 
   @Override
@@ -133,12 +146,12 @@ final class PolygonComponent2D implements Component2D {
     }
 
     if (numCorners == 2) {
-      if (tree.crossesLine(a2x, a2y, b2x, b2y)) {
+      if (tree.crossesLine(decoder.decodeX(a2x), decoder.decodeY(a2y), decoder.decodeX(b2x), decoder.decodeY(b2y))) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
     } else if (numCorners == 0) {
-      if (tree.crossesLine(a2x, a2y, b2x, b2y)) {
+      if (tree.crossesLine(decoder.decodeX(a2x), decoder.decodeY(a2y), decoder.decodeX(b2x), decoder.decodeY(b2y))) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -151,18 +164,24 @@ final class PolygonComponent2D implements Component2D {
     // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfTriangleCorners(aX, aY, bX, bY, cX, cY);
     if (numCorners == 3) {
-      if (tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+      if (tree.crossesTriangle(decoder.decodeX(minX), decoder.decodeX(maxX), decoder.decodeY(minY), decoder.decodeY(maxY),
+          decoder.decodeX(aX), decoder.decodeY(aY), decoder.decodeX(bX), decoder.decodeY(bY), decoder.decodeX(cX), decoder.decodeY(cY))) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
     } else if (numCorners == 0) {
-      if (Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY) ||
-          tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+      if  (crossesTriangle(decoder.decodeX(minX), decoder.decodeX(maxX), decoder.decodeY(minY), decoder.decodeY(maxY),
+          decoder.decodeX(aX), decoder.decodeY(aY), decoder.decodeX(bX), decoder.decodeY(bY), decoder.decodeX(cX), decoder.decodeY(cY))) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
     }
     return Relation.CELL_CROSSES_QUERY;
+  }
+
+  private boolean crossesTriangle(double minX, double maxX, double minY, double maxY, double aX, double aY, double bX, double bY, double cX, double cY) {
+    return Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY) == true ||
+        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY);
   }
 
   private int numberOfTriangleCorners(int aX, int aY, int bX, int bY, int cX, int cY) {

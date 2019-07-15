@@ -22,7 +22,7 @@ import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.TestUtil;
 
-public class TestXYComponent2DTree extends TestBaseLatLonComponent2D {
+public class TestXYComponent2DTree extends TestBaseXYComponent2D {
 
   @Override
   protected Object nextShape() {

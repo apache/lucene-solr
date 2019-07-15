@@ -20,6 +20,7 @@ package org.apache.lucene.component2D;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.document.LatLonShape;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
@@ -88,7 +89,7 @@ public class LatLonComponent2DFactory {
         GeoEncodingUtils.encodeLongitude(polygon.maxLon),
         GeoEncodingUtils.encodeLatitude(polygon.minLat),
         GeoEncodingUtils.encodeLatitude(polygon.maxLat));
-    return new PolygonComponent2D(encodeLongs(polygon.getPolyLons()), encodeLats(polygon.getPolyLats()), box, holes);
+    return new PolygonComponent2D(quatizeLongs(polygon.getPolyLons()), quantizeLats(polygon.getPolyLats()), box, holes, LatLonShape.DECODER);
   }
 
   /** Builds a Component2D tree from multipolygon */
@@ -109,7 +110,7 @@ public class LatLonComponent2DFactory {
         GeoEncodingUtils.encodeLongitude(line.maxLon),
         GeoEncodingUtils.encodeLatitude(line.minLat),
         GeoEncodingUtils.encodeLatitude(line.maxLat));
-    return new LineComponent2D(encodeLongs(line.getLons()), encodeLats(line.getLats()), box);
+    return new LineComponent2D(quatizeLongs(line.getLons()), quantizeLats(line.getLats()), box, LatLonShape.DECODER);
   }
 
   /** Builds a Component2D tree from multiline */
@@ -153,19 +154,23 @@ public class LatLonComponent2DFactory {
     return Component2DTree.createTree(components, 0, components.length - 1, true);
   }
 
-  private static int[] encodeLongs(double[] longs) {
-    int[] encoded = new int[longs.length];
+  private static double[] quatizeLongs(double[] longs) {
+    double[] encoded = new double[longs.length];
     for (int i = 0; i < longs.length; i++) {
-      encoded[i] = GeoEncodingUtils.encodeLongitude(longs[i]);
+      encoded[i] = GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(longs[i]));
     }
     return encoded;
   }
 
-  private static int[] encodeLats(double[] lats) {
-    int[] encoded = new int[lats.length];
+  private static double[] quantizeLats(double[] lats) {
+    double[] encoded = new double[lats.length];
     for (int i = 0; i < lats.length; i++) {
-      encoded[i] = GeoEncodingUtils.encodeLatitude(lats[i]);
+      encoded[i] = GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(lats[i]));
     }
     return encoded;
+  }
+
+  public static Component2DPredicate createComponentPredicate(Component2D component) {
+    return Component2DPredicate.createComponentPredicate(component, LatLonShape.DECODER);
   }
 }

@@ -20,6 +20,7 @@ package org.apache.lucene.component2D;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.document.XYShape;
 import org.apache.lucene.geo.XYEncodingUtils;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
@@ -75,7 +76,7 @@ public class XYComponent2DFactory {
         XYEncodingUtils.encode(polygon.maxX),
         XYEncodingUtils.encode(polygon.minY),
         XYEncodingUtils.encode(polygon.maxY));
-    return new PolygonComponent2D(encode(polygon.getPolyX()), encode(polygon.getPolyY()), box, holes);
+    return new PolygonComponent2D(quantize(polygon.getPolyX()), quantize(polygon.getPolyY()), box, holes, XYShape.DECODER);
   }
 
   /** Builds a Component2D tree from multipolygon */
@@ -96,7 +97,7 @@ public class XYComponent2DFactory {
         XYEncodingUtils.encode(line.maxX),
         XYEncodingUtils.encode(line.minY),
         XYEncodingUtils.encode(line.maxY));
-    return new LineComponent2D(encode(line.getX()), encode(line.getY()), box);
+    return new LineComponent2D(quantize(line.getX()), quantize(line.getY()), box, XYShape.DECODER);
   }
 
   /** Builds a Component2D tree from multiline */
@@ -140,11 +141,15 @@ public class XYComponent2DFactory {
     return Component2DTree.createTree(components, 0, components.length - 1, true);
   }
 
-  private static int[] encode(double[] vars) {
-    int[] encoded = new int[vars.length];
+  private static double[] quantize(double[] vars) {
+    double[] encoded = new double[vars.length];
     for (int i = 0; i < vars.length; i++) {
-      encoded[i] = XYEncodingUtils.encode(vars[i]);
+      encoded[i] = XYEncodingUtils.decode(XYEncodingUtils.encode(vars[i]));
     }
     return encoded;
+  }
+
+  public static Component2DPredicate createComponentPredicate(Component2D component) {
+    return Component2DPredicate.createComponentPredicate(component, XYShape.DECODER);
   }
 }

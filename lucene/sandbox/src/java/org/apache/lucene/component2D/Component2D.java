@@ -52,7 +52,7 @@ public interface Component2D {
 
   /**
    * Compute whether the given x, y point is in a triangle; uses the winding order method */
-  static boolean pointInTriangle(int minX, int maxX, int minY, int maxY, int x, int y, int aX, int aY, int bX, int bY, int cX, int cY) {
+  static boolean pointInTriangle(double minX, double maxX, double minY, double maxY, double x, double y, double aX, double aY, double bX, double bY, double cX, double cY) {
     //check the bounding box because if the triangle is degenerated, e.g points and lines, we need to filter out
     //coplanar points that are not part of the triangle.
     if (x >= minX && x <= maxX && y >= minY && y <= maxY) {

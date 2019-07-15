@@ -17,8 +17,6 @@
 
 package org.apache.lucene.component2D;
 
-import java.util.Arrays;
-import java.util.Objects;
 
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LuceneTestCase;
@@ -99,22 +97,6 @@ public abstract class TestBaseComponent2D extends LuceneTestCase {
         assertTrue(component.contains(ax, ay));
         assertTrue(component.contains(bx, by));
         assertTrue(component.contains(cx, cy));
-      }
-    }
-  }
-
-  public void testComponentPredicate() {
-    Object shape = nextShape();
-    Component2D component = getComponent(shape);
-    Component2DPredicate predicate = Component2DPredicate.createComponentPredicate(component);
-    for (int i =0; i < 1000; i++) {
-      int x = nextEncodedX();
-      int y = nextEncodedY();
-      assertEquals(component.contains(x, y), predicate.test(x, y));
-      if (component.contains(x, y)) {
-        assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, component.relateTriangle(x, y, x, y, x, y));
-      } else {
-        assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, component.relateTriangle(x, y, x, y, x, y));
       }
     }
   }

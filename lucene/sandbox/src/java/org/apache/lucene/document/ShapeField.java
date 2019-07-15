@@ -304,4 +304,14 @@ public final class ShapeField {
     //Points of the decoded triangle must be co-planar or CCW oriented
     assert GeoUtils.orient(triangle[1], triangle[0], triangle[3], triangle[2], triangle[5], triangle[4]) >= 0;
   }
+
+  public interface Decoder {
+    double decodeX(int x);
+    double decodeY(int y);
+    int getMaxXEncodedValue();
+    int getMinXEncodedValue();
+    int getMaxYEncodedValue();
+    int getMinYEncodedValue();
+
+  }
 }

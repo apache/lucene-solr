@@ -20,7 +20,7 @@ package org.apache.lucene.component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYPolygon;
 
-public class TestXYPolygonComponent2D extends TestBaseLatLonComponent2D {
+public class TestXYPolygonComponent2D extends TestBaseXYComponent2D {
 
   @Override
   protected Object nextShape() {

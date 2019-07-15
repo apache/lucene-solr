@@ -18,7 +18,11 @@
 package org.apache.lucene.component2D;
 
 import java.util.Arrays;
+
+import org.apache.lucene.document.ShapeField;
 import org.apache.lucene.index.PointValues;
+
+import static org.apache.lucene.geo.GeoUtils.orient;
 
 /** Represents a 2D line.
  *
@@ -27,25 +31,28 @@ import org.apache.lucene.index.PointValues;
 class LineComponent2D implements Component2D {
 
   /** X values, used for equality and hashcode */
-  private final int[] Xs;
+  private final double[] Xs;
   /** Y values, used for equality and hashcode */
-  private final int[] Ys;
+  private final double[] Ys;
   /** edge tree representing the line */
   private final EdgeTree tree;
   /**  bounding box of the line */
   private final RectangleComponent2D box;
 
-  protected LineComponent2D(int[] Xs, int[] Ys, RectangleComponent2D box) {
+  private final ShapeField.Decoder decoder;
+
+  protected LineComponent2D(double[] Xs, double[] Ys, RectangleComponent2D box, ShapeField.Decoder decoder) {
     this.Xs = Xs;
     this.Ys = Ys;
     this.tree = EdgeTree.createTree(Xs, Ys);
     this.box = box;
+    this.decoder = decoder;
   }
 
   @Override
   public boolean contains(int x, int y) {
     if (box.contains(x, y)) {
-      return tree.pointInEdge(x, y);
+      return tree.pointInEdge(decoder.decodeX(x), decoder.decodeY(y));
     }
     return false;
   }
@@ -55,7 +62,7 @@ class LineComponent2D implements Component2D {
     if (box.disjoint(minX, maxX, minY, maxY)) {
       return PointValues.Relation.CELL_OUTSIDE_QUERY;
     }
-    if (box.within(minX, maxX, minY, maxY) || tree.crossesBox(minX, maxX, minY, maxY, true)) {
+    if (box.within(minX, maxX, minY, maxY) || tree.crossesBox(decoder.decodeX(minX), decoder.decodeX(maxX), decoder.decodeY(minY), decoder.decodeY(maxY), true)) {
       return PointValues.Relation.CELL_CROSSES_QUERY;
     }
     return PointValues.Relation.CELL_OUTSIDE_QUERY;
@@ -71,18 +78,26 @@ class LineComponent2D implements Component2D {
       if (contains(aX, aY)) {
         return PointValues.Relation.CELL_INSIDE_QUERY;
       }
+      return PointValues.Relation.CELL_OUTSIDE_QUERY;
     } else if ((aX == cX && aY == cY) || (bX == cX && bY == cY)) {
       // indexed "triangle" is a line:
-      if (tree.crossesLine(aX, aY, bX, bY)) {
+      if (tree.crossesLine(decoder.decodeX(aX), decoder.decodeY(aY), decoder.decodeX(bX), decoder.decodeY(bY))) {
         return PointValues.Relation.CELL_CROSSES_QUERY;
       }
       return PointValues.Relation.CELL_OUTSIDE_QUERY;
-    } else if (Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY) == true ||
-        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
-      // indexed "triangle" is a triangle:
-      return PointValues.Relation.CELL_CROSSES_QUERY;
+    } else {
+      if (crossesTriangle(decoder.decodeX(minX), decoder.decodeX(maxX), decoder.decodeY(minY), decoder.decodeY(maxY),
+          decoder.decodeX(aX), decoder.decodeY(aY), decoder.decodeX(bX), decoder.decodeY(bY), decoder.decodeX(cX), decoder.decodeY(cY))) {
+        // indexed "triangle" is a triangle:
+        return PointValues.Relation.CELL_CROSSES_QUERY;
+      }
+      return PointValues.Relation.CELL_OUTSIDE_QUERY;
     }
-    return PointValues.Relation.CELL_OUTSIDE_QUERY;
+  }
+
+  private boolean crossesTriangle(double minX, double maxX, double minY, double maxY, double aX, double aY, double bX, double bY, double cX, double cY) {
+    return Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY) == true ||
+        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY);
   }
 
   @Override

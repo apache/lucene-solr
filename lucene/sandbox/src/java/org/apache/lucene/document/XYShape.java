@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
 import org.apache.lucene.document.ShapeField.Triangle;
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.geo.XYEncodingUtils;
 import org.apache.lucene.index.PointValues; // javadoc
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
@@ -50,6 +51,8 @@ import static org.apache.lucene.geo.XYEncodingUtils.encode;
  * @lucene.experimental
  */
 public class XYShape {
+
+  public static ShapeField.Decoder DECODER = new Decoder();
 
   // no instance:
   private XYShape() {
@@ -99,5 +102,38 @@ public class XYShape {
   /** create a query to find all cartesian shapes that intersect a provided polygon (or array of polygons) **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, XYPolygon... polygons) {
     return new XYShapePolygonQuery(field, queryRelation, polygons);
+  }
+
+  private static class Decoder implements ShapeField.Decoder {
+
+    @Override
+    public double decodeX(int x) {
+      return XYEncodingUtils.decode(x);
+    }
+
+    @Override
+    public double decodeY(int y) {
+      return XYEncodingUtils.decode(y);
+    }
+
+    @Override
+    public int getMaxXEncodedValue() {
+      return XYEncodingUtils.encode(XYEncodingUtils.MAX_VAL_INCL);
+    }
+
+    @Override
+    public int getMinXEncodedValue() {
+      return XYEncodingUtils.encode(XYEncodingUtils.MIN_VAL_INCL);
+    }
+
+    @Override
+    public int getMaxYEncodedValue() {
+      return XYEncodingUtils.encode(XYEncodingUtils.MAX_VAL_INCL);
+    }
+
+    @Override
+    public int getMinYEncodedValue() {
+      return XYEncodingUtils.encode(XYEncodingUtils.MIN_VAL_INCL);
+    }
   }
 }

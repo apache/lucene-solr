@@ -19,11 +19,12 @@ package org.apache.lucene.component2D;
 
 import java.util.function.Function;
 
+import org.apache.lucene.document.ShapeField;
 import org.apache.lucene.index.PointValues;
 
 /**
  *
- * A component2D predicate for fast computation of point in component computation,
+ * A component2D predicate for fast computation of point in component computation.
  *
  * @lucene.internal
  */
@@ -33,52 +34,55 @@ public class Component2DPredicate {
 
   static final int ARITY = 64;
 
-  final int latShift, lonShift;
-  final int latBase, lonBase;
-  final int maxLatDelta, maxLonDelta;
+  final int yShift, xShift;
+  final int yBase, xBase;
+  final int maxYDelta, maxXDelta;
   final byte[] relations;
+  private final ShapeField.Decoder decoder;
 
   private Component2DPredicate(
-      int latShift, int lonShift,
-      int latBase, int lonBase,
-      int maxLatDelta, int maxLonDelta,
+      int yShift, int xShift,
+      int yBase, int xBase,
+      int maxYDelta, int maxXDelta,
       byte[] relations,
-      Component2D component) {
-    if (latShift < 1 || latShift > 31) {
+      Component2D component,
+      ShapeField.Decoder decoder) {
+    if (yShift < 1 || yShift > 31) {
       throw new IllegalArgumentException();
     }
-    if (lonShift < 1 || lonShift > 31) {
+    if (xShift < 1 || xShift > 31) {
       throw new IllegalArgumentException();
     }
-    this.latShift = latShift;
-    this.lonShift = lonShift;
-    this.latBase = latBase;
-    this.lonBase = lonBase;
-    this.maxLatDelta = maxLatDelta;
-    this.maxLonDelta = maxLonDelta;
+    this.yShift = yShift;
+    this.xShift = xShift;
+    this.yBase = yBase;
+    this.xBase = xBase;
+    this.maxYDelta = maxYDelta;
+    this.maxXDelta = maxXDelta;
     this.relations = relations;
     this.component = component;
+    this.decoder = decoder;
   }
 
   /** Check whether the given point is within the considered component.
    *  NOTE: this operates directly on the encoded representation of points. */
   public boolean test(int x, int y) {
-    final int y2 = ((y - Integer.MIN_VALUE) >>> latShift);
-    if (y2 < latBase || y2 >= latBase + maxLatDelta) {
+    final int y2 = ((y - decoder.getMinYEncodedValue()) >>> yShift);
+    if (y2 < yBase || y2 >= yBase + maxYDelta) {
       // not sure about this but it fails in some cases for point components
-      return (y2 == Integer.MAX_VALUE) ? component.contains(x, y) : false;
+      return false;//(y2 == decoder.getMaxYEncodedValue()) ? component.contains(x, y) : false;
     }
-    int x2 = ((x - Integer.MIN_VALUE) >>> lonShift);
-    if (x2 < lonBase) { // wrap
-      x2 += 1 << (32 - lonShift);
+    int x2 = ((x - decoder.getMinXEncodedValue()) >>> xShift);
+    if (x2 < xBase) { // wrap
+      x2 += 1 << (32 - xShift);
     }
-    assert Integer.toUnsignedLong(x2) >= lonBase;
-    assert x2 - lonBase >= 0;
-    if (x2 - lonBase >= maxLonDelta) {
+    assert Integer.toUnsignedLong(x2) >= xBase;
+    assert x2 - xBase >= 0;
+    if (x2 - xBase >= maxXDelta) {
       return false;
     }
 
-    final int relation = relations[(y2 - latBase) * maxLonDelta + (x2 - lonBase)];
+    final int relation = relations[(y2 - yBase) * maxXDelta + (x2 - xBase)];
     if (relation == PointValues.Relation.CELL_CROSSES_QUERY.ordinal()) {
       return component.contains(x, y);
     } else {
@@ -86,51 +90,52 @@ public class Component2DPredicate {
     }
   }
 
-  private static Component2DPredicate createSubBoxes(RectangleComponent2D boundingBox, Function<RectangleComponent2D, PointValues.Relation> boxToRelation, Component2D component) {
+  private static Component2DPredicate createSubBoxes(RectangleComponent2D boundingBox, Function<RectangleComponent2D, PointValues.Relation> boxToRelation, Component2D component, ShapeField.Decoder decoder) {
     final int minY = boundingBox.minY;
     final int maxY = boundingBox.maxY;
     final int minX = boundingBox.minX;
     final int maxX = boundingBox.maxX;
 
-    final int latShift, lonShift;
-    final int latBase, lonBase;
-    final int maxLatDelta, maxLonDelta;
+    final int yShift, xShift;
+    final int yBase, xBase;
+    final int maxYDelta, maxXDelta;
     {
-      long minY2 = (long) minY - Integer.MIN_VALUE;
-      long maxY2 = (long) maxY - Integer.MIN_VALUE;
-      latShift = computeShift(minY2, maxY2);
-      latBase = (int) (minY2 >>> latShift);
-      maxLatDelta = (int) (maxY2 >>> latShift) - latBase + 1;
-      assert maxLatDelta > 0;
+      long minY2 = (long) minY - decoder.getMinYEncodedValue();
+      long maxY2 = (long) maxY - decoder.getMinYEncodedValue();
+      yShift = computeShift(minY2, maxY2);
+      yBase = (int) (minY2 >>> yShift);
+      maxYDelta = (int) (maxY2 >>> yShift) - yBase + 1;
+      assert maxYDelta > 0;
     }
     {
-      long minX2 = (long) minX - Integer.MIN_VALUE;
-      long maxX2 = (long) maxX - Integer.MIN_VALUE;
-      lonShift = computeShift(minX2, maxX2);
-      lonBase = (int) (minX2 >>> lonShift);
-      maxLonDelta = (int) (maxX2 >>> lonShift) - lonBase + 1;
-      assert maxLonDelta > 0;
+      long minX2 = (long) minX - decoder.getMinXEncodedValue();
+      long maxX2 = (long) maxX - decoder.getMinXEncodedValue();
+      xShift = computeShift(minX2, maxX2);
+      xBase = (int) (minX2 >>> xShift);
+      maxXDelta = (int) (maxX2 >>> xShift) - xBase + 1;
+      assert maxXDelta > 0;
     }
 
-    final byte[] relations = new byte[maxLatDelta * maxLonDelta];
-    for (int i = 0; i < maxLatDelta; ++i) {
-      for (int j = 0; j < maxLonDelta; ++j) {
-        final int boxMinY = ((latBase + i) << latShift) + Integer.MIN_VALUE;
-        final int boxMinX = ((lonBase + j) << lonShift) + Integer.MIN_VALUE;
-        final int boxMaxY = boxMinY + (1 << latShift) - 1;
-        final int boxMaxX = boxMinX + (1 << lonShift) - 1;
+    final byte[] relations = new byte[maxYDelta * maxXDelta];
+    for (int i = 0; i < maxYDelta; ++i) {
+      for (int j = 0; j < maxXDelta; ++j) {
+        final int boxMinY = ((yBase + i) << yShift) + decoder.getMinYEncodedValue();
+        final int boxMinX = ((xBase + j) << xShift) + decoder.getMinXEncodedValue();
+        final int boxMaxY = boxMinY + (1 << yShift) - 1;
+        final int boxMaxX = boxMinX + (1 << xShift) - 1;
 
-        relations[i * maxLonDelta + j] = (byte) boxToRelation.apply(RectangleComponent2D.createComponent(
+        //System.out.println(boxMinX + " " + boxMaxX + " " + boxMinY + " " + boxMaxY);
+        relations[i * maxXDelta + j] = (byte) boxToRelation.apply(RectangleComponent2D.createComponent(
             boxMinX, boxMaxX,
             boxMinY, boxMaxY)).ordinal();
       }
     }
 
     return new Component2DPredicate(
-        latShift, lonShift,
-        latBase, lonBase,
-        maxLatDelta, maxLonDelta,
-        relations, component);
+        yShift, xShift,
+        yBase, xBase,
+        maxYDelta, maxXDelta,
+        relations, component, decoder);
   }
 
   /** Compute the minimum shift value so that
@@ -151,11 +156,11 @@ public class Component2DPredicate {
 
   /** Create a predicate that checks whether points are within a component2D.
    *  @lucene.internal */
-  public static Component2DPredicate createComponentPredicate(Component2D component) {
+  static Component2DPredicate createComponentPredicate(Component2D component, ShapeField.Decoder decoder) {
     final RectangleComponent2D boundingBox = component.getBoundingBox();
     final Function<RectangleComponent2D, PointValues.Relation> boxToRelation = box -> component.relate(
         box.minX, box.maxX, box.minY, box.maxY);
-    return  createSubBoxes(boundingBox, boxToRelation, component);
+    return  createSubBoxes(boundingBox, boxToRelation, component, decoder);
   }
 
 }

@@ -21,9 +21,11 @@ import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
 import org.apache.lucene.document.ShapeField.Triangle;
+import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.geo.XYEncodingUtils;
 import org.apache.lucene.index.PointValues; // javadoc
 import org.apache.lucene.search.Query;
 
@@ -53,6 +55,8 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
  * @lucene.experimental
  */
 public class LatLonShape {
+
+  public static ShapeField.Decoder DECODER = new Decoder();
 
   // no instance:
   private LatLonShape() {
@@ -108,5 +112,38 @@ public class LatLonShape {
    **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
     return new LatLonShapePolygonQuery(field, queryRelation, polygons);
+  }
+
+  private static class Decoder implements ShapeField.Decoder {
+
+    @Override
+    public double decodeX(int x) {
+      return GeoEncodingUtils.decodeLongitude(x);
+    }
+
+    @Override
+    public double decodeY(int y) {
+      return GeoEncodingUtils.decodeLatitude(y);
+    }
+
+    @Override
+    public int getMaxXEncodedValue() {
+      return GeoEncodingUtils.MAX_LON_ENCODED;
+    }
+
+    @Override
+    public int getMinXEncodedValue() {
+      return GeoEncodingUtils.MIN_LON_ENCODED;
+    }
+
+    @Override
+    public int getMaxYEncodedValue() {
+      return GeoEncodingUtils.encodeLatitude(90);
+    }
+
+    @Override
+    public int getMinYEncodedValue() {
+      return GeoEncodingUtils.encodeLatitude(-90);
+    }
   }
 }

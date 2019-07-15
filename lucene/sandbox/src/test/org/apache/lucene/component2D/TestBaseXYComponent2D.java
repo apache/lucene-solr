@@ -47,5 +47,19 @@ public abstract class TestBaseXYComponent2D extends TestBaseComponent2D {
     return XYEncodingUtils.encode(ShapeTestUtil.nextDouble());
   }
 
-
+//  public void testComponentPredicate() {
+//    Object shape = nextShape();
+//    Component2D component = getComponent(shape);
+//    Component2DPredicate predicate = XYComponent2DFactory.createComponentPredicate(component);
+//    for (int i =0; i < 1000; i++) {
+//      int x = nextEncodedX();
+//      int y = nextEncodedY();
+//      assertEquals(component.contains(x, y), predicate.test(x, y));
+//      if (component.contains(x, y)) {
+//        assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, component.relateTriangle(x, y, x, y, x, y));
+//      } else {
+//        assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, component.relateTriangle(x, y, x, y, x, y));
+//      }
+//    }
+//  }
 }
