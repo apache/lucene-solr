@@ -148,8 +148,4 @@ public class XYComponent2DFactory {
     }
     return encoded;
   }
-
-  public static Component2DPredicate createComponentPredicate(Component2D component) {
-    return Component2DPredicate.createComponentPredicate(component, XYShape.DECODER);
-  }
 }

@@ -170,7 +170,9 @@ public class LatLonComponent2DFactory {
     return encoded;
   }
 
-  public static Component2DPredicate createComponentPredicate(Component2D component) {
-    return Component2DPredicate.createComponentPredicate(component, LatLonShape.DECODER);
+  /** Builds a Component predicate for fast computation of point in component. The component must
+   * be created with one of the methods of this factory */
+  public static LatLonComponent2DPredicate createComponentPredicate(Component2D component) {
+    return LatLonComponent2DPredicate.createComponentPredicate(component);
   }
 }

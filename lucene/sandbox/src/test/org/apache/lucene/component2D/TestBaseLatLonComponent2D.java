@@ -50,7 +50,7 @@ public abstract class TestBaseLatLonComponent2D extends TestBaseComponent2D {
   public void testComponentPredicate() {
     Object shape = nextShape();
     Component2D component = getComponent(shape);
-    Component2DPredicate predicate = LatLonComponent2DFactory.createComponentPredicate(component);
+    LatLonComponent2DPredicate predicate = LatLonComponent2DFactory.createComponentPredicate(component);
     for (int i =0; i < 1000; i++) {
       int x = nextEncodedX();
       int y = nextEncodedY();
