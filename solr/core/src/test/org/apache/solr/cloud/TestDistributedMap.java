@@ -37,7 +37,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setUpClass() throws Exception {
     zkDir = createTempDir("TestDistributedMap");
-    zkServer = new ZkTestServer(zkDir.toFile().getAbsolutePath());
+    zkServer = new ZkTestServer(zkDir);
     zkServer.run();
   }
   
@@ -48,8 +48,10 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
       zkServer.shutdown();
       zkServer = null;
     }
-    FileUtils.deleteDirectory(zkDir.toFile());
-    zkDir = null;
+    if (null != zkDir) {
+      FileUtils.deleteDirectory(zkDir.toFile());
+      zkDir = null;
+    }
   }
   
   public void testPut() throws KeeperException, InterruptedException {

@@ -829,7 +829,7 @@ NOTE: While it's very common to define the Background Set as `\*:*`, or some oth
 [[relatedness-options]]
 ==== relatedness() Options
 
-When using the extended `type:func` syntax for specifying a `relatedness()` aggregation, an opional `min_popularity` (float) option can be used to specify a lower bound on the `foreground_popularity` and `background_popularity` values, that must be met in order for the `relatedness` score to be valid -- If this `min_popularity` is not met, then the `relatedness` score will be `-Infinity`.
+When using the extended `type:func` syntax for specifying a `relatedness()` aggregation, an optional `min_popularity` (float) option can be used to specify a lower bound on the `foreground_popularity` and `background_popularity` values, that must be met in order for the `relatedness` score to be valid -- If this `min_popularity` is not met, then the `relatedness` score will be `-Infinity`.
 
 [source,json]
 ----

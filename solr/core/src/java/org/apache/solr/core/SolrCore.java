@@ -182,7 +182,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  */
 public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
 
-  public static final String version="1.0";
+  public static final String version = "1.0";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Logger requestLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Request");
@@ -209,7 +209,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private final RequestHandlers reqHandlers;
   private final PluginBag<SearchComponent> searchComponents = new PluginBag<>(SearchComponent.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors = new PluginBag<>(UpdateRequestProcessorFactory.class, this, true);
-  private final Map<String,UpdateRequestProcessorChain> updateProcessorChains;
+  private final Map<String, UpdateRequestProcessorChain> updateProcessorChains;
   private final SolrCoreMetricManager coreMetricManager;
   private final Map<String, SolrInfoBean> infoRegistry = new ConcurrentHashMap<>();
   private final IndexDeletionPolicyWrapper solrDelPolicy;
@@ -235,19 +235,17 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private String metricTag = Integer.toHexString(hashCode());
 
-  public boolean searchEnabled = true;
-  public boolean indexEnabled = true;
+  public volatile boolean searchEnabled = true;
+  public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
 
   public Set<String> getMetricNames() {
     return metricNames;
   }
 
-  public boolean isSearchEnabled(){
-    return searchEnabled;
+  public Date getStartTimeStamp() {
+    return startTime;
   }
-
-  public Date getStartTimeStamp() { return startTime; }
 
   private final Map<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache = new MapMaker().weakKeys().makeMap();
 
@@ -271,6 +269,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   /**
    * The SolrResourceLoader used to load all resources for this core.
+   *
    * @since solr 1.3
    */
   public SolrResourceLoader getResourceLoader() {
@@ -279,6 +278,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   /**
    * Gets the configuration resource name used by this core instance.
+   *
    * @since solr 1.3
    */
   public String getConfigResource() {
@@ -294,25 +294,27 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   /**
    * Gets the schema resource name used by this core instance.
+   *
    * @since solr 1.3
    */
   public String getSchemaResource() {
     return getLatestSchema().getResourceName();
   }
-  
-  /** 
-   * @return the latest snapshot of the schema used by this core instance. 
-   * @see #setLatestSchema 
+
+  /**
+   * @return the latest snapshot of the schema used by this core instance.
+   * @see #setLatestSchema
    */
   public IndexSchema getLatestSchema() {
     return schema;
   }
-  
-  /** 
-   * Sets the latest schema snapshot to be used by this core instance. 
-   * If the specified <code>replacementSchema</code> uses a {@link SimilarityFactory} which is 
-   * {@link SolrCoreAware} then this method will {@link SolrCoreAware#inform} that factory about 
+
+  /**
+   * Sets the latest schema snapshot to be used by this core instance.
+   * If the specified <code>replacementSchema</code> uses a {@link SimilarityFactory} which is
+   * {@link SolrCoreAware} then this method will {@link SolrCoreAware#inform} that factory about
    * this SolrCore prior to using the <code>replacementSchema</code>
+   *
    * @see #getLatestSchema
    */
   public void setLatestSchema(IndexSchema replacementSchema) {
@@ -329,7 +331,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     }
     this.schema = replacementSchema;
   }
-  
+
   public NamedList getConfigSetProperties() {
     return configSetProperties;
   }
@@ -359,7 +361,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    * and indexwriters. Use the getIndexDir() method to know the active index directory
    *
    * @return the indexdir as given in index.properties
-   *
    * @throws SolrException if for any reason the a reasonable index directory cannot be determined.
    */
   public String getNewIndexDir() {
@@ -434,7 +435,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public IndexReaderFactory getIndexReaderFactory() {
     return indexReaderFactory;
   }
-  
+
   public long getIndexSize() {
     Directory dir;
     long size = 0;
@@ -460,14 +461,13 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   public void setName(String v) {
     this.name = v;
-    this.logid = (v==null)?"":("["+v+"] ");
+    this.logid = (v == null) ? "" : ("[" + v + "] ");
     if (coreMetricManager != null) {
       coreMetricManager.afterCoreSetName();
     }
   }
 
-  public String getLogId()
-  {
+  public String getLogId() {
     return this.logid;
   }
 
@@ -496,7 +496,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     if (delPolicyWrapper != null) {
       return delPolicyWrapper;
     }
-    
+
     final PluginInfo info = solrConfig.getPluginInfo(IndexDeletionPolicy.class.getName());
     final IndexDeletionPolicy delPolicy;
     if (info != null) {
@@ -515,7 +515,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     try {
       String dirName = getDataDir() + SolrSnapshotMetaDataManager.SNAPSHOT_METADATA_DIR + "/";
       Directory snapshotDir = directoryFactory.get(dirName, DirContext.DEFAULT,
-           getSolrConfig().indexConfig.lockType);
+          getSolrConfig().indexConfig.lockType);
       return new SolrSnapshotMetaDataManager(this, snapshotDir);
     } catch (IOException e) {
       throw new IllegalStateException(e);
@@ -626,9 +626,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    *
    * @see SolrCoreAware
    */
-  public void registerFirstSearcherListener( SolrEventListener listener )
-  {
-    firstSearcherListeners.add( listener );
+  public void registerFirstSearcherListener(SolrEventListener listener) {
+    firstSearcherListeners.add(listener);
   }
 
   /**
@@ -638,9 +637,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    *
    * @see SolrCoreAware
    */
-  public void registerNewSearcherListener( SolrEventListener listener )
-  {
-    newSearcherListeners.add( listener );
+  public void registerNewSearcherListener(SolrEventListener listener) {
+    newSearcherListeners.add(listener);
   }
 
   /**
@@ -650,7 +648,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    *
    * @see SolrCoreAware
    */
-  public QueryResponseWriter registerResponseWriter( String name, QueryResponseWriter responseWriter ){
+  public QueryResponseWriter registerResponseWriter(String name, QueryResponseWriter responseWriter) {
     return responseWriters.put(name, responseWriter);
   }
 
@@ -674,10 +672,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         core = new SolrCore(coreContainer, getName(), getDataDir(), coreConfig.getSolrConfig(),
             coreConfig.getIndexSchema(), coreConfig.getProperties(),
             cd, updateHandler, solrDelPolicy, currentCore, true);
-        
+
         // we open a new IndexWriter to pick up the latest config
         core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
-        
+
         core.getSearcher(true, false, null, true);
         success = true;
         return core;
@@ -728,10 +726,11 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   /**
    * Returns <code>true</code> iff the index in the named directory is
    * currently locked.
+   *
    * @param directory the directory to check for a lock
    * @throws IOException if there is a low-level IO error
    * @deprecated Use of this method can only lead to race conditions. Try
-   *             to actually obtain a lock instead.
+   * to actually obtain a lock instead.
    */
   @Deprecated
   private static boolean isWriterLocked(Directory directory) throws IOException {
@@ -776,12 +775,12 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       log.debug("{}Solr index directory '{}' doesn't exist. Creating new index...", logid, indexDir);
       SolrIndexWriter writer = null;
       try {
-       writer = SolrIndexWriter.create(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(), true,
-          getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec);
+        writer = SolrIndexWriter.create(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(), true,
+            getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec);
       } finally {
         IOUtils.closeQuietly(writer);
       }
-   
+
     }
 
     cleanupOldIndexDirectories(reload);
@@ -832,17 +831,17 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     Class<? extends UpdateHandler> clazz = null;
     if (msg == null) msg = "SolrCore Object";
     try {
-        clazz = getResourceLoader().findClass(className, UpdateHandler.class);
-        //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
-        // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
-        Constructor<?>[] cons =  clazz.getConstructors();
-        for (Constructor<?> con : cons) {
-          Class<?>[] types = con.getParameterTypes();
-          if(types.length == 2 && types[0] == SolrCore.class && types[1] == UpdateHandler.class){
-            return UpdateHandler.class.cast(con.newInstance(this, updateHandler));
-          }
+      clazz = getResourceLoader().findClass(className, UpdateHandler.class);
+      //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
+      // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
+      Constructor<?>[] cons = clazz.getConstructors();
+      for (Constructor<?> con : cons) {
+        Class<?>[] types = con.getParameterTypes();
+        if (types.length == 2 && types[0] == SolrCore.class && types[1] == UpdateHandler.class) {
+          return UpdateHandler.class.cast(con.newInstance(this, updateHandler));
         }
-        throw new SolrException(ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " could not find proper constructor for " + UpdateHandler.class.getName());
+      }
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error Instantiating " + msg + ", " + className + " could not find proper constructor for " + UpdateHandler.class.getName());
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
@@ -853,19 +852,19 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         throw inner;
       }
 
-      throw new SolrException(ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " + UpdateHandler.class.getName(), e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error Instantiating " + msg + ", " + className + " failed to instantiate " + UpdateHandler.class.getName(), e);
     }
   }
 
-  public <T extends Object> T createInitInstance(PluginInfo info,Class<T> cast, String msg, String defClassName){
-    if(info == null) return null;
-    T o = createInstance(info.className == null ? defClassName : info.className ,cast, msg,this, getResourceLoader());
+  public <T extends Object> T createInitInstance(PluginInfo info, Class<T> cast, String msg, String defClassName) {
+    if (info == null) return null;
+    T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, getResourceLoader());
     if (o instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) o).init(info);
     } else if (o instanceof NamedListInitializedPlugin) {
       ((NamedListInitializedPlugin) o).init(info.initArgs);
     }
-    if(o instanceof SearchComponent) {
+    if (o instanceof SearchComponent) {
       ((SearchComponent) o).setName(info.name);
     }
     return o;
@@ -893,19 +892,15 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    * Creates a new core and register it in the list of cores. If a core with the
    * same name already exists, it will be stopped and replaced by this one.
    *
-   * @param dataDir
-   *          the index directory
-   * @param config
-   *          a solr config instance
-   * @param schema
-   *          a solr schema instance
-   *
+   * @param dataDir the index directory
+   * @param config  a solr config instance
+   * @param schema  a solr schema instance
    * @since solr 1.3
    */
   public SolrCore(CoreContainer coreContainer, String name, String dataDir, SolrConfig config,
                   IndexSchema schema, NamedList configSetProperties,
                   CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
-      IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
+                  IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
 
     assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
 
@@ -1004,6 +999,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       // Initialize the RestManager
       restManager = initRestManager();
 
+      // at this point we can load jars loaded from remote urls.
+      memClassLoader.loadRemoteJars();
+
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
       resourceLoader.inform(this); // last call before the latch is released.
@@ -1079,9 +1077,11 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     }
   }
 
-  /** Set UpdateLog to buffer updates if the slice is in construction. */
+  /**
+   * Set UpdateLog to buffer updates if the slice is in construction.
+   */
   private void bufferUpdatesIfConstructing(CoreDescriptor coreDescriptor) {
-    
+
     if (coreContainer != null && coreContainer.isZooKeeperAware()) {
       if (reqHandlers.get("/get") == null) {
         log.warn("WARNING: RealTimeGetHandler is not registered at /get. " +
@@ -1134,15 +1134,16 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       newUpdateHandler = createUpdateHandler(updateHandlerClass, updateHandler);
     }
     if (newUpdateHandler instanceof SolrMetricProducer) {
-      coreMetricManager.registerMetricProducer("updateHandler", (SolrMetricProducer)newUpdateHandler);
+      coreMetricManager.registerMetricProducer("updateHandler", (SolrMetricProducer) newUpdateHandler);
     }
     infoRegistry.put("updateHandler", newUpdateHandler);
     return newUpdateHandler;
   }
-  
+
   /**
-   * Initializes the "Latest Schema" for this SolrCore using either the provided <code>schema</code> 
+   * Initializes the "Latest Schema" for this SolrCore using either the provided <code>schema</code>
    * if non-null, or a new instance build via the factory identified in the specified <code>config</code>
+   *
    * @see IndexSchemaFactory
    * @see #setLatestSchema
    */
@@ -1236,8 +1237,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         VersionInfo.getAndCheckVersionField(schema);
       } catch (SolrException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
-                                "Schema will not work with SolrCloud mode: " +
-                                e.getMessage(), e);
+            "Schema will not work with SolrCloud mode: " +
+                e.getMessage(), e);
       }
     }
   }
@@ -1249,18 +1250,13 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   /**
    * Locate the data directory for a given config and core descriptor.
    *
-   * @param directoryFactory
-   *          The directory factory to use if necessary to calculate an absolute path. Should be the same as what will
-   *          be used to open the data directory later.
-   * @param dataDir
-   *          An optional hint to the data directory location. Will be normalized and used if not null.
-   * @param config
-   *          A solr config to retrieve the default data directory location, if used.
-   * @param coreDescriptor
-   *          descriptor to load the actual data dir from, if not using the defualt.
+   * @param directoryFactory The directory factory to use if necessary to calculate an absolute path. Should be the same as what will
+   *                         be used to open the data directory later.
+   * @param dataDir          An optional hint to the data directory location. Will be normalized and used if not null.
+   * @param config           A solr config to retrieve the default data directory location, if used.
+   * @param coreDescriptor   descriptor to load the actual data dir from, if not using the defualt.
    * @return a normalized data directory name
-   * @throws SolrException
-   *           if the data directory cannot be loaded from the core descriptor
+   * @throws SolrException if the data directory cannot be loaded from the core descriptor
    */
   static String findDataDir(DirectoryFactory directoryFactory, String dataDir, SolrConfig config, CoreDescriptor coreDescriptor) {
     if (dataDir == null) {
@@ -1285,7 +1281,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public boolean modifyIndexProps(String tmpIdxDirName) {
     return SolrCore.modifyIndexProps(getDirectoryFactory(), getDataDir(), getSolrConfig(), tmpIdxDirName);
   }
-  
+
   /**
    * Update the index.properties file with the new index sub directory name
    */
@@ -1311,11 +1307,12 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       }
     }
   }
-  
+
   /**
    * Write the index.properties file with the new index sub directory name
-   * @param dir a data directory (containing an index.properties file)
-   * @param tmpFileName the file name to write the new index.properties to
+   *
+   * @param dir           a data directory (containing an index.properties file)
+   * @param tmpFileName   the file name to write the new index.properties to
    * @param tmpIdxDirName new index directory name
    */
   private static void writeNewIndexProps(Directory dir, String tmpFileName, String tmpIdxDirName) {
@@ -1323,7 +1320,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       tmpFileName = IndexFetcher.INDEX_PROPERTIES;
     }
     final Properties p = new Properties();
-    
+
     // Read existing properties
     try {
       final IndexInput input = dir.openInput(IndexFetcher.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
@@ -1338,7 +1335,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     } catch (IOException e) {
       // ignore; file does not exist
     }
-    
+
     p.put("index", tmpIdxDirName);
 
     // Write new properties
@@ -1365,8 +1362,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   /**
    * Close the core, if it is still in use waits until is no longer in use.
-   * @see #close() 
-   * @see #isClosed() 
+   *
+   * @see #close()
+   * @see #isClosed()
    */
   public void closeAndWait() {
     close();
@@ -1383,7 +1381,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       }
     }
   }
-  
+
   private Codec initCodec(SolrConfig solrConfig, final IndexSchema schema) {
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
@@ -1401,7 +1399,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     if (factory instanceof SolrCoreAware) {
       // CodecFactory needs SolrCore before inform() is called on all registered
       // SolrCoreAware listeners, at the end of the SolrCore constructor
-      ((SolrCoreAware)factory).inform(this);
+      ((SolrCoreAware) factory).inform(this);
     } else {
       for (FieldType ft : schema.getFieldTypes().values()) {
         if (null != ft.getPostingsFormat()) {
@@ -1443,19 +1441,19 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   /**
    * Load the request processors
    */
-  private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
+  private Map<String, UpdateRequestProcessorChain> loadUpdateProcessorChains() {
     Map<String, UpdateRequestProcessorChain> map = new HashMap<>();
-    UpdateRequestProcessorChain def = initPlugins(map,UpdateRequestProcessorChain.class, UpdateRequestProcessorChain.class.getName());
-    if(def == null){
+    UpdateRequestProcessorChain def = initPlugins(map, UpdateRequestProcessorChain.class, UpdateRequestProcessorChain.class.getName());
+    if (def == null) {
       def = map.get(null);
     }
     if (def == null) {
       log.debug("no updateRequestProcessorChain defined as default, creating implicit default");
       // construct the default chain
       UpdateRequestProcessorFactory[] factories = new UpdateRequestProcessorFactory[]{
-              new LogUpdateProcessorFactory(),
-              new DistributedUpdateProcessorFactory(),
-              new RunUpdateProcessorFactory()
+          new LogUpdateProcessorFactory(),
+          new DistributedUpdateProcessorFactory(),
+          new RunUpdateProcessorFactory()
       };
       def = new UpdateRequestProcessorChain(Arrays.asList(factories), this);
     }
@@ -1475,12 +1473,11 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   /**
    * @return an update processor registered to the given name.  Throw an exception if this chain is undefined
    */
-  public UpdateRequestProcessorChain getUpdateProcessingChain( final String name )
-  {
-    UpdateRequestProcessorChain chain = updateProcessorChains.get( name );
-    if( chain == null ) {
-      throw new SolrException( ErrorCode.BAD_REQUEST,
-          "unknown UpdateRequestProcessorChain: "+name );
+  public UpdateRequestProcessorChain getUpdateProcessingChain(final String name) {
+    UpdateRequestProcessorChain chain = updateProcessorChains.get(name);
+    if (chain == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "unknown UpdateRequestProcessorChain: " + name);
     }
     return chain;
   }
@@ -1500,7 +1497,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   // this core current usage count
   private final AtomicInteger refCount = new AtomicInteger(1);
 
-  /** expert: increments the core reference count */
+  /**
+   * expert: increments the core reference count
+   */
   public void open() {
     refCount.incrementAndGet();
   }
@@ -1508,25 +1507,26 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   /**
    * Close all resources allocated by the core if it is no longer in use...
    * <ul>
-   *   <li>searcher</li>
-   *   <li>updateHandler</li>
-   *   <li>all CloseHooks will be notified</li>
-   *   <li>All MBeans will be unregistered from MBeanServer if JMX was enabled
-   *       </li>
+   * <li>searcher</li>
+   * <li>updateHandler</li>
+   * <li>all CloseHooks will be notified</li>
+   * <li>All MBeans will be unregistered from MBeanServer if JMX was enabled
+   * </li>
    * </ul>
    * <p>
    * The behavior of this method is determined by the result of decrementing
    * the core's reference count (A core is created with a reference count of 1)...
    * </p>
    * <ul>
-   *   <li>If reference count is &gt; 0, the usage count is decreased by 1 and no
-   *       resources are released.
-   *   </li>
-   *   <li>If reference count is == 0, the resources are released.
-   *   <li>If reference count is &lt; 0, and error is logged and no further action
-   *       is taken.
-   *   </li>
+   * <li>If reference count is &gt; 0, the usage count is decreased by 1 and no
+   * resources are released.
+   * </li>
+   * <li>If reference count is == 0, the resources are released.
+   * <li>If reference count is &lt; 0, and error is logged and no further action
+   * is taken.
+   * </li>
    * </ul>
+   *
    * @see #isClosed()
    */
   @Override
@@ -1534,7 +1534,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     int count = refCount.decrementAndGet();
     if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
-      log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, this );
+      log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, this);
       assert false : "Too many closes on SolrCore";
       return;
     }
@@ -1547,25 +1547,25 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       coreMetricManager.close();
     } catch (Throwable e) {
       SolrException.log(log, e);
-      if (e instanceof  Error) {
+      if (e instanceof Error) {
         throw (Error) e;
       }
     }
 
-    if( closeHooks != null ) {
-       for( CloseHook hook : closeHooks ) {
-         try {
-           hook.preClose( this );
-         } catch (Throwable e) {
-           SolrException.log(log, e);
-           if (e instanceof Error) {
-             throw (Error) e;
-           }
-         }
+    if (closeHooks != null) {
+      for (CloseHook hook : closeHooks) {
+        try {
+          hook.preClose(this);
+        } catch (Throwable e) {
+          SolrException.log(log, e);
+          if (e instanceof Error) {
+            throw (Error) e;
+          }
+        }
       }
     }
 
-    if(reqHandlers != null) reqHandlers.close();
+    if (reqHandlers != null) reqHandlers.close();
     responseWriters.close();
     searchComponents.close();
     qParserPlugins.close();
@@ -1585,7 +1585,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         updateHandler.close();
       }
     } catch (Throwable e) {
-      SolrException.log(log,e);
+      SolrException.log(log, e);
       if (e instanceof Error) {
         throw (Error) e;
       }
@@ -1627,12 +1627,12 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       // tries to use it, and the exception handling code should close it.
       closeSearcher();
     } catch (Throwable e) {
-      SolrException.log(log,e);
+      SolrException.log(log, e);
       if (e instanceof Error) {
         throw (Error) e;
       }
     }
-    
+
     if (coreStateClosed) {
       try {
         cleanupOldIndexDirectories(false);
@@ -1654,15 +1654,15 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
     try {
       this.directoryFactory.release(snapshotsDir);
-    }  catch (Throwable e) {
-      SolrException.log(log,e);
+    } catch (Throwable e) {
+      SolrException.log(log, e);
       if (e instanceof Error) {
         throw (Error) e;
       }
     }
 
     if (coreStateClosed) {
-      
+
       try {
         directoryFactory.close();
       } catch (Throwable e) {
@@ -1673,48 +1673,53 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       }
     }
 
-    if( closeHooks != null ) {
-       for( CloseHook hook : closeHooks ) {
-         try {
-           hook.postClose( this );
-         } catch (Throwable e) {
-           SolrException.log(log, e);
-           if (e instanceof Error) {
-             throw (Error) e;
-           }
-         }
+    if (closeHooks != null) {
+      for (CloseHook hook : closeHooks) {
+        try {
+          hook.postClose(this);
+        } catch (Throwable e) {
+          SolrException.log(log, e);
+          if (e instanceof Error) {
+            throw (Error) e;
+          }
+        }
       }
     }
-    
+
     assert ObjectReleaseTracker.release(this);
   }
 
-  /** Current core usage count. */
+  /**
+   * Current core usage count.
+   */
   public int getOpenCount() {
     return refCount.get();
   }
 
-  /** Whether this core is closed. */
+  /**
+   * Whether this core is closed.
+   */
   public boolean isClosed() {
-      return refCount.get() <= 0;
+    return refCount.get() <= 0;
   }
 
   private Collection<CloseHook> closeHooks = null;
 
-   /**
-    * Add a close callback hook
-    */
-   public void addCloseHook( CloseHook hook )
-   {
-     if( closeHooks == null ) {
-       closeHooks = new ArrayList<>();
-     }
-     closeHooks.add( hook );
-   }
+  /**
+   * Add a close callback hook
+   */
+  public void addCloseHook(CloseHook hook) {
+    if (closeHooks == null) {
+      closeHooks = new ArrayList<>();
+    }
+    closeHooks.add(hook);
+  }
 
-  /** @lucene.internal
-   *  Debugging aid only.  No non-test code should be released with uncommented verbose() calls.  */
-  public static boolean VERBOSE = Boolean.parseBoolean(System.getProperty("tests.verbose","false"));
+  /**
+   * @lucene.internal Debugging aid only.  No non-test code should be released with uncommented verbose() calls.
+   */
+  public static boolean VERBOSE = Boolean.parseBoolean(System.getProperty("tests.verbose", "false"));
+
   public static void verbose(Object... args) {
     if (!VERBOSE) return;
     StringBuilder sb = new StringBuilder("VERBOSE:");
@@ -1722,7 +1727,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 //    sb.append(':');
     for (Object o : args) {
       sb.append(' ');
-      sb.append(o==null ? "(null)" : o.toString());
+      sb.append(o == null ? "(null)" : o.toString());
     }
     // System.out.println(sb.toString());
     log.info(sb.toString());
@@ -1735,7 +1740,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   /**
    * Get the request handler registered to a given name.
-   *
+   * <p>
    * This function is thread safe.
    */
   public SolrRequestHandler getRequestHandler(String handlerName) {
@@ -1753,30 +1758,29 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   /**
    * Registers a handler at the specified location.  If one exists there, it will be replaced.
    * To remove a handler, register <code>null</code> at its path
-   *
+   * <p>
    * Once registered the handler can be accessed through:
    * <pre>
    *   http://${host}:${port}/${context}/${handlerName}
    * or:
    *   http://${host}:${port}/${context}/select?qt=${handlerName}
    * </pre>
-   *
+   * <p>
    * Handlers <em>must</em> be initialized before getting registered.  Registered
    * handlers can immediately accept requests.
-   *
+   * <p>
    * This call is thread safe.
    *
    * @return the previous <code>SolrRequestHandler</code> registered to this name <code>null</code> if none.
    */
   public SolrRequestHandler registerRequestHandler(String handlerName, SolrRequestHandler handler) {
-    return reqHandlers.register(handlerName,handler);
+    return reqHandlers.register(handlerName, handler);
   }
 
   /**
    * Register the default search components
    */
-  private void loadSearchComponents()
-  {
+  private void loadSearchComponents() {
     Map<String, SearchComponent> instances = createInstances(SearchComponent.standard_components);
     for (Map.Entry<String, SearchComponent> e : instances.entrySet()) e.getValue().setName(e.getKey());
     searchComponents.init(instances, this);
@@ -1790,6 +1794,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       }
     }
   }
+
   /**
    * @return a Search Component registered to a given name.  Throw an exception if the component is undefined
    */
@@ -1799,6 +1804,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   /**
    * Accessor for all the Search Components
+   *
    * @return An unmodifiable Map of Search Components
    */
   public PluginBag<SearchComponent> getSearchComponents() {
@@ -1865,11 +1871,15 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    * {@link org.apache.solr.request.SolrQueryRequest#getSearcher()} instead.
    * If you still think you need to call this, consider {@link #withSearcher(IOFunction)} instead which is easier to
    * use.
+   *
    * @see SolrQueryRequest#getSearcher()
    * @see #withSearcher(IOFunction)
    */
   public RefCounted<SolrIndexSearcher> getSearcher() {
-    return getSearcher(false,true,null);
+    if (searchEnabled) {
+      return getSearcher(false, true, null);
+    }
+    throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Search is temporarily disabled");
   }
 
   /**
@@ -1883,7 +1893,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    * be closed soon after this method returns; it really depends.
    */
   @SuppressWarnings("unchecked")
-  public <R> R withSearcher(IOFunction<SolrIndexSearcher,R> lambda) throws IOException {
+  public <R> R withSearcher(IOFunction<SolrIndexSearcher, R> lambda) throws IOException {
     final RefCounted<SolrIndexSearcher> refCounted = getSearcher();
     try {
       return lambda.apply(refCounted.get());
@@ -1910,7 +1920,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       log.debug("Cannot cache IndexFingerprint as reader does not support caching. searcher:{} reader:{} readerHash:{} maxVersion:{}", searcher, ctx.reader(), ctx.reader().hashCode(), maxVersion);
       return IndexFingerprint.getFingerprint(searcher, ctx, maxVersion);
     }
-    
+
     IndexFingerprint f = null;
     f = perSegmentFingerprintCache.get(cacheHelper.getKey());
     // fingerprint is either not cached or
@@ -1934,8 +1944,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   /**
-  * Returns the current registered searcher with its reference count incremented, or null if none are registered.
-  */
+   * Returns the current registered searcher with its reference count incremented, or null if none are registered.
+   */
   public RefCounted<SolrIndexSearcher> getRegisteredSearcher() {
     synchronized (searcherLock) {
       if (_searcher != null) {
@@ -1963,7 +1973,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return openNew ? getRealtimeSearcher() : null;
   }
 
-  /** Gets the latest real-time searcher w/o forcing open a new searcher if one already exists.
+  /**
+   * Gets the latest real-time searcher w/o forcing open a new searcher if one already exists.
    * The reference count will be incremented.
    */
   public RefCounted<SolrIndexSearcher> getRealtimeSearcher() {
@@ -1999,18 +2010,19 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
 
-  /** Opens a new searcher and returns a RefCounted&lt;SolrIndexSearcher&gt; with its reference incremented.
-   *
+  /**
+   * Opens a new searcher and returns a RefCounted&lt;SolrIndexSearcher&gt; with its reference incremented.
+   * <p>
    * "realtime" means that we need to open quickly for a realtime view of the index, hence don't do any
    * autowarming and add to the _realtimeSearchers queue rather than the _searchers queue (so it won't
    * be used for autowarming by a future normal searcher).  A "realtime" searcher will currently never
    * become "registered" (since it currently lacks caching).
-   *
+   * <p>
    * realtimeSearcher is updated to the latest opened searcher, regardless of the value of "realtime".
-   *
+   * <p>
    * This method acquires openSearcherLock - do not call with searchLock held!
    */
-  public RefCounted<SolrIndexSearcher>  openNewSearcher(boolean updateHandlerReopens, boolean realtime) {
+  public RefCounted<SolrIndexSearcher> openNewSearcher(boolean updateHandlerReopens, boolean realtime) {
     if (isClosed()) { // catch some errors quicker
       throw new SolrCoreState.CoreIsClosedException();
     }
@@ -2086,7 +2098,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         final boolean useCaches = !realtime;
         final String newName = realtime ? "realtime" : "main";
         tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(), newName,
-                                    newReader, true, useCaches, true, directoryFactory);
+            newReader, true, useCaches, true, directoryFactory);
 
       } else {
         // newestSearcher == null at this point
@@ -2097,8 +2109,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           // in time on a core reload
           DirectoryReader newReader = newReaderCreator.call();
           tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(),
-              (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
-        } else  {
+              (realtime ? "realtime" : "main"), newReader, true, !realtime, true, directoryFactory);
+        } else {
           RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(this);
           DirectoryReader newReader = null;
           try {
@@ -2107,7 +2119,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
             writer.decref();
           }
           tmp = new SolrIndexSearcher(this, newIndexDir, getLatestSchema(),
-              (realtime ? "realtime":"main"), newReader, true, !realtime, true, directoryFactory);
+              (realtime ? "realtime" : "main"), newReader, true, !realtime, true, directoryFactory);
         }
       }
 
@@ -2139,8 +2151,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error opening new searcher", e);
-    }
-    finally {
+    } finally {
       openSearcherLock.unlock();
       if (newestSearcher != null) {
         newestSearcher.decref();
@@ -2163,14 +2174,14 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    *
    * <p>
    * If <tt>forceNew==true</tt> then
-   *  A new searcher will be opened and registered regardless of whether there is already
-   *    a registered searcher or other searchers in the process of being created.
+   * A new searcher will be opened and registered regardless of whether there is already
+   * a registered searcher or other searchers in the process of being created.
    * <p>
    * If <tt>forceNew==false</tt> then:<ul>
-   *   <li>If a searcher is already registered, that searcher will be returned</li>
-   *   <li>If no searcher is currently registered, but at least one is in the process of being created, then
+   * <li>If a searcher is already registered, that searcher will be returned</li>
+   * <li>If no searcher is currently registered, but at least one is in the process of being created, then
    * this call will block until the first searcher is registered</li>
-   *   <li>If no searcher is currently registered, and no searchers in the process of being registered, a new
+   * <li>If no searcher is currently registered, and no searchers in the process of being registered, a new
    * searcher will be created.</li>
    * </ul>
    * <p>
@@ -2182,6 +2193,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    * <tt>null</tt> in which case the SolrIndexSearcher created has already been registered at the time
    * this method returned.
    * <p>
+   *
    * @param forceNew             if true, force the open of a new index searcher regardless if there is already one open.
    * @param returnSearcher       if true, returns a {@link SolrIndexSearcher} holder with the refcount already incremented.
    * @param waitSearcher         if non-null, will be filled in with a {@link Future} that will return after the new searcher is registered.
@@ -2193,7 +2205,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     // if it isn't necessary.
 
     synchronized (searcherLock) {
-      for(;;) { // this loop is so w can retry in the event that we exceed maxWarmingSearchers
+      for (; ; ) { // this loop is so w can retry in the event that we exceed maxWarmingSearchers
         // see if we can return the current searcher
         if (_searcher != null && !forceNew) {
           if (returnSearcher) {
@@ -2250,7 +2262,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     }
 
     // a signal to decrement onDeckSearchers if something goes wrong.
-    final boolean[] decrementOnDeckCount=new boolean[]{true};
+    final boolean[] decrementOnDeckCount = new boolean[]{true};
     RefCounted<SolrIndexSearcher> currSearcherHolder = null;     // searcher we are autowarming from
     RefCounted<SolrIndexSearcher> searchHolder = null;
     boolean success = false;
@@ -2259,8 +2271,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     Timer.Context timerContext = newSearcherTimer.time();
     try {
       searchHolder = openNewSearcher(updateHandlerReopens, false);
-       // the searchHolder will be incremented once already (and it will eventually be assigned to _searcher when registered)
-       // increment it again if we are going to return it to the caller.
+      // the searchHolder will be incremented once already (and it will eventually be assigned to _searcher when registered)
+      // increment it again if we are going to return it to the caller.
       if (returnSearcher) {
         searchHolder.incref();
       }
@@ -2277,20 +2289,20 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           // want to register this one before warming is complete instead of waiting.
           if (solrConfig.useColdSearcher) {
             registerSearcher(newSearchHolder);
-            decrementOnDeckCount[0]=false;
-            alreadyRegistered=true;
+            decrementOnDeckCount[0] = false;
+            alreadyRegistered = true;
           }
         } else {
           // get a reference to the current searcher for purposes of autowarming.
-          currSearcherHolder=_searcher;
+          currSearcherHolder = _searcher;
           currSearcherHolder.incref();
         }
       }
 
 
-      final SolrIndexSearcher currSearcher = currSearcherHolder==null ? null : currSearcherHolder.get();
+      final SolrIndexSearcher currSearcher = currSearcherHolder == null ? null : currSearcherHolder.get();
 
-      Future future=null;
+      Future future = null;
 
       // if the underlying searcher has not changed, no warming is needed
       if (newSearcher != currSearcher) {
@@ -2367,7 +2379,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
               } finally {
                 // we are all done with the old searcher we used
                 // for warming...
-                if (currSearcherHolderF!=null) currSearcherHolderF.decref();
+                if (currSearcherHolderF != null) currSearcherHolderF.decref();
               }
               return null;
             }
@@ -2385,21 +2397,22 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       return returnSearcher ? newSearchHolder : null;
 
     } catch (Exception e) {
-      if (e instanceof RuntimeException) throw (RuntimeException)e;
+      if (e instanceof RuntimeException) throw (RuntimeException) e;
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } finally {
 
       timerContext.close();
 
       if (!success) {
-        newSearcherOtherErrorsCounter.inc();;
+        newSearcherOtherErrorsCounter.inc();
+        ;
         synchronized (searcherLock) {
           onDeckSearchers--;
 
           if (onDeckSearchers < 0) {
             // sanity check... should never happen
             log.error("{}ERROR!!! onDeckSearchers after decrement={}", logid, onDeckSearchers);
-            onDeckSearchers=0; // try and recover
+            onDeckSearchers = 0; // try and recover
           }
           // if we failed, we need to wake up at least one waiter to continue the process
           searcherLock.notify();
@@ -2431,7 +2444,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       @Override
       public void close() {
         try {
-          synchronized(searcherLock) {
+          synchronized (searcherLock) {
             // it's possible for someone to get a reference via the _searchers queue
             // and increment the refcount while RefCounted.close() is being called.
             // we check the refcount again to see if this has happened and abort the close.
@@ -2475,23 +2488,23 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
         if (_searcher != null) {
           _searcher.decref();   // dec refcount for this._searcher
-          _searcher=null;
+          _searcher = null;
         }
 
         _searcher = newSearcherHolder;
         SolrIndexSearcher newSearcher = newSearcherHolder.get();
 
         /***
-        // a searcher may have been warming asynchronously while the core was being closed.
-        // if this happens, just close the searcher.
-        if (isClosed()) {
-          // NOTE: this should not happen now - see close() for details.
-          // *BUT* if we left it enabled, this could still happen before
-          // close() stopped the executor - so disable this test for now.
-          log.error("Ignoring searcher register on closed core:" + newSearcher);
-          _searcher.decref();
-        }
-        ***/
+         // a searcher may have been warming asynchronously while the core was being closed.
+         // if this happens, just close the searcher.
+         if (isClosed()) {
+         // NOTE: this should not happen now - see close() for details.
+         // *BUT* if we left it enabled, this could still happen before
+         // close() stopped the executor - so disable this test for now.
+         log.error("Ignoring searcher register on closed core:" + newSearcher);
+         _searcher.decref();
+         }
+         ***/
 
         newSearcher.register(); // register subitems (caches)
         log.info("{}Registered new searcher {}", logid, newSearcher);
@@ -2510,7 +2523,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
 
-
   public void closeSearcher() {
     log.debug("{}Closing main searcher on request.", logid);
     synchronized (searcherLock) {
@@ -2526,9 +2538,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
-    if (handler==null) {
+    if (handler == null) {
       String msg = "Null Request Handler '" +
-        req.getParams().get(CommonParams.QT) + "'";
+          req.getParams().get(CommonParams.QT) + "'";
 
       log.warn("{}{}:{}", logid, msg, req);
 
@@ -2552,7 +2564,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     // if (req.getParams().getBool(ShardParams.IS_SHARD,false) && !(handler instanceof SearchHandler))
     //   throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"isShard is only acceptable with search handlers");
 
-    handler.handleRequest(req,rsp);
+    handler.handleRequest(req, rsp);
     postDecorateResponse(handler, req, rsp);
 
     if (rsp.getToLog().size() > 0) {
@@ -2614,51 +2626,53 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     }
   }
 
-  /** Put status, QTime, and possibly request handler and params, in the response header */
+  /**
+   * Put status, QTime, and possibly request handler and params, in the response header
+   */
   public static void postDecorateResponse
-      (SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
+  (SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     // TODO should check that responseHeader has not been replaced by handler
     NamedList<Object> responseHeader = rsp.getResponseHeader();
-    final int qtime=(int)(req.getRequestTimer().getTime());
+    final int qtime = (int) (req.getRequestTimer().getTime());
     int status = 0;
     Exception exception = rsp.getException();
-    if( exception != null ){
-      if( exception instanceof SolrException )
-        status = ((SolrException)exception).code();
+    if (exception != null) {
+      if (exception instanceof SolrException)
+        status = ((SolrException) exception).code();
       else
         status = 500;
     }
-    responseHeader.add("status",status);
-    responseHeader.add("QTime",qtime);
+    responseHeader.add("status", status);
+    responseHeader.add("QTime", qtime);
 
     if (rsp.getToLog().size() > 0) {
-      rsp.getToLog().add("status",status);
-      rsp.getToLog().add("QTime",qtime);
+      rsp.getToLog().add("status", status);
+      rsp.getToLog().add("QTime", qtime);
     }
 
     SolrParams params = req.getParams();
-    if( null != handler && params.getBool(CommonParams.HEADER_ECHO_HANDLER, false) ) {
-      responseHeader.add("handler", handler.getName() );
+    if (null != handler && params.getBool(CommonParams.HEADER_ECHO_HANDLER, false)) {
+      responseHeader.add("handler", handler.getName());
     }
 
     // Values for echoParams... false/true/all or false/explicit/all ???
-    String ep = params.get( CommonParams.HEADER_ECHO_PARAMS, null );
-    if( ep != null ) {
-      EchoParamStyle echoParams = EchoParamStyle.get( ep );
-      if( echoParams == null ) {
+    String ep = params.get(CommonParams.HEADER_ECHO_PARAMS, null);
+    if (ep != null) {
+      EchoParamStyle echoParams = EchoParamStyle.get(ep);
+      if (echoParams == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid value '" + ep + "' for " + CommonParams.HEADER_ECHO_PARAMS
-            + " parameter, use '" + EchoParamStyle.EXPLICIT + "' or '" + EchoParamStyle.ALL + "'" );
+            + " parameter, use '" + EchoParamStyle.EXPLICIT + "' or '" + EchoParamStyle.ALL + "'");
       }
-      if( echoParams == EchoParamStyle.EXPLICIT ) {
+      if (echoParams == EchoParamStyle.EXPLICIT) {
         responseHeader.add("params", req.getOriginalParams().toNamedList());
-      } else if( echoParams == EchoParamStyle.ALL ) {
+      } else if (echoParams == EchoParamStyle.ALL) {
         responseHeader.add("params", req.getParams().toNamedList());
       }
     }
   }
 
   final public static void log(Throwable e) {
-    SolrException.log(log,null,e);
+    SolrException.log(log, null, e);
   }
 
   public PluginBag<QueryResponseWriter> getResponseWriters() {
@@ -2666,9 +2680,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   private final PluginBag<QueryResponseWriter> responseWriters = new PluginBag<>(QueryResponseWriter.class, this);
-  public static final Map<String ,QueryResponseWriter> DEFAULT_RESPONSE_WRITERS ;
-  static{
-    HashMap<String, QueryResponseWriter> m= new HashMap<>(15, 1);
+  public static final Map<String, QueryResponseWriter> DEFAULT_RESPONSE_WRITERS;
+
+  static {
+    HashMap<String, QueryResponseWriter> m = new HashMap<>(15, 1);
     m.put("xml", new XMLResponseWriter());
     m.put(CommonParams.JSON, new JSONResponseWriter());
     m.put("standard", m.get(CommonParams.JSON));
@@ -2694,7 +2709,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   private static BinaryResponseWriter getFileStreamWriter() {
-    return new BinaryResponseWriter(){
+    return new BinaryResponseWriter() {
       @Override
       public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
         RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
@@ -2725,11 +2740,14 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     default String getContentType() {
       return BinaryResponseParser.BINARY_CONTENT_TYPE;
     }
-    void write(OutputStream os) throws IOException ;
+
+    void write(OutputStream os) throws IOException;
   }
 
-  /** Configure the query response writers. There will always be a default writer; additional
-   * writers may also be configured. */
+  /**
+   * Configure the query response writers. There will always be a default writer; additional
+   * writers may also be configured.
+   */
   private void initWriters() {
     responseWriters.init(DEFAULT_RESPONSE_WRITERS, this);
     // configure the default response writer; this one should never be null
@@ -2737,12 +2755,15 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
 
-  /** Finds a writer by name, or returns the default writer if not found. */
+  /**
+   * Finds a writer by name, or returns the default writer if not found.
+   */
   public final QueryResponseWriter getQueryResponseWriter(String writerName) {
     return responseWriters.get(writerName, true);
   }
 
-  /** Returns the appropriate writer for a request. If the request specifies a writer via the
+  /**
+   * Returns the appropriate writer for a request. If the request specifies a writer via the
    * 'wt' parameter, attempts to find that one; otherwise return the default writer.
    */
   public final QueryResponseWriter getQueryResponseWriter(SolrQueryRequest request) {
@@ -2778,14 +2799,14 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return transformerFactories.get(name);
   }
 
-  public void addTransformerFactory(String name, TransformerFactory factory){
+  public void addTransformerFactory(String name, TransformerFactory factory) {
     transformerFactories.put(name, factory);
   }
 
 
   /**
-   * @param registry The map to which the instance should be added to. The key is the name attribute
-   * @param type the class or interface that the instance should extend or implement.
+   * @param registry     The map to which the instance should be added to. The key is the name attribute
+   * @param type         the class or interface that the instance should extend or implement.
    * @param defClassName If PluginInfo does not have a classname, use this as the classname
    * @return The default instance . The one with (default=true)
    */
@@ -2796,12 +2817,12 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public <T> T initPlugins(List<PluginInfo> pluginInfos, Map<String, T> registry, Class<T> type, String defClassName) {
     T def = null;
     for (PluginInfo info : pluginInfos) {
-      T o = createInitInstance(info,type, type.getSimpleName(), defClassName);
+      T o = createInitInstance(info, type, type.getSimpleName(), defClassName);
       registry.put(info.name, o);
       if (o instanceof SolrMetricProducer) {
-        coreMetricManager.registerMetricProducer(type.getSimpleName() + "." + info.name, (SolrMetricProducer)o);
+        coreMetricManager.registerMetricProducer(type.getSimpleName() + "." + info.name, (SolrMetricProducer) o);
       }
-      if(info.isDefault()){
+      if (info.isDefault()) {
         def = o;
       }
     }
@@ -2810,26 +2831,27 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   public void initDefaultPlugin(Object plugin, Class type) {
     if (plugin instanceof SolrMetricProducer) {
-      coreMetricManager.registerMetricProducer(type.getSimpleName() + ".default", (SolrMetricProducer)plugin);
+      coreMetricManager.registerMetricProducer(type.getSimpleName() + ".default", (SolrMetricProducer) plugin);
     }
   }
 
-  /**For a given List of PluginInfo return the instances as a List
+  /**
+   * For a given List of PluginInfo return the instances as a List
+   *
    * @param defClassName The default classname if PluginInfo#className == null
    * @return The instances initialized
    */
   public <T> List<T> initPlugins(List<PluginInfo> pluginInfos, Class<T> type, String defClassName) {
-    if(pluginInfos.isEmpty()) return Collections.emptyList();
+    if (pluginInfos.isEmpty()) return Collections.emptyList();
     List<T> result = new ArrayList<>(pluginInfos.size());
-    for (PluginInfo info : pluginInfos) result.add(createInitInstance(info,type, type.getSimpleName(), defClassName));
+    for (PluginInfo info : pluginInfos) result.add(createInitInstance(info, type, type.getSimpleName(), defClassName));
     return result;
   }
 
   /**
-   *
    * @param registry The map to which the instance should be added to. The key is the name attribute
-   * @param type The type of the Plugin. These should be standard ones registered by type.getName() in SolrConfig
-   * @return     The default if any
+   * @param type     The type of the Plugin. These should be standard ones registered by type.getName() in SolrConfig
+   * @return The default if any
    */
   public <T> T initPlugins(Map<String, T> registry, Class<T> type) {
     return initPlugins(registry, type, null);
@@ -2880,13 +2902,13 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return coreContainer.getCoreDescriptor(name);
   }
 
-  public IndexDeletionPolicyWrapper getDeletionPolicy(){
+  public IndexDeletionPolicyWrapper getDeletionPolicy() {
     return solrDelPolicy;
   }
 
   /**
    * @return A reference of {@linkplain SolrSnapshotMetaDataManager}
-   *         managing the persistent snapshots for this Solr core.
+   * managing the persistent snapshots for this Solr core.
    */
   public SolrSnapshotMetaDataManager getSnapshotMetaDataManager() {
     return snapshotMgr;
@@ -2975,7 +2997,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
 
-  /**Register to notify for any file change in the conf directory.
+  /**
+   * Register to notify for any file change in the conf directory.
    * If the file change results in a core reload , then the listener
    * is not fired
    */
@@ -2983,13 +3006,15 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     confListeners.add(runnable);
   }
 
-  /**Remove a listener
-   * */
+  /**
+   * Remove a listener
+   */
   public boolean removeConfListener(Runnable runnable) {
     return confListeners.remove(runnable);
   }
 
-  /**This registers one listener for the entire conf directory. In zookeeper
+  /**
+   * This registers one listener for the entire conf directory. In zookeeper
    * there is no event fired when children are modified. So , we expect everyone
    * to 'touch' the /conf directory by setting some data  so that events are triggered.
    */
@@ -3038,9 +3063,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           checkStale(zkClient, solrConfigPath, overlayVersion) ||
           checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
         log.info("core reload {}", coreName);
-        SolrConfigHandler configHandler = ((SolrConfigHandler)core.getRequestHandler("/config"));
-        if (configHandler.getReloadLock().tryLock()){
-          
+        SolrConfigHandler configHandler = ((SolrConfigHandler) core.getRequestHandler("/config"));
+        if (configHandler.getReloadLock().tryLock()) {
+
           try {
             cc.reload(coreName);
           } catch (SolrCoreState.CoreIsClosedException e) {
@@ -3048,7 +3073,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           } finally {
             configHandler.getReloadLock().unlock();
           }
-        
+
         } else {
           log.info("Another reload is in progress. Not doing anything.");
         }
@@ -3078,20 +3103,20 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     }
   }
 
-  private static boolean checkStale(SolrZkClient zkClient,  String zkPath, int currentVersion)  {
-    if(zkPath == null) return false;
+  private static boolean checkStale(SolrZkClient zkClient, String zkPath, int currentVersion) {
+    if (zkPath == null) return false;
     try {
       Stat stat = zkClient.exists(zkPath, null, true);
-      if(stat == null){
-        if(currentVersion > -1) return true;
+      if (stat == null) {
+        if (currentVersion > -1) return true;
         return false;
       }
-      if (stat.getVersion() >  currentVersion) {
-        log.debug("{} is stale will need an update from {} to {}", zkPath, currentVersion,stat.getVersion());
+      if (stat.getVersion() > currentVersion) {
+        log.debug("{} is stale will need an update from {} to {}", zkPath, currentVersion, stat.getVersion());
         return true;
       }
       return false;
-    } catch (KeeperException.NoNodeException nne){
+    } catch (KeeperException.NoNodeException nne) {
       //no problem
     } catch (KeeperException e) {
       log.error("error refreshing solrconfig ", e);
@@ -3114,7 +3139,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
         } catch (Exception exc) {
           log.error("Failed to cleanup old index directories for core {}", coreName, exc);
         }
-      }, "OldIndexDirectoryCleanupThreadForCore-"+coreName);
+      }, "OldIndexDirectoryCleanupThreadForCore-" + coreName);
       cleanupThread.setDaemon(true);
       cleanupThread.start();
     }
@@ -3135,14 +3160,14 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   /**
-   * Convenience method to load a blob. This method minimizes the degree to which component and other code needs 
-   * to depend on the structure of solr's object graph and ensures that a proper close hook is registered. This method 
+   * Convenience method to load a blob. This method minimizes the degree to which component and other code needs
+   * to depend on the structure of solr's object graph and ensures that a proper close hook is registered. This method
    * should normally be called in {@link SolrCoreAware#inform(SolrCore)}, and should never be called during request
-   * processing. The Decoder will only run on the first invocations, subsequent invocations will return the 
-   * cached object. 
-   * 
-   * @param key A key in the format of name/version for a blob stored in the
-   *            {@link CollectionAdminParams#SYSTEM_COLL} blob store via the Blob Store API
+   * processing. The Decoder will only run on the first invocations, subsequent invocations will return the
+   * cached object.
+   *
+   * @param key     A key in the format of name/version for a blob stored in the
+   *                {@link CollectionAdminParams#SYSTEM_COLL} blob store via the Blob Store API
    * @param decoder a decoder with which to convert the blob into a Java Object representation (first time only)
    * @return a reference to the blob that has already cached the decoded version.
    */

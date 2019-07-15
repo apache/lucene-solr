@@ -1715,7 +1715,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           TopFieldDocs[] topFieldDocs = Arrays.copyOf(topDocs, topDocs.length, TopFieldDocs[].class);
           mergedTopDocs = TopFieldDocs.merge(weightSort(cmd.getSort()), len, topFieldDocs);
         } else {
-          mergedTopDocs = needTopDocs? TopDocs.merge(0, len, topDocs, true): null;
+          mergedTopDocs = needTopDocs? TopDocs.merge(0, len, topDocs): null;
         }
         int totalHits = needTopDocs? (int)mergedTopDocs.totalHits.value: -1;
         maxScore = totalHits > 0 ? maxScore : 0.0f;
@@ -2421,6 +2421,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     manager.registerGauge(this, registry, () -> reader.toString(), tag, true, "reader", Category.SEARCHER.toString(), scope);
     manager.registerGauge(this, registry, () -> reader.directory().toString(), tag, true, "readerDir", Category.SEARCHER.toString(), scope);
     manager.registerGauge(this, registry, () -> reader.getVersion(), tag, true, "indexVersion", Category.SEARCHER.toString(), scope);
+    // size of the currently opened commit
+    manager.registerGauge(this, registry, () -> {
+      try {
+        Collection<String> files = reader.getIndexCommit().getFileNames();
+        long total = 0;
+        for (String file : files) {
+          total += DirectoryFactory.sizeOf(reader.directory(), file);
+        }
+        return total;
+      } catch (Exception e) {
+        return -1;
+      }
+    }, tag, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
 
   }
 

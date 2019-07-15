@@ -18,7 +18,7 @@ package org.apache.lucene.document;
 
 import java.util.Arrays;
 
-import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
@@ -26,7 +26,7 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 /**
- * Finds all previously indexed shapes that intersect the specified arbitrary {@code Line}.
+ * Finds all previously indexed geo shapes that intersect the specified arbitrary {@code Line}.
  * <p>
  * Note:
  * <ul>
@@ -43,7 +43,7 @@ import org.apache.lucene.util.NumericUtils;
  *
  *  @lucene.experimental
  **/
-final class LatLonShapeLineQuery extends LatLonShapeQuery {
+final class LatLonShapeLineQuery extends ShapeQuery {
   final Line[] lines;
   final private Line2D line2D;
 
@@ -85,7 +85,7 @@ final class LatLonShapeLineQuery extends LatLonShapeQuery {
 
   @Override
   protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
-    LatLonShape.decodeTriangle(t, scratchTriangle);
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
     double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle[0]);
     double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle[1]);
@@ -94,7 +94,7 @@ final class LatLonShapeLineQuery extends LatLonShapeQuery {
     double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle[4]);
     double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle[5]);
 
-    if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
+    if (queryRelation == QueryRelation.WITHIN) {
       return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
     }
     // INTERSECTS
@@ -111,7 +111,7 @@ final class LatLonShapeLineQuery extends LatLonShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("Line(" + lines[0].toGeoJSON() + ")");
+    sb.append("Line(").append(lines[0].toGeoJSON()).append(')');
     return sb.toString();
   }
 

@@ -201,8 +201,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     for (Object o : conditions.entrySet()) {
       Map.Entry e = (Map.Entry) o;
       String path = (String) e.getKey();
-      List<String> parts = StrUtils.splitSmart(path, path.charAt(0) == '/' ?  '/':' ');
-      if (parts.get(0).isEmpty()) parts.remove(0);
+      List<String> parts = StrUtils.splitSmart(path, path.charAt(0) == '/' ?  '/':' ', true);
       Object val = Utils.getObjectByPath(root, false, parts);
       if (e.getValue() instanceof ValidatingJsonMap.PredicateWithErrMsg) {
         ValidatingJsonMap.PredicateWithErrMsg value = (ValidatingJsonMap.PredicateWithErrMsg) e.getValue();

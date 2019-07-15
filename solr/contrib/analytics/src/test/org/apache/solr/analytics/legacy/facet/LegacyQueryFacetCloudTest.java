@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.NamedList;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,11 +35,19 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
   private static final int STRING = 7;
   private static final int NUM_LOOPS = 100;
   
-  private static ArrayList<ArrayList<Integer>> int1TestStart = new ArrayList<>();
-  private static ArrayList<ArrayList<Integer>> int2TestStart = new ArrayList<>();
-  private static ArrayList<ArrayList<Long>> longTestStart = new ArrayList<>();
-  private static ArrayList<ArrayList<Float>> floatTestStart = new ArrayList<>();
+  private static final ArrayList<ArrayList<Integer>> int1TestStart = new ArrayList<>();
+  private static final ArrayList<ArrayList<Integer>> int2TestStart = new ArrayList<>();
+  private static final ArrayList<ArrayList<Long>> longTestStart = new ArrayList<>();
+  private static final ArrayList<ArrayList<Float>> floatTestStart = new ArrayList<>();
 
+  @After
+  public void afterTest() throws Exception {
+    int1TestStart.clear();
+    int2TestStart.clear();
+    longTestStart.clear();
+    floatTestStart.clear();
+  }
+  
   @Before
   public void beforeTest() throws Exception {
     

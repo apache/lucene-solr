@@ -178,6 +178,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     resetDelays();
     reorderedDBQsResurrectionTest();
     resetDelays();
+    setNullForDVEnabledField();
+    resetDelays();
     
     // AwaitsFix this test fails easily
     // reorderedDBQsUsingUpdatedValueFromADroppedUpdate();
@@ -217,6 +219,45 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     
     assertNotNull(LEADER);
     assertEquals(2, NONLEADERS.size());
+  }
+
+  private void setNullForDVEnabledField() throws Exception {
+    // to test set=null
+    // should this test be here? As set null would be an atomic update
+    clearIndex();
+    commit();
+
+    buildRandomIndex(0);
+    float inplace_updatable_float = 1;
+
+    // update doc, set
+    index("id", 0, "inplace_updatable_float", map("set", inplace_updatable_float));
+
+    LEADER.commit();
+    SolrDocument sdoc = LEADER.getById("0");  // RTG straight from the index
+    assertEquals(inplace_updatable_float, sdoc.get("inplace_updatable_float"));
+    assertEquals("title0", sdoc.get("title_s"));
+    long version0 = (long) sdoc.get("_version_");
+
+    for (SolrClient client : NONLEADERS) {
+      SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
+      assertEquals(inplace_updatable_float, doc.get("inplace_updatable_float"));
+      assertEquals(version0, doc.get("_version_"));
+    }
+
+    index("id", 0, "inplace_updatable_float", map("set", null));
+    LEADER.commit();
+
+    sdoc = LEADER.getById("0");  // RTG straight from the index
+    assertNull(sdoc.get("inplace_updatable_float"));
+    assertEquals("title0", sdoc.get("title_s"));
+    long version1 = (long) sdoc.get("_version_");
+
+    for (SolrClient client : NONLEADERS) {
+      SolrDocument doc = client.getById(String.valueOf(0), params("distrib", "false"));
+      assertNull(doc.get("inplace_updatable_float"));
+      assertEquals(version1, doc.get("_version_"));
+    }
   }
 
   final int NUM_RETRIES = 100, WAIT_TIME = 50;

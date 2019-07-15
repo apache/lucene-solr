@@ -25,13 +25,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Lists;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -100,6 +101,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     testCollectionCreationShardNameValidation();
     testAliasCreationNameValidation();
     testShardCreationNameValidation();
+    testNoConfigset();
     testModifyCollection(); // deletes replicationFactor property from collections, be careful adding new tests after this one!
   }
 
@@ -201,6 +203,52 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       assertCountsForRepFactorAndNrtReplicas(client, "test_repFactorColl");
     }
+  }
+
+  // See  SOLR-12013. We should report something back if the configset has mysteriously disappeared.
+  private void testNoConfigset() throws Exception {
+    String configSet = "delete_config";
+
+    final String collection = "deleted_collection";
+    try (CloudSolrClient client = createCloudClient(null)) {
+      copyConfigUp(TEST_PATH().resolve("configsets"), "cloud-minimal", configSet, client.getZkHost());
+
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+      params.set("name", collection);
+      params.set("numShards", "1");
+      params.set("replicationFactor", "1");
+      params.set("collection.configName", configSet);
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      client.request(request);
+
+      waitForCollection(cloudClient.getZkStateReader(), collection, 1);
+      waitForRecoveriesToFinish(collection, false);
+
+      // Now try deleting the configset and doing a clusterstatus.
+      String parent = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
+      deleteThemAll(client.getZkStateReader().getZkClient(), parent);
+      client.getZkStateReader().forciblyRefreshAllClusterStateSlow();
+
+      final CollectionAdminRequest.ClusterStatus req = CollectionAdminRequest.getClusterStatus();
+      NamedList<Object> rsp = client.request(req);
+      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      assertNotNull("Collections should not be null in cluster state", collections);
+      assertNotNull("Testing to insure collections are returned", collections.get(COLLECTION_NAME1));
+      assertNull("Should have failed to find: " + collection + " because the configset was delted. ", collections.get(collection));
+    }
+  }
+
+  private void deleteThemAll(SolrZkClient zkClient, String node) throws KeeperException, InterruptedException {
+    List<String> kids = zkClient.getChildren(node, null, true);
+    for (String kid : kids) {
+      deleteThemAll(zkClient, node + "/" + kid);
+    }
+    zkClient.delete(node, -1, true);
   }
 
   private void assertCountsForRepFactorAndNrtReplicas(CloudSolrClient client, String collectionName) throws Exception {

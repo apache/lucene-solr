@@ -33,6 +33,9 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.propagation.Format;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -50,6 +53,8 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
+import org.apache.solr.util.tracing.GlobalTracer;
+import org.apache.solr.util.tracing.SolrRequestCarrier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,7 +122,7 @@ public class SolrCmdDistributor implements Closeable {
       int maxErrorsToShow = 10;
       for (Error e:errors) {
         if (maxErrorsToShow-- <= 0) break;
-        builder.append("\n" + e);
+        builder.append("\n").append(e);
       }
       if (errors.size() > 10) {
         builder.append("\n... and ");
@@ -283,6 +288,13 @@ public class SolrCmdDistributor implements Closeable {
     // Copy user principal from the original request to the new update request, for later authentication interceptor use
     if (SolrRequestInfo.getRequestInfo() != null) {
       req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
+    }
+
+    Tracer tracer = GlobalTracer.getTracer();
+    Span parentSpan = tracer.activeSpan();
+    if (parentSpan != null) {
+      tracer.inject(parentSpan.context(), Format.Builtin.HTTP_HEADERS,
+          new SolrRequestCarrier(req.uReq));
     }
 
     if (req.synchronous) {

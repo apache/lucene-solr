@@ -25,8 +25,8 @@ Versions of Major Components
 Apache Tika 1.19.1
 Carrot2 3.16.0
 Velocity 2.0 and Velocity Tools 3.0
-Apache ZooKeeper 3.4.13
-Jetty 9.4.14.v20181114
+Apache ZooKeeper 3.5.5
+Jetty 9.4.19.v20190610
 
 Upgrade Notes
 ----------------------
@@ -36,7 +36,7 @@ Upgrade Notes
 
 * SOLR-12055 introduces async logging by default. There's a small window where log messages may be lost
   in the event of some hard crash. Switch back to synchronous logging if this is unacceptable, see
-  see commeints in the log4j2 configuration files (log4j2.xml by default).
+  see comments in the log4j2 configuration files (log4j2.xml by default).
 
 * SOLR-12891: MacroExpander will no longer will expand URL parameters inside of the 'expr' parameter (used by streaming
   expressions) Additionally, users are advised to use the 'InjectionDefense' class when constructing streaming
@@ -51,13 +51,218 @@ Upgrade Notes
 * SOLR-13323: The unused package org.apache.solr.internal.csv.writer and associated classes/tests that were easily
   confused with but not used by org.apache.solr.response.CSVWriter (or any other code) have been removed (Gus Heck)
 
-New Features
-----------------------
-* SOLR-13131: Category Routed Aliases are now available for data driven assignment of documents to collections based on
-  values of a field. The Ref Guide now has a page dedicated to explaining the different types of aliases. (Gus Heck,
-  Moshe Bla)
+* SOLR-7530: TermsComponent's JSON response format was changed so that "terms" property carries per field arrays by default
+  regardless of distrib, terms.list, terms.ttf parameters. This affects JSON based response format but not others
+  (Munendra S N, Mikhail Khludnev)
+
+* SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
 
 ==================  8.2.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 2.0 and Velocity Tools 3.0
+Apache ZooKeeper 3.5.5
+Jetty 9.4.19.v20190610
+
+Upgrade Notes
+----------------------
+
+* SOLR-8346: Upgrade ZooKeeper to 3.5.5. ZooKeeper 3.5.5 introduces more security features. Include in your zoo.cfg
+  file at minimum the following:
+  4lw.commands.whitelist=mntr,conf,ruok
+  You can use
+  4lw.commands.whitelist=* to enable all ZooKeeper "4 letter commands".
+  (Erick Erickson)
+
+* SOLR-13515: org.apache.solr.util.SolrPluginUtils.IdentityRegenerator has been removed, please use
+  the identical org.apache.solr.search.NoOpRegenerator instead. (David Smiley, Christine Poerschke)
+
+* SOLR-13541: Upgrade Jetty to 9.4.19.v20190610. (Erick Erickson, Cao Manh Dat)
+
+* SOLR-13420: Routed Aliases now use collection properties rather than core properties to identify collections that
+  belong to the alias by default. This should be invisible and fully backwards compatible from within solr, and
+  existing routed alias collections with core based properties will continue to work, but new collections created will
+  not add a property to core.properties anymoore so any external code that inspected core.properties will not find the
+  'routedAliasName' key in new cores belonging to routed aliases.
+
+* SOLR-13419: Time Routed Aliases now have a '__TRA__' infix preceding the timestamp portion of the collection names.
+  collections with the old format will not be altered and will continue to work, but any new TRA's or new collections
+  for existing TRA's will use the new format. Solr will handle this invisibly, but any external code that attempted to
+  predict collection names in TRA's will probably need adjustment.
+
+* SOLR-13507: Support for "addr" parameter from the "/solr/admin/zookeeper" endpoint has now been removed and will no
+  longer be supported.
+
+New Features
+----------------------
+
+* SOLR-13320: add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
+
+* SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
+
+* SOLR-13047: Add facet2D Streaming Expression (Nazerke Seidan, Joel Bernstein)
+
+* SOLR-13494: Add DeepRandomStream implementation (Joel Bernstein)
+
+* SOLR-13434: OpenTracing support for Solr (Cao Manh Dat)
+
+* SOLR-13512: Raw index data analysis tool (extension of COLSTATUS collection command). (ab)
+
+* SOLR-13550: Allow zplot to automatically create the x axis (Joel Bernstein)
+
+* SOLR-13552: Add recNum Stream Evaluator (Joel Bernstein)
+
+* SOLR-13534: Dynamic loading to support loading jars from a URL (noble)
+
+* SOLR-13560: Add isNull and notNull Stream Evaluators (Joel Bernstein)
+
+* SOLR-10291: Add matches Stream Evaluator to support regex matching (Joel Bernstein)
+
+* SOLR-13589: Allow zplot to visualize 2D clusters and convex hulls (Joel Bernstein)
+
+Improvements
+----------------------
+
+* SOLR-13049: Make contrib/ltr Feature.defaultValue configurable. (Stanislav Livotov, Christine Poerschke)
+
+* SOLR-13306: Add a request parameter to execute a streaming expression locally
+
+* SOLR-13440: Support saving/restoring autoscaling state for repeatable simulations. (ab)
+
+* SOLR-11558: It would be nice if the Graph section of the Cloud tab in the Admin UI could give some more
+  information about the replicas of a collection (Erick Erickson)
+
+* SOLR-13468: autoscaling/suggestions should be able to give suggestions from config sent as a payload (noble)
+
+* SOLR-12304: The MoreLikeThisComponent now supports the mlt.interestingTerms parameter.  Previously this option was
+  unique to the MLT handler.   (Alessandro Benedetti via David Smiley)
+
+* SOLR-13484: autoscaling/diagnostics API should be able to give diagnostics output from config sent as a payload (noble)
+
+* SOLR-13493: /autoscaling/suggestions to be able to filter by type (noble)
+
+* SOLR-13504: In autoscaling policies, use an explicit 'nodeset' attribute for filtering
+  nodes instead of using them directly at the toplevel (noble)
+
+* SOLR-13329: In autoscaling policies, use an explicit 'put : on-each-node'
+  to specify the the rules is applied on each node  (noble)
+
+* SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
+
+* SOLR-13367: Highlighting: Range queries will now highlight in hl.method=unified mode. (David Smiley)
+
+* SOLR-13569: Admin UI visual indication of prod/test/dev environment (janhoy)
+
+* SOLR-12554: Expose IndexWriterConfig's ramPerThreadHardLimitMB through solrconfig.xml (Ishan Chattopadhyaya, Munendra S N)
+
+* SOLR-13602 SOLR-13588: Add a field type for Estonian language to default managed_schema,
+  document about Estonian language analysis in Solr Ref Guide (Tomoko Uchida)
+
+* SOLR-13003: Query Result Cache does not honour maxRamBytes parameter. (ab, Brian Ecker)
+
+Bug Fixes
+----------------------
+
+* SOLR-13474: Fix "Search is temporarily disabled" logic to be consistent for entire request (hossman)
+
+* SOLR-13469: Fix rejected requests during full disk full + IndexFetch to use 503 not 403 (hossman)
+
+* SOLR-12941: Fix IndexSizeTrigger to correctly work with "aboveBytes" and "splitMethod=link" parameters. (ab)
+
+* SOLR-13491: SolrZkClient's watch wrapper no longer allows zookeeper to hold the same watch object multiple times.
+
+* SOLR-13489: Stop the leader from trying to rejoin the election on session expiration and harden our zk reconnect code path.
+  (Mark Miller, Anshum Gupta)
+
+* SOLR-12249: Better error message when grouping on a tokenized (non SortableText) field in SolrCloud (Erick Erickson)
+
+* SOLR-13521: Fix input parameter handling in SchemaRequest.DynamicField and SchemaRequest.FieldTypes (Schema API)
+  (Tomás Fernández Löbbe)
+
+* SOLR-13496: Fix distributed grouping related NullPointerException in JSONWriter.writeSolrDocument (Christine Poerschke)
+
+* SOLR-12013: collections API CUSTERSTATUS command fails when configset missing (Erick Erickson)
+
+* SOLR-13509: NPE on omitHeader=true is fixed by sending omitHeader=false to shard searches (Munendra S N, Mikhail Khludnev)
+
+* SOLR-13333: unleashing terms.ttf from terms.list when distrib=false (Munendra S N via Mikhail Khludnev)
+
+* SOLR-13490: Fix CollectionStateWatcher/CollectionStatePredicate based APIs in ZkStateReader and
+  CloudSolrClient to be triggered on liveNode changes.  Also add Predicate<DocCollection> equivalents
+  for callers that don't care about liveNodes. (hossman)
+
+* SOLR-13545: ContentStreamUpdateRequest refused to close file (Colvin Cowie, Mikhail Khludnev)
+
+* SOLR-12127: Updates containing 'set' operation with value null or empty list should be considered as Atomic Update
+  (Oliver Kuldmäe, Munendra S N, Ishan Chattopadhyaya)
+
+* SOLR-13187: Fix NPE when invalid query parser is specified and return 400 error code.
+  (Cesar Rodriguez, Marek, Charles Sanders, Munendra S N, Mikhail Khludnev)
+
+* SOLR-12979: Improve error message and change error code to 400 when collapse field is non-docValued and
+  non-uninvertible (hossman, Munendra S N)
+  
+* SOLR-13574: Fix many test and test-framework classes to not fail on After/AfterClass cleanup if
+  assumptions fail in Before/BeforeClass setup (hossman)
+  
+* SOLR-13280: Strengthen ScheduledTrigger's preferredOperation parameter validation. (Christine Poerschke)
+
+* SOLR-9409: Improve error message for unsupported field types and return 400 error code on
+  unsupported values in collapsing (hossman, Munendra S N)
+
+* SOLR-13404: Support group.query in multi-shard environment when group.main=true or group.format=simple (Munendra S N)
+
+* SOLR-13538: toNativeType () TrieDate & EnumField do not handle CharSequence properly (Munendra S N)
+
+* SOLR-13532: Fix http timeout and error logging bugs in RecoveryStrategy. (Suril Shah, hossman)
+
+* SOLR-13472: Forwarded requests should skip authorization on receiving nodes (adfel, Ishan Chattopadhyaya)
+
+* SOLR-13619: Kerberos plugin to pass original user principal to avoid 403 on nodes not hosting a collection
+  (adfel, Ishan Chattopadhyaya, noble)
+
+Other Changes
+----------------------
+
+* SOLR-13453: Adjust auth metrics asserts in tests caused by SOLR-13449 (janhoy)
+
+* SOLR-13437: noggit json parser is forked into solrj (noble)
+
+* SOLR-13467: Include the S2 Geometry lib to make it simpler to use prefixTree="s2" on a Geo3D spatial field.
+  Improved documentation on Geo3D too.  (David Smiley)
+
+* SOLR-13371: Re-structure and clarify Security chapters in Ref Guide (janhoy)
+
+* SOLR-13235: Split Collections API Ref Guide page into several smaller child pages (Cassandra Targett)
+
+* SOLR-8754: Adding test cases for org.apache.solr.util.hll.NumberUtilTest (Benoit Vanalderweireldt via janhoy)
+
+* SOLR-13511: Add SearchHandler.newResponseBuilder method to facilitate custom plugins' maintenance
+  of per-request state in a custom ResponseBuilder. (Ramsey Haddad, Christine Poerschke)
+  
+* SOLR-12988: SSLTestConfig has been changed to throw AssumptionViolatedException when tests/seeds
+  request SSL but the JVM appears to be an OpenJDK version known to have SSL bugs (hossman, Cao Manh Dat)
+
+* SOLR-13279: Clarify ScheduledTrigger's "every parameter missing" error response. (Christine Poerschke)
+
+* SOLR-13576: Factor out a TopGroupsShardResponseProcessor.fillResultIds method. (Christine Poerschke, Diego Ceccarelli)
+
+* SOLR-12364: Add test cases for edismax boost (David Smiley, Munendra S N)
+
+* SOLR-13603: Remove usage of GroupingSpecification's deprecated methods (Munendra S N)
+
+* SOLR-13507: Remove support for "addr" parameter from the "/solr/admin/zookeeper" endpoint. (janhoy, Anshum Gupta)
+
+* SOLR-13588: Document Estonian analyzer in Solr Ref Guide (Tomoko Uchida)
+
+* SOLR-13602: Add a field type for Estonian language to default managed_schema (Tomoko Uchida)
+
+==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
@@ -69,26 +274,44 @@ Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.4.14
 Jetty 9.4.14.v20181114
 
-
-New Features
+Bug Fixes
 ----------------------
 
-* SOLR-13320: add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
+* SOLR-13510: Intermittent 401's for internode requests with basicauth enabled (Cao Manh Dat, Colvin Cowie)
 
-* SOLR-13306: Add a request parameter to execute a streaming expression locally
+* SOLR-13523: In 8.1, Atomic Updates were broken (NPE) when the schema declared the new _nest_path_ field even if you
+  weren't using nested docs.  In-place updates were not affected (worked).
+  Reminder: if you don't need nested docs then remove both _root_ and _nest_path_ !  (David Smiley)
 
-* SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
+* SOLR-13566: REINDEXCOLLECTION does not work with (basic) authentication. (Colvin Cowie, ab)
 
-* SOLR-13049: Make contrib/ltr Feature.defaultValue configurable. (Stanislav Livotov, Christine Poerschke)
+* SOLR-13159: Fix atomic update encoding issue for UUID, enum, bool, and binary fields (Thomas Wockinger via Jason Gerlowski)
 
-* SOLR-13047: Add facet2D Streaming Expression (Nazerke Seidan, Joel Bernstein)
+* SOLR-13583: Impossible to delete a collection with the same name as an existing alias. This fixes also a bug in
+  REINDEXCOLLECTION when used with removeSource=true which could lead to a data loss. (ab)
 
-* SOLR-13440: Support saving/restoring autoscaling state for repeatable simulations. (ab)
-
-Other Changes
+Improvements
 ----------------------
 
-* SOLR-13453: Adjust auth metrics asserts in tests caused by SOLR-13449 (janhoy)
+* SOLR-13158: DataImportHandler: Added enable.dih.dataConfigParam system property to toggle whether the dataConfig param
+  is permitted. (David Smiley, janhoy, Tomás Fernández Löbbe)
+
+==================  8.1.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 2.0 and Velocity Tools 3.0
+Apache ZooKeeper 3.4.14
+Jetty 9.4.14.v20181114
+
+Bug Fixes
+----------------------
+
+* SOLR-13475: Null Pointer Exception when querying collection through collection alias. (Jörn Franke, ab)
 
 ==================  8.1.0 ==================
 
@@ -139,6 +362,9 @@ Upgrade Notes
 
 New Features
 ----------------------
+* SOLR-13131: Category Routed Aliases are now available for data driven assignment of documents to collections based on
+  values of a field. The Ref Guide now has a page dedicated to explaining the different types of aliases. (Gus Heck,
+  Moshe Bla)
 
 * SOLR-13171 : A true streaming parser for javabin payload/stream without creating any objects (noble)
 
@@ -621,6 +847,100 @@ Other Changes
 * SOLR-12365: Renamed class Config to XmlConfigFile (David Smiley)
 
 * SOLR-9515: Hadoop dependencies have been upgraded to Hadoop 3.2.0 from 2.7.2. (Mark Miller, Kevin Risden)
+
+==================  7.7.2 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache ZooKeeper 3.4.14
+Jetty 9.4.14.v20181114
+
+Upgrade Notes
+----------------------
+
+* SOLR-13234: The Prometheus Metric Exporter now collects metrics from Solr at a fixed schedule that is controlled
+  by the exporter itself. The default interval is 60s but it can be changed by specifying the --scrape-interval
+  command line parameter to the tool. The collected metrics are cached and returned for any requests coming in before
+  the next scheduled collection. This can impact the freshness of the metrics if prometheus is configured to query the
+  tool more frequently.
+
+* SOLR-12708: When requesting the status of an async request via REQUESTSTATUS collections API, the response will
+  include the list of internal async requests (if any) in the "success" or "failed" keys (in addition
+  to them being included outside those keys for backwards compatibility). See SOLR-12708 for more
+  details
+
+Bug fixes
+----------------------
+
+* SOLR-13234: Prometheus Metric Exporter not threadsafe. This changes the prometheus exporter to collect metrics
+  from Solr on a fixed interval controlled by this tool and prevents concurrent collections. This change also improves
+  performance slightly by using the cluster state instead of sending multiple HTTP requests to each node to lookup
+  all the cores.
+  (Danyal Prout via shalin)
+
+* SOLR-12708: Async collection actions should not hide internal failures (Mano Kovacs, Varun Thacker, Tomás Fernández Löbbe)
+
+* SOLR-11876: In-place update fails when resolving from Tlog if schema has a required field (Justin Deoliveira, janhoy,
+  Ishan Chattopadhyaya)
+
+* SOLR-13349: High CPU usage in Solr due to Java 8 bug (Erick Erickson)
+
+* SOLR-13355: 'all' permission ignored by RuleBasedAuthorizationPlugin in most cases (Jason Gerlowski, janhoy)
+
+* SOLR-13344: Admin UI inaccessible with RuleBasedAuthorizationPlugin (janhoy, Jason Gerlowski)
+
+* SOLR-12860: MetricsHistoryHandler now uses PKI Auth for metrics collection in background thread (janhoy, Lorenzo)
+
+* SOLR-13331: Atomic Update 'remove' operations broken for certain field types in SolrJ (Thomas Wockinger via Jason Gerlowski)
+
+* SOLR-13285: Updates with enum fields and javabin cause ClassCastException (noble)
+
+* SOLR-12371: Editing authorization config via REST API now works in standalone mode (janhoy)
+
+* SOLR-13281: Fixed NPE in DocExpirationUpdateProcessorFactory (Munendra S N, Tomás Fernández Löbbe)
+
+* SOLR-13409: Disable HTML directory listings in admin interface to prevent possible security issues (Uwe Schindler)
+
+* SOLR-13126: Query boosts were not being combined correctly for documents where not all boost queries
+  matched (Alan Woodward, Mikhail Khludnev)
+
+* SOLR-13414: SolrSchema - Avoid NPE if Luke returns field with no type defined (Kevin Risden)
+
+* SOLR-12833: Avoid unnecessary memory cost when DistributedUpdateProcessor timed-out lock is not used. (ab)
+
+* SOLR-13449: SolrClientNodeStateProvider always retries on requesting metrics from other nodes (Cao Manh Dat)
+
+* SOLR-13112: Upgrade jackson to 2.9.8 (Kevin Risden)
+
+* SOLR-13410: Designated overseer wasn't able to rejoin election queue at head upon restart (Ishan Chattopadhyaya,
+  Kesharee Nandan Vishwakarma)
+
+* SOLR-13254: Correct message that is logged in solrj's ConnectionManager when an exception
+  occurred while reconnecting to ZooKeeper. (hu xiaodong via Christine Poerschke)
+
+* SOLR-13252: Fix an NPE when setting a "policy" property for an existing collection (ab)
+
+* SOLR-13398: Move log line "Processing SSL Credential Provider chain..." from INFO to DEBUG (janhoy)
+
+* SOLR-13386: OverseerTaskQueue#remove should not throw an exception when no node exists after an exists
+  check and the Overseer work loop should not allow free spinning the loop when it hits a KeeperException.
+  (Mark Miller, Fernandez-Lobbe, Mike Drob)
+
+* SOLR-13366: Clarify 'Invalid stage name' warning logging in AutoScalingConfig (Christine Poerschke)
+
+* SOLR-13352: Remove risk of deadlock/threadleak when shutting down an Overseer(TriggerThread).  (hossman)
+
+* SOLR-13229: Cleanup replicasMetTragicEvent after all types of exception (Tomás Fernández Löbbe)
+
+Other Changes
+----------------------
+
+* SOLR-13363: Upgrade to ZooKeeper 3.4.14 (Erick Erickson)
 
 ==================  7.7.1 ==================
 

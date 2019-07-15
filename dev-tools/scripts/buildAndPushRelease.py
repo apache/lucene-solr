@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -17,10 +19,11 @@ import argparse
 import datetime
 import re
 import time
-import shutil
 import os
 import sys
 import subprocess
+from subprocess import TimeoutExpired
+from scriptutil import check_ant
 import textwrap
 import urllib.request, urllib.error, urllib.parse
 import xml.etree.ElementTree as ET
@@ -252,6 +255,8 @@ def parse_config():
                       help='Release Candidate number.  Default: 1')
   parser.add_argument('--root', metavar='PATH', default='.',
                       help='Root of Git working tree for lucene-solr.  Default: "." (the current directory)')
+  parser.add_argument('--logfile', metavar='PATH',
+                      help='Specify log file path (default /tmp/release.log)')
   config = parser.parse_args()
 
   if not config.prepare and config.sign:
@@ -270,6 +275,9 @@ def parse_config():
   if os.system('git rev-parse') or 3 != len([d for d in ('dev-tools','lucene','solr') if os.path.isdir(d)]):
     parser.error('Root path "%s" is not a valid lucene-solr checkout' % config.root)
   os.chdir(cwd)
+  global LOG
+  if config.logfile:
+    LOG = config.logfile
 
   config.version = read_version(config.root)
   print('Building version: %s' % config.version)
@@ -281,16 +289,6 @@ def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
     raise RuntimeError('"git --version" returned a non-zero exit code.')
   check_ant()
 
-def check_ant():
-  antVersion = os.popen('ant -version').read().strip()
-  if (antVersion.startswith('Apache Ant(TM) version 1.8')):
-    return
-  if (antVersion.startswith('Apache Ant(TM) version 1.9')):
-    return
-  if (antVersion.startswith('Apache Ant(TM) version 1.10')):
-    return
-  raise RuntimeError('Unsupported ant version (must be 1.8 - 1.10): "%s"' % antVersion)
-  
 def check_key_in_keys(gpgKeyID, local_keys):
   if gpgKeyID is not None:
     print('  Verify your gpg key is in the main KEYS file')

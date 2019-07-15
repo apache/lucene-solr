@@ -92,7 +92,7 @@ final class LatLonPointSortField extends SortField {
     builder.append(" longitude=");
     builder.append(longitude);
     if (Double.POSITIVE_INFINITY != getMissingValue()) {
-      builder.append(" missingValue=" + getMissingValue());
+      builder.append(" missingValue=").append(getMissingValue());
     }
     builder.append('>');
     return builder.toString();

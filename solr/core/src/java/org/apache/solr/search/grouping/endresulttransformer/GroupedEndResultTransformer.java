@@ -28,6 +28,7 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -37,6 +38,7 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 
 /**
@@ -53,6 +55,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
   @Override
   public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
     NamedList<Object> commands = new SimpleOrderedMap<>();
+    SortSpec withinGroupSortSpec = rb.getGroupingSpec().getWithinGroupSortSpec();
     for (Map.Entry<String, ?> entry : result.entrySet()) {
       Object value = entry.getValue();
       if (TopGroups.class.isInstance(value)) {
@@ -89,10 +92,8 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
           if (!Float.isNaN(group.maxScore)) {
             docList.setMaxScore(group.maxScore);
           }
-          docList.setStart(rb.getGroupingSpec().getWithinGroupOffset());
-          for (ScoreDoc scoreDoc : group.scoreDocs) {
-            docList.add(solrDocumentSource.retrieve(scoreDoc));
-          }
+          docList.setStart(withinGroupSortSpec.getOffset());
+          retrieveAndAdd(docList, solrDocumentSource, group.scoreDocs);
           groupResult.add("doclist", docList);
           groups.add(groupResult);
         }
@@ -109,15 +110,22 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
         if (!Float.isNaN(queryCommandResult.getMaxScore())) {
           docList.setMaxScore(queryCommandResult.getMaxScore());
         }
-        docList.setStart(rb.getGroupingSpec().getWithinGroupOffset());
-        for (ScoreDoc scoreDoc :queryCommandResult.getTopDocs().scoreDocs){
-          docList.add(solrDocumentSource.retrieve(scoreDoc));
-        }
+        docList.setStart(withinGroupSortSpec.getOffset());
+        retrieveAndAdd(docList, solrDocumentSource, queryCommandResult.getTopDocs().scoreDocs);
         command.add("doclist", docList);
         commands.add(entry.getKey(), command);
       }
     }
     rb.rsp.add("grouped", commands);
+  }
+
+  private static void retrieveAndAdd(SolrDocumentList solrDocumentList, SolrDocumentSource solrDocumentSource, ScoreDoc[] scoreDocs) {
+    for (ScoreDoc scoreDoc : scoreDocs) {
+      SolrDocument solrDocument = solrDocumentSource.retrieve(scoreDoc);
+      if (solrDocument != null) {
+        solrDocumentList.add(solrDocument);
+      }
+    }
   }
 
 }

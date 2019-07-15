@@ -78,10 +78,12 @@ public class TestCloudConsistency extends SolrCloudTestCase {
 
   @After
   public void tearDownCluster() throws Exception {
-    for (SocketProxy proxy:proxies.values()) {
-      proxy.close();
+    if (null != proxies) {
+      for (SocketProxy proxy : proxies.values()) {
+        proxy.close();
+      }
+      proxies = null;
     }
-    proxies = null;
     jettys = null;
     System.clearProperty("solr.directoryFactory");
     System.clearProperty("solr.ulog.numRecordsToKeep");

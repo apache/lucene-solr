@@ -17,7 +17,6 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,6 +51,8 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -751,13 +752,8 @@ public class UnifiedHighlighter {
   }
 
   protected FieldHighlighter getFieldHighlighter(String field, Query query, Set<Term> allTerms, int maxPassages) {
-    Predicate<String> fieldMatcher = getFieldMatcher(field);
-    BytesRef[] terms = filterExtractedTerms(fieldMatcher, allTerms);
-    Set<HighlightFlag> highlightFlags = getFlags(field);
-    PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
-    CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
-    OffsetSource offsetSource = getOptimizedOffsetSource(field, terms, phraseHelper, automata);
-    UHComponents components = new UHComponents(field, fieldMatcher, query, terms, phraseHelper, automata, highlightFlags);
+    UHComponents components = getHighlightComponents(field, query, allTerms);
+    OffsetSource offsetSource = getOptimizedOffsetSource(components);
     return new FieldHighlighter(field,
         getOffsetStrategy(offsetSource, components),
         new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
@@ -765,6 +761,41 @@ public class UnifiedHighlighter {
         maxPassages,
         getMaxNoHighlightPassages(field),
         getFormatter(field));
+  }
+
+  protected UHComponents getHighlightComponents(String field, Query query, Set<Term> allTerms) {
+    Predicate<String> fieldMatcher = getFieldMatcher(field);
+    Set<HighlightFlag> highlightFlags = getFlags(field);
+    PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
+    boolean queryHasUnrecognizedPart = hasUnrecognizedQuery(fieldMatcher, query);
+    BytesRef[] terms = null;
+    CharacterRunAutomaton[] automata = null;
+    if (!highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES) || !queryHasUnrecognizedPart) {
+      terms = filterExtractedTerms(fieldMatcher, allTerms);
+      automata = getAutomata(field, query, highlightFlags);
+    } // otherwise don't need to extract
+    return new UHComponents(field, fieldMatcher, query, terms, phraseHelper, automata, queryHasUnrecognizedPart, highlightFlags);
+  }
+
+  protected boolean hasUnrecognizedQuery(Predicate<String> fieldMatcher, Query query) {
+    boolean[] hasUnknownLeaf = new boolean[1];
+    query.visit(new QueryVisitor() {
+      @Override
+      public boolean acceptField(String field) {
+        // checking hasUnknownLeaf is a trick to exit early
+        return hasUnknownLeaf[0] == false && fieldMatcher.test(field);
+      }
+
+      @Override
+      public void visitLeaf(Query query) {
+        if (MultiTermHighlighting.canExtractAutomataFromLeafQuery(query) == false) {
+          if (!(query instanceof MatchAllDocsQuery || query instanceof MatchNoDocsQuery)) {
+            hasUnknownLeaf[0] = true;
+          }
+        }
+      }
+    });
+    return hasUnknownLeaf[0];
   }
 
   protected static BytesRef[] filterExtractedTerms(Predicate<String> fieldMatcher, Set<Term> queryTerms) {
@@ -820,26 +851,26 @@ public class UnifiedHighlighter {
         : ZERO_LEN_AUTOMATA_ARRAY;
   }
 
-  protected OffsetSource getOptimizedOffsetSource(String field, BytesRef[] terms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata) {
-    OffsetSource offsetSource = getOffsetSource(field);
+  protected OffsetSource getOptimizedOffsetSource(UHComponents components) {
+    OffsetSource offsetSource = getOffsetSource(components.getField());
 
-    if (terms.length == 0 && automata.length == 0 && !phraseHelper.willRewrite()) {
+    // null automata means unknown, so assume a possibility
+    boolean mtqOrRewrite = components.getAutomata() == null || components.getAutomata().length > 0
+        || components.getPhraseHelper().willRewrite() || components.hasUnrecognizedQueryPart();
+
+    // null terms means unknown, so assume something to highlight
+    if (mtqOrRewrite == false && components.getTerms() != null && components.getTerms().length == 0) {
       return OffsetSource.NONE_NEEDED; //nothing to highlight
     }
 
     switch (offsetSource) {
       case POSTINGS:
-        if (phraseHelper.willRewrite()) {
-          // We can't choose the postings offset source when there is "rewriting" in the strict phrase
-          // processing (rare but possible). Postings requires knowing all the terms (except wildcards)
-          // up front.
-          return OffsetSource.ANALYSIS;
-        } else if (automata.length > 0) {
+        if (mtqOrRewrite) { // may need to see scan through all terms for the highlighted document efficiently
           return OffsetSource.ANALYSIS;
         }
         break;
       case POSTINGS_WITH_TERM_VECTORS:
-        if (!phraseHelper.willRewrite() && automata.length == 0) {
+        if (mtqOrRewrite == false) {
           return OffsetSource.POSTINGS; //We don't need term vectors
         }
         break;
@@ -995,9 +1026,9 @@ public class UnifiedHighlighter {
     }
 
     @Override
-    public void stringField(FieldInfo fieldInfo, byte[] byteValue) throws IOException {
-      String value = new String(byteValue, StandardCharsets.UTF_8);
+    public void stringField(FieldInfo fieldInfo, String value) throws IOException {
       assert currentField >= 0;
+      Objects.requireNonNull(value, "String value should not be null");
       CharSequence curValue = values[currentField];
       if (curValue == null) {
         //question: if truncate due to maxLength, should we try and avoid keeping the other chars in-memory on

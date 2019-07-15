@@ -552,7 +552,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     StreamFactory factory = new StreamFactory()
         .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
-        .withFunctionName("random", RandomStream.class);
+        .withFunctionName("random", RandomFacadeStream.class);
 
 
     StreamContext context = new StreamContext();
@@ -571,6 +571,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       stream.setStreamContext(context);
       List<Tuple> tuples2 = getTuples(stream);
       assert (tuples2.size() == 1000);
+
 
       boolean different = false;
       for (int i = 0; i < tuples1.size(); i++) {
@@ -601,6 +602,44 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       List<Tuple> tuples3 = getTuples(stream);
       assert (tuples3.size() == 1);
 
+      //Exercise the DeepRandomStream with higher rows
+
+      expression = StreamExpressionParser.parse("random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"10001\", fl=\"id, a_i\")");
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(context);
+      List<Tuple> tuples10 = getTuples(stream);
+      assert (tuples10.size() == 1000);
+
+      expression = StreamExpressionParser.parse("random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"10001\", fl=\"id, a_i\")");
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(context);
+      List<Tuple> tuples11 = getTuples(stream);
+      assert (tuples11.size() == 1000);
+
+      different = false;
+      for (int i = 0; i < tuples10.size(); i++) {
+        Tuple tuple1 = tuples10.get(i);
+        Tuple tuple2 = tuples11.get(i);
+        if (!tuple1.get("id").equals(tuple2.get(id))) {
+          different = true;
+          break;
+        }
+      }
+
+      assertTrue(different);
+
+      Collections.sort(tuples10, new FieldComparator("id", ComparatorOrder.ASCENDING));
+      Collections.sort(tuples11, new FieldComparator("id", ComparatorOrder.ASCENDING));
+
+      for (int i = 0; i < tuples10.size(); i++) {
+        Tuple tuple1 = tuples10.get(i);
+        Tuple tuple2 = tuples11.get(i);
+        if (!tuple1.get("id").equals(tuple2.get(id))) {
+          assert(tuple1.getLong("id").equals(tuple2.get("a_i")));
+        }
+      }
+
+
 
       //Exercise the /stream handler
       ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
@@ -609,6 +648,13 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       List<Tuple> tuples4 = getTuples(solrStream);
       assert (tuples4.size() == 1);
+
+      sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
+      sParams.add("expr", "random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"10001\", fl=\"id, a_i\")");
+      jetty = cluster.getJettySolrRunner(0);
+      solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
+      tuples4 = getTuples(solrStream);
+      assert (tuples4.size() == 1000);
 
     } finally {
       cache.close();

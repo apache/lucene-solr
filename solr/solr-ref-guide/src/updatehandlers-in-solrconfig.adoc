@@ -132,7 +132,7 @@ An example, to be included under `<config><updateHandler>` in `solrconfig.xml`, 
 </updateLog>
 ----
 
-== Other options
+== Other Options
 In some cases complex updates (such as spatial/shape) may take very long time to complete. In the default
 configuration other updates that fall into the same internal version bucket will wait indefinitely and
 eventually these outstanding requests may pile up and lead to thread exhaustion and eventually to

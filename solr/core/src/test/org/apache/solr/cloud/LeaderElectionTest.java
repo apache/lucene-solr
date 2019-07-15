@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,7 +71,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();;
+    Path zkDir = createTempDir("zkData");
 
     server = new ZkTestServer(zkDir);
     server.setTheTickTime(1000);

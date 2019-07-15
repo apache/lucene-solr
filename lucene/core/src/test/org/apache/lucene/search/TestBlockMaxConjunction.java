@@ -40,6 +40,14 @@ public class TestBlockMaxConjunction extends LuceneTestCase {
     return query;
   }
 
+  private Query maybeWrapTwoPhase(Query query) {
+    if (random().nextBoolean()) {
+      query = new RandomApproximationQuery(query, random());
+      query = new AssertingQuery(random(), query);
+    }
+    return query;
+  }
+
   public void testRandom() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
@@ -75,6 +83,18 @@ public class TestBlockMaxConjunction extends LuceneTestCase {
           .build();
 
       CheckHits.checkTopScores(random(), filteredQuery, searcher);
+
+      builder = new BooleanQuery.Builder();
+      for (int i = 0; i < numClauses; ++i) {
+        builder.add(maybeWrapTwoPhase(new TermQuery(new Term("foo", Integer.toString(start + i)))), Occur.MUST);
+      }
+
+      Query twoPhaseQuery = new BooleanQuery.Builder()
+          .add(query, Occur.MUST)
+          .add(new TermQuery(new Term("foo", Integer.toString(filterTerm))), Occur.FILTER)
+          .build();
+
+      CheckHits.checkTopScores(random(), twoPhaseQuery, searcher);
     }
     reader.close();
     dir.close();

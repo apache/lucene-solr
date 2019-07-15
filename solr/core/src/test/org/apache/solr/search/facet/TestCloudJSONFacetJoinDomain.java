@@ -83,7 +83,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
@@ -184,11 +184,14 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   
   @AfterClass
   private static void afterClass() throws Exception {
-    CLOUD_CLIENT.close(); CLOUD_CLIENT = null;
+    if (null != CLOUD_CLIENT) {
+      CLOUD_CLIENT.close();
+      CLOUD_CLIENT = null;
+    }
     for (HttpSolrClient client : CLIENTS) {
       client.close();
     }
-    CLIENTS = null;
+    CLIENTS.clear();
   }
 
   /** Sanity check that malformed requests produce errors */

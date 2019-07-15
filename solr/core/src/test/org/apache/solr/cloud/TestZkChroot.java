@@ -34,14 +34,14 @@ public class TestZkChroot extends SolrTestCaseJ4 {
   private Path home;
   
   protected ZkTestServer zkServer;
-  protected String zkDir;
+  protected Path zkDir;
   
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
 
-    zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    zkDir = createTempDir("zkData");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     home = Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome());
@@ -58,9 +58,10 @@ public class TestZkChroot extends SolrTestCaseJ4 {
       cores = null;
     }
     
-    zkServer.shutdown();
-    
-    zkServer = null;
+    if (null != zkServer) {
+      zkServer.shutdown();
+      zkServer = null;
+    }
     zkDir = null;
     
     super.tearDown();

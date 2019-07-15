@@ -18,6 +18,8 @@
 package org.apache.lucene.luke.models.analysis;
 
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -38,6 +40,7 @@ import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharFilterFactory;
@@ -46,6 +49,8 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.util.reflection.ClassScanner;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.IOUtils;
 
 /** Default implementation of {@link AnalysisImpl} */
 public final class AnalysisImpl implements Analysis {
@@ -131,7 +136,6 @@ public final class AnalysisImpl implements Analysis {
 
     try {
       List<Token> result = new ArrayList<>();
-
       TokenStream stream = analyzer.tokenStream("", text);
       stream.reset();
 
@@ -139,19 +143,7 @@ public final class AnalysisImpl implements Analysis {
 
       // iterate tokens
       while (stream.incrementToken()) {
-        List<TokenAttribute> attributes = new ArrayList<>();
-        Iterator<AttributeImpl> itr = stream.getAttributeImplsIterator();
-
-        while (itr.hasNext()) {
-          AttributeImpl att = itr.next();
-          Map<String, String> attValues = new LinkedHashMap<>();
-          att.reflectWith((attClass, key, value) -> {
-            if (value != null)
-              attValues.put(key, value.toString());
-          });
-          attributes.add(new TokenAttribute(att.getClass().getSimpleName(), attValues));
-        }
-
+        List<TokenAttribute> attributes = copyAttributes(stream, charAtt);
         result.add(new Token(charAtt.toString(), attributes));
       }
       stream.close();
@@ -160,6 +152,21 @@ public final class AnalysisImpl implements Analysis {
     } catch (IOException e) {
       throw new LukeException(e.getMessage(), e);
     }
+  }
+
+  private List<TokenAttribute> copyAttributes(TokenStream tokenStream, CharTermAttribute charAtt) {
+    List<TokenAttribute> attributes = new ArrayList<>();
+    Iterator<AttributeImpl> itr = tokenStream.getAttributeImplsIterator();
+    while(itr.hasNext()) {
+      AttributeImpl att = itr.next();
+      Map<String, String> attValues = new LinkedHashMap<>();
+      att.reflectWith((attClass, key, value) -> {
+        if (value != null)
+          attValues.put(key, value.toString());
+      });
+      attributes.add(new TokenAttribute(att.getClass().getSimpleName(), attValues));
+    }
+    return attributes;
   }
 
   @Override
@@ -211,6 +218,163 @@ public final class AnalysisImpl implements Analysis {
       throw new LukeException("Analyzer is not set.");
     }
     return analyzer;
+  }
+
+  @Override
+  public StepByStepResult analyzeStepByStep(String text){
+    Objects.requireNonNull(text);
+    if (analyzer == null) {
+      throw new LukeException("Analyzer is not set.");
+    }
+
+    if (!(analyzer instanceof CustomAnalyzer)) {
+      throw new LukeException("Analyzer is not CustomAnalyzer.");
+    }
+
+    List<NamedTokens> namedTokens = new ArrayList<>();
+    List<CharfilteredText> charfilteredTexts = new ArrayList<>();
+
+    try {
+      CustomAnalyzer customAnalyzer = (CustomAnalyzer)analyzer;
+      final List<CharFilterFactory> charFilterFactories = customAnalyzer.getCharFilterFactories();
+      Reader reader = new StringReader(text);
+      String charFilteredSource = text;
+      if (charFilterFactories.size() > 0) {
+        Reader cs = reader;
+        for (CharFilterFactory charFilterFactory : charFilterFactories) {
+          cs = charFilterFactory.create(reader);
+          Reader readerForWriteOut = new StringReader(charFilteredSource);
+          readerForWriteOut = charFilterFactory.create(readerForWriteOut);
+          charFilteredSource = writeCharStream(readerForWriteOut);
+          charfilteredTexts.add(new CharfilteredText(CharFilterFactory.findSPIName(charFilterFactory.getClass()), charFilteredSource));
+        }
+        reader = cs;
+      }
+
+      final TokenizerFactory tokenizerFactory = customAnalyzer.getTokenizerFactory();
+      final List<TokenFilterFactory> tokenFilterFactories = customAnalyzer.getTokenFilterFactories();
+
+      TokenStream tokenStream = tokenizerFactory.create();
+      ((Tokenizer)tokenStream).setReader(reader);
+      List<Token> tokens = new ArrayList<>();
+      List<AttributeSource> attributeSources = analyzeTokenStream(tokenStream, tokens);
+      namedTokens.add(new NamedTokens(TokenizerFactory.findSPIName(tokenizerFactory.getClass()), tokens));
+
+      ListBasedTokenStream listBasedTokenStream = new ListBasedTokenStream(tokenStream, attributeSources);
+      for (TokenFilterFactory tokenFilterFactory : tokenFilterFactories) {
+        tokenStream = tokenFilterFactory.create(listBasedTokenStream);
+        tokens = new ArrayList<>();
+        attributeSources = analyzeTokenStream(tokenStream, tokens);
+        namedTokens.add(new NamedTokens(TokenFilterFactory.findSPIName(tokenFilterFactory.getClass()), tokens));
+        try {
+          listBasedTokenStream.close();
+        } catch (IOException e) {
+          // do nothing;
+        }
+        listBasedTokenStream = new ListBasedTokenStream(listBasedTokenStream, attributeSources);
+      }
+      try {
+        listBasedTokenStream.close();
+      } catch (IOException e) {
+        // do nothing.
+      } finally {
+        reader.close();
+      }
+      return new StepByStepResult(charfilteredTexts, namedTokens);
+    } catch (Exception e) {
+      throw new LukeException(e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Analyzes the given TokenStream, collecting the Tokens it produces.
+   *
+   * @param tokenStream TokenStream to analyze
+   *
+   * @return List of tokens produced from the TokenStream
+   */
+  private List<AttributeSource> analyzeTokenStream(TokenStream tokenStream, List<Token> result) {
+    final List<AttributeSource> tokens = new ArrayList<>();
+    try {
+      tokenStream.reset();
+      CharTermAttribute charAtt = tokenStream.getAttribute(CharTermAttribute.class);
+      while (tokenStream.incrementToken()) {
+        tokens.add(tokenStream.cloneAttributes());
+        List<TokenAttribute> attributes = copyAttributes(tokenStream, charAtt);
+        result.add(new Token(charAtt.toString(), attributes));
+      }
+      tokenStream.end();
+    } catch (IOException ioe) {
+      throw new RuntimeException("Error occurred while iterating over TokenStream", ioe);
+    } finally {
+      IOUtils.closeWhileHandlingException(tokenStream);
+    }
+    return tokens;
+  }
+
+  /**
+   * TokenStream that iterates over a list of pre-existing Tokens
+   * see org.apache.solr.handler.AnalysisRequestHandlerBase#ListBasedTokenStream
+   */
+  protected final static class ListBasedTokenStream extends TokenStream {
+    private final List<AttributeSource> tokens;
+    private Iterator<AttributeSource> tokenIterator;
+
+    /**
+     * Creates a new ListBasedTokenStream which uses the given tokens as its token source.
+     *
+     * @param attributeSource source of the attribute factory and attribute impls
+     * @param tokens Source of tokens to be used
+     */
+    ListBasedTokenStream(AttributeSource attributeSource, List<AttributeSource> tokens) {
+      super(attributeSource.getAttributeFactory());
+      this.tokens = tokens;
+      // Make sure all the attributes of the source are here too
+      addAttributes(attributeSource);
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      tokenIterator = tokens.iterator();
+    }
+
+    @Override
+    public boolean incrementToken() {
+      if (tokenIterator.hasNext()) {
+        clearAttributes();
+        AttributeSource next = tokenIterator.next();
+        addAttributes(next);
+        next.copyTo(this);
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    void addAttributes(AttributeSource attributeSource) {
+      Iterator<AttributeImpl> atts = attributeSource.getAttributeImplsIterator();
+      while (atts.hasNext()) {
+        addAttributeImpl(atts.next()); // adds both impl & interfaces
+      }
+    }
+  }
+
+  private static String writeCharStream(Reader input ){
+    final int BUFFER_SIZE = 1024;
+    char[] buf = new char[BUFFER_SIZE];
+    int len = 0;
+    StringBuilder sb = new StringBuilder();
+    do {
+      try {
+        len = input.read( buf, 0, BUFFER_SIZE );
+      } catch (IOException e) {
+        throw new RuntimeException("Error occurred while iterating over charfiltering", e);
+      }
+      if( len > 0 )
+        sb.append(buf, 0, len);
+    } while( len == BUFFER_SIZE );
+    return sb.toString();
   }
 
 }

@@ -481,6 +481,18 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         })
       }
 
+      $scope.showEnvironment = data.environment !== undefined;
+      if (data.environment) {
+        $scope.environment = data.environment;
+        var env_labels = {'prod': 'Production', 'stage': 'Staging', 'test': 'Test', 'dev': 'Development'};
+        $scope.environment_label = env_labels[data.environment];
+        if (data.environment_label) {
+          $scope.environment_label = data.environment_label;
+        }
+        if (data.environment_color) {
+          $scope.environment_color = data.environment_color;
+        }
+      }
     });
 
     $scope.showingLogging = page.lastIndexOf("logging", 0) === 0;

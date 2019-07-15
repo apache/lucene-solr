@@ -357,14 +357,12 @@ public class Utils {
 
   public static Object getObjectByPath(Object root, boolean onlyPrimitive, String hierarchy) {
     if (hierarchy == null) return getObjectByPath(root, onlyPrimitive, singletonList(null));
-    List<String> parts = StrUtils.splitSmart(hierarchy, '/');
-    if (parts.get(0).isEmpty()) parts.remove(0);
+    List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return getObjectByPath(root, onlyPrimitive, parts);
   }
 
   public static boolean setObjectByPath(Object root, String hierarchy, Object value) {
-    List<String> parts = StrUtils.splitSmart(hierarchy, '/');
-    if (parts.get(0).isEmpty()) parts.remove(0);
+    List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
     return setObjectByPath(root, parts, value);
   }
 

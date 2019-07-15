@@ -109,7 +109,7 @@ public final class FST<T> implements Accountable {
   // Increment version to change it
   private static final String FILE_FORMAT_NAME = "FST";
   private static final int VERSION_START = 6;
-  private static final int VERSION_CURRENT = VERSION_START;
+  private static final int VERSION_CURRENT = 7;
 
   // Never serialized; just used to represent the virtual
   // final node w/ no arcs:
@@ -208,8 +208,8 @@ public final class FST<T> implements Accountable {
     @Override
     public String toString() {
       StringBuilder b = new StringBuilder();
-      b.append(" target=" + target);
-      b.append(" label=0x" + Integer.toHexString(label));
+      b.append(" target=").append(target);
+      b.append(" label=0x").append(Integer.toHexString(label));
       if (flag(BIT_FINAL_ARC)) {
         b.append(" final");
       }
@@ -223,13 +223,13 @@ public final class FST<T> implements Accountable {
         b.append(" stop");
       }
       if (flag(BIT_ARC_HAS_OUTPUT)) {
-        b.append(" output=" + output);
+        b.append(" output=").append(output);
       }
       if (flag(BIT_ARC_HAS_FINAL_OUTPUT)) {
-        b.append(" nextFinalOutput=" + nextFinalOutput);
+        b.append(" nextFinalOutput=").append(nextFinalOutput);
       }
       if (bytesPerArc != 0) {
-        b.append(" arcArray(idx=" + arcIdx + " of " + numArcs + ")");
+        b.append(" arcArray(idx=").append(arcIdx).append(" of ").append(numArcs).append(")");
       }
       return b.toString();
     }
@@ -647,8 +647,7 @@ public final class FST<T> implements Accountable {
       // array that may have holes in it so that we can address the arcs directly by label without
       // binary search
       int labelRange = nodeIn.arcs[nodeIn.numArcs - 1].label - nodeIn.arcs[0].label + 1;
-      boolean writeDirectly = builder.useDirectArcAddressing && labelRange > 0
-          && labelRange < Builder.DIRECT_ARC_LOAD_FACTOR * nodeIn.numArcs;
+      boolean writeDirectly = labelRange > 0 && labelRange < Builder.DIRECT_ARC_LOAD_FACTOR * nodeIn.numArcs;
 
       //System.out.println("write int @pos=" + (fixedArrayStart-4) + " numArcs=" + nodeIn.numArcs);
       // create the header

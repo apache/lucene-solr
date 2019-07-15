@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#delete",
+  "documentation": "https://lucene.apache.org/solr/guide/collection-management.html#delete",
   "description": "Deletes a collection.",
   "methods": [
     "DELETE"

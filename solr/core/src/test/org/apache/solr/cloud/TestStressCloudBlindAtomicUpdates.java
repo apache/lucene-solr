@@ -81,7 +81,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
 
   /** Service to execute all parallel work 
    * @see #NUM_THREADS
@@ -136,6 +136,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
+    CLIENTS.clear();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       assertNotNull("Cluster contains null jetty?", jetty);
       final URL baseUrl = jetty.getBaseUrl();
@@ -157,17 +158,21 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   @AfterClass
   private static void afterClass() throws Exception {
     TestInjection.reset();
-    ExecutorUtil.shutdownAndAwaitTermination(EXEC_SERVICE);
-    EXEC_SERVICE = null;
-    IOUtils.closeQuietly(CLOUD_CLIENT);
-    CLOUD_CLIENT = null;
+    if (null != EXEC_SERVICE) {
+      ExecutorUtil.shutdownAndAwaitTermination(EXEC_SERVICE);
+      EXEC_SERVICE = null;
+    }
+    if (null != CLOUD_CLIENT) {
+      IOUtils.closeQuietly(CLOUD_CLIENT);
+      CLOUD_CLIENT = null;
+    }
     for (HttpSolrClient client : CLIENTS) {
       if (null == client) {
         log.error("CLIENTS contains a null SolrClient???");
       }
       IOUtils.closeQuietly(client);
     }
-    CLIENTS = null;
+    CLIENTS.clear();
   }
   
   @Before

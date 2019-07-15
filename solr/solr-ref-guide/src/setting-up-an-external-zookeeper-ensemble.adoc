@@ -83,6 +83,7 @@ The file should have the following information to start:
 tickTime=2000
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr,conf,ruok
 ----
 
 The parameters are as follows:
@@ -92,6 +93,8 @@ The parameters are as follows:
 `dataDir`:: This is the directory in which ZooKeeper will store data about the cluster. This directory must be empty before starting ZooKeeper for the first time.
 
 `clientPort`:: This is the port on which Solr will access ZooKeeper.
+
+`4lw.commands.whitelist`:: This allows the Solr admin UI to query ZooKeeper. Optionally use "*" to enable all "4 letter words", the three listed will enable the admin UI.
 
 These are the basic parameters that need to be in use on each ZooKeeper node, so this file must be copied to or created on each node.
 
@@ -110,6 +113,7 @@ Once complete, your `zoo.cfg` file might look like this:
 tickTime=2000
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr,conf,ruok
 
 initLimit=5
 syncLimit=2
@@ -153,6 +157,7 @@ On the second node, update `<ZOOKEEPER_HOME>/conf/zoo.cfg` file so it matches th
 tickTime=2000
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr,conf,ruok
 
 initLimit=5
 syncLimit=2
@@ -176,6 +181,7 @@ On the third node, update `<ZOOKEEPER_HOME>/conf/zoo.cfg` file so it matches the
 tickTime=2000
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr,conf,ruok
 
 initLimit=5
 syncLimit=2

@@ -25,6 +25,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -48,8 +50,10 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * @see org.apache.solr.search.SolrCache
  * @since solr 3.6
  */
-public class LFUCache<K, V> implements SolrCache<K, V> {
+public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(LFUCache.class);
 
   // contains the statistics objects for all open caches of the same type
   private List<ConcurrentLFUCache.Stats> statsList;
@@ -67,8 +71,6 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
-  private SolrMetricManager metricManager;
-  private String registryName;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -237,8 +239,6 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    this.metricManager = manager;
-    this.registryName = registryName;
     registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
@@ -315,4 +315,14 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
     return name + (cacheMap != null ? cacheMap.getValue().toString() : "");
   }
 
+  @Override
+  public long ramBytesUsed() {
+    synchronized (statsList) {
+      return BASE_RAM_BYTES_USED +
+          RamUsageEstimator.sizeOfObject(name) +
+          RamUsageEstimator.sizeOfObject(metricNames) +
+          RamUsageEstimator.sizeOfObject(statsList) +
+          RamUsageEstimator.sizeOfObject(cache);
+    }
+  }
 }

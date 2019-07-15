@@ -105,6 +105,7 @@ public final class Util {
    *  For example, simple ordinals (0, 1,
    *  2, ...), or file offsets (when appending to a file)
    *  fit this. */
+  @Deprecated
   public static IntsRef getByOutput(FST<Long> fst, long targetOutput) throws IOException {
 
     final BytesReader in = fst.getBytesReader();
@@ -122,6 +123,7 @@ public final class Util {
    * Expert: like {@link Util#getByOutput(FST, long)} except reusing 
    * BytesReader, initial and scratch Arc, and result.
    */
+  @Deprecated
   public static IntsRef getByOutput(FST<Long> fst, long targetOutput, BytesReader in, Arc<Long> arc, Arc<Long> scratchArc, IntsRefBuilder result) throws IOException {
     long output = arc.output;
     int upto = 0;
@@ -924,7 +926,7 @@ public final class Util {
   */
 
   /**
-   * Reads the first arc greater or equal that the given label into the provided
+   * Reads the first arc greater or equal than the given label into the provided
    * arc in place and returns it iff found, otherwise return <code>null</code>.
    * 
    * @param label the label to ceil on
@@ -958,7 +960,19 @@ public final class Util {
     }
     fst.readFirstTargetArc(follow, arc, in);
     if (arc.bytesPerArc != 0 && arc.label != FST.END_LABEL) {
-      // Arcs are fixed array -- use binary search to find
+      if (arc.arcIdx == Integer.MIN_VALUE) {
+        // Arcs are in an array-with-gaps
+        int offset = label - arc.label;
+        if (offset >= arc.numArcs) {
+          return null;
+        } else if (offset < 0) {
+          return arc;
+        } else {
+          arc.nextArc = arc.posArcsStart - offset * arc.bytesPerArc;
+          return fst.readNextRealArc(arc, in);
+        }
+      }
+      // Arcs are packed array -- use binary search to find
       // the target.
 
       int low = arc.arcIdx;

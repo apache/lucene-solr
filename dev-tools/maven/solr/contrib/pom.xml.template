@@ -37,6 +37,7 @@
     <module>dataimporthandler</module>
     <module>dataimporthandler-extras</module>
     <module>extraction</module>
+    <module>jaegertracer-configurator</module>
     <module>langid</module>
     <module>ltr</module>
     <module>prometheus-exporter</module>

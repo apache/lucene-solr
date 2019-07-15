@@ -398,7 +398,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       rawMLTQuery = mlt.like(id);
       boostedMLTQuery = getBoostedQuery( rawMLTQuery );
       if( terms != null ) {
-        fillInterestingTermsFromMLTQuery( rawMLTQuery, terms );
+        fillInterestingTermsFromMLTQuery( boostedMLTQuery, terms );
       }
 
       // exclude current document from results

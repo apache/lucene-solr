@@ -168,6 +168,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
@@ -299,6 +300,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
+    System.setProperty(ZK_WHITELIST_PROPERTY, "*");
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
@@ -323,7 +325,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         log.error("Error deleting SolrCore.");
       }
       
-      ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
+      if (null != testExecutor) {
+        ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
+      }
 
       resetExceptionIgnores();
 
@@ -350,6 +354,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("solr.peerSync.useRangeVersions");
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
+      System.clearProperty(ZK_WHITELIST_PROPERTY);
       HttpClientUtil.resetHttpClientBuilder();
       Http2SolrClient.resetSslContextFactory();
 
@@ -552,6 +557,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("useCompoundFile", String.valueOf(iwc.getUseCompoundFile()));
 
     System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(iwc.getMaxBufferedDocs()));
+    System.setProperty("solr.tests.ramPerThreadHardLimitMB", String.valueOf(iwc.getRAMPerThreadHardLimitMB()));
     System.setProperty("solr.tests.ramBufferSizeMB", String.valueOf(iwc.getRAMBufferSizeMB()));
 
     String mergeSchedulerClass = iwc.getMergeScheduler().getClass().getName();
@@ -1283,6 +1289,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @see #deleteByQueryAndGetVersion
    */
   public void clearIndex() {
+    if (null == h) {
+      // harness not initialized, treat as No-Op so safe to call in cleanup methods
+      // even if no tests run
+      return;
+    }
     try {
       deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE),
                                                DISTRIB_UPDATE_PARAM,DistribPhase.FROMLEADER.toString()));
@@ -1346,7 +1357,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *  For example, this method changed single quoted strings into double quoted strings before
    *  the parser could natively handle them.
    *
-   * This transformation is automatically applied to JSON test srings (like assertJQ).
+   * This transformation is automatically applied to JSON test strings (like assertJQ).
    */
   public static String json(String testJSON) {
     return testJSON;

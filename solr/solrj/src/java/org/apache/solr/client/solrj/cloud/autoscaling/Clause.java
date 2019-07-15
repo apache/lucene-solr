@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,20 +57,25 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  * Represents a set of conditions in the policy
  */
 public class Clause implements MapWriter, Comparable<Clause> {
-  private static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type"));
+  public static final String NODESET = "nodeset";
+  static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type", "put", NODESET));
 
   private final int hashCode;
   final boolean hasComputedValue;
   final Map<String, Object> original;
   final Clause derivedFrom;
+  boolean nodeSetPresent = false;
   Condition collection, shard, replica, tag, globalTag;
   final Replica.Type type;
+  Put put;
   boolean strict;
 
   protected Clause(Clause clause, Function<Condition, Object> computedValueEvaluator) {
     this.original = clause.original;
     this.hashCode = original.hashCode();
     this.type = clause.type;
+    this.put = clause.put;
+    this.nodeSetPresent = clause.nodeSetPresent;
     this.collection = clause.collection;
     this.shard = clause.shard;
     this.tag = evaluateValue(clause.tag, computedValueEvaluator);
@@ -81,7 +87,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   // internal use only
-  Clause(Map<String, Object> original, Condition tag, Condition globalTag, boolean isStrict)  {
+  Clause(Map<String, Object> original, Condition tag, Condition globalTag, boolean isStrict, Put put, boolean nodeSetPresent) {
     this.hashCode = original.hashCode();
     this.original = original;
     this.tag = tag;
@@ -91,6 +97,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.hasComputedValue = false;
     this.strict = isStrict;
     derivedFrom = null;
+    this.put = put;
+    this.nodeSetPresent = nodeSetPresent;
   }
 
   private Clause(Map<String, Object> m) {
@@ -99,6 +107,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
     this.hashCode = original.hashCode();
     String type = (String) m.get("type");
     this.type = type == null || ANY.equals(type) ? null : Replica.Type.valueOf(type.toUpperCase(Locale.ROOT));
+    String put = (String) m.getOrDefault("put", m.containsKey(NODESET)? Put.ON_ALL.val: null );
+    if (put != null) {
+      this.put = Put.get(put);
+      if (this.put == null) throwExp(m, "invalid value for put : {0}", put);
+    }
+
     strict = Boolean.parseBoolean(String.valueOf(m.getOrDefault("strict", "true")));
     Optional<String> globalTagName = m.keySet().stream().filter(Policy.GLOBAL_ONLY_TAGS::contains).findFirst();
     if (globalTagName.isPresent()) {
@@ -117,7 +131,9 @@ public class Clause implements MapWriter, Comparable<Clause> {
       }
       this.replica = parse(REPLICA, m);
       if (replica.op == WILDCARD) throw new IllegalArgumentException("replica val cannot be null" + toJSONString(m));
-      m.forEach(this::parseCondition);
+
+      this.nodeSetPresent = parseNodeset(m);
+      m.forEach((s, o) -> parseCondition(s, o, m));
     }
     if (tag == null)
       throw new RuntimeException("Invalid op, must have one and only one tag other than collection, shard,replica " + toJSONString(m));
@@ -131,9 +147,71 @@ public class Clause implements MapWriter, Comparable<Clause> {
     hasComputedValue = hasComputedValue();
   }
 
+  private boolean parseNodeset(Map<String, Object> m) {
+    if (!m.containsKey(NODESET)) return false;
+    Object o = m.get(NODESET);
+    if (o instanceof Map) {
+      String key = validateObjectInNodeset(m, (Map) o);
+      parseCondition(key, o, m);
+    } else if (o instanceof List) {
+      List l = (List) o;
+      if(l.size()<2) throwExp(m, "nodeset [] must have atleast 2 items");
+      if( checkMapArray(l, m)) return true;
+      for (Object it : l) {
+        if (it instanceof String) continue;
+        else throwExp(m, "nodeset :[]must have only string values");
+      }
+      parseCondition("node", o, m);
+    } else {
+      throwExp(m, "invalid value for nodeset, must be an object or a list of String");
+    }
+    return true;
+  }
+
+  private String validateObjectInNodeset(Map<String, Object> m, Map map) {
+    if (map.size() != 1) {
+      throwExp(m, "nodeset must only have one and only one key");
+    }
+    String key = (String) map.keySet().iterator().next();
+    Object val = map.get(key);
+    if(val instanceof String && ((String )val).trim().charAt(0) == '#'){
+      throwExp(m, formatString("computed  value {0} not allowed in nodeset", val));
+    }
+    return key;
+  }
+
+  private boolean checkMapArray(List l, Map<String, Object> m) {
+    List<Map> maps = null;
+    for (Object o : l) {
+      if (o instanceof Map) {
+        if (maps == null) maps = new ArrayList<>();
+        maps.add((Map) o);
+      }
+    }
+    String key = null;
+    if (maps != null) {
+      if (maps.size() != l.size()) throwExp(m, "all elements of nodeset must be Objects");
+      List<Condition> tags = new ArrayList<>(maps.size());
+      for (Map map : maps) {
+        String s = validateObjectInNodeset(m, map);
+        if(key == null) key = s;
+        if(!Objects.equals(key, s)){
+          throwExp(m, "all element must have same key");
+        }
+        tags.add(parse(s, m));
+      }
+      if(this.put == Put.ON_EACH) throwExp(m, "cannot use put: ''on-each-node''  with an array value in nodeset ");
+      this.tag = new Condition(key, tags,Operand.IN, null,this);
+      return true;
+    }
+    return false;
+
+  }
+
   public Condition getThirdTag() {
     return globalTag == null ? tag : globalTag;
   }
+
   private void doPostValidate(Condition... conditions) {
     for (Condition condition : conditions) {
       if (condition == null) continue;
@@ -198,12 +276,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return globalTag == null;
   }
 
-  void parseCondition(String s, Object o) {
+  void parseCondition(String s, Object o, Map m) {
     if (IGNORE_TAGS.contains(s)) return;
     if (tag != null) {
-      throw new IllegalArgumentException("Only one tag other than collection, shard, replica is possible");
+      throwExp(m, "Only one tag other than collection, shard, replica is possible");
     }
-    tag = parse(s, singletonMap(s, o));
+    tag = parse(s, o instanceof Map? (Map<String, Object>) o : singletonMap(s, o));
   }
 
   private int compareTypes(Replica.Type t1, Replica.Type t2) {
@@ -249,8 +327,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof Clause)) return false;
-    Clause that = (Clause)o;
-    return  Objects.equals(this.original, that.original);
+    Clause that = (Clause) o;
+    return Objects.equals(this.original, that.original);
   }
 
   //replica value is zero
@@ -265,14 +343,14 @@ public class Clause implements MapWriter, Comparable<Clause> {
         new SealedClause(this, computedValueEvaluator);
   }
 
-  Condition parse(String s, Map<String,Object> m) {
+  Condition parse(String s, Map<String, Object> m) {
 
     Object expectedVal = null;
     ComputedType computedType = null;
     Object val = m.get(s);
     Type varType = VariableBase.getTagType(s);
     if (varType.meta.isHidden()) {
-      throwExp(m,"''{0}'' is not allowed", varType.tagName);
+      throwExp(m, "''{0}'' is not allowed", varType.tagName);
     }
     try {
       String conditionName = s.trim();
@@ -297,12 +375,12 @@ public class Clause implements MapWriter, Comparable<Clause> {
             computedType = t;
             strVal = changedVal;
             if (varType == null || !varType.supportedComputedTypes.contains(computedType)) {
-              throwExp(m,"''{0}'' is not allowed for variable :  ''{1}''",t,conditionName);
+              throwExp(m, "''{0}'' is not allowed for variable :  ''{1}''", t, conditionName);
             }
           }
         }
         if (computedType == null && ((String) val).charAt(0) == '#' && !varType.wildCards.contains(val)) {
-          throwExp(m, "''{0}'' is not an allowed value for ''{1}'', supported value is : {2} ", val, conditionName,  varType.wildCards );
+          throwExp(m, "''{0}'' is not an allowed value for ''{1}'', supported value is : {2} ", val, conditionName, varType.wildCards);
 
         }
         operand = varType == null ? operand : varType.getOperand(operand, strVal, computedType);
@@ -318,16 +396,16 @@ public class Clause implements MapWriter, Comparable<Clause> {
     } catch (IllegalArgumentException iae) {
       throw iae;
     } catch (Exception e) {
-      throwExp(m, "Invalid tag : {0} ",s );
+      throwExp(m, " Invalid tag : {0} "+ e.getMessage(), s);
       return null;
     }
   }
 
-  public void throwExp(Map<String, Object> clause, String msg, Object... args) {
-    throw new IllegalArgumentException("syntax error in clause :"+ toJSONString(clause)+ " , msg:  "+  formatString(msg, args));
+  public static void throwExp(Map clause, String msg, Object... args) {
+    throw new IllegalArgumentException("syntax error in clause :" + toJSONString(clause) + " , msg:  " + formatString(msg, args));
   }
 
-  private List readListVal(Map m, List val, Type varType, String conditionName) {
+  private static List readListVal(Map m, List val, Type varType, String conditionName) {
     List list = val;
     list = (List) list.stream()
         .map(it -> varType.validate(conditionName, it, true))
@@ -360,7 +438,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return list;
   }
 
-  private Operand getOperand(String strVal) {
+  private static Operand getOperand(String strVal) {
     Operand operand;
     if (Policy.ANY.equals(strVal) || Policy.EACH.equals(strVal)) operand = WILDCARD;
     else if (strVal.startsWith(NOT_EQUAL.operand)) operand = NOT_EQUAL;
@@ -370,26 +448,25 @@ public class Clause implements MapWriter, Comparable<Clause> {
     return operand;
   }
 
+
+  private boolean isRowPass(ComputedValueEvaluator eval, Object t, Row row) {
+    eval.node = row.node;
+    if (t instanceof Condition) {
+      Condition tag = (Condition) t;
+      if (tag.computedType != null) tag = evaluateValue(tag, eval);
+      return tag.isPass(row);
+    } else {
+      return t.equals(row.getVal(tag.name));
+    }
+  }
+
   List<Violation> testGroupNodes(Policy.Session session, double[] deviations) {
     //e.g:  {replica:'#EQUAL', shard:'#EACH',  sysprop.zone:'#EACH'}
     ComputedValueEvaluator eval = new ComputedValueEvaluator(session);
     eval.collName = (String) collection.getValue();
     Violation.Ctx ctx = new Violation.Ctx(this, session.matrix, eval);
 
-    Set tags = new HashSet();
-    for (Row row : session.matrix) {
-      eval.node = row.node;
-      Condition tag = this.tag;
-      if (tag.computedType != null) tag = evaluateValue(tag, eval);
-      Object val = row.getVal(tag.name);
-      if (val != null) {
-        if (tag.op == LESS_THAN || tag.op == GREATER_THAN) {
-          tags.add(this.tag);
-        } else if (tag.isPass(val)) {
-          tags.add(val);
-        }
-      }
-    }
+    Set tags = getUniqueTags(session, eval);
     if (tags.isEmpty()) return Collections.emptyList();
 
     Set<String> shards = getShardNames(session, eval);
@@ -398,17 +475,10 @@ public class Clause implements MapWriter, Comparable<Clause> {
       final ReplicaCount replicaCount = new ReplicaCount();
       eval.shardName = s;
 
-      for (Object t : tags) {
+      for (Object tag : tags) {
         replicaCount.reset();
         for (Row row : session.matrix) {
-          eval.node = row.node;
-          if (t instanceof Condition) {
-            Condition tag = (Condition) t;
-            if (tag.computedType != null) tag = evaluateValue(tag, eval);
-            if (!tag.isPass(row)) continue;
-          } else {
-            if (!t.equals(row.getVal(tag.name))) continue;
-          }
+         if(!isRowPass(eval, tag, row)) continue;
           addReplicaCountsForNode(eval, replicaCount, row);
         }
 
@@ -421,28 +491,78 @@ public class Clause implements MapWriter, Comparable<Clause> {
               null,
               replicaCountCopy,
               sealedClause.getReplica().replicaCountDelta(replicaCountCopy),
-              t);
-          ctx.resetAndAddViolation(t, replicaCountCopy, violation);
-          sealedClause.addViolatingReplicas(sealedClause.tag, eval, ctx, tag.name, t, violation, session);
+              tag);
+          ctx.resetAndAddViolation(tag, replicaCountCopy, violation);
+          sealedClause.addViolatingReplicasForGroup(sealedClause.tag, eval, ctx, this.tag.name, tag, violation, session.matrix);
           if (!this.strict && deviations != null) {
-            tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
+            this.tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
           }
         } else {
-          if (replica.op == RANGE_EQUAL) tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
+          if (replica.op == RANGE_EQUAL) this.tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
         }
       }
     }
     return ctx.allViolations;
   }
 
-  void addViolatingReplicas(Condition tag,
-                            ComputedValueEvaluator eval,
-                            Violation.Ctx ctx, String tagName, Object tagVal,
-                            Violation violation,
-                            Policy.Session session) {
+  private Set getUniqueTags(Policy.Session session, ComputedValueEvaluator eval) {
+    Set tags =  new HashSet();
+
+    if(nodeSetPresent) {
+      if (tag.val instanceof List && ((List) tag.val).get(0) instanceof Condition) {
+        tags.addAll((List) tag.val);
+      } else {
+        tags.add(tag);
+      }
+      return tags;
+    }
+    if(tag.op == WILDCARD){
+      for (Row row : session.matrix) {
+        eval.node = row.node;
+        Condition tag = this.tag;
+        if (tag.computedType != null) tag = evaluateValue(tag, eval);
+        Object val = row.getVal(tag.name);
+        if (val != null) {
+          if (tag.op == LESS_THAN || tag.op == GREATER_THAN) {
+            tags.add(this.tag);
+          } else if (tag.isPass(val)) {
+            tags.add(val);
+          }
+        }
+      }
+
+    } else {
+
+      if (tag.op == LESS_THAN || tag.op == GREATER_THAN || tag.op == RANGE_EQUAL || tag.op == NOT_EQUAL) {
+        tags.add(tag); // eg: freedisk > 100
+      } else if (tag.val instanceof Collection) {
+        tags.add(tag); //e: sysprop.zone:[east,west]
+      } else {
+        tags.add(tag.val);//
+      }
+    }
+    return tags;
+  }
+
+  void addViolatingReplicasForGroup(Condition tag,
+                                    ComputedValueEvaluator eval,
+                                    Violation.Ctx ctx, String tagName, Object tagVal,
+                                    Violation violation,
+                                    List<Row> nodes) {
     if (tag.varType.addViolatingReplicas(ctx)) return;
-    for (Row row : session.matrix) {
-      if (tagVal.equals(row.getVal(tagName))) {
+    for (Row row : nodes) {
+      boolean isPass;
+      if (tagVal instanceof Condition) {
+        Condition condition = (Condition) tagVal;
+        if(condition.computedType != null){
+          eval.node = row.node;
+          Object val = eval.apply(condition);
+          condition = new Condition(condition.name, val,condition.op, null, condition.clause);
+        }
+        isPass = condition.isPass(row);
+      }
+      else isPass = tagVal.equals(row.getVal(tagName));
+      if (isPass) {
         row.forEachReplica(eval.collName, ri -> {
           if (Policy.ANY.equals(eval.shardName)
               || eval.shardName.equals(ri.getShard()))
@@ -456,6 +576,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
   public static long addReplicaCountsForNode = 0;
   public static long addReplicaCountsForNodeCacheMiss = 0;
   public static final String PERSHARD_REPLICAS = Clause.class.getSimpleName() + ".perShardReplicas";
+
   private void addReplicaCountsForNode(ComputedValueEvaluator computedValueEvaluator, ReplicaCount replicaCount, Row node) {
     addReplicaCountsForNode++;
 
@@ -504,7 +625,8 @@ public class Clause implements MapWriter, Comparable<Clause> {
               sealedClause.getReplica().replicaCountDelta(replicaCountCopy),
               eval.node);
           ctx.resetAndAddViolation(row.node, replicaCountCopy, violation);
-          sealedClause.addViolatingReplicas(sealedClause.tag, eval, ctx, NODE, row.node, violation, session);
+          sealedClause.addViolatingReplicasForGroup(sealedClause.tag, eval, ctx, NODE, row.node, violation,
+              Collections.singletonList(row));
           if (!this.strict && deviations != null) {
             tag.varType.computeDeviation(session, deviations, replicaCount, sealedClause);
           }
@@ -537,6 +659,14 @@ public class Clause implements MapWriter, Comparable<Clause> {
 
   public List<Violation> test(Policy.Session session, double[] deviations) {
     if (isPerCollectiontag()) {
+      if(nodeSetPresent) {
+        if(put == Put.ON_EACH){
+          return testPerNode(session, deviations) ;
+        } else {
+          return testGroupNodes(session, deviations);
+        }
+      }
+
       return tag.varType == Type.NODE ||
           (tag.varType.meta.isNodeSpecificVal() && replica.computedType == null) ?
           testPerNode(session, deviations) :
@@ -550,7 +680,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
         if (!sealedClause.getGlobalTag().isPass(r)) {
           ctx.resetAndAddViolation(r.node, null, new Violation(sealedClause, null, null, r.node, r.getVal(sealedClause.globalTag.name),
               sealedClause.globalTag.delta(r.getVal(globalTag.name)), r.node));
-          addViolatingReplicas(sealedClause.globalTag, computedValueEvaluator, ctx, Type.CORES.tagName, r.node, ctx.currentViolation, session);
+          addViolatingReplicasForGroup(sealedClause.globalTag, computedValueEvaluator, ctx, Type.CORES.tagName, r.node, ctx.currentViolation, session.matrix);
 
         }
       }
@@ -618,7 +748,7 @@ public class Clause implements MapWriter, Comparable<Clause> {
    * @param isRuleVal is this provided in the rule
    * @return actual validated value
    */
-  public static Object  validate(String name, Object val, boolean isRuleVal) {
+  public static Object validate(String name, Object val, boolean isRuleVal) {
     if (val == null) return null;
     Type info = VariableBase.getTagType(name);
     if (info == null) throw new RuntimeException("Unknown type :" + name);
@@ -678,5 +808,22 @@ public class Clause implements MapWriter, Comparable<Clause> {
   }
 
   public static final String METRICS_PREFIX = "metrics:";
+
+  enum Put {
+    ON_ALL(""), ON_EACH("on-each-node");
+
+    public final String val;
+
+    Put(String s) {
+      this.val = s;
+    }
+
+    public static Put get(String s) {
+      for (Put put : values()) {
+        if (put.val.equals(s)) return put;
+      }
+      return null;
+    }
+  }
 
 }

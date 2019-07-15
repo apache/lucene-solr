@@ -96,7 +96,9 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
       System.setProperty("java.naming.factory.initial", sysProp);
     }
     super.tearDown();
-    reset(driver, dataSource, connection);
+    if (null != driver) {
+      reset(driver, dataSource, connection);
+    }
   }
 
   @Test

@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CyclicBarrier;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -886,7 +887,9 @@ public class TestSuggestField extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(random(), analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     Codec filterCodec = new Lucene80Codec() {
-      PostingsFormat postingsFormat = new Completion50PostingsFormat();
+      CompletionPostingsFormat.FSTLoadMode fstLoadMode =
+          RandomPicks.randomFrom(random(), CompletionPostingsFormat.FSTLoadMode.values());
+      PostingsFormat postingsFormat = new Completion50PostingsFormat(fstLoadMode);
 
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {

@@ -23,6 +23,7 @@ import java.util.Date;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 
@@ -59,6 +60,14 @@ public class DateFieldTest extends SolrTestCaseJ4 {
     // Date math
     out = f.createField(sf, "1995-12-31T23:59:59.99Z+5MINUTES");
     assertEquals(820454699990L, ((Date) f.toObject( out )).getTime() );
+  }
+
+  public void testToNativeType() {
+    FieldType ft = new TrieDateField();
+    ByteArrayUtf8CharSequence charSequence = new ByteArrayUtf8CharSequence("1995-12-31T23:59:59Z");
+
+    Date val = (Date) ft.toNativeType(charSequence);
+    assertEquals("1995-12-31T23:59:59Z", val.toInstant().toString());
   }
 
 }

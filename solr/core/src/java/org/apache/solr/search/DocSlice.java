@@ -38,6 +38,7 @@ public class DocSlice extends DocSetBase implements DocList {
   final float[] scores;  // optional score list
   final long matches;
   final float maxScore;
+  final long ramBytesUsed; // cached value
 
   /**
    * Primary constructor for a DocSlice instance.
@@ -55,6 +56,7 @@ public class DocSlice extends DocSetBase implements DocList {
     this.scores=scores;
     this.matches=matches;
     this.maxScore=maxScore;
+    this.ramBytesUsed = BASE_RAM_BYTES_USED + ((long)docs.length << 2) + (scores == null ? 0 : ((long)scores.length<<2)+RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
   }
 
   @Override
@@ -172,7 +174,7 @@ public class DocSlice extends DocSetBase implements DocList {
   /** WARNING: this can over-estimate real memory use since backing arrays are shared with other DocSlice instances */
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES_USED + ((long)docs.length << 2) + (scores == null ? 0 : ((long)scores.length<<2)+RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
+    return ramBytesUsed;
   }
 
   @Override

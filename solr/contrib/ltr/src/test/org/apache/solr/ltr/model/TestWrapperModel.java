@@ -249,6 +249,12 @@ public class TestWrapperModel extends TestRerankBase {
     ++methodCount;
     Mockito.verify(wrappedModel, Mockito.times(1)).getNorms();
 
+    // ramBytesUseD() : delegate
+    Mockito.reset(wrappedModel);
+    wrapperModel.ramBytesUsed();
+    ++methodCount;
+    Mockito.verify(wrappedModel, Mockito.times(1)).ramBytesUsed();
+
     // getFeatures : delegate
     Mockito.reset(wrappedModel);
     wrapperModel.getFeatures();

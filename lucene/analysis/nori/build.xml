@@ -123,8 +123,8 @@
     </compile>
   </target>
 
-  <target name="test-tools" depends="compile-tools-tests">
-    <test-macro dataDir="src/tools/test" junit.classpath="tools.test.classpath"/>
+  <target name="test-tools" depends="install-junit4-taskdef, compile-tools-tests">
+    <test-macro testsDir="${build.dir}/classes/tools-test" workDir="src/tools/test" junit.classpath="tools.test.classpath"/>
   </target>
 
   <target name="compile-test" depends="module-build.compile-test, compile-tools-tests"/>

@@ -171,13 +171,14 @@ public class TestSolrConfigHandler extends RestTestBase {
     reqhandlertests(restTestHarness, null, null);
   }
 
-  public static void runConfigCommand(RestTestHarness harness, String uri, String payload) throws IOException {
+  public static Map runConfigCommand(RestTestHarness harness, String uri, String payload) throws IOException {
     String json = SolrTestCaseJ4.json(payload);
     log.info("going to send config command. path {} , payload: {}", uri, payload);
     String response = harness.post(uri, json);
     Map map = (Map) Utils.fromJSONString(response);
     assertNull(response, map.get("errorMessages"));
     assertNull(response, map.get("errors")); // Will this ever be returned?
+    return map;
   }
 
   public static void runConfigCommandExpectFailure(RestTestHarness harness, String uri, String payload, String expectedErrorMessage) throws Exception {
