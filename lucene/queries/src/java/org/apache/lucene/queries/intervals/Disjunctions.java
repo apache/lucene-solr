@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.BooleanQuery;
 
 final class Disjunctions {
 
@@ -43,7 +43,7 @@ final class Disjunctions {
         rewritten.forEach(l -> l.add(disjuncts.get(0)));
       }
       else {
-        if (rewritten.size() * disjuncts.size() > IndexSearcher.getMaxClauseCount()) {
+        if (rewritten.size() * disjuncts.size() > BooleanQuery.getMaxClauseCount()) {
           throw new IllegalArgumentException("Too many disjunctions to expand");
         }
         List<List<IntervalsSource>> toAdd = new ArrayList<>();

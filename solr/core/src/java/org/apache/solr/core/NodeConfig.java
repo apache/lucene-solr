@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -137,7 +136,7 @@ public class NodeConfig {
   /** 
    * If null, the lucene default will not be overridden
    *
-   * @see IndexSearcher#setMaxClauseCount
+   * @see org.apache.lucene.search.BooleanQuery#setMaxClauseCount
    */
   public Integer getBooleanQueryMaxClauseCount() {
     return booleanQueryMaxClauseCount;

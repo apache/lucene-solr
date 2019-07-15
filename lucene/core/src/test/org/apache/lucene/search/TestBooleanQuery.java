@@ -175,7 +175,7 @@ public class TestBooleanQuery extends LuceneTestCase {
 
   public void testException() {
     expectThrows(IllegalArgumentException.class, () -> {
-      IndexSearcher.setMaxClauseCount(0);
+      BooleanQuery.setMaxClauseCount(0);
     });
   }
 

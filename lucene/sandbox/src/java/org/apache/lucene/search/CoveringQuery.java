@@ -54,8 +54,8 @@ public final class CoveringQuery extends Query implements Accountable {
    *                           do not match.
    */
   public CoveringQuery(Collection<Query> queries, LongValuesSource minimumNumberMatch) {
-    if (queries.size() > IndexSearcher.getMaxClauseCount()) {
-      throw new IndexSearcher.TooManyClauses();
+    if (queries.size() > BooleanQuery.getMaxClauseCount()) {
+      throw new BooleanQuery.TooManyClauses();
     }
     if (minimumNumberMatch.needsScores()) {
       throw new IllegalArgumentException("The minimum number of matches may not depend on the score.");

@@ -87,7 +87,6 @@ import org.apache.lucene.util.ThreadInterruptedException;
  */
 public class IndexSearcher {
 
-  static int maxClauseCount = 1024;
   private static QueryCache DEFAULT_QUERY_CACHE;
   private static QueryCachingPolicy DEFAULT_CACHING_POLICY = new UsageTrackingQueryCachingPolicy();
   static {
@@ -108,7 +107,6 @@ public class IndexSearcher {
   // in the next release
   protected final IndexReaderContext readerContext;
   protected final List<LeafReaderContext> leafContexts;
-
   /** used with executor - each slice holds a set of leafs executed within one thread */
   private final LeafSlice[] leafSlices;
 
@@ -217,24 +215,6 @@ public class IndexSearcher {
    */
   public IndexSearcher(IndexReaderContext context) {
     this(context, null);
-  }
-
-  /** Return the maximum number of clauses permitted, 1024 by default.
-   * Attempts to add more than the permitted number of clauses cause {@link
-   * TooManyClauses} to be thrown.
-   * @see #setMaxClauseCount(int)
-   */
-  public static int getMaxClauseCount() { return maxClauseCount; }
-
-  /**
-   * Set the maximum number of clauses permitted per Query.
-   * Default value is 1024.
-   */
-  public static void setMaxClauseCount(int value)  {
-    if (value < 1) {
-      throw new IllegalArgumentException("maxClauseCount must be >= 1");
-    }
-    maxClauseCount = value;
   }
 
   /**
@@ -402,8 +382,8 @@ public class IndexSearcher {
    * this method can be used for efficient 'deep-paging' across potentially
    * large result sets.
    *
-   * @throws TooManyClauses If a query would exceed
-   *         {@link IndexSearcher#getMaxClauseCount()} clauses.
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs searchAfter(ScoreDoc after, Query query, int numHits) throws IOException {
     final int limit = Math.max(1, reader.maxDoc());
@@ -439,8 +419,8 @@ public class IndexSearcher {
   /** Finds the top <code>n</code>
    * hits for <code>query</code>.
    *
-   * @throws TooManyClauses If a query would exceed
-   *         {@link IndexSearcher#getMaxClauseCount()} clauses.
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs search(Query query, int n)
     throws IOException {
@@ -451,8 +431,8 @@ public class IndexSearcher {
    *
    * <p>{@link LeafCollector#collect(int)} is called for every matching document.
    *
-   * @throws TooManyClauses If a query would exceed
-   *         {@link IndexSearcher#getMaxClauseCount()} clauses.
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public void search(Query query, Collector results)
     throws IOException {
@@ -471,8 +451,8 @@ public class IndexSearcher {
    * <code>true</code> then the maximum score over all
    * collected hits will be computed.
    * 
-   * @throws TooManyClauses If a query would exceed
-   *         {@link IndexSearcher#getMaxClauseCount()} clauses.
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopFieldDocs search(Query query, int n,
       Sort sort, boolean doDocScores) throws IOException {
@@ -499,8 +479,8 @@ public class IndexSearcher {
    * this method can be used for efficient 'deep-paging' across potentially
    * large result sets.
    *
-   * @throws TooManyClauses If a query would exceed
-   *         {@link IndexSearcher#getMaxClauseCount()} clauses.
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs searchAfter(ScoreDoc after, Query query, int n, Sort sort) throws IOException {
     return searchAfter(after, query, n, sort, false);
@@ -519,8 +499,8 @@ public class IndexSearcher {
    * <code>true</code> then the maximum score over all
    * collected hits will be computed.
    *
-   * @throws TooManyClauses If a query would exceed
-   *         {@link IndexSearcher#getMaxClauseCount()} clauses.
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopFieldDocs searchAfter(ScoreDoc after, Query query, int numHits, Sort sort,
       boolean doDocScores) throws IOException {
@@ -647,8 +627,8 @@ public class IndexSearcher {
    *          to match documents
    * @param collector
    *          to receive hits
-   * @throws TooManyClauses If a query would exceed
-   *         {@link IndexSearcher#getMaxClauseCount()} clauses.
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
       throws IOException {
@@ -678,8 +658,8 @@ public class IndexSearcher {
   }
 
   /** Expert: called to re-write queries into primitive queries.
-   * @throws TooManyClauses If a query would exceed
-   *         {@link IndexSearcher#getMaxClauseCount()} clauses.
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public Query rewrite(Query original) throws IOException {
     Query query = original;
@@ -687,42 +667,7 @@ public class IndexSearcher {
          rewrittenQuery = query.rewrite(reader)) {
       query = rewrittenQuery;
     }
-    query.visit(getNumClausesCheckVisitor());
     return query;
-  }
-
-  /** Returns a QueryVisitor which recursively checks the total
-   * number of clauses that a query and its children cumulatively
-   * have and validates that the total number does not exceed
-   * the specified limit
-   */
-  private static QueryVisitor getNumClausesCheckVisitor() {
-    return new QueryVisitor() {
-
-      int numClauses;
-
-      @Override
-      public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
-        // Return this instance even for MUST_NOT and not an empty QueryVisitor
-        return this;
-      }
-
-      @Override
-      public void visitLeaf(Query query) {
-        if (numClauses > maxClauseCount) {
-          throw new TooManyClauses();
-        }
-        ++numClauses;
-      }
-
-      @Override
-      public void consumeTerms(Query query, Term... terms) {
-        if (numClauses > maxClauseCount) {
-          throw new TooManyClauses();
-        }
-        ++numClauses;
-      }
-    };
   }
 
   /** Returns an Explanation that describes how <code>doc</code> scored against
@@ -747,8 +692,8 @@ public class IndexSearcher {
    * Computing an explanation is as expensive as executing the query over the
    * entire index.
    * <p>Applications should call {@link IndexSearcher#explain(Query, int)}.
-   * @throws TooManyClauses If a query would exceed
-   *         {@link IndexSearcher#getMaxClauseCount()} clauses.
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   protected Explanation explain(Weight weight, int doc) throws IOException {
     int n = ReaderUtil.subIndex(doc, leafContexts);
@@ -856,16 +801,5 @@ public class IndexSearcher {
    */
   public Executor getExecutor() {
     return executor;
-  }
-
-  /** Thrown when an attempt is made to add more than {@link
-   * #getMaxClauseCount()} clauses. This typically happens if
-   * a PrefixQuery, FuzzyQuery, WildcardQuery, or TermRangeQuery
-   * is expanded to many terms during search.
-   */
-  public static class TooManyClauses extends RuntimeException {
-    public TooManyClauses() {
-      super("maxClauseCount is set to " + maxClauseCount);
-    }
   }
 }

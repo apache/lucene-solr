@@ -171,7 +171,3 @@ by the LegacyBM25Similarity class which can be found in the lucene-misc jar.
 IndexWriter#getDocStats() should be used instead of #maxDoc() / #numDocs() which offers a consistent 
 view on document stats. Previously calling two methods in order ot get point in time stats was subject
 to concurrent changes.
-
-## maxClausesCount moved from BooleanQuery To IndexSearcher (LUCENE-8811) ##
-IndexSearcher now performs max clause count checks on all types of queries (including BooleanQueries).
-This led to a logical move of the clauses count from BooleanQuery to IndexSearcher.

@@ -107,8 +107,8 @@ public final class BM25FQuery extends Query implements Accountable {
      * Adds a term to this builder.
      */
     public Builder addTerm(BytesRef term) {
-      if (termsSet.size() > IndexSearcher.getMaxClauseCount()) {
-        throw new IndexSearcher.TooManyClauses();
+      if (termsSet.size() > BooleanQuery.getMaxClauseCount()) {
+        throw new BooleanQuery.TooManyClauses();
       }
       termsSet.add(term);
       return this;
@@ -119,8 +119,8 @@ public final class BM25FQuery extends Query implements Accountable {
      */
     public BM25FQuery build() {
       int size = fieldAndWeights.size() * termsSet.size();
-      if (size > IndexSearcher.getMaxClauseCount()) {
-        throw new IndexSearcher.TooManyClauses();
+      if (size > BooleanQuery.getMaxClauseCount()) {
+        throw new BooleanQuery.TooManyClauses();
       }
       BytesRef[] terms = termsSet.toArray(new BytesRef[0]);
       return new BM25FQuery(similarity, new TreeMap<>(fieldAndWeights), terms);
@@ -153,8 +153,8 @@ public final class BM25FQuery extends Query implements Accountable {
     this.fieldAndWeights = fieldAndWeights;
     this.terms = terms;
     int numFieldTerms = fieldAndWeights.size() * terms.length;
-    if (numFieldTerms > IndexSearcher.getMaxClauseCount()) {
-      throw new IndexSearcher.TooManyClauses();
+    if (numFieldTerms > BooleanQuery.getMaxClauseCount()) {
+      throw new BooleanQuery.TooManyClauses();
     }
     this.fieldTerms = new Term[numFieldTerms];
     Arrays.sort(terms);

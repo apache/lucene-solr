@@ -220,33 +220,33 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
   }
   
   private void checkMaxClauseLimitation(MultiTermQuery.RewriteMethod method) throws Exception {
-    int savedMaxClauseCount = IndexSearcher.getMaxClauseCount();
-    IndexSearcher.setMaxClauseCount(3);
+    int savedMaxClauseCount = BooleanQuery.getMaxClauseCount();
+    BooleanQuery.setMaxClauseCount(3);
     
     final MultiTermQuery mtq = TermRangeQuery.newStringRange("data", "2", "7", true, true);
     mtq.setRewriteMethod(method);
     try {
-      IndexSearcher.TooManyClauses expected = expectThrows(IndexSearcher.TooManyClauses.class, () -> {
+      BooleanQuery.TooManyClauses expected = expectThrows(BooleanQuery.TooManyClauses.class, () -> {
         multiSearcherDupls.rewrite(mtq);
       });
       //  Maybe remove this assert in later versions, when internal API changes:
       assertEquals("Should throw BooleanQuery.TooManyClauses with a stacktrace containing checkMaxClauseCount()",
         "checkMaxClauseCount", expected.getStackTrace()[0].getMethodName());
     } finally {
-      IndexSearcher.setMaxClauseCount(savedMaxClauseCount);
+      BooleanQuery.setMaxClauseCount(savedMaxClauseCount);
     }
   }
   
   private void checkNoMaxClauseLimitation(MultiTermQuery.RewriteMethod method) throws Exception {
-    int savedMaxClauseCount = IndexSearcher.getMaxClauseCount();
-    IndexSearcher.setMaxClauseCount(3);
+    int savedMaxClauseCount = BooleanQuery.getMaxClauseCount();
+    BooleanQuery.setMaxClauseCount(3);
     
     final MultiTermQuery mtq = TermRangeQuery.newStringRange("data", "2", "7", true, true);
     mtq.setRewriteMethod(method);
     try {
       multiSearcherDupls.rewrite(mtq);
     } finally {
-      IndexSearcher.setMaxClauseCount(savedMaxClauseCount);
+      BooleanQuery.setMaxClauseCount(savedMaxClauseCount);
     }
   }
   
