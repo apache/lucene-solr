@@ -27,7 +27,7 @@ import org.apache.lucene.index.PointValues;
  *
  * @lucene.internal
  */
-class LatLonComponent2DPredicate {
+public class LatLonComponent2DPredicate {
 
   private final Component2D component;
 
