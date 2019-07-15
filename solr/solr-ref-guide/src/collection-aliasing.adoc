@@ -97,7 +97,13 @@ prohibited. If routing parameters are present this parameter is prohibited.
 Most routed alias parameters become _alias properties_ that can subsequently be inspected and <<aliasprop,modified>>.
 
 `router.name`::
-The type of routing to use. Presently only `time` and `category` are valid.  This parameter is required.
+The type of routing to use. Presently only `time` and `category` and `Dimensional[]` are valid.
+In the case of a multi dimensional routed alias (A. K. A. "DRA", see <<aliases.adoc#dimensional-routed-aliases,Aliases>>
+documentation), it is required to express all the dimensions in the same order that they will appear in the dimension
+array. The format for a DRA router.name is Dimensional[dim1,dim2] where dim1 and dim2 are valid router.name
+values for each sub-dimension. Note that DRA's are very new, and only 2D DRA's are presently supported. Higher
+numbers of dimensions will be supported soon. See examples below for further clarification on how to configure
+individual dimensions. This parameter is required.
 
 `router.field`::
 The field to inspect to determine which underlying collection an incoming document should be routed to.
@@ -189,6 +195,14 @@ indexed. Any valid Java regular expression pattern may be specified. This expres
 each request so batching of updates is strongly recommended. Overly complex patterns will produce cpu
 or garbage collecting overhead during indexing as determined by the JVM's implementation of regular expressions.
 
+==== Dimensional Routed Alias Parameters
+
+
+`router.#.`::
+This prefix denotes which position in the dimension array is being referred to for purposes of dimension configuration.
+For example in a Dimensional[time,category] router.0.start would be used to set the start time for the time dimension.
+
+
 === CREATEALIAS Response
 
 The output will simply be a responseHeader with details of the time it took to process the request.
@@ -196,19 +210,48 @@ To confirm the creation of the alias, you can look in the Solr Admin UI, under t
 `aliases.json` file. The initial collection for routed aliases should also be visible in various parts of the admin UI.
 
 === Examples using CREATEALIAS
+Create an alias named "testalias" and link it to the collections named "foo" and "bar".
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v2createAlias]
+====
+[.tab-label]*V2 API*
+*Input*
+
+[source,json]
+----
+{
+  "create-alias":{
+    "name":"testalias",
+    "collections":["foo","bar"]
+  }
+}
+----
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 125
+  }
+}
+----
+====
+
+[example.tab-pane#v1createAlias]
+====
+[.tab-label]*V1 API*
 
 *Input*
 
-Create an alias named "testalias" and link it to the collections named "anotherCollection" and "testCollection".
-
-// tag::createalias-simple-example[]
-
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=anotherCollection,testCollection&wt=xml
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=foo,bar&wt=xml
 ----
-
-//end::createalias-simple-example[]
 
 *Output*
 
@@ -221,41 +264,27 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
   </lst>
 </response>
 ----
+====
+--
 
-*Input*
-
-Create an alias named "myTimeData" for data beginning on `2018-01-15` in the UTC time zone and partitioning daily
-based on the `evt_dt` field in the incoming documents. Data more than one hour beyond the latest (most recent)
-partition is to be rejected and collections are created using a configset named "myConfig".
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=myTimeData&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
-----
-
-*Output*
-
-[source,xml]
-----
-<response>
-  <lst name="responseHeader">
-    <int name="status">0</int>
-    <int name="QTime">1234</int>
-  </lst>
-</response>
-----
-
-
-*Input*
-
-A somewhat contrived example demonstrating the <<v2-api.adoc#top-v2-api,V2 API>> usage and additional collection creation options.
+A somewhat contrived example demonstrating creating a TRA with many additional collection creation options.
 Notice that the collection creation parameters follow the v2 API naming convention, not the v1 naming conventions.
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v2createTRA]
+====
+[.tab-label]*V2 API*
+
+*Input*
+
+POST /api/c
 
 [source,json]
 ----
-POST /api/c
 {
-  "create-routed-alias" : {
+  "create-alias" : {
     "name": "somethingTemporalThisWayComes",
     "router" : {
       "name": "time",
@@ -285,7 +314,7 @@ POST /api/c
 
 *Output*
 
-[source,xml]
+[source,json]
 ----
 {
     "responseHeader": {
@@ -294,6 +323,132 @@ POST /api/c
     }
 }
 ----
+====
+
+[example.tab-pane#v1createTRA]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS
+    &name=somethingTemporalThisWayComes
+    &router.name=time
+    &router.start=NOW/MINUTE
+    &router.field=evt_dt
+    &router.interval=%2B2HOUR
+    &router.maxFutureMs=14400000
+    &create-collection.collection.configName=_default
+    &create-collection.router.name=implicit
+    &create-collection.router.field=foo_s
+    &create-collection.numShards=3
+    &create-collection.shards=foo,bar,baz
+    &create-collection.tlogReplicas=1
+    &create-collection.pullReplicas=1
+    &create-collection.maxShardsPerNode=2
+    &create-collection.property.foobar=bazbam
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1234</int>
+  </lst>
+</response>
+----
+====
+--
+
+Another example, this time of a Dimensional Routed Alias demonstrating how to specify parameters for the
+individual dimensions
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v2createDRA]
+====
+[.tab-label]*V2 API*
+
+*Input*
+
+POST /api/c
+[source,json]
+----
+{
+  "create-alias":{
+    "name":"dra_test1",
+    "router": {
+      "name": "Dimensional[time,category]",
+      "routerList" : [ {
+            "field":"myDate_tdt",
+            "start":"2019-01-01T00:00:00Z",
+            "interval":"+1MONTH",
+            "maxFutureMs":600000
+        },{
+             "field":"myCategory_s",
+             "maxCardinality":20
+        }]
+    },
+    "create-collection": {
+      "config":"_default",
+      "numShards":2
+    }
+  }
+}
+----
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 1234
+    }
+}
+----
+====
+
+[example.tab-pane#v1createDRA]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS
+    &name=dra_test1
+    &router.name=Dimensional[time,category]
+    &router.0.start=2019-01-01T00:00:00Z
+    &router.0.field=myDate_tdt
+    &router.0.interval=%2B1MONTH
+    &router.0.maxFutureMs=600000
+    &create-collection.collection.configName=_default
+    &create-collection.numShards=2
+    &router.1.maxCardinality=20
+    &router.1.field=myCategory_s
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1234</int>
+  </lst>
+</response>
+----
+====
+--
 
 [[listaliases]]
 == LISTALIASES: List of all aliases in the cluster

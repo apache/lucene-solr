@@ -79,7 +79,15 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         Thread.sleep(500);
       }
     }
+    try {
+      DocCollection confirmCollection = cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollectionOrNull(collection);
+      assertNotNull("Unable to find collection we were waiting for after done waiting",confirmCollection);
+    } catch (IOException e) {
+      fail("exception getting collection we were waiting for and have supposedly created already");
+    }
   }
+
+
 
   private boolean haveCollection(String alias, String collection) {
     // separated into separate lines to make it easier to track down an NPE that occurred once
@@ -192,6 +200,37 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     }
   }
 
+  protected void waitCoreCount(String collection, int count) {
+    long start = System.nanoTime();
+    int coreFooCount;
+    List<JettySolrRunner> jsrs = cluster.getJettySolrRunners();
+    do {
+      coreFooCount = 0;
+      // have to check all jetties... there was a very confusing bug where we only checked one and
+      // thus might pick a jetty without a core for the collection and succeed if count = 0 when we
+      // should have failed, or at least waited longer
+      for (JettySolrRunner jsr : jsrs) {
+        List<CoreDescriptor> coreDescriptors = jsr.getCoreContainer().getCoreDescriptors();
+        for (CoreDescriptor coreDescriptor : coreDescriptors) {
+          String collectionName = coreDescriptor.getCollectionName();
+          if (collection.equals(collectionName)) {
+            coreFooCount ++;
+          }
+        }
+      }
+      if (NANOSECONDS.toSeconds(System.nanoTime() - start) > 60) {
+        fail("took over 60 seconds after collection creation to update aliases:"+collection + " core count=" + coreFooCount + " was looking for " + count);
+      } else {
+        try {
+          Thread.sleep(500);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+          fail(e.getMessage());
+        }
+      }
+    } while(coreFooCount != count);
+  }
+
   public abstract String getAlias() ;
 
   public abstract CloudSolrClient getSolrClient() ;
@@ -229,19 +268,26 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
     if (random().nextBoolean()) {
       // Send in separate threads. Choose random collection & solrClient
+      ExecutorService exec = null;
       try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
-        ExecutorService exec = ExecutorUtil.newMDCAwareFixedThreadPool(1 + random().nextInt(2),
-            new DefaultSolrThreadFactory(getSaferTestName()));
-        List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
-        for (SolrInputDocument solrInputDocument : solrInputDocuments) {
-          String col = collections.get(random().nextInt(collections.size()));
-          futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument, commitWithin)));
+        try {
+          exec = ExecutorUtil.newMDCAwareFixedThreadPool(1 + random().nextInt(2),
+              new DefaultSolrThreadFactory(getSaferTestName()));
+          List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
+          for (SolrInputDocument solrInputDocument : solrInputDocuments) {
+            String col = collections.get(random().nextInt(collections.size()));
+            futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument, commitWithin)));
+          }
+          for (Future<UpdateResponse> future : futures) {
+            assertUpdateResponse(future.get());
+          }
+          // at this point there shouldn't be any tasks running
+          assertEquals(0, exec.shutdownNow().size());
+        } finally {
+          if (exec != null) {
+            exec.shutdownNow();
+          }
         }
-        for (Future<UpdateResponse> future : futures) {
-          assertUpdateResponse(future.get());
-        }
-        // at this point there shouldn't be any tasks running
-        assertEquals(0, exec.shutdownNow().size());
       }
     } else {
       // send in a batch.
