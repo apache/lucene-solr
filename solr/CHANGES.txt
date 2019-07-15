@@ -198,6 +198,9 @@ Bug Fixes
 
 * SOLR-13472: Forwarded requests should skip authorization on receiving nodes (adfel, Ishan Chattopadhyaya)
 
+* SOLR-13619: Kerberos plugin to pass original user principal to avoid 403 on nodes not hosting a collection
+  (adfel, Ishan Chattopadhyaya, noble)
+
 Other Changes
 ----------------------
 
