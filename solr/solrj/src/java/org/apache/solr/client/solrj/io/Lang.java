@@ -46,6 +46,7 @@ public class Lang {
         .withFunctionName("random", RandomFacadeStream.class)
         .withFunctionName("knnSearch", KnnStream.class)
 
+
             // decorator streams
         .withFunctionName("merge", MergeStream.class)
         .withFunctionName("unique", UniqueStream.class)

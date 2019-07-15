@@ -801,6 +801,32 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     return Paths.get(home);
   }
 
+  /**
+   * Solr allows users to store arbitrary files in a special directory located directly under SOLR_HOME.
+   *
+   * This directory is generally created by each node on startup.  Files located in this directory can then be
+   * manipulated using select Solr features (e.g. streaming expressions).
+   */
+  public static final String USER_FILES_DIRECTORY = "userfiles";
+  public static void ensureUserFilesDataDir(Path solrHome) {
+    final Path userFilesPath = getUserFilesPath(solrHome);
+    final File userFilesDirectory = new File(userFilesPath.toString());
+    if (! userFilesDirectory.exists()) {
+      try {
+        final boolean created = userFilesDirectory.mkdir();
+        if (! created) {
+          log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", USER_FILES_DIRECTORY, solrHome);
+        }
+      } catch (Exception e) {
+          log.warn("Unable to create [" + USER_FILES_DIRECTORY + "] directory in SOLR_HOME [" + solrHome + "].  Features requiring this directory may fail.", e);
+      }
+    }
+  }
+
+  public static Path getUserFilesPath(Path solrHome) {
+    return Paths.get(solrHome.toAbsolutePath().toString(), USER_FILES_DIRECTORY).toAbsolutePath();
+  }
+
   // Logs a message only once per startup
   private static void logOnceInfo(String key, String msg) {
     if (!loggedOnce.contains(key)) {

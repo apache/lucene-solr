@@ -177,9 +177,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         extraProperties = new Properties();
 
       String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
-
-      coresInit = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
-                                       extraProperties);
+      final Path solrHomePath = solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome);
+      coresInit = createCoreContainer(solrHomePath, extraProperties);
+      SolrResourceLoader.ensureUserFilesDataDir(solrHomePath);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
       log.debug("user.dir=" + System.getProperty("user.dir"));
