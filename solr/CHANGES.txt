@@ -226,6 +226,7 @@ Other Changes
 
 * SOLR-12364: Add test cases for edismax boost (David Smiley, Munendra S N)
 
+* SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
