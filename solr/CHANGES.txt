@@ -221,6 +221,8 @@ Bug Fixes
 
 * SOLR-13532: Fix http timeout and error logging bugs in RecoveryStrategy. (Suril Shah, hossman)
 
+* SOLR-13472: Forwarded requests should skip authorization on receiving nodes (adfel, Ishan Chattopadhyaya)
+
 Other Changes
 ----------------------
 
