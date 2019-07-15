@@ -137,6 +137,8 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 public class HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String ORIGINAL_USER_PRINCIPAL_HEADER = "originalUserPrincipal";
+
   public static final Random random;
   static {
     // We try to make things reproducible in the context of our tests by initializing the random instance
@@ -414,10 +416,12 @@ public class HttpSolrCall {
           if (path.equals(req.getServletPath())) {
             // avoid endless loop - pass through to Restlet via webapp
             action = PASSTHROUGH;
+            SolrRequestInfo.getRequestInfo().setAction(action);
             return;
           } else {
             // forward rewritten URI (without path prefix and core/collection name) to Restlet
             action = FORWARD;
+            SolrRequestInfo.getRequestInfo().setAction(action);
             return;
           }
         }
@@ -542,7 +546,7 @@ public class HttpSolrCall {
           handleAdminRequest();
           return RETURN;
         case REMOTEQUERY:
-          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse()));
+          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse(), action));
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
@@ -558,7 +562,7 @@ public class HttpSolrCall {
                * QueryResponseWriter is selected and we get the correct
                * Content-Type)
                */
-            SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp));
+            SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
             execute(solrRsp);
             if (shouldAudit()) {
               EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
