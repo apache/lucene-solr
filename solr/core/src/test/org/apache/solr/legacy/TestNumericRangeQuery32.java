@@ -23,6 +23,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
@@ -142,7 +143,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     super.setUp();
     // set the theoretical maximum term count for 8bit (see docs for the number)
     // super.tearDown will restore the default
-    IndexSearcher.setMaxClauseCount(3*255*2 + 255);
+    BooleanQuery.setMaxClauseCount(3*255*2 + 255);
   }
   
   /** test for both constant score and boolean query, the other tests only use the constant score mode */

@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.util;
 
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.BooleanQuery;
 
 /**
  * Prepares and restores {@link LuceneTestCase} at instance level 
@@ -27,11 +27,11 @@ final class TestRuleSetupAndRestoreInstanceEnv extends AbstractBeforeAfterRule {
 
   @Override
   protected void before() {
-    savedBoolMaxClauseCount = IndexSearcher.getMaxClauseCount();
+    savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
   }
 
   @Override
   protected void after() {
-    IndexSearcher.setMaxClauseCount(savedBoolMaxClauseCount);
+    BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
   }
 }

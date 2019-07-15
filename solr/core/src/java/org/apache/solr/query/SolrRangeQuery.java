@@ -369,7 +369,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
      */
     private long collectTerms(LeafReaderContext context, TermsEnum termsEnum, List<TermAndState> terms) throws IOException {
       long count = 0;
-      final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
+      final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, BooleanQuery.getMaxClauseCount());
       for (int i = 0; i < threshold; ++i) {
         final BytesRef term = termsEnum.next();
         if (term == null) {

@@ -36,7 +36,6 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
@@ -263,7 +262,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     }
     catch (ParseException | TokenMgrError tme) {
       throw new SyntaxError("Cannot parse '" +query+ "': " + tme.getMessage(), tme);
-    } catch (IndexSearcher.TooManyClauses tmc) {
+    } catch (BooleanQuery.TooManyClauses tmc) {
       throw new SyntaxError("Cannot parse '" +query+ "': too many boolean clauses", tmc);
     }
   }
