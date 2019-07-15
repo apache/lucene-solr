@@ -89,6 +89,8 @@ New Features
 
 * SOLR-13553: Node level custom RequestHandlers (noble)
 
+* SOLR-13622: Add files() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
+
 Improvements
 ----------------------
 
