@@ -73,6 +73,21 @@ public class TestBooleanQuery extends LuceneTestCase {
     assertEquals(bq1.build(), bq2.build());
   }
 
+  public void testFlattenInnerDisjunctionsWithMoreThan1024Terms() throws IOException {
+    IndexSearcher searcher = newSearcher(new MultiReader());
+
+    BooleanQuery.Builder builder1024 = new BooleanQuery.Builder();
+    for(int i = 0; i < 1024; i++) {
+      builder1024.add(new TermQuery(new Term("foo", "bar-" + i)), Occur.SHOULD);
+    }
+    Query inner = builder1024.build();
+    Query query = new BooleanQuery.Builder()
+        .add(inner, Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)
+        .build();
+    searcher.rewrite(query);
+  }
+
   public void testEqualityDoesNotDependOnOrder() {
     TermQuery[] queries = new TermQuery[] {
         new TermQuery(new Term("foo", "bar")),
