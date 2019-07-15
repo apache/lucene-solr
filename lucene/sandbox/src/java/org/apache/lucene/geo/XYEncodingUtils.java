@@ -58,9 +58,6 @@ public final class XYEncodingUtils {
    */
   public static double decode(int encoded) {
     double result = NumericUtils.sortableIntToFloat(encoded);
-    if ((result >=  MIN_VAL_INCL && result <= MAX_VAL_INCL) == false) {
-      int a =0;
-    }
     assert result >=  MIN_VAL_INCL && result <= MAX_VAL_INCL;
     return result;
   }
