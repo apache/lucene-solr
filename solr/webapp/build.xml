@@ -19,6 +19,7 @@
   <description>Solr webapp</description>
 
   <property name="rat.additional-includes" value="**"/>
+  <property name="rat.additional-excludes" value="web/img/**"/>
 
   <import file="../common-build.xml"/>
 
