@@ -92,10 +92,6 @@ Improvements
 * LUCENE-8770: BlockMaxConjunctionScorer now leverages two-phase iterators in order to avoid
   executing the second phase when scorers don't intersect. (Adrien Grand, Jim Ferenczi)
 
-* LUCENE-8781: FST lookup performance has been improved in many cases by
-  encoding Arcs using full-sized arrays with gaps. The new encoding is
-  enabled for postings in the default codec and for suggesters. (Mike Sokolov)
-
 * LUCENE-8818: Fix smokeTestRelease.py encoding bug (janhoy)
 
 * LUCENE-8845: Allow Intervals.prefix() and Intervals.wildcard() to specify

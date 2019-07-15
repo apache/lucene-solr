@@ -109,7 +109,7 @@ public final class FST<T> implements Accountable {
   // Increment version to change it
   private static final String FILE_FORMAT_NAME = "FST";
   private static final int VERSION_START = 6;
-  private static final int VERSION_CURRENT = 7;
+  private static final int VERSION_CURRENT = 6;
 
   // Never serialized; just used to represent the virtual
   // final node w/ no arcs:
@@ -650,6 +650,10 @@ public final class FST<T> implements Accountable {
       // binary search
       int labelRange = nodeIn.arcs[nodeIn.numArcs - 1].label - nodeIn.arcs[0].label + 1;
       boolean writeDirectly = labelRange > 0 && labelRange < Builder.DIRECT_ARC_LOAD_FACTOR * nodeIn.numArcs;
+      // TODO: LUCENE-8920 tighten up RAM usage. Until then, direct
+      // arc encoding is disabled due to excessive memory usage found
+      // in some cases
+      writeDirectly = false;
 
       //System.out.println("write int @pos=" + (fixedArrayStart-4) + " numArcs=" + nodeIn.numArcs);
       // create the header
