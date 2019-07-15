@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
@@ -109,6 +110,7 @@ public class PhraseQuery extends Query {
      * all of them.
      */
     public Builder add(Term term, int position) {
+      Objects.requireNonNull(term, "Cannot add a null term to PhraseQuery");
       if (position < 0) {
         throw new IllegalArgumentException("Positions must be >= 0, got " + position);
       }
