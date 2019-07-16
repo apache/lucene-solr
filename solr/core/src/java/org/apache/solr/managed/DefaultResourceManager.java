@@ -93,7 +93,7 @@ public class DefaultResourceManager extends ResourceManager {
   }
 
   @Override
-  public void createPool(String name, String type, Map<String, Float> poolLimits, Map<String, Object> params) throws Exception {
+  public void createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> params) throws Exception {
     ensureNotClosed();
     if (resourcePools.containsKey(name)) {
       throw new IllegalArgumentException("Pool '" + name + "' already exists.");
@@ -110,7 +110,7 @@ public class DefaultResourceManager extends ResourceManager {
   }
 
   @Override
-  public void modifyPoolLimits(String name, Map<String, Float> poolLimits) throws Exception {
+  public void modifyPoolLimits(String name, Map<String, Object> poolLimits) throws Exception {
     ensureNotClosed();
     ResourceManagerPool pool = resourcePools.get(name);
     if (pool == null) {

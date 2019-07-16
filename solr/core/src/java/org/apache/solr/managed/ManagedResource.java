@@ -44,7 +44,7 @@ public interface ManagedResource {
    * Set values of managed limits.
    * @param limits map of limit names and values
    */
-  default void setManagedLimits(Map<String, Float> limits) {
+  default void setManagedLimits(Map<String, Object> limits) {
     if (limits == null) {
       return;
     }
@@ -63,18 +63,18 @@ public interface ManagedResource {
    * @param key limit name
    * @param value limit value
    */
-  void setManagedLimit(String key, float value) throws Exception;
+  void setManagedLimit(String key, Object value) throws Exception;
 
   /**
    * Returns current values of managed limits.
    * @return map where keys are controlled tags and values are current limits
    */
-  Map<String, Float> getManagedLimits();
+  Map<String, Object> getManagedLimits();
 
   /**
    * Returns monitored values that are used for calculating optimal settings of managed limits.
    * @param tags monitored tags
    * @return map of tags to current values.
    */
-  Map<String, Float> getMonitoredValues(Collection<String> tags) throws Exception;
+  Map<String, Object> getMonitoredValues(Collection<String> tags) throws Exception;
 }

@@ -29,18 +29,18 @@ import org.apache.solr.core.SolrInfoBean;
 public interface ManagedMetricProducer extends SolrInfoBean, ManagedResource {
 
   @Override
-  default Map<String, Float> getMonitoredValues(Collection<String> tags) {
+  default Map<String, Object> getMonitoredValues(Collection<String> tags) {
     Map<String, Object> metrics = getMetricsSnapshot();
     if (metrics == null) {
       return Collections.emptyMap();
     }
-    Map<String, Float> result = new HashMap<>();
+    Map<String, Object> result = new HashMap<>();
     tags.forEach(tag -> {
       Object value = metrics.get(tag);
-      if (value == null || !(value instanceof Number)) {
+      if (value == null) {
         return;
       }
-      result.put(tag, ((Number)value).floatValue());
+      result.put(tag, value);
     });
     return result;
   }

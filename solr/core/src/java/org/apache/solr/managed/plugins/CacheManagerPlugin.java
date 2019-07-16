@@ -80,11 +80,16 @@ public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
 
   @Override
   public void manage(ResourceManagerPool pool) throws Exception {
-    Map<String, Map<String, Float>> currentValues = pool.getCurrentValues();
+    Map<String, Map<String, Object>> currentValues = pool.getCurrentValues();
     Map<String, Float> totalValues = pool.getTotalValues();
     // pool limits are defined using controlled tags
-    pool.getPoolLimits().forEach((poolLimitName, poolLimitValue) -> {
-      if (poolLimitValue == null || poolLimitValue <= 0) {
+    pool.getPoolLimits().forEach((poolLimitName, value) -> {
+      // only numeric limits are supported
+      if (value == null || !(value instanceof Number)) {
+        return;
+      }
+      float poolLimitValue = ((Number)value).floatValue();
+      if (poolLimitValue <= 0) {
         return;
       }
       String monitoredTag = controlledToMonitored.get(poolLimitName);
@@ -105,9 +110,13 @@ public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
       float changeRatio = poolLimitValue / totalValue;
       // modify current limits by the changeRatio
       pool.getResources().forEach((name, resource) -> {
-        Map<String, Float> resourceLimits = resource.getManagedLimits();
-        Float currentResourceLimit = resourceLimits.get(poolLimitName);
-        if (currentResourceLimit == null || currentResourceLimit <= 0) {
+        Map<String, Object> resourceLimits = resource.getManagedLimits();
+        Object limit = resourceLimits.get(poolLimitName);
+        if (limit == null || !(limit instanceof Number)) {
+          return;
+        }
+        float currentResourceLimit = ((Number)limit).floatValue();
+        if (currentResourceLimit <= 0) {
           return;
         }
         float newLimit = currentResourceLimit * changeRatio;

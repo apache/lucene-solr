@@ -39,7 +39,7 @@ public class ResourceManagerPool implements Runnable, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, ManagedResource> resources = new ConcurrentHashMap<>();
-  private Map<String, Float> poolLimits;
+  private Map<String, Object> poolLimits;
   private final String type;
   private final String name;
   private final ResourceManagerPlugin resourceManagerPlugin;
@@ -58,7 +58,7 @@ public class ResourceManagerPool implements Runnable, Closeable {
    * @param params parameters for the {@link ResourceManagerPlugin}
    * @throws Exception
    */
-  public ResourceManagerPool(String name, String type, ResourceManagerPluginFactory factory, Map<String, Float> poolLimits, Map<String, Object> params) throws Exception {
+  public ResourceManagerPool(String name, String type, ResourceManagerPluginFactory factory, Map<String, Object> poolLimits, Map<String, Object> params) throws Exception {
     this.name = name;
     this.type = type;
     this.resourceManagerPlugin = factory.create(type, params);
@@ -94,11 +94,11 @@ public class ResourceManagerPool implements Runnable, Closeable {
    * Get the current monitored values from all resources. Result is a map with resource names as keys,
    * and tag/value maps as values.
    */
-  public Map<String, Map<String, Float>> getCurrentValues() throws InterruptedException {
+  public Map<String, Map<String, Object>> getCurrentValues() throws InterruptedException {
     updateLock.lockInterruptibly();
     try {
       // collect current values
-      Map<String, Map<String, Float>> currentValues = new HashMap<>();
+      Map<String, Map<String, Object>> currentValues = new HashMap<>();
       for (ManagedResource resource : resources.values()) {
         try {
           currentValues.put(resource.getResourceName(), resource.getMonitoredValues(resourceManagerPlugin.getMonitoredTags()));
@@ -109,11 +109,15 @@ public class ResourceManagerPool implements Runnable, Closeable {
       // calculate totals
       Map<String, Float> newTotalValues = new HashMap<>();
       currentValues.values().forEach(map -> map.forEach((k, v) -> {
+        // only calculate totals for numbers
+        if (!(v instanceof Number)) {
+          return;
+        }
         Float total = newTotalValues.get(k);
         if (total == null) {
-          newTotalValues.put(k, v);
+          newTotalValues.put(k, ((Number)v).floatValue());
         } else {
-          newTotalValues.put(k, total + v);
+          newTotalValues.put(k, total + ((Number)v).floatValue());
         }
       }));
       totalValues = newTotalValues;
@@ -136,14 +140,14 @@ public class ResourceManagerPool implements Runnable, Closeable {
     }
   }
 
-  public Map<String, Float> getPoolLimits() {
+  public Map<String, Object> getPoolLimits() {
     return poolLimits;
   }
 
   /**
    * Pool limits are defined using controlled tags.
    */
-  public void setPoolLimits(Map<String, Float> poolLimits) {
+  public void setPoolLimits(Map<String, Object> poolLimits) {
     this.poolLimits = new HashMap(poolLimits);
   }
 

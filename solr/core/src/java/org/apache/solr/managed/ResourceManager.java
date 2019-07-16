@@ -88,14 +88,14 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
    * @param poolLimits pool limits
    * @param params other parameters. These are also used for creating a {@link ResourceManagerPlugin}
    */
-  public abstract void createPool(String name, String type, Map<String, Float> poolLimits, Map<String, Object> params) throws Exception;
+  public abstract void createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> params) throws Exception;
 
   /**
    * Modify pool limits.
    * @param name existing pool name
    * @param poolLimits new pool limits
    */
-  public abstract void modifyPoolLimits(String name, Map<String, Float> poolLimits) throws Exception;
+  public abstract void modifyPoolLimits(String name, Map<String, Object> poolLimits) throws Exception;
 
   /**
    * Remove pool. This also stops the management of resources registered with that pool.
