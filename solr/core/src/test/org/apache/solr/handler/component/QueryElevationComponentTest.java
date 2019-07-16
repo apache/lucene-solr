@@ -399,8 +399,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
       assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
       assertNull(elevationProvider.getElevationForQuery("xxxx"));
-      assertNull(null, elevationProvider.getElevationForQuery("yyyy"));
-      assertNull(null, elevationProvider.getElevationForQuery("zzzz"));
+      assertNull(elevationProvider.getElevationForQuery("yyyy"));
+      assertNull(elevationProvider.getElevationForQuery("zzzz"));
 
       // Now test the same thing with a lowercase filter: 'lowerfilt'
       args = new NamedList<>();

@@ -42,6 +42,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.WeakHashMap;
+import java.util.function.Consumer;
 
 import com.carrotsearch.hppc.IntIntHashMap;
 import com.carrotsearch.hppc.cursors.IntIntCursor;
@@ -52,6 +53,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ObjectArrays;
+import com.google.common.collect.Sets;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -690,7 +692,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * @return The created {@link ElevationProvider}.
    */
   protected ElevationProvider createElevationProvider(Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap) {
-    return new SubsetMatchElevationProvider(new TrieSubsetMatcher.Builder<>(), elevationBuilderMap);
+    return new DefaultElevationProvider(new TrieSubsetMatcher.Builder<>(), elevationBuilderMap);
   }
 
   //---------------------------------------------------------------------------------
@@ -701,28 +703,20 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * Analyzes the provided query string and returns a concatenation of the analyzed tokens.
    */
   public String analyzeQuery(String query) {
-    StringBuilder concatenatedTerms = new StringBuilder();
-    analyzeQuery(query, null, concatenatedTerms);
-    return concatenatedTerms.toString();
+    StringBuilder concatTerms = new StringBuilder();
+    analyzeQuery(query, concatTerms::append);
+    return concatTerms.toString();
   }
 
   /**
-   * Analyzes the provided query string, tokenizes the terms and add them to either the provided {@link Collection} or {@link Appendable}.
-   *
-   * @param queryTerms The {@link Collection} that receives the terms; or null if none.
-   * @param concatenatedTerms The {@link Appendable} that receives the terms; or null if none.
+   * Analyzes the provided query string, tokenizes the terms, and adds them to the provided {@link Consumer}.
    */
-  protected void analyzeQuery(String query, Collection<String> queryTerms, Appendable concatenatedTerms) {
+  protected void analyzeQuery(String query, Consumer<String> termsConsumer) {
     try (TokenStream tokens = queryAnalyzer.tokenStream("", query)) {
       tokens.reset();
       CharTermAttribute termAtt = tokens.addAttribute(CharTermAttribute.class);
       while (tokens.incrementToken()) {
-        if (queryTerms != null) {
-          queryTerms.add(termAtt.toString());
-        }
-        if (concatenatedTerms != null) {
-          concatenatedTerms.append(termAtt);
-        }
+        termsConsumer.accept(termAtt.toString());
       }
       tokens.end();
     } catch (IOException e) {
@@ -857,31 +851,33 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * </ul>
    * The terms are tokenized with the query analyzer.
    */
-  protected class SubsetMatchElevationProvider implements ElevationProvider {
+  protected class DefaultElevationProvider implements ElevationProvider {
 
-    private final SubsetMatcher<String, Elevation> subsetMatcher;
+    private final TrieSubsetMatcher<String, Elevation> subsetMatcher;
     private final Map<String, Elevation> exactMatchElevationMap;
 
     /**
-     * @param subsetMatcherBuilder The {@link SubsetMatcher.Builder} to build the {@link SubsetMatcher}.
+     * @param subsetMatcherBuilder The {@link TrieSubsetMatcher.Builder} to build the {@link TrieSubsetMatcher}.
      * @param elevationBuilderMap The map of elevation rules.
      */
-    protected SubsetMatchElevationProvider(SubsetMatcher.Builder<String, Elevation> subsetMatcherBuilder,
-                                           Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap) {
+    protected DefaultElevationProvider(TrieSubsetMatcher.Builder<String, Elevation> subsetMatcherBuilder,
+                                       Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap) {
       exactMatchElevationMap = new LinkedHashMap<>();
       Collection<String> queryTerms = new ArrayList<>();
-      StringBuilder concatenatedTerms = new StringBuilder();
+      Consumer<String> termsConsumer = queryTerms::add;
+      StringBuilder concatTerms = new StringBuilder();
+      Consumer<String> concatConsumer = concatTerms::append;
       for (Map.Entry<ElevatingQuery, ElevationBuilder> entry : elevationBuilderMap.entrySet()) {
         ElevatingQuery elevatingQuery = entry.getKey();
         Elevation elevation = entry.getValue().build();
         if (elevatingQuery.subsetMatch) {
           queryTerms.clear();
-          analyzeQuery(elevatingQuery.queryString, queryTerms, null);
+          analyzeQuery(elevatingQuery.queryString, termsConsumer);
           subsetMatcherBuilder.addSubset(queryTerms, elevation);
         } else {
-          concatenatedTerms.setLength(0);
-          analyzeQuery(elevatingQuery.queryString, null, concatenatedTerms);
-          exactMatchElevationMap.put(concatenatedTerms.toString(), elevation);
+          concatTerms.setLength(0);
+          analyzeQuery(elevatingQuery.queryString, concatConsumer);
+          exactMatchElevationMap.put(concatTerms.toString(), elevation);
         }
       }
       this.subsetMatcher = subsetMatcherBuilder.build();
@@ -896,13 +892,18 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         }
         return exactMatchElevationMap.get(analyzeQuery(queryString));
       }
-      StringBuilder concatenatedTerms = hasExactMatchElevationRules ? new StringBuilder() : null;
       Collection<String> queryTerms = new ArrayList<>();
-      analyzeQuery(queryString, queryTerms, concatenatedTerms);
+      Consumer<String> termsConsumer = queryTerms::add;
+      StringBuilder concatTerms = null;
+      if (hasExactMatchElevationRules) {
+        concatTerms = new StringBuilder();
+        termsConsumer = termsConsumer.andThen(concatTerms::append);
+      }
+      analyzeQuery(queryString, termsConsumer);
       Elevation mergedElevation = null;
 
       if (hasExactMatchElevationRules) {
-        mergedElevation = exactMatchElevationMap.get(concatenatedTerms.toString());
+        mergedElevation = exactMatchElevationMap.get(concatTerms.toString());
       }
 
       Iterator<Elevation> elevationIterator = subsetMatcher.findSubsetsMatching(queryTerms);
@@ -1090,7 +1091,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       Set<BytesRef> elevatedIds = ImmutableSet.<BytesRef>builder().addAll(this.elevatedIds).addAll(elevation.elevatedIds).build();
       boolean overlappingElevatedIds = elevatedIds.size() != (this.elevatedIds.size() + elevation.elevatedIds.size());
       BooleanQuery.Builder includeQueryBuilder = new BooleanQuery.Builder();
-      Set<BooleanClause> clauseSet = (overlappingElevatedIds ? new HashSet<>() : null);
+      Set<BooleanClause> clauseSet = (overlappingElevatedIds ? Sets.newHashSetWithExpectedSize(elevatedIds.size()) : null);
       for (BooleanClause clause : this.includeQuery.clauses()) {
         if (!overlappingElevatedIds || clauseSet.add(clause)) {
           includeQueryBuilder.add(clause);
@@ -1110,8 +1111,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       } else {
         boolean overlappingExcludedIds = excludedIds.size() != (this.excludedIds.size() + elevation.excludedIds.size());
         if (overlappingExcludedIds) {
-          ImmutableSet.Builder<TermQuery> excludeQueriesBuilder = ImmutableSet.builder();
-          ImmutableSet<TermQuery> excludedQueriesSet = excludeQueriesBuilder.add(this.excludeQueries).add(elevation.excludeQueries).build();
+          ImmutableSet<TermQuery> excludedQueriesSet = ImmutableSet.<TermQuery>builder().add(this.excludeQueries).add(elevation.excludeQueries).build();
           excludeQueries = excludedQueriesSet.toArray(new TermQuery[0]);
         } else {
           excludeQueries = ObjectArrays.concat(this.excludeQueries, elevation.excludeQueries, TermQuery.class);
@@ -1151,7 +1151,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     @Override
     public FieldComparator<Integer> newComparator(String fieldName, final int numHits, int sortPos, boolean reversed) {
-      return new SimpleFieldComparator<Integer>() {
+      return new SimpleFieldComparator<>() {
         final int[] values = new int[numHits];
         int bottomVal;
         int topVal;
@@ -1229,7 +1229,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   /**
-   * Matches a collection of subsets of type &lt;E&gt;.
+   * Matches a potentially large collection of subsets with a trie implementation.
    * <p>
    * Given a collection of subsets <code>N</code>, finds all the subsets that are contained (ignoring duplicate elements)
    * by a provided set <code>s</code>.
@@ -1238,35 +1238,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * <p>
    * Associates a match value of type &lt;M&gt; to each subset and provides it each time the subset matches (i.e. is
    * contained by the provided set).
-   *
-   * @param <E> Subset element type.
-   * @param <M> Subset match value type.
-   */
-  protected interface SubsetMatcher<E, M> {
-
-    /**
-     * Returns an iterator over all the subsets that are contained by the provided set.
-     * The returned iterator does not support removal.
-     *
-     * @param set The provided set. It can be any {@link Collection} structure, see the implementation for more details.
-     */
-    Iterator<M> findSubsetsMatching(Collection<E> set);
-
-    /**
-     * Gets the number of subsets in this matcher.
-     */
-    int getSubsetCount();
-
-    interface Builder<E, M> {
-
-      Builder<E, M> addSubset(Collection<E> subset, M matchValue);
-
-      SubsetMatcher<E, M> build();
-    }
-  }
-
-  /**
-   * Matches a potentially large collection of subsets with a trie implementation.
    * <p>
    * This matcher imposes the elements are {@link Comparable}.
    * It does not keep the subset insertion order.
@@ -1278,8 +1249,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * complexity is <code>O(s^3)</code> where s is the size of the set to partially match.
    * Note it does not depend on <code>N</code>, the size of the collection of subsets, nor on <code>n</code>, the size of
    * a subset.
+   *
+   * @param <E> Subset element type.
+   * @param <M> Subset match value type.
    */
-  protected static class TrieSubsetMatcher<E extends Comparable<? super E>, M> implements SubsetMatcher<E, M> {
+  protected static class TrieSubsetMatcher<E extends Comparable<? super E>, M> {
 
       /*
       Trie structure:
@@ -1327,7 +1301,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
       Time complexity:
       ----------------
-      s = size of the set to partially
+      s = size of the set to partially match
       N = size of the collection of subsets
       n = size of a subset
 
@@ -1367,7 +1341,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       So a more typical case time complexity is: min(O(s^3), O(s.N.n))
       */
 
-    public static class Builder<E extends Comparable<? super E>, M> implements SubsetMatcher.Builder<E, M> {
+    public static class Builder<E extends Comparable<? super E>, M> {
 
       private final TrieSubsetMatcher.Node<E, M> root = new TrieSubsetMatcher.Node<>();
       private int subsetCount;
@@ -1408,7 +1382,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       this.subsetCount = subsetCount;
     }
 
-    @Override
+    /**
+     * Gets the number of subsets in this matcher.
+     */
     public int getSubsetCount() {
       return subsetCount;
     }
@@ -1419,7 +1395,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
      *
      * @param set This set is copied to a new {@link ImmutableSortedSet} with natural ordering.
      */
-    @Override
     public Iterator<M> findSubsetsMatching(Collection<E> set) {
       return new MatchIterator(ImmutableSortedSet.copyOf(set));
     }
