@@ -711,12 +711,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   /**
    * Analyzes the provided query string, tokenizes the terms, and adds them to the provided {@link Consumer}.
    */
-  protected void analyzeQuery(String query, Consumer<String> termsConsumer) {
+  protected void analyzeQuery(String query, Consumer<CharSequence> termsConsumer) {
     try (TokenStream tokens = queryAnalyzer.tokenStream("", query)) {
       tokens.reset();
       CharTermAttribute termAtt = tokens.addAttribute(CharTermAttribute.class);
       while (tokens.incrementToken()) {
-        termsConsumer.accept(termAtt.toString());
+        termsConsumer.accept(termAtt);
       }
       tokens.end();
     } catch (IOException e) {
@@ -864,9 +864,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
                                        Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap) {
       exactMatchElevationMap = new LinkedHashMap<>();
       Collection<String> queryTerms = new ArrayList<>();
-      Consumer<String> termsConsumer = queryTerms::add;
+      Consumer<CharSequence> termsConsumer = term -> queryTerms.add(term.toString());
       StringBuilder concatTerms = new StringBuilder();
-      Consumer<String> concatConsumer = concatTerms::append;
+      Consumer<CharSequence> concatConsumer = concatTerms::append;
       for (Map.Entry<ElevatingQuery, ElevationBuilder> entry : elevationBuilderMap.entrySet()) {
         ElevatingQuery elevatingQuery = entry.getKey();
         Elevation elevation = entry.getValue().build();
@@ -893,7 +893,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         return exactMatchElevationMap.get(analyzeQuery(queryString));
       }
       Collection<String> queryTerms = new ArrayList<>();
-      Consumer<String> termsConsumer = queryTerms::add;
+      Consumer<CharSequence> termsConsumer = term -> queryTerms.add(term.toString());
       StringBuilder concatTerms = null;
       if (hasExactMatchElevationRules) {
         concatTerms = new StringBuilder();
