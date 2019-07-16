@@ -50,8 +50,8 @@ import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
-import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
@@ -620,13 +620,27 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       String collections = req.getParams().get("collections");
       RoutedAlias routedAlias = null;
       Exception ex = null;
+      HashMap<String,Object> possiblyModifiedParams = new HashMap<>();
       try {
         // note that RA specific validation occurs here.
-        routedAlias = RoutedAlias.fromProps(alias, req.getParams().toMap(new HashMap<>()));
+        routedAlias = RoutedAlias.fromProps(alias, req.getParams().toMap(possiblyModifiedParams));
       } catch (SolrException e) {
         // we'll throw this later if we are in fact creating a routed alias.
         ex = e;
       }
+      @SuppressWarnings("unchecked")
+      ModifiableSolrParams finalParams = new ModifiableSolrParams();
+      for (Map.Entry<String, Object> entry : possiblyModifiedParams.entrySet()) {
+        if (entry.getValue().getClass().isArray() ) {
+          // v2 api hits this case
+          for (Object o : (Object[]) entry.getValue()) {
+            finalParams.add(entry.getKey(),o.toString());
+          }
+        } else {
+          finalParams.add(entry.getKey(),entry.getValue().toString());
+        }
+      }
+
       if (collections != null) {
         if (routedAlias != null) {
           throw new SolrException(BAD_REQUEST, "Collections cannot be specified when creating a routed alias.");
@@ -634,7 +648,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           //////////////////////////////////////
           // Regular alias creation indicated //
           //////////////////////////////////////
-          return copy(req.getParams().required(), null, NAME, "collections");
+          return copy(finalParams.required(), null, NAME, "collections");
         }
       }
 
@@ -648,14 +662,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       // Now filter out just the parameters we care about from the request
-      Map<String, Object> result = copy(req.getParams(), null, routedAlias.getRequiredParams());
-      copy(req.getParams(), result, routedAlias.getOptionalParams());
+      assert routedAlias != null;
+      Map<String, Object> result = copy(finalParams, null, routedAlias.getRequiredParams());
+      copy(finalParams, result, routedAlias.getOptionalParams());
 
       ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // without prefix
 
       // add to result params that start with "create-collection.".
       //   Additionally, save these without the prefix to createCollParams
-      for (Map.Entry<String, String[]> entry : req.getParams()) {
+      for (Map.Entry<String, String[]> entry : finalParams) {
         final String p = entry.getKey();
         if (p.startsWith(CREATE_COLLECTION_PREFIX)) {
           // This is what SolrParams#getAll(Map, Collection)} does

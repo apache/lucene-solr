@@ -22,8 +22,10 @@ API Changes
   byte[] that stores the UTF-8 bytes of the stored string.
   (Namgyu Kim via Adrien Grand)
 
-* LUCENE-8811: Deprecated BooleanQuery#setMaxClauseCount() and getMaxClauseCount
-  have been removed (Atri Sharma, Adrien Grand, Alan Woodward)
+* LUCENE-8811: BooleanQuery#setMaxClauseCount() and #getMaxClauseCount() have
+  moved to IndexSearcher. The checks are now implemented using a QueryVisitor
+  and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
+  Grand, Alan Woodward)
 
 Improvements
 
@@ -59,11 +61,6 @@ API Changes
 * LUCENE-8865: IndexSearcher now uses Executor instead of ExecutorSerivce.
   This change is fully backwards compatible since ExecutorService directly
   implements Executor. (Simon Willnauer)
-
-* LUCENE-8811: BooleanQuery#setMaxClauseCount() and #getMaxClauseCount() have
-  moved to IndexSearcher. The checks are now implemented using a QueryVisitor
-  and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
-  Grand, Alan Woodward)
 
 * LUCENE-8856: Intervals queries have moved from the sandbox to the queries
   module. (Alan Woodward)

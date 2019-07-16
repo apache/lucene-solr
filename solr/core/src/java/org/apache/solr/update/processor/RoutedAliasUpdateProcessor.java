@@ -176,7 +176,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
     // to avoid potential for race conditions, this next method should not get called again unless
     // we have created a collection synchronously
-    routedAlias.updateParsedCollectionAliases(this.zkController);
+    routedAlias.updateParsedCollectionAliases(this.zkController.zkStateReader, false);
 
     String targetCollection = routedAlias.createCollectionsIfRequired(cmd);
 
@@ -268,9 +268,5 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     return new SolrCmdDistributor.ForwardNode(new ZkCoreNodeProps(leader), zkController.getZkStateReader(),
         collection, slice.getName(), DistributedUpdateProcessor.MAX_RETRIES_ON_FORWARD_DEAULT);
   }
-
-
-
-
 
 }
