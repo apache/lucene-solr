@@ -42,8 +42,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @see Normalizer2
  * @see FilteredNormalizer2
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class ICUNormalizer2FilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "icuNormalizer2";
+
   private final Normalizer2 normalizer;
 
   /** Creates a new ICUNormalizer2FilterFactory */

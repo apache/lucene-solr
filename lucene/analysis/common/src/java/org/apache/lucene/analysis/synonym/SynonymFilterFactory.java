@@ -78,9 +78,14 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  * use {@link FlattenGraphFilterFactory} at index time (not at search time) as well.
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 @Deprecated
 public class SynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "synonym";
+
   private final boolean ignoreCase;
   private final String tokenizerFactory;
   private final String synonyms;

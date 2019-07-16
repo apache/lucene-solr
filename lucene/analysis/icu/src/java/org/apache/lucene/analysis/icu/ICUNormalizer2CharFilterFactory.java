@@ -43,8 +43,13 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  * @see FilteredNormalizer2
  *
  * @since 4.10.0
+ * @lucene.spi {@value #NAME}
  */
 public class ICUNormalizer2CharFilterFactory extends CharFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "icuNormalizer2";
+
   private final Normalizer2 normalizer;
 
   /** Creates a new ICUNormalizer2CharFilterFactory */

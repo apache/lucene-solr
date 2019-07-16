@@ -34,8 +34,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @lucene.experimental
  *
  * @since 7.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class KoreanReadingFormFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "koreanReadingForm";
 
   /** Creates a new KoreanReadingFilterFactory */
   public KoreanReadingFormFilterFactory(Map<String,String> args) {
