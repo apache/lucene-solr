@@ -27,20 +27,10 @@ public class UnknownDictionaryTest extends LuceneTestCase {
   @Test
   public void testPutCharacterCategory() {
     UnknownDictionaryWriter unkDic = new UnknownDictionaryWriter(10 * 1024 * 1024);
-    
-    try{
-      unkDic.putCharacterCategory(0, "DUMMY_NAME");
-      fail();
-    } catch(Exception e) {
-      
-    }
-    
-    try{
-      unkDic.putCharacterCategory(-1, "HANGUL");
-      fail();
-    } catch(Exception e) {
-      
-    }
+
+    expectThrows(Exception.class, () -> unkDic.putCharacterCategory(0, "DUMMY_NAME"));
+
+    expectThrows(Exception.class, () -> unkDic.putCharacterCategory(-1, "HANGUL"));
     
     unkDic.putCharacterCategory(0, "DEFAULT");
     unkDic.putCharacterCategory(1, "GREEK");
@@ -52,12 +42,8 @@ public class UnknownDictionaryTest extends LuceneTestCase {
   @Test
   public void testPut() {
     UnknownDictionaryWriter unkDic = new UnknownDictionaryWriter(10 * 1024 * 1024);
-    try{
-      unkDic.put(CSVUtil.parse("HANGUL,1800,3562,UNKNOWN,*,*,*,*,*,*,*"));
-      fail();
-    } catch(Exception e){
-      
-    }
+    expectThrows(NumberFormatException.class, () ->
+        unkDic.put(CSVUtil.parse("HANGUL,1800,3562,UNKNOWN,*,*,*,*,*,*,*")));
 
     String entry1 = "ALPHA,1793,3533,795,SL,*,*,*,*,*,*,*";
     String entry2 = "HANGUL,1800,3562,10247,UNKNOWN,*,*,*,*,*,*,*";

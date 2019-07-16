@@ -32,6 +32,7 @@ A solrconfig.xml snippet containing indexConfig settings for randomized testing.
 
   <maxBufferedDocs>${solr.tests.maxBufferedDocs}</maxBufferedDocs>
   <ramBufferSizeMB>${solr.tests.ramBufferSizeMB}</ramBufferSizeMB>
+  <ramPerThreadHardLimitMB>${solr.tests.ramPerThreadHardLimitMB}</ramPerThreadHardLimitMB>
 
   <mergeScheduler class="${solr.tests.mergeScheduler}" />
 

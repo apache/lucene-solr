@@ -137,12 +137,14 @@ public final class OfflinePointReader implements PointReader {
    */
   static class OfflinePointValue implements PointValue {
 
-    BytesRef packedValue;
-    BytesRef docIDBytes;
+    final BytesRef packedValue;
+    final BytesRef packedValueDocID;
+    final int packedValueLength;
 
     OfflinePointValue(byte[] value, int packedValueLength) {
-      packedValue = new BytesRef(value, 0, packedValueLength);
-      docIDBytes = new BytesRef(value, packedValueLength, Integer.BYTES);
+      this.packedValueLength = packedValueLength;
+      this.packedValue = new BytesRef(value, 0, packedValueLength);
+      this.packedValueDocID = new BytesRef(value, 0, packedValueLength + Integer.BYTES);
     }
 
     /**
@@ -150,7 +152,7 @@ public final class OfflinePointReader implements PointReader {
      */
     public void setOffset(int offset) {
       packedValue.offset = offset;
-      docIDBytes.offset = offset + packedValue.length;
+      packedValueDocID.offset = offset;
     }
 
     @Override
@@ -160,14 +162,14 @@ public final class OfflinePointReader implements PointReader {
 
     @Override
     public int docID() {
-      int position =docIDBytes.offset;
-      return ((docIDBytes.bytes[position] & 0xFF) << 24) | ((docIDBytes.bytes[++position] & 0xFF) << 16)
-          | ((docIDBytes.bytes[++position] & 0xFF) <<  8) |  (docIDBytes.bytes[++position] & 0xFF);
+      int position = packedValueDocID.offset + packedValueLength;
+      return ((packedValueDocID.bytes[position] & 0xFF) << 24) | ((packedValueDocID.bytes[++position] & 0xFF) << 16)
+          | ((packedValueDocID.bytes[++position] & 0xFF) <<  8) |  (packedValueDocID.bytes[++position] & 0xFF);
     }
 
     @Override
-    public BytesRef docIDBytes() {
-      return docIDBytes;
+    public BytesRef packedValueDocIDBytes() {
+      return packedValueDocID;
     }
   }
 

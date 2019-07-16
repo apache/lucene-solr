@@ -572,8 +572,8 @@ public class TestTessellator extends LuceneTestCase {
   private double area(List<Tessellator.Triangle> triangles) {
     double area = 0;
     for (Tessellator.Triangle t : triangles) {
-      double[] lats = new double[] {t.getLat(0), t.getLat(1), t.getLat(2), t.getLat(0)};
-      double[] lons = new double[] {t.getLon(0), t.getLon(1), t.getLon(2), t.getLon(0)};
+      double[] lats = new double[] {t.getY(0), t.getY(1), t.getY(2), t.getY(0)};
+      double[] lons = new double[] {t.getX(0), t.getX(1), t.getX(2), t.getX(0)};
       area += area(new Polygon(lats, lons));
     }
     return area;

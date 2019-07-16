@@ -105,4 +105,12 @@ public class BinaryField extends FieldType  {
 
     return new org.apache.lucene.document.StoredField(field.getName(), buf, offset, len);
   }
+
+  @Override
+  public Object toNativeType(Object val) {
+    if (val instanceof byte[]) {
+      return ByteBuffer.wrap((byte[]) val);
+    }
+    return super.toNativeType(val);
+  }
 }

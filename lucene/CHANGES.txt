@@ -22,8 +22,24 @@ API Changes
   byte[] that stores the UTF-8 bytes of the stored string.
   (Namgyu Kim via Adrien Grand)
 
-* LUCENE-8811: Deprecated BooleanQuery#setMaxClauseCount() and getMaxClauseCount
-  have been removed (Atri Sharma, Adrien Grand, Alan Woodward)
+* LUCENE-8811: BooleanQuery#setMaxClauseCount() and #getMaxClauseCount() have
+  moved to IndexSearcher. The checks are now implemented using a QueryVisitor
+  and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
+  Grand, Alan Woodward)
+
+Improvements
+
+* LUCENE-8757: When provided with an ExecutorService to run queries across
+  multiple threads, IndexSearcher now groups small segments together, up to
+  250k docs per slice. (Atri Sharma via Adrien Grand)
+
+* LUCENE-8857: Introduce Custom Tiebreakers in TopDocs.merge for tie breaking on
+  docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
+  indices (Atri Sharma, Adrien Grand, Simon Willnauer)
+
+* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
+
+* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
 
 Bug fixes
 
@@ -34,6 +50,10 @@ Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
+* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
+  (Tomoko Uchida, Uwe Schindler)
+
+
 ======================= Lucene 8.2.0 =======================
 
 API Changes
@@ -42,15 +62,19 @@ API Changes
   This change is fully backwards compatible since ExecutorService directly
   implements Executor. (Simon Willnauer)
 
-* LUCENE-8811: BooleanQuery#setMaxClauseCount() and #getMaxClauseCount() have
-  moved to IndexSearcher. The checks are now implemented using a QueryVisitor
-  and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
-  Grand, Alan Woodward)
-
 * LUCENE-8856: Intervals queries have moved from the sandbox to the queries
   module. (Alan Woodward)
 
+* LUCENE-8893: Intervals.wildcard() and Intervals.prefix() methods now take
+  BytesRef rather than String. (Alan Woodward)
+
 New Features
+
+* LUCENE-8632: New XYShape Field and Queries for indexing and searching general cartesian
+  geometries. (Nick Knize)
+
+* LUCENE-8891: Snowball stemmer/analyzer for the Estonian language.
+ (Gert Morten Paimla via Tomoko Uchida)
 
 * LUCENE-8815: Provide a DoubleValues implementation for retrieving the value of features without
   requiring a separate numeric field. Note that as feature values are stored with only 8 bits of 
@@ -109,6 +133,8 @@ Bug Fixes
 * LUCENE-8853: FileSwitchDirectory now applies best effort to place tmp files in the same
   directory as the target files. (Simon Willnauer)
 
+* LUCENE-8892: Add missing closing parentheses in MultiBoolFunction's description() (Florian Diebold, Munendra S N)
+
 Improvements
 
 * LUCENE-7840: Non-scoring BooleanQuery now removes SHOULD clauses before building the scorer supplier
@@ -117,14 +143,13 @@ Improvements
 * LUCENE-8770: BlockMaxConjunctionScorer now leverages two-phase iterators in order to avoid
   executing the second phase when scorers don't intersect. (Adrien Grand, Jim Ferenczi)
 
-* LUCENE-8757: When provided with an ExecutorService to run queries across
-  multiple threads, IndexSearcher now groups small segments together, up to
-  250k docs per slice. (Atri Sharma via Adrien Grand)
-
 * LUCENE-8818: Fix smokeTestRelease.py encoding bug (janhoy)
 
 * LUCENE-8845: Allow Intervals.prefix() and Intervals.wildcard() to specify
   their maximum allowed expansions (Alan Woodward)
+
+* LUCENE-8875: Introduce a Collector optimized for use cases when large
+  number of hits are requested (Atri Sharma)
 
 * LUCENE-8848 LUCENE-7757 LUCENE-8492: The UnifiedHighlighter now detects that parts of the query are not understood by
   it, and thus it should not make optimizations that result in no highlights or slow highlighting.  This generally works
@@ -146,7 +171,21 @@ Optimizations
 
 * LUCENE-8868: New storing strategy for BKD tree leaves with low cardinality.
   It stores the distinct values once with the cardinality value reducing the
-  storage cost.
+  storage cost. (Ignacio Vera)
+
+* LUCENE-8885: Optimise BKD reader by exploiting cardinality information stored
+  on leaves. (Ignacio Vera)
+
+* LUCENE-8896: Override default implementation of IntersectVisitor#visit(DocIDSetBuilder, byte[])
+  for several queries. (Ignacio Vera)
+
+* LUCENE-8901: Load frequencies lazily only when needed in BlockDocsEnum and
+  BlockImpactsEverythingEnum (Mayya Sharipova).
+
+* LUCENE-8888: Optimize distribution of points with data dimensions in
+  BKD tree leaves. (Ignacio Vera)
+
+* LUCENE-8311: Phrase queries now leverage impacts. (Adrien Grand)
 
 Test Framework
 
@@ -161,9 +200,6 @@ Other
 * LUCENE-8861: Script to find open Github PRs that needs attention (janhoy)
 
 * LUCENE-8852: ReleaseWizard tool for release managers (janhoy)
-
-* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
-  (Tomoko Uchida, Uwe Schindler)
 
 * LUCENE-8838: Remove support for Steiner points on Tessellator. (Ignacio Vera)
 

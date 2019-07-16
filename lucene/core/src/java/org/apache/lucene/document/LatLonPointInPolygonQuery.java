@@ -31,6 +31,7 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -142,7 +143,18 @@ final class LatLonPointInPolygonQuery extends Query {
                            public void visit(int docID, byte[] packedValue) {
                              if (polygonPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
                                                        NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
-                               adder.add(docID);
+                               visit(docID);
+                             }
+                           }
+
+                           @Override
+                           public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+                             if (polygonPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
+                                                       NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
+                               int docID;
+                               while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                                 visit(docID);
+                               }
                              }
                            }
 

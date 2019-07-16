@@ -38,6 +38,7 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
@@ -737,7 +738,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testPrefix() throws IOException {
-    IntervalsSource source = Intervals.prefix("p");
+    IntervalsSource source = Intervals.prefix(new BytesRef("p"));
     checkIntervals(source, "field1", 5, new int[][]{
         {},
         { 0, 0, 1, 1, 3, 3, 4, 4, 6, 6, 7, 7, 10, 10, 27, 27 },
@@ -751,11 +752,11 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 0, 0, 0, 5);
     assertMatch(mi, 1, 1, 6, 14);
 
-    IntervalsSource noSuch = Intervals.prefix("qqq");
+    IntervalsSource noSuch = Intervals.prefix(new BytesRef("qqq"));
     checkIntervals(noSuch, "field1", 0, new int[][]{});
 
     IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
-      IntervalsSource s = Intervals.prefix("p", 1);
+      IntervalsSource s = Intervals.prefix(new BytesRef("p"), 1);
       for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
         s.intervals("field1", ctx);
       }
@@ -764,7 +765,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testWildcard() throws IOException {
-    IntervalsSource source = Intervals.wildcard("?ot");
+    IntervalsSource source = Intervals.wildcard(new BytesRef("?ot"));
     checkIntervals(source, "field1", 4, new int[][]{
         {},
         { 2, 2, 10, 10, 17, 17, 27, 27 },
@@ -780,7 +781,7 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 17, 17, 97, 100);
 
     IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
-      IntervalsSource s = Intervals.wildcard("?ot", 1);
+      IntervalsSource s = Intervals.wildcard(new BytesRef("?ot"), 1);
       for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
         s.intervals("field1", ctx);
       }

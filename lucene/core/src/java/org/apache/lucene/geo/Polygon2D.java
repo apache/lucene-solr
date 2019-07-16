@@ -29,16 +29,20 @@ import org.apache.lucene.index.PointValues.Relation;
  */
 // Both Polygon.contains() and Polygon.crossesSlowly() loop all edges, and first check that the edge is within a range.
 // we just organize the edges to do the same computations on the same subset of edges more efficiently.
-public final class Polygon2D extends EdgeTree {
+public class Polygon2D extends EdgeTree {
   // each component/hole is a node in an augmented 2d kd-tree: we alternate splitting between latitude/longitude,
   // and pull up max values for both dimensions to each parent node (regardless of split).
   /** tree of holes, or null */
-  private final Polygon2D holes;
+  protected final Polygon2D holes;
   private final AtomicBoolean containsBoundary = new AtomicBoolean(false);
 
-  private Polygon2D(Polygon polygon, Polygon2D holes) {
-    super(polygon.minLat, polygon.maxLat, polygon.minLon, polygon.maxLon, polygon.getPolyLats(), polygon.getPolyLons());
+  protected Polygon2D(final double minLat, final double maxLat, final double minLon, final double maxLon, double[] lats, double[] lons, Polygon2D holes) {
+    super(minLat, maxLat, minLon, maxLon, lats, lons);
     this.holes = holes;
+  }
+
+  protected Polygon2D(Polygon polygon, Polygon2D holes) {
+    this(polygon.minLat, polygon.maxLat, polygon.minLon, polygon.maxLon, polygon.getPolyLats(), polygon.getPolyLons(), holes);
   }
 
   /**

@@ -79,8 +79,7 @@ public interface CollectionParams {
     DELETEALIAS(true, LockLevel.COLLECTION),
     ALIASPROP(true, LockLevel.COLLECTION),
     LISTALIASES(false, LockLevel.NONE),
-    MAINTAINTIMEROUTEDALIAS(true, LockLevel.COLLECTION), // internal use only
-    MAINTAINCATEGORYROUTEDALIAS(true, LockLevel.COLLECTION), // internal use only
+    MAINTAINROUTEDALIAS(true, LockLevel.COLLECTION), // internal use only
     DELETEROUTEDALIASCOLLECTIONS(true, LockLevel.COLLECTION),
     SPLITSHARD(true, LockLevel.SHARD),
     DELETESHARD(true, LockLevel.SHARD),

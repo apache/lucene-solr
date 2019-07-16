@@ -290,6 +290,7 @@ public class Lang {
         .withFunctionName("notNull", NotNullEvaluator.class)
         .withFunctionName("isNull", IsNullEvaluator.class)
         .withFunctionName("matches", MatchesEvaluator.class)
+        .withFunctionName("projectToBorder", ProjectToBorderEvaluator.class)
 
         // Boolean Stream Evaluators
 

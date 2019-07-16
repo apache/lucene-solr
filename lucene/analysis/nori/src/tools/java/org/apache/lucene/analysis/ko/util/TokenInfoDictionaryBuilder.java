@@ -84,8 +84,7 @@ public class TokenInfoDictionaryBuilder {
         String[] entry = CSVUtil.parse(line);
 
         if(entry.length < 12) {
-          System.out.println("Entry in CSV is not valid: " + line);
-          continue;
+          throw new IllegalArgumentException("Entry in CSV is not valid (12 field values expected): " + line);
         }
 
         // NFKC normalize dictionary entry
@@ -109,7 +108,7 @@ public class TokenInfoDictionaryBuilder {
     System.out.println("  encode...");
 
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
-    Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, true, 15, false);
+    Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, true, 15);
     IntsRefBuilder scratch = new IntsRefBuilder();
     long ord = -1; // first ord will be 0
     String lastValue = null;

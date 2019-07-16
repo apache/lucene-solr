@@ -55,6 +55,8 @@ Upgrade Notes
   regardless of distrib, terms.list, terms.ttf parameters. This affects JSON based response format but not others
   (Munendra S N, Mikhail Khludnev)
 
+* SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -93,18 +95,42 @@ Upgrade Notes
   for existing TRA's will use the new format. Solr will handle this invisibly, but any external code that attempted to
   predict collection names in TRA's will probably need adjustment.
 
+* SOLR-13507: Support for "addr" parameter from the "/solr/admin/zookeeper" endpoint has now been removed and will no
+  longer be supported.
+
 New Features
 ----------------------
 
 * SOLR-13320: add an update param failOnVersionConflicts=false to updates not fail when there is a version conflict (noble)
 
-* SOLR-13306: Add a request parameter to execute a streaming expression locally
-
 * SOLR-13445: Preferred replicas on nodes with same system properties as the query master (Cao Manh Dat)
+
+* SOLR-13047: Add facet2D Streaming Expression (Nazerke Seidan, Joel Bernstein)
+
+* SOLR-13494: Add DeepRandomStream implementation (Joel Bernstein)
+
+* SOLR-13434: OpenTracing support for Solr (Cao Manh Dat)
+
+* SOLR-13512: Raw index data analysis tool (extension of COLSTATUS collection command). (ab)
+
+* SOLR-13550: Allow zplot to automatically create the x axis (Joel Bernstein)
+
+* SOLR-13552: Add recNum Stream Evaluator (Joel Bernstein)
+
+* SOLR-13534: Dynamic loading to support loading jars from a URL (noble)
+
+* SOLR-13560: Add isNull and notNull Stream Evaluators (Joel Bernstein)
+
+* SOLR-10291: Add matches Stream Evaluator to support regex matching (Joel Bernstein)
+
+* SOLR-13589: Allow zplot to visualize 2D clusters and convex hulls (Joel Bernstein)
+
+Improvements
+----------------------
 
 * SOLR-13049: Make contrib/ltr Feature.defaultValue configurable. (Stanislav Livotov, Christine Poerschke)
 
-* SOLR-13047: Add facet2D Streaming Expression (Nazerke Seidan, Joel Bernstein)
+* SOLR-13306: Add a request parameter to execute a streaming expression locally
 
 * SOLR-13440: Support saving/restoring autoscaling state for repeatable simulations. (ab)
 
@@ -120,33 +146,24 @@ New Features
 
 * SOLR-13493: /autoscaling/suggestions to be able to filter by type (noble)
 
-* SOLR-13494: Add DeepRandomStream implementation (Joel Bernstein)
-
 * SOLR-13504: In autoscaling policies, use an explicit 'nodeset' attribute for filtering
   nodes instead of using them directly at the toplevel (noble)
 
 * SOLR-13329: In autoscaling policies, use an explicit 'put : on-each-node'
   to specify the the rules is applied on each node  (noble)
 
-* SOLR-13434: OpenTracing support for Solr (Cao Manh Dat)
-
-* SOLR-13512: Raw index data analysis tool (extension of COLSTATUS collection command). (ab)
-
-* SOLR-13550: Allow zplot to automatically create the x axis (Joel Bernstein)
-
-* SOLR-13552: Add recNum Stream Evaluator (Joel Bernstein)
-
-* SOLR-13534 : Dynamic loading to support loading jars from a URL (noble)
-
 * SOLR-13347: Transaction log to natively support UUID types (Thomas Wöckinger via noble)
-
-* SOLR-13560: Add isNull and notNull Stream Evaluators (Joel Bernstein)
-
-* SOLR-10291: Add matches Stream Evaluator to support regex matching (Joel Bernstein)
 
 * SOLR-13367: Highlighting: Range queries will now highlight in hl.method=unified mode. (David Smiley)
 
-* SOLR-13569: AdminUI visual indication of prod/test/dev environment (janhoy)
+* SOLR-13569: Admin UI visual indication of prod/test/dev environment (janhoy)
+
+* SOLR-12554: Expose IndexWriterConfig's ramPerThreadHardLimitMB through solrconfig.xml (Ishan Chattopadhyaya, Munendra S N)
+
+* SOLR-13602 SOLR-13588: Add a field type for Estonian language to default managed_schema,
+  document about Estonian language analysis in Solr Ref Guide (Tomoko Uchida)
+
+* SOLR-13003: Query Result Cache does not honour maxRamBytes parameter. (ab, Brian Ecker)
 
 Bug Fixes
 ----------------------
@@ -198,6 +215,17 @@ Bug Fixes
 * SOLR-9409: Improve error message for unsupported field types and return 400 error code on
   unsupported values in collapsing (hossman, Munendra S N)
 
+* SOLR-13404: Support group.query in multi-shard environment when group.main=true or group.format=simple (Munendra S N)
+
+* SOLR-13538: toNativeType () TrieDate & EnumField do not handle CharSequence properly (Munendra S N)
+
+* SOLR-13532: Fix http timeout and error logging bugs in RecoveryStrategy. (Suril Shah, hossman)
+
+* SOLR-13472: Forwarded requests should skip authorization on receiving nodes (adfel, Ishan Chattopadhyaya)
+
+* SOLR-13619: Kerberos plugin to pass original user principal to avoid 403 on nodes not hosting a collection
+  (adfel, Ishan Chattopadhyaya, noble)
+
 Other Changes
 ----------------------
 
@@ -227,6 +255,15 @@ Other Changes
 * SOLR-12364: Add test cases for edismax boost (David Smiley, Munendra S N)
 
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
+
+* SOLR-13603: Remove usage of GroupingSpecification's deprecated methods (Munendra S N)
+
+* SOLR-13507: Remove support for "addr" parameter from the "/solr/admin/zookeeper" endpoint. (janhoy, Anshum Gupta)
+
+* SOLR-13588: Document Estonian analyzer in Solr Ref Guide (Tomoko Uchida)
+
+* SOLR-13602: Add a field type for Estonian language to default managed_schema (Tomoko Uchida)
+
 ==================  8.1.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -249,6 +286,17 @@ Bug Fixes
   Reminder: if you don't need nested docs then remove both _root_ and _nest_path_ !  (David Smiley)
 
 * SOLR-13566: REINDEXCOLLECTION does not work with (basic) authentication. (Colvin Cowie, ab)
+
+* SOLR-13159: Fix atomic update encoding issue for UUID, enum, bool, and binary fields (Thomas Wockinger via Jason Gerlowski)
+
+* SOLR-13583: Impossible to delete a collection with the same name as an existing alias. This fixes also a bug in
+  REINDEXCOLLECTION when used with removeSource=true which could lead to a data loss. (ab)
+
+Improvements
+----------------------
+
+* SOLR-13158: DataImportHandler: Added enable.dih.dataConfigParam system property to toggle whether the dataConfig param
+  is permitted. (David Smiley, janhoy, Tomás Fernández Löbbe)
 
 ==================  8.1.1 ==================
 
