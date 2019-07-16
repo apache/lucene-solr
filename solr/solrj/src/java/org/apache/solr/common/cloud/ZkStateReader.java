@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -196,6 +197,7 @@ public class ZkStateReader implements SolrCloseable {
   private final ConcurrentHashMap<String, PropsWatcher> collectionPropsWatchers = new ConcurrentHashMap<>();
 
   private volatile SortedSet<String> liveNodes = emptySortedSet();
+  private volatile Integer clusterPropsVersion;
 
   private volatile Map<String, Object> clusterProperties = Collections.emptyMap();
 
@@ -258,6 +260,12 @@ public class ZkStateReader implements SolrCloseable {
     }
     map.put(AutoScalingParams.ZK_VERSION, stat.getVersion());
     return new AutoScalingConfig(map);
+  }
+
+  public void forceRefreshClusterProps(int expectedVersion) {
+    if (clusterPropsVersion == null || expectedVersion > clusterPropsVersion) {
+      loadClusterProperties();
+    }
   }
 
   private static class CollectionWatch<T> {
@@ -1112,20 +1120,28 @@ public class ZkStateReader implements SolrCloseable {
     loadClusterProperties();
   };
 
+  public Integer getClusterPropsVersion() {
+    return clusterPropsVersion;
+  }
+
   @SuppressWarnings("unchecked")
   private void loadClusterProperties() {
     try {
       while (true) {
         try {
-          byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
-          this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat((Map<String, Object>) Utils.fromJSON(data));
+
+          Stat stat = new Stat();
+          this.clusterProperties = new ClusterProperties(zkClient).getClusterProperties(stat);
+          this.clusterPropsVersion = stat.getVersion();
+
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
 
           for (ClusterPropertiesListener listener : clusterPropertiesListeners) {
             listener.onChange(getClusterProperties());
           }
           return;
-        } catch (KeeperException.NoNodeException e) {
+        } catch (IOException e) {
+          this.clusterPropsVersion = null;
           this.clusterProperties = Collections.emptyMap();
           log.debug("Loaded empty cluster properties");
           // set an exists watch, and if the node has been created since the last call,

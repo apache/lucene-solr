@@ -89,14 +89,18 @@ public class ClusterProperties {
     return value;
   }
 
+  public Map<String, Object> getClusterProperties() throws IOException {
+    return getClusterProperties(new Stat());
+
+  }
   /**
    * Return the cluster properties
    * @throws IOException if there is an error reading properties from the cluster
    */
   @SuppressWarnings("unchecked")
-  public Map<String, Object> getClusterProperties() throws IOException {
+  public Map<String, Object> getClusterProperties(Stat stat) throws IOException {
     try {
-      Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+      Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, stat, true));
       return convertCollectionDefaultsToNestedFormat(properties);
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyMap();

@@ -17,17 +17,25 @@
 
 package org.apache.solr.core;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.RestTestHarness;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.BeforeClass;
 
 import static java.util.Arrays.asList;
@@ -122,6 +130,40 @@ public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
     compareValues(result, MemClassLoader.class.getName(), asList("loader"));
 
 
+  }
+
+  public static Pair<Server, Integer> runHttpServer(Map<String, Object> jars) throws Exception {
+    int port = 0;
+    int start = 30000 + random().nextInt(10000);
+    for (int i = 0; i < 10000; i++) {
+      try {
+        new ServerSocket(start + i).close();
+        port = 35000 + i;
+        break;
+      } catch (IOException e) {
+        continue;
+      }
+    }
+    if (port == 0) {
+      fail("No port to be found");
+    }
+    Server server = null;
+    server = new Server(port);
+    server.setHandler(new AbstractHandler() {
+      @Override
+      public void handle(String s, Request request, HttpServletRequest req, HttpServletResponse rsp)
+          throws IOException {
+        ByteBuffer b = (ByteBuffer) jars.get(s);
+        if (b != null) {
+          rsp.getOutputStream().write(b.array(), 0, b.limit());
+          rsp.setContentType("application/octet-stream");
+          rsp.setStatus(HttpServletResponse.SC_OK);
+          request.setHandled(true);
+        }
+      }
+    });
+    server.start();
+    return new Pair<>(server, port);
   }
 }
 

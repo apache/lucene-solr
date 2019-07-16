@@ -28,6 +28,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.solr.cloud.CloudUtil;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.CryptoKeys;
@@ -41,13 +42,23 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 /**
  * This represents a Runtime Jar. A jar requires two details , name and version
  */
-public class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
+public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWriter {
   public static final String TYPE = "runtimeLib";
+  public static final String SHA512 = "sha512";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
   private String name, version, sig, sha512, url;
   private BlobRepository.BlobContentRef<ByteBuffer> jarContent;
   private boolean verified = false;
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.putIfNotNull(NAME, name);
+    ew.putIfNotNull("url", url);
+    ew.putIfNotNull(version, version);
+    ew.putIfNotNull(sha512, sha512);
+    ew.putIfNotNull("sig", sig);
+  }
 
   public RuntimeLib(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
@@ -76,23 +87,23 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
     name = info.attributes.get(NAME);
     url = info.attributes.get("url");
     sig = info.attributes.get("sig");
-    if(url == null) {
+    if (url == null) {
       Object v = info.attributes.get("version");
       if (name == null || v == null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "runtimeLib must have name and version");
       }
       version = String.valueOf(v);
     } else {
-      sha512 = info.attributes.get("sha512");
-      if(sha512 == null){
+      sha512 = info.attributes.get(SHA512);
+      if (sha512 == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "runtimeLib with url must have a 'sha512' attribute");
       }
       ByteBuffer buf = null;
       buf = coreContainer.getBlobRepository().fetchFromUrl(name, url);
 
       String digest = BlobRepository.sha512Digest(buf);
-      if(!sha512.equals(digest))  {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, StrUtils.formatString(BlobRepository.INVALID_JAR_MSG, url, sha512, digest)  );
+      if (!sha512.equals(digest)) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, StrUtils.formatString(BlobRepository.INVALID_JAR_MSG, url, sha512, digest));
       }
       verifyJarSignature();
 
@@ -102,7 +113,7 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
 
   }
 
-  public String getUrl(){
+  public String getUrl() {
     return url;
   }
 
@@ -111,9 +122,9 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
     synchronized (this) {
       if (jarContent != null) return;
 
-      jarContent = url == null?
-          coreContainer.getBlobRepository().getBlobIncRef(name + "/" + version):
-          coreContainer.getBlobRepository().getBlobIncRef(name, null,url,sha512);
+      jarContent = url == null ?
+          coreContainer.getBlobRepository().getBlobIncRef(name + "/" + version) :
+          coreContainer.getBlobRepository().getBlobIncRef(name, null, url, sha512);
 
     }
   }
@@ -131,18 +142,18 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
 
   }
 
-  public String getSha512(){
+  public String getSha512() {
     return sha512;
   }
 
   public ByteBuffer getFileContent(String entryName) throws IOException {
     if (jarContent == null)
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jar not available: " + name  );
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jar not available: " + name);
     return getFileContent(jarContent.blob, entryName);
 
   }
 
-  public ByteBuffer getFileContent(BlobRepository.BlobContent<ByteBuffer> blobContent,  String entryName) throws IOException {
+  public ByteBuffer getFileContent(BlobRepository.BlobContent<ByteBuffer> blobContent, String entryName) throws IOException {
     ByteBuffer buff = blobContent.get();
     ByteArrayInputStream zipContents = new ByteArrayInputStream(buff.array(), buff.arrayOffset(), buff.limit());
     ZipInputStream zis = new ZipInputStream(zipContents);
@@ -183,7 +194,7 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
     verifyJarSignature();
   }
 
-  void verifyJarSignature()  {
+  void verifyJarSignature() {
     Map<String, byte[]> keys = CloudUtil.getTrustedKeys(coreContainer.getZkController().getZkClient(), "exe");
     if (keys.isEmpty()) {
       if (sig == null) {
@@ -202,7 +213,7 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No key matched signature for jar : " + name + " version: " + version);
       log.info("Jar {} signed with {} successfully verified", name, matchedKey);
     } catch (Exception e) {
-      if (e instanceof SolrException) throw (SolrException)e;
+      if (e instanceof SolrException) throw (SolrException) e;
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error verifying key ", e);
     }
   }

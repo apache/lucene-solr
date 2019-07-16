@@ -213,7 +213,7 @@ public void testCantConnectToPullReplica() throws Exception {
 //    the last part of this test.
 //    addDocs(20);
 //    assertNumDocs(20, cluster.getSolrClient(), 300);
-//    try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+//    try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getBaseUrl())) {
 //      assertNumDocs(20, pullReplicaClient);
 //    }
   }

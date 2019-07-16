@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.util.Utils.makeMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -107,6 +105,8 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -1979,7 +1979,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       for (Map.Entry<String,Replica> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
         if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
-          return ZkCoreNodeProps.getCoreUrl(node.getStr(ZkStateReader.BASE_URL_PROP), collection); //new ZkCoreNodeProps(node).getCoreUrl();
+          return ZkCoreNodeProps.getCoreUrl(node.getStr(ZkStateReader.BASE_URL_PROP), collection); //new ZkCoreNodeProps(node).getBaseUrl();
         }
       }
     }

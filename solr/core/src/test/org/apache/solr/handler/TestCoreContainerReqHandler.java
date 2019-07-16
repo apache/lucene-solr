@@ -17,16 +17,16 @@
 
 package org.apache.solr.handler;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.nio.ByteBuffer;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
@@ -36,16 +36,21 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.MemClassLoader;
-import org.eclipse.jetty.server.Request;
+import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+import static org.apache.solr.core.TestDynamicLoadingUrl.runHttpServer;
+
 @SolrTestCaseJ4.SuppressSSL
 public class TestCoreContainerReqHandler extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -53,39 +58,35 @@ public class TestCoreContainerReqHandler extends SolrCloudTestCase {
     configureCluster(4).configure();
   }
 
-
-  public static Pair<Server,Integer> runHttpServer(Map<String, Object> jars) throws Exception {
-    int port = 0;
-    int start = 30000 + random().nextInt(10000);
-    for (int i = 0; i < 10000; i++) {
+  static void assertResponseValues(int repeats, SolrClient client, SolrRequest req, Map vals) throws Exception {
+    for (int i = 0; i < repeats; i++) {
+      if (i > 0) {
+        Thread.sleep(100);
+      }
       try {
-        new ServerSocket(start + i).close();
-        port = 35000 + i;
-        break;
-      } catch (IOException e) {
+        SolrResponse rsp = req.process(client);
+        try {
+          for (Object e : vals.entrySet()) {
+            Map.Entry entry = (Map.Entry) e;
+            String key = (String) entry.getKey();
+            String v = (String) entry.getValue();
+            assertEquals("attempt: "+ i +" Mismatch for value : '" + key + "' in response " + Utils.toJSONString(rsp),
+                v, rsp.getResponse()._getStr(key, null));
+          }
+          return;
+        } catch (Exception e) {
+          if (i >= repeats - 1) throw e;
+          continue;
+        }
+
+      } catch (Exception e) {
+        if (i >= repeats - 1) throw e;
+        log.error("exception in request", e);
         continue;
       }
     }
-    if (port == 0) {
-      fail("No port to be found");
-    }
-    Server server = null;
-    server = new Server(port);
-    server.setHandler(new AbstractHandler() {
-      @Override
-      public void handle(String s, Request request, HttpServletRequest req, HttpServletResponse rsp)
-          throws IOException {
-        ByteBuffer b = (ByteBuffer) jars.get(s);
-        if (b != null) {
-          rsp.getOutputStream().write(b.array(), 0, b.limit());
-          rsp.setContentType("application/octet-stream");
-          rsp.setStatus(HttpServletResponse.SC_OK);
-          request.setHandled(true);
-        }
-      }
-    });
-    server.start();
-    return new Pair<>(server, port);
+
+
   }
 
   public void testSetClusterReqHandler() throws Exception {
@@ -93,16 +94,18 @@ public class TestCoreContainerReqHandler extends SolrCloudTestCase {
         .withPayload("{add-requesthandler:{name : 'foo', class : 'org.apache.solr.handler.DumpRequestHandler'}}")
         .withMethod(SolrRequest.METHOD.POST)
         .build().process(cluster.getSolrClient());
-    Map<String, Object> map = new ClusterProperties(zkClient()).getClusterProperties();
+
+    Map<String, Object> map = assertVersionInSync();
 
     assertEquals("org.apache.solr.handler.DumpRequestHandler",
         getObjectByPath(map, true, Arrays.asList("requestHandler", "foo", "class")));
 
+    assertVersionInSync();
     V2Response rsp = new V2Request.Builder("/node/ext/foo")
         .withMethod(SolrRequest.METHOD.GET)
-        .withParams(new MapSolrParams((Map)Utils.makeMap("testkey", "testval")))
+        .withParams(new MapSolrParams((Map) Utils.makeMap("testkey", "testval")))
         .build().process(cluster.getSolrClient());
-    assertEquals( "testval", rsp._getStr("params/testkey",null));
+    assertEquals("testval", rsp._getStr("params/testkey", null));
 
     new V2Request.Builder("/cluster")
         .withPayload("{delete-requesthandler: 'foo'}")
@@ -113,6 +116,13 @@ public class TestCoreContainerReqHandler extends SolrCloudTestCase {
 
   }
 
+  private  Map<String, Object> assertVersionInSync() throws SolrServerException, IOException {
+    Stat stat = new Stat();
+    Map<String, Object> map = new ClusterProperties(zkClient()).getClusterProperties(stat);
+    assertEquals(String.valueOf(stat.getVersion()),  getExtResponse()._getStr("metadata/version",null));
+    return map;
+  }
+
   @Test
   public void testRuntimeLib() throws Exception {
     Map<String, Object> jars = Utils.makeMap(
@@ -120,7 +130,7 @@ public class TestCoreContainerReqHandler extends SolrCloudTestCase {
         "/jar2.jar", getFileContent("runtimecode/runtimelibs_v2.jar.bin"),
         "/jar3.jar", getFileContent("runtimecode/runtimelibs_v3.jar.bin"));
 
-    Pair<Server,Integer> server = runHttpServer(jars);
+    Pair<Server, Integer> server = runHttpServer(jars);
     int port = server.second();
 
     try {
@@ -134,7 +144,7 @@ public class TestCoreContainerReqHandler extends SolrCloudTestCase {
             .build().process(cluster.getSolrClient());
         fail("Expected error");
       } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-        assertTrue( "actual output : "+ Utils.toJSONString(e.getMetaData()), e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("expected sha512 hash :"));
+        assertTrue("actual output : " + Utils.toJSONString(e.getMetaData()), e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("expected sha512 hash :"));
       }
 
       try {
@@ -146,7 +156,7 @@ public class TestCoreContainerReqHandler extends SolrCloudTestCase {
             .build().process(cluster.getSolrClient());
         fail("Expected error");
       } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-        assertTrue("Actual output : "+ Utils.toJSONString(e.getMetaData()), e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("no such resource available: foo"));
+        assertTrue("Actual output : " + Utils.toJSONString(e.getMetaData()), e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("no such resource available: foo"));
       }
 
       payload = "{add-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar1.jar', " +
@@ -158,6 +168,8 @@ public class TestCoreContainerReqHandler extends SolrCloudTestCase {
       assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "add-runtimelib/sha512"),
           getObjectByPath(new ClusterProperties(zkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
 
+      V2Response rsp = getExtResponse();
+      System.out.println(Utils.toJSONString(rsp));
 
 
       new V2Request.Builder("/cluster")
@@ -165,20 +177,25 @@ public class TestCoreContainerReqHandler extends SolrCloudTestCase {
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
       Map<String, Object> map = new ClusterProperties(zkClient()).getClusterProperties();
+      rsp = getExtResponse();
+      System.out.println(Utils.toJSONString(rsp));
 
-      V2Response rsp = new V2Request.Builder("/node/ext/bar")
+
+      V2Request request = new V2Request.Builder("/node/ext/bar")
           .withMethod(SolrRequest.METHOD.POST)
-          .build().process(cluster.getSolrClient());
-      assertEquals("org.apache.solr.core.RuntimeLibReqHandler", rsp._getStr("class",null));
-      assertEquals(MemClassLoader.class.getName(), rsp._getStr("loader",null));
-      assertEquals(null, rsp._getStr("version",null));
+          .build();
+      assertResponseValues(5, cluster.getSolrClient(), request, Utils.makeMap(
+          "class", "org.apache.solr.core.RuntimeLibReqHandler",
+          "loader", MemClassLoader.class.getName(),
+          "version", null));
+
 
 
       assertEquals("org.apache.solr.core.RuntimeLibReqHandler",
           getObjectByPath(map, true, Arrays.asList("requestHandler", "bar", "class")));
 
 
-      payload =  "{update-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar3.jar', " +
+      payload = "{update-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar3.jar', " +
           "sha512 : 'f67a7735a89b4348e273ca29e4651359d6d976ba966cb871c4b468ea1dbd452e42fcde9d188b7788e5a1ef668283c690606032922364759d19588666d5862653'}}";
       new V2Request.Builder("/cluster")
           .withPayload(payload)
@@ -187,14 +204,25 @@ public class TestCoreContainerReqHandler extends SolrCloudTestCase {
       assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "update-runtimelib/sha512"),
           getObjectByPath(new ClusterProperties(zkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
 
-      rsp = new V2Request.Builder("/node/ext/bar")
+      rsp = getExtResponse();
+      System.out.println(Utils.toJSONString(rsp));
+
+      request = new V2Request.Builder("/node/ext/bar")
           .withMethod(SolrRequest.METHOD.POST)
-          .build().process(cluster.getSolrClient());
-      assertEquals("org.apache.solr.core.RuntimeLibReqHandler", rsp._getStr("class",null));
-      assertEquals(MemClassLoader.class.getName(), rsp._getStr("loader",null));
-      assertEquals("3", rsp._getStr("version",null));
+          .build();
+      assertResponseValues(5, cluster.getSolrClient(), request, Utils.makeMap(
+          "class", "org.apache.solr.core.RuntimeLibReqHandler",
+          "loader", MemClassLoader.class.getName(),
+          "version", "3")
+      );
     } finally {
       server.first().stop();
     }
+  }
+
+  private V2Response getExtResponse() throws SolrServerException, IOException {
+    return new V2Request.Builder("/node/ext")
+        .withMethod(SolrRequest.METHOD.GET)
+        .build().process(cluster.getSolrClient());
   }
 }

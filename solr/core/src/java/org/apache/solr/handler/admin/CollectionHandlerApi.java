@@ -18,11 +18,13 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -30,25 +32,33 @@ import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.Meta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RuntimeLib;
+import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.admin.CollectionsHandler.CollectionOperation;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.RTimer;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
+import static org.apache.solr.common.util.StrUtils.formatString;
 
 public class CollectionHandlerApi extends BaseHandlerApiSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -103,11 +113,76 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
         cmd.call(info);
       } finally {
         CoreContainer cc = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
+        Stat stat = new Stat();
         cc.getClusterPropertiesListener()
-            .onChange(new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties());
+            .onChange(new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties(stat));
+
       }
     };
   }
+
+  private void waitForStateSync(int expectedVersion, CoreContainer coreContainer)
+  {
+    final RTimer timer = new RTimer();
+    int waitTime = 30;//seconds
+    // get a list of active replica cores to query for the schema zk version (skipping this core of course)
+    List<SolrConfigHandler.PerReplicaCallable> concurrentTasks = new ArrayList<>();
+
+    ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
+    for (String nodeName : zkStateReader.getClusterState().getLiveNodes() ) {
+      String baseurl = zkStateReader.getBaseUrlForNodeName(nodeName);
+      baseurl+= "/____v2/node/ext";
+      PerNodeCallable e = new PerNodeCallable(baseurl, expectedVersion, waitTime);
+      concurrentTasks.add(e);
+    }
+    if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
+
+    log.info(formatString("Waiting up to {0} secs for {1} nodes to update clusterprops to be of version {2} ",
+        waitTime, concurrentTasks.size(), expectedVersion));
+
+    // use an executor service to invoke schema zk version requests in parallel with a max wait time
+    int poolSize = Math.min(concurrentTasks.size(), 10);
+    ExecutorService parallelExecutor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new DefaultSolrThreadFactory("solrHandlerExecutor"));
+    try {
+      List<String> failedList = SolrConfigHandler.executeAll(expectedVersion, waitTime, concurrentTasks, parallelExecutor);
+
+      // if any tasks haven't completed within the specified timeout, it's an error
+      if (failedList != null)
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            formatString("{0} out of {1} the property {2} to be of version {3} within {4} seconds! Failed cores: {5}",
+                failedList.size(), concurrentTasks.size() + 1,  expectedVersion, 30, failedList));
+
+    } catch (InterruptedException ie) {
+      log.warn(formatString(
+          "Request was interrupted . trying to set the clusterprops to version {0} to propagate to {1} nodes ",
+          expectedVersion, concurrentTasks.size()));
+      Thread.currentThread().interrupt();
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
+    }
+
+    log.info("Took {}ms to update the clusterprops to be of version {}  on {} nodes",
+        timer.getTime(), expectedVersion, concurrentTasks.size());
+
+  }
+
+  public static class PerNodeCallable extends SolrConfigHandler.PerReplicaCallable{
+    private String url;
+    PerNodeCallable(String baseUrl, int expectedversion, int waitTime){
+      super(baseUrl, null, expectedversion, waitTime);
+      super.coreUrl = baseUrl;
+    }
+
+    @Override
+    protected boolean verifyResponse(MapWriter mw) {
+      remoteVersion = (Number) mw._get("metadata/version", -1);
+      return remoteVersion.intValue() >= expectedZkVersion;
+    }
+  }
+
+
+
 
 
 
