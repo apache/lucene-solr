@@ -234,8 +234,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     final boolean indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     final boolean indexHasPayloads = fieldInfo.hasPayloads();
 
-   if (indexHasPositions == false || PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS) == false) {
-      return new BlockImpactsDocsEnum(fieldInfo, (IntBlockTermState) state);
+    if (indexHasPositions == false || PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS) == false) {
+      return new BlockImpactsDocsEnum(fieldInfo, (IntBlockTermState) state, flags);
     } else if (indexHasPositions &&
         PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS) &&
         (indexHasOffsets == false || PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS) == false) &&
@@ -1787,6 +1787,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     private int accum;                                // accumulator for doc deltas
     private int freq;                                 // freq we last read
 
+    private boolean needsFreq; // true if the caller actually needs frequencies
+
     // Where this term's postings start in the .doc file:
     private long docTermStartFP;
 
@@ -1801,7 +1803,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
     private long seekTo = -1;
 
-    public BlockImpactsDocsEnum(FieldInfo fieldInfo, IntBlockTermState termState) throws IOException {
+    public BlockImpactsDocsEnum(FieldInfo fieldInfo, IntBlockTermState termState, int flags) throws IOException {
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
       indexHasPos = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
@@ -1822,7 +1824,8 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       docUpto = 0;
       docBufferUpto = BLOCK_SIZE;
 
-      if (indexHasFreq == false) {
+      this.needsFreq = PostingsEnum.featureRequested(flags, PostingsEnum.FREQS);
+      if (indexHasFreq == false || needsFreq == false) {
         Arrays.fill(freqBuffer, 1);
       }
 
@@ -1851,9 +1854,15 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
       if (left >= BLOCK_SIZE) {
         forUtil.readBlock(docIn, encoded, docDeltaBuffer);
+
         if (indexHasFreq) {
-          forUtil.readBlock(docIn, encoded, freqBuffer);
+          if (needsFreq) {
+            forUtil.readBlock(docIn, encoded, freqBuffer);
+          } else {
+            forUtil.skipBlock(docIn); // skip over freqs if we don't need them at all
+          }
         }
+
       } else {
         readVIntBlock(docIn, docDeltaBuffer, freqBuffer, left, indexHasFreq);
       }
