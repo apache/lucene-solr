@@ -34,6 +34,7 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -173,9 +174,10 @@ public class LibListener implements ClusterPropertiesListener {
 
     @Override
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
-      int v = req.getParams().getInt(VERSION, -1);
+      int v = req.getParams().getInt(ConfigOverlay.ZNODEVER, -1);
       if (v >= 0) {
-        libListener.coreContainer.getZkController().getZkStateReader().forceRefreshClusterProps(v);
+        ZkStateReader zkStateReader = libListener.coreContainer.getZkController().getZkStateReader();
+        zkStateReader.forceRefreshClusterProps(v);
       }
       rsp.add("metadata", (MapWriter) ew -> ew.putIfNotNull(VERSION,
           libListener.coreContainer.getZkController().zkStateReader.getClusterPropsVersion()));
@@ -197,7 +199,7 @@ public class LibListener implements ClusterPropertiesListener {
           }
           SolrRequestHandler handler = customHandlers.get(name);
           if (handler == null) {
-            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, " No such handler " + name);
+            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, " No such handler " + name+ " available handlers "+ customHandlers.keySet() );
           }
           handler.handleRequest(req, rsp);
         }

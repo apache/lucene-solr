@@ -36,6 +36,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.MemClassLoader;
+import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.server.Server;
 import org.junit.BeforeClass;
@@ -48,7 +49,8 @@ import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 import static org.apache.solr.core.TestDynamicLoadingUrl.runHttpServer;
 
 @SolrTestCaseJ4.SuppressSSL
-public class TestCoreContainerReqHandler extends SolrCloudTestCase {
+@LogLevel("org.apache.solr.common.cloud.ZkStateReader=DEBUG;org.apache.solr.handler.admin.CollectionHandlerApi=DEBUG")
+public class TestContainerReqHandler extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 

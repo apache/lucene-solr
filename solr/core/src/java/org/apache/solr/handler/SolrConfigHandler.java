@@ -36,6 +36,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -196,29 +197,53 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         maxWaitSecs, concurrentTasks.size(), prop, expectedVersion, collection));
 
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
+    execInparallel(concurrentTasks, parallelExecutor -> {
+      try {
+        List<String> failedList = executeAll(expectedVersion, maxWaitSecs, concurrentTasks, parallelExecutor);
+        // if any tasks haven't completed within the specified timeout, it's an error
+        if (failedList != null)
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              formatString("{0} out of {1} the property {2} to be of version {3} within {4} seconds! Failed cores: {5}",
+                  failedList.size(), concurrentTasks.size() + 1, prop, expectedVersion, maxWaitSecs, failedList));
+      } catch (InterruptedException e) {
+        log.warn(formatString(
+            "Core  was interrupted . trying to set the property {0} to version {1} to propagate to {2} replicas for collection {3}",
+            prop, expectedVersion, concurrentTasks.size(), collection));
+        Thread.currentThread().interrupt();
+      }
+    });
+
+    log.info("Took {}ms to set the property {} to be of version {} for collection {}",
+        timer.getTime(), prop, expectedVersion, collection);
+  }
+
+  public  static void execInparallel( List<? extends PerReplicaCallable> concurrentTasks, Consumer<ExecutorService> fun) {
     int poolSize = Math.min(concurrentTasks.size(), 10);
     ExecutorService parallelExecutor =
         ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new DefaultSolrThreadFactory("solrHandlerExecutor"));
     try {
-      List<String> failedList = executeAll(expectedVersion, maxWaitSecs, concurrentTasks, parallelExecutor);
 
+     fun.accept(parallelExecutor);
+
+    }  finally {
+      ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
+    }
+  }
+
+  private static void ghgjhg(String collection, String prop, int expectedVersion, int maxWaitSecs, List<PerReplicaCallable> concurrentTasks, ExecutorService parallelExecutor) {
+    try {
+      List<String> failedList = executeAll(expectedVersion, maxWaitSecs, concurrentTasks, parallelExecutor);
       // if any tasks haven't completed within the specified timeout, it's an error
       if (failedList != null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             formatString("{0} out of {1} the property {2} to be of version {3} within {4} seconds! Failed cores: {5}",
                 failedList.size(), concurrentTasks.size() + 1, prop, expectedVersion, maxWaitSecs, failedList));
-
-    } catch (InterruptedException ie) {
+    } catch (InterruptedException e) {
       log.warn(formatString(
           "Core  was interrupted . trying to set the property {0} to version {1} to propagate to {2} replicas for collection {3}",
           prop, expectedVersion, concurrentTasks.size(), collection));
       Thread.currentThread().interrupt();
-    } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
     }
-
-    log.info("Took {}ms to set the property {} to be of version {} for collection {}",
-        timer.getTime(), prop, expectedVersion, collection);
   }
 
   @Override
@@ -261,7 +286,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   public static final String CREATE = "create";
   private static Set<String> cmdPrefixes = ImmutableSet.of(CREATE, UPDATE, "delete", "add");
 
-  public static List<String> executeAll(int expectedVersion, int maxWaitSecs, List<PerReplicaCallable> concurrentTasks, ExecutorService parallelExecutor) throws InterruptedException {
+  public static List<String> executeAll(int expectedVersion, int maxWaitSecs, List<? extends PerReplicaCallable> concurrentTasks, ExecutorService parallelExecutor) throws InterruptedException {
     List<Future<Boolean>> results =
         parallelExecutor.invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
 
@@ -315,7 +340,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     public Boolean call() throws Exception {
       final RTimer timer = new RTimer();
       int attempts = 0;
-      try (HttpSolrClient solr = new HttpSolrClient.Builder(getBaseUrl()).build()) {
+      try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (true) {
           try {
@@ -326,14 +351,13 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             log.info("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
             Thread.sleep(100);
             MapWriter resp = solr.httpUriRequest(this).future.get();
-            if (verifyResponse(resp)) break;
+            if (verifyResponse(resp, attempts)) break;
             attempts++;
-            log.info(formatString("Could not get expectedVersion {0} from {1} for prop {2}   after {3} attempts", expectedZkVersion, getBaseUrl(), prop, attempts));
           } catch (Exception e) {
             if (e instanceof InterruptedException) {
               break; // stop looping
             } else {
-              log.warn("Failed to get /schema/zkversion from " + getBaseUrl() + " due to: " + e);
+              log.warn("Failed to get /schema/zkversion from " + coreUrl + " due to: " + e);
             }
           }
         }
@@ -341,17 +365,15 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       return true;
     }
 
-    protected String getBaseUrl() {
-      return coreUrl;
-    }
-
-    protected boolean verifyResponse(MapWriter mw) {
+    protected boolean verifyResponse(MapWriter mw, int attempts) {
       NamedList resp = (NamedList) mw;
       if (resp != null) {
         Map m = (Map) resp.get(ZNODEVER);
         if (m != null) {
           remoteVersion = (Number) m.get(prop);
           if (remoteVersion != null && remoteVersion.intValue() >= expectedZkVersion) return true;
+          log.info(formatString("Could not get expectedVersion {0} from {1} for prop {2}   after {3} attempts", expectedZkVersion, coreUrl, prop, attempts));
+
         }
       }
       return false;

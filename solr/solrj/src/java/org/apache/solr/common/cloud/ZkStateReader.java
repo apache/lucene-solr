@@ -263,7 +263,9 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public void forceRefreshClusterProps(int expectedVersion) {
+    log.info("Expected version of clusterprops.json is {} , my version is {}", expectedVersion, clusterPropsVersion);
     if (clusterPropsVersion == null || expectedVersion > clusterPropsVersion) {
+      log.info("reloading clusterprops.json");
       loadClusterProperties();
     }
   }
@@ -1129,12 +1131,11 @@ public class ZkStateReader implements SolrCloseable {
     try {
       while (true) {
         try {
-
           Stat stat = new Stat();
           this.clusterProperties = new ClusterProperties(zkClient).getClusterProperties(stat);
           this.clusterPropsVersion = stat.getVersion();
 
-          log.debug("Loaded cluster properties: {}", this.clusterProperties);
+          log.debug("Loaded cluster properties: {} to version {}", this.clusterProperties, clusterPropsVersion);
 
           for (ClusterPropertiesListener listener : clusterPropertiesListeners) {
             listener.onChange(getClusterProperties());

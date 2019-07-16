@@ -19,12 +19,12 @@ package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -37,10 +37,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RuntimeLib;
@@ -49,7 +50,6 @@ import org.apache.solr.handler.admin.CollectionsHandler.CollectionOperation;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -109,101 +109,41 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
 
   static Command wrap(Command cmd) {
     return info -> {
-      try {
-        cmd.call(info);
-      } finally {
+      boolean modified = cmd.call(info);
+      if (modified) {
         CoreContainer cc = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
         Stat stat = new Stat();
-        cc.getClusterPropertiesListener()
-            .onChange(new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties(stat));
-
+        Map<String, Object> clusterProperties = new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties(stat);
+        cc.getClusterPropertiesListener().onChange(clusterProperties);
+        log.info("current version of clusterprops.json is {} , trying to get every node to update ", stat.getVersion());
+        log.debug("The current clusterprops.json:  {}",clusterProperties );
+        ((CollectionHandlerApi) info.apiHandler).waitForStateSync(stat.getVersion(), cc);
       }
+      return modified;
+
     };
   }
 
-  private void waitForStateSync(int expectedVersion, CoreContainer coreContainer)
-  {
-    final RTimer timer = new RTimer();
-    int waitTime = 30;//seconds
-    // get a list of active replica cores to query for the schema zk version (skipping this core of course)
-    List<SolrConfigHandler.PerReplicaCallable> concurrentTasks = new ArrayList<>();
-
-    ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
-    for (String nodeName : zkStateReader.getClusterState().getLiveNodes() ) {
-      String baseurl = zkStateReader.getBaseUrlForNodeName(nodeName);
-      baseurl+= "/____v2/node/ext";
-      PerNodeCallable e = new PerNodeCallable(baseurl, expectedVersion, waitTime);
-      concurrentTasks.add(e);
-    }
-    if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
-
-    log.info(formatString("Waiting up to {0} secs for {1} nodes to update clusterprops to be of version {2} ",
-        waitTime, concurrentTasks.size(), expectedVersion));
-
-    // use an executor service to invoke schema zk version requests in parallel with a max wait time
-    int poolSize = Math.min(concurrentTasks.size(), 10);
-    ExecutorService parallelExecutor =
-        ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new DefaultSolrThreadFactory("solrHandlerExecutor"));
-    try {
-      List<String> failedList = SolrConfigHandler.executeAll(expectedVersion, waitTime, concurrentTasks, parallelExecutor);
-
-      // if any tasks haven't completed within the specified timeout, it's an error
-      if (failedList != null)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            formatString("{0} out of {1} the property {2} to be of version {3} within {4} seconds! Failed cores: {5}",
-                failedList.size(), concurrentTasks.size() + 1,  expectedVersion, 30, failedList));
-
-    } catch (InterruptedException ie) {
-      log.warn(formatString(
-          "Request was interrupted . trying to set the clusterprops to version {0} to propagate to {1} nodes ",
-          expectedVersion, concurrentTasks.size()));
-      Thread.currentThread().interrupt();
-    } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
-    }
-
-    log.info("Took {}ms to update the clusterprops to be of version {}  on {} nodes",
-        timer.getTime(), expectedVersion, concurrentTasks.size());
-
-  }
-
-  public static class PerNodeCallable extends SolrConfigHandler.PerReplicaCallable{
-    private String url;
-    PerNodeCallable(String baseUrl, int expectedversion, int waitTime){
-      super(baseUrl, null, expectedversion, waitTime);
-      super.coreUrl = baseUrl;
-    }
-
-    @Override
-    protected boolean verifyResponse(MapWriter mw) {
-      remoteVersion = (Number) mw._get("metadata/version", -1);
-      return remoteVersion.intValue() >= expectedZkVersion;
-    }
-  }
-
-
-
-
-
-
-  private static void getNodes(ApiInfo params) {
+  private static boolean getNodes(ApiInfo params) {
     params.rsp.add("nodes", ((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getClusterState().getLiveNodes());
+    return false;
   }
 
-  private static void deleteReqHandler(ApiInfo params) throws Exception {
+  private static boolean deleteReqHandler(ApiInfo params) throws Exception {
     String name = params.op.getStr("");
     ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
     Map<String, Object> map = clusterProperties.getClusterProperties();
     if (Utils.getObjectByPath(map, false, asList(SolrRequestHandler.TYPE, name)) == null) {
       params.op.addError("NO such requestHandler with name :");
-      return;
+      return false;
     }
     Map m = new LinkedHashMap();
     Utils.setObjectByPath(m, asList(SolrRequestHandler.TYPE, name), null, true);
     clusterProperties.setClusterProperties(m);
+    return true;
   }
 
-  private static void addRequestHandler(ApiInfo params) throws Exception {
+  private static boolean addRequestHandler(ApiInfo params) throws Exception {
     Map data = params.op.getDataMap();
     String name = (String) data.get("name");
     CoreContainer coreContainer = ((CollectionHandlerApi) params.apiHandler).handler.coreContainer;
@@ -211,17 +151,18 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     Map<String, Object> map = clusterProperties.getClusterProperties();
     if (Utils.getObjectByPath(map, false, asList(SolrRequestHandler.TYPE, name)) != null) {
       params.op.addError("A requestHandler already exists with the said name");
-      return;
+      return false;
     }
     Map m = new LinkedHashMap();
     Utils.setObjectByPath(m, asList(SolrRequestHandler.TYPE, name), data, true);
     clusterProperties.setClusterProperties(m);
+    return true;
   }
 
-  private static void addUpdateRuntimeLib(ApiInfo params) throws Exception {
-    if(!RuntimeLib.isEnabled()){
+  private static boolean addUpdateRuntimeLib(ApiInfo params) throws Exception {
+    if (!RuntimeLib.isEnabled()) {
       params.op.addError("node not started with enable.runtime.lib=true");
-      return;
+      return false;
     }
 
     CollectionHandlerApi handler = (CollectionHandlerApi) params.apiHandler;
@@ -235,12 +176,12 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     if (Meta.ADD_RUNTIME_LIB.commandName.equals(op.name)) {
       if (existing != null) {
         op.addError(StrUtils.formatString("The jar with a name ''{0}'' already exists", name));
-        return;
+        return false;
       }
     } else {
       if (existing == null) {
         op.addError(StrUtils.formatString("The jar with a name ''{0}'' doesn not exist", name));
-        return;
+        return false;
       }
     }
     try {
@@ -248,22 +189,69 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     } catch (SolrException e) {
       log.error("Error loading runtimelib ", e);
       op.addError(e.getMessage());
-      return;
+      return false;
     }
 
     Map delta = new LinkedHashMap();
     Utils.setObjectByPath(delta, pathToLib, op.getDataMap(), true);
     clusterProperties.setClusterProperties(delta);
+    return true;
 
   }
 
-  private static void setClusterObj(ApiInfo params) {
+  private static boolean setClusterObj(ApiInfo params) {
     ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
     try {
       clusterProperties.setClusterProperties(params.op.getDataMap());
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error in API", e);
     }
+    return false;
+  }
+
+  private void waitForStateSync(int expectedVersion, CoreContainer coreContainer) {
+    final RTimer timer = new RTimer();
+    int waitTimeSecs = 30;
+    // get a list of active replica cores to query for the schema zk version (skipping this core of course)
+    List<PerNodeCallable> concurrentTasks = new ArrayList<>();
+
+    ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
+    for (String nodeName : zkStateReader.getClusterState().getLiveNodes()) {
+      PerNodeCallable e = new PerNodeCallable(zkStateReader.getBaseUrlForNodeName(nodeName), expectedVersion, waitTimeSecs);
+      concurrentTasks.add(e);
+    }
+    if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
+
+    log.info("Waiting up to {} secs for {} nodes to update clusterprops to be of version {} ",
+        waitTimeSecs, concurrentTasks.size(), expectedVersion);
+    SolrConfigHandler.execInparallel(concurrentTasks, parallelExecutor -> {
+      try {
+        List<String> failedList = SolrConfigHandler.executeAll(expectedVersion, waitTimeSecs, concurrentTasks, parallelExecutor);
+
+        // if any tasks haven't completed within the specified timeout, it's an error
+        if (failedList != null)
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+              formatString("{0} out of {1} the property {2} to be of version {3} within {4} seconds! Failed cores: {5}",
+                  failedList.size(), concurrentTasks.size() + 1, expectedVersion, 30, failedList));
+      } catch (InterruptedException e) {
+        log.warn(formatString(
+            "Request was interrupted . trying to set the clusterprops to version {0} to propagate to {1} nodes ",
+            expectedVersion, concurrentTasks.size()));
+        Thread.currentThread().interrupt();
+
+      }
+    });
+
+    log.info("Took {}ms to update the clusterprops to be of version {}  on {} nodes",
+        timer.getTime(), expectedVersion, concurrentTasks.size());
+
+  }
+
+  interface Command {
+
+
+    boolean call(ApiInfo info) throws Exception;
+
   }
 
   private static void addApi(Map<Meta, ApiCommand> mapping, Meta metaInfo, Command fun) {
@@ -302,10 +290,25 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     return apiCommands;
   }
 
-  interface Command {
+  public static class PerNodeCallable extends SolrConfigHandler.PerReplicaCallable {
 
-    void call(ApiInfo info) throws Exception;
+    static final List<String> path = Arrays.asList("metadata", CommonParams.VERSION);
+    PerNodeCallable(String baseUrl, int expectedversion, int waitTime) {
+      super(baseUrl, ConfigOverlay.ZNODEVER, expectedversion, waitTime);
+    }
 
+    @Override
+    protected boolean verifyResponse(MapWriter mw, int attempts) {
+      remoteVersion = (Number) mw._get(path, -1);
+      if (remoteVersion.intValue() >= expectedZkVersion) return true;
+      log.info(formatString("Could not get expectedVersion {0} from {1} , remote val= {2}   after {3} attempts", expectedZkVersion, coreUrl, remoteVersion, attempts));
+
+      return false;
+    }
+
+    public String getPath() {
+      return "/____v2/node/ext";
+    }
   }
 
   static class ApiInfo {
