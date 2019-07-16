@@ -148,4 +148,10 @@ public class XYComponent2DFactory {
     }
     return encoded;
   }
+
+  /** Builds a Component predicate for fast computation of point in component. The component must
+   * be created with one of the methods of this factory */
+  public static XYComponent2DPredicate createComponentPredicate(Component2D component) {
+    return XYComponent2DPredicate.createComponentPredicate(component);
+  }
 }

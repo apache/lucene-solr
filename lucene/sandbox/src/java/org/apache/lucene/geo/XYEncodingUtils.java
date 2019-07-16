@@ -28,6 +28,8 @@ public final class XYEncodingUtils {
 
   public static final double MIN_VAL_INCL = -Float.MAX_VALUE;
   public static final double MAX_VAL_INCL = Float.MAX_VALUE;
+  public static final int MIN_ENC_VAL = encode(MIN_VAL_INCL);
+  public static final int MAX_ENC_VAL = encode(MAX_VAL_INCL);
 
   // No instance:
   private XYEncodingUtils() {
