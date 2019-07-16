@@ -202,13 +202,14 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
       aliases = zkStateReader.getAliases();
       aliasesRefs = referencedByAlias(extCollection, aliases, followAliases);
+      String collection = followAliases ? aliases.resolveSimpleAlias(extCollection) : extCollection;
       if (aliasesRefs.size() > 0) {
         for (String alias : aliasesRefs) {
           // for back-compat in 8.x we don't automatically remove other
           // aliases that point only to this collection
           if (!extCollection.equals(alias)) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Collection : " + extCollection + " is part of aliases: " + aliasesRefs + ", remove or modify the aliases before removing this collection.");
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "Collection : " + collection + " is part of aliases: " + aliasesRefs + ", remove or modify the aliases before removing this collection.");
           } else {
             aliasesToDelete.add(alias);
           }

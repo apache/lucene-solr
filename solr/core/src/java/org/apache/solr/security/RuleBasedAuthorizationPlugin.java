@@ -189,6 +189,24 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
     return MatchStatus.FORBIDDEN;
   }
 
+  public boolean doesUserHavePermission(String user, PermissionNameProvider.Name permission) {
+    Set<String> roles = usersVsRoles.get(user);
+    if (roles != null) {
+      for (String role: roles) {
+        if (mapping.get(null) == null) continue;
+        List<Permission> permissions = mapping.get(null).get(null);
+        if (permissions != null) {
+          for (Permission p: permissions) {
+            if (permission.equals(p.wellknownName) && p.role.contains(role)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   @Override
   public void init(Map<String, Object> initInfo) {
     mapping.put(null, new WildCardSupportMap());

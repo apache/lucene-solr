@@ -123,6 +123,7 @@ public final class Util {
    * Expert: like {@link Util#getByOutput(FST, long)} except reusing 
    * BytesReader, initial and scratch Arc, and result.
    */
+  @Deprecated
   public static IntsRef getByOutput(FST<Long> fst, long targetOutput, BytesReader in, Arc<Long> arc, Arc<Long> scratchArc, IntsRefBuilder result) throws IOException {
     long output = arc.output;
     int upto = 0;

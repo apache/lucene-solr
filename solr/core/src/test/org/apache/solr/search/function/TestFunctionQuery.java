@@ -470,6 +470,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     );
     // this should pass
     assertQ(req("q", "*:*","defType","edismax", "boost","recip(1, 2, 3, 4)"));
+
+    // for undefined field NPE shouldn't be thrown
+    assertQEx("Should Fail as the field is undefined", "undefined field a",
+        req("q", "*:*", "fl", "x:payload(a,b)"), SolrException.ErrorCode.BAD_REQUEST);
   }
 
   @Test

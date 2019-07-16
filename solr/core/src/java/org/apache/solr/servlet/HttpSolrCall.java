@@ -137,6 +137,8 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 public class HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String ORIGINAL_USER_PRINCIPAL_HEADER = "originalUserPrincipal";
+
   public static final Random random;
   static {
     // We try to make things reproducible in the context of our tests by initializing the random instance
@@ -414,10 +416,12 @@ public class HttpSolrCall {
           if (path.equals(req.getServletPath())) {
             // avoid endless loop - pass through to Restlet via webapp
             action = PASSTHROUGH;
+            SolrRequestInfo.getRequestInfo().setAction(action);
             return;
           } else {
             // forward rewritten URI (without path prefix and core/collection name) to Restlet
             action = FORWARD;
+            SolrRequestInfo.getRequestInfo().setAction(action);
             return;
           }
         }
@@ -464,6 +468,35 @@ public class HttpSolrCall {
     }
   }
 
+  Action authorize() throws IOException {
+    AuthorizationContext context = getAuthCtx();
+    log.debug("AuthorizationContext : {}", context);
+    AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);
+    if (authResponse.statusCode == AuthorizationResponse.PROMPT.statusCode) {
+      Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
+      if (headers != null) {
+        for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
+      }
+      log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
+      if (shouldAudit(EventType.REJECTED)) {
+        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.REJECTED, req, context));
+      }
+    }
+    if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
+      log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);
+      sendError(authResponse.statusCode,
+          "Unauthorized request, Response code: " + authResponse.statusCode);
+      if (shouldAudit(EventType.UNAUTHORIZED)) {
+        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.UNAUTHORIZED, req, context));
+      }
+      return RETURN;
+    }
+    if (shouldAudit(EventType.AUTHORIZED)) {
+      cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.AUTHORIZED, req, context));
+    }
+    return null;
+  }
+  
   /**
    * This method processes the request.
    */
@@ -491,36 +524,20 @@ public class HttpSolrCall {
 
     try {
       init();
-      /* Authorize the request if
-       1. Authorization is enabled, and
-       2. The requested resource is not a known static file
-        */
-      if (cores.getAuthorizationPlugin() != null && shouldAuthorize()) {
-        AuthorizationContext context = getAuthCtx();
-        log.debug("AuthorizationContext : {}", context);
-        AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);
-        if (authResponse.statusCode == AuthorizationResponse.PROMPT.statusCode) {
-          Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
-          if (headers != null) {
-            for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
-          }
-          log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
-          if (shouldAudit(EventType.REJECTED)) {
-            cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.REJECTED, req, context));
-          }
-        }
-        if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
-          log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);
-          sendError(authResponse.statusCode,
-              "Unauthorized request, Response code: " + authResponse.statusCode);
-          if (shouldAudit(EventType.UNAUTHORIZED)) {
-            cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.UNAUTHORIZED, req, context));
-          }
-          return RETURN;
-        }
-        if (shouldAudit(EventType.AUTHORIZED)) {
-          cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.AUTHORIZED, req, context));
-        }
+
+      // Perform authorization here, if:
+      //    (a) Authorization is enabled, and
+      //    (b) The requested resource is not a known static file
+      //    (c) And this request should be handled by this node (see NOTE below)
+      // NOTE: If the query is to be handled by another node, then let that node do the authorization.
+      // In case of authentication using BasicAuthPlugin, for example, the internode request
+      // is secured using PKI authentication and the internode request here will contain the
+      // original user principal as a payload/header, using which the receiving node should be
+      // able to perform the authorization.
+      if (cores.getAuthorizationPlugin() != null && shouldAuthorize()
+          && !(action == REMOTEQUERY || action == FORWARD)) {
+        Action authorizationAction = authorize();
+        if (authorizationAction != null) return authorizationAction;
       }
 
       HttpServletResponse resp = response;
@@ -529,7 +546,7 @@ public class HttpSolrCall {
           handleAdminRequest();
           return RETURN;
         case REMOTEQUERY:
-          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse()));
+          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, new SolrQueryResponse(), action));
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
@@ -545,7 +562,7 @@ public class HttpSolrCall {
                * QueryResponseWriter is selected and we get the correct
                * Content-Type)
                */
-            SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp));
+            SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
             execute(solrRsp);
             if (shouldAudit()) {
               EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;

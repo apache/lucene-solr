@@ -492,6 +492,10 @@ groups:
       - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
         tee: true
+      - !Command
+        comment: Make sure the edits done by `addVersion.py` are ok, then push
+        cmd: git add -u .  && git commit -m "Add next major version {{ next_version }}"  && git push
+        logfile: commit-stable.log
     post_description: |
       Make sure to follow the manual instructions printed by the script:
 
@@ -510,7 +514,7 @@ groups:
       next_version: "{{ release_version_major }}.{{ release_version_minor + 1 }}.0"
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Run these commands to add the new major version {{ next_version }} to the stable branch
+      commands_text: Run these commands to add the new minor version {{ next_version }} to the stable branch
       commands:
       - !Command
         cmd: git checkout {{ stable_branch }}
@@ -518,6 +522,10 @@ groups:
       - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
         tee: true
+      - !Command
+        comment: Make sure the edits done by `addVersion.py` are ok, then push
+        cmd: git add -u .  && git commit -m "Add next minor version {{ next_version }}"  && git push
+        logfile: commit-stable.log
   - !Todo
     id: sanity_check_doap
     title: Sanity check the DOAP files
