@@ -55,7 +55,7 @@ Improvements
 * LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
 
 * LUCENE-8914: move the logic for discarding inner modes to the IntersectVisitor so we take advantage
-  of the change introduced in LUCENE-7862.
+  of the change introduced in LUCENE-7862. (Ignacio Vera)
 
 Other
 
