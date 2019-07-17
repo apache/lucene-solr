@@ -504,14 +504,6 @@ public class ZkStateReader implements SolrCloseable {
     loadClusterProperties();
   };
 
-  public void forceRefreshClusterProps(int expectedVersion) {
-    log.debug("Expected version of clusterprops.json is {} , my version is {}", expectedVersion, clusterPropsVersion);
-    if (expectedVersion > clusterPropsVersion) {
-      log.info("reloading clusterprops.json");
-      loadClusterProperties();
-    }
-  }
-
   private void addSecurityNodeWatcher(final Callable<Pair<byte[], Stat>> callback)
       throws KeeperException, InterruptedException {
     zkClient.exists(SOLR_SECURITY_CONF_PATH,
