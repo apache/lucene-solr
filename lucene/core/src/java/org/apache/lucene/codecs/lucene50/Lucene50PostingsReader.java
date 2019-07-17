@@ -1788,6 +1788,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     private int freq;                                 // freq we last read
 
     private boolean needsFreq; // true if the caller actually needs frequencies
+    private boolean isFreqsRead;
 
     // Where this term's postings start in the .doc file:
     private long docTermStartFP;
@@ -1825,6 +1826,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
       docBufferUpto = BLOCK_SIZE;
 
       this.needsFreq = PostingsEnum.featureRequested(flags, PostingsEnum.FREQS);
+      this.isFreqsRead = true;
       if (indexHasFreq == false || needsFreq == false) {
         Arrays.fill(freqBuffer, 1);
       }
@@ -1839,8 +1841,12 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     }
 
     @Override
-    public int freq() {
-      return freq;
+    public int freq() throws IOException {
+      if (isFreqsRead == false) {
+        forUtil.readBlock(docIn, encoded, freqBuffer); // read freqs for this block
+        isFreqsRead = true;
+      }
+      return freqBuffer[docBufferUpto-1];
     }
 
     @Override
@@ -1849,6 +1855,12 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
     }
 
     private void refillDocs() throws IOException {
+      // Check if we skipped reading the previous block of freqs, and if yes, position docIn after it
+      if (isFreqsRead == false) {
+        forUtil.skipBlock(docIn);
+        isFreqsRead = true;
+      }
+
       final int left = docFreq - docUpto;
       assert left > 0;
 
@@ -1857,7 +1869,7 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
 
         if (indexHasFreq) {
           if (needsFreq) {
-            forUtil.readBlock(docIn, encoded, freqBuffer);
+            isFreqsRead = false;
           } else {
             forUtil.skipBlock(docIn); // skip over freqs if we don't need them at all
           }
@@ -1916,6 +1928,10 @@ public final class Lucene50PostingsReader extends PostingsReaderBase {
         if (seekTo >= 0) {
           docIn.seek(seekTo);
           seekTo = -1;
+          // even if freqs were not read from the previous block, we will mark them as read,
+          // as we don't need to skip the previous block freqs in refillDocs,
+          // as we have already positioned docIn where in needs to be.
+          isFreqsRead = true;
         }
         refillDocs();
       }
