@@ -259,6 +259,7 @@ public class LibListener implements ClusterPropertiesListener {
 
     @Override
     public Name getPermissionName(AuthorizationContext request) {
+      if(request.getResource().endsWith("/node/ext")) return Name.COLL_READ_PERM;
       return Name.CUSTOM_PERM;
     }
   }
