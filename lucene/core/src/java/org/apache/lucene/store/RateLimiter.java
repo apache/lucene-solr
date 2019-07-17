@@ -31,7 +31,7 @@ public abstract class RateLimiter {
   /**
    * Sets an updated MB per second rate limit.
    * A subclass is allowed to perform dynamic updates of the rate limit
-   * during use
+   * during use.
    */
   public abstract void setMBPerSec(double mbPerSec);
 
@@ -52,7 +52,7 @@ public abstract class RateLimiter {
   /** How many bytes caller should add up itself before invoking {@link #pause}.
    *  NOTE: The value returned by this method may change over time and is not guaranteed
    *  to be constant throughout the lifetime of the RateLimiter. Users are advised to
-   *  refresh their local values with calls to this method to ensure consistency
+   *  refresh their local values with calls to this method to ensure consistency.
    */
   public abstract long getMinPauseCheckBytes();
 
