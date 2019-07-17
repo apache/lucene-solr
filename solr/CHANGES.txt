@@ -28,8 +28,11 @@ Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
 Jetty 9.4.19.v20190610
 
+Improvements
+----------------------
 
-(No Changes)
+* SOLR-12368: Support InPlace DV updates for a field that does not yet exist in any documents
+(hossman, Simon Willnauer, Adrien Grand, Munendra S N)
 
 
 ==================  8.2.0 ==================
