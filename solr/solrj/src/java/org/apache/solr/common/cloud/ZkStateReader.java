@@ -16,9 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -61,7 +59,6 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.WatchedEvent;
@@ -263,14 +260,6 @@ public class ZkStateReader implements SolrCloseable {
     map.put(AutoScalingParams.ZK_VERSION, stat.getVersion());
     return new AutoScalingConfig(map);
   }
-  private final Watcher clusterPropertiesWatcher = event -> {
-    log.debug("Callback received for clusterprops.json change event");
-    // session events are not change events, and do not remove the watcher
-    if (Watcher.Event.EventType.None.equals(event.getType())) {
-      return;
-    }
-    loadClusterProperties();
-  };
 
   private static class CollectionWatch<T> {
 
@@ -506,6 +495,14 @@ public class ZkStateReader implements SolrCloseable {
 
     return collection.getZNodeVersion();
   }
+
+  private final Watcher clusterPropertiesWatcher = event -> {
+    // session events are not change events, and do not remove the watcher
+    if (Watcher.Event.EventType.None.equals(event.getType())) {
+      return;
+    }
+    loadClusterProperties();
+  };
 
   public void forceRefreshClusterProps(int expectedVersion) {
     log.debug("Expected version of clusterprops.json is {} , my version is {}", expectedVersion, clusterPropsVersion);
@@ -1101,12 +1098,6 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     // on reconnect of SolrZkClient force refresh and re-add watches.
-    try {
-      zkClient.create(ZkStateReader.CLUSTER_PROPS, "{}".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT,true);
-    } catch (KeeperException | InterruptedException e) {
-       SolrZkClient.checkInterrupted(e);// May be it's already created by some other node
-    }
-
     loadClusterProperties();
     refreshLiveNodes(new LiveNodeWatcher());
     refreshLegacyClusterState(new LegacyClusterStateWatcher());
@@ -1130,28 +1121,24 @@ public class ZkStateReader implements SolrCloseable {
     });
   }
 
-  public int getClusterPropsVersion() {
-    return clusterPropsVersion;
-  }
-
   @SuppressWarnings("unchecked")
   private void loadClusterProperties() {
     try {
       while (true) {
         try {
           Stat stat = new Stat();
-          this.clusterProperties = new ClusterProperties(zkClient).getClusterProperties(stat);
+          byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, stat, true);
+          this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat((Map<String, Object>) Utils.fromJSON(data));
           this.clusterPropsVersion = stat.getVersion();
-
           log.debug("Loaded cluster properties: {} to version {}", this.clusterProperties, clusterPropsVersion);
 
           for (ClusterPropertiesListener listener : clusterPropertiesListeners) {
             listener.onChange(getClusterProperties());
           }
           return;
-        } catch (IOException e) {
-          this.clusterPropsVersion = -1;
+        } catch (KeeperException.NoNodeException e) {
           this.clusterProperties = Collections.emptyMap();
+          this.clusterPropsVersion = -1;
           log.debug("Loaded empty cluster properties");
           // set an exists watch, and if the node has been created since the last call,
           // read the data again
@@ -1162,6 +1149,10 @@ public class ZkStateReader implements SolrCloseable {
     } catch (KeeperException | InterruptedException e) {
       log.error("Error reading cluster properties from zookeeper", SolrZkClient.checkInterrupted(e));
     }
+  }
+
+  public int getClusterPropsVersion() {
+    return clusterPropsVersion;
   }
 
   /**
