@@ -54,6 +54,9 @@ Improvements
 
 * LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
 
+* LUCENE-8914: move the logic for discarding inner modes to the IntersectVisitor so we take advantage
+  of the change introduced in LUCENE-7862.
+
 Other
 
 * LUCENE-8778 LUCENE-8911: Define analyzer SPI names as static final fields and document the names in Javadocs.
