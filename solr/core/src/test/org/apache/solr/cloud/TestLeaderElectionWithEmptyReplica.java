@@ -111,7 +111,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
       HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl())
           .withHttpClient(cloudClient.getLbClient().getHttpClient()).build();
       QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
-//      log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(), replica.getBaseUrl());
+//      log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(), replica.getCoreUrl());
       if (numFound == Long.MIN_VALUE)  {
         numFound = response.getResults().getNumFound();
       } else  {
