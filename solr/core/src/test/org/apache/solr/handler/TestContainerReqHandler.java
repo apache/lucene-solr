@@ -20,6 +20,7 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -49,7 +50,7 @@ import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 import static org.apache.solr.core.TestDynamicLoadingUrl.runHttpServer;
 
 @SolrTestCaseJ4.SuppressSSL
-@LogLevel("org.apache.solr.common.cloud.ZkStateReader=DEBUG;org.apache.solr.handler.admin.CollectionHandlerApi=DEBUG")
+@LogLevel("org.apache.solr.common.cloud.ZkStateReader=DEBUG;org.apache.solr.handler.admin.CollectionHandlerApi=DEBUG;org.apache.solr.core.LibListener=DEBUG;org.apache.solr.common.cloud.ClusterProperties=DEBUG")
 public class TestContainerReqHandler extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -72,7 +73,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
             Map.Entry entry = (Map.Entry) e;
             String key = (String) entry.getKey();
             String v = (String) entry.getValue();
-            assertEquals("attempt: "+ i +" Mismatch for value : '" + key + "' in response " + Utils.toJSONString(rsp),
+            assertEquals("attempt: " + i + " Mismatch for value : '" + key + "' in response " + Utils.toJSONString(rsp),
                 v, rsp.getResponse()._getStr(key, null));
           }
           return;
@@ -91,37 +92,43 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   }
 
+  @Test
   public void testSetClusterReqHandler() throws Exception {
-    new V2Request.Builder("/cluster")
-        .withPayload("{add-requesthandler:{name : 'foo', class : 'org.apache.solr.handler.DumpRequestHandler'}}")
-        .withMethod(SolrRequest.METHOD.POST)
-        .build().process(cluster.getSolrClient());
+    try {
+      new V2Request.Builder("/cluster")
+          .withPayload("{add-requesthandler:{name : 'foo', class : 'org.apache.solr.handler.DumpRequestHandler'}}")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
 
-    Map<String, Object> map = assertVersionInSync();
+      Map<String, Object> map = assertVersionInSync();
 
-    assertEquals("org.apache.solr.handler.DumpRequestHandler",
-        getObjectByPath(map, true, Arrays.asList("requestHandler", "foo", "class")));
+      assertEquals("org.apache.solr.handler.DumpRequestHandler",
+          getObjectByPath(map, true, Arrays.asList("requestHandler", "foo", "class")));
 
-    assertVersionInSync();
-    V2Response rsp = new V2Request.Builder("/node/ext/foo")
-        .withMethod(SolrRequest.METHOD.GET)
-        .withParams(new MapSolrParams((Map) Utils.makeMap("testkey", "testval")))
-        .build().process(cluster.getSolrClient());
-    assertEquals("testval", rsp._getStr("params/testkey", null));
+      assertVersionInSync();
+      V2Response rsp = new V2Request.Builder("/node/ext/foo")
+          .withMethod(SolrRequest.METHOD.GET)
+          .withParams(new MapSolrParams((Map) Utils.makeMap("testkey", "testval")))
+          .build().process(cluster.getSolrClient());
+      assertEquals("testval", rsp._getStr("params/testkey", null));
 
-    new V2Request.Builder("/cluster")
-        .withPayload("{delete-requesthandler: 'foo'}")
-        .withMethod(SolrRequest.METHOD.POST)
-        .build().process(cluster.getSolrClient());
+      new V2Request.Builder("/cluster")
+          .withPayload("{delete-requesthandler: 'foo'}")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
 
-    assertNull(getObjectByPath(map, true, Arrays.asList("requestHandler", "foo")));
+      assertNull(getObjectByPath(map, true, Arrays.asList("requestHandler", "foo")));
+    } finally {
+      new ClusterProperties(zkClient()).setClusterProperties(Collections.EMPTY_MAP);
+
+    }
 
   }
 
-  private  Map<String, Object> assertVersionInSync() throws SolrServerException, IOException {
+  private Map<String, Object> assertVersionInSync() throws SolrServerException, IOException {
     Stat stat = new Stat();
     Map<String, Object> map = new ClusterProperties(zkClient()).getClusterProperties(stat);
-    assertEquals(String.valueOf(stat.getVersion()),  getExtResponse()._getStr("metadata/version",null));
+    assertEquals(String.valueOf(stat.getVersion()), getExtResponse()._getStr("metadata/version", null));
     return map;
   }
 
@@ -170,8 +177,6 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "add-runtimelib/sha512"),
           getObjectByPath(new ClusterProperties(zkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
 
-      V2Response rsp = getExtResponse();
-      System.out.println(Utils.toJSONString(rsp));
 
 
       new V2Request.Builder("/cluster")
@@ -179,8 +184,6 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
       Map<String, Object> map = new ClusterProperties(zkClient()).getClusterProperties();
-      rsp = getExtResponse();
-      System.out.println(Utils.toJSONString(rsp));
 
 
       V2Request request = new V2Request.Builder("/node/ext/bar")
@@ -190,7 +193,6 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           "class", "org.apache.solr.core.RuntimeLibReqHandler",
           "loader", MemClassLoader.class.getName(),
           "version", null));
-
 
 
       assertEquals("org.apache.solr.core.RuntimeLibReqHandler",
@@ -206,8 +208,6 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "update-runtimelib/sha512"),
           getObjectByPath(new ClusterProperties(zkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
 
-      rsp = getExtResponse();
-      System.out.println(Utils.toJSONString(rsp));
 
       request = new V2Request.Builder("/node/ext/bar")
           .withMethod(SolrRequest.METHOD.POST)
@@ -219,6 +219,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       );
     } finally {
       server.first().stop();
+      new ClusterProperties(zkClient()).setClusterProperties(Collections.EMPTY_MAP);
     }
   }
 

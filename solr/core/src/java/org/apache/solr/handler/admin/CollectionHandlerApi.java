@@ -95,6 +95,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     addApi(apiMapping, Meta.SET_CLUSTER_PROPERTY_OBJ, CollectionHandlerApi::setClusterObj);
     addApi(apiMapping, Meta.ADD_RUNTIME_LIB, wrap(CollectionHandlerApi::addUpdateRuntimeLib));
     addApi(apiMapping, Meta.UPDATE_RUNTIME_LIB, wrap(CollectionHandlerApi::addUpdateRuntimeLib));
+    addApi(apiMapping, Meta.DELETE_RUNTIME_LIB, wrap(CollectionHandlerApi::deleteRuntimeLib));
     addApi(apiMapping, Meta.ADD_REQ_HANDLER, wrap(CollectionHandlerApi::addRequestHandler));
     addApi(apiMapping, Meta.DELETE_REQ_HANDLER, wrap(CollectionHandlerApi::deleteReqHandler));
 
@@ -156,6 +157,25 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     Map m = new LinkedHashMap();
     Utils.setObjectByPath(m, asList(SolrRequestHandler.TYPE, name), data, true);
     clusterProperties.setClusterProperties(m);
+    return true;
+  }
+  private static boolean deleteRuntimeLib(ApiInfo params) throws Exception {
+    if (!RuntimeLib.isEnabled()) {
+      params.op.addError("node not started with enable.runtime.lib=true");
+      return false;
+    }
+    String name = params.op.getStr(CommandOperation.ROOT_OBJ);
+    ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
+    Map<String, Object> props = clusterProperties.getClusterProperties();
+    List<String> pathToLib = asList(RuntimeLib.TYPE, name);
+    Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
+    if(existing == null){
+      params.op.addError("No such runtimeLib : " + name);
+      return false;
+    }
+    Map delta = new LinkedHashMap();
+    Utils.setObjectByPath(delta, pathToLib, null, true);
+    clusterProperties.setClusterProperties(delta);
     return true;
   }
 

@@ -60,6 +60,7 @@ public class LibListener implements ClusterPropertiesListener {
   Map<String, RuntimeLib> runtimeLibs = new HashMap<>();
   MemClassLoader memClassLoader;
   final ExtHandler extHandler;
+  private int myversion = -1;
 
   LibListener(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
@@ -98,9 +99,10 @@ public class LibListener implements ClusterPropertiesListener {
 
   @Override
   public boolean onChange(Map<String, Object> properties) {
-    log.info("clusterprops.json changed");
+    log.info("clusterprops.json changed , version {}", coreContainer.getZkController().getZkStateReader().getClusterPropsVersion());
     boolean forceReload = updateRuntimeLibs(properties);
     extHandler.updateReqHandlers(properties, forceReload);
+    myversion = coreContainer.getZkController().getZkStateReader().getClusterPropsVersion();
     return false;
   }
 
@@ -176,6 +178,7 @@ public class LibListener implements ClusterPropertiesListener {
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
       int v = req.getParams().getInt(ConfigOverlay.ZNODEVER, -1);
       if (v >= 0) {
+        log.debug("expected version : {} , my version {}", v, libListener.myversion );
         ZkStateReader zkStateReader = libListener.coreContainer.getZkController().getZkStateReader();
         zkStateReader.forceRefreshClusterProps(v);
       }
@@ -199,7 +202,9 @@ public class LibListener implements ClusterPropertiesListener {
           }
           SolrRequestHandler handler = customHandlers.get(name);
           if (handler == null) {
-            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, " No such handler " + name+ " available handlers "+ customHandlers.keySet() );
+            String err = StrUtils.formatString(" No such handler: {0}, available handlers : {1}" , name, customHandlers.keySet());
+            log.error(err);
+            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, err);
           }
           handler.handleRequest(req, rsp);
         }
@@ -212,7 +217,7 @@ public class LibListener implements ClusterPropertiesListener {
       boolean hasChanged = true;
       if (customHandlers.size() == m.size() && customHandlers.keySet().containsAll(m.keySet())) hasChanged = false;
       if (forceReload || hasChanged) {
-        log.info("RequestHandlers being reloaded in {}:{}", libListener.coreContainer.getZkController().getHostName(), libListener.coreContainer.getZkController().getHostPort());
+        log.debug("RequestHandlers being reloaded : {}", m.keySet());
         Map<String, SolrRequestHandler> newCustomHandlers = new HashMap<>();
         m.forEach((k, v) -> {
           if (v instanceof Map) {
@@ -224,20 +229,15 @@ public class LibListener implements ClusterPropertiesListener {
               }
               newCustomHandlers.put((String) k, inst);
             }
+          } else {
+            log.error("Invalid data for requestHandler : {} , {}", k, v);
           }
         });
 
+        log.debug("Registering request handlers {} ", newCustomHandlers.keySet());
         Map<String, SolrRequestHandler> old = customHandlers;
         customHandlers = newCustomHandlers;
-        old.forEach((s, h) -> {
-          if (h instanceof AutoCloseable) {
-            try {
-              ((AutoCloseable) h).close();
-            } catch (Exception e) {
-              log.error("Error closing handler", e);
-            }
-          }
-        });
+        old.forEach((s, h) -> PluginBag.closeQuietly(h));
       }
     }
 

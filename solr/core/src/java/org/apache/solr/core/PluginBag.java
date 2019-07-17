@@ -315,6 +315,14 @@ public class PluginBag<T> implements AutoCloseable {
     }
   }
 
+  public static void closeQuietly(Object inst)  {
+    try {
+      if (inst != null && inst instanceof AutoCloseable) ((AutoCloseable) inst).close();
+    } catch (Exception e) {
+      log.error("Error closing "+ inst , e);
+    }
+  }
+
   /**
    * An indirect reference to a plugin. It just wraps a plugin instance.
    * subclasses may choose to lazily load the plugin
@@ -349,7 +357,7 @@ public class PluginBag<T> implements AutoCloseable {
       // can close() be called concurrently with other methods?
       if (isLoaded()) {
         T myInst = get();
-        if (myInst != null && myInst instanceof AutoCloseable) ((AutoCloseable) myInst).close();
+        closeQuietly(myInst);
       }
     }
 

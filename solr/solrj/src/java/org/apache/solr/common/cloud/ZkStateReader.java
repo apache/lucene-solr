@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -60,6 +61,7 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.WatchedEvent;
@@ -197,7 +199,7 @@ public class ZkStateReader implements SolrCloseable {
   private final ConcurrentHashMap<String, PropsWatcher> collectionPropsWatchers = new ConcurrentHashMap<>();
 
   private volatile SortedSet<String> liveNodes = emptySortedSet();
-  private volatile Integer clusterPropsVersion;
+  private volatile int clusterPropsVersion = -1;
 
   private volatile Map<String, Object> clusterProperties = Collections.emptyMap();
 
@@ -261,14 +263,14 @@ public class ZkStateReader implements SolrCloseable {
     map.put(AutoScalingParams.ZK_VERSION, stat.getVersion());
     return new AutoScalingConfig(map);
   }
-
-  public void forceRefreshClusterProps(int expectedVersion) {
-    log.info("Expected version of clusterprops.json is {} , my version is {}", expectedVersion, clusterPropsVersion);
-    if (clusterPropsVersion == null || expectedVersion > clusterPropsVersion) {
-      log.info("reloading clusterprops.json");
-      loadClusterProperties();
+  private final Watcher clusterPropertiesWatcher = event -> {
+    log.debug("Callback received for clusterprops.json change event");
+    // session events are not change events, and do not remove the watcher
+    if (Watcher.Event.EventType.None.equals(event.getType())) {
+      return;
     }
-  }
+    loadClusterProperties();
+  };
 
   private static class CollectionWatch<T> {
 
@@ -505,40 +507,12 @@ public class ZkStateReader implements SolrCloseable {
     return collection.getZNodeVersion();
   }
 
-  public synchronized void createClusterStateWatchersAndUpdate() throws KeeperException,
-      InterruptedException {
-    // We need to fetch the current cluster state and the set of live nodes
-
-    log.debug("Updating cluster state from ZooKeeper... ");
-
-    // Sanity check ZK structure.
-    if (!zkClient.exists(CLUSTER_STATE, true)) {
-      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-          "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready");
+  public void forceRefreshClusterProps(int expectedVersion) {
+    log.debug("Expected version of clusterprops.json is {} , my version is {}", expectedVersion, clusterPropsVersion);
+    if (expectedVersion > clusterPropsVersion) {
+      log.info("reloading clusterprops.json");
+      loadClusterProperties();
     }
-
-    // on reconnect of SolrZkClient force refresh and re-add watches.
-    loadClusterProperties();
-    refreshLiveNodes(new LiveNodeWatcher());
-    refreshLegacyClusterState(new LegacyClusterStateWatcher());
-    refreshStateFormat2Collections();
-    refreshCollectionList(new CollectionsChildWatcher());
-    refreshAliases(aliasesManager);
-
-    if (securityNodeListener != null) {
-      addSecurityNodeWatcher(pair -> {
-        ConfigData cd = new ConfigData();
-        cd.data = pair.first() == null || pair.first().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
-        cd.version = pair.second() == null ? -1 : pair.second().getVersion();
-        securityData = cd;
-        securityNodeListener.run();
-      });
-      securityData = getSecurityProps(true);
-    }
-
-    collectionPropsObservers.forEach((k, v) -> {
-      collectionPropsWatchers.computeIfAbsent(k, PropsWatcher::new).refreshAndWatch(true);
-    });
   }
 
   private void addSecurityNodeWatcher(final Callable<Pair<byte[], Stat>> callback)
@@ -1114,15 +1088,49 @@ public class ZkStateReader implements SolrCloseable {
     return Collections.unmodifiableMap(clusterProperties);
   }
 
-  private final Watcher clusterPropertiesWatcher = event -> {
-    // session events are not change events, and do not remove the watcher
-    if (Watcher.Event.EventType.None.equals(event.getType())) {
-      return;
-    }
-    loadClusterProperties();
-  };
+  public synchronized void createClusterStateWatchersAndUpdate() throws KeeperException,
+      InterruptedException {
+    // We need to fetch the current cluster state and the set of live nodes
 
-  public Integer getClusterPropsVersion() {
+    log.debug("Updating cluster state from ZooKeeper... ");
+
+    // Sanity check ZK structure.
+    if (!zkClient.exists(CLUSTER_STATE, true)) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+          "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready");
+    }
+
+    // on reconnect of SolrZkClient force refresh and re-add watches.
+    try {
+      zkClient.create(ZkStateReader.CLUSTER_PROPS, "{}".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT,true);
+    } catch (KeeperException | InterruptedException e) {
+       SolrZkClient.checkInterrupted(e);// May be it's already created by some other node
+    }
+
+    loadClusterProperties();
+    refreshLiveNodes(new LiveNodeWatcher());
+    refreshLegacyClusterState(new LegacyClusterStateWatcher());
+    refreshStateFormat2Collections();
+    refreshCollectionList(new CollectionsChildWatcher());
+    refreshAliases(aliasesManager);
+
+    if (securityNodeListener != null) {
+      addSecurityNodeWatcher(pair -> {
+        ConfigData cd = new ConfigData();
+        cd.data = pair.first() == null || pair.first().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
+        cd.version = pair.second() == null ? -1 : pair.second().getVersion();
+        securityData = cd;
+        securityNodeListener.run();
+      });
+      securityData = getSecurityProps(true);
+    }
+
+    collectionPropsObservers.forEach((k, v) -> {
+      collectionPropsWatchers.computeIfAbsent(k, PropsWatcher::new).refreshAndWatch(true);
+    });
+  }
+
+  public int getClusterPropsVersion() {
     return clusterPropsVersion;
   }
 
@@ -1142,7 +1150,7 @@ public class ZkStateReader implements SolrCloseable {
           }
           return;
         } catch (IOException e) {
-          this.clusterPropsVersion = null;
+          this.clusterPropsVersion = -1;
           this.clusterProperties = Collections.emptyMap();
           log.debug("Loaded empty cluster properties");
           // set an exists watch, and if the node has been created since the last call,
