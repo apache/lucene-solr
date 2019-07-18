@@ -68,6 +68,9 @@ Improvements
 * LUCENE-8918: PhraseQuery throws exceptions at construction time if it is passed
   null arguments. (Alan Woodward)
 
+* LUCENE-8916: GraphTokenStreamFiniteStrings preserves all Token attributes
+  through its finite strings TokenStreams (Alan Woodward)
+
 Other
 
 * LUCENE-8778 LUCENE-8911: Define analyzer SPI names as static final fields and document the names in Javadocs.
