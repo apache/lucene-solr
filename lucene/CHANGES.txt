@@ -27,6 +27,9 @@ API Changes
   and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
   Grand, Alan Woodward)
 
+* LUCENE-8909: The deprecated IndexWriter#getFieldNames() method has been removed.
+  (Adrien Grand, Munendra S N)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -47,6 +50,11 @@ Other
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
 ======================= Lucene 8.3.0 =======================
+
+API Changes
+
+* LUCENE-8909: IndexWriter#getFieldNames() method is used to get fields present in index. After LUCENE-8316, this
+  method is no longer required. Hence, deprecate IndexWriter#getFieldNames() method. (Adrien Grand, Munendra S N)
 
 Improvements
 
