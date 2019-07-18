@@ -19,14 +19,10 @@ package org.apache.solr.managed;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
@@ -43,6 +39,7 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
   protected PluginInfo pluginInfo;
   protected boolean isClosed = false;
   protected boolean enabled = true;
+  protected boolean initialized = false;
 
   @Override
   public void init(PluginInfo info) {
@@ -58,6 +55,7 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
     }
     try {
       doInit();
+      initialized = true;
     } catch (Exception e) {
       log.warn("Exception initializing resource manager " + getClass().getSimpleName() + ", disabling!");
       IOUtils.closeQuietly(this);
@@ -86,9 +84,17 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
    * @param name pool name
    * @param type pool type (one of the supported {@link ResourceManagerPlugin} types)
    * @param poolLimits pool limits
-   * @param params other parameters. These are also used for creating a {@link ResourceManagerPlugin}
+   * @param args other parameters. These are also used for creating a {@link ResourceManagerPlugin}
    */
-  public abstract void createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> params) throws Exception;
+  public abstract void createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> args) throws Exception;
+
+  /**
+   * List all currently existing pool names.
+   */
+  public abstract Collection<String> listPools();
+
+  /** Get a named pool. */
+  public abstract ResourceManagerPool getPool(String name);
 
   /**
    * Modify pool limits.
@@ -109,7 +115,7 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
    * @param managedResources resources to add
    */
   public void addResources(String pool, Collection<ManagedResource> managedResources) throws Exception {
-    ensureNotClosed();
+    ensureActive();
     for (ManagedResource resource : managedResources) {
       addResource(pool, resource);
     }
@@ -125,9 +131,12 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
    */
   public abstract void addResource(String pool, ManagedResource managedResource) throws Exception;
 
-  protected void ensureNotClosed() {
+  protected void ensureActive() {
     if (isClosed()) {
       throw new IllegalStateException("Already closed.");
+    }
+    if (!initialized) {
+      throw new IllegalStateException("Not initialized.");
     }
   }
 

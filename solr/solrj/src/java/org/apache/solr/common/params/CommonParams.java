@@ -186,6 +186,7 @@ public interface CommonParams {
   String SYSTEM_INFO_PATH = "/admin/info/system";
   String METRICS_PATH = "/admin/metrics";
   String METRICS_HISTORY_PATH = "/admin/metrics/history";
+  String RESOURCE_MANAGER_PATH = "/admin/resources";
   String AUTOSCALING_PATH = "/admin/autoscaling";
   String AUTOSCALING_HISTORY_PATH = "/admin/autoscaling/history";
   String AUTOSCALING_DIAGNOSTICS_PATH = "/admin/autoscaling/diagnostics";
@@ -206,6 +207,7 @@ public interface CommonParams {
       AUTHZ_PATH,
       METRICS_PATH,
       METRICS_HISTORY_PATH,
+      RESOURCE_MANAGER_PATH,
       AUTOSCALING_PATH,
       AUTOSCALING_HISTORY_PATH,
       AUTOSCALING_DIAGNOSTICS_PATH,

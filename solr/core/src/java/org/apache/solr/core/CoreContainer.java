@@ -72,6 +72,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -87,6 +88,7 @@ import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
 import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.handler.admin.MetricsHistoryHandler;
+import org.apache.solr.handler.admin.ResourceManagerHandler;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocal;
 import org.apache.solr.handler.admin.SecurityConfHandlerZk;
@@ -95,6 +97,8 @@ import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.managed.DefaultResourceManager;
+import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -128,6 +132,7 @@ import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_HISTORY_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
+import static org.apache.solr.common.params.CommonParams.RESOURCE_MANAGER_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
 import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
@@ -217,6 +222,10 @@ public class CoreContainer {
   protected volatile MetricsCollectorHandler metricsCollectorHandler;
 
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
+
+  protected volatile ResourceManager resourceManager;
+
+  protected volatile ResourceManagerHandler resourceManagerHandler;
 
 
   // Bits for the state variable.
@@ -569,6 +578,10 @@ public class CoreContainer {
     return metricsHistoryHandler;
   }
 
+  public ResourceManager getResourceManager() {
+    return resourceManager;
+  }
+
   public OrderedExecutor getReplayUpdatesExecutor() {
     return replayUpdatesExecutor;
   }
@@ -598,6 +611,10 @@ public class CoreContainer {
     }
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
+
+    resourceManager = new DefaultResourceManager(loader, TimeSource.NANO_TIME);
+    // TODO: get the config from solr.xml?
+    resourceManager.init(new PluginInfo("resourceManager", Collections.emptyMap()));
 
     coreContainerWorkExecutor = MetricUtils.instrumentedExecutorService(
         coreContainerWorkExecutor, null,
@@ -646,6 +663,10 @@ public class CoreContainer {
     metricsHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, METRICS_PATH);
 
     createMetricsHistoryHandler();
+
+    resourceManagerHandler = new ResourceManagerHandler(resourceManager);
+    containerHandlers.put(RESOURCE_MANAGER_PATH, resourceManagerHandler);
+    resourceManagerHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, RESOURCE_MANAGER_PATH);
 
     autoscalingHistoryHandler = createHandler(AUTOSCALING_HISTORY_PATH, AutoscalingHistoryHandler.class.getName(), AutoscalingHistoryHandler.class);
     metricsCollectorHandler = createHandler(MetricsCollectorHandler.HANDLER_PATH, MetricsCollectorHandler.class.getName(), MetricsCollectorHandler.class);
@@ -968,6 +989,10 @@ public class CoreContainer {
         if (metricManager != null) {
           metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.cluster));
         }
+      }
+
+      if (resourceManager != null) {
+        IOUtils.closeQuietly(resourceManager);
       }
 
       try {

@@ -18,6 +18,8 @@ package org.apache.solr.managed;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -45,7 +47,7 @@ public class DefaultResourceManager extends ResourceManager {
   public static final String MAX_NUM_POOLS_PARAM = "maxNumPools";
 
   public static final int DEFAULT_MAX_POOLS = 100;
-  public static final int DEFAULT_SCHEDULE_DELAY_SECONDS = 60;
+  public static final int DEFAULT_SCHEDULE_DELAY_SECONDS = 30;
 
   protected int maxNumPools = DEFAULT_MAX_POOLS;
 
@@ -77,6 +79,7 @@ public class DefaultResourceManager extends ResourceManager {
     scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     // TODO: make configurable
     resourceManagerPluginFactory = new DefaultResourceManagerPluginFactory(loader);
+    log.info("Resource manager initialized.");
   }
 
   public void setMaxNumPools(Integer maxNumPools) {
@@ -93,45 +96,62 @@ public class DefaultResourceManager extends ResourceManager {
   }
 
   @Override
-  public void createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> params) throws Exception {
-    ensureNotClosed();
+  public void createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> args) throws Exception {
+    ensureActive();
     if (resourcePools.containsKey(name)) {
       throw new IllegalArgumentException("Pool '" + name + "' already exists.");
     }
     if (resourcePools.size() >= maxNumPools) {
       throw new IllegalArgumentException("Maximum number of pools (" + maxNumPools + ") reached.");
     }
-    ResourceManagerPool newPool = new ResourceManagerPool(name, type, resourceManagerPluginFactory, poolLimits, params);
-    newPool.scheduleDelaySeconds = Integer.parseInt(String.valueOf(params.getOrDefault(SCHEDULE_DELAY_SECONDS_PARAM, DEFAULT_SCHEDULE_DELAY_SECONDS)));
+    DefaultResourceManagerPool newPool = new DefaultResourceManagerPool(name, type, resourceManagerPluginFactory, poolLimits, args);
+    newPool.scheduleDelaySeconds = Integer.parseInt(String.valueOf(args.getOrDefault(SCHEDULE_DELAY_SECONDS_PARAM, DEFAULT_SCHEDULE_DELAY_SECONDS)));
     resourcePools.putIfAbsent(name, newPool);
-    newPool.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(newPool, 0,
+    newPool.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
+          log.info("- running pool " + newPool.getName() + " / " + newPool.getType());
+          newPool.run();
+        }, 0,
         timeSource.convertDelay(TimeUnit.SECONDS, newPool.scheduleDelaySeconds, TimeUnit.MILLISECONDS),
         TimeUnit.MILLISECONDS);
+    log.info("- created pool " + newPool.getName() + " / " + newPool.getType());
+  }
+
+  @Override
+  public Collection<String> listPools() {
+    return Collections.unmodifiableSet(resourcePools.keySet());
+  }
+
+  @Override
+  public ResourceManagerPool getPool(String name) {
+    return resourcePools.get(name);
   }
 
   @Override
   public void modifyPoolLimits(String name, Map<String, Object> poolLimits) throws Exception {
-    ensureNotClosed();
+    ensureActive();
     ResourceManagerPool pool = resourcePools.get(name);
     if (pool == null) {
       throw new IllegalArgumentException("Pool '" + name + "' doesn't exist.");
     }
     pool.setPoolLimits(poolLimits);
+    log.info("- modified pool limits " + pool.getName() + " / " + pool.getType() + ": " + poolLimits);
+
   }
 
   @Override
   public void removePool(String name) throws Exception {
-    ensureNotClosed();
+    ensureActive();
     ResourceManagerPool pool = resourcePools.remove(name);
     if (pool == null) {
       throw new IllegalArgumentException("Pool '" + name + "' doesn't exist.");
     }
     IOUtils.closeQuietly(pool);
+    log.info("- removed pool " + pool.getName() + " / " + pool.getType());
   }
 
   @Override
   public void addResource(String name, ManagedResource managedResource) {
-    ensureNotClosed();
+    ensureActive();
     ResourceManagerPool pool = resourcePools.get(name);
     if (pool == null) {
       throw new IllegalArgumentException("Pool '" + name + "' doesn't exist.");

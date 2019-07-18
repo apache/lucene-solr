@@ -47,6 +47,8 @@ public interface PermissionNameProvider {
     SECURITY_EDIT_PERM("security-edit", null),
     SECURITY_READ_PERM("security-read", null),
     METRICS_READ_PERM("metrics-read", null),
+    RESOURCE_READ_PERM("resource-read", null),
+    RESOURCE_WRITE_PERM("resource-write", null),
     AUTOSCALING_READ_PERM("autoscaling-read", null),
     AUTOSCALING_WRITE_PERM("autoscaling-write", null),
     AUTOSCALING_HISTORY_READ_PERM("autoscaling-history-read", null),
