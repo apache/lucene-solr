@@ -105,7 +105,7 @@ image::images/math-expressions/hfit.png[]
 
 === Interpolation
 
-image::images/math-expressions/spline.png[]
+image::images/math-expressions/interpolate1.png[]
 
 === Sine Waves and Derivatives
 
