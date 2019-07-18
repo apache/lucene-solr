@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
@@ -111,6 +112,7 @@ public class PhraseQuery extends Query {
      * all of them.
      */
     public Builder add(Term term, int position) {
+      Objects.requireNonNull(term, "Cannot add a null term to PhraseQuery");
       if (position < 0) {
         throw new IllegalArgumentException("Positions must be >= 0, got " + position);
       }
@@ -154,6 +156,9 @@ public class PhraseQuery extends Query {
     if (slop < 0) {
       throw new IllegalArgumentException("Slop must be >= 0, got " + slop);
     }
+    for (Term term : terms) {
+      Objects.requireNonNull(term, "Cannot add a null term to PhraseQuery");
+    }
     for (int i = 1; i < terms.length; ++i) {
       if (terms[i-1].field().equals(terms[i].field()) == false) {
         throw new IllegalArgumentException("All terms should have the same field");
@@ -187,6 +192,7 @@ public class PhraseQuery extends Query {
   private static Term[] toTerms(String field, String... termStrings) {
     Term[] terms = new Term[termStrings.length];
     for (int i = 0; i < terms.length; ++i) {
+      Objects.requireNonNull(termStrings[i], "Cannot add a null term to PhraseQuery");
       terms[i] = new Term(field, termStrings[i]);
     }
     return terms;
@@ -195,6 +201,7 @@ public class PhraseQuery extends Query {
   private static Term[] toTerms(String field, BytesRef... termBytes) {
     Term[] terms = new Term[termBytes.length];
     for (int i = 0; i < terms.length; ++i) {
+      Objects.requireNonNull(termBytes[i], "Cannot add a null term to PhraseQuery");
       terms[i] = new Term(field, termBytes[i]);
     }
     return terms;
