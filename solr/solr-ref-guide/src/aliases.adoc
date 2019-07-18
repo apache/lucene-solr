@@ -76,12 +76,12 @@ When adding data, you should usually direct documents to the alias (e.g., refere
 The Solr server and `CloudSolrClient` will direct an update request to the first collection that an alias points to.
 Once the server receives the data it will perform the necessary routing.
 
-WARNING: It is possible to update the collections
-  directly, but there is no safeguard against putting data in the incorrect collection if the alias is circumvented
-  in this manner.
+WARNING: It's extremely important with all routed aliases that the route values NOT change. Re-indexing a document
+with a different route value for the same ID produces two distinct documents with the same ID accessible via the alias.
+All query time behavior of the routed alias is *_undefined_* and not easily predictable once duplicate ID's exist.
 
-CAUTION: It is a bad idea to use "data driven" mode (aka <<schemaless-mode.adoc#schemaless-mode,schemaless-mode>>) with routed aliases, as duplicate schema mutations might happen
-concurrently leading to errors.
+CAUTION: It is a bad idea to use "data driven" mode (aka <<schemaless-mode.adoc#schemaless-mode,schemaless-mode>>) with
+routed aliases, as duplicate schema mutations might happen concurrently leading to errors.
 
 
 === Time Routed Aliases
@@ -247,6 +247,120 @@ the following procedure is recommended:
   the name of the collection to be created has been calculated. It may not be avoided and is necessary
   to support future features.
 
+=== Dimensional Routed Aliases
+
+For cases where the desired segregation of of data relates to two fields and combination into a single
+field during indexing is impractical, or the TRA behavior is desired across multiple categories,
+Dimensional Routed aliases may be used. This feature has been designed to handle an arbitrary number
+and combination of category and time dimensions in any order, but users are cautioned to carefully
+consider the total number of collections that will result from such configurations. Collection counts
+in the high hundreds or low 1000's begin to pose significant challenges with zookeeper.
+
+NOTE: DRA's are a new feature and presently only 2 dimensions are supported. More dimensions will
+be supported in the future (see https://issues.apache.org/jira/browse/SOLR-13628 for progress)
+
+==== How It Works
+
+First you create a dimensional routed alias with the desired router settings for each dimension. See the
+<<collection-aliasing.adoc#createalias,CREATEALIAS>> command documentation for details on how to specify the
+per-dimension configuration. Typical collection names will be of the form (example is for category x time example,
+with 30 minute intervals):
+
+    myalias__CRA__someCategory__TRA__2019-07-01_00_30
+
+Note that the initial collection will be a throw away place holder for any DRA containing a category based dimension.
+Name generation for each sub-part of a collection name is identical to the corresponding potion of the component
+dimension type. (e.g. a category value generating __CRA__ or __TRA__ would still produce an error)
+
+WARNING: The prior warning about reindexing documents with different route value applies to every dimensio of
+a DRA. DRA's are inappropriate for documents where categories or timestamps used in routing will change (this of
+course applies to other route values in future RA types too).
+
+As with all Routed Aliases, DRA's impose some costs if your data is not well behaved. In addition to the
+normal caveats of each component dimension there is a need for care in sending new categories after the DRA has been
+running for a while. Ordered Dimensions (time) behave slightly differently from Unordered (category) dimensions.
+Ordered dimensions rely on the iteration order of the collections in the alias and therefore cannot tolerate the
+generation of collection names out of order. The this means that of this is that when an ordered dimension such as time
+is a component of a DRA and the DRA experiences receipt of a document with a novel category with a time value
+corresponding to a time slice other than the starting time-slice for the time dimension, several collections will
+need to be created before the document can be indexed. This "new category effect" is identical to the behavior
+you would get with a TRA if you picked a start-date too far in the past.
+
+For example given a Dimensional[time,category]  DRA with start time of 2019-07-01T00:00:00Z the pattern of collections
+created for 4 documents might look like this:
+
+*No documents*
+
+*Aliased collections:*
+
+    // temp avoids empty alias error conditions
+    myalias__TRA__2019-07-01__CRA__NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA_TEMP
+
+*Doc 1*
+
+  * time: 2019-07-01T00:00:00Z
+  * category: someCategory
+
+*Aliased collections:*
+
+    // temp retained to avoid empty alias during race with collection creation
+    myalias__TRA__2019-07-01__CRA__NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA_TEMP
+    myalias__TRA__2019-07-01__CRA__someCategory
+
+*Doc 2*
+
+  * time: 2019-07-02T00:04:00Z
+  * category: otherCategory
+
+*Aliased collections:*
+
+    // temp can now be deleted without risk of having an empty alias.
+    myalias__TRA__2019-07-01__CRA__someCategory
+    myalias__TRA__2019-07-01__CRA__otherCategory // 2 collections created in one update
+    myalias__TRA__2019-07-02__CRA__otherCategory
+
+*Doc 3*
+
+  * time: 2019-07-03T00:12:00Z
+  * category: thirdCategory
+
+*Aliased collections:*
+
+    myalias__TRA__2019-07-01__CRA__someCategory
+    myalias__TRA__2019-07-01__CRA__otherCategory
+    myalias__TRA__2019-07-02__CRA__otherCategory
+    myalias__TRA__2019-07-01__CRA__thirdCategory // 3 collections created in one update!
+    myalias__TRA__2019-07-02__CRA__thirdCategory
+    myalias__TRA__2019-07-03__CRA__thirdCategory
+
+*Doc 4*
+
+  * time: 2019-07-03T00:12:00Z
+  * category: someCategory
+
+*Aliased collections:*
+
+    myalias__TRA__2019-07-01__CRA__someCategory
+    myalias__TRA__2019-07-01__CRA__otherCategory
+    myalias__TRA__2019-07-02__CRA__otherCategory
+    myalias__TRA__2019-07-01__CRA__thirdCategory
+    myalias__TRA__2019-07-02__CRA__thirdCategory
+    myalias__TRA__2019-07-03__CRA__thirdCategory
+    myalias__TRA__2019-07-02__CRA__someCategory // 2 collections created in one update
+    myalias__TRA__2019-07-03__CRA__someCategory
+
+Therefore the sweet spot for DRA's is for a data set with a well standardized set of dimensions that are not changing
+and where the full set of permutations occur regularly. If a new category is introduced at a later date and
+indexing latency is an important SLA feature, there are a couple strategies to mitigate this effect:
+
+* If the number of extra time slices to be created is not very large, then sending a single document out of band from
+  regular indexing, and waiting for collection creation to complete before allowing the new category to be sent via the
+  SLA constrained process.
+
+* If the above procedure is likely to create an extreme number of collections, and the earliest possible document in
+  the new category is known, the start time for the time dimension may be adjusted using the
+  <<collection-aliasing.adoc#aliasprop,ALIASPROP>> command
+
 === Improvement Possibilities
 
 Routed aliases are a relatively new feature of SolrCloud that can be expected to be improved.
@@ -260,6 +374,8 @@ Some _potential_ areas for improvement that _are not implemented yet_ are:
 * *CRAs*: Intrinsic support for non-English text via Base64 encoding.
 
 * *CRAs*: Supply an initial list of values for cases where these are known before hand to reduce pauses during indexing.
+
+* *DRAs*: Support for more than 2 dimensions.
 
 * `CloudSolrClient` could route documents to the correct collection based on the route value instead always picking the
   latest/first.
