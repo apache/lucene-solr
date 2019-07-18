@@ -115,7 +115,7 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
     }
     //different shape
     Rectangle newRectangle = GeoTestUtil.nextBox();
-    Query q5 = newRectQuery(fieldName, queryRelation, rectangle.minLon, rectangle.maxLon, newRectangle.minLat, newRectangle.maxLat);
+    Query q5 = newRectQuery(fieldName, queryRelation, newRectangle.minLon, newRectangle.maxLon, newRectangle.minLat, newRectangle.maxLat);
     if (rectangle.equals(newRectangle)) {
       QueryUtils.checkEqual(q1, q5);
     } else {
