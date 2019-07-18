@@ -5,6 +5,11 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 8.3.0 =======================
 
+API Changes
+
+* LUCENE-8909: IndexWriter#getFieldNames() method is used to get fields present in index. After LUCENE-8316, this
+  method is no longer required. Hence, deprecate IndexWriter#getFieldNames() method. (Adrien Grand, Munendra S N)
+
 Improvements
 
 * LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)

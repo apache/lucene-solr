@@ -1853,6 +1853,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * @lucene.internal
    * @lucene.experimental
    */
+  @Deprecated
   public Set<String> getFieldNames() {
     return globalFieldNumberMap.getFieldNames(); // FieldNumbers#getFieldNames() returns an unmodifiableSet
   }
