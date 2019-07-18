@@ -34,6 +34,10 @@ Improvements
 * SOLR-12368: Support InPlace DV updates for a field that does not yet exist in any documents
 (hossman, Simon Willnauer, Adrien Grand, Munendra S N)
 
+Bug Fixes
+----------------------
+
+* SOLR-13206: Fix AIOOBE when group.facet is specified with group.query and return proper error code. (Marek, Munendra S N)
 
 ==================  8.2.0 ==================
 
