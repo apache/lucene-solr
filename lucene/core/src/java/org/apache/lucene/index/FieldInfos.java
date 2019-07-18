@@ -422,6 +422,10 @@ public class FieldInfos implements Iterable<FieldInfo> {
       }
     }
     
+    synchronized Set<String> getFieldNames() {
+      return Set.copyOf(nameToNumber.keySet());
+    }
+
     synchronized void clear() {
       numberToName.clear();
       nameToNumber.clear();
