@@ -24,10 +24,10 @@ Interpolation is used to construct new data points between a set of known contro
 The ability to predict new data points allows for sampling along the curve defined by the
 control points.
 
-The interpolation functions described below all return an _interpolation model_
+The interpolation functions described below all return an _interpolation function_
 that can be passed to other functions which make use of the sampling capability.
 
-If returned directly the interpolation model returns an array containing predictions for each of the
+If returned directly the interpolation function returns an array containing predictions for each of the
 control points. This is useful in the case of `loess` interpolation which first smooths the control points
 and then interpolates the smoothed points. All other interpolation functions simply return the original
 control points because interpolation predicts a curve that passes through the original control points.
@@ -44,26 +44,28 @@ and form a smooth curve between control points.
 * `loess`: Loess interpolation first performs a non-linear local regression to smooth the original
 control points. Then a spline is used to interpolate the smoothed control points.
 
-=== Zoom
+=== Sampling Along the Curve
 
-One way to better understand interpolation is to zoom into one section of a larger curve. Using
-interpolation we can zoom in by sampling a curve between a specific *x* axis range.
-
-The visualization below illustrates how this works.
+One way to better understand interpolation is to visualize what it means to sample along a curve. The example
+below zooms in on a specific region of a curve by sampling the curve between a specific *x* axis range.
 
 image::images/math-expressions/interpolate1.png[]
 
-The visualization above first creates two arrays with *x* and *y* axis points. Then the `akima`, `spline` and `lerp`
+The visualization above first creates two arrays with *x* and *y* axis points. Notice that the *x* axis ranges from
+ 0 to 9. Then the `akima`, `spline` and `lerp`
 functions are applied to the vectors to create three interpolation functions.
 
 Then 500 hundred random samples are drawn from a uniform distribution between 0 and 3. These are
-the new *x* axis points. Then the `predict` function is used to predict *y* axis points for
-the new *x* axis, for all three interpolation functions. Finally all three prediction vectors
-are plotted with the same zoomed *x* axis points.
+the new zoomed in *x* axis points, between 0 and 3. Notice that we are sampling a specific
+area of the curve.
+
+Then the `predict` function is used to predict *y* axis points for
+the sampled *x* axis, for all three interpolation functions. Finally all three prediction vectors
+are plotted with the sampled *x* axis points.
 
 The red line is the `lerp` interpolation, the blue line is the `akima` and the purple line is
-the `spline` interpolation.
-
+the `spline` interpolation. You can see they each produce different curves in between the control
+points.
 
 
 === Smoothing Interpolation
