@@ -86,6 +86,11 @@ Bug Fixes
 
 * SOLR-13206: Fix AIOOBE when group.facet is specified with group.query and return proper error code. (Marek, Munendra S N)
 
+Other Changes
+----------------------
+
+* SOLR-13585: Factor out SearchGroupsResultTransformer.[de]serializeOneSearchGroup methods. (Christine Poerschke, Diego Ceccarelli)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
