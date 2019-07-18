@@ -123,11 +123,16 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
         if (!(v instanceof Number)) {
           return;
         }
+        Float val = ((Number)v).floatValue();
+        // -1 and MAX_VALUE are our special guard values
+        if (val < 0 || val.longValue() == Long.MAX_VALUE || val.longValue() == Integer.MAX_VALUE) {
+          return;
+        }
         Float total = newTotalValues.get(k);
         if (total == null) {
-          newTotalValues.put(k, ((Number)v).floatValue());
+          newTotalValues.put(k, val);
         } else {
-          newTotalValues.put(k, total + ((Number)v).floatValue());
+          newTotalValues.put(k, total + val);
         }
       }));
       totalValues = newTotalValues;

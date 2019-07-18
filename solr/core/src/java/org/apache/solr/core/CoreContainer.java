@@ -100,6 +100,7 @@ import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.managed.DefaultResourceManager;
 import org.apache.solr.managed.ResourceManager;
+import org.apache.solr.managed.plugins.CacheManagerPlugin;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -616,6 +617,13 @@ public class CoreContainer {
     resourceManager = new DefaultResourceManager(loader, TimeSource.NANO_TIME);
     // TODO: get the config from solr.xml?
     resourceManager.init(new PluginInfo("resourceManager", Collections.emptyMap()));
+    // TODO: create default pools from solr.xml?
+    try {
+      resourceManager.createPool(ResourceManager.SEARCHER_CACHE_POOL, CacheManagerPlugin.TYPE,
+          Collections.singletonMap("maxRamMB", 500), Collections.emptyMap());
+    } catch (Exception e) {
+      log.warn("failed to create default searcherCache pool,, disabling", e);
+    }
 
     coreContainerWorkExecutor = MetricUtils.instrumentedExecutorService(
         coreContainerWorkExecutor, null,

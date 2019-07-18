@@ -36,6 +36,8 @@ import org.slf4j.LoggerFactory;
 public abstract class ResourceManager implements SolrCloseable, PluginInfoInitialized {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String SEARCHER_CACHE_POOL = "searcherCache";
+
   protected PluginInfo pluginInfo;
   protected boolean isClosed = false;
   protected boolean enabled = true;

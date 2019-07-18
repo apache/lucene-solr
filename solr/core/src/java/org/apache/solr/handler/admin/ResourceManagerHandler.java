@@ -45,7 +45,6 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String POOL_PARAM = "pool";
-  public static final String RESOURCE_PARAM = "resource";
   public static final String LIMIT_PREFIX_PARAM = "limit.";
   public static final String ARG_PREFIX_PARAM = "arg.";
   public static final String POOL_ACTION_PARAM = "poolAction";
@@ -138,6 +137,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
           perPool.add("size", pool.getResources().size());
           perPool.add("limits", pool.getPoolLimits());
           perPool.add("args", pool.getArgs());
+          perPool.add("resources", pool.getResources().keySet());
         });
         break;
       case STATUS:
@@ -151,7 +151,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
         result.add("args", pool.getArgs());
         result.add("resources", pool.getResources().keySet());
         try {
-          result.add("currentValues", pool.getCurrentValues());
+          pool.getCurrentValues();
           result.add("totalValues", pool.getTotalValues());
         } catch (Exception e) {
           log.warn("Error getting current values from pool " + name, e);
@@ -230,9 +230,9 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
     if (pool == null) {
       throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Pool '" + poolName + "' not found.");
     }
-    String resName = params.get(RESOURCE_PARAM);
+    String resName = params.get(CommonParams.NAME);
     if ((resName == null || resName.isBlank()) && op != ResOp.LIST) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing '" + RESOURCE_PARAM + "' parameter.");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing '" + CommonParams.NAME + "' parameter.");
     }
     NamedList<Object> result = new SimpleOrderedMap<>();
     switch (op) {
