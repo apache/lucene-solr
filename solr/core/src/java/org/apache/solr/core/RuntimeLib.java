@@ -98,14 +98,13 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
       if (sha512 == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "runtimeLib with url must have a 'sha512' attribute");
       }
-      ByteBuffer buf = null;
-      buf = coreContainer.getBlobRepository().fetchFromUrl(name, url);
+      ByteBuffer buf = coreContainer.getBlobRepository().fetchFromUrl(name, url);
 
       String digest = BlobRepository.sha512Digest(buf);
       if (!sha512.equals(digest)) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, StrUtils.formatString(BlobRepository.INVALID_JAR_MSG, url, sha512, digest));
       }
-      verifyJarSignature();
+      verifyJarSignature(buf);
 
       log.debug("dynamic library verified {}, sha512: {}", url, sha512);
 
@@ -191,10 +190,10 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
 
     if (!coreContainer.isZooKeeperAware())
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Signing jar is possible only in cloud");
-    verifyJarSignature();
+    verifyJarSignature(jarContent.blob.get());
   }
 
-  void verifyJarSignature() {
+  void verifyJarSignature(ByteBuffer buf) {
     Map<String, byte[]> keys = CloudUtil.getTrustedKeys(coreContainer.getZkController().getZkClient(), "exe");
     if (keys.isEmpty()) {
       if (sig == null) {
@@ -208,11 +207,12 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
     }
 
     try {
-      String matchedKey = new CryptoKeys(keys).verify(sig, jarContent.blob.get());
+      String matchedKey = new CryptoKeys(keys).verify(sig, buf);
       if (matchedKey == null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No key matched signature for jar : " + name + " version: " + version);
       log.info("Jar {} signed with {} successfully verified", name, matchedKey);
     } catch (Exception e) {
+      log.error("Signature verifying error ", e);
       if (e instanceof SolrException) throw (SolrException) e;
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error verifying key ", e);
     }

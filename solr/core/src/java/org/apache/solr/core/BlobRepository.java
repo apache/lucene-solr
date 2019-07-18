@@ -186,7 +186,12 @@ public class BlobRepository {
       //unlikely
       throw new SolrException(SERVER_ERROR, e);
     }
-    digest.update(byteBuffer);
+    int oldPos = byteBuffer.position();
+    try {
+      digest.update(byteBuffer);
+    } finally {
+      byteBuffer.position(oldPos);
+    }
     return String.format(
         Locale.ROOT,
         "%0128x",

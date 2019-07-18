@@ -44,6 +44,7 @@ import org.apache.solr.core.MemClassLoader;
 import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.LogLevel;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.server.Server;
 import org.junit.BeforeClass;
@@ -51,6 +52,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.TestCryptoKeys.readFile;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 import static org.apache.solr.core.TestDynamicLoadingUrl.runHttpServer;
@@ -79,15 +81,12 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
             Map.Entry entry = (Map.Entry) e;
             String key = (String) entry.getKey();
             Object val = entry.getValue();
-            Predicate p = val instanceof Predicate ? (Predicate) val : new Predicate() {
-              @Override
-              public boolean test(Object o) {
-                String v = o == null ? null : String.valueOf(o);
-                return Objects.equals(val, o);
-              }
+            Predicate p = val instanceof Predicate ? (Predicate) val : o -> {
+              String v = o == null ? null : String.valueOf(o);
+              return Objects.equals(val, o);
             };
             assertTrue("attempt: " + i + " Mismatch for value : '" + key + "' in response " + Utils.toJSONString(rsp),
-                 p.test( rsp.getResponse()._get(key, null)));
+                p.test(rsp.getResponse()._get(key, null)));
 
           }
           return;
@@ -192,7 +191,6 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           getObjectByPath(new ClusterProperties(zkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
 
 
-
       new V2Request.Builder("/cluster")
           .withPayload("{add-requesthandler:{name : 'bar', class : 'org.apache.solr.core.RuntimeLibReqHandler'}}")
           .withMethod(SolrRequest.METHOD.POST)
@@ -254,6 +252,97 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       server.first().stop();
       new ClusterProperties(zkClient()).setClusterProperties(Collections.EMPTY_MAP);
     }
+  }
+
+  public void testRutimeLibWithSig() throws Exception {
+    Map<String, Object> jars = Utils.makeMap(
+        "/jar1.jar", getFileContent("runtimecode/runtimelibs.jar.bin"),
+        "/jar2.jar", getFileContent("runtimecode/runtimelibs_v2.jar.bin"),
+        "/jar3.jar", getFileContent("runtimecode/runtimelibs_v3.jar.bin"));
+
+    Pair<Server, Integer> server = runHttpServer(jars);
+    int port = server.second();
+
+    try {
+
+      byte[] derFile = readFile("cryptokeys/pub_key2048.der");
+      zkClient().makePath("/keys/exe", true);
+      zkClient().create("/keys/exe/pub_key2048.der", derFile, CreateMode.PERSISTENT, true);
+
+      String signature = "NaTm3+i99/ZhS8YRsLc3NLz2Y6VuwEbu7DihY8GAWwWIGm+jpXgn1JiuaenfxFCcfNKCC9WgZmEgbTZTzmV/OZMVn90u642YJbF3vTnzelW1pHB43ZRAJ1iesH0anM37w03n3es+vFWQtuxc+2Go888fJoMkUX2C6Zk6Jn116KE45DWjeyPM4mp3vvGzwGvdRxP5K9Q3suA+iuI/ULXM7m9mV4ruvs/MZvL+ELm5Jnmk1bBtixVJhQwJP2z++8tQKJghhyBxPIC/2fkAHobQpkhZrXu56JjP+v33ul3Ku4bbvfVMY/LVwCAEnxlvhk+C6uRCKCeFMrzQ/k5inasXLw==";
+
+     /* String payload = "{add-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar1.jar', " +
+          "sig : 'EdYkvRpMZbvElN93/xUmyKXcj6xHP16AVk71TlTascEwCb5cFQ2AeKhPIlwYpkLWXEOcLZKfeXoWwOLaV5ZNhg==' ," +
+          "sha512 : 'd01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420'}}";
+      try {
+        new V2Request.Builder("/cluster")
+            .withPayload(payload)
+            .withMethod(SolrRequest.METHOD.POST)
+            .build().process(cluster.getSolrClient());
+      } catch (BaseHttpSolrClient.RemoteExecutionException e) {
+        //No key matched signature for jar
+        assertTrue(e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("No key matched signature for jar"));
+      }*/
+
+
+
+
+      String payload = "{add-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar1.jar', " +
+          "sig : '"+signature + "',"+
+          "sha512 : 'd01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420'}}";
+
+      new V2Request.Builder("/cluster")
+          .withPayload(payload)
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "add-runtimelib/sha512"),
+          getObjectByPath(new ClusterProperties(zkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
+
+      new V2Request.Builder("/cluster")
+          .withPayload("{add-requesthandler:{name : 'bar', class : 'org.apache.solr.core.RuntimeLibReqHandler'}}")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      Map<String, Object> map = new ClusterProperties(zkClient()).getClusterProperties();
+
+
+      V2Request request = new V2Request.Builder("/node/ext/bar")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build();
+      assertResponseValues(10, cluster.getSolrClient(), request, Utils.makeMap(
+          "class", "org.apache.solr.core.RuntimeLibReqHandler",
+          "loader", MemClassLoader.class.getName(),
+          "version", null));
+
+
+      assertEquals("org.apache.solr.core.RuntimeLibReqHandler",
+          getObjectByPath(map, true, Arrays.asList("requestHandler", "bar", "class")));
+
+      payload = "{update-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar3.jar', " +
+          "sig : 'BSx/v0eKWX+LzkWF+iIAzwGL9rezWMePsyRzi4TvV6boATZ9cSfeUAqUgRW50f/hAHX4/hrHr2Piy8za9tIUoXbLqn3xJNNroOqpcVEgwh1Zii4c7zPwUSB9gtd9zlAK4LAPLdjxILS8NXpTD2zLycc8kSpcyTpSTITqz6HA3HsPGC81WIq2k3IRqYAkacn46viW+nnEjA7OxDCOqoL//evjxDWQ6R1YggTGh4u5MSWZJCiCPJNQnTlPRzUZOAJjtX7PblDrKeiunKGbjtiOhFLYkupe1lSlIRLiJV/qqopO4TQGO1bhbxeCKAX2vEz5Ch5bGOa+VZLJJGaDo318UQ==' ," +
+          "sha512 : 'f67a7735a89b4348e273ca29e4651359d6d976ba966cb871c4b468ea1dbd452e42fcde9d188b7788e5a1ef668283c690606032922364759d19588666d5862653'}}";
+
+      new V2Request.Builder("/cluster")
+          .withPayload(payload)
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "update-runtimelib/sha512"),
+          getObjectByPath(new ClusterProperties(zkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
+
+
+      request = new V2Request.Builder("/node/ext/bar")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build();
+      assertResponseValues(10, cluster.getSolrClient(), request, Utils.makeMap(
+          "class", "org.apache.solr.core.RuntimeLibReqHandler",
+          "loader", MemClassLoader.class.getName(),
+          "version", "3"));
+
+
+    } finally {
+      server.first().stop();
+      new ClusterProperties(zkClient()).setClusterProperties(Collections.EMPTY_MAP);
+    }
+
   }
 
   private V2Response getExtResponse() throws SolrServerException, IOException {

@@ -1,0 +1,37 @@
+================priv_key2048.pem===================
+
+openssl dgst -sha1 -sign ../cryptokeys/priv_key2048.pem runtimelibs.jar.bin | openssl enc -base64
+
+NaTm3+i99/ZhS8YRsLc3NLz2Y6VuwEbu7DihY8GAWwWIGm+jpXgn1JiuaenfxFCc
+fNKCC9WgZmEgbTZTzmV/OZMVn90u642YJbF3vTnzelW1pHB43ZRAJ1iesH0anM37
+w03n3es+vFWQtuxc+2Go888fJoMkUX2C6Zk6Jn116KE45DWjeyPM4mp3vvGzwGvd
+RxP5K9Q3suA+iuI/ULXM7m9mV4ruvs/MZvL+ELm5Jnmk1bBtixVJhQwJP2z++8tQ
+KJghhyBxPIC/2fkAHobQpkhZrXu56JjP+v33ul3Ku4bbvfVMY/LVwCAEnxlvhk+C
+6uRCKCeFMrzQ/k5inasXLw==
+
+
+openssl dgst -sha1 -sign ../cryptokeys/priv_key2048.pem runtimelibs_v2.jar.bin | openssl enc -base64
+
+jsPpNMs74ogRbx9M4n/OH3j3s85KOq9dOtgGJkUf6O5D8T9d9zU2lDwxnTYjQCaW
+cRTLGH3Z8vpc0wyT3g4aXepgLUTSnrepbPffSFhQtFrCNxurPOLzbp6ERhwjZ0RL
+GvZrlbbjR2SxqZ3BpHiGxslj0tPCkdevNCEy1glLhl8RWG5xsLCrRL1mrEtLg97A
+53oCCrfGAHLEvW+olGeB1r7jqUaSrbfAUfDMSIvZfOIV+xdlvabkNiuzvsAc+B6Q
+pXWm+Em2f5TO/bkOh2m/UInGXcNHCa0oqRMGKP1H252Cv9eXm/d0h3Dqxv+f80Gz
+LfyA6/OKQ9FfskY4pltCsQ==
+
+openssl dgst -sha1 -sign ../cryptokeys/priv_key2048.pem runtimelibs_v3.jar.bin | openssl enc -base64
+
+BSx/v0eKWX+LzkWF+iIAzwGL9rezWMePsyRzi4TvV6boATZ9cSfeUAqUgRW50f/h
+AHX4/hrHr2Piy8za9tIUoXbLqn3xJNNroOqpcVEgwh1Zii4c7zPwUSB9gtd9zlAK
+4LAPLdjxILS8NXpTD2zLycc8kSpcyTpSTITqz6HA3HsPGC81WIq2k3IRqYAkacn4
+6viW+nnEjA7OxDCOqoL//evjxDWQ6R1YggTGh4u5MSWZJCiCPJNQnTlPRzUZOAJj
+tX7PblDrKeiunKGbjtiOhFLYkupe1lSlIRLiJV/qqopO4TQGO1bhbxeCKAX2vEz5
+Ch5bGOa+VZLJJGaDo318UQ==
+
+=====================pk1.pem=====================
+
+
+NaTm3+i99/ZhS8YRsLc3NLz2Y6VuwEbu7DihY8GAWwWIGm+jpXgn1JiuaenfxFCcfNKCC9WgZmEgbTZTzmV/OZMVn90u642YJbF3vTnzelW1pHB43ZRAJ1iesH0anM37w03n3es+vFWQtuxc+2Go888fJoMkUX2C6Zk6Jn116KE45DWjeyPM4mp3vvGzwGvdRxP5K9Q3suA+iuI/ULXM7m9mV4ruvs/MZvL+ELm5Jnmk1bBtixVJhQwJP2z++8tQKJghhyBxPIC/2fkAHobQpkhZrXu56JjP+v33ul3Ku4bbvfVMY/LVwCAEnxlvhk+C6uRCKCeFMrzQ/k5inasXLw==
+NaTm3+i99/ZhS8YRsLc3NLz2Y6VuwEbu7DihY8GAWwWIGm+jpXgn1JiuaenfxFCcfNKCC9WgZmEgbTZTzmV/OZMVn90u642YJbF3vTnzelW1pHB43ZRAJ1iesH0anM37w03n3es+vFWQtuxc+2Go888fJoMkUX2C6Zk6Jn116KE45DWjeyPM4mp3vvGzwGvdRxP5K9Q3suA+iuI/ULXM7m9mV4ruvs/MZvL+ELm5Jnmk1bBtixVJhQwJP2z++8tQKJghhyBxPIC/2fkAHobQpkhZrXu56JjP+v33ul3Ku4bbvfVMY/LVwCAEnxlvhk+C6uRCKCeFMrzQ/k5inasXLw==
+
+
