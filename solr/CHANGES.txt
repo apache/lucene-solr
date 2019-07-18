@@ -53,6 +53,9 @@ Bug Fixes
 
 * SOLR-13206: Fix AIOOBE when group.facet is specified with group.query and return proper error code. (Marek, Munendra S N)
 
+* SOLR-11556: Backup and restore command really supports picking one of a few repositories by 
+  repository parameter (Timothy Potter via Mikhail Khludnev) 
+
 Other Changes
 ----------------------
 
@@ -168,7 +171,7 @@ Improvements
 * SOLR-13602 SOLR-13588: Add a field type for Estonian language to default managed_schema,
   document about Estonian language analysis in Solr Ref Guide (Tomoko Uchida)
 
-* SOLR-13003: Query Result Cache does not honour maxRamBytes parameter. (ab, Brian Ecker)
+* SOLR-13003: Query Result Cache does not honor maxRamBytes parameter. (ab, Brian Ecker)
 
 Bug Fixes
 ----------------------
