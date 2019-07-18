@@ -27,13 +27,17 @@ import org.apache.solr.analytics.util.OldAnalyticsParams;
 import org.apache.solr.analytics.util.OldAnalyticsRequestConverter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
+import java.lang.invoke.MethodHandles;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Computes analytics requests.
  */
 public class AnalyticsComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "analytics";
-  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @Override
   public void init(NamedList args) {
     AnalyticsRequestParser.init();
@@ -43,23 +47,30 @@ public class AnalyticsComponent extends SearchComponent {
   public void prepare(ResponseBuilder rb) throws IOException {
     // First check to see if there is an analytics request using the current format
     String analyticsRequest = rb.req.getParams().get(AnalyticsRequestParser.analyticsParamName);
-    rb._isOlapAnalytics = false;
-    rb.doAnalytics = false;
+    rb.setIsOlapAnalytics(false);
+    rb.setDoAnalytics(false);
+    boolean isDistributed = rb.isDistributed();
     if (analyticsRequest != null) {
-      rb.doAnalytics = true;
-      rb._analyticsRequestManager = AnalyticsRequestParser.parse(analyticsRequest, new ExpressionFactory(rb.req.getSchema()), rb.isDistrib);
+      rb.setDoAnalytics(true);
+      rb.setAnalyticsRequestManager(
+          AnalyticsRequestParser.parse(
+              analyticsRequest,
+              new ExpressionFactory(rb.req.getSchema()), isDistributed));
     }
     // If there is no request in the current format, check for the old olap-style format
     else if (rb.req.getParams().getBool(OldAnalyticsParams.OLD_ANALYTICS,false)) {
-      rb._analyticsRequestManager = AnalyticsRequestParser.parse(OldAnalyticsRequestConverter.convert(rb.req.getParams()), new ExpressionFactory(rb.req.getSchema()), rb.isDistrib);
-      rb._isOlapAnalytics = true;
-      rb.doAnalytics = true;
+      rb.setAnalyticsRequestManager(
+          AnalyticsRequestParser.parse(
+              OldAnalyticsRequestConverter.convert(rb.req.getParams()),
+              new ExpressionFactory(rb.req.getSchema()), isDistributed));
+      rb.setIsOlapAnalytics(true);
+      rb.setDoAnalytics(true);
     }
-    
-    if (rb.doAnalytics) {
-      AnalyticsRequestManager reqManager = (AnalyticsRequestManager)rb._analyticsRequestManager;
+    log.debug("DoAnalytics: {}, isOlap: {}", rb.getDoAnalytics(), rb.getIsOlapAnalytics());
+    if (rb.getDoAnalytics()) {
+      AnalyticsRequestManager reqManager = getAnalyticsRequestManager(rb);
       // Check to see if the request is distributed
-      if (rb.isDistrib) {
+      if (isDistributed) {
         reqManager.sendShards = true;
         reqManager.shardStream = new AnalyticsShardRequestManager(rb.req.getParams(), reqManager);
       } else {
@@ -71,86 +82,90 @@ public class AnalyticsComponent extends SearchComponent {
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
-    if (!rb.doAnalytics) {
+    if (!rb.getDoAnalytics()) {
       return;
     }
-    AnalyticsRequestManager reqManager = (AnalyticsRequestManager)rb._analyticsRequestManager;
+    AnalyticsRequestManager reqManager = getAnalyticsRequestManager(rb);
     // Collect the data and generate a response
     AnalyticsDriver.drive(reqManager, rb.req.getSearcher(), rb.getResults().docSet.getTopFilter(), rb.req);
-    
-    if (rb._isOlapAnalytics) {
+
+    if (rb.getIsOlapAnalytics()) {
       rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER, reqManager.createOldResponse());
     } else {
       rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_HEADER, reqManager.createResponse());
     }
 
-    rb.doAnalytics = false;
+    rb.setDoAnalytics(false);
+    rb.setIsOlapAnalytics(false);
   }
-  
-  
+
+
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
-    if (!rb.doAnalytics || rb.stage != ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (!rb.getDoAnalytics() || rb.stage != ResponseBuilder.STAGE_EXECUTE_QUERY) {
       return ResponseBuilder.STAGE_DONE;
     }
-    AnalyticsRequestManager reqManager = (AnalyticsRequestManager)rb._analyticsRequestManager;
+    AnalyticsRequestManager reqManager = getAnalyticsRequestManager(rb);
     if (!reqManager.sendShards){
       return ResponseBuilder.STAGE_DONE;
     }
-    
+
     // Send out a request to each shard and merge the responses into our AnalyticsRequestManager
     reqManager.shardStream.sendRequests(rb.req.getCore().getCoreDescriptor().getCollectionName(),
         rb.req.getCore().getCoreContainer().getZkController().getZkServerAddress());
-    
+
     reqManager.sendShards = false;
-    
+
     return ResponseBuilder.STAGE_DONE;
   }
-  
+
   @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     // We don't want the shard requests to compute analytics, since we send
     // separate requests for that in distributedProcess() to the AnalyticsHandler
     sreq.params.remove(AnalyticsRequestParser.analyticsParamName);
     sreq.params.remove(OldAnalyticsParams.OLD_ANALYTICS);
-    
+
     super.modifyRequest(rb, who, sreq);
   }
-  
+
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
-    
+
     // NO-OP since analytics shard responses are handled through the AnalyticsResponseParser
-    
+
     super.handleResponses(rb, sreq);
   }
- 
+
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb.doAnalytics && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
-      AnalyticsRequestManager reqManager = (AnalyticsRequestManager)rb._analyticsRequestManager;
+    if (rb.getDoAnalytics() && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+      AnalyticsRequestManager reqManager = getAnalyticsRequestManager(rb);
       // Generate responses from the merged shard data
-      if (rb._isOlapAnalytics) {
+      if (rb.getIsOlapAnalytics()) {
         rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER, reqManager.createOldResponse());
       } else {
         rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_HEADER, reqManager.createResponse());
       }
     }
-    
+
     super.finishStage(rb);
   }
-  
-  
+
+
   @Override
   public String getName() {
     return COMPONENT_NAME;
   }
-  
+
   @Override
   public String getDescription() {
     return "Perform analytics";
   }
 
+  private AnalyticsRequestManager getAnalyticsRequestManager(ResponseBuilder rb) {
+    return (AnalyticsRequestManager)rb.getAnalyticsRequestManager();
+  }
   /*@Override
   public NamedList getStatistics() {
     return analyticsCollector.getStatistics();

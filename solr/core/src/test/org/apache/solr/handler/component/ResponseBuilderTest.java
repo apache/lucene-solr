@@ -26,6 +26,9 @@ import org.junit.BeforeClass;
 
 public class ResponseBuilderTest extends SolrTestCaseJ4 {
 
+  SolrQueryRequest req = req("q", "title:test");
+  SolrQueryResponse rsp = new SolrQueryResponse();
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
@@ -33,13 +36,33 @@ public class ResponseBuilderTest extends SolrTestCaseJ4 {
 
   //This test is being added to verify responseBuilder.isDistributed() exists and is visible.
   public void testIsDistrib(){
-
-    SolrQueryRequest req = req("q", "title:test");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-
     ResponseBuilder responseBuilder = new ResponseBuilder(req, rsp, new ArrayList<>(0));
     assertFalse(responseBuilder.isDistributed());
-
   }
 
+  public void testDoAnalyticsAccessors() {
+    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0));
+    assertFalse(rb.getDoAnalytics());
+    rb.setDoAnalytics(true);
+    assertTrue(rb.getDoAnalytics());
+    rb.setDoAnalytics(false);
+    assertFalse(rb.getDoAnalytics());
+  }
+
+  public void testIsOlapAnalyticsAccessors() {
+    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0));
+    assertFalse(rb.getIsOlapAnalytics());
+    rb.setIsOlapAnalytics(true);
+    assertTrue(rb.getIsOlapAnalytics());
+    rb.setIsOlapAnalytics(false);
+    assertFalse(rb.getIsOlapAnalytics());
+  }
+
+  public void testAnalyticsRequestManagerAccessors() {
+    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0));
+    assertNull(rb.getAnalyticsRequestManager());
+    rb.setAnalyticsRequestManager(this);
+    assertNotNull(rb.getAnalyticsRequestManager());
+    assertEquals(rb.getAnalyticsRequestManager(), this);
+  }
 }

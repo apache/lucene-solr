@@ -497,4 +497,28 @@ public class ResponseBuilder
   public void setNextCursorMark(CursorMark nextCursorMark) {
     this.nextCursorMark = nextCursorMark;
   }
+
+  public void setDoAnalytics(boolean doAnalytics) {
+    this.doAnalytics = doAnalytics;
+  }
+
+  public boolean getDoAnalytics() {
+    return this.doAnalytics;
+  }
+
+  public void setAnalyticsRequestManager(Object analyticsRequestManager) {
+    this._analyticsRequestManager = analyticsRequestManager;
+  }
+
+  public Object getAnalyticsRequestManager() {
+    return this._analyticsRequestManager;
+  }
+
+  public void setIsOlapAnalytics(boolean isOlapAnalytics) {
+    this._isOlapAnalytics = isOlapAnalytics;
+  }
+
+  public boolean getIsOlapAnalytics() {
+    return this._isOlapAnalytics;
+  }
 }
