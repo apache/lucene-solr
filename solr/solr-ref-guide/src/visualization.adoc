@@ -97,7 +97,7 @@ image::images/math-expressions/knnRegress.png[]
 
 === Residuals Plot
 
-image::images/math-expressions/residuals.png[]
+image::images/math-expressions/residual-plot.png[]
 
 === Curve Fitting
 
