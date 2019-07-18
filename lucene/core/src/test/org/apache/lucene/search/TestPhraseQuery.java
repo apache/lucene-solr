@@ -1071,4 +1071,15 @@ public class TestPhraseQuery extends LuceneTestCase {
     reader.close();
     dir.close();
   }
+
+  public void testNullTerm() {
+    NullPointerException e = expectThrows(NullPointerException.class, () -> new PhraseQuery.Builder().add(null));
+    assertEquals("Cannot add a null term to PhraseQuery", e.getMessage());
+
+    e = expectThrows(NullPointerException.class, () -> new PhraseQuery("field", (BytesRef)null));
+    assertEquals("Cannot add a null term to PhraseQuery", e.getMessage());
+
+    e = expectThrows(NullPointerException.class, () -> new PhraseQuery("field", (String)null));
+    assertEquals("Cannot add a null term to PhraseQuery", e.getMessage());
+  }
 }

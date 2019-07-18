@@ -57,6 +57,35 @@ Upgrade Notes
 
 * SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
 
+Other Changes
+----------------------
+
+* SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
+
+
+==================  8.3.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 2.0 and Velocity Tools 3.0
+Apache ZooKeeper 3.5.5
+Jetty 9.4.19.v20190610
+
+Improvements
+----------------------
+
+* SOLR-12368: Support InPlace DV updates for a field that does not yet exist in any documents
+(hossman, Simon Willnauer, Adrien Grand, Munendra S N)
+
+Bug Fixes
+----------------------
+
+* SOLR-13206: Fix AIOOBE when group.facet is specified with group.query and return proper error code. (Marek, Munendra S N)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

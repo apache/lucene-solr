@@ -59,6 +59,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.Credential
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.common.AlreadyClosedException;
@@ -918,6 +919,12 @@ public class CoreContainer {
   }
 
   public void shutdown() {
+
+    ZkController zkController = getZkController();
+    if (zkController != null) {
+      OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
+      overseerCollectionQueue.allowOverseerPendingTasksToComplete();
+    }
     log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);

@@ -41,7 +41,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public class CreateAliasCmd extends AliasCmd {
 
-  private final OverseerCollectionMessageHandler ocmh;
 
   private static boolean anyRoutingParams(ZkNodeProps message) {
     return message.keySet().stream().anyMatch(k -> k.startsWith(CollectionAdminParams.ROUTER_PREFIX));
@@ -49,7 +48,7 @@ public class CreateAliasCmd extends AliasCmd {
 
   @SuppressWarnings("WeakerAccess")
   public CreateAliasCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+    super(ocmh);
   }
 
   @Override

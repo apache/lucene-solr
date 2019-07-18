@@ -22,8 +22,13 @@ API Changes
   byte[] that stores the UTF-8 bytes of the stored string.
   (Namgyu Kim via Adrien Grand)
 
-* LUCENE-8811: Deprecated BooleanQuery#setMaxClauseCount() and getMaxClauseCount
-  have been removed (Atri Sharma, Adrien Grand, Alan Woodward)
+* LUCENE-8811: BooleanQuery#setMaxClauseCount() and #getMaxClauseCount() have
+  moved to IndexSearcher. The checks are now implemented using a QueryVisitor
+  and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
+  Grand, Alan Woodward)
+
+* LUCENE-8909: The deprecated IndexWriter#getFieldNames() method has been removed.
+  (Adrien Grand, Munendra S N)
 
 Improvements
 
@@ -35,10 +40,6 @@ Improvements
   docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
   indices (Atri Sharma, Adrien Grand, Simon Willnauer)
 
-* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
-
-* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
-
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -48,9 +49,29 @@ Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
-* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
-  (Tomoko Uchida, Uwe Schindler)
+======================= Lucene 8.3.0 =======================
 
+API Changes
+
+* LUCENE-8909: IndexWriter#getFieldNames() method is used to get fields present in index. After LUCENE-8316, this
+  method is no longer required. Hence, deprecate IndexWriter#getFieldNames() method. (Adrien Grand, Munendra S N)
+
+Improvements
+
+* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
+
+* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
+
+* LUCENE-8914: move the logic for discarding inner modes to the IntersectVisitor so we take advantage
+  of the change introduced in LUCENE-7862. (Ignacio Vera)
+
+* LUCENE-8918: PhraseQuery throws exceptions at construction time if it is passed
+  null arguments. (Alan Woodward)
+
+Other
+
+* LUCENE-8778 LUCENE-8911: Define analyzer SPI names as static final fields and document the names in Javadocs.
+  (Tomoko Uchida, Uwe Schindler)
 
 ======================= Lucene 8.2.0 =======================
 
@@ -59,11 +80,6 @@ API Changes
 * LUCENE-8865: IndexSearcher now uses Executor instead of ExecutorSerivce.
   This change is fully backwards compatible since ExecutorService directly
   implements Executor. (Simon Willnauer)
-
-* LUCENE-8811: BooleanQuery#setMaxClauseCount() and #getMaxClauseCount() have
-  moved to IndexSearcher. The checks are now implemented using a QueryVisitor
-  and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
-  Grand, Alan Woodward)
 
 * LUCENE-8856: Intervals queries have moved from the sandbox to the queries
   module. (Alan Woodward)

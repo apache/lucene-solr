@@ -17,22 +17,30 @@
 
 package org.apache.solr.core;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.RestTestHarness;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.BeforeClass;
 
 import static java.util.Arrays.asList;
+import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
+@SolrTestCaseJ4.SuppressSSL
 public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
@@ -40,86 +48,78 @@ public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
     System.setProperty("enable.runtime.lib", "true");
   }
 
-  public static class JarHandler extends RequestHandlerBase {
-    @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-      rsp.add(ReplicationHandler.FILE_STREAM, (SolrCore.RawWriter) os -> {
-
-        ByteBuffer buf = TestDynamicLoading.getFileContent("runtimecode/runtimelibs.jar.bin");
-        if (buf == null) {
-          //should never happen unless a user wrote this document directly
-          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Invalid document . No field called blob");
-        } else {
-          os.write(buf.array(), 0, buf.limit());
+  public static Pair<Server, Integer> runHttpServer(Map<String, Object> jars) throws Exception {
+    final Server server = new Server();
+    final ServerConnector connector = new ServerConnector(server);
+    server.setConnectors(new Connector[] { connector });
+    server.setHandler(new AbstractHandler() {
+      @Override
+      public void handle(String s, Request request, HttpServletRequest req, HttpServletResponse rsp)
+        throws IOException {
+        ByteBuffer b = (ByteBuffer) jars.get(s);
+        if (b != null) {
+          rsp.getOutputStream().write(b.array(), 0, b.limit());
+          rsp.setContentType("application/octet-stream");
+          rsp.setStatus(HttpServletResponse.SC_OK);
+          request.setHandled(true);
         }
-      });
-
-    }
-
-    @Override
-    public String getDescription() {
-      return "serves jar files";
-    }
+      }
+    });
+    server.start();
+    return new Pair<>(server, connector.getLocalPort());
   }
-
 
   public void testDynamicLoadingUrl() throws Exception {
     setupRestTestHarnesses();
-    String payload = "{\n" +
-        "'create-requesthandler' : { 'name' : '/jarhandler', 'class': " + JarHandler.class.getName() +
-        ", registerPath: '/solr,/v2' }\n" +
-        "}";
+    Pair<Server, Integer> pair = runHttpServer(ImmutableMap.of("/jar1.jar", getFileContent("runtimecode/runtimelibs.jar.bin")));
+    Integer port = pair.second();
 
-    RestTestHarness client = randomRestTestHarness();
-    TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
-    TestSolrConfigHandler.testForResponseElement(client,
-        null,
-        "/config/overlay",
-        null,
-        Arrays.asList("overlay", "requestHandler", "/jarhandler", "class"),
-        JarHandler.class.getName(), 10);
-      payload = "{\n" +
-          "'add-runtimelib' : { 'name' : 'urljar', url : '" + client.getBaseURL() + "/jarhandler?wt=filestream'" +
+    try {
+      String payload = "{\n" +
+          "'add-runtimelib' : { 'name' : 'urljar', url : 'http://localhost:" + port + "/jar1.jar'" +
           "  'sha512':'e01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420'}" +
           "}";
+      RestTestHarness client = randomRestTestHarness();
+      TestSolrConfigHandler.runConfigCommandExpectFailure(client, "/config", payload, "Invalid jar");
+
+
+      payload = "{\n" +
+          "'add-runtimelib' : { 'name' : 'urljar', url : 'http://localhost:" + port + "/jar1.jar'" +
+          "  'sha512':'d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420'}" +
+          "}";
       client = randomRestTestHarness();
-    TestSolrConfigHandler.runConfigCommandExpectFailure(client, "/config", payload, "Invalid jar");
+      TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
+      TestSolrConfigHandler.testForResponseElement(client,
+          null,
+          "/config/overlay",
+          null,
+          Arrays.asList("overlay", "runtimeLib", "urljar", "sha512"),
+          "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420", 120);
 
+      payload = "{\n" +
+          "'create-requesthandler' : { 'name' : '/runtime', 'class': 'org.apache.solr.core.RuntimeLibReqHandler', 'runtimeLib' : true}" +
+          "}";
+      client = randomRestTestHarness();
+      TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
 
-//    String url = client
-    payload = "{\n" +
-        "'add-runtimelib' : { 'name' : 'urljar', url : '" + client.getBaseURL() + "/jarhandler?wt=filestream'" +
-        "  'sha512':'d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420'}" +
-        "}";
-    client = randomRestTestHarness();
-    TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
-    TestSolrConfigHandler.testForResponseElement(client,
-        null,
-        "/config/overlay",
-        null,
-        Arrays.asList("overlay", "runtimeLib", "urljar", "sha512"),
-        "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420", 10);
+      TestSolrConfigHandler.testForResponseElement(client,
+          null,
+          "/config/overlay",
+          null,
+          Arrays.asList("overlay", "requestHandler", "/runtime", "class"),
+          "org.apache.solr.core.RuntimeLibReqHandler", 120);
 
-    payload = "{\n" +
-        "'create-requesthandler' : { 'name' : '/runtime', 'class': 'org.apache.solr.core.RuntimeLibReqHandler', 'runtimeLib' : true}" +
-        "}";
-    client = randomRestTestHarness();
-    TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
+      Map result = TestSolrConfigHandler.testForResponseElement(client,
+          null,
+          "/runtime",
+          null,
+          Arrays.asList("class"),
+          "org.apache.solr.core.RuntimeLibReqHandler", 120);
+      compareValues(result, MemClassLoader.class.getName(), asList("loader"));
+    } finally {
+      pair.first().stop();
 
-    TestSolrConfigHandler.testForResponseElement(client,
-        null,
-        "/config/overlay",
-        null,
-        Arrays.asList("overlay", "requestHandler", "/runtime", "class"),
-        "org.apache.solr.core.RuntimeLibReqHandler", 10);
-
-    Map result = TestSolrConfigHandler.testForResponseElement(client,
-        null,
-        "/runtime",
-        null,
-        Arrays.asList("class"),
-        "org.apache.solr.core.RuntimeLibReqHandler", 10);
-    compareValues(result, MemClassLoader.class.getName(), asList("loader"));
+    }
 
 
   }
