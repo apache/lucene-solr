@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -117,6 +118,15 @@ public final class GraphTokenStreamFiniteStrings {
       tokens.addAll(Arrays.asList(this.tokens).subList(transition.min, transition.max + 1));
     }
     return tokens;
+  }
+
+  /**
+   * Returns the list of terms that start at the provided state
+   */
+  public Term[] getTerms(String field, int state) {
+    return getTerms(state).stream()
+        .map(s -> new Term(field, s.addAttribute(TermToBytesRefAttribute.class).getBytesRef()))
+        .toArray(Term[]::new);
   }
 
   /**

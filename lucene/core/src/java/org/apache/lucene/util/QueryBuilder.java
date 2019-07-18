@@ -259,13 +259,6 @@ public class QueryBuilder {
   }
 
   /**
-   * Build a {@link Term} from an {@link AttributeSource}
-   */
-  protected Term buildTerm(String field, AttributeSource source) {
-    return new Term(field, source.addAttribute(TermToBytesRefAttribute.class).getBytesRef());
-  }
-
-  /**
    * Creates a query from a token stream.
    *
    * @param source     the token stream to create the query from
@@ -393,24 +386,25 @@ public class QueryBuilder {
    * Creates simple boolean query from the cached tokenstream contents 
    */
   protected Query analyzeBoolean(String field, TokenStream stream) throws IOException {
-
+    TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+    
     stream.reset();
-    List<AttributeSource> terms = new ArrayList<>();
+    List<Term> terms = new ArrayList<>();
     while (stream.incrementToken()) {
-      terms.add(stream.cloneAttributes());
+      terms.add(new Term(field, termAtt.getBytesRef()));
     }
     
-    return newSynonymQuery(field, terms);
+    return newSynonymQuery(terms.toArray(new Term[terms.size()]));
   }
 
-  protected void add(BooleanQuery.Builder q, String field, List<AttributeSource> current, BooleanClause.Occur operator) {
+  protected void add(BooleanQuery.Builder q, List<Term> current, BooleanClause.Occur operator) {
     if (current.isEmpty()) {
       return;
     }
     if (current.size() == 1) {
-      q.add(newTermQuery(buildTerm(field, current.get(0))), operator);
+      q.add(newTermQuery(current.get(0)), operator);
     } else {
-      q.add(newSynonymQuery(field, current), operator);
+      q.add(newSynonymQuery(current.toArray(new Term[current.size()])), operator);
     }
   }
 
@@ -419,19 +413,20 @@ public class QueryBuilder {
    */
   protected Query analyzeMultiBoolean(String field, TokenStream stream, BooleanClause.Occur operator) throws IOException {
     BooleanQuery.Builder q = newBooleanQuery();
-    List<AttributeSource> currentQuery = new ArrayList<>();
+    List<Term> currentQuery = new ArrayList<>();
     
+    TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
 
     stream.reset();
     while (stream.incrementToken()) {
       if (posIncrAtt.getPositionIncrement() != 0) {
-        add(q, field, currentQuery, operator);
+        add(q, currentQuery, operator);
         currentQuery.clear();
       }
-      currentQuery.add(stream.cloneAttributes());
+      currentQuery.add(new Term(field, termAtt.getBytesRef()));
     }
-    add(q, field, currentQuery, operator);
+    add(q, currentQuery, operator);
     
     return q.build();
   }
@@ -531,12 +526,12 @@ public class QueryBuilder {
         };
         queryPos = newGraphSynonymQuery(queries);
       } else {
-        List<AttributeSource> terms = graph.getTerms(start);
-        assert terms.size() > 0;
-        if (terms.size() == 1) {
-          queryPos = newTermQuery(buildTerm(field, terms.get(0)));
+        Term[] terms = graph.getTerms(field, start);
+        assert terms.length > 0;
+        if (terms.length == 1) {
+          queryPos = newTermQuery(terms[0]);
         } else {
-          queryPos = newSynonymQuery(field, terms);
+          queryPos = newSynonymQuery(terms);
         }
       }
       if (queryPos != null) {
@@ -605,17 +600,17 @@ public class QueryBuilder {
           queryPos = null;
         }
       } else {
-        List<AttributeSource> terms = graph.getTerms(start);
-        assert terms.size() > 0;
-        if (terms.size() == 1) {
-          queryPos = new SpanTermQuery(buildTerm(field, terms.get(0)));
+        Term[] terms = graph.getTerms(field, start);
+        assert terms.length > 0;
+        if (terms.length == 1) {
+          queryPos = new SpanTermQuery(terms[0]);
         } else {
-          if (terms.size() >= maxClauseCount) {
+          if (terms.length >= maxClauseCount) {
             throw new IndexSearcher.TooManyClauses();
           }
-          SpanTermQuery[] orClauses = new SpanTermQuery[terms.size()];
-          for (int idx = 0; idx < terms.size(); idx++) {
-            orClauses[idx] = new SpanTermQuery(buildTerm(field, terms.get(idx)));
+          SpanTermQuery[] orClauses = new SpanTermQuery[terms.length];
+          for (int idx = 0; idx < terms.length; idx++) {
+            orClauses[idx] = new SpanTermQuery(terms[idx]);
           }
 
           queryPos = new SpanOrQuery(orClauses);
@@ -655,17 +650,7 @@ public class QueryBuilder {
    * This is intended for subclasses that wish to customize the generated queries.
    * @return new Query instance
    */
-  protected Query newSynonymQuery(String field, List<AttributeSource> terms) {
-    return newSynonymQuery(terms.stream().map(s -> buildTerm(field, s)).toArray(Term[]::new));
-  }
-
-  /**
-   * Builds a new SynonymQuery instance.
-   * <p>
-   * This is intended for subclasses that wish to customize the generated queries.
-   * @return new Query instance
-   */
-  protected Query newSynonymQuery(Term[] terms) {
+  protected Query newSynonymQuery(Term terms[]) {
     SynonymQuery.Builder builder = new SynonymQuery.Builder(terms[0].field());
     for (Term term : terms) {
       builder.addTerm(term);
