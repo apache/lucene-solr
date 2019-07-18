@@ -21,8 +21,12 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
 
+import com.carrotsearch.ant.tasks.junit4.dependencies.com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -37,6 +41,8 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.MemClassLoader;
+import org.apache.solr.core.RuntimeLib;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.server.Server;
@@ -72,9 +78,17 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           for (Object e : vals.entrySet()) {
             Map.Entry entry = (Map.Entry) e;
             String key = (String) entry.getKey();
-            String v = (String) entry.getValue();
-            assertEquals("attempt: " + i + " Mismatch for value : '" + key + "' in response " + Utils.toJSONString(rsp),
-                v, rsp.getResponse()._getStr(key, null));
+            Object val = entry.getValue();
+            Predicate p = val instanceof Predicate ? (Predicate) val : new Predicate() {
+              @Override
+              public boolean test(Object o) {
+                String v = o == null ? null : String.valueOf(o);
+                return Objects.equals(val, o);
+              }
+            };
+            assertTrue("attempt: " + i + " Mismatch for value : '" + key + "' in response " + Utils.toJSONString(rsp),
+                 p.test( rsp.getResponse()._get(key, null)));
+
           }
           return;
         } catch (Exception e) {
@@ -189,7 +203,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       V2Request request = new V2Request.Builder("/node/ext/bar")
           .withMethod(SolrRequest.METHOD.POST)
           .build();
-      assertResponseValues(5, cluster.getSolrClient(), request, Utils.makeMap(
+      assertResponseValues(10, cluster.getSolrClient(), request, Utils.makeMap(
           "class", "org.apache.solr.core.RuntimeLibReqHandler",
           "loader", MemClassLoader.class.getName(),
           "version", null));
@@ -212,11 +226,30 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       request = new V2Request.Builder("/node/ext/bar")
           .withMethod(SolrRequest.METHOD.POST)
           .build();
-      assertResponseValues(5, cluster.getSolrClient(), request, Utils.makeMap(
+      assertResponseValues(10, cluster.getSolrClient(), request, Utils.makeMap(
           "class", "org.apache.solr.core.RuntimeLibReqHandler",
           "loader", MemClassLoader.class.getName(),
           "version", "3")
       );
+
+
+      new V2Request.Builder("/cluster")
+          .withPayload("{delete-requesthandler: 'bar'}")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      request = new V2Request.Builder("/node/ext")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build();
+      assertResponseValues(10, cluster.getSolrClient(), request, ImmutableMap.of(SolrRequestHandler.TYPE,
+          (Predicate<Object>) o -> o instanceof List && ((List) o).isEmpty()));
+      new V2Request.Builder("/cluster")
+          .withPayload("{delete-runtimelib : 'foo'}")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      assertResponseValues(10, cluster.getSolrClient(), request, ImmutableMap.of(RuntimeLib.TYPE,
+          (Predicate<Object>) o -> o instanceof List && ((List) o).isEmpty()));
+
+
     } finally {
       server.first().stop();
       new ClusterProperties(zkClient()).setClusterProperties(Collections.EMPTY_MAP);
