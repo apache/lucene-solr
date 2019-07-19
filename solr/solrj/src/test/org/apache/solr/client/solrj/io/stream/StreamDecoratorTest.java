@@ -68,7 +68,6 @@ import org.junit.Test;
 @Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-//commented 23-AUG-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
 public class StreamDecoratorTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
@@ -111,7 +110,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  //commented 23-AUG-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testUniqueStream() throws Exception {
 
     new UpdateRequest()
@@ -662,7 +660,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelHavingStream() throws Exception {
 
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -873,7 +870,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelFetchStream() throws Exception {
 
     new UpdateRequest()
@@ -1520,7 +1516,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelReducerStream() throws Exception {
 
     new UpdateRequest()
@@ -1653,7 +1648,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelMergeStream() throws Exception {
 
     new UpdateRequest()
@@ -1705,7 +1699,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testParallelRollupStream() throws Exception {
 
     new UpdateRequest()
@@ -2600,7 +2593,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelPriorityStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -2769,7 +2761,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
@@ -2868,7 +2859,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelDaemonUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).process(cluster.getSolrClient());
@@ -3255,7 +3245,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testParallelCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
@@ -3570,7 +3559,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  //Commented 14-Oct-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testClassifyStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -3623,10 +3611,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     // classify unknown documents
     String expr = "classify(" +
-        "model(modelCollection, id=\"model\", cacheMillis=5000)," +
-        "topic(checkpointCollection, uknownCollection, q=\"*:*\", fl=\"text_s, id\", id=\"1000000\", initialCheckpoint=\"0\")," +
-        "field=\"text_s\"," +
-        "analyzerField=\"tv_text\")";
+      // use cacheMillis=0 to prevent cached results. it doesn't matter on the first run,
+      // but we want to ensure that when we re-use this expression later after
+      // training another model, we'll still get accurate results.
+      "model(modelCollection, id=\"model\", cacheMillis=0)," +
+      "topic(checkpointCollection, uknownCollection, q=\"*:*\", fl=\"text_s, id\", id=\"1000000\", initialCheckpoint=\"0\")," +
+      "field=\"text_s\"," +
+      "analyzerField=\"tv_text\")";
 
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
@@ -3670,9 +3661,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     updateRequest.add(id, String.valueOf(4), "text_s", "a b c c d");
     updateRequest.add(id, String.valueOf(5), "text_s", "a b e e f");
     updateRequest.commit(cluster.getSolrClient(), "uknownCollection");
-
-    //Sleep for 5 seconds to let model cache expire
-    Thread.sleep(5100);
 
     classifyStream = new SolrStream(url, paramsLoc);
     idToLabel = getIdToLabel(classifyStream, "probability_d");
@@ -3787,7 +3775,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection("workQueue", 2, 2);
@@ -3854,7 +3841,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
 
   @Test
-  // commented out on: 17-Feb-2019   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testParallelExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue1", "conf", 2, 1).processAndWait(cluster.getSolrClient(),DEFAULT_TIMEOUT);
 
