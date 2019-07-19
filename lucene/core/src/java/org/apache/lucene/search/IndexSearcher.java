@@ -861,17 +861,17 @@ public class IndexSearcher {
   
   /**
    * Returns {@link TermStatistics} for a term, or {@code null} if
-   * the term does not exist.
+   * the term does not exist (if docFreq == 0).
    * 
    * This can be overridden for example, to return a term's statistics
    * across a distributed collection.
    * @lucene.experimental
    */
-  public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
-    if (context.docFreq() == 0) {
+  public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
+    if (docFreq == 0) {
       return null;
     } else {
-      return new TermStatistics(term.bytes(), context.docFreq(), context.totalTermFreq());
+      return new TermStatistics(term.bytes(), docFreq, totalTermFreq);
     }
   }
   

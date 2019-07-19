@@ -34,9 +34,9 @@ public final class LocalStatsSource extends StatsSource {
   }
   
   @Override
-  public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, TermStates context)
+  public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, int docFreq, long totalTermFreq)
       throws IOException {
-    return localSearcher.localTermStatistics(term, context);
+    return localSearcher.localTermStatistics(term, docFreq, totalTermFreq);
   }
   
   @Override

@@ -234,7 +234,7 @@ public class MultiPhraseQuery extends Query {
               termStates.put(term, ts);
             }
             if (scoreMode.needsScores()) {
-              TermStatistics termStatistics = searcher.termStatistics(term, ts);
+              TermStatistics termStatistics = searcher.termStatistics(term, ts.docFreq(), ts.totalTermFreq());
               if (termStatistics != null) {
                 allTermStats.add(termStatistics);
               }

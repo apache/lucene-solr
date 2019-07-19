@@ -428,7 +428,8 @@ public class PhraseQuery extends Query {
           final Term term = terms[i];
           states[i] = TermStates.build(context, term, scoreMode.needsScores());
           if (scoreMode.needsScores()) {
-            TermStatistics termStatistics = searcher.termStatistics(term, states[i]);
+            TermStates ts = states[i];
+            TermStatistics termStatistics = searcher.termStatistics(term, ts.docFreq(), ts.totalTermFreq());
             if (termStatistics != null) {
               termStats[termUpTo++] = termStatistics;
             }
