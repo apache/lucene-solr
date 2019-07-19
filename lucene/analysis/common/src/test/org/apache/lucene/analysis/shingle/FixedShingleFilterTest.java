@@ -18,11 +18,13 @@
 package org.apache.lucene.analysis.shingle;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.graph.GraphTokenStreamFiniteStrings;
 
 public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
 
@@ -225,6 +227,21 @@ public class FixedShingleFilterTest extends BaseTokenStreamTestCase {
       new FixedShingleFilter(new CannedTokenStream(), 5);
     });
     assertEquals("Shingle size must be between 2 and 4, got 5", e2.getMessage());
+  }
+
+  public void testWithGraphInput() throws IOException {
+
+    TokenStream ts = new CannedTokenStream(
+        new Token("fuz", 0, 3),
+        new Token("foo", 1, 4, 6, 2),
+        new Token("bar", 0, 4, 6),
+        new Token("baz", 1, 4, 6)
+    );
+    GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(ts);
+    Iterator<TokenStream> it = graph.getFiniteStrings();
+    assertTokenStreamContents(new FixedShingleFilter(it.next(), 2), new String[]{ "fuz foo"});
+    assertTokenStreamContents(new FixedShingleFilter(it.next(), 2), new String[]{ "fuz bar", "bar baz"});
+
   }
 
 }
