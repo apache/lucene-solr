@@ -235,11 +235,14 @@ public final class GraphTokenStreamFiniteStrings {
       if (tokens.length < id + 1) {
         tokens = ArrayUtil.grow(tokens, id + 1);
       }
+
       tokens[id] = in.cloneAttributes();
-      //System.out.println("Adding transition: " + term.utf8ToString() + "@" + pos + "->" + endPos);
       builder.addTransition(pos, endPos, id);
       pos += gap;
 
+      // we always produce linear token graphs from getFiniteStrings(), so we need to adjust
+      // posLength and posIncrement accordingly
+      tokens[id].addAttribute(PositionLengthAttribute.class).setPositionLength(1);
       if (currentIncr == 0) {
         // stacked token should have the same increment as original token at this position
         tokens[id].addAttribute(PositionIncrementAttribute.class).setPositionIncrement(prevIncr);
