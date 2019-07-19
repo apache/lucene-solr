@@ -34,6 +34,10 @@ New Features
 * SOLR-13375: Two dimensional routed aliases are now available for organizing collections based on the data values
   of two fields. (Gus Heck)
 
+* SOLR-13399: SPLITSHARD implements a new splitByPrefix option that takes into account the actual document distribution
+  when using compositeIds.  The id prefix should be indexed into the "id_prefix" field for this feature to work.
+  (yonik)
+
 
 Improvements
 ----------------------
