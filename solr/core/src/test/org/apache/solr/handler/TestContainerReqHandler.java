@@ -257,7 +257,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
   }
 
   @Test
-  public void testRutimeLibWithSig() throws Exception {
+  public void testRuntimeLibWithSig2048() throws Exception {
     Map<String, Object> jars = Utils.makeMap(
         "/jar1.jar", getFileContent("runtimecode/runtimelibs.jar.bin"),
         "/jar2.jar", getFileContent("runtimecode/runtimelibs_v2.jar.bin"),
@@ -339,6 +339,82 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           "loader", MemClassLoader.class.getName(),
           "version", "3"));
 
+
+    } finally {
+      server.first().stop();
+      cluster.shutdown();
+    }
+
+  }
+
+  @Test
+  public void testRuntimeLibWithSig512() throws Exception {
+    Map<String, Object> jars = Utils.makeMap(
+        "/jar1.jar", getFileContent("runtimecode/runtimelibs.jar.bin"),
+        "/jar2.jar", getFileContent("runtimecode/runtimelibs_v2.jar.bin"),
+        "/jar3.jar", getFileContent("runtimecode/runtimelibs_v3.jar.bin"));
+
+    Pair<Server, Integer> server = runHttpServer(jars);
+    int port = server.second();
+    MiniSolrCloudCluster cluster =  configureCluster(4).configure();
+
+    try {
+
+      byte[] derFile = readFile("cryptokeys/pub_key512.der");
+      cluster.getZkClient().makePath("/keys/exe", true);
+      cluster.getZkClient().create("/keys/exe/pub_key512.der", derFile, CreateMode.PERSISTENT, true);
+
+      String signature = "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==";
+
+      String payload = "{add-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar1.jar', " +
+          "sig : '" + signature + "'," +
+          "sha512 : 'd01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420'}}";
+
+      new V2Request.Builder("/cluster")
+          .withPayload(payload)
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "add-runtimelib/sha512"),
+          getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
+
+      new V2Request.Builder("/cluster")
+          .withPayload("{add-requesthandler:{name : 'bar', class : 'org.apache.solr.core.RuntimeLibReqHandler'}}")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      Map<String, Object> map = new ClusterProperties(cluster.getZkClient()).getClusterProperties();
+
+
+      V2Request request = new V2Request.Builder("/node/ext/bar")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build();
+      assertResponseValues(10, cluster.getSolrClient(), request, Utils.makeMap(
+          "class", "org.apache.solr.core.RuntimeLibReqHandler",
+          "loader", MemClassLoader.class.getName(),
+          "version", null));
+
+
+      assertEquals("org.apache.solr.core.RuntimeLibReqHandler",
+          getObjectByPath(map, true, Arrays.asList("requestHandler", "bar", "class")));
+
+      payload = "{update-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar3.jar', " +
+          "sig : 'pnH8uDHsTF0HWyQqABqVWmvo3rM/Mp2qpuo6S9YXZA9Ifg8NjHX8WzPe6EzlaqBcYcusrEV0b+5NCBx4AS0TGA==' ," +
+          "sha512 : 'f67a7735a89b4348e273ca29e4651359d6d976ba966cb871c4b468ea1dbd452e42fcde9d188b7788e5a1ef668283c690606032922364759d19588666d5862653'}}";
+
+      new V2Request.Builder("/cluster")
+          .withPayload(payload)
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "update-runtimelib/sha512"),
+          getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
+
+
+      request = new V2Request.Builder("/node/ext/bar")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build();
+      assertResponseValues(10, cluster.getSolrClient(), request, Utils.makeMap(
+          "class", "org.apache.solr.core.RuntimeLibReqHandler",
+          "loader", MemClassLoader.class.getName(),
+          "version", "3"));
 
     } finally {
       server.first().stop();

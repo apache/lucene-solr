@@ -28,10 +28,21 @@ AHX4/hrHr2Piy8za9tIUoXbLqn3xJNNroOqpcVEgwh1Zii4c7zPwUSB9gtd9zlAK
 tX7PblDrKeiunKGbjtiOhFLYkupe1lSlIRLiJV/qqopO4TQGO1bhbxeCKAX2vEz5
 Ch5bGOa+VZLJJGaDo318UQ==
 
-=====================pk1.pem=====================
+=====================priv_key512.pem=====================
+openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem runtimelibs.jar.bin | openssl enc -base64
 
+L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1
+f/U3bOlMPINlSOM6LK3JpQ==
+L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==
 
-NaTm3+i99/ZhS8YRsLc3NLz2Y6VuwEbu7DihY8GAWwWIGm+jpXgn1JiuaenfxFCcfNKCC9WgZmEgbTZTzmV/OZMVn90u642YJbF3vTnzelW1pHB43ZRAJ1iesH0anM37w03n3es+vFWQtuxc+2Go888fJoMkUX2C6Zk6Jn116KE45DWjeyPM4mp3vvGzwGvdRxP5K9Q3suA+iuI/ULXM7m9mV4ruvs/MZvL+ELm5Jnmk1bBtixVJhQwJP2z++8tQKJghhyBxPIC/2fkAHobQpkhZrXu56JjP+v33ul3Ku4bbvfVMY/LVwCAEnxlvhk+C6uRCKCeFMrzQ/k5inasXLw==
-NaTm3+i99/ZhS8YRsLc3NLz2Y6VuwEbu7DihY8GAWwWIGm+jpXgn1JiuaenfxFCcfNKCC9WgZmEgbTZTzmV/OZMVn90u642YJbF3vTnzelW1pHB43ZRAJ1iesH0anM37w03n3es+vFWQtuxc+2Go888fJoMkUX2C6Zk6Jn116KE45DWjeyPM4mp3vvGzwGvdRxP5K9Q3suA+iuI/ULXM7m9mV4ruvs/MZvL+ELm5Jnmk1bBtixVJhQwJP2z++8tQKJghhyBxPIC/2fkAHobQpkhZrXu56JjP+v33ul3Ku4bbvfVMY/LVwCAEnxlvhk+C6uRCKCeFMrzQ/k5inasXLw==
+openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem runtimelibs_v2.jar.bin | openssl enc -base64
 
+j+Rflxi64tXdqosIhbusqi6GTwZq8znunC/dzwcWW0/dHlFGKDurOaE1Nz9FSPJu
+XbHkVLj638yZ0Lp1ssnoYA==
 
+openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem runtimelibs_v3.jar.bin | openssl enc -base64
+
+pnH8uDHsTF0HWyQqABqVWmvo3rM/Mp2qpuo6S9YXZA9Ifg8NjHX8WzPe6EzlaqBc
+YcusrEV0b+5NCBx4AS0TGA==
+
+pnH8uDHsTF0HWyQqABqVWmvo3rM/Mp2qpuo6S9YXZA9Ifg8NjHX8WzPe6EzlaqBcYcusrEV0b+5NCBx4AS0TGA==
