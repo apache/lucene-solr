@@ -421,10 +421,6 @@ public class FieldInfos implements Iterable<FieldInfo> {
         return dvType == docValuesType.get(fieldName);
       }
     }
-    
-    synchronized Set<String> getFieldNames() {
-      return Set.copyOf(nameToNumber.keySet());
-    }
 
     synchronized void clear() {
       numberToName.clear();
