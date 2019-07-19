@@ -106,45 +106,17 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   }
 
-  @Test
-  public void testSetClusterReqHandler() throws Exception {
-    MiniSolrCloudCluster cluster = configureCluster(4).configure();
-    try {
-      SolrZkClient zkClient = cluster.getZkClient();
-      new V2Request.Builder("/cluster")
-          .withPayload("{add-requesthandler:{name : 'foo', class : 'org.apache.solr.handler.DumpRequestHandler'}}")
-          .withMethod(SolrRequest.METHOD.POST)
-          .build().process(cluster.getSolrClient());
-
-      Map<String, Object> map = assertVersionInSync(zkClient);
-
-      assertEquals("org.apache.solr.handler.DumpRequestHandler",
-          getObjectByPath(map, true, Arrays.asList("requestHandler", "foo", "class")));
-
-      assertVersionInSync(zkClient);
-      V2Response rsp = new V2Request.Builder("/node/ext/foo")
-          .withMethod(SolrRequest.METHOD.GET)
-          .withParams(new MapSolrParams((Map) Utils.makeMap("testkey", "testval")))
-          .build().process(cluster.getSolrClient());
-      assertEquals("testval", rsp._getStr("params/testkey", null));
-
-      new V2Request.Builder("/cluster")
-          .withPayload("{delete-requesthandler: 'foo'}")
-          .withMethod(SolrRequest.METHOD.POST)
-          .build().process(cluster.getSolrClient());
-
-      assertNull(getObjectByPath(map, true, Arrays.asList("requestHandler", "foo")));
-    } finally {
-      shutdownCluster();
-    }
-
-  }
-
-  private Map<String, Object> assertVersionInSync(SolrZkClient zkClient) throws SolrServerException, IOException {
+  private static Map<String, Object> assertVersionInSync(SolrZkClient zkClient, SolrClient solrClient) throws SolrServerException, IOException {
     Stat stat = new Stat();
     Map<String, Object> map = new ClusterProperties(zkClient).getClusterProperties(stat);
-    assertEquals(String.valueOf(stat.getVersion()), getExtResponse()._getStr("metadata/version", null));
+    assertEquals(String.valueOf(stat.getVersion()), getExtResponse(solrClient)._getStr("metadata/version", null));
     return map;
+  }
+
+  private static V2Response getExtResponse(SolrClient solrClient) throws SolrServerException, IOException {
+    return new V2Request.Builder("/node/ext")
+        .withMethod(SolrRequest.METHOD.GET)
+        .build().process(solrClient);
   }
 
   @Test
@@ -423,9 +395,37 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   }
 
-  private V2Response getExtResponse() throws SolrServerException, IOException {
-    return new V2Request.Builder("/node/ext")
-        .withMethod(SolrRequest.METHOD.GET)
-        .build().process(cluster.getSolrClient());
+  @Test
+  public void testSetClusterReqHandler() throws Exception {
+    MiniSolrCloudCluster cluster = configureCluster(4).configure();
+    try {
+      SolrZkClient zkClient = cluster.getZkClient();
+      new V2Request.Builder("/cluster")
+          .withPayload("{add-requesthandler:{name : 'foo', class : 'org.apache.solr.handler.DumpRequestHandler'}}")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+
+      Map<String, Object> map = assertVersionInSync(zkClient, cluster.getSolrClient());
+
+      assertEquals("org.apache.solr.handler.DumpRequestHandler",
+          getObjectByPath(map, true, Arrays.asList("requestHandler", "foo", "class")));
+
+      assertVersionInSync(zkClient, cluster.getSolrClient());
+      V2Response rsp = new V2Request.Builder("/node/ext/foo")
+          .withMethod(SolrRequest.METHOD.GET)
+          .withParams(new MapSolrParams((Map) Utils.makeMap("testkey", "testval")))
+          .build().process(cluster.getSolrClient());
+      assertEquals("testval", rsp._getStr("params/testkey", null));
+
+      new V2Request.Builder("/cluster")
+          .withPayload("{delete-requesthandler: 'foo'}")
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+
+      assertNull(getObjectByPath(map, true, Arrays.asList("requestHandler", "foo")));
+    } finally {
+      cluster.shutdown();
+    }
+
   }
 }
