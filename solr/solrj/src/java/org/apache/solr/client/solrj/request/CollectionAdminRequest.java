@@ -1391,6 +1391,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String splitKey;
     protected String shard;
     protected String splitMethod;
+    protected Boolean splitByPrefix;
     protected Integer numSubShards;
     protected Float splitFuzz;
 
@@ -1454,6 +1455,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public Boolean getSplitByPrefix() {
+      return splitByPrefix;
+    }
+
+    public SplitShard setSplitByPrefix(Boolean splitByPrefix) {
+      this.splitByPrefix = splitByPrefix;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1473,6 +1483,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (splitFuzz != null) {
         params.set(CommonAdminParams.SPLIT_FUZZ, String.valueOf(splitFuzz));
+      }
+
+      if (splitByPrefix != null) {
+        params.set(CommonAdminParams.SPLIT_BY_PREFIX, splitByPrefix);
       }
 
       if(properties != null) {
