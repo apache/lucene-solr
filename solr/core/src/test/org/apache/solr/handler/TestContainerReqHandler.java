@@ -20,7 +20,6 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,8 +34,10 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
@@ -66,7 +67,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
-    configureCluster(4).configure();
+
   }
 
   static void assertResponseValues(int repeats, SolrClient client, SolrRequest req, Map vals) throws Exception {
@@ -107,18 +108,20 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   @Test
   public void testSetClusterReqHandler() throws Exception {
+    MiniSolrCloudCluster cluster = configureCluster(4).configure();
     try {
+      SolrZkClient zkClient = cluster.getZkClient();
       new V2Request.Builder("/cluster")
           .withPayload("{add-requesthandler:{name : 'foo', class : 'org.apache.solr.handler.DumpRequestHandler'}}")
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
 
-      Map<String, Object> map = assertVersionInSync();
+      Map<String, Object> map = assertVersionInSync(zkClient);
 
       assertEquals("org.apache.solr.handler.DumpRequestHandler",
           getObjectByPath(map, true, Arrays.asList("requestHandler", "foo", "class")));
 
-      assertVersionInSync();
+      assertVersionInSync(zkClient);
       V2Response rsp = new V2Request.Builder("/node/ext/foo")
           .withMethod(SolrRequest.METHOD.GET)
           .withParams(new MapSolrParams((Map) Utils.makeMap("testkey", "testval")))
@@ -132,15 +135,14 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       assertNull(getObjectByPath(map, true, Arrays.asList("requestHandler", "foo")));
     } finally {
-      new ClusterProperties(zkClient()).setClusterProperties(Collections.EMPTY_MAP);
-
+      shutdownCluster();
     }
 
   }
 
-  private Map<String, Object> assertVersionInSync() throws SolrServerException, IOException {
+  private Map<String, Object> assertVersionInSync(SolrZkClient zkClient) throws SolrServerException, IOException {
     Stat stat = new Stat();
-    Map<String, Object> map = new ClusterProperties(zkClient()).getClusterProperties(stat);
+    Map<String, Object> map = new ClusterProperties(zkClient).getClusterProperties(stat);
     assertEquals(String.valueOf(stat.getVersion()), getExtResponse()._getStr("metadata/version", null));
     return map;
   }
@@ -154,7 +156,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
     Pair<Server, Integer> server = runHttpServer(jars);
     int port = server.second();
-
+    MiniSolrCloudCluster cluster = configureCluster(4).configure();
     try {
       String payload = null;
       try {
@@ -188,14 +190,14 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
       assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "add-runtimelib/sha512"),
-          getObjectByPath(new ClusterProperties(zkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
+          getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
 
 
       new V2Request.Builder("/cluster")
           .withPayload("{add-requesthandler:{name : 'bar', class : 'org.apache.solr.core.RuntimeLibReqHandler'}}")
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
-      Map<String, Object> map = new ClusterProperties(zkClient()).getClusterProperties();
+      Map<String, Object> map = new ClusterProperties(cluster.getZkClient()).getClusterProperties();
 
 
       V2Request request = new V2Request.Builder("/node/ext/bar")
@@ -218,7 +220,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
       assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "update-runtimelib/sha512"),
-          getObjectByPath(new ClusterProperties(zkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
+          getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
 
 
       request = new V2Request.Builder("/node/ext/bar")
@@ -250,10 +252,11 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
     } finally {
       server.first().stop();
-      new ClusterProperties(zkClient()).setClusterProperties(Collections.EMPTY_MAP);
+      cluster.shutdown();
     }
   }
 
+  @Test
   public void testRutimeLibWithSig() throws Exception {
     Map<String, Object> jars = Utils.makeMap(
         "/jar1.jar", getFileContent("runtimecode/runtimelibs.jar.bin"),
@@ -262,16 +265,17 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
     Pair<Server, Integer> server = runHttpServer(jars);
     int port = server.second();
+    MiniSolrCloudCluster cluster =  configureCluster(4).configure();
 
     try {
 
       byte[] derFile = readFile("cryptokeys/pub_key2048.der");
-      zkClient().makePath("/keys/exe", true);
-      zkClient().create("/keys/exe/pub_key2048.der", derFile, CreateMode.PERSISTENT, true);
+      cluster.getZkClient().makePath("/keys/exe", true);
+      cluster.getZkClient().create("/keys/exe/pub_key2048.der", derFile, CreateMode.PERSISTENT, true);
 
       String signature = "NaTm3+i99/ZhS8YRsLc3NLz2Y6VuwEbu7DihY8GAWwWIGm+jpXgn1JiuaenfxFCcfNKCC9WgZmEgbTZTzmV/OZMVn90u642YJbF3vTnzelW1pHB43ZRAJ1iesH0anM37w03n3es+vFWQtuxc+2Go888fJoMkUX2C6Zk6Jn116KE45DWjeyPM4mp3vvGzwGvdRxP5K9Q3suA+iuI/ULXM7m9mV4ruvs/MZvL+ELm5Jnmk1bBtixVJhQwJP2z++8tQKJghhyBxPIC/2fkAHobQpkhZrXu56JjP+v33ul3Ku4bbvfVMY/LVwCAEnxlvhk+C6uRCKCeFMrzQ/k5inasXLw==";
 
-     /* String payload = "{add-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar1.jar', " +
+      String payload = "{add-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar1.jar', " +
           "sig : 'EdYkvRpMZbvElN93/xUmyKXcj6xHP16AVk71TlTascEwCb5cFQ2AeKhPIlwYpkLWXEOcLZKfeXoWwOLaV5ZNhg==' ," +
           "sha512 : 'd01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420'}}";
       try {
@@ -282,13 +286,11 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       } catch (BaseHttpSolrClient.RemoteExecutionException e) {
         //No key matched signature for jar
         assertTrue(e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("No key matched signature for jar"));
-      }*/
+      }
 
 
-
-
-      String payload = "{add-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar1.jar', " +
-          "sig : '"+signature + "',"+
+      payload = "{add-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar1.jar', " +
+          "sig : '" + signature + "'," +
           "sha512 : 'd01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420'}}";
 
       new V2Request.Builder("/cluster")
@@ -296,13 +298,13 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
       assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "add-runtimelib/sha512"),
-          getObjectByPath(new ClusterProperties(zkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
+          getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
 
       new V2Request.Builder("/cluster")
           .withPayload("{add-requesthandler:{name : 'bar', class : 'org.apache.solr.core.RuntimeLibReqHandler'}}")
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
-      Map<String, Object> map = new ClusterProperties(zkClient()).getClusterProperties();
+      Map<String, Object> map = new ClusterProperties(cluster.getZkClient()).getClusterProperties();
 
 
       V2Request request = new V2Request.Builder("/node/ext/bar")
@@ -326,7 +328,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
       assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "update-runtimelib/sha512"),
-          getObjectByPath(new ClusterProperties(zkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
+          getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
 
 
       request = new V2Request.Builder("/node/ext/bar")
@@ -340,7 +342,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
     } finally {
       server.first().stop();
-      new ClusterProperties(zkClient()).setClusterProperties(Collections.EMPTY_MAP);
+      cluster.shutdown();
     }
 
   }

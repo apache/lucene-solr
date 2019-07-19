@@ -110,15 +110,19 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
 
   static Command wrap(Command cmd) {
     return info -> {
+      CoreContainer cc = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
       boolean modified = cmd.call(info);
       if (modified) {
-        CoreContainer cc = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
         Stat stat = new Stat();
         Map<String, Object> clusterProperties = new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties(stat);
         cc.getClusterPropertiesListener().onChange(clusterProperties);
         log.info("current version of clusterprops.json is {} , trying to get every node to update ", stat.getVersion());
         log.debug("The current clusterprops.json:  {}",clusterProperties );
         ((CollectionHandlerApi) info.apiHandler).waitForStateSync(stat.getVersion(), cc);
+
+      }
+      if (info.op != null && info.op.hasError()) {
+        log.error("Error in running command {} , current clusterprops.json : {}", Utils.toJSONString(info.op), Utils.toJSONString(new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties()));
       }
       return modified;
 
@@ -195,7 +199,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
     if (Meta.ADD_RUNTIME_LIB.commandName.equals(op.name)) {
       if (existing != null) {
-        op.addError(StrUtils.formatString("The jar with a name ''{0}'' already exists", name));
+        op.addError(StrUtils.formatString("The jar with a name ''{0}'' already exists ", name));
         return false;
       }
     } else {
