@@ -453,15 +453,15 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
     }
   }
   
-  final static class IntBlockTermState extends BlockTermState {
-    long docStartFP = 0;
-    long posStartFP = 0;
-    long payStartFP = 0;
-    long skipOffset = -1;
-    long lastPosBlockOffset = -1;
+  public static final class IntBlockTermState extends BlockTermState {
+    public long docStartFP = 0;
+    public long posStartFP = 0;
+    public long payStartFP = 0;
+    public long skipOffset = -1;
+    public long lastPosBlockOffset = -1;
     // docid when there is a single pulsed posting, otherwise -1
     // freq is always implicitly totalTermFreq in this case.
-    int singletonDocID = -1;
+    public int singletonDocID = -1;
 
     @Override
     public IntBlockTermState clone() {
