@@ -145,10 +145,6 @@ public class DemoHTMLParser implements HTMLParser {
       // assign body text
       this.body = body.toString();
     }
-    
-    private static final Set<String> createElementNameSet(String... names) {
-      return Set.copyOf(Arrays.asList(names));
-    }
 
     /** HTML elements that cause a line break (they are block-elements) */
     static final Set<String> ENDLINE_ELEMENTS = Set.of(
