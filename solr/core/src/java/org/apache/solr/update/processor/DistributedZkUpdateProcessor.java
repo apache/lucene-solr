@@ -18,6 +18,7 @@
 package org.apache.solr.update.processor;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -61,6 +62,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.store.blob.process.CoreUpdateTracker;
+import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -247,6 +249,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // check if client has requested minimum replication factor information. will set replicationTracker to null if
     // we aren't the leader or subShardLeader
     checkReplicationTracker(cmd);
+    // Update the local cores if needed.
+    if (replicaType.equals(Replica.Type.SHARED)) {
+      readFromSharedStoreIfNecessary();
+    }
 
     super.processAdd(cmd);
   }
@@ -312,6 +318,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
     if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
+    }
+    // Update the local cores if needed.
+    if (replicaType.equals(Replica.Type.SHARED)) {
+      readFromSharedStoreIfNecessary();
     }
 
     super.processDelete(cmd);
@@ -1041,6 +1051,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
+   
     super.processMergeIndexes(cmd);
   }
 
@@ -1059,14 +1070,27 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     doFinish();
   }
   
-  private void writeToShareStore() {
+  private void writeToShareStore() throws SolrException {
     log.info("Attempting to initiate index update write to shared store for collection=" + cloudDesc.getCollectionName() + 
         " and shard=" + cloudDesc.getShardId() + " using core=" + req.getCore().getName());
-
+    
     sharedCoreTracker.persistShardIndexToSharedStore(zkController.zkStateReader.getClusterState(), 
         cloudDesc.getCollectionName(), 
         cloudDesc.getShardId(), 
         req.getCore().getName());
+  }
+  
+  private void readFromSharedStoreIfNecessary() throws SolrException {
+    String coreName = req.getCore().getName();
+    String shardName = cloudDesc.getShardId();
+    String collectionName = cloudDesc.getCollectionName();
+    assertEquals(replicaType, Replica.Type.SHARED);
+    // Peers and subShardLeaders should only forward the update request to leader replica,
+    // hence not need to sync with the blob store at this point.
+    if (!isLeader || isSubShardLeader) {
+      return;
+    }
+    BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName,coreName,shardName,req.getCore().getCoreContainer());
   }
   
   
@@ -1086,11 +1110,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
      *  Track the updated core for push to Blob store. 
      *  
      *  Only, the leader node pushes the updates to blob store but the leader can be change mid update, 
-     *  so we don't stop peers from pushing updates to the blob store.    
+     *  so we don't stop peers from pushing updates to the blob store.
+     *  
+     *  We also need to check for isLeader here because a peer can also receive commit message if the request was directly send to the peer.     
      */
     if ( updateCommand != null &&
-        updateCommand.getClass() == CommitUpdateCommand.class &&
-        replicaType.equals(Replica.Type.SHARED)
+        updateCommand.getClass() == CommitUpdateCommand.class && 
+        isLeader && replicaType.equals(Replica.Type.SHARED)
         && !((CommitUpdateCommand) updateCommand).softCommit) {
       /*
        * TODO SPLITSHARD triggers soft commits.  
