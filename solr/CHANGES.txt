@@ -85,6 +85,11 @@ New Features
   when using compositeIds.  The id prefix should be indexed into the "id_prefix" field for this feature to work.
   (yonik)
 
+* SOLR-13565: Node level runtime libs loaded from remote urls  (noble)
+
+* SOLR-13553: Node level custom RequestHandlers (noble)
+
+
 
 Improvements
 ----------------------
