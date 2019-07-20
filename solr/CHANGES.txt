@@ -42,8 +42,6 @@ New Features
 
 * SOLR-13553: Node level custom RequestHandlers (noble)
 
-
-
 Improvements
 ----------------------
 
@@ -61,6 +59,8 @@ Other Changes
 * SOLR-13585: Factor out SearchGroupsResultTransformer.[de]serializeOneSearchGroup methods. (Christine Poerschke, Diego Ceccarelli)
 
 * SOLR-12870: Use StandardCharsets instead of String values (Peter Somogyi via Munendra S N)
+
+* SOLR-10377: Add `debug.explain.structured` to Admin UI. (David Smiley, Munendra S N)
 
 ==================  8.2.0 ==================
 
