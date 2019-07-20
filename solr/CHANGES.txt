@@ -97,7 +97,6 @@ Improvements
 * SOLR-12368: Support InPlace DV updates for a field that does not yet exist in any documents
 (hossman, Simon Willnauer, Adrien Grand, Munendra S N)
 
-
 Bug Fixes
 ----------------------
 
@@ -107,6 +106,8 @@ Other Changes
 ----------------------
 
 * SOLR-13585: Factor out SearchGroupsResultTransformer.[de]serializeOneSearchGroup methods. (Christine Poerschke, Diego Ceccarelli)
+
+* SOLR-12870: Use StandardCharsets instead of String values (Peter Somogyi via Munendra S N)
 
 ==================  8.2.0 ==================
 

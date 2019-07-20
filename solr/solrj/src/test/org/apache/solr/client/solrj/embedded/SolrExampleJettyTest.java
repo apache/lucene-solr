@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
@@ -86,7 +87,8 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     HttpClient httpClient = client.getHttpClient();
     HttpPost post = new HttpPost(getUri(client));
     post.setHeader("Content-Type", "application/json");
-    post.setEntity(new InputStreamEntity(new ByteArrayInputStream(json.getBytes("UTF-8")), -1));
+    post.setEntity(new InputStreamEntity(
+        new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
     HttpResponse response = httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
     assertEquals(200, response.getStatusLine().getStatusCode());
     client.commit();

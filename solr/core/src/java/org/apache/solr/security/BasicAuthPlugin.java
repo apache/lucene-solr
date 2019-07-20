@@ -140,7 +140,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
         if (basic.equalsIgnoreCase("Basic")) {
           if (st.hasMoreTokens()) {
             try {
-              String credentials = new String(Base64.decodeBase64(st.nextToken()), "UTF-8");
+              String credentials = new String(Base64.decodeBase64(st.nextToken()), StandardCharsets.UTF_8);
               int p = credentials.indexOf(":");
               if (p != -1) {
                 final String username = credentials.substring(0, p).trim();
