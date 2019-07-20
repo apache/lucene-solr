@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -266,7 +267,7 @@ public class SolrStream extends TupleStream {
     if (CommonParams.JAVABIN.equals(wt)) {
       return new JavabinTupleStreamParser(stream, true);
     } else {
-      InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+      InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
       return new JSONTupleStream(reader);
     }
   }
