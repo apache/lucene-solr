@@ -230,22 +230,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     }
   }
 
-  private static void ghgjhg(String collection, String prop, int expectedVersion, int maxWaitSecs, List<PerReplicaCallable> concurrentTasks, ExecutorService parallelExecutor) {
-    try {
-      List<String> failedList = executeAll(expectedVersion, maxWaitSecs, concurrentTasks, parallelExecutor);
-      // if any tasks haven't completed within the specified timeout, it's an error
-      if (failedList != null)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            formatString("{0} out of {1} the property {2} to be of version {3} within {4} seconds! Failed cores: {5}",
-                failedList.size(), concurrentTasks.size() + 1, prop, expectedVersion, maxWaitSecs, failedList));
-    } catch (InterruptedException e) {
-      log.warn(formatString(
-          "Core  was interrupted . trying to set the property {0} to version {1} to propagate to {2} replicas for collection {3}",
-          prop, expectedVersion, concurrentTasks.size(), collection));
-      Thread.currentThread().interrupt();
-    }
-  }
-
   @Override
   public SolrRequestHandler getSubHandler(String path) {
     if (subPaths.contains(path)) return this;
