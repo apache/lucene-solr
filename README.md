@@ -81,9 +81,9 @@ Ant can be used to generate project files compatible with most common IDEs.
 Run the ant command corresponding to your IDE of choice before attempting to
 import Lucene/Solr.
 
-- *Eclipse* - `ant eclipse` (See [this](https://wiki.apache.org/solr/HowToConfigureEclipse) for details)
-- *IntelliJ* - `ant idea` (See [this](https://wiki.apache.org/lucene-java/HowtoConfigureIntelliJ) for details)
-- *Netbeans* - `ant netbeans` (See [this](https://wiki.apache.org/lucene-java/HowtoConfigureNetbeans) for details)
+- *Eclipse* - `ant eclipse` (See [this](https://cwiki.apache.org/confluence/display/solr/HowToConfigureEclipse) for details)
+- *IntelliJ* - `ant idea` (See [this](https://cwiki.apache.org/confluence/display/lucene/HowtoConfigureIntelliJ) for details)
+- *Netbeans* - `ant netbeans` (See [this](https://cwiki.apache.org/confluence/display/lucene/HowtoConfigureNetbeans) for details)
 
 
 ## Running Tests
@@ -100,7 +100,7 @@ ways.  For an exhaustive discussion of the options available, run:
 ## Contributing
 
 Please review the [Contributing to Solr
-Guide](https://wiki.apache.org/solr/HowToContribute) for information on
+Guide](https://cwiki.apache.org/confluence/display/solr/HowToContribute) for information on
 contributing.
 
 ## Discussion and Support
