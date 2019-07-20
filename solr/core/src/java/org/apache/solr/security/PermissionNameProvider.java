@@ -39,6 +39,7 @@ public interface PermissionNameProvider {
     CORE_READ_PERM("core-admin-read", null),
     CORE_EDIT_PERM("core-admin-edit", null),
     READ_PERM("read", "*"),
+    CUSTOM_PERM("custom-op", null),//custom operation , user-defined
     UPDATE_PERM("update", "*"),
     CONFIG_EDIT_PERM("config-edit", unmodifiableSet(new HashSet<>(asList("*", null)))),
     CONFIG_READ_PERM("config-read", "*"),

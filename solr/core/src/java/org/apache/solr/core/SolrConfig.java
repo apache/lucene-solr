@@ -377,7 +377,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           // and even then -- only if there is a single SpellCheckComponent
           // because of queryConverter.setIndexAnalyzer
       .add(new SolrPluginInfo(QueryConverter.class, "queryConverter", REQUIRE_NAME, REQUIRE_CLASS))
-      .add(new SolrPluginInfo(PluginBag.RuntimeLib.class, "runtimeLib", REQUIRE_NAME, MULTI_OK))
+      .add(new SolrPluginInfo(RuntimeLib.class, RuntimeLib.TYPE, REQUIRE_NAME, MULTI_OK))
           // this is hackish, since it picks up all SolrEventListeners,
           // regardless of when/how/why they are used (or even if they are
           // declared outside of the appropriate context) but there's no nice
