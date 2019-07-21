@@ -58,7 +58,11 @@ class UnusedDeps extends DefaultTask {
   List<String> jarExcludes = new ArrayList<>()
   
   public UnusedDeps() {
-    
+
+  }
+  
+  @TaskAction
+  void execute() {
     if (project.hasProperty('useConfiguration')) {
       configuration = project.useConfiguration
     }
@@ -66,10 +70,6 @@ class UnusedDeps extends DefaultTask {
     if (!project.configurations.hasProperty(configuration)) {
       return
     }
-  }
-  
-  @TaskAction
-  void execute() {
     
     // make sure ant task logging shows up by default
     ant.lifecycleLogLevel = "INFO"
