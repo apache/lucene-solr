@@ -722,11 +722,4 @@ public class Utils {
     return def;
   }
 
-  public static void main(String[] args) {
-    List<String> strings = StrUtils.splitSmart("overlay/requestHandler//runtime/class",
-        '/', true);
-    System.out.println(strings);
-
-  }
-
 }
