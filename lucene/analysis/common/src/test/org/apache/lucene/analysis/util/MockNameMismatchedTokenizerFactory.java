@@ -17,9 +17,9 @@
 
 package org.apache.lucene.analysis.util;
 
-import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.AttributeFactory;
 
@@ -35,11 +35,6 @@ public class MockNameMismatchedTokenizerFactory extends TokenizerFactory {
   
   @Override
   public Tokenizer create(AttributeFactory factory) {
-    return new Tokenizer() {
-      @Override
-      public boolean incrementToken() throws IOException {
-        return false;
-      }
-    };
+    return new MockTokenizer();
   }
 }
