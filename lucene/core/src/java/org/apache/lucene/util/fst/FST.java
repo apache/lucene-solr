@@ -195,6 +195,10 @@ public final class FST<T> implements Accountable {
       return flag(BIT_FINAL_ARC);
     }
 
+    public boolean isPackedArray() {
+      return bytesPerArc != 0 && arcIdx > Integer.MIN_VALUE;
+    }
+
     @Override
     public String toString() {
       StringBuilder b = new StringBuilder();
@@ -569,7 +573,6 @@ public final class FST<T> implements Accountable {
         return NON_FINAL_END_NODE;
       }
     }
-
     final long startAddress = builder.bytes.getPosition();
     //System.out.println("  startAddr=" + startAddress);
 
