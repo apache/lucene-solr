@@ -16,13 +16,21 @@
  */
 package org.apache.solr.core;
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.DOMUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import java.util.*;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
@@ -35,6 +43,8 @@ import static org.apache.solr.schema.FieldType.CLASS_NAME;
  *
  */
 public class PluginInfo implements MapSerializable {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public final String name, className, type;
   public final NamedList initArgs;
   public final Map<String, String> attributes;
@@ -187,4 +197,15 @@ public class PluginInfo implements MapSerializable {
     result.isFromSolrConfig = isFromSolrConfig;
     return result;
   }
+  public String getRuntimeLibType(){
+    Object runtimeType = attributes.get(RuntimeLib.TYPE);
+    if(runtimeType == null || "false".equals(runtimeType) || Boolean.FALSE.equals(runtimeType)) return null;
+    runtimeType = runtimeType.toString();
+    if ("true".equals(String.valueOf(runtimeType))) {
+      log.warn("runtimeLib = true is deprecated, use runtimeLib=core/global");
+      runtimeType = "core";
+    }
+    return runtimeType.toString();
+  }
+
 }

@@ -180,6 +180,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     try {
       return findClass(cname).asSubclass(expectedType);
     } catch (Exception e) {
+      log.error("Error loading class from runtime libs ", e);
       if (e instanceof SolrException) {
         throw (SolrException) e;
       } else {
