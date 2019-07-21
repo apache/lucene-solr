@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.IteratorWriter;
@@ -102,6 +103,9 @@ public class LibListener implements ClusterPropertiesListener {
     log.info("clusterprops.json changed , version {}", coreContainer.getZkController().getZkStateReader().getClusterPropsVersion());
     boolean forceReload = updateRuntimeLibs(properties);
     extHandler.updateReqHandlers(properties, forceReload);
+    for (SolrCore core : coreContainer.solrCores.getCores()) {
+      core.globalClassLoaderChanged();
+    }
     myversion = coreContainer.getZkController().getZkStateReader().getClusterPropsVersion();
     return false;
   }
@@ -130,7 +134,9 @@ public class LibListener implements ClusterPropertiesListener {
     }
     return needsReload[0];
   }
-
+  public ResourceLoader getResourceLoader() {
+    return memClassLoader == null ? coreContainer.getResourceLoader() : memClassLoader;
+  }
   void createNewClassLoader(Map m) {
     boolean[] loadedAll = new boolean[1];
     loadedAll[0] = true;

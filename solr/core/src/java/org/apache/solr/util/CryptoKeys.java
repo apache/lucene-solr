@@ -72,11 +72,11 @@ public final class CryptoKeys implements CLIO {
       boolean verified;
       try {
         verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), data);
-        log.info("verified {} ", verified);
+        log.debug("verified {} ", verified);
         if (verified) return entry.getKey();
       } catch (Exception e) {
         exception = e;
-        log.info("NOT verified  ");
+        log.debug("NOT verified  ");
       }
 
     }

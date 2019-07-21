@@ -31,7 +31,7 @@ public class RuntimeUrp extends SimpleUpdateProcessorFactory {
     List<String>  names = new ArrayList<>();
     for (UpdateRequestProcessorFactory p : processorChain.getProcessors()) {
       if (p instanceof UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder.LazyUpdateRequestProcessorFactory) {
-        p = ((UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder.LazyUpdateRequestProcessorFactory) p).delegate;
+        p = ((UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder.LazyUpdateRequestProcessorFactory) p).getDelegate();
       }
       names.add(p.getClass().getSimpleName());
     }
