@@ -80,7 +80,7 @@ public class LibListener implements ClusterPropertiesListener {
           try {
             return klas.getConstructor(CoreContainer.class).newInstance(coreContainer);
           } catch (NoSuchMethodException ex) {
-            return klas.getConstructor().newInstance();
+            return klas.getConstructor((Class<?>[])null).newInstance();
           }
         } catch (Exception ex) {
           if (!memClassLoader.getErrors().isEmpty()) {
