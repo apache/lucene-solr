@@ -600,6 +600,8 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           }
         }
       } catch (Exception e) {
+
+        log.error( "error executing commands "+ Utils.toJSONString(ops) ,e);
         resp.setException(e);
         resp.add(CommandOperation.ERR_MSGS, singletonList(SchemaManager.getErrorStr(e)));
       }
@@ -788,7 +790,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           return overlay;
         }
       }
-      if (!verifyClass(op, clz, info.clazz)) return overlay;
+      if (!verifyClass(op, clz, info)) return overlay;
       if (pluginExists(info, overlay, name)) {
         if (isCeate) {
           op.addError(formatString(" ''{0}'' already exists . Do an ''{1}'' , if you want to change it ", name, "update-" + info.getTagCleanLower()));
@@ -812,12 +814,19 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       return overlay.getNamedPlugins(info.getCleanTag()).containsKey(name);
     }
 
-    private boolean verifyClass(CommandOperation op, String clz, Class expected) {
+    private boolean verifyClass(CommandOperation op, String clz, SolrConfig.SolrPluginInfo pluginMeta) {
       if (clz == null) return true;
-      if (!"true".equals(String.valueOf(op.getStr(RuntimeLib.TYPE, null)))) {
+      PluginInfo info = new PluginInfo(pluginMeta.getCleanTag(), op.getDataMap());
+      if(info.getRuntimeLibType() != null && !RuntimeLib.isEnabled()){
+        op.addError("node not started with enable.runtime.lib=true");
+        return false;
+      }
+
+
+      if ( !"true".equals(String.valueOf(op.getStr(RuntimeLib.TYPE, null)))) {
         //this is not dynamically loaded so we can verify the class right away
         try {
-          req.getCore().createInitInstance(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()), expected, clz, "");
+          req.getCore().createInitInstance(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()), pluginMeta.clazz, clz, "");
         } catch (Exception e) {
           op.addError(e.getMessage());
           return false;
