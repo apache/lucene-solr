@@ -79,6 +79,9 @@ public class Builder<T> {
   // current "frontier"
   private UnCompiledNode<T>[] frontier;
 
+  // This starts true, but can become false if too much waste is detected
+  boolean enableDirectArcs;
+
   // Used for the BIT_TARGET_NEXT optimization (whereby
   // instead of storing the address of the target node for
   // a given arc, we mark a single bit noting that the next
@@ -88,8 +91,12 @@ public class Builder<T> {
   // Reused temporarily while building the FST:
   int[] reusedBytesPerArc = new int[4];
 
+  // usage stats
   long arcCount;
   long nodeCount;
+  long packedArcCount;
+  long directArcCount;
+  long directArcGaps;
 
   boolean allowArrayArcs;
 
@@ -158,6 +165,7 @@ public class Builder<T> {
     this.doShareNonSingletonNodes = doShareNonSingletonNodes;
     this.shareMaxTailLength = shareMaxTailLength;
     this.allowArrayArcs = allowArrayArcs;
+    enableDirectArcs = true;
     fst = new FST<>(inputType, outputs, bytesPageBits);
     bytes = fst.bytes;
     assert bytes != null;
@@ -213,6 +221,11 @@ public class Builder<T> {
       // The FST added a new node:
       assert bytesPosEnd > bytesPosStart;
       lastFrozenNode = node;
+      if (enableDirectArcs && directArcCount > 1000 && directArcGaps > directArcCount) {
+        // After observing a significant amount of direct arcs, monitor the number of gaps created.
+        // If it exceeds the number of arcs being encoded, then disable direct arc encoding.
+        enableDirectArcs = false;
+      }
     }
 
     nodeIn.clear();
@@ -642,4 +655,5 @@ public class Builder<T> {
       }
     }
   }
+
 }

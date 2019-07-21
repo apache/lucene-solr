@@ -20,8 +20,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.DataInput;
@@ -33,34 +35,70 @@ import org.junit.Before;
 
 public class TestFstDirect extends LuceneTestCase {
 
-  private List<String> words;
-
-  @Before
-  public void before() {
-    words = new ArrayList<>();
-  }
-
   public void testDenseWithGap() throws Exception {
-    //words.addAll(Arrays.asList("apple", "berry", "cherry", "damson", "fig", "grape"));
-    words.addAll(Arrays.asList("ah", "bi", "cj", "dk", "fl", "gm"));
-    final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<>(buildFST(words));
+    List<String> words = Arrays.asList("ah", "bi", "cj", "dk", "fl", "gm");
+    List<BytesRef> entries = new ArrayList<>();
     for (String word : words) {
-      assertNotNull(word + " not found", fstEnum.seekExact(new BytesRef(word)));
+      entries.add(new BytesRef(word.getBytes("ascii")));
+    }
+    final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<>(buildFST(entries));
+    for (BytesRef entry : entries) {
+      assertNotNull(entry.utf8ToString() + " not found", fstEnum.seekExact(entry));
     }
   }
 
 
-  private FST<Object> buildFST(List<String> words) throws Exception {
-    long start = System.nanoTime();
+  public void testAdaptivelyDisableDirectArcs() throws Exception {
+    long total = 0;
+    List<BytesRef> entries = new ArrayList<>();
+    for (int i = 0; i < 1000000; ++i) {
+      byte[] b = new byte[5];
+      random().nextBytes(b);
+      for (int j = 0; j < b.length; ++j) {
+        b[j] &= 0xfc; // make this byte a multiple of 4
+      }
+      entries.add(new BytesRef(b));
+    }
+    Collections.sort(entries);
+    long size = buildFST(entries).ramBytesUsed();
+    // without adaptive disabling direct arcs, 5089712 (all arrays have gaps)
+    // with direct arcs disabled: 4028848 (no arrays have gaps)
+    // with adaptive disabling: 4043216 (1023 arcs in arrays with gaps; 3021 gaps)
+    System.out.println("fst size = " + size + " bytes");
+    assertTrue(size < 4_100_000);
+  }
+
+  public void testDeDupTails() throws Exception {
+    List<BytesRef> entries = new ArrayList<>();
+    for (int i = 0; i < 1000000; i += 4) {
+      byte[] b = new byte[3];
+      int val = i;
+      for (int j = b.length - 1; j >= 0; --j) {
+        b[j] = (byte) (val & 0xff);
+        val >>= 8;
+      }
+      entries.add(new BytesRef(b));
+    }
+    long size = buildFST(entries).ramBytesUsed();
+    // Size is 1664 when we use only list-encoding.  We were previously failing to ever de-dup
+    // arrays-with-gaps, which led this case to blow up.
+    assertTrue(size < 3000);
+    //printf("fst size = %d bytes", size);
+  }
+
+  private FST<Object> buildFST(List<BytesRef> entries) throws Exception {
     final Outputs<Object> outputs = NoOutputs.getSingleton();
     final Builder<Object> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
-
-    for (String word : words) {
-      b.add(Util.toIntsRef(new BytesRef(word), new IntsRefBuilder()), outputs.getNoOutput());
+    BytesRef last = null;
+    for (BytesRef entry : entries) {
+      if (entry.equals(last) == false) {
+        b.add(Util.toIntsRef(entry, new IntsRefBuilder()), outputs.getNoOutput());
+      }
+      last = entry;
     }
     FST<Object> fst = b.finish();
-    long t = System.nanoTime();
-    printf("Built FST of %d bytes in %d ms", fst.ramBytesUsed(), nsToMs(t - start));
+    printf("FST has %d nodes, %d arcs, (%d packed, %d direct, %d gaps)",
+           b.nodeCount, b.arcCount, b.packedArcCount, b.directArcCount, b.directArcGaps);
     return fst;
   }
 

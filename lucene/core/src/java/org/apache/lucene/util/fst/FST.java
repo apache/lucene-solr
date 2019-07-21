@@ -197,6 +197,10 @@ public final class FST<T> implements Accountable {
       return flag(BIT_FINAL_ARC);
     }
 
+    public boolean isPackedArray() {
+      return bytesPerArc != 0 && arcIdx > Integer.MIN_VALUE;
+    }
+
     @Override
     public String toString() {
       StringBuilder b = new StringBuilder();
@@ -569,7 +573,6 @@ public final class FST<T> implements Accountable {
         return NON_FINAL_END_NODE;
       }
     }
-
     final long startAddress = builder.bytes.getPosition();
     //System.out.println("  startAddr=" + startAddress);
 
@@ -626,7 +629,7 @@ public final class FST<T> implements Accountable {
       builder.bytes.writeByte((byte) flags);
       writeLabel(builder.bytes, arc.label);
 
-      // System.out.println("  write arc: label=" + (char) arc.label + " flags=" + flags + " target=" + target.node + " pos=" + bytes.getPosition() + " output=" + outputs.outputToString(arc.output));
+      //System.out.println("  write arc: label=" + (char) arc.label + " flags=" + flags + " target=" + target.node + " pos=" + bytes.getPosition() + " output=" + outputs.outputToString(arc.output));
 
       if (arc.output != NO_OUTPUT) {
         outputs.write(arc.output, builder.bytes);
@@ -683,9 +686,11 @@ public final class FST<T> implements Accountable {
       // array that may have holes in it so that we can address the arcs directly by label without
       // binary search
       int labelRange = nodeIn.arcs[nodeIn.numArcs - 1].label - nodeIn.arcs[0].label + 1;
-      boolean writeDirectly = labelRange > 0 && labelRange < Builder.DIRECT_ARC_LOAD_FACTOR * nodeIn.numArcs;
+      boolean writeDirectly = builder.enableDirectArcs
+          && labelRange > 0
+          && labelRange < Builder.DIRECT_ARC_LOAD_FACTOR * nodeIn.numArcs;
+      // writeDirectly = false;
 
-      //System.out.println("write int @pos=" + (fixedArrayStart-4) + " numArcs=" + nodeIn.numArcs);
       // create the header
       // TODO: clean this up: or just rewind+reuse and deal with it
       byte[] header = new byte[MAX_HEADER_SIZE];
@@ -694,9 +699,12 @@ public final class FST<T> implements Accountable {
       if (writeDirectly) {
         bad.writeByte(ARCS_AS_ARRAY_WITH_GAPS);
         bad.writeVInt(labelRange);
+        builder.directArcCount += nodeIn.numArcs;
+        builder.directArcGaps += (labelRange - nodeIn.numArcs);
       } else {
         bad.writeByte(ARCS_AS_ARRAY_PACKED);
         bad.writeVInt(nodeIn.numArcs);
+        builder.packedArcCount += nodeIn.numArcs;
       }
       bad.writeVInt(maxBytesPerArc);
       int headerLen = bad.getPosition();
@@ -1208,7 +1216,7 @@ public final class FST<T> implements Accountable {
 
     in.setPosition(follow.target());
 
-    // System.out.println("fta label=" + (char) labelToMatch);
+    //System.out.println("fta label=" + (char) labelToMatch);
 
     byte flags = in.readByte();
     if (flags == ARCS_AS_ARRAY_WITH_GAPS) {
