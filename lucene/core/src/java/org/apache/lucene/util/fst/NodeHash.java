@@ -41,10 +41,10 @@ final class NodeHash<T> {
 
   private boolean nodesEqual(Builder.UnCompiledNode<T> node, long address) throws IOException {
     fst.readFirstRealTargetArc(address, scratchArc, in);
-    if (scratchArc.bytesPerArc() != 0 && node.numArcs != scratchArc.numArcs()) {
+    if (scratchArc.isPackedArray() && node.numArcs != scratchArc.numArcs()) {
       return false;
     }
-    for(int arcUpto=0;arcUpto<node.numArcs;arcUpto++) {
+    for(int arcUpto=0; arcUpto < node.numArcs; arcUpto++) {
       final Builder.Arc<T> arc = node.arcs[arcUpto];
       if (arc.label != scratchArc.label() ||
           !arc.output.equals(scratchArc.output()) ||
@@ -170,4 +170,5 @@ final class NodeHash<T> {
       }
     }
   }
+
 }
