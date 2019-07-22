@@ -529,7 +529,6 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
               "loader", MemClassLoader.class.getName()));
 
 
-
       payload = "{update-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar2.jar', " +
           "sha512 : 'bc5ce45ad281b6a08fb7e529b1eb475040076834816570902acb6ebdd809410e31006efdeaa7f78a6c35574f3504963f5f7e4d92247d0eb4db3fc9abdda5d417'}}";
       new V2Request.Builder("/cluster")
@@ -539,13 +538,23 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "update-runtimelib/sha512"),
           getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
 
+      try {
+        new V2Request.Builder("/cluster")
+            .withPayload(payload)
+            .withMethod(SolrRequest.METHOD.POST)
+            .build().process(cluster.getSolrClient());
+        fail("should have failed");
+      } catch (BaseHttpSolrClient.RemoteExecutionException e) {
+        assertTrue("actual output : " + Utils.toJSONString(e.getMetaData()), e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("Trying to update a jar with the same sha512"));
+      }
+
 
       assertResponseValues(10,
           cluster.getSolrClient(),
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/get?abc=xyz", params),
           Utils.makeMap("get", "org.apache.solr.core.RuntimeLibSearchComponent",
-          "loader", MemClassLoader.class.getName(),
-          "Version","2"));
+              "loader", MemClassLoader.class.getName(),
+              "Version", "2"));
     } finally {
       cluster.deleteAllCollections();
       cluster.shutdown();
