@@ -59,6 +59,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.Credential
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.common.AlreadyClosedException;
@@ -217,6 +218,8 @@ public class CoreContainer {
   protected volatile MetricsCollectorHandler metricsCollectorHandler;
 
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
+
+  private final LibListener clusterPropertiesListener = new LibListener(this);
 
 
   // Bits for the state variable.
@@ -622,6 +625,7 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
+      getZkController().getZkStateReader().registerClusterPropertiesListener(clusterPropertiesListener);
       pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
@@ -633,6 +637,7 @@ public class CoreContainer {
     reloadSecurityProperties();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
+    containerHandlers.put("/ext", clusterPropertiesListener.extHandler);
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
@@ -897,6 +902,12 @@ public class CoreContainer {
   }
 
   public void shutdown() {
+
+    ZkController zkController = getZkController();
+    if (zkController != null) {
+      OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
+      overseerCollectionQueue.allowOverseerPendingTasksToComplete();
+    }
     log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
@@ -1779,6 +1790,14 @@ public class CoreContainer {
       ((SolrMetricProducer) handler).initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, path);
     }
     return handler;
+  }
+
+  public PluginBag<SolrRequestHandler> getContainerHandlers() {
+    return containerHandlers;
+  }
+
+  public LibListener getClusterPropertiesListener(){
+    return clusterPropertiesListener;
   }
 
   public CoreAdminHandler getMultiCoreHandler() {

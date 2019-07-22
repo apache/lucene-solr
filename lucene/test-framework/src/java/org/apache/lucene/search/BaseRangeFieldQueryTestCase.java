@@ -17,6 +17,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -38,6 +39,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /**
  * Abstract class to do basic tests for a RangeField query. Testing rigor inspired by {@code BaseGeoPointTestCase}
@@ -77,6 +79,33 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
 
   public void testMultiValued() throws Exception {
     doTestRandom(10000, true);
+  }
+
+  public void testAllEqual() throws Exception {
+    int numDocs = atLeast(10000);
+    int dimensions = dimension();
+    Range[][] ranges = new Range[numDocs][];
+    Range[] theRange =  new Range[] {nextRange(dimensions)};
+    Arrays.fill(ranges, theRange);
+    verify(ranges);
+  }
+
+  // Force low cardinality leaves
+  public void testLowCardinality() throws Exception {
+    int numDocs = atLeast(10000);
+    int dimensions = dimension();
+
+    int cardinality = TestUtil.nextInt(random(), 2, 20);
+    Range[][] diffRanges =  new Range[cardinality][];
+    for (int i = 0; i < cardinality; i++) {
+      diffRanges[i] =  new Range[] {nextRange(dimensions)};
+    }
+
+    Range[][] ranges = new Range[numDocs][];
+    for (int i = 0; i < numDocs; i++) {
+      ranges[i] =  diffRanges[random().nextInt(cardinality)];
+    }
+    verify(ranges);
   }
 
   private void doTestRandom(int count, boolean multiValued) throws Exception {

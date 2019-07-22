@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -187,13 +188,12 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     // SOLR-4150: what if group.query has no matches, 
     // or only matches on one shard
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", 
-          "group.query", t1 + ":kings OR " + t1 + ":eggs", 
+    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true",
+          "group.query", t1 + ":kings OR " + t1 + ":eggs",
           "group.query", "id:5", // single doc, so only one shard will have it
           "group.limit", -1, "sort", i1 + " asc, id asc");
-    handle.put(t1 + ":this_will_never_match", SKIP); // :TODO: SOLR-4181
-    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", 
-          "group.query", t1 + ":kings OR " + t1 + ":eggs", 
+    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true",
+          "group.query", t1 + ":kings OR " + t1 + ":eggs",
           "group.query", t1 + ":this_will_never_match",
           "group.limit", 10, "sort", i1 + " asc, id asc");
 
@@ -208,6 +208,38 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           "group.query", t1 + ":kings OR " + t1 + ":eggs", 
           "group.field", i1,
           "group.limit", 10, "sort", i1 + " asc, id asc");
+
+    // SOLR-13404
+    query("q", "*:*",
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs",
+        "fl", "id", "group.format", "grouped", "group.limit", "2", "group.offset", "2",
+        "sort", i1 + " asc, id asc");
+    query("q", "*:*",
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs",
+        "fl", "id", "group.format", "grouped", "group.limit", "-12",
+        "sort", i1 + " asc, id asc");
+
+    SolrException exception = expectThrows(SolrException.class, () -> query("q", "*:*",
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.offset", "-1")
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+    assertTrue(exception.getMessage().contains("'group.offset' parameter cannot be negative"));
+
+    query("q", "*:*",
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+        "fl", "id", "group.format", "simple", "sort", i1 + " asc, id asc");
+    query("q", "*:*",
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs",
+        "fl", "id", "group.main", "true", "sort", i1 + " asc, id asc");
+    query("q", "*:*",
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs", "rows", "13", "start", "2",
+        "fl", "id", "group.main", "true", "sort", i1 + " asc, id asc");
 
     // SOLR-3109
     query("q", t1 + ":eggs", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", tlong + " asc, id asc");

@@ -97,7 +97,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
 
     assertNotNull(map = (Map) map.get("error"));
-    assertTrue("full output " + map, map.get("msg").toString().contains("no such blob or version available: colltest/1" ));
+    assertTrue("full output " + map, map.get("msg").toString().contains("no such resource available: colltest/1" ));
     payload = " {\n" +
         "  'set' : {'watched': {" +
         "                    'x':'X val',\n" +

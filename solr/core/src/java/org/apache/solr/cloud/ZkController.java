@@ -2545,7 +2545,8 @@ public class ZkController implements Closeable {
     };
   }
 
-  private class UnloadCoreOnDeletedWatcher implements DocCollectionWatcher {
+  /** @lucene.internal */
+  class UnloadCoreOnDeletedWatcher implements DocCollectionWatcher {
     String coreNodeName;
     String shard;
     String coreName;

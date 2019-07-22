@@ -66,6 +66,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -73,6 +74,7 @@ import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -147,13 +149,22 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    masterJetty.stop();
-    slaveJetty.stop();
-    masterJetty = slaveJetty = null;
-    master = slave = null;
-    masterClient.close();
-    slaveClient.close();
-    masterClient = slaveClient = null;
+    if (null != masterJetty) {
+      masterJetty.stop();
+      masterJetty = null;
+    }
+    if (null != slaveJetty) {
+      slaveJetty.stop();
+      slaveJetty = null;
+    }
+    if (null != masterClient) {
+      masterClient.close();
+      masterClient = null;
+    }
+    if (null != slaveClient) {
+      slaveClient.close();
+      slaveClient = null;
+    }
     System.clearProperty("solr.indexfetcher.sotimeout");
   }
 
@@ -666,30 +677,60 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       masterJetty.stop();
 
-      // poll interval on slave is 1 second, so we just sleep for a few seconds
-      Thread.sleep(2000);
+      final TimeOut waitForLeaderToShutdown = new TimeOut(300, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      waitForLeaderToShutdown.waitFor
+        ("Gave up after waiting an obscene amount of time for leader to shut down",
+         () -> masterJetty.isStopped() );
+        
+      for(int retries=0; ;retries++) { 
 
+        Thread.yield(); // might not be necessary at all
+        // poll interval on slave is 1 second, so we just sleep for a few seconds
+        Thread.sleep(2000);
+        
+        NamedList<Object> slaveDetails=null;
+        try {
+          slaveDetails = getSlaveDetails();
+          int failed = Integer.parseInt(getStringOrNull(slaveDetails,"timesFailed"));
+          if (previousTimesFailed != null) {
+            assertTrue(failed > previousTimesFailed);
+          }
+          assertEquals(1, Integer.parseInt(getStringOrNull(slaveDetails,"timesIndexReplicated")) - failed);
+          break;
+        } catch (NumberFormatException | AssertionError notYet) {
+          log.info((retries+1)+"th attempt failure on " + notYet+" details are "+slaveDetails);
+          if (retries>9) {
+            log.error("giving up: ", notYet);
+            throw notYet;
+          } 
+        }
+      }
+      
       masterJetty.start();
 
       // poll interval on slave is 1 second, so we just sleep for a few seconds
       Thread.sleep(2000);
-
       //get docs from slave and assert that they are still the same as before
       slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
       slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
       assertEquals(nDocs, numFound(slaveQueryRsp));
 
-      int failed = Integer.parseInt(getSlaveDetails("timesFailed"));
-      if (previousTimesFailed != null) {
-        assertTrue(failed > previousTimesFailed);
-      }
-      assertEquals(1, Integer.parseInt(getSlaveDetails("timesIndexReplicated")) - failed);
     } finally {
       resetFactory();
     }
   }
 
   private String getSlaveDetails(String keyName) throws SolrServerException, IOException {
+    NamedList<Object> details = getSlaveDetails();
+    return getStringOrNull(details, keyName);
+  }
+
+  private String getStringOrNull(NamedList<Object> details, String keyName) {
+    Object o = details.get(keyName);
+    return o != null ? o.toString() : null;
+  }
+
+  private NamedList<Object> getSlaveDetails() throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.QT, "/replication");
     params.set("command", "details");
@@ -698,8 +739,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // details/slave/timesIndexReplicated
     NamedList<Object> details = (NamedList<Object>) response.getResponse().get("details");
     NamedList<Object> slave = (NamedList<Object>) details.get("slave");
-    Object o = slave.get(keyName);
-    return o != null ? o.toString() : null;
+    return slave;
   }
 
   @Test

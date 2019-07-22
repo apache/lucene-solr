@@ -236,19 +236,14 @@ public class AtomicUpdateDocumentMerger {
     // third pass: requiring checks against the actual IndexWriter due to internal DV update limitations
     SolrCore core = cmd.getReq().getCore();
     RefCounted<IndexWriter> holder = core.getSolrCoreState().getIndexWriter(core);
-    Set<String> fieldNamesFromIndexWriter = null;
     Set<String> segmentSortingFields = null;
     try {
       IndexWriter iw = holder.get();
-      fieldNamesFromIndexWriter = iw.getFieldNames(); // This shouldn't be needed once LUCENE-7659 is resolved
       segmentSortingFields = iw.getConfig().getIndexSortFields();
     } finally {
       holder.decref();
     }
     for (String fieldName: candidateFields) {
-      if (! fieldNamesFromIndexWriter.contains(fieldName) ) {
-        return Collections.emptySet(); // if this field doesn't exist, DV update can't work
-      }
       if (segmentSortingFields.contains(fieldName) ) {
         return Collections.emptySet(); // if this is used for segment sorting, DV updates can't work
       }

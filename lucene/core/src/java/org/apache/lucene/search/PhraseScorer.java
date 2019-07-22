@@ -21,6 +21,8 @@ import java.io.IOException;
 
 class PhraseScorer extends Scorer {
 
+  final DocIdSetIterator approximation;
+  final ImpactsDISI impactsApproximation;
   final PhraseMatcher matcher;
   final ScoreMode scoreMode;
   private final LeafSimScorer simScorer;
@@ -35,11 +37,13 @@ class PhraseScorer extends Scorer {
     this.scoreMode = scoreMode;
     this.simScorer = simScorer;
     this.matchCost = matcher.getMatchCost();
+    this.approximation = matcher.approximation();
+    this.impactsApproximation = matcher.impactsApproximation();
   }
 
   @Override
   public TwoPhaseIterator twoPhaseIterator() {
-    return new TwoPhaseIterator(matcher.approximation) {
+    return new TwoPhaseIterator(approximation) {
       @Override
       public boolean matches() throws IOException {
         matcher.reset();
@@ -63,7 +67,7 @@ class PhraseScorer extends Scorer {
 
   @Override
   public int docID() {
-    return matcher.approximation.docID();
+    return approximation.docID();
   }
 
   @Override
@@ -85,18 +89,22 @@ class PhraseScorer extends Scorer {
   @Override
   public void setMinCompetitiveScore(float minScore) {
     this.minCompetitiveScore = minScore;
+    impactsApproximation.setMinCompetitiveScore(minScore);
+  }
+
+  @Override
+  public int advanceShallow(int target) throws IOException {
+    return impactsApproximation.advanceShallow(target);
   }
 
   @Override
   public float getMaxScore(int upTo) throws IOException {
-    // TODO: merge impacts of all clauses to get better score upper bounds
-    return simScorer.getSimScorer().score(Integer.MAX_VALUE, 1L);
+    return impactsApproximation.getMaxScore(upTo);
   }
 
   @Override
   public String toString() {
     return "PhraseScorer(" + weight + ")";
   }
-
 
 }

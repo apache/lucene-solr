@@ -291,10 +291,10 @@ public class BKDWriter implements Closeable {
             return false;
           }
           //System.out.println("  new block @ fp=" + state.in.getFilePointer());
-          docsInBlock = bkd.readDocIDs(state.in, state.in.getFilePointer(), state.scratchDocIDs);
+          docsInBlock = bkd.readDocIDs(state.in, state.in.getFilePointer(), state.scratchIterator);
           assert docsInBlock > 0;
           docBlockUpto = 0;
-          bkd.visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchDocIDs, docsInBlock, new IntersectVisitor() {
+          bkd.visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, docsInBlock, new IntersectVisitor() {
             int i = 0;
 
             @Override
@@ -304,7 +304,7 @@ public class BKDWriter implements Closeable {
 
             @Override
             public void visit(int docID, byte[] packedValue) {
-              assert docID == state.scratchDocIDs[i];
+              assert docID == state.scratchIterator.docIDs[i];
               System.arraycopy(packedValue, 0, packedValues, i * bkd.packedBytesLength, bkd.packedBytesLength);
               i++;
             }
@@ -320,7 +320,7 @@ public class BKDWriter implements Closeable {
         }
 
         final int index = docBlockUpto++;
-        int oldDocID = state.scratchDocIDs[index];
+        int oldDocID = state.scratchIterator.docIDs[index];
 
         int mappedDocID;
         if (docMap == null) {
@@ -774,7 +774,7 @@ public class BKDWriter implements Closeable {
     assert pointCount / numLeaves <= maxPointsInLeafNode: "pointCount=" + pointCount + " numLeaves=" + numLeaves + " maxPointsInLeafNode=" + maxPointsInLeafNode;
 
     //We re-use the selector so we do not need to create an object every time.
-    BKDRadixSelector radixSelector = new BKDRadixSelector(numDataDims, bytesPerDim, maxPointsSortInHeap, tempDir, tempFileNamePrefix);
+    BKDRadixSelector radixSelector = new BKDRadixSelector(numDataDims, numIndexDims, bytesPerDim, maxPointsSortInHeap, tempDir, tempFileNamePrefix);
 
     boolean success = false;
     try {
@@ -785,7 +785,8 @@ public class BKDWriter implements Closeable {
             minPackedValue, maxPackedValue,
             parentSplits,
             splitPackedValues,
-            leafBlockFPs);
+            leafBlockFPs,
+            new int[maxPointsInLeafNode]);
       assert Arrays.equals(parentSplits, new int[numIndexDims]);
 
       // If no exception, we should have cleaned everything up:
@@ -1361,7 +1362,7 @@ public class BKDWriter implements Closeable {
       }
 
       // sort by sortedDim
-      MutablePointsReaderUtils.sortByDim(sortedDim, bytesPerDim, commonPrefixLengths,
+      MutablePointsReaderUtils.sortByDim(numDataDims, numIndexDims, sortedDim, bytesPerDim, commonPrefixLengths,
           reader, from, to, scratchBytesRef1, scratchBytesRef2);
 
       BytesRef comparator = scratchBytesRef1;
@@ -1428,7 +1429,7 @@ public class BKDWriter implements Closeable {
         commonPrefixLen = bytesPerDim;
       }
 
-      MutablePointsReaderUtils.partition(maxDoc, splitDim, bytesPerDim, commonPrefixLen,
+      MutablePointsReaderUtils.partition(numDataDims, numIndexDims, maxDoc, splitDim, bytesPerDim, commonPrefixLen,
           reader, from, to, mid, scratchBytesRef1, scratchBytesRef2);
 
       // set the split value
@@ -1465,7 +1466,8 @@ public class BKDWriter implements Closeable {
                      byte[] minPackedValue, byte[] maxPackedValue,
                      int[] parentSplits,
                      byte[] splitPackedValues,
-                     long[] leafBlockFPs) throws IOException {
+                     long[] leafBlockFPs,
+                     int[] spareDocIds) throws IOException {
 
     if (nodeID >= leafNodeOffset) {
 
@@ -1525,7 +1527,13 @@ public class BKDWriter implements Closeable {
       // loading the values:
       int count = to - from;
       assert count > 0: "nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset;
-      writeLeafBlockDocs(out, heapSource.docIDs, from, count);
+      assert count <= spareDocIds.length : "count=" + count + " > length=" + spareDocIds.length;
+      // Write doc IDs
+      int[] docIDs = spareDocIds;
+      for (int i = 0; i < count; i++) {
+        docIDs[i] = heapSource.getPackedValueSlice(from + i).docID();
+      }
+      writeLeafBlockDocs(out, docIDs, 0, count);
 
       // TODO: minor opto: we don't really have to write the actual common prefixes, because BKDReader on recursing can regenerate it for us
       // from the index, much like how terms dict does so from the FST:
@@ -1548,7 +1556,7 @@ public class BKDWriter implements Closeable {
         }
       };
       assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
-          heapSource.docIDs, from);
+          docIDs, 0);
       writeLeafBlockPackedValues(out, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality);
 
     } else {
@@ -1595,12 +1603,12 @@ public class BKDWriter implements Closeable {
       // Recurse on left tree:
       build(2 * nodeID, leafNodeOffset, slices[0],
           out, radixSelector, minPackedValue, maxSplitPackedValue,
-          parentSplits, splitPackedValues, leafBlockFPs);
+          parentSplits, splitPackedValues, leafBlockFPs, spareDocIds);
 
       // Recurse on right tree:
       build(2 * nodeID + 1, leafNodeOffset, slices[1],
           out, radixSelector, minSplitPackedValue, maxPackedValue
-          , parentSplits, splitPackedValues, leafBlockFPs);
+          , parentSplits, splitPackedValues, leafBlockFPs, spareDocIds);
 
       parentSplits[splitDim]--;
     }
@@ -1653,6 +1661,13 @@ public class BKDWriter implements Closeable {
       int cmp = Arrays.compareUnsigned(lastPackedValue, dimOffset, dimOffset + bytesPerDim, packedValue, packedValueOffset + dimOffset, packedValueOffset + dimOffset + bytesPerDim);
       if (cmp > 0) {
         throw new AssertionError("values out of order: last value=" + new BytesRef(lastPackedValue) + " current value=" + new BytesRef(packedValue, packedValueOffset, packedBytesLength) + " ord=" + ord);
+      }
+      if (cmp == 0  && numDataDims > numIndexDims) {
+        int dataOffset = numIndexDims * bytesPerDim;
+        cmp = Arrays.compareUnsigned(lastPackedValue, dataOffset, packedBytesLength, packedValue, packedValueOffset + dataOffset, packedValueOffset + packedBytesLength);
+        if (cmp > 0) {
+          throw new AssertionError("data values out of order: last value=" + new BytesRef(lastPackedValue) + " current value=" + new BytesRef(packedValue, packedValueOffset, packedBytesLength) + " ord=" + ord);
+        }
       }
       if (cmp == 0 && doc < lastDoc) {
         throw new AssertionError("docs out of order: last doc=" + lastDoc + " current doc=" + doc + " ord=" + ord);

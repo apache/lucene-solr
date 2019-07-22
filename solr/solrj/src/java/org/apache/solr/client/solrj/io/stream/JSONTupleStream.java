@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -65,7 +66,7 @@ public class JSONTupleStream implements TupleStreamParser {
     query.setMethod(SolrRequest.METHOD.POST);
     NamedList<Object> genericResponse = server.request(query);
     InputStream stream = (InputStream)genericResponse.get("stream");
-    InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+    InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
     return new JSONTupleStream(reader);
   }
 

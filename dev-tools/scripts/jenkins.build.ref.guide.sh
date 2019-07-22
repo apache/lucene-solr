@@ -37,7 +37,7 @@ set -x                                   # Echo commands to the console
 set -e                                   # Fail the script if any command fails
 
 RVM_PATH=$HOME/.rvm
-RUBY_VERSION=ruby-2.3.3
+RUBY_VERSION=ruby-2.5.1
 GEMSET=solr-refguide-gemset
 
 # Install the "stable" RVM release to ~/.rvm/, and don't mess with .bash_profile etc.

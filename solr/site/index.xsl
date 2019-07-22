@@ -56,23 +56,23 @@
           <xsl:value-of select="$version"/>
           <xsl:text> Documentation</xsl:text>
         </h1>
-        <p>Solr is the popular, blazing fast open source enterprise search platform from the Apache Lucene project.
-        Its major features include powerful full-text search, hit highlighting, faceted search, dynamic clustering,
-        database integration, rich document (e.g., Word, PDF) handling, and geospatial search. Solr is highly scalable,
-        providing distributed search and index replication, and it powers the search and navigation features of many
-        of the world's largest internet sites.</p>
-        <p>Solr is written in Java and runs as a standalone full-text search server within a servlet container such as
-        Jetty. Solr uses the Lucene Java search library at its core for full-text indexing and search, and has REST-like
-        HTTP/XML and JSON APIs that make it easy to use from virtually any programming language. Solr's powerful external
-        configuration allows it to be tailored to almost any type of application without Java coding, and it has an extensive
-        plugin architecture when more advanced customization is required.</p>
+        <p>Solr is the popular, blazing fast, open source NoSQL search platform from the Apache Lucene project. Its major 
+          features include powerful full-text search, hit highlighting, faceted search and analytics, rich document 
+          parsing, geospatial search, extensive REST APIs as well as parallel SQL. Solr is enterprise grade, secure and 
+          highly scalable, providing fault tolerant distributed search and indexing, and powers the search and navigation 
+          features of many of the world's largest internet sites.</p>
+        <p>Solr is written in Java and runs as a standalone full-text search server. Solr uses the Lucene Java search 
+          library at its core for full-text indexing and search, and has REST-like JSON APIs that make it easy to use 
+          from virtually any programming language. Solr's powerful configuration APIs and files allows it to be tailored 
+          to almost any type of application without Java coding, and it has an extensive plugin architecture when more 
+          advanced customization is required.</p>
         <p>
           This is the official documentation for <b><xsl:text>Apache Solr </xsl:text>
           <xsl:value-of select="$version"/></b>.
         </p>
         <h2>Reference Documents</h2>
           <ul>
-            <li><a href="http://wiki.apache.org/solr">Wiki</a>: Additional documentation, especially focused on using Solr.</li>
+            <li><a href="https://lucene.apache.org/solr/guide/{$solrGuideVersion}/">Reference Guide</a>: The main documentation for Solr</li>
             <li><a href="changes/Changes.html">Changes</a>: List of changes in this release.</li>
             <li><a href="SYSTEM_REQUIREMENTS.html">System Requirements</a>: Minimum and supported Java versions.</li>
             <li><a href="https://lucene.apache.org/solr/guide/{$solrGuideVersion}/solr-tutorial.html">Solr Tutorial</a>: This document covers the basics of running Solr using an example schema, and some sample data.</li>

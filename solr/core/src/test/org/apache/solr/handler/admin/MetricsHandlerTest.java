@@ -52,9 +52,11 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void cleanupMetrics() throws Exception {
-    h.getCoreContainer().getMetricManager().registry("solr.jvm"  ).remove("solrtest_foo");
-    h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo");
-    h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo:bar");
+    if (null != h) {
+      h.getCoreContainer().getMetricManager().registry("solr.jvm"  ).remove("solrtest_foo");
+      h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo");
+      h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo:bar");
+    }
   }
   
   @Test

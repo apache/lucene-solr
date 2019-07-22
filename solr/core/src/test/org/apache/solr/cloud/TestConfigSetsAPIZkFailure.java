@@ -88,8 +88,14 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
   @Override
   @After
   public void tearDown() throws Exception {
-    solrCluster.shutdown();
-    zkTestServer.shutdown();
+    if (null != solrCluster) {
+      solrCluster.shutdown();
+      solrCluster = null;
+    }
+    if (null != zkTestServer) {
+      zkTestServer.shutdown();
+      zkTestServer = null;
+    }
     super.tearDown();
   }
 

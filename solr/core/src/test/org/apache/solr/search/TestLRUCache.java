@@ -146,19 +146,19 @@ public class TestLRUCache extends SolrTestCase {
       }
     });
     assertEquals(1, accountableLRUCache.size());
-    assertEquals(baseSize + 512 * 1024 + LRUCache.DEFAULT_RAM_BYTES_USED + LRUCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY, accountableLRUCache.ramBytesUsed());
-    accountableLRUCache.put("2", new Accountable() {
+    assertEquals(baseSize + 512 * 1024 + RamUsageEstimator.sizeOfObject("1") + RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY, accountableLRUCache.ramBytesUsed());
+    accountableLRUCache.put("20", new Accountable() {
       @Override
       public long ramBytesUsed() {
         return 512 * 1024;
       }
     });
     assertEquals(1, accountableLRUCache.size());
-    assertEquals(baseSize + 512 * 1024 + LRUCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + LRUCache.DEFAULT_RAM_BYTES_USED, accountableLRUCache.ramBytesUsed());
+    assertEquals(baseSize + 512 * 1024 + RamUsageEstimator.sizeOfObject("20") + RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY, accountableLRUCache.ramBytesUsed());
     Map<String,Object> nl = accountableLRUCache.getMetricsMap().getValue();
     assertEquals(1L, nl.get("evictions"));
     assertEquals(1L, nl.get("evictionsRamUsage"));
-    accountableLRUCache.put("3", new Accountable() {
+    accountableLRUCache.put("300", new Accountable() {
       @Override
       public long ramBytesUsed() {
         return 1024;
@@ -168,7 +168,8 @@ public class TestLRUCache extends SolrTestCase {
     assertEquals(1L, nl.get("evictions"));
     assertEquals(1L, nl.get("evictionsRamUsage"));
     assertEquals(2L, accountableLRUCache.size());
-    assertEquals(baseSize + 513 * 1024 + LRUCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY * 2 + LRUCache.DEFAULT_RAM_BYTES_USED * 2, accountableLRUCache.ramBytesUsed());
+    assertEquals(baseSize + 513 * 1024 + RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY * 2 +
+        RamUsageEstimator.sizeOfObject("20") + RamUsageEstimator.sizeOfObject("300"), accountableLRUCache.ramBytesUsed());
 
     accountableLRUCache.clear();
     assertEquals(RamUsageEstimator.shallowSizeOfInstance(LRUCache.class), accountableLRUCache.ramBytesUsed());

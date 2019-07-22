@@ -41,8 +41,11 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RoaringDocIdSet;
+
+import static org.apache.lucene.util.RamUsageEstimator.HASHTABLE_RAM_BYTES_PER_ENTRY;
+import static org.apache.lucene.util.RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
+import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
 
 /**
  * A {@link QueryCache} that evicts queries using a LRU (least-recently-used)
@@ -85,18 +88,6 @@ import org.apache.lucene.util.RoaringDocIdSet;
  * @lucene.experimental
  */
 public class LRUQueryCache implements QueryCache, Accountable {
-
-  // approximate memory usage that we assign to all queries
-  // this maps roughly to a BooleanQuery with a couple term clauses
-  static final long QUERY_DEFAULT_RAM_BYTES_USED = 1024;
-
-  static final long HASHTABLE_RAM_BYTES_PER_ENTRY =
-      2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // key + value
-      * 2; // hash tables need to be oversized to avoid collisions, assume 2x capacity
-
-  static final long LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY =
-      HASHTABLE_RAM_BYTES_PER_ENTRY
-      + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF; // previous & next references
 
   private final int maxSize;
   private final long maxRamBytesUsed;

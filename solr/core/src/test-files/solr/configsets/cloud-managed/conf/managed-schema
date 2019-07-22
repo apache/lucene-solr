@@ -36,4 +36,15 @@
   </fieldType>
 
   <uniqueKey>id</uniqueKey>
+
+    <!-- needed for splitByPrefix -->
+  <field name="id_prefix" type="composite_id_prefix" indexed="true" stored="false"/>
+  <copyField source="id" dest="id_prefix"/>
+  <fieldtype name="composite_id_prefix" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.PatternTokenizerFactory" pattern=".*!" group="0"/>
+    </analyzer>
+  </fieldtype>
+
+
 </schema>

@@ -3303,6 +3303,39 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     );
     
   }
+
+  public void testGroupFacetErrors() {
+    ModifiableSolrParams params = params("q", "*:*", "group", "true", "group.query", "myfield_s:*",
+        "facet", "true", "group.facet", "true");
+
+    // with facet.field
+    SolrException ex = expectThrows(SolrException.class, () -> {
+      h.query(req(params, "facet.field", "myfield_s"));
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
+
+    // with facet.query
+    ex = expectThrows(SolrException.class, () -> {
+      h.query(req(params, "facet.query", "myfield_s:*"));
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
+
+    // with facet.range
+    ex = expectThrows(SolrException.class, () -> h.query(req(params, "facet.range", "range_facet_l",
+        "facet.range.start", "43", "facet.range.end", "450", "facet.range.gap", "10"))
+    );
+    assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
+
+    // with facet.interval
+    ex = expectThrows(SolrException.class, () -> h.query(req(params, "facet.interval", "range_facet_l",
+        "f.range_facet_l.facet.interval.set", "(43,60]"))
+    );
+    assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Interval Faceting can't be used with group.facet"));
+  }
   
   public void testRangeFacetingBadRequest() {
     String field = "range_facet_l";

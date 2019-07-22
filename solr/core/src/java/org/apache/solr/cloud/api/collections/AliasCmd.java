@@ -17,9 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.cloud.Overseer;
@@ -28,15 +25,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP;
@@ -50,7 +43,12 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  final OverseerCollectionMessageHandler ocmh;
+
+  AliasCmd(OverseerCollectionMessageHandler ocmh) {
+    this.ocmh = ocmh;
+  }
+
   /**
    * Creates a collection (for use in a routed alias), waiting for it to be ready before returning.
    * If the collection already exists then this is not an error.<p>
@@ -100,18 +98,5 @@ abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
     return results;
   }
 
-  void updateAlias(String aliasName, ZkStateReader.AliasesManager aliasesManager, String createCollName) {
-    aliasesManager.applyModificationAndExportToZk(curAliases -> {
-      final List<String> curTargetCollections = curAliases.getCollectionAliasListMap().get(aliasName);
-      if (curTargetCollections.contains(createCollName)) {
-        return curAliases;
-      } else {
-        List<String> newTargetCollections = new ArrayList<>(curTargetCollections.size() + 1);
-        // prepend it on purpose (thus reverse sorted). Solr alias resolution defaults to the first collection in a list
-        newTargetCollections.add(createCollName);
-        newTargetCollections.addAll(curTargetCollections);
-        return curAliases.cloneWithCollectionAlias(aliasName, StrUtils.join(newTargetCollections, ','));
-      }
-    });
-  }
+
 }

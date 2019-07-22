@@ -82,13 +82,15 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
 
   @AfterClass
   public static void dihZk_afterClass() throws Exception {
-    cc.shutdown();
-    
-    zkServer.shutdown();
-
-    zkServer = null;
+    if (null != cc) {
+      cc.shutdown();
+      cc = null;
+    }
+    if (null != zkServer) {
+      zkServer.shutdown();
+      zkServer = null;
+    }
     zkDir = null;
-    cc = null;
   }
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to construct date stamps")

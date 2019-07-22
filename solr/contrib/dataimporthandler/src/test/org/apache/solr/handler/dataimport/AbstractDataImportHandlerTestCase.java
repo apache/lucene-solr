@@ -39,7 +39,7 @@ import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.junit.Before;
+import org.junit.BeforeClass;
 
 /**
  * <p>
@@ -60,13 +60,10 @@ public abstract class AbstractDataImportHandlerTestCase extends
     FileUtils.copyDirectory(getFile("dih/solr"), testHome);
     initCore(config, schema, testHome.getAbsolutePath());
   }
-  
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-    File home = createTempDir("dih-properties").toFile();
-    System.setProperty("solr.solr.home", home.getAbsolutePath());    
+
+  @BeforeClass
+  public static void baseBeforeClass() {
+    System.setProperty(DataImportHandler.ENABLE_DIH_DATA_CONFIG_PARAM, "true");
   }
 
   protected String loadDataConfig(String dataConfigFileName) {

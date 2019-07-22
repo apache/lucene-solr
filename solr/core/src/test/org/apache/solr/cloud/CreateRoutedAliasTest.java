@@ -50,7 +50,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.cloud.api.collections.RoutedAlias.SupportedRouterTypes.TIME;
+import static org.apache.solr.client.solrj.RoutedAliasTypes.TIME;
 
 /**
  * Direct http tests of the CreateRoutedAlias functionality.
@@ -82,7 +82,10 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   public void doAfter() throws Exception {
     cluster.deleteAllCollections(); // deletes aliases too
 
-    solrClient.close();
+    if (null != solrClient) {
+      solrClient.close();
+      solrClient = null;
+    }
   }
 
   // This is a fairly complete test where we set many options and see that it both affected the created
@@ -118,7 +121,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "      \"tlogReplicas\":1,\n" +
         "      \"pullReplicas\":1,\n" +
         "      \"maxShardsPerNode\":4,\n" + // note: we also expect the 'policy' to work fine
-        "      \"nodeSet\": ['" + createNode + "'],\n" +
+        "      \"nodeSet\": '" + createNode + "',\n" +
         "      \"properties\" : {\n" +
         "        \"foobar\":\"bazbam\",\n" +
         "        \"foobar2\":\"bazbam2\"\n" +
@@ -133,6 +136,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     // small chance could fail due to "NOW"; see above
     assertCollectionExists(initialCollectionName);
 
+    Thread.sleep(1000);
     // Test created collection:
     final DocCollection coll = solrClient.getClusterStateProvider().getState(initialCollectionName).get();
     //System.err.println(coll);

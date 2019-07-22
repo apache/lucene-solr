@@ -238,6 +238,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public volatile boolean searchEnabled = true;
   public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
+  private List<Runnable> globalClassLoaderListeners = new ArrayList<>();
 
   public Set<String> getMetricNames() {
     return metricNames;
@@ -351,6 +352,15 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       return searcher.getPath() == null ? dataDir + "index/" : searcher
           .getPath();
     }
+  }
+  void globalClassLoaderChanged(){
+    for (Runnable r : globalClassLoaderListeners) {
+      r.run();
+
+    }
+  }
+  void addGlobalClassLoaderListener(Runnable r){
+    globalClassLoaderListeners.add(r);
   }
 
 
@@ -858,7 +868,11 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   public <T extends Object> T createInitInstance(PluginInfo info, Class<T> cast, String msg, String defClassName) {
     if (info == null) return null;
-    T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, getResourceLoader());
+    ResourceLoader resourceLoader = "global".equals(info.getRuntimeLibType())?
+        coreContainer.getClusterPropertiesListener().
+        getResourceLoader(): getResourceLoader();
+
+    T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, resourceLoader);
     if (o instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) o).init(info);
     } else if (o instanceof NamedListInitializedPlugin) {
@@ -966,7 +980,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       this.codec = initCodec(solrConfig, this.schema);
 
       memClassLoader = new MemClassLoader(
-          PluginBag.RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(PluginBag.RuntimeLib.class.getName())),
+          RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(RuntimeLib.class.getName())),
           getResourceLoader());
       initIndex(prev != null, reload);
 

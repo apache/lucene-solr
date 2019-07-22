@@ -59,6 +59,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.SolrIndexSplitter;
@@ -73,6 +74,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
@@ -100,6 +102,8 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
+    final String asyncId = message.getStr(ASYNC);
+
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
     String methodStr = message.getStr(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());
     SolrIndexSplitter.SplitMethod splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
@@ -111,7 +115,13 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
     String extCollectionName = message.getStr(CoreAdminParams.COLLECTION);
 
-    String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String collectionName;
+    if (followAliases) {
+      collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+    } else {
+      collectionName = extCollectionName;
+    }
 
     log.debug("Split shard invoked: {}", message);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -195,7 +205,50 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
 
+      @SuppressWarnings("deprecation")
+      ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
+
+
+      if (message.getBool(CommonAdminParams.SPLIT_BY_PREFIX, true)) {
+        t = timings.sub("getRanges");
+
+        log.info("Requesting split ranges from replica " + parentShardLeader.getName() + " as part of slice " + slice + " of collection "
+            + collectionName + " on " + parentShardLeader);
+
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.SPLIT.toString());
+        params.set(CoreAdminParams.GET_RANGES, "true");
+        params.set(CommonAdminParams.SPLIT_METHOD, splitMethod.toLower());
+        params.set(CoreAdminParams.CORE, parentShardLeader.getStr("core"));
+        int numSubShards = message.getInt(NUM_SUB_SHARDS, DEFAULT_NUM_SUB_SHARDS);
+        params.set(NUM_SUB_SHARDS, Integer.toString(numSubShards));
+
+        {
+          final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+          shardRequestTracker.sendShardRequest(parentShardLeader.getNodeName(), params, shardHandler);
+          SimpleOrderedMap<Object> getRangesResults = new SimpleOrderedMap<>();
+          shardRequestTracker.processResponses(getRangesResults, shardHandler, true, "SPLITSHARD failed to invoke SPLIT.getRanges core admin command");
+
+          // Extract the recommended splits from the shard response (if it exists)
+          // example response: getRangesResults={success={127.0.0.1:62086_solr={responseHeader={status=0,QTime=1},ranges=10-20,3a-3f}}}
+          NamedList successes = (NamedList)getRangesResults.get("success");
+          if (successes != null && successes.size() > 0) {
+            NamedList shardRsp = (NamedList)successes.getVal(0);
+            String splits = (String)shardRsp.get(CoreAdminParams.RANGES);
+            if (splits != null) {
+              log.info("Resulting split range to be used is " + splits);
+              // change the message to use the recommended split ranges
+              message = message.plus(CoreAdminParams.RANGES, splits);
+            }
+          }
+        }
+
+        t.stop();
+      }
+
+
       t = timings.sub("fillRanges");
+
       String rangesStr = fillRanges(ocmh.cloudManager, message, collection, parentSlice, subRanges, subSlices, subShardNames, firstNrtReplica);
       t.stop();
 
@@ -234,7 +287,6 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         collection = clusterState.getCollection(collectionName);
       }
 
-      final String asyncId = message.getStr(ASYNC);
       String nodeName = parentShardLeader.getNodeName();
 
       t = timings.sub("createSubSlicesAndLeadersInState");
@@ -286,8 +338,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.addReplica(clusterState, new ZkNodeProps(propMap), results, null);
       }
 
-      @SuppressWarnings("deprecation")
-      ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
+
       {
         final ShardRequestTracker syncRequestTracker = ocmh.syncRequestTracker();
         syncRequestTracker.processResponses(results, shardHandler, true, "SPLITSHARD failed to create subshard leaders");

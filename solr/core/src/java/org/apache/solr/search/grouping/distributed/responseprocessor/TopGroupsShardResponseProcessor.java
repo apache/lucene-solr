@@ -40,6 +40,7 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.Grouping;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.TopGroupsResultTransformer;
@@ -52,29 +53,33 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
   @Override
   @SuppressWarnings("unchecked")
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
-    Sort groupSort = rb.getGroupingSpec().getGroupSort();
+    Sort groupSort = rb.getGroupingSpec().getGroupSortSpec().getSort();
     String[] fields = rb.getGroupingSpec().getFields();
     String[] queries = rb.getGroupingSpec().getQueries();
-    Sort withinGroupSort = rb.getGroupingSpec().getSortWithinGroup();
+    SortSpec withinGroupSortSpec = rb.getGroupingSpec().getWithinGroupSortSpec();
+    Sort withinGroupSort = withinGroupSortSpec.getSort();
     assert withinGroupSort != null;
+
+    boolean simpleOrMain = rb.getGroupingSpec().getResponseFormat() == Grouping.Format.simple ||
+        rb.getGroupingSpec().isMain();
 
     // If group.format=simple group.offset doesn't make sense
     int groupOffsetDefault;
-    if (rb.getGroupingSpec().getResponseFormat() == Grouping.Format.simple || rb.getGroupingSpec().isMain()) {
+    if (simpleOrMain) {
       groupOffsetDefault = 0;
     } else {
-      groupOffsetDefault = rb.getGroupingSpec().getWithinGroupOffset();
+      groupOffsetDefault = withinGroupSortSpec.getOffset();
     }
-    int docsPerGroupDefault = rb.getGroupingSpec().getWithinGroupLimit();
+    int docsPerGroupDefault = withinGroupSortSpec.getCount();
 
     Map<String, List<TopGroups<BytesRef>>> commandTopGroups = new HashMap<>();
     for (String field : fields) {
-      commandTopGroups.put(field, new ArrayList<TopGroups<BytesRef>>());
+      commandTopGroups.put(field, new ArrayList<>());
     }
 
     Map<String, List<QueryCommandResult>> commandTopDocs = new HashMap<>();
     for (String query : queries) {
-      commandTopDocs.put(query, new ArrayList<QueryCommandResult>());
+      commandTopDocs.put(query, new ArrayList<>());
     }
 
     TopGroupsResultTransformer serializer = new TopGroupsResultTransformer(rb);
@@ -162,6 +167,16 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
       rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, withinGroupSort, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
     }
 
+    // calculate topN and start for group.query
+    int topN = docsPerGroupDefault >= 0? docsPerGroupDefault: Integer.MAX_VALUE;
+    int start = groupOffsetDefault;
+    if (simpleOrMain) {
+      // use start and rows here
+      start = rb.getGroupingSpec().getGroupSortSpec().getOffset();
+      int limit = rb.getGroupingSpec().getGroupSortSpec().getCount();
+      topN = limit >= 0? limit: Integer.MAX_VALUE;
+    }
+
     for (String query : commandTopDocs.keySet()) {
       List<QueryCommandResult> queryCommandResults = commandTopDocs.get(query);
       List<TopDocs> topDocs = new ArrayList<>(queryCommandResults.size());
@@ -179,16 +194,24 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         }
       }
 
-      int topN = rb.getGroupingSpec().getOffset() + rb.getGroupingSpec().getLimit();
       final TopDocs mergedTopDocs;
       if (withinGroupSort.equals(Sort.RELEVANCE)) {
-        mergedTopDocs = TopDocs.merge(topN, topDocs.toArray(new TopDocs[topDocs.size()]));
+        mergedTopDocs = TopDocs.merge(
+            start, topN, topDocs.toArray(new TopDocs[topDocs.size()]));
       } else {
-        mergedTopDocs = TopDocs.merge(withinGroupSort, topN, topDocs.toArray(new TopFieldDocs[topDocs.size()]));
+        mergedTopDocs = TopDocs.merge(
+            withinGroupSort, start, topN, topDocs.toArray(new TopFieldDocs[topDocs.size()]));
       }
       rb.mergedQueryCommandResults.put(query, new QueryCommandResult(mergedTopDocs, mergedMatches, maxScore));
     }
+    fillResultIds(rb);
+  }
 
+  /**
+   * Fill the {@link ResponseBuilder}'s <code>resultIds</code> field.
+   * @param rb the response builder
+   */
+  static void fillResultIds(ResponseBuilder rb) {
     Map<Object, ShardDoc> resultIds = new HashMap<>();
     int i = 0;
     for (TopGroups<BytesRef> topGroups : rb.mergedTopGroups.values()) {

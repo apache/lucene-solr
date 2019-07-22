@@ -39,7 +39,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SolrPluginUtils;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -520,6 +519,56 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//doc[2]/str[@name='id'][.='52']",
         "//doc[3]/str[@name='id'][.='54']"
      );
+  }
+
+  @Test
+  public void testBf() {
+    assertQ(
+        req("q", "tekna", "qf", "text_sw", "defType", "edismax", "bf", "ord(id)", "fq", "id:[52 TO 54]", "fl", "id,score"),
+        "//doc[1]/str[@name='id'][.='54']",
+        "//doc[2]/str[@name='id'][.='53']",
+        "//doc[3]/str[@name='id'][.='52']"
+    );
+
+    assertQ(req("q", "tekna", "qf", "text_sw", "defType", "edismax",
+        "bf", "if(and(query({!v='id:53'})),120,if(query({!v='id:52'}),10,0))", "fq", "id:[52 TO 54]", "fl", "id,score"),
+        "//doc[1]/str[@name='id'][.='53']",
+        "//doc[2]/str[@name='id'][.='52']",
+        "//doc[3]/str[@name='id'][.='54']");
+
+    // adding value from a field
+    // 0 would be returned for negative values
+    assertQ(req("q", "*:*", "qf", "text_sw", "defType", "edismax",
+        "bf", "foo_i", "fq", "id:[47 TO 49]", "fl", "id,score"),
+        "//doc[1]/str[@name='id'][.='48']",
+        "//doc[2]/str[@name='id'][.='47']",
+        "//doc[3]/str[@name='id'][.='49']");
+  }
+
+  @Test
+  public void testBoost() {
+    assertQ(
+        req("q", "*:*", "qf", "text_sw", "defType", "edismax", "boost", "exists(foo_i)", "fq", "id:[47 TO 49]",
+            "fl", "id,score", "boost", "if(not(query({!v=id:49})),10,1)"),
+        "//doc[1]/str[@name='id'][.='48']",
+        "//doc[2]/str[@name='id'][.='49']",
+        "//doc[3]/str[@name='id'][.='47']"
+    );
+
+    assertQ(req("q", "tekna", "qf", "text_sw", "defType", "edismax",
+        "boost", "if(and(query({!v='id:53'})),120,if(query({!v='id:52'}),0.0002,1))", "fq", "id:[52 TO 54]", "fl", "id,score"),
+        "//doc[1]/str[@name='id'][.='53']",
+        "//doc[2]/str[@name='id'][.='54']",
+        "//doc[3]/str[@name='id'][.='52']");
+
+    // adding value from a field
+    // using sum to verify the order
+    // 0 would be returned for negative values or if the field value is not present
+    assertQ(req("q", "*:*", "qf", "text_sw", "defType", "edismax",
+        "boost", "sum(foo_i,1)", "fq", "id:[48 TO 50]", "fl", "id,score"),
+        "//doc[1]/str[@name='id'][.='48']",
+        "//doc[2]/str[@name='id'][.='50']",
+        "//doc[3]/str[@name='id'][.='49']");
   }
 
   public void testUserFields() {
@@ -2078,9 +2127,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** SOLR-11512 */
-  @Test(expected=SolrException.class)
+  @Test
   public void killInfiniteRecursionParse() throws Exception {
-    assertJQ(req("defType", "edismax", "q", "*", "qq", "{!edismax v=something}", "bq", "{!edismax v=$qq}"));
+    SolrException exception = expectThrows(SolrException.class, () -> {
+      h.query(req("defType", "edismax", "q", "*", "qq", "{!edismax v=something}", "bq", "{!edismax v=$qq}"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+    assertTrue(exception.getMessage().contains("Infinite Recursion detected parsing query"));
   }
 
   /** SOLR-5163 */
@@ -2095,19 +2148,16 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     params.add("debugQuery", "true");
 
     // test valid field names
-    try (SolrQueryRequest req = req(params)) {
-      String response = h.query(req);
-      response.contains("+DisjunctionMaxQuery((title:olive | (subject:oliv)^3.0)) +DisjunctionMaxQuery((title:other | (subject:other)^3.0))");
-    }
+    String response = h.query(req(params));
+    assertTrue(response.contains("+DisjunctionMaxQuery((title:olive | " +
+        "(subject:oliv)^3.0)) +DisjunctionMaxQuery((title:other | (subject:other)^3.0))"));
 
     // test invalid field name
     params.set("qf", "subject^3 nosuchfield");
-    try (SolrQueryRequest req = req(params)) {
-      h.query(req);
-    } catch (Exception e) {
-      Assert.assertEquals("org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name", e.getMessage());
-    }
-
+    SolrException exception = expectThrows(SolrException.class, () -> h.query(req(params)));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+    assertEquals("org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name",
+        exception.getMessage());
   }
 
 }
