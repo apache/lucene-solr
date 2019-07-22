@@ -85,31 +85,30 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       if (i > 0) {
         Thread.sleep(100);
       }
+      SolrResponse rsp = null;
       try {
-        SolrResponse rsp = req.process(client);
-        try {
-          for (Object e : vals.entrySet()) {
-            Map.Entry entry = (Map.Entry) e;
-            String key = (String) entry.getKey();
-            Object val = entry.getValue();
-            Predicate p = val instanceof Predicate ? (Predicate) val : o -> {
-              String v = o == null ? null : String.valueOf(o);
-              return Objects.equals(val, o);
-            };
-            assertTrue("attempt: " + i + " Mismatch for value : '" + key + "' in response " + Utils.toJSONString(rsp),
-                p.test(rsp.getResponse()._get(key, null)));
-
-          }
-          return;
-        } catch (Exception e) {
-          if (i >= repeats - 1) throw e;
-          continue;
-        }
-
+        rsp = req.process(client);
       } catch (Exception e) {
         if (i >= repeats - 1) throw e;
-        continue;
       }
+      for (Object e : vals.entrySet()) {
+        Map.Entry entry = (Map.Entry) e;
+        String key = (String) entry.getKey();
+        Object val = entry.getValue();
+        Predicate p = val instanceof Predicate ? (Predicate) val : o -> {
+          String v = o == null ? null : String.valueOf(o);
+          return Objects.equals(val, o);
+        };
+        boolean isPass = p.test(rsp.getResponse()._get(key, null));
+        if (!isPass && i >= repeats - 1) {
+          assertTrue("attempt: " + i + " Mismatch for value : '" + key + "' in response " + Utils.toJSONString(rsp),
+              isPass);
+        }
+
+      }
+      return;
+
+
     }
 
 
