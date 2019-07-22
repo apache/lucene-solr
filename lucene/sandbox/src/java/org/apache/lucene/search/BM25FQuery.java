@@ -283,8 +283,8 @@ public final class BM25FQuery extends Query implements Accountable {
         FieldAndWeight field = fieldAndWeights.get(fieldTerms[i].field());
         TermStates ts = TermStates.build(searcher.getTopReaderContext(), fieldTerms[i], true);
         termStates[i] = ts;
-        TermStatistics termStats = searcher.termStatistics(fieldTerms[i], ts.docFreq(), ts.totalTermFreq());
-        if (termStats != null) {
+        if (ts.docFreq() > 0) {
+          TermStatistics termStats = searcher.termStatistics(fieldTerms[i], ts.docFreq(), ts.totalTermFreq());
           docFreq = Math.max(termStats.docFreq(), docFreq);
           totalTermFreq += (double) field.weight * termStats.totalTermFreq();
         }

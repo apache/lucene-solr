@@ -187,7 +187,9 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     try {
       for(Term term : terms) {
         final TermStates ts = TermStates.build(s.getIndexReader().getContext(), term, true);
-        stats.put(term, s.termStatistics(term, ts.docFreq(), ts.totalTermFreq()));
+        if (ts.docFreq() > 0) {
+          stats.put(term, s.termStatistics(term, ts.docFreq(), ts.totalTermFreq()));
+        }
       }
     } finally {
       node.searchers.release(s);
@@ -274,24 +276,19 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           } else {
             final TermAndShardVersion key = new TermAndShardVersion(nodeID, nodeVersions[nodeID], term);
             subStats = termStatsCache.get(key);
+            if (subStats == null) {
+              continue; // term not found
+            }
           }
-          
-          if (subStats == null) {
-            continue; // term not found
-          }
-        
+
           long nodeDocFreq = subStats.docFreq();
           distributedDocFreq += nodeDocFreq;
           
           long nodeTotalTermFreq = subStats.totalTermFreq();
           distributedTotalTermFreq += nodeTotalTermFreq;
         }
-
-        if (distributedDocFreq == 0) {
-          return null; // term not found in any node whatsoever
-        } else {
-          return new TermStatistics(term.bytes(), distributedDocFreq, distributedTotalTermFreq);
-        }
+        assert distributedDocFreq > 0;
+        return new TermStatistics(term.bytes(), distributedDocFreq, distributedTotalTermFreq);
       }
 
       @Override

@@ -207,8 +207,8 @@ public final class SynonymQuery extends Query {
       for (int i = 0; i < termStates.length; i++) {
         TermStates ts =  TermStates.build(searcher.getTopReaderContext(), terms[i].term, true);
         termStates[i] = ts;
-        TermStatistics termStats = searcher.termStatistics(terms[i].term, ts.docFreq(), ts.totalTermFreq());
-        if (termStats != null) {
+        if (ts.docFreq() > 0) {
+          TermStatistics termStats = searcher.termStatistics(terms[i].term, ts.docFreq(), ts.totalTermFreq());
           docFreq = Math.max(termStats.docFreq(), docFreq);
           totalTermFreq += termStats.totalTermFreq();
         }

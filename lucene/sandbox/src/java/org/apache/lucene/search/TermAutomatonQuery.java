@@ -361,9 +361,8 @@ public class TermAutomatonQuery extends Query implements Accountable {
         Integer termID = ent.getKey();
         if (ent.getValue() != null) {
           TermStates ts = termStates.get(termID);
-          TermStatistics stats = searcher.termStatistics(new Term(field, ent.getValue()), ts.docFreq(), ts.totalTermFreq());
-          if (stats != null) {
-            allTermStats.add(stats);
+          if (ts.docFreq() > 0) {
+            allTermStats.add(searcher.termStatistics(new Term(field, ent.getValue()), ts.docFreq(), ts.totalTermFreq()));
           }
         }
       }

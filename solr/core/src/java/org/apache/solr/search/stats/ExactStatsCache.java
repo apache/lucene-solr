@@ -28,7 +28,6 @@ import java.util.Set;
 
 import com.google.common.collect.Lists;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -172,9 +171,6 @@ public class ExactStatsCache extends StatsCache {
         @Override
         public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
           TermStatistics ts = super.termStatistics(term, docFreq, totalTermFreq);
-          if (ts == null) {
-            return null;
-          }
           terms.add(term);
           statsMap.put(term.toString(), new TermStats(term.field(), ts));
           return ts;
