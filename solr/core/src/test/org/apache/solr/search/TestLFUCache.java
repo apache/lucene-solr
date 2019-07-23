@@ -454,6 +454,46 @@ public class TestLFUCache extends SolrTestCaseJ4 {
 
   }
 
+  public void testSetLimits() throws Exception {
+    SolrMetricManager metricManager = new SolrMetricManager();
+    Random r = random();
+    String registry = TestUtil.randomSimpleString(r, 2, 10);
+    String scope = TestUtil.randomSimpleString(r, 2, 10);
+    LFUCache<String, String> cache = new LFUCache<>();
+    cache.initializeMetrics(metricManager, registry, "foo", scope + ".lfuCache");
+
+    Map<String, String> params = new HashMap<>();
+    params.put("size", "6");
+    CacheRegenerator cr = new NoOpRegenerator();
+    Object o = cache.init(params, null, cr);
+    for (int i = 0; i < 6; i++) {
+      cache.put("" + i, "foo " + i);
+    }
+    // no evictions yet
+    assertEquals(6, cache.size());
+    // this sets minSize = 4, evictions will target minSize
+    cache.setResourceLimit(SolrCache.SIZE_PARAM, 5);
+    // should not happen yet - evictions are triggered by put
+    assertEquals(6, cache.size());
+    cache.put("6", "foo 6");
+    // should evict to minSize
+    assertEquals(4, cache.size());
+    // should allow adding 1 more item before hitting "size" limit
+    cache.put("7", "foo 7");
+    assertEquals(5, cache.size());
+    // should evict down to minSize = 4
+    cache.put("8", "foo 8");
+    assertEquals(4, cache.size());
+
+    // scale up
+
+    cache.setResourceLimit(SolrCache.SIZE_PARAM, 10);
+    for (int i = 0; i < 6; i++) {
+      cache.put("new" + i, "bar " + i);
+    }
+    assertEquals(10, cache.size());
+  }
+
 // From the original LRU cache tests, they're commented out there too because they take a while.
 //  void doPerfTest(int iter, int cacheSize, int maxKey) {
 //    long start = System.currentTimeMillis();

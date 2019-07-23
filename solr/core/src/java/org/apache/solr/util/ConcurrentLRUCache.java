@@ -59,18 +59,19 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
       RamUsageEstimator.shallowSizeOfInstance(ConcurrentHashMap.class);
 
   private final ConcurrentHashMap<Object, CacheEntry<K,V>> map;
-  private final int upperWaterMark, lowerWaterMark;
+  private int upperWaterMark, lowerWaterMark;
   private final ReentrantLock markAndSweepLock = new ReentrantLock(true);
   private boolean isCleaning = false;  // not volatile... piggybacked on other volatile vars
-  private final boolean newThreadForCleanup;
+  private boolean newThreadForCleanup;
   private volatile boolean islive = true;
   private final Stats stats = new Stats();
-  private final int acceptableWaterMark;
+  private int acceptableWaterMark;
   private long oldestEntry = 0;  // not volatile, only accessed in the cleaning method
   private final EvictionListener<K,V> evictionListener;
   private CleanupThread cleanupThread;
+  private boolean runCleanupThread;
 
-  private final long ramLowerWatermark, ramUpperWatermark;
+  private long ramLowerWatermark, ramUpperWatermark;
   private final AtomicLong ramBytes = new AtomicLong(0);
 
   public ConcurrentLRUCache(long ramLowerWatermark, long ramUpperWatermark,
@@ -86,10 +87,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     this.lowerWaterMark = Integer.MIN_VALUE;
     this.upperWaterMark = Integer.MAX_VALUE;
 
-    if (runCleanupThread) {
-      cleanupThread = new CleanupThread(this);
-      cleanupThread.start();
-    }
+    setRunCleanupThread(runCleanupThread);
   }
 
   public ConcurrentLRUCache(int upperWaterMark, final int lowerWaterMark, int acceptableWatermark,
@@ -104,10 +102,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     this.lowerWaterMark = lowerWaterMark;
     this.acceptableWaterMark = acceptableWatermark;
     this.evictionListener = evictionListener;
-    if (runCleanupThread) {
-      cleanupThread = new CleanupThread(this);
-      cleanupThread.start();
-    }
+    setRunCleanupThread(runCleanupThread);
     this.ramLowerWatermark = Long.MIN_VALUE;
     this.ramUpperWatermark = Long.MAX_VALUE;
   }
@@ -119,6 +114,48 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
 
   public void setAlive(boolean live) {
     islive = live;
+  }
+
+  public void setUpperWaterMark(int upperWaterMark) {
+    if (upperWaterMark < 1) throw new IllegalArgumentException("upperWaterMark must be >= 1");
+    this.upperWaterMark = upperWaterMark;
+  }
+
+  public void setLowerWaterMark(int lowerWaterMark) {
+    this.lowerWaterMark = lowerWaterMark;
+  }
+
+  public void setAcceptableWaterMark(int acceptableWaterMark) {
+    this.acceptableWaterMark = acceptableWaterMark;
+  }
+
+  public void setRamUpperWatermark(long ramUpperWatermark) {
+    if (ramUpperWatermark < 1) {
+      throw new IllegalArgumentException("ramUpperWaterMark must be >= 1");
+    }
+    this.ramUpperWatermark = ramUpperWatermark;
+  }
+
+  public void setRamLowerWatermark(long ramLowerWatermark) {
+    if (ramLowerWatermark < 0) {
+      throw new IllegalArgumentException("ramLowerWaterMark must be >= 0");
+    }
+    this.ramLowerWatermark = ramLowerWatermark;
+  }
+
+  public synchronized void setRunCleanupThread(boolean runCleanupThread) {
+    this.runCleanupThread = runCleanupThread;
+    if (this.runCleanupThread) {
+      if (cleanupThread == null) {
+        cleanupThread = new CleanupThread(this);
+        cleanupThread.start();
+      }
+    } else {
+      if (cleanupThread != null) {
+        cleanupThread.stopThread();
+        cleanupThread = null;
+      }
+    }
   }
 
   @Override
@@ -207,11 +244,11 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
 
     if (!markAndSweepLock.tryLock()) return;
     try {
-      if (upperWaterMark != Integer.MAX_VALUE) {
+      if (upperWaterMark < size()) {
         markAndSweepByCacheSize();
-      } else if (ramUpperWatermark != Long.MAX_VALUE) {
+      } else if (ramUpperWatermark < ramBytesUsed()) {
         markAndSweepByRamSize();
-      } else  {
+      } else if (upperWaterMark == Integer.MAX_VALUE && ramUpperWatermark == Long.MAX_VALUE) {
         // should never happen
         throw new AssertionError("ConcurrentLRUCache initialized with neither size limits nor ram limits");
       }
