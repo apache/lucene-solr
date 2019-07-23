@@ -52,7 +52,11 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
     if (tieBreakerMultiplier < 0 || tieBreakerMultiplier > 1) {
       throw new IllegalArgumentException("tieBreakerMultiplier must be in [0, 1]");
     }
-    this.disjunctionBlockPropagator = new DisjunctionScoreBlockBoundaryPropagator(subScorers);
+    if (scoreMode == ScoreMode.TOP_SCORES) {
+      this.disjunctionBlockPropagator = new DisjunctionScoreBlockBoundaryPropagator(subScorers);
+    } else {
+      this.disjunctionBlockPropagator = null;
+    }
   }
 
   @Override
