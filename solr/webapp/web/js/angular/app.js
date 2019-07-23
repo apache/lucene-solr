@@ -477,8 +477,12 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
         Collections.list(function (cdata) {
           Collections.listaliases(function (adata) {
             $scope.aliases = [];
-            for (key in adata.aliases) {
-              var alias = {name: key, collections: adata.aliases[key], type: 'alias'};
+            for (var key in adata.aliases) {
+              props = {};
+              if (key in adata.properties) {
+                props = adata.properties[key];
+              }
+              var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
               $scope.aliases.push(alias);
               if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
                 $scope.currentCollection = alias;

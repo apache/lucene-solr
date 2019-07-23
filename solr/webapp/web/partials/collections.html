@@ -177,9 +177,9 @@ limitations under the License.
                   </span>
                 </dd>
 
-                <span ng-repeat="prop in collection.properties">
-                  <dt><span>{{prop}}</span></dt>
-                  <dd>{{collection.properties[prop]}}</dd>
+                <span ng-repeat="(key, value) in collection.properties">
+                  <dt><span>{{ key }}</span></dt>
+                  <dd>{{ value }}</dd>
                 </span>
               </dl>
             </li>
@@ -230,7 +230,7 @@ limitations under the License.
                 <dd>{{collection.autoAddReplicas}}</dd>
             </dl></li>
 
-            <li><dl class="clearfix">
+            <li ng-show="collection.aliases"><dl class="clearfix">
               <dt><span>aliases:</span></dt>
               <dd>
                   <span ng-repeat="coll in collection.aliases">

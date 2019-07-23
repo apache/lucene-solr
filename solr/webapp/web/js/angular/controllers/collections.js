@@ -24,7 +24,6 @@ solrAdminApp.controller('CollectionsController',
           $scope.rootUrl = Constants.ROOT_URL + "#/~collections/" + $routeParams.collection;
 
           Collections.status(function (data) {
-              $scope.aliases = [];
               $scope.collections = [];
               for (var name in data.cluster.collections) {
                   var collection = data.cluster.collections[name];
@@ -52,23 +51,28 @@ solrAdminApp.controller('CollectionsController',
                       $scope.collection = collection;
                   }
               }
-              for (var name in data.cluster.aliases) {
-                props = {};
-                if (data.cluster.properties && name in data.cluster.properties) {
-                  props = data.cluster.properties[name];
-                }
+              // Fetch aliases using LISTALIASES to get properties
+              Collections.listaliases(function (adata) {
+                  // TODO: Population of aliases array duplicated in app.js
+                  $scope.aliases = [];
+                  for (var key in adata.aliases) {
+                      props = {};
+                      if (key in adata.properties) {
+                          props = adata.properties[key];
+                      }
+                      var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
+                      $scope.aliases.push(alias);
+                      if ($routeParams.collection == 'alias_' + key) {
+                          $scope.collection = alias;
+                      }
+                  }
+                  // Decide what is selected in list
+                  if ($routeParams.collection && !$scope.collection) {
+                      alert("No collection or alias called " + $routeParams.collection);
+                      $location.path("/~collections");
+                  }
+              });
 
-                alias = {name: name, collections: data.cluster.aliases[name], properties: props, type: 'alias'};
-                $scope.aliases.push(alias);
-                if ($routeParams.collection == 'alias_' + name) {
-                  $scope.collection = alias;
-                }
-              }
-
-            if ($routeParams.collection && !$scope.collection) {
-                  alert("No collection or alias called " + $routeParams.collection);
-                  $location.path("/~collections");
-              }
               $scope.liveNodes = data.cluster.liveNodes;
           });
           Zookeeper.configs(function(data) {
