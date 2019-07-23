@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
@@ -324,6 +325,76 @@ public class TestFastLRUCache extends SolrTestCase {
     } finally {
       sc.close();
     }
+  }
+
+  public void testSetLimits() throws Exception {
+    FastLRUCache<String, Accountable> cache = new FastLRUCache<>();
+    cache.initializeMetrics(metricManager, registry, "foo", scope);
+    Map<String, String> params = new HashMap<>();
+    params.put("size", "6");
+    params.put("maxRamMB", "8");
+    CacheRegenerator cr = new NoOpRegenerator();
+    Object o = cache.init(params, null, cr);
+    for (int i = 0; i < 6; i++) {
+      cache.put("" + i, new Accountable() {
+        @Override
+        public long ramBytesUsed() {
+          return 1024 * 1024;
+        }
+      });
+    }
+    // no evictions yet
+    assertEquals(6, cache.size());
+    // this also sets minLimit = 4
+    cache.setResourceLimit(SolrCache.SIZE_PARAM, 5);
+    // should not happen yet - evictions are triggered by put
+    assertEquals(6, cache.size());
+    cache.put("6", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 1024 * 1024;
+      }
+    });
+    // should evict to minLimit
+    assertEquals(4, cache.size());
+
+    // modify ram limit
+    cache.setResourceLimit(SolrCache.MAX_RAM_MB_PARAM, 3);
+    // should not happen yet - evictions are triggered by put
+    assertEquals(4, cache.size());
+    // this evicts down to 3MB * 0.8, ie. ramLowerWaterMark
+    cache.put("7", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 0;
+      }
+    });
+    assertEquals(3, cache.size());
+    assertNotNull("5", cache.get("5"));
+    assertNotNull("6", cache.get("6"));
+    assertNotNull("7", cache.get("7"));
+
+    // scale up
+
+    cache.setResourceLimit(SolrCache.MAX_RAM_MB_PARAM, 4);
+    cache.put("8", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 1024 * 1024;
+      }
+    });
+    assertEquals(4, cache.size());
+
+    cache.setResourceLimit(SolrCache.SIZE_PARAM, 10);
+    for (int i = 0; i < 6; i++) {
+      cache.put("new" + i, new Accountable() {
+        @Override
+        public long ramBytesUsed() {
+          return 0;
+        }
+      });
+    }
+    assertEquals(10, cache.size());
   }
 
   /***

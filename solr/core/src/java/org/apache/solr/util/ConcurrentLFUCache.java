@@ -54,37 +54,32 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
       RamUsageEstimator.shallowSizeOfInstance(ConcurrentHashMap.class);
 
   private final ConcurrentHashMap<Object, CacheEntry<K, V>> map;
-  private final int upperWaterMark, lowerWaterMark;
+  private int upperWaterMark, lowerWaterMark;
   private final ReentrantLock markAndSweepLock = new ReentrantLock(true);
   private boolean isCleaning = false;  // not volatile... piggybacked on other volatile vars
-  private final boolean newThreadForCleanup;
+  private boolean newThreadForCleanup;
+  private boolean runCleanupThread;
   private volatile boolean islive = true;
   private final Stats stats = new Stats();
   @SuppressWarnings("unused")
-  private final int acceptableWaterMark;
+  private int acceptableWaterMark;
   private long lowHitCount = 0;  // not volatile, only accessed in the cleaning method
   private final EvictionListener<K, V> evictionListener;
   private CleanupThread cleanupThread;
-  private final boolean timeDecay;
+  private boolean timeDecay;
   private final AtomicLong ramBytes = new AtomicLong(0);
 
   public ConcurrentLFUCache(int upperWaterMark, final int lowerWaterMark, int acceptableSize,
                             int initialSize, boolean runCleanupThread, boolean runNewThreadForCleanup,
                             EvictionListener<K, V> evictionListener, boolean timeDecay) {
-    if (upperWaterMark < 1) throw new IllegalArgumentException("upperWaterMark must be > 0");
-    if (lowerWaterMark >= upperWaterMark)
-      throw new IllegalArgumentException("lowerWaterMark must be  < upperWaterMark");
+    setUpperWaterMark(upperWaterMark);
+    setLowerWaterMark(lowerWaterMark);
+    setAcceptableWaterMark(acceptableSize);
     map = new ConcurrentHashMap<>(initialSize);
-    newThreadForCleanup = runNewThreadForCleanup;
-    this.upperWaterMark = upperWaterMark;
-    this.lowerWaterMark = lowerWaterMark;
-    this.acceptableWaterMark = acceptableSize;
     this.evictionListener = evictionListener;
-    this.timeDecay = timeDecay;
-    if (runCleanupThread) {
-      cleanupThread = new CleanupThread(this);
-      cleanupThread.start();
-    }
+    setNewThreadForCleanup(runNewThreadForCleanup);
+    setTimeDecay(timeDecay);
+    setRunCleanupThread(runCleanupThread);
   }
 
   public ConcurrentLFUCache(int size, int lowerWatermark) {
@@ -94,6 +89,44 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
 
   public void setAlive(boolean live) {
     islive = live;
+  }
+
+  public void setUpperWaterMark(int upperWaterMark) {
+    if (upperWaterMark < 1) throw new IllegalArgumentException("upperWaterMark must be > 0");
+    this.upperWaterMark = upperWaterMark;
+  }
+
+  public void setLowerWaterMark(int lowerWaterMark) {
+    if (lowerWaterMark >= upperWaterMark)
+      throw new IllegalArgumentException("lowerWaterMark must be  < upperWaterMark");
+    this.lowerWaterMark = lowerWaterMark;
+  }
+
+  public void setAcceptableWaterMark(int acceptableWaterMark) {
+    this.acceptableWaterMark = acceptableWaterMark;
+  }
+
+  public void setTimeDecay(boolean timeDecay) {
+    this.timeDecay = timeDecay;
+  }
+
+  public synchronized void setNewThreadForCleanup(boolean newThreadForCleanup) {
+    this.newThreadForCleanup = newThreadForCleanup;
+  }
+
+  public synchronized void setRunCleanupThread(boolean runCleanupThread) {
+    this.runCleanupThread = runCleanupThread;
+    if (this.runCleanupThread) {
+      if (cleanupThread == null) {
+        cleanupThread = new CleanupThread(this);
+        cleanupThread.start();
+      }
+    } else {
+      if (cleanupThread != null) {
+        cleanupThread.stopThread();
+        cleanupThread = null;
+      }
+    }
   }
 
   @Override

@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,12 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FastLRUCache.class);
 
+  public static final String MIN_SIZE_PARAM = "minSize";
+  public static final String ACCEPTABLE_SIZE_PARAM = "acceptableSize";
+  public static final String INITIAL_SIZE_PARAM = "initialSize";
+  public static final String CLEANUP_THREAD_PARAM = "cleanupThread";
+  public static final String SHOW_ITEMS_PARAM = "showItems";
+
   // contains the statistics objects for all open caches of the same type
   private List<ConcurrentLRUCache.Stats> statsList;
 
@@ -62,6 +69,12 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   private int showItems = 0;
 
   private long maxRamBytes;
+  private int sizeLimit;
+  private int minSizeLimit;
+  private int initialSize;
+  private int acceptableSize;
+  private boolean cleanupThread;
+  private long ramLowerWatermark;
 
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
@@ -70,45 +83,44 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     super.init(args, regenerator);
-    String str = (String) args.get("size");
-    int limit = str == null ? 1024 : Integer.parseInt(str);
-    int minLimit;
-    str = (String) args.get("minSize");
+    String str = (String) args.get(SIZE_PARAM);
+    sizeLimit = str == null ? 1024 : Integer.parseInt(str);
+    str = (String) args.get(MIN_SIZE_PARAM);
     if (str == null) {
-      minLimit = (int) (limit * 0.9);
+      minSizeLimit = (int) (sizeLimit * 0.9);
     } else {
-      minLimit = Integer.parseInt(str);
+      minSizeLimit = Integer.parseInt(str);
     }
-    if (minLimit <= 0) minLimit = 1;
-    if (limit <= minLimit) limit=minLimit+1;
+    checkAndAdjustLimits();
 
-    int acceptableLimit;
-    str = (String) args.get("acceptableSize");
+    str = (String) args.get(ACCEPTABLE_SIZE_PARAM);
     if (str == null) {
-      acceptableLimit = (int) (limit * 0.95);
+      acceptableSize = (int) (sizeLimit * 0.95);
     } else {
-      acceptableLimit = Integer.parseInt(str);
+      acceptableSize = Integer.parseInt(str);
     }
     // acceptable limit should be somewhere between minLimit and limit
-    acceptableLimit = Math.max(minLimit, acceptableLimit);
+    acceptableSize = Math.max(minSizeLimit, acceptableSize);
 
-    str = (String) args.get("initialSize");
-    final int initialSize = str == null ? limit : Integer.parseInt(str);
-    str = (String) args.get("cleanupThread");
-    boolean newThread = str == null ? false : Boolean.parseBoolean(str);
+    str = (String) args.get(INITIAL_SIZE_PARAM);
+    initialSize = str == null ? sizeLimit : Integer.parseInt(str);
+    str = (String) args.get(CLEANUP_THREAD_PARAM);
+    cleanupThread = str == null ? false : Boolean.parseBoolean(str);
 
-    str = (String) args.get("showItems");
+    str = (String) args.get(SHOW_ITEMS_PARAM);
     showItems = str == null ? 0 : Integer.parseInt(str);
 
-    str = (String) args.get("maxRamMB");
-    this.maxRamBytes = str == null ? Long.MAX_VALUE : (long) (Double.parseDouble(str) * 1024L * 1024L);
+    str = (String) args.get(MAX_RAM_MB_PARAM);
+    long maxRamMB = str == null ? -1 : (long) Double.parseDouble(str);
+    this.maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
     if (maxRamBytes != Long.MAX_VALUE)  {
-      long ramLowerWatermark = Math.round(maxRamBytes * 0.8);
-      description = generateDescription(maxRamBytes, ramLowerWatermark, newThread);
-      cache = new ConcurrentLRUCache<K, V>(ramLowerWatermark, maxRamBytes, newThread, null);
+      ramLowerWatermark = Math.round(maxRamBytes * 0.8);
+      description = generateDescription(maxRamBytes, ramLowerWatermark, cleanupThread);
+      cache = new ConcurrentLRUCache<>(ramLowerWatermark, maxRamBytes, cleanupThread, null);
     } else  {
-      description = generateDescription(limit, initialSize, minLimit, acceptableLimit, newThread);
-      cache = new ConcurrentLRUCache<>(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
+      ramLowerWatermark = -1L;
+      description = generateDescription(sizeLimit, initialSize, minSizeLimit, acceptableSize, cleanupThread);
+      cache = new ConcurrentLRUCache<>(sizeLimit, minSizeLimit, acceptableSize, initialSize, cleanupThread, false, null);
     }
 
     cache.setAlive(false);
@@ -126,7 +138,15 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
     statsList.add(cache.getStats());
     return statsList;
   }
-  
+
+  protected String generateDescription() {
+    if (maxRamBytes != Long.MAX_VALUE) {
+      return generateDescription(maxRamBytes, ramLowerWatermark, cleanupThread);
+    } else {
+      return generateDescription(sizeLimit, initialSize, minSizeLimit, acceptableSize, cleanupThread);
+    }
+  }
+
   /**
    * @return Returns the description of this Cache.
    */
@@ -259,6 +279,9 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
         map.put("inserts", inserts);
         map.put("evictions", evictions);
         map.put("size", size);
+        map.put("cleanupThread", cleanupThread);
+        map.put("ramBytesUsed", ramBytesUsed());
+        map.put("maxRamMB", maxRamBytes != Long.MAX_VALUE ? maxRamBytes / 1024L / 1024L : -1L);
 
         map.put("warmupTime", warmupTime);
         map.put("cumulative_lookups", clookups);
@@ -305,6 +328,93 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
     return BASE_RAM_BYTES_USED +
         RamUsageEstimator.sizeOfObject(cache) +
         RamUsageEstimator.sizeOfObject(statsList);
+  }
+
+  @Override
+  public Map<String, Object> getResourceLimits() {
+    Map<String, Object> limits = new HashMap<>();
+    limits.put(SIZE_PARAM, cache.getStats().getCurrentSize());
+    limits.put(MIN_SIZE_PARAM, minSizeLimit);
+    limits.put(ACCEPTABLE_SIZE_PARAM, acceptableSize);
+    limits.put(CLEANUP_THREAD_PARAM, cleanupThread);
+    limits.put(SHOW_ITEMS_PARAM, showItems);
+    limits.put(MAX_RAM_MB_PARAM, maxRamBytes != Long.MAX_VALUE ? maxRamBytes / 1024L / 1024L : -1L);
+    return limits;
+  }
+
+  @Override
+  public void setResourceLimit(String limitName, Object val) {
+    if (CLEANUP_THREAD_PARAM.equals(limitName)) {
+      Boolean value;
+      try {
+        value = Boolean.parseBoolean(val.toString());
+        cleanupThread = value;
+        cache.setRunCleanupThread(cleanupThread);
+      } catch (Exception e) {
+        throw new IllegalArgumentException("Invalid new value for boolean limit '" + limitName + "': " + val);
+      }
+    }
+    Number value;
+    try {
+      value = Long.parseLong(String.valueOf(val));
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Invalid new value for numeric limit '" + limitName +"': " + val);
+    }
+    if (!limitName.equals(MAX_RAM_MB_PARAM)) {
+      if (value.intValue() <= 1) {
+        throw new IllegalArgumentException("Invalid new value for numeric limit '" + limitName +"': " + value);
+      }
+    }
+    if (value.longValue() > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("Invalid new value for numeric limit '" + limitName +"': " + value);
+    }
+    switch (limitName) {
+      case SIZE_PARAM:
+        sizeLimit = value.intValue();
+        checkAndAdjustLimits();
+        cache.setUpperWaterMark(sizeLimit);
+        cache.setLowerWaterMark(minSizeLimit);
+        break;
+      case MIN_SIZE_PARAM:
+        minSizeLimit = value.intValue();
+        checkAndAdjustLimits();
+        cache.setUpperWaterMark(sizeLimit);
+        cache.setLowerWaterMark(minSizeLimit);
+        break;
+      case ACCEPTABLE_SIZE_PARAM:
+        acceptableSize = value.intValue();
+        acceptableSize = Math.max(minSizeLimit, acceptableSize);
+        cache.setAcceptableWaterMark(acceptableSize);
+        break;
+      case MAX_RAM_MB_PARAM:
+        long maxRamMB = value.intValue();
+        maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
+        if (maxRamMB < 0) {
+          ramLowerWatermark = Long.MIN_VALUE;
+        } else {
+          ramLowerWatermark = Math.round(maxRamBytes * 0.8);
+        }
+        cache.setRamUpperWatermark(maxRamBytes);
+        cache.setRamLowerWatermark(ramLowerWatermark);
+        break;
+      case SHOW_ITEMS_PARAM:
+        showItems = value.intValue();
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported limit '" + limitName + "'");
+    }
+    description = generateDescription();
+  }
+
+  private void checkAndAdjustLimits() {
+    if (minSizeLimit <= 0) minSizeLimit = 1;
+    if (sizeLimit <= minSizeLimit) {
+      if (sizeLimit > 1) {
+        minSizeLimit = sizeLimit - 1;
+      } else {
+        sizeLimit = minSizeLimit + 1;
+      }
+    }
   }
 }
 
