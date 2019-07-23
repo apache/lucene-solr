@@ -151,7 +151,7 @@ limitations under the License.
 
 
     <div class="requires-core" ng-hide="collection">
-      <h2>Please select a collection or alias</h2>
+      <h2 ng-show="aliases.length + collections.length > 0">Please select a collection or alias</h2>
     </div>
 
     <div id="data" class="requires-core clearfix" ng-show="collection">
@@ -386,7 +386,7 @@ limitations under the License.
       <li ng-repeat="c in collections" ng-class="{current: collection.name == c.name && collection.type === 'collection'}"><a href="#~collections/{{c.name}}">{{c.name}}</a></li>
     </ul>
     <hr/>
-    <button id="create-alias" class="action requires-core" ng-click="toggleCreateAlias()"><span>Create Alias</span></button>
+    <button id="create-alias" class="action requires-core" ng-click="toggleCreateAlias()" ng-disabled="collections.length == 0"><span>Create Alias</span></button>
     <ul>
       <li ng-repeat="c in aliases" ng-class="{current: collection.name == c.name && collection.type === 'alias'}"><a href="#~collections/alias_{{c.name}}">{{c.name}}</a></li>
     </ul>
