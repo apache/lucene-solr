@@ -89,6 +89,8 @@ New Features
 
 * SOLR-13553: Node level custom RequestHandlers (noble)
 
+* SOLR-13122: Ability to query aliases in Solr Admin UI (janhoy)
+
 Improvements
 ----------------------
 
@@ -219,8 +221,6 @@ Improvements
   document about Estonian language analysis in Solr Ref Guide (Tomoko Uchida)
 
 * SOLR-13003: Query Result Cache does not honor maxRamBytes parameter. (ab, Brian Ecker)
-
-* SOLR-13122: Ability to query aliases in Solr Admin UI (janhoy)
 
 Bug Fixes
 ----------------------
