@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -174,7 +175,7 @@ public class HttpTriggerListenerTest extends SolrCloudTestCase {
           byte[] httpInData = new byte[request.getContentLength()];
           int len = -1;
           while ((len = is.read(httpInData)) != -1) {
-            stringBuilder.append(new String(httpInData, 0, len, "UTF-8"));
+            stringBuilder.append(new String(httpInData, 0, len, StandardCharsets.UTF_8));
           }
           requests.add(stringBuilder.toString());
           httpServletResponse.setStatus(HttpServletResponse.SC_OK);

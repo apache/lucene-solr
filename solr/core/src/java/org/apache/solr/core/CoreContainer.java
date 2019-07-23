@@ -229,6 +229,8 @@ public class CoreContainer {
 
   protected volatile ResourceManagerHandler resourceManagerHandler;
 
+  private final LibListener clusterPropertiesListener = new LibListener(this);
+
 
   // Bits for the state variable.
   public final static long LOAD_COMPLETE = 0x1L;
@@ -648,6 +650,7 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
+      getZkController().getZkStateReader().registerClusterPropertiesListener(clusterPropertiesListener);
       pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
@@ -659,6 +662,7 @@ public class CoreContainer {
     reloadSecurityProperties();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
+    containerHandlers.put("/ext", clusterPropertiesListener.extHandler);
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
@@ -1819,6 +1823,14 @@ public class CoreContainer {
       ((SolrMetricProducer) handler).initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, path);
     }
     return handler;
+  }
+
+  public PluginBag<SolrRequestHandler> getContainerHandlers() {
+    return containerHandlers;
+  }
+
+  public LibListener getClusterPropertiesListener(){
+    return clusterPropertiesListener;
   }
 
   public CoreAdminHandler getMultiCoreHandler() {

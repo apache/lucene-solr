@@ -169,6 +169,43 @@
       "required": [
         "name"
       ]
+    },
+    "add-runtimelib": {
+      "documentation": "",
+      "description" : "Add a remote jar to the classpath",
+      "#include": "cluster.Commands.runtimelib.properties"
+    },
+    "update-runtimelib": {
+      "documentation": "",
+      "description" : "Update the jar details",
+      "#include": "cluster.Commands.runtimelib.properties"
+    },
+    "delete-runtimelib": {
+      "documentation": "",
+      "description" : "delete a lib",
+      "type": "string"
+    },
+    "add-requesthandler": {
+      "type": "object",
+      "documentation": "",
+      "description" : "Create a node level request handler",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the request handler. This is the path"
+        },
+        "class": {
+          "type": "string",
+          "description": "The class name"
+        }
+      },
+      "required": ["name", "class"],
+      "additionalProperties": true
+    },
+    "delete-requesthandler" : {
+      "description" : "delete a requesthandler",
+      "type": "string"
     }
+
   }
 }
