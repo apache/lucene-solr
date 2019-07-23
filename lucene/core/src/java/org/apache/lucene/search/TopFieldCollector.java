@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -277,6 +278,125 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       };
     }
 
+  }
+
+  /*
+   * Implements a TopFieldCollector that terminates early based on a global
+   * scoreboard which is shared amongst multiple collectors.
+   * NOTE: This should ideally be outside of TopFieldCollector since it does
+   * not have private access, but we keep it here to limit the visibility
+   * of dependent classes
+   */
+  public static class GlobalStateFieldCollector extends TopFieldCollector {
+
+    final Sort sort;
+    final FieldValueHitQueue<Entry> queue;
+    final AtomicInteger globalTotalHits;
+
+    final GlobalStateCollectorManager.GlobalStateCallback callback;
+
+    public GlobalStateFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits, int totalHitsThreshold,
+                                     AtomicInteger globalTotalHits, GlobalStateCollectorManager.GlobalStateCallback callback) {
+      super(queue, numHits, totalHitsThreshold, sort.needsScores());
+      this.sort = sort;
+      this.queue = queue;
+      this.globalTotalHits = globalTotalHits;
+      this.callback = callback;
+    }
+
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      docBase = context.docBase;
+
+      final LeafFieldComparator[] comparators = queue.getComparators(context);
+      final int[] reverseMul = queue.getReverseMul();
+      final Sort indexSort = context.reader().getMetaData().getSort();
+      final boolean canEarlyTerminate = canEarlyTerminate(sort, indexSort);
+
+      return new MultiComparatorLeafCollector(comparators, reverseMul) {
+
+        boolean collectedAllCompetitiveHits = false;
+
+        @Override
+        public void setScorer(Scorable scorer) throws IOException {
+          super.setScorer(scorer);
+          updateMinCompetitiveScore(scorer);
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+          // Increment local hit counter
+          totalHits++;
+
+          if (queueFull) {
+            if (collectedAllCompetitiveHits || !isHitCompetitive(doc, scorer)) {
+              // since docs are visited in doc Id order, if compare is 0, it means
+              // this document is largest than anything else in the queue, and
+              // therefore not competitive.
+              if (canEarlyTerminate) {
+                // Check the global scoreboard to see total hits accumulated yet
+                if (globalTotalHits.incrementAndGet() > totalHitsThreshold) {
+                  totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
+                  throw new CollectionTerminatedException();
+                } else {
+                  collectedAllCompetitiveHits = true;
+                }
+              } else if (totalHitsRelation == Relation.EQUAL_TO) {
+                // we just reached totalHitsThreshold, we can start setting the min
+                // competitive score now
+                //TODO: Should we also update competitive score globally?
+                updateMinCompetitiveScore(scorer);
+              }
+              return;
+            }
+
+            // This hit is competitive - replace bottom element in queue & adjustTop
+            comparator.copy(bottom.slot, doc);
+            updateBottom(doc);
+            comparator.setBottom(bottom.slot);
+            updateMinCompetitiveScore(scorer);
+            //Increment global hit counter
+            globalTotalHits.incrementAndGet();
+          } else {
+            // Startup transient: queue hasn't gathered numHits yet
+
+            //Increment global hit counter
+            globalTotalHits.incrementAndGet();
+
+            final int slot = totalHits - 1;
+
+            // Copy hit into queue
+            comparator.copy(slot, doc);
+            add(slot, doc);
+            if (queueFull) {
+              comparator.setBottom(bottom.slot);
+              updateMinCompetitiveScore(scorer);
+            }
+          }
+        }
+
+        // Check if hit is competitive and set the global value accordingly
+        private boolean isHitCompetitive(int doc, Scorable scorer) throws IOException {
+          // Check if hit is locally competitive
+          if (reverseMul * comparator.compareBottom(doc) > 0) {
+            // Hit was competitive locally, but was it globally competitive?
+            if (callback.getGlobalMinCompetitiveScore() > scorer.score()) {
+              return false;
+            } else {
+              // Hit was locally and globally competitive, set the right
+              // global minimum competitive score
+              callback.checkAndUpdateMinCompetitiveScore(scorer.score());
+              return true;
+            }
+          }
+
+          // Hit was not locally competitive hence it cannot
+          // be globally competitive
+          return false;
+        }
+
+      };
+    }
   }
 
   private static final ScoreDoc[] EMPTY_SCOREDOCS = new ScoreDoc[0];
