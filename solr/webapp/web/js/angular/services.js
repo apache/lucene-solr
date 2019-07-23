@@ -141,6 +141,11 @@ solrAdminServices.factory('System',
         }).success(success).error(error);
     }
 })
+.filter('splitByComma', function() {
+  return function(input) {
+    return input === undefined ? input : input.split(',');
+  }
+})
 .factory('Luke',
   ['$resource', function($resource) {
     return $resource(':core/admin/luke', {core: '@core', wt:'json', _:Date.now()}, {
