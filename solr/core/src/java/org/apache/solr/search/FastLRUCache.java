@@ -20,6 +20,8 @@ import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.managed.ResourceId;
+import org.apache.solr.managed.plugins.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLRUCache;
@@ -27,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
@@ -79,6 +83,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
+  private ResourceId resourceId;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -305,6 +310,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
       }
     });
     manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    resourceId = new ResourceId(tag, registryName, getCategory().toString(), scope);
   }
 
 
@@ -340,6 +346,21 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
     limits.put(SHOW_ITEMS_PARAM, showItems);
     limits.put(MAX_RAM_MB_PARAM, maxRamBytes != Long.MAX_VALUE ? maxRamBytes / 1024L / 1024L : -1L);
     return limits;
+  }
+
+  @Override
+  public Map<String, Object> getMonitoredValues(Collection<String> tags) throws Exception {
+    return cacheMap.getValue();
+  }
+
+  @Override
+  public ResourceId getResourceId() {
+    return resourceId;
+  }
+
+  @Override
+  public Collection<String> getManagedResourceTypes() {
+    return Collections.singleton(CacheManagerPlugin.TYPE);
   }
 
   @Override

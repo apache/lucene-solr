@@ -44,9 +44,4 @@ public interface ManagedMetricProducer extends SolrInfoBean, ManagedResource {
     });
     return result;
   }
-
-  @Override
-  default String getResourceName() {
-    return getName();
-  }
 }

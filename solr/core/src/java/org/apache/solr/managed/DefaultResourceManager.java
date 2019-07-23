@@ -20,17 +20,21 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.managed.plugins.CacheManagerPlugin;
+import org.apache.solr.search.SolrCache;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,11 +47,25 @@ import org.slf4j.LoggerFactory;
 public class DefaultResourceManager extends ResourceManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+
   public static final String SCHEDULE_DELAY_SECONDS_PARAM = "scheduleDelaySeconds";
   public static final String MAX_NUM_POOLS_PARAM = "maxNumPools";
 
   public static final int DEFAULT_MAX_POOLS = 100;
   public static final int DEFAULT_SCHEDULE_DELAY_SECONDS = 30;
+
+  public static final String NODE_SEARCHER_CACHE_POOL = "nodeSearcherCachePool";
+
+  public static final Map<String, Map<String, Object>> DEFAULT_NODE_POOLS = new HashMap<>();
+
+  static {
+    Map<String, Object> params = new HashMap<>();
+    params.put(CommonParams.TYPE, CacheManagerPlugin.TYPE);
+    // unlimited RAM
+    params.put(SolrCache.MAX_RAM_MB_PARAM, -1L);
+    DEFAULT_NODE_POOLS.put(NODE_SEARCHER_CACHE_POOL, params);
+  }
+
 
   protected int maxNumPools = DEFAULT_MAX_POOLS;
 
@@ -67,6 +85,7 @@ public class DefaultResourceManager extends ResourceManager {
   protected ResourceManagerPluginFactory resourceManagerPluginFactory;
   protected SolrResourceLoader loader;
 
+
   public DefaultResourceManager(SolrResourceLoader loader, TimeSource timeSource) {
     this.loader = loader;
     this.timeSource = timeSource;
@@ -77,7 +96,7 @@ public class DefaultResourceManager extends ResourceManager {
         new DefaultSolrThreadFactory(getClass().getSimpleName()));
     scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
     scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-    // TODO: make configurable
+    // TODO: make configurable based on plugin info
     resourceManagerPluginFactory = new DefaultResourceManagerPluginFactory(loader);
     log.info("Resource manager initialized.");
   }
@@ -127,7 +146,7 @@ public class DefaultResourceManager extends ResourceManager {
   }
 
   @Override
-  public void modifyPoolLimits(String name, Map<String, Object> poolLimits) throws Exception {
+  public void setPoolLimits(String name, Map<String, Object> poolLimits) throws Exception {
     ensureActive();
     ResourceManagerPool pool = resourcePools.get(name);
     if (pool == null) {
@@ -162,12 +181,22 @@ public class DefaultResourceManager extends ResourceManager {
         return;
       }
       if (otherPool.getType().equals(type)) {
-        throw new IllegalArgumentException("Resource " + managedResource.getResourceName() +
+        throw new IllegalArgumentException("Resource " + managedResource.getResourceId() +
             " is already managed in another pool (" +
             otherPool.getName() + ") of the same type " + type);
       }
     });
     pool.addResource(managedResource);
+  }
+
+  @Override
+  public boolean removeResource(String poolName, String resourceId) {
+    ensureActive();
+    ResourceManagerPool pool = resourcePools.get(poolName);
+    if (pool == null) {
+      throw new IllegalArgumentException("Pool '" + poolName + "' doesn't exist.");
+    }
+    return pool.removeResource(resourceId);
   }
 
   @Override

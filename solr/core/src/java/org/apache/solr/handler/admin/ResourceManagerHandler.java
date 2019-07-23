@@ -135,8 +135,8 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
           result.add(p, perPool);
           perPool.add("type", pool.getType());
           perPool.add("size", pool.getResources().size());
-          perPool.add("limits", pool.getPoolLimits());
-          perPool.add("args", pool.getArgs());
+          perPool.add("poolLimits", pool.getPoolLimits());
+          perPool.add("poolParams", pool.getParams());
           perPool.add("resources", pool.getResources().keySet());
         });
         break;
@@ -147,8 +147,8 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
         }
         result.add("type", pool.getType());
         result.add("size", pool.getResources().size());
-        result.add("limits", pool.getPoolLimits());
-        result.add("args", pool.getArgs());
+        result.add("poolLimits", pool.getPoolLimits());
+        result.add("poolParams", pool.getParams());
         result.add("resources", pool.getResources().keySet());
         try {
           pool.getCurrentValues();
@@ -242,7 +242,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
           result.add(n, perRes);
           perRes.add("class", resource.getClass().getName());
           perRes.add("types", resource.getManagedResourceTypes());
-          perRes.add("managedLimits", resource.getManagedLimits());
+          perRes.add("resourceLimits", resource.getResourceLimits());
         });
         break;
       case STATUS:
@@ -252,7 +252,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
         }
         result.add("class", resource.getClass().getName());
         result.add("types", resource.getManagedResourceTypes());
-        result.add("managedLimits", resource.getManagedLimits());
+        result.add("resourceLimits", resource.getResourceLimits());
         try {
           result.add("monitoredValues", resource.getMonitoredValues(Collections.emptySet()));
         } catch (Exception e) {
@@ -265,14 +265,14 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
         if (resource1 == null) {
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Resource '" + resName + " not found in pool '" + poolName + "'.");
         }
-        result.add("managedLimits", resource1.getManagedLimits());
+        result.add("resourceLimits", resource1.getResourceLimits());
         break;
       case SETLIMITS:
         ManagedResource resource2 = pool.getResources().get(resName);
         if (resource2 == null) {
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Resource '" + resName + " not found in pool '" + poolName + "'.");
         }
-        Map<String, Object> currentLimits = new HashMap<>(resource2.getManagedLimits());
+        Map<String, Object> currentLimits = new HashMap<>(resource2.getResourceLimits());
         Map<String, Object> newLimits = getMap(params, LIMIT_PREFIX_PARAM);
         newLimits.forEach((k, v) -> {
           if (v == null) {
@@ -281,7 +281,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
             currentLimits.put(k, v);
           }
         });
-        resource2.setManagedLimits(newLimits);
+        resource2.setResourceLimits(newLimits);
         result.add("success", newLimits);
         break;
       case DELETE:

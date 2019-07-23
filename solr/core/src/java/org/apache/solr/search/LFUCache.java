@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
@@ -29,6 +31,8 @@ import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.managed.ResourceId;
+import org.apache.solr.managed.plugins.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLFUCache;
@@ -80,6 +84,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
+  private ResourceId resourceId;
 
   private int sizeLimit;
   private int minSizeLimit;
@@ -312,6 +317,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
       }
     });
     manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    resourceId = new ResourceId(tag, registryName, getCategory().toString(), scope);
   }
 
   // for unit tests only
@@ -346,6 +352,11 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   }
 
   @Override
+  public ResourceId getResourceId() {
+    return resourceId;
+  }
+
+  @Override
   public Map<String, Object> getResourceLimits() {
     Map<String, Object> limits = new HashMap<>();
     limits.put(SIZE_PARAM, cache.getStats().getCurrentSize());
@@ -356,6 +367,16 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     limits.put(SHOW_ITEMS_PARAM, showItems);
     limits.put(TIME_DECAY_PARAM, timeDecay);
     return limits;
+  }
+
+  @Override
+  public Map<String, Object> getMonitoredValues(Collection<String> tags) throws Exception {
+    return cacheMap.getValue();
+  }
+
+  @Override
+  public Collection<String> getManagedResourceTypes() {
+    return Collections.singleton(CacheManagerPlugin.TYPE);
   }
 
   @Override

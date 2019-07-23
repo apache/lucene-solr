@@ -33,12 +33,12 @@ public interface ResourceManagerPlugin {
    * Name of monitored parameters that {@link ManagedResource}-s managed by this plugin
    * are expected to support.
    */
-  Collection<String> getMonitoredTags();
+  Collection<String> getMonitoredParams();
   /**
    * Name of controlled parameters that {@link ManagedResource}-s managed by this plugin
    * are expected to support.
    */
-  Collection<String> getControlledTags();
+  Collection<String> getControlledParams();
 
   /**
    * Manage resources in a pool. This method is called periodically by {@link ResourceManager},

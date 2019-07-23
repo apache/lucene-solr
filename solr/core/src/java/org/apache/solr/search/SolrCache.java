@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.managed.ManagedResource;
 import org.apache.solr.metrics.SolrMetricProducer;
 
 import java.util.Map;
@@ -25,7 +26,7 @@ import java.util.Map;
 /**
  * Primary API for dealing with Solr's internal caches.
  */
-public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
+public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer, ManagedResource {
 
   String SIZE_PARAM = "size";
   String MAX_RAM_MB_PARAM = "maxRamMB";
@@ -128,21 +129,5 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
 
   /** Frees any non-memory resources */
   public void close();
-
-  /** Report current resource limits. */
-  public Map<String, Object> getResourceLimits();
-
-  /** Set resource limits. */
-  default void setResourceLimits(Map<String, Object> limits) throws Exception {
-    if (limits == null || limits.isEmpty()) {
-      return;
-    }
-    for (Map.Entry<String, Object> entry : limits.entrySet()) {
-      setResourceLimit(entry.getKey(), entry.getValue());
-    }
-  }
-
-  /** Set a named resource limit. */
-  public void setResourceLimit(String limitName, Object value) throws Exception;
 
 }

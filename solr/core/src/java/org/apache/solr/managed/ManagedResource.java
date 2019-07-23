@@ -30,9 +30,10 @@ public interface ManagedResource {
   Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * Unique name of this resource.
+   * Unique name of this resource. By convention id-s form a dot-separated hierarchy that
+   * follows the naming of metric registries and metric names.
    */
-  String getResourceName();
+  ResourceId getResourceId();
 
   /**
    * Returns types of management plugins supported by this resource. This must always
@@ -41,38 +42,38 @@ public interface ManagedResource {
   Collection<String> getManagedResourceTypes();
 
   /**
-   * Set values of managed limits.
+   * Set values of managed resource limits.
    * @param limits map of limit names and values
    */
-  default void setManagedLimits(Map<String, Object> limits) {
+  default void setResourceLimits(Map<String, Object> limits) {
     if (limits == null) {
       return;
     }
     limits.forEach((key, value) -> {
       try {
-        setManagedLimit(key, value);
+        setResourceLimit(key, value);
       } catch (Exception e) {
-        log.warn("Exception setting managed limit on {}: key={}, value={}, exception={}",
-            getResourceName(), key, value, e);
+        log.warn("Exception setting resource limit on {}: key={}, value={}, exception={}",
+            getResourceId(), key, value, e);
       }
     });
   }
 
   /**
-   * Set value of a managed limit.
+   * Set value of a managed resource limit.
    * @param key limit name
    * @param value limit value
    */
-  void setManagedLimit(String key, Object value) throws Exception;
+  void setResourceLimit(String key, Object value) throws Exception;
 
   /**
-   * Returns current values of managed limits.
-   * @return map where keys are controlled tags and values are current limits
+   * Returns current values of managed resource limits.
+   * @return map where keys are controlled parameters and values are current values of limits
    */
-  Map<String, Object> getManagedLimits();
+  Map<String, Object> getResourceLimits();
 
   /**
-   * Returns monitored values that are used for calculating optimal settings of managed limits.
+   * Returns monitored values that are used for calculating optimal settings of managed resource limits.
    * @param tags selected monitored tags, empty collection to return all monitored values
    * @return map of tags to current values.
    */

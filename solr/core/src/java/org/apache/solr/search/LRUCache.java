@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Iterator;
@@ -32,6 +33,8 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.managed.ResourceId;
+import org.apache.solr.managed.plugins.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
@@ -78,6 +81,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private MetricRegistry registry;
   private int sizeLimit;
   private int initialSize;
+  private ResourceId resourceId;
 
   private long maxRamBytes = Long.MAX_VALUE;
   // The synchronization used for the map will be used to update this,
@@ -335,6 +339,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
     });
     manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    resourceId = new ResourceId(tag, registryName, getCategory().toString(), scope);
   }
 
   // for unit tests only
@@ -372,6 +377,21 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     limits.put(SIZE_PARAM, sizeLimit);
     limits.put(MAX_RAM_MB_PARAM, maxRamBytes != Long.MAX_VALUE ? maxRamBytes / 1024L / 1024L : -1L);
     return limits;
+  }
+
+  @Override
+  public Map<String, Object> getMonitoredValues(Collection<String> tags) throws Exception {
+    return cacheMap.getValue();
+  }
+
+  @Override
+  public ResourceId getResourceId() {
+    return resourceId;
+  }
+
+  @Override
+  public Collection<String> getManagedResourceTypes() {
+    return Collections.singleton(CacheManagerPlugin.TYPE);
   }
 
   @Override

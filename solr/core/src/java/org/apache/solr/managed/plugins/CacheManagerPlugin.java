@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
  * the management of {@link org.apache.solr.search.SolrCache} instances.
  * <p>This plugin calculates the total size and maxRamMB of all registered cache instances
  * and adjusts each cache's limits so that the aggregated values again fit within the pool limits.</p>
- * <p>In order to avoid thrashing the plugin uses a dead zone (by default {@link #DEFAULT_DEAD_ZONE}),
- * which can be adjusted using configuration parameter {@link #DEAD_ZONE}. If monitored values don't
+ * <p>In order to avoid thrashing the plugin uses a dead zone (by default {@link #DEFAULT_DEAD_BAND}),
+ * which can be adjusted using configuration parameter {@link #DEAD_BAND}. If monitored values don't
  * exceed the limits +/- the dead zone no action is taken.</p>
  */
 public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
@@ -30,8 +30,8 @@ public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
   public static final String RAM_BYTES_USED_TAG = "ramBytesUsed";
   public static final String MAX_RAM_MB_TAG = "maxRamMB";
 
-  public static final String DEAD_ZONE = "deadZone";
-  public static final float DEFAULT_DEAD_ZONE = 0.1f;
+  public static final String DEAD_BAND = "deadBand";
+  public static final float DEFAULT_DEAD_BAND = 0.1f;
 
   private static final Map<String, String> controlledToMonitored = new HashMap<>();
 
@@ -51,15 +51,15 @@ public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
       SIZE_TAG
   );
 
-  private float deadZone = DEFAULT_DEAD_ZONE;
+  private float deadBand = DEFAULT_DEAD_BAND;
 
   @Override
-  public Collection<String> getMonitoredTags() {
+  public Collection<String> getMonitoredParams() {
     return MONITORED_TAGS;
   }
 
   @Override
-  public Collection<String> getControlledTags() {
+  public Collection<String> getControlledParams() {
     return CONTROLLED_TAGS;
   }
 
@@ -70,11 +70,11 @@ public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
 
   @Override
   public void init(Map<String, Object> params) {
-    String deadZoneStr = String.valueOf(params.getOrDefault(DEAD_ZONE, DEFAULT_DEAD_ZONE));
+    String deadBandStr = String.valueOf(params.getOrDefault(DEAD_BAND, DEFAULT_DEAD_BAND));
     try {
-      deadZone = Float.parseFloat(deadZoneStr);
+      deadBand = Float.parseFloat(deadBandStr);
     } catch (Exception e) {
-      log.warn("Invalid deadZone parameter value '" + deadZoneStr + "', using default " + DEFAULT_DEAD_ZONE);
+      log.warn("Invalid deadBand parameter value '" + deadBandStr + "', using default " + DEFAULT_DEAD_BAND);
     }
   }
 
@@ -102,15 +102,15 @@ public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
       }
       float totalDelta = poolLimitValue - totalValue;
 
-      // dead zone to avoid thrashing
-      if (Math.abs(totalDelta / poolLimitValue) < deadZone) {
+      // dead band to avoid thrashing
+      if (Math.abs(totalDelta / poolLimitValue) < deadBand) {
         return;
       }
 
       float changeRatio = poolLimitValue / totalValue;
       // modify current limits by the changeRatio
       pool.getResources().forEach((name, resource) -> {
-        Map<String, Object> resourceLimits = resource.getManagedLimits();
+        Map<String, Object> resourceLimits = resource.getResourceLimits();
         Object limit = resourceLimits.get(poolLimitName);
         if (limit == null || !(limit instanceof Number)) {
           return;
@@ -121,10 +121,10 @@ public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
         }
         float newLimit = currentResourceLimit * changeRatio;
         try {
-          resource.setManagedLimit(poolLimitName, newLimit);
+          resource.setResourceLimit(poolLimitName, newLimit);
         } catch (Exception e) {
           log.warn("Failed to set managed limit " + poolLimitName +
-              " from " + currentResourceLimit + " to " + newLimit + " on " + resource.getResourceName(), e);
+              " from " + currentResourceLimit + " to " + newLimit + " on " + resource.getResourceId(), e);
         }
       });
     });

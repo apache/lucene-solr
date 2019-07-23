@@ -40,7 +40,7 @@ public interface ResourceManagerPool extends Runnable, Closeable {
   Map<String, Object> getPoolLimits();
 
   /** Get parameters specified during creation. */
-  Map<String, Object> getArgs();
+  Map<String, Object> getParams();
 
   /**
    * Pool limits are defined using controlled tags.

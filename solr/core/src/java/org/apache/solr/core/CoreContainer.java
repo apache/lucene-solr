@@ -99,6 +99,7 @@ import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.managed.DefaultResourceManager;
+import org.apache.solr.managed.NoOpResourceManager;
 import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.managed.plugins.CacheManagerPlugin;
 import org.apache.solr.metrics.SolrCoreMetricManager;
@@ -616,17 +617,6 @@ public class CoreContainer {
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
 
-    resourceManager = new DefaultResourceManager(loader, TimeSource.NANO_TIME);
-    // TODO: get the config from solr.xml?
-    resourceManager.init(new PluginInfo("resourceManager", Collections.emptyMap()));
-    // TODO: create default pools from solr.xml?
-    try {
-      resourceManager.createPool(ResourceManager.SEARCHER_CACHE_POOL, CacheManagerPlugin.TYPE,
-          Collections.singletonMap("maxRamMB", 500), Collections.emptyMap());
-    } catch (Exception e) {
-      log.warn("failed to create default searcherCache pool,, disabling", e);
-    }
-
     coreContainerWorkExecutor = MetricUtils.instrumentedExecutorService(
         coreContainerWorkExecutor, null,
         metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
@@ -676,6 +666,21 @@ public class CoreContainer {
     metricsHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, METRICS_PATH);
 
     createMetricsHistoryHandler();
+
+    Map<String, Object> resManConfig = new HashMap<>();
+    Map<String, Object> poolConfigs = new HashMap<>(DefaultResourceManager.DEFAULT_NODE_POOLS);
+    resManConfig.put(DefaultResourceManager.POOL_CONFIGS_PARAM, poolConfigs);
+    if (isZooKeeperAware()) {
+      Map<String, Object> clusterProps = getZkController().getZkStateReader().getClusterProperties();
+      poolConfigs.putAll((Map<String, Object>)clusterProps.getOrDefault(DefaultResourceManager.POOL_CONFIGS_PARAM, Collections.emptyMap()));
+    }
+    try {
+      resourceManager = ResourceManager.load(loader, TimeSource.NANO_TIME, DefaultResourceManager.class,
+          new PluginInfo("resourceManager", Collections.emptyMap()), poolConfigs);
+    } catch (Exception e) {
+      log.warn("Resource manager initialization error - disabling!", e);
+      resourceManager = NoOpResourceManager.INSTANCE;
+    }
 
     resourceManagerHandler = new ResourceManagerHandler(resourceManager);
     containerHandlers.put(RESOURCE_MANAGER_PATH, resourceManagerHandler);

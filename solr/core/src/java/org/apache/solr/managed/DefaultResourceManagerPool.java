@@ -76,7 +76,7 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   }
 
   @Override
-  public Map<String, Object> getArgs() {
+  public Map<String, Object> getParams() {
     return args;
   }
 
@@ -84,12 +84,12 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   public void addResource(ManagedResource managedResource) {
     Collection<String> types = managedResource.getManagedResourceTypes();
     if (!types.contains(type)) {
-      log.debug("Pool type '" + type + "' is not supported by the resource " + managedResource.getResourceName());
+      log.debug("Pool type '" + type + "' is not supported by the resource " + managedResource.getResourceId());
       return;
     }
-    ManagedResource existing = resources.putIfAbsent(managedResource.getResourceName(), managedResource);
+    ManagedResource existing = resources.putIfAbsent(managedResource.getResourceId().toString(), managedResource);
     if (existing != null) {
-      throw new IllegalArgumentException("Resource '" + managedResource.getResourceName() + "' already exists in pool '" + name + "' !");
+      throw new IllegalArgumentException("Resource '" + managedResource.getResourceId() + "' already exists in pool '" + name + "' !");
     }
   }
 
@@ -111,9 +111,9 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
       Map<String, Map<String, Object>> currentValues = new HashMap<>();
       for (ManagedResource resource : resources.values()) {
         try {
-          currentValues.put(resource.getResourceName(), resource.getMonitoredValues(resourceManagerPlugin.getMonitoredTags()));
+          currentValues.put(resource.getResourceId().toString(), resource.getMonitoredValues(resourceManagerPlugin.getMonitoredParams()));
         } catch (Exception e) {
-          log.warn("Error getting managed values from " + resource.getResourceName(), e);
+          log.warn("Error getting managed values from " + resource.getResourceId(), e);
         }
       }
       // calculate totals

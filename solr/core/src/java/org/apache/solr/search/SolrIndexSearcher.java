@@ -67,6 +67,8 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
+import org.apache.solr.managed.DefaultResourceManager;
+import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -424,9 +426,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       infoRegistry.put(cache.name(), cache);
     }
     metricManager = core.getCoreContainer().getMetricManager();
+    ResourceManager resourceManager = core.getCoreContainer().getResourceManager();
     registryName = core.getCoreMetricManager().getRegistryName();
     for (SolrCache cache : cacheList) {
       cache.initializeMetrics(metricManager, registryName, core.getMetricTag(), SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+      try {
+        resourceManager.addResource(DefaultResourceManager.NODE_SEARCHER_CACHE_POOL, cache);
+      } catch (Exception e) {
+        log.warn("Exception adding cache '" + cache.getResourceId() + "' to the resource manager pool", e);
+      }
     }
     initializeMetrics(metricManager, registryName, core.getMetricTag(), STATISTICS_KEY);
     registerTime = new Date();
@@ -471,6 +479,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     for (SolrCache cache : cacheList) {
+      core.getCoreContainer().getResourceManager().removeResource(DefaultResourceManager.NODE_SEARCHER_CACHE_POOL, cache.getResourceId().toString());
       cache.close();
     }
 
