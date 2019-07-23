@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler;
+package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;

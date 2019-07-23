@@ -560,7 +560,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         )
     );
 
-    addDocsAndCommit(false,
+    addDocsAndCommit(true,
         newDoc("shorthair", "2019-07-02T23:00:00Z"), // no effect expected
         newDoc("calico", "2019-07-06T00:00:00Z")     // create July 6, delete July 1
     );

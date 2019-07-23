@@ -20,7 +20,6 @@ package org.apache.solr.core;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
@@ -30,8 +29,10 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.RestTestHarness;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.BeforeClass;
 
@@ -48,26 +49,13 @@ public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
   }
 
   public static Pair<Server, Integer> runHttpServer(Map<String, Object> jars) throws Exception {
-    int port = 0;
-    int start = 30000 + random().nextInt(10000);//start at somewhere between 30000 - 40000
-    for (int i = start; i < (start+1000); i++) {//check ports one by one
-      try {
-        new ServerSocket(i).close();
-        port = i;
-        break;
-      } catch (IOException e) {
-        continue;
-      }
-    }
-    if (port == 0) {
-      fail("No port to be found");
-    }
-    Server server = null;
-    server = new Server(port);
+    final Server server = new Server();
+    final ServerConnector connector = new ServerConnector(server);
+    server.setConnectors(new Connector[] { connector });
     server.setHandler(new AbstractHandler() {
       @Override
       public void handle(String s, Request request, HttpServletRequest req, HttpServletResponse rsp)
-          throws IOException {
+        throws IOException {
         ByteBuffer b = (ByteBuffer) jars.get(s);
         if (b != null) {
           rsp.getOutputStream().write(b.array(), 0, b.limit());
@@ -78,7 +66,7 @@ public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
       }
     });
     server.start();
-    return new Pair<>(server, port);
+    return new Pair<>(server, connector.getLocalPort());
   }
 
   public void testDynamicLoadingUrl() throws Exception {
@@ -106,7 +94,7 @@ public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
           "/config/overlay",
           null,
           Arrays.asList("overlay", "runtimeLib", "urljar", "sha512"),
-          "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420", 10);
+          "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420", 120);
 
       payload = "{\n" +
           "'create-requesthandler' : { 'name' : '/runtime', 'class': 'org.apache.solr.core.RuntimeLibReqHandler', 'runtimeLib' : true}" +
@@ -119,14 +107,14 @@ public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
           "/config/overlay",
           null,
           Arrays.asList("overlay", "requestHandler", "/runtime", "class"),
-          "org.apache.solr.core.RuntimeLibReqHandler", 10);
+          "org.apache.solr.core.RuntimeLibReqHandler", 120);
 
       Map result = TestSolrConfigHandler.testForResponseElement(client,
           null,
           "/runtime",
           null,
           Arrays.asList("class"),
-          "org.apache.solr.core.RuntimeLibReqHandler", 10);
+          "org.apache.solr.core.RuntimeLibReqHandler", 120);
       compareValues(result, MemClassLoader.class.getName(), asList("loader"));
     } finally {
       pair.first().stop();

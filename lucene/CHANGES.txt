@@ -27,6 +27,9 @@ API Changes
   and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
   Grand, Alan Woodward)
 
+* LUCENE-8909: The deprecated IndexWriter#getFieldNames() method has been removed.
+  (Adrien Grand, Munendra S N)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -37,10 +40,6 @@ Improvements
   docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
   indices (Atri Sharma, Adrien Grand, Simon Willnauer)
 
-* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
-
-* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
-
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -50,9 +49,32 @@ Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
-* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
-  (Tomoko Uchida, Uwe Schindler)
+======================= Lucene 8.3.0 =======================
 
+API Changes
+
+* LUCENE-8909: IndexWriter#getFieldNames() method is used to get fields present in index. After LUCENE-8316, this
+  method is no longer required. Hence, deprecate IndexWriter#getFieldNames() method. (Adrien Grand, Munendra S N)
+
+Improvements
+
+* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
+
+* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
+
+* LUCENE-8914: move the logic for discarding inner modes to the IntersectVisitor so we take advantage
+  of the change introduced in LUCENE-7862. (Ignacio Vera)
+
+* LUCENE-8918: PhraseQuery throws exceptions at construction time if it is passed
+  null arguments. (Alan Woodward)
+
+* LUCENE-8916: GraphTokenStreamFiniteStrings preserves all Token attributes
+  through its finite strings TokenStreams (Alan Woodward)
+
+Other
+
+* LUCENE-8778 LUCENE-8911: Define analyzer SPI names as static final fields and document the names in Javadocs.
+  (Tomoko Uchida, Uwe Schindler)
 
 ======================= Lucene 8.2.0 =======================
 
