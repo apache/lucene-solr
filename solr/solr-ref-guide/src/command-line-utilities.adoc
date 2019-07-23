@@ -29,7 +29,7 @@ Many of the functions provided by the zkCli.sh script are also provided by the <
 .Solr's zkcli.sh vs ZooKeeper's zkCli.sh
 [IMPORTANT]
 ====
-The `zkcli.sh` provided by Solr is not the same as the https://zookeeper.apache.org/doc/trunk/zookeeperStarted.html#sc_ConnectingToZooKeeper[`zkCli.sh` included in ZooKeeper distributions].
+The `zkcli.sh` provided by Solr is not the same as the https://zookeeper.apache.org/doc/current/zookeeperStarted.html#sc_ConnectingToZooKeeper[`zkCli.sh` included in ZooKeeper distributions].
 
 ZooKeeper's `zkCli.sh` provides a completely general, application-agnostic shell for manipulating data in ZooKeeper. Solr's `zkcli.sh` – discussed in this section – is specific to Solr, and has command line arguments specific to dealing with Solr data in ZooKeeper.
 ====
