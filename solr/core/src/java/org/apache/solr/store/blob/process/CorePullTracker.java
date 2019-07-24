@@ -75,7 +75,7 @@ public class CorePullTracker {
     // Initialize variables
     String coreName = core.getName();
     String shardName = core.getCoreDescriptor().getCloudDescriptor().getShardId();
-    SharedShardMetadataController sharedShardMetadataController = cores.getZkController().getSharedShardMetadataController();
+    SharedShardMetadataController sharedShardMetadataController = cores.getSharedStoreManager().getSharedShardMetadataController();
     DocCollection collection = cores.getZkController().getClusterState().getCollection(collectionName);
 
     Slice shard = collection.getSlicesMap().get(shardName);

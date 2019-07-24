@@ -726,7 +726,7 @@ public class Overseer implements SolrCloseable {
   }
   
   public SharedShardMetadataController getShardSharedMetadataController() {
-    return zkController.getSharedShardMetadataController();
+    return getCoreContainer().getSharedStoreManager().getSharedShardMetadataController();
   }
 
   /**

@@ -224,7 +224,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
     String message = null;
     try {
       // Do the sequence of actions required to pull a core from the Blob store.
-      BlobStorageProvider blobProvider = coreContainer.getZkController().getBlobStorageProvider(); 
+      BlobStorageProvider blobProvider = coreContainer.getSharedStoreManager().getBlobStorageProvider(); 
       CoreStorageClient blobClient = blobProvider.getDefaultClient(); // TODO, use a real client
 
       // Get blob metadata
@@ -277,7 +277,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       // If we call pullUpdateFromBlob with an empty list of files to pull, we'll see an NPE down the line.
       // TODO: might be better to handle this error in CorePushPull.pullUpdateFromBlob
       if (resolutionResult.getFilesToPull().size() > 0) {
-        BlobDeleteManager deleteManager = coreContainer.getZkController().getBlobDeleteManager();
+        BlobDeleteManager deleteManager = coreContainer.getSharedStoreManager().getBlobDeleteManager();
         CorePushPull cp = new CorePushPull(blobClient, deleteManager, pullCoreInfo, resolutionResult, serverMetadata, blobMetadata);
         cp.pullUpdateFromBlob(/* waitForSearcher */ true);
         syncStatus = CoreSyncStatus.SUCCESS;

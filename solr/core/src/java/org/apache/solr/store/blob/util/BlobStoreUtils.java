@@ -52,14 +52,14 @@ public class BlobStoreUtils {
    * local content.
    * @throws SolrException if the local core was not successfully sync'd.
    */
-  public static void  syncLocalCoreWithSharedStore( String collectionName, String coreName, String shardName, CoreContainer  coreContainer) throws SolrException
+  public static void syncLocalCoreWithSharedStore(String collectionName, String coreName, String shardName, CoreContainer coreContainer) throws SolrException
   {
     assertTrue(coreContainer.isZooKeeperAware());
 
     ZkController zkController = coreContainer.getZkController();
-    SharedShardMetadataController sharedMetadataController = zkController.getSharedShardMetadataController();
+    SharedShardMetadataController sharedMetadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
     DocCollection collection = zkController.getClusterState().getCollection(collectionName);
-    CoreStorageClient blobClient = zkController.getBlobStorageProvider().getDefaultClient();
+    CoreStorageClient blobClient = coreContainer.getSharedStoreManager().getBlobStorageProvider().getDefaultClient();
     log.info("sync intialized for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
 
     CoreSyncStatus syncStatus = CoreSyncStatus.FAILURE;
@@ -115,7 +115,7 @@ public class BlobStoreUtils {
 
         if (resolutionResult.getFilesToPull().size() > 0) {
 
-          BlobDeleteManager deleteManager = zkController.getBlobDeleteManager();
+          BlobDeleteManager deleteManager = coreContainer.getSharedStoreManager().getBlobDeleteManager();
           CorePushPull cp = new CorePushPull(blobClient, deleteManager, pushPullData, resolutionResult, serverMetadata, blobstoreMetadata);
           cp.pullUpdateFromBlob(/* waitForSearcher */ true);
         } else {

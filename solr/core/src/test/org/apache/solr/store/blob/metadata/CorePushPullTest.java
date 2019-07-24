@@ -16,25 +16,26 @@
  */
 package org.apache.solr.store.blob.metadata;
 
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
-import org.apache.solr.store.blob.client.BlobstoreProviderType;
 import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.blob.client.LocalStorageClient;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil.SharedMetadataResolutionResult;
 import org.apache.solr.store.blob.process.BlobDeleteManager;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
@@ -42,8 +43,9 @@ import org.mockito.Mockito;
  */
 public class CorePushPullTest extends SolrTestCaseJ4 {
   
-  private static CoreStorageClient client = Mockito.mock(CoreStorageClient.class);
   private static BlobDeleteManager deleteManager = Mockito.mock(BlobDeleteManager.class);
+  private static CoreStorageClient storageClient;
+  private static Path localBlobDir;
   
   private String sharedBlobName = "collectionTest_shardTest";
   private String collectionName = "collectionTest";
@@ -51,26 +53,26 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
   private String metadataSuffix = "metadataSuffix";
   
   @BeforeClass
-  public static void setup() throws Exception {
-    initCore("solrconfig.xml", "schema-minimal.xml");
-    
-    Mockito.doNothing().when(client).pushCoreMetadata(Mockito.any(), Mockito.any(), Mockito.any());
-    Mockito.when(client.getStorageProvider()).thenReturn(BlobstoreProviderType.LOCAL_FILE_SYSTEM);
-    Mockito.when(client.getBucketRegion()).thenReturn("bucketRegion");
-    Mockito.when(client.getBucketName()).thenReturn("bucketName");
+  public static void setupTest() throws Exception {
+    // set up the temp directory for a local blob store
+    localBlobDir = createTempDir("tempDir");
+    storageClient = new LocalStorageClient(localBlobDir.resolve("LocalBlobStore/").toString());
   }
   
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    clearIndex();
-    assertU(commit());
+    deleteCore();
+    initCore("solrconfig.xml", "schema-minimal.xml");
+    
+    FileUtils.cleanDirectory(localBlobDir.toFile());
   }
   
   /*
    * Test that if a core is not found in the core container when pushing, an exception is thrown
    */
+  @Test
   public void testPushFailsOnMissingCore() throws Exception {
     ServerSideMetadata solrServerMetadata = Mockito.mock(ServerSideMetadata.class);
     BlobCoreMetadata blobMetadata = Mockito.mock(BlobCoreMetadata.class);
@@ -81,7 +83,7 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
     
     // We can pass null values here because we don't expect those arguments to be interacted with.
     // If they are, a bug is introduced and should be addressed
-    CorePushPull pushPull = new CorePushPull(client, deleteManager, null, null, solrServerMetadata, blobMetadata) {
+    CorePushPull pushPull = new CorePushPull(storageClient, deleteManager, null, null, solrServerMetadata, blobMetadata) {
       @Override
       void enqueueForHardDelete(BlobCoreMetadataBuilder bcmBuilder) throws Exception {
         return;
@@ -101,6 +103,7 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
    * Test that pushing to blob is successful when blob core metadata on the blob store is empty
    * (or equivalently, didn't exist).
    */
+  @Test
   public void testPushSucceedsOnEmptyMetadata() throws Exception {
     SolrCore core = h.getCore();
     
@@ -109,6 +112,65 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
     assertU(adoc("id", docId));
     assertU(commit());
     
+    // the doc should be present
+    assertQ(req("*:*"), "//*[@numFound='1']");
+
+    // do a push via CorePushPull
+    BlobCoreMetadata returnedBcm = doPush(core);
+
+    // verify the return BCM is correct
+    IndexCommit indexCommit = core.getDeletionPolicy().getLatestCommit();
+    
+    assertEquals(sharedBlobName, returnedBcm.getSharedBlobName());
+    // the bcm on blob was empty so the file count should be equal to the count of the core's latest commit point
+    assertEquals(indexCommit.getFileNames().size(), returnedBcm.getBlobFiles().length);
+    
+    // this is a little ugly but the readability is better than the alternatives
+    Set<String> blobFileNames =  
+        Arrays.asList(returnedBcm.getBlobFiles())
+          .stream()
+          .map(s -> s.getSolrFileName())
+          .collect(Collectors.toSet());
+    assertEquals(indexCommit.getFileNames().stream().collect(Collectors.toSet()), blobFileNames);
+  }
+  
+  /*
+   * Test that pull to blob is successful when the core locally needs to be refreshed
+   */
+  @Test
+  public void testPullSucceedsAfterUpdate() throws Exception {
+    SolrCore core = h.getCore();
+    
+    // add a doc
+    String docId = "docID";
+    assertU(adoc("id", docId));
+    assertU(commit());
+    
+    // the doc should be present
+    assertQ(req("*:*"), "//*[@numFound='1']");
+    
+    // do a push via CorePushPull, the returned BlobCoreMetadata is what we'd expect to find
+    // on the blob store
+    BlobCoreMetadata returnedBcm = doPush(core);
+    // Delete the core to clear the index data and then re-create it 
+    deleteCore();
+    initCore("solrconfig.xml", "schema-minimal.xml");
+    core = h.getCore();
+    
+    // the doc should not be present
+    assertQ(req("*:*"), "//*[@numFound='0']");
+    
+    // now perform a pull
+    doPull(core, returnedBcm);
+    
+    // the doc should be present, we should be able to index and query again
+    assertQ(req("*:*"), "//*[@numFound='1']");
+    assertU(adoc("id", docId + "1"));
+    assertU(commit());
+    assertQ(req("*:*"), "//*[@numFound='2']");
+  }
+  
+  private BlobCoreMetadata doPush(SolrCore core) throws Exception {
     // build the require metadata
     ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer());
     
@@ -129,39 +191,32 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
     
     // the returned BCM is what is pushed to blob store so we should verify the push
     // was made with the correct data
-    CorePushPull pushPull = new CorePushPull(client, deleteManager, ppd, resResult, solrServerMetadata, bcm) {
-      @Override
-      protected String pushFileToBlobStore(CoreStorageClient blob, Directory dir, 
-          String fileName, long fileSize) throws Exception {
-       return UUID.randomUUID().toString();
-      }
-      
+    CorePushPull pushPull = new CorePushPull(storageClient, deleteManager, ppd, resResult, solrServerMetadata, bcm) {
       @Override
       void enqueueForHardDelete(BlobCoreMetadataBuilder bcmBuilder) throws Exception {
         return;
       }
     };
-    BlobCoreMetadata returnedBcm = pushPull.pushToBlobStore();
-    
-    // verify we called the storage client with the right args
-    Mockito.verify(client).pushCoreMetadata(
-        Mockito.eq(sharedBlobName), 
-        Mockito.eq(BlobStoreUtils.buildBlobStoreMetadataName(randomSuffix)),
-        Mockito.any());
-
-    // verify the return BCM is correct
-    IndexCommit indexCommit = core.getDeletionPolicy().getLatestCommit();
-    
-    assertEquals(sharedBlobName, returnedBcm.getSharedBlobName());
-    // the bcm on blob was empty so the file count should be equal to the count of the core's latest commit point
-    assertEquals(indexCommit.getFileNames().size(), returnedBcm.getBlobFiles().length);
-    
-    // this is a little ugly but the readability is better than the alternatives
-    Set<String> blobFileNames =  
-        Arrays.asList(returnedBcm.getBlobFiles())
-          .stream()
-          .map(s -> s.getSolrFileName())
-          .collect(Collectors.toSet());
-    assertEquals(indexCommit.getFileNames().stream().collect(Collectors.toSet()), blobFileNames);
+    return pushPull.pushToBlobStore();
   }
+  
+  private void doPull(SolrCore core, BlobCoreMetadata bcm) throws Exception {
+    // build the require metadata
+    ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer());
+    
+    String randomSuffix = BlobStoreUtils.generateMetadataSuffix();
+    PushPullData ppd = new PushPullData.Builder()
+        .setCollectionName(collectionName)
+        .setShardName(shardName)
+        .setCoreName(core.getName())
+        .setSharedStoreName(sharedBlobName)
+        .setLastReadMetadataSuffix(metadataSuffix)
+        .setNewMetadataSuffix(randomSuffix)
+        .setZkVersion(1)
+        .build();
+    SharedMetadataResolutionResult resResult = SharedStoreResolutionUtil.resolveMetadata(solrServerMetadata, bcm);
+    
+    CorePushPull pushPull = new CorePushPull(storageClient, deleteManager, ppd, resResult, solrServerMetadata, bcm);
+    pushPull.pullUpdateFromBlob(true);
+  }  
 }

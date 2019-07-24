@@ -30,7 +30,7 @@ public class CoreUpdateTracker {
   private SharedShardMetadataController shardSharedMetadataController; 
 
   private CoreUpdateTracker(CoreContainer coreContainer) {
-    shardSharedMetadataController = coreContainer.getZkController().getSharedShardMetadataController();
+    shardSharedMetadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
   }
 
   /**

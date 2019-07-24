@@ -17,11 +17,14 @@
 
 package org.apache.solr.store.blob.util;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.mockito.Mockito;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
+import java.nio.file.Path;
+import java.util.UUID;
+
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -34,15 +37,16 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.blob.client.LocalStorageClient;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
+import org.apache.solr.store.shared.SharedStoreManager;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.hamcrest.core.StringContains;
-import java.util.UUID;
-
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.anyString;
-
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 /**
  * Unit tests for {@link BlobStoreUtils}
@@ -54,11 +58,31 @@ public class BlobStoreUtilsTest extends SolrCloudTestCase {
   private Replica newReplica;
   private CoreContainer cc;
   private ZkController zk;
+  
+  private static CoreStorageClient storageClient;
+  private static BlobStorageProvider providerTestHarness = new BlobStorageProvider() {
+    @Override
+    public CoreStorageClient getDefaultClient() {
+      return storageClient;
+    }
+    
+    @Override
+    public CoreStorageClient getClient(String localBlobDir, String blobBucketName, String blobStoreEndpoint,
+        String blobStoreAccessKey, String blobStoreSecretKey, String blobStorageProvider) {
+      return storageClient;
+    }
+  };  
+  
   @BeforeClass
   public static void setupCluster() throws Exception {    
     configureCluster(1)
       .addConfig("conf", configset("cloud-minimal"))
       .configure();
+    
+    // setup a local blob store client to be used by the Mini Solr Cluster for testing
+    setupLocalBlobStoreClient("LocalBlobStore/");
+    // provision the harness on each node
+    setupBlobProviderTestHarness();
   }
   
   @Before
@@ -87,22 +111,18 @@ public class BlobStoreUtilsTest extends SolrCloudTestCase {
   public void doAfter() throws Exception {
     cluster.deleteAllCollections();
     if (null!= sharedStoreName) {
-      zk.getBlobStorageProvider().getDefaultClient().deleteCore(sharedStoreName);
+      cc.getSharedStoreManager().getBlobStorageProvider().getDefaultClient().deleteCore(sharedStoreName);
     }
   }
   
   /**
-   *  testSyncLocalCoreWithSharedStore_NoSuchElementZK checks that syncLocalCoreWithSharedStore 
-   *  will throw exception if metadataSuffix can't be found in the ZK.
+   * testSyncLocalCoreWithSharedStore_NoSuchElementZK checks that syncLocalCoreWithSharedStore 
+   * will throw exception if metadataSuffix can't be found in the ZK.
    */
   @Test
   public void testSyncLocalCoreWithSharedStore_NoSuchElementZK() throws Exception {
-    CoreContainer ccSpy = Mockito.spy(cc);
-    ZkController zkSpy = Mockito.spy(zk);
-    
-    Mockito.when(ccSpy.getZkController()).thenReturn(zkSpy);
     try {
-      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(),shardName, ccSpy);
+      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(), shardName, cc);
       fail("syncLocalCoreWithSharedStore should throw exception if zookeeper doesn't have metadataSuffix.");
     } catch (Exception ex){
       String expectedException = "Error reading data from path: " +
@@ -115,44 +135,33 @@ public class BlobStoreUtilsTest extends SolrCloudTestCase {
   }
   
   /**
-   *  testSyncLocalCoreWithSharedStore_syncEquivalent checks that syncLocalCoreWithSharedStore 
-   *  will skip sync if metadataSuffix is set to default in the ZK.
+   * testSyncLocalCoreWithSharedStore_syncEquivalent checks that syncLocalCoreWithSharedStore 
+   * will skip sync if metadataSuffix is set to default in the ZK.
    */
   @Test
   public void testSyncLocalCoreWithSharedStore_syncEquivalent() throws Exception {
-    CoreContainer ccSpy = Mockito.spy(cc);
-    ZkController zkSpy = Mockito.spy(zk);
-    BlobStorageProvider blobProvideMock = Mockito.mock(BlobStorageProvider.class);
-    CoreStorageClient blobClientMock = Mockito.mock(CoreStorageClient.class);
-    
-    Mockito.when(ccSpy.getZkController()).thenReturn(zkSpy);
-    Mockito.when(zkSpy.getBlobStorageProvider()).thenReturn(blobProvideMock);
-    Mockito.when(blobProvideMock.getDefaultClient()).thenReturn(blobClientMock);
-    
-    SharedShardMetadataController sharedMetadataController = zk.getSharedShardMetadataController();
+    CoreStorageClient blobClientSpy = Mockito.spy(storageClient);    
+    SharedShardMetadataController sharedMetadataController = cc.getSharedStoreManager().getSharedShardMetadataController();
     sharedMetadataController.ensureMetadataNodeExists(collectionName, shardName);
     try {
-      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(),shardName, ccSpy);
-      verify(blobClientMock,never()).pullCoreMetadata(anyString(),anyString());
+      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(), shardName, cc);
+      verify(blobClientSpy, never()).pullCoreMetadata(anyString(), anyString());
     } catch (Exception ex){
-      fail("syncLocalCoreWithSharedStore failed with exception: " + ex.getMessage() );
+      fail("syncLocalCoreWithSharedStore failed with exception: " + ex.getMessage());
     } 
   }
   
   /**
-   *  testSyncLocalCoreWithSharedStore_missingBlob checks that syncLocalCoreWithSharedStore 
-   *  will throw exception if core.metadata file is missing from the sharedStore.
+   * testSyncLocalCoreWithSharedStore_missingBlob checks that syncLocalCoreWithSharedStore 
+   * will throw exception if core.metadata file is missing from the sharedStore.
    */
   @Test
   public void testSyncLocalCoreWithSharedStore_missingBlob() throws Exception {
-    CoreContainer ccSpy = Mockito.spy(cc);
-    ZkController zkSpy = Mockito.spy(zk);
-    Mockito.when(ccSpy.getZkController()).thenReturn(zkSpy);
-    SharedShardMetadataController sharedMetadataController = zk.getSharedShardMetadataController();
+    SharedShardMetadataController sharedMetadataController = cc.getSharedStoreManager().getSharedShardMetadataController();
     sharedMetadataController.ensureMetadataNodeExists(collectionName, shardName);
     sharedMetadataController.updateMetadataValueWithVersion(collectionName, shardName, UUID.randomUUID().toString(), -1);
     try {
-      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(),shardName, ccSpy);
+      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(),shardName, cc);
       fail("syncLocalCoreWithSharedStore should throw exception if shared store doesn't have the core.metadata file.");
     } catch (Exception ex){
       String expectedException = "cannot get core.metadata file from shared store";
@@ -161,26 +170,42 @@ public class BlobStoreUtilsTest extends SolrCloudTestCase {
   }
   
   /**
-   *  testSyncLocalCoreWithSharedStore_syncSuccessful checks that syncLocalCoreWithSharedStore 
-   *  doesn't throw an exception if shared store and local files, already are in sync.
+   * testSyncLocalCoreWithSharedStore_syncSuccessful checks that syncLocalCoreWithSharedStore 
+   * doesn't throw an exception if shared store and local files, already are in sync.
    */
   @Test
   public void testSyncLocalCoreWithSharedStore_syncSuccessful() throws Exception {
-    SolrInputDocument doc;
-    CloudSolrClient cloudClient = cluster.getSolrClient();
+    CoreStorageClient blobClientSpy = Mockito.spy(storageClient);
     // Add a document.
-    doc = new SolrInputDocument();
+    SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
     doc.setField("cat", "cat123");
     UpdateRequest req = new UpdateRequest();
     req.add(doc);
-    req.process(cloudClient, collectionName);
-    req.commit(cloudClient, collectionName);
+    req.commit(cluster.getSolrClient(), collectionName);
     try {
-      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(),shardName, cc);
-    } catch (Exception ex){ 
+      // we push and already have the latest updates so we should not pull here
+      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(), shardName, cc);
+      verify(blobClientSpy, never()).pullCoreMetadata(anyString(), anyString());
+    } catch (Exception ex) { 
       fail("syncLocalCoreWithSharedStore failed with exception: " + ex.getMessage());
     }
   }
   
+  // adds the test harness to each solr process in the MiniSolrCluster
+  private static void setupBlobProviderTestHarness() {
+    for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
+      SharedStoreManager manager = solrRunner.getCoreContainer().getSharedStoreManager();
+      manager.initBlobStorageProvider(providerTestHarness);
+    }
+  }
+  
+  // setup a blob local storage client that writes to the blobDirName within a test temp dir
+  // that automatically gets cleaned up
+  private static Path setupLocalBlobStoreClient(String blobDirName) throws Exception {
+    // set up the temp directory for a local blob store
+    Path localBlobDir = createTempDir("tempDir");
+    storageClient = new LocalStorageClient(localBlobDir.resolve(blobDirName).toString());
+    return localBlobDir;
+  }
 }

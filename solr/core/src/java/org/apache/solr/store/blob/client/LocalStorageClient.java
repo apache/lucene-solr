@@ -1,255 +1,258 @@
 package org.apache.solr.store.blob.client;
 
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
-
-import org.apache.solr.store.blob.client.BlobException;
-import org.apache.solr.store.blob.client.BlobstoreProviderType;
-import org.apache.solr.store.blob.client.BlobCoreMetadata;
-import org.apache.solr.store.blob.client.BlobClientUtils;
-import org.apache.solr.store.blob.client.ToFromJson;
 
 /**
  * Class that handles reads and writes of solr blob files to the local file system.
  */
 public class LocalStorageClient implements CoreStorageClient {
+  
+  /** The directory on the local file system where blobs will be stored. */
+  private final String blobStoreRootDir;
 
-    /** The directory on the local file system where blobs will be stored. */
-    private final String blobStoreRootDir;
+  public LocalStorageClient(String blobStoreRootDir) throws Exception {
+    this.blobStoreRootDir = blobStoreRootDir;
+    File rootDir = new File(blobStoreRootDir);
+    rootDir.mkdirs(); // Might create the directory... or not
+    if (!rootDir.isDirectory()) {
+      throw new IOException("Can't create local Blob root directory " + rootDir.getAbsolutePath());
+    }
+  }
 
-    public LocalStorageClient(String blobStoreRootDir) throws Exception {
-        this.blobStoreRootDir = blobStoreRootDir;
-        File rootDir = new File(blobStoreRootDir);
-        rootDir.mkdirs(); // Might create the directory... or not
-        if (!rootDir.isDirectory()) {
-            throw new IOException("Can't create local Blob root directory " + rootDir.getAbsolutePath());
-        }
-    }
+  private File getCoreRootDir(String blobName) {
+    return new File(BlobClientUtils.concatenatePaths(blobStoreRootDir, blobName));
+  }
 
-    private File getCoreRootDir(String blobName) {
-        return new File(blobStoreRootDir + blobName);
-    }
+  @Override
+  public String pushStream(String blobName, InputStream is, long contentLength, String fileNamePrefix) throws BlobException {
+    try {
+      createCoreStorage(blobName);
+      String blobPath = createNewNonExistingBlob(blobName, fileNamePrefix);
 
-    @Override
-    public String pushStream(String blobName, InputStream is, long contentLength, String fileNamePrefix) throws BlobException {
-        try {
-            createCoreStorage(blobName);
-            String blobPath = createNewNonExistingBlob(blobName, fileNamePrefix);
+      Files.copy(is, Paths.get(getblobAbsolutePath(blobPath)), StandardCopyOption.REPLACE_EXISTING);
 
-            Files.copy(is, Paths.get(getblobAbsolutePath(blobPath)), StandardCopyOption.REPLACE_EXISTING);
-    
-            assert new File(getblobAbsolutePath(blobPath)).length() == contentLength;
-    
-            return blobPath;
-        } catch (Exception ex) {
-            throw new BlobException(ex);
-        }
-    }
+      assert new File(getblobAbsolutePath(blobPath)).length() == contentLength;
 
-    /**
-     * Picks a unique name for a new blob for the given core.<p>
-     * The current implementation creates a file, but eventually we just pick up a random blob name then delegate to S3...
-     * @return the blob file name, including the "path" part of the name
-     */
-    private String createNewNonExistingBlob(String blobName, String fileNamePrefix) throws BlobException {
-        try {
-            String blobPath = BlobClientUtils.generateNewBlobCorePath(blobName, fileNamePrefix);
-            final File blobFile = new File(getblobAbsolutePath(blobPath));
-            if (blobFile.exists()) {
-                // Not expecting this ever to happen. In theory we could just do "continue" here to try a new
-                // name. For now throwing an exception to make sure we don't run into this...
-                // continue;
-                throw new IllegalStateException("The random file name chosen using UUID already exists. Very worrying! " + blobFile.getAbsolutePath());
-            }
+      return blobPath;
+    } catch (Exception ex) {
+      throw new BlobException(ex);
+    }
+  }
 
-            return blobPath;
-        } catch (Exception ex) {
-            throw new BlobException(ex);
-        }
-    }
+  /**
+   * Picks a unique name for a new blob for the given core.<p>
+   * The current implementation creates a file, but eventually we just pick up a random blob name then delegate to S3...
+   * @return the blob file name, including the "path" part of the name
+   */
+  private String createNewNonExistingBlob(String blobName, String fileNamePrefix) throws BlobException {
+    try {
+      String blobPath = BlobClientUtils.generateNewBlobCorePath(blobName, fileNamePrefix);
+      final File blobFile = new File(getblobAbsolutePath(blobPath));
+      if (blobFile.exists()) {
+        // Not expecting this ever to happen. In theory we could just do "continue" here to try a new
+        // name. For now throwing an exception to make sure we don't run into this...
+        // continue;
+        throw new IllegalStateException("The random file name chosen using UUID already exists. Very worrying! " + blobFile.getAbsolutePath());
+      }
 
-    @Override
-    public InputStream pullStream(String blobPath) throws BlobException {
-        try {
-            File blobFile = new File(getblobAbsolutePath(blobPath));
-            return new FileInputStream(blobFile);
-        } catch (Exception ex) {
-            throw new BlobException(ex);
-        }
+      return blobPath;
+    } catch (Exception ex) {
+      throw new BlobException(ex);
     }
+  }
 
-    @Override
-    public void pushCoreMetadata(String sharedStoreName, String blobCoreMetadataName, BlobCoreMetadata bcm) throws BlobException {
-        try {
-            createCoreStorage(sharedStoreName);
-            ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
-            String json = converter.toJson(bcm);
-    
-            // Constant path under which the core metadata is stored in the Blob store (the only blob stored under a constant path!)
-            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(sharedStoreName, blobCoreMetadataName));
-            final File blobMetadataFile = new File(blobMetadataPath); 
-    
-            // Writing to the file assumed atomic, the file cannot be observed midway. Might not hold here but should be the case
-            // with a real S3 implementation.
-            try (PrintWriter out = new PrintWriter(blobMetadataFile)){
-                out.println(json);
-            }  
-        } catch (Exception ex) {
-            throw new BlobException(ex);
-        }
+  @Override
+  public InputStream pullStream(String blobPath) throws BlobException {
+    try {
+      File blobFile = new File(getblobAbsolutePath(blobPath));
+      return new FileInputStream(blobFile);
+    } catch (Exception ex) {
+      throw new BlobException(ex);
     }
+  }
 
-    @Override
-    public BlobCoreMetadata pullCoreMetadata(String sharedStoreName, String blobCoreMetadataName) throws BlobException {
-        try {
-            if (!coreMetadataExists(sharedStoreName, blobCoreMetadataName)) {
-                return null;
-            }
-            
-            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(sharedStoreName, blobCoreMetadataName));
-            File blobMetadataFile = new File(blobMetadataPath); 
-            
-            String json = new String(Files.readAllBytes(blobMetadataFile.toPath()));
-            ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
-            return converter.fromJson(json, BlobCoreMetadata.class);
-        } catch (Exception ex) {
-            throw new BlobException(ex);
-        }
-    }
+  @Override
+  public void pushCoreMetadata(String sharedStoreName, String blobCoreMetadataName, BlobCoreMetadata bcm) throws BlobException {
+    try {
+      createCoreStorage(sharedStoreName);
+      ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
+      String json = converter.toJson(bcm);
 
-    @Override
-    public boolean coreMetadataExists(String sharedStoreName, String blobCoreMetadataName) throws BlobException { 
-        try {
-            String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(sharedStoreName, blobCoreMetadataName));
-            File coreMetadataFile = new File(blobMetadataPath); 
-            return coreMetadataFile.exists();
-        } catch (Exception ex) {
-            throw new BlobException(ex);
-        }
-    }
+      // Constant path under which the core metadata is stored in the Blob store (the only blob stored under a constant path!)
+      String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(sharedStoreName, blobCoreMetadataName));
+      final File blobMetadataFile = new File(blobMetadataPath); 
 
-    /**
-     * Prefixes the given path with the blob store root directory on the local FS 
-     */
-    private String getblobAbsolutePath(String blobPath) {
-        return BlobClientUtils.concatenatePaths(blobStoreRootDir, blobPath);
+      // Writing to the file assumed atomic, the file cannot be observed midway. Might not hold here but should be the case
+      // with a real S3 implementation.
+      try (PrintWriter out = new PrintWriter(blobMetadataFile)){
+        out.println(json);
+      }  
+    } catch (Exception ex) {
+      throw new BlobException(ex);
     }
-    
-    private void createCoreStorage(String blobName) throws Exception {
-        File coreRootDir = getCoreRootDir(blobName);
-        coreRootDir.mkdirs();
-        if (!coreRootDir.isDirectory()) {
-            throw new IOException("Can't create Blob core root directory " + coreRootDir.getAbsolutePath());
-        }
-    }
-    
-    @Override
-    public void deleteCore(String blobName) throws BlobException {
-        try {
-            Path path = Paths.get(getblobAbsolutePath(blobName));
-            Files.walk(path)
-                // Since this traversal includes the root directory
-                // we need to reverse because we can't delete non-empty directories 
-                .sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(file -> {
-                    file.delete();
-                });
-        } catch (Exception ex) {
-            // In case the path doesn't exist, we'll just swallow the exception because it's not an issue,
-            // especially in test clean up.
-        }
-    }
-    
-    /**
-     * On the local FS implementation we'll just delete blob files individually
-     */
-    @Override
-    public void deleteBlobs(Collection<String> paths) throws BlobException {
-        try {
-            for (String blobPath : paths) {
-                final File blobFile = new File(getblobAbsolutePath(blobPath));
-                blobFile.delete();
-            }
-        } catch (Exception ex) {
-            throw new BlobException(ex);
-        }
-    }
-    
-    private String getBlobMetadataName(String blobName, String blobCoreMetadataName) {
-        return BlobClientUtils.concatenatePaths(blobName, blobCoreMetadataName);
-    }
-    
-    @Override
-    public BlobstoreProviderType getStorageProvider() {
-        return BlobstoreProviderType.LOCAL_FILE_SYSTEM;
-    }
-    
-    @Override 
-    public String getBucketRegion() {
-        return "N/A";
-    }
-    
-    @Override 
-    public String getBucketName() {
-        return "N/A";
-    }
-    
-    @Override 
-    public String getEndpoint() {
-        return "N/A";
-    }
+  }
 
-    /**
-     * The local file system is being used, there's nothing to connect to so this method will always return true.
-     */
-    @Override
-    public boolean doesBucketExist() {
-        return true;
+  @Override
+  public BlobCoreMetadata pullCoreMetadata(String sharedStoreName, String blobCoreMetadataName) throws BlobException {
+    try {
+      if (!coreMetadataExists(sharedStoreName, blobCoreMetadataName)) {
+        return null;
+      }
+      
+      String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(sharedStoreName, blobCoreMetadataName));
+      File blobMetadataFile = new File(blobMetadataPath); 
+      
+      String json = new String(Files.readAllBytes(blobMetadataFile.toPath()));
+      ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
+      return converter.fromJson(json, BlobCoreMetadata.class);
+    } catch (Exception ex) {
+      throw new BlobException(ex);
     }
+  }
 
-    @Override
-    public void shutdown() {
-        
+  @Override
+  public boolean coreMetadataExists(String sharedStoreName, String blobCoreMetadataName) throws BlobException { 
+    try {
+      String blobMetadataPath = getblobAbsolutePath(getBlobMetadataName(sharedStoreName, blobCoreMetadataName));
+      File coreMetadataFile = new File(blobMetadataPath); 
+      return coreMetadataFile.exists();
+    } catch (Exception ex) {
+      throw new BlobException(ex);
     }
+  }
+
+  /**
+   * Prefixes the given path with the blob store root directory on the local FS 
+   */
+  private String getblobAbsolutePath(String blobPath) {
+    return BlobClientUtils.concatenatePaths(blobStoreRootDir, blobPath);
+  }
     
-    @Override
-    public List<String> listCoreBlobFilesOlderThan(String blobName, long timestamp) throws BlobException {
-        try {
-            Path path = Paths.get(getblobAbsolutePath(blobName));
-            List<String> blobFiles =
-                    Files.walk(path).map(Path::toFile)
-                    // We need to ignore the root directory as a path since this traversal includes it
-                    .filter(file -> (file.lastModified() < timestamp) && !file.isDirectory())
-                    .map(file -> BlobClientUtils.concatenatePaths(blobName, file.getName()))
-                    .collect(Collectors.toList());
-            return blobFiles;
-        } catch (Exception ex) {
-            throw new BlobException(ex);
-        }
+  private void createCoreStorage(String blobName) throws Exception {
+    File coreRootDir = getCoreRootDir(blobName);
+    coreRootDir.mkdirs();
+    if (!coreRootDir.isDirectory()) {
+      throw new IOException("Can't create Blob core root directory " + coreRootDir.getAbsolutePath());
     }
+  }
     
-    @Override
-    public List<String> listCommonBlobPrefix(String prefix) throws BlobException {
-        try {
-            String rootBlobDir = getblobAbsolutePath("");
-            Path path = Paths.get(rootBlobDir);
-            List<String> blobFiles =
-                    Files.walk(path).map(Path::toFile)
-                    .filter(file -> (!file.isDirectory()))
-                    .map(file -> {
-                        // extracts just the file system blob file name without the root dir
-                        String fileBlobKey = file.getAbsolutePath().substring(rootBlobDir.length());
-                        // extract the common prefix up to the delimiter
-                        return fileBlobKey.substring(0, fileBlobKey.indexOf(BlobClientUtils.BLOB_FILE_PATH_DELIMITER));
-                    })
-                    .distinct()
-                    .collect(Collectors.toList());
-            return blobFiles;
-        } catch (Exception ex) {
-            throw new BlobException(ex);
-        }
+  @Override
+  public void deleteCore(String blobName) throws BlobException {
+    try {
+      Path path = Paths.get(getblobAbsolutePath(blobName));
+      Files.walk(path)
+        // Since this traversal includes the root directory
+        // we need to reverse because we can't delete non-empty directories 
+        .sorted(Comparator.reverseOrder())
+        .map(Path::toFile)
+        .forEach(file -> {
+          file.delete();
+        });
+    } catch (Exception ex) {
+      // In case the path doesn't exist, we'll just swallow the exception because it's not an issue,
+      // especially in test clean up.
     }
+  }
+    
+  /**
+   * On the local FS implementation we'll just delete blob files individually
+   */
+  @Override
+  public void deleteBlobs(Collection<String> paths) throws BlobException {
+    try {
+      for (String blobPath : paths) {
+        final File blobFile = new File(getblobAbsolutePath(blobPath));
+        blobFile.delete();
+      }
+    } catch (Exception ex) {
+      throw new BlobException(ex);
+    }
+  }
+  
+  private String getBlobMetadataName(String blobName, String blobCoreMetadataName) {
+    return BlobClientUtils.concatenatePaths(blobName, blobCoreMetadataName);
+  }
+    
+  @Override
+  public BlobstoreProviderType getStorageProvider() {
+    return BlobstoreProviderType.LOCAL_FILE_SYSTEM;
+  }
+  
+  @Override 
+  public String getBucketRegion() {
+    return "N/A";
+  }
+    
+  @Override 
+  public String getBucketName() {
+    return "N/A";
+  }
+  
+  @Override 
+  public String getEndpoint() {
+    return "N/A";
+  }
+
+  /**
+   * The local file system is being used, there's nothing to connect to so this method will always return true.
+   */
+  @Override
+  public boolean doesBucketExist() {
+    return true;
+  }
+
+  @Override
+  public void shutdown() {
+      
+  }
+    
+  @Override
+  public List<String> listCoreBlobFilesOlderThan(String blobName, long timestamp) throws BlobException {
+    try {
+      Path path = Paths.get(getblobAbsolutePath(blobName));
+      List<String> blobFiles =
+        Files.walk(path).map(Path::toFile)
+        // We need to ignore the root directory as a path since this traversal includes it
+        .filter(file -> (file.lastModified() < timestamp) && !file.isDirectory())
+        .map(file -> BlobClientUtils.concatenatePaths(blobName, file.getName()))
+        .collect(Collectors.toList());
+      return blobFiles;
+    } catch (Exception ex) {
+      throw new BlobException(ex);
+    }
+  }
+    
+  @Override
+  public List<String> listCommonBlobPrefix(String prefix) throws BlobException {
+    try {
+      String rootBlobDir = getblobAbsolutePath("");
+      Path path = Paths.get(rootBlobDir);
+      List<String> blobFiles =
+        Files.walk(path).map(Path::toFile)
+          .filter(file -> (!file.isDirectory()))
+          .map(file -> {
+            // extracts just the file system blob file name without the root dir
+            String fileBlobKey = file.getAbsolutePath().substring(rootBlobDir.length());
+            // extract the common prefix up to the delimiter
+            return fileBlobKey.substring(0, fileBlobKey.indexOf(BlobClientUtils.BLOB_FILE_PATH_DELIMITER));
+          })
+        .distinct()
+        .collect(Collectors.toList());
+      return blobFiles;
+    } catch (Exception ex) {
+      throw new BlobException(ex);
+    }
+  }
 }

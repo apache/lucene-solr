@@ -40,9 +40,9 @@ public class CorePusher {
    * Pushes the local core updates to the Blob store and logs whether the push succeeded or failed.
    */
   static void pushCoreToBlob(PushPullData pushPullData) throws Exception {
-    BlobStorageProvider blobProvider = coreContainer.getZkController().getBlobStorageProvider(); 
+    BlobStorageProvider blobProvider = coreContainer.getSharedStoreManager().getBlobStorageProvider(); 
     CoreStorageClient blobClient = blobProvider.getDefaultClient(); // TODO, use a real client
-    BlobDeleteManager deleteManager = coreContainer.getZkController().getBlobDeleteManager(); // TODO, use a real client
+    BlobDeleteManager deleteManager = coreContainer.getSharedStoreManager().getBlobDeleteManager(); // TODO, use a real client
         
     BlobCoreMetadata blobCoreMetadata = null;
     logger.info("Push to shared store initiating with PushPullData= " + pushPullData.toString());
@@ -77,7 +77,7 @@ public class CorePusher {
       pushPull.pushToBlobStore();
       
       // at this point we've pushed the new metadata file with the newMetadataSuffix and now need to write to zookeeper
-      SharedShardMetadataController shardSharedMetadataController = coreContainer.getZkController().getSharedShardMetadataController(); 
+      SharedShardMetadataController shardSharedMetadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController(); 
       shardSharedMetadataController.updateMetadataValueWithVersion(pushPullData.getCollectionName(), pushPullData.getShardName(),
           pushPullData.getNewMetadataSuffix(), pushPullData.getZkVersion());
       logger.info("Successfully pushed to shared store");

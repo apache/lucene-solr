@@ -121,9 +121,6 @@ import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.store.blob.process.BlobDeleteManager;
-import org.apache.solr.store.blob.provider.BlobStorageProvider;
-import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -210,9 +207,6 @@ public class ZkController implements Closeable {
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
   private CloudSolrClient cloudSolrClient;
-  private SharedShardMetadataController sharedShardMetadataController;
-  private BlobStorageProvider blobStorageProvider;
-  private BlobDeleteManager blobDeleteManager;
 
   private final String zkServerAddress;          // example: 127.0.0.1:54062/solr
 
@@ -746,37 +740,7 @@ public class ZkController implements Closeable {
     }
     return cloudManager;
   }
-  
-  public SharedShardMetadataController getSharedShardMetadataController() {
-    if (sharedShardMetadataController != null) {
-      return sharedShardMetadataController;
-    }
-    sharedShardMetadataController = new SharedShardMetadataController(getSolrCloudManager());
-    return sharedShardMetadataController;
-  }
-  
-  /*
-   * TODO May not be the appropriate class to initiate shared store interaction components 
-   */
-  public BlobStorageProvider getBlobStorageProvider() {
-    if (blobStorageProvider != null) {
-      return blobStorageProvider;
-    }
-    blobStorageProvider = new BlobStorageProvider();
-    return blobStorageProvider;
-  }
-  
-  /*
-   * TODO May not be the appropriate class to initiate shared store interaction components 
-   */
-  public BlobDeleteManager getBlobDeleteManager() {
-    if (blobDeleteManager != null) {
-      return blobDeleteManager;
-    }
-    blobDeleteManager = new BlobDeleteManager(getBlobStorageProvider().getDefaultClient());
-    return blobDeleteManager;
-  }
- 
+
   /**
    * Returns config file data (in bytes)
    */
