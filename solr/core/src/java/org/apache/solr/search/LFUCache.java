@@ -63,7 +63,6 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   public static final String TIME_DECAY_PARAM = "timeDecay";
   public static final String CLEANUP_THREAD_PARAM = "cleanupThread";
   public static final String INITIAL_SIZE_PARAM = "initialSize";
-  public static final String MIN_SIZE_PARAM = "minSize";
   public static final String ACCEPTABLE_SIZE_PARAM = "acceptableSize";
   public static final String AUTOWARM_COUNT_PARAM = "autowarmCount";
   public static final String SHOW_ITEMS_PARAM = "showItems";
@@ -86,8 +85,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private MetricRegistry registry;
   private ResourceId resourceId;
 
-  private int sizeLimit;
-  private int minSizeLimit;
+  private int maxSize;
+  private int minSize;
   private int initialSize;
   private int acceptableSize;
   private boolean cleanupThread;
@@ -98,26 +97,26 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     this.regenerator = regenerator;
     name = (String) args.get(NAME);
     String str = (String) args.get(SIZE_PARAM);
-    sizeLimit = str == null ? 1024 : Integer.parseInt(str);
+    maxSize = str == null ? 1024 : Integer.parseInt(str);
     str = (String) args.get(MIN_SIZE_PARAM);
     if (str == null) {
-      minSizeLimit = (int) (sizeLimit * 0.9);
+      minSize = (int) (maxSize * 0.9);
     } else {
-      minSizeLimit = Integer.parseInt(str);
+      minSize = Integer.parseInt(str);
     }
     checkAndAdjustLimits();
 
     str = (String) args.get(ACCEPTABLE_SIZE_PARAM);
     if (str == null) {
-      acceptableSize = (int) (sizeLimit * 0.95);
+      acceptableSize = (int) (maxSize * 0.95);
     } else {
       acceptableSize = Integer.parseInt(str);
     }
     // acceptable limit should be somewhere between minLimit and limit
-    acceptableSize = Math.max(minSizeLimit, acceptableSize);
+    acceptableSize = Math.max(minSize, acceptableSize);
 
     str = (String) args.get(INITIAL_SIZE_PARAM);
-    initialSize = str == null ? sizeLimit : Integer.parseInt(str);
+    initialSize = str == null ? maxSize : Integer.parseInt(str);
     str = (String) args.get(AUTOWARM_COUNT_PARAM);
     autowarmCount = str == null ? 0 : Integer.parseInt(str);
     str = (String) args.get(CLEANUP_THREAD_PARAM);
@@ -132,7 +131,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
     description = generateDescription();
 
-    cache = new ConcurrentLFUCache<>(sizeLimit, minSizeLimit, acceptableSize, initialSize, cleanupThread, false, null, timeDecay);
+    cache = new ConcurrentLFUCache<>(maxSize, minSize, acceptableSize, initialSize, cleanupThread, false, null, timeDecay);
     cache.setAlive(false);
 
     statsList = (List<ConcurrentLFUCache.Stats>) persistence;
@@ -150,8 +149,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   }
 
   private String generateDescription() {
-    String descr = "Concurrent LFU Cache(maxSize=" + sizeLimit + ", initialSize=" + initialSize +
-        ", minSize=" + minSizeLimit + ", acceptableSize=" + acceptableSize + ", cleanupThread=" + cleanupThread +
+    String descr = "Concurrent LFU Cache(maxSize=" + maxSize + ", initialSize=" + initialSize +
+        ", minSize=" + minSize + ", acceptableSize=" + acceptableSize + ", cleanupThread=" + cleanupThread +
         ", timeDecay=" + Boolean.toString(timeDecay);
     if (autowarmCount > 0) {
       descr += ", autowarmCount=" + autowarmCount + ", regenerator=" + regenerator;
@@ -273,10 +272,13 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
         map.put("lookups", lookups);
         map.put("hits", hits);
-        map.put("hitratio", calcHitRatio(lookups, hits));
+        map.put(HIT_RATIO_PARAM, calcHitRatio(lookups, hits));
         map.put("inserts", inserts);
         map.put("evictions", evictions);
-        map.put("size", size);
+        map.put(SIZE_PARAM, size);
+        map.put(MAX_SIZE_PARAM, maxSize);
+        map.put(MIN_SIZE_PARAM, minSize);
+        map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
 
         map.put("warmupTime", warmupTime);
         map.put("timeDecay", timeDecay);
@@ -299,7 +301,6 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
         map.put("cumulative_hitratio", calcHitRatio(clookups, chits));
         map.put("cumulative_inserts", cinserts);
         map.put("cumulative_evictions", cevictions);
-        map.put("ramBytesUsed", ramBytesUsed());
 
         if (detailed && showItems != 0) {
           Map items = cache.getMostUsedItems(showItems == -1 ? Integer.MAX_VALUE : showItems);
@@ -359,8 +360,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   @Override
   public Map<String, Object> getResourceLimits() {
     Map<String, Object> limits = new HashMap<>();
-    limits.put(SIZE_PARAM, cache.getStats().getCurrentSize());
-    limits.put(MIN_SIZE_PARAM, minSizeLimit);
+    limits.put(MAX_SIZE_PARAM, maxSize);
+    limits.put(MIN_SIZE_PARAM, minSize);
     limits.put(ACCEPTABLE_SIZE_PARAM, acceptableSize);
     limits.put(AUTOWARM_COUNT_PARAM, autowarmCount);
     limits.put(CLEANUP_THREAD_PARAM, cleanupThread);
@@ -370,7 +371,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   }
 
   @Override
-  public Map<String, Object> getMonitoredValues(Collection<String> tags) throws Exception {
+  public Map<String, Object> getMonitoredValues(Collection<String> params) throws Exception {
     return cacheMap.getValue();
   }
 
@@ -409,21 +410,21 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
         throw new IllegalArgumentException("Out of range new value for numeric limit '" + limitName +"': " + value);
       }
       switch (limitName) {
-        case SIZE_PARAM:
-          sizeLimit = value.intValue();
+        case MAX_SIZE_PARAM:
+          maxSize = value.intValue();
           checkAndAdjustLimits();
-          cache.setUpperWaterMark(sizeLimit);
-          cache.setLowerWaterMark(minSizeLimit);
+          cache.setUpperWaterMark(maxSize);
+          cache.setLowerWaterMark(minSize);
           break;
         case MIN_SIZE_PARAM:
-          minSizeLimit = value.intValue();
+          minSize = value.intValue();
           checkAndAdjustLimits();
-          cache.setUpperWaterMark(sizeLimit);
-          cache.setLowerWaterMark(minSizeLimit);
+          cache.setUpperWaterMark(maxSize);
+          cache.setLowerWaterMark(minSize);
           break;
         case ACCEPTABLE_SIZE_PARAM:
           acceptableSize = value.intValue();
-          acceptableSize = Math.max(minSizeLimit, acceptableSize);
+          acceptableSize = Math.max(minSize, acceptableSize);
           cache.setAcceptableWaterMark(acceptableSize);
           break;
         case AUTOWARM_COUNT_PARAM:
@@ -440,12 +441,12 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   }
 
   private void checkAndAdjustLimits() {
-    if (minSizeLimit <= 0) minSizeLimit = 1;
-    if (sizeLimit <= minSizeLimit) {
-      if (sizeLimit > 1) {
-        minSizeLimit = sizeLimit - 1;
+    if (minSize <= 0) minSize = 1;
+    if (maxSize <= minSize) {
+      if (maxSize > 1) {
+        minSize = maxSize - 1;
       } else {
-        sizeLimit = minSizeLimit + 1;
+        maxSize = minSize + 1;
       }
     }
   }

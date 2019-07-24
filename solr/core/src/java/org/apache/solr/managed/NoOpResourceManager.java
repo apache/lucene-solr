@@ -64,7 +64,7 @@ public class NoOpResourceManager extends ResourceManager {
     }
 
     @Override
-    public Map<String, Float> getTotalValues() throws InterruptedException {
+    public Map<String, Number> getTotalValues() throws InterruptedException {
       return Collections.emptyMap();
     }
 
@@ -81,6 +81,16 @@ public class NoOpResourceManager extends ResourceManager {
     @Override
     public void setPoolLimits(Map<String, Object> poolLimits) {
 
+    }
+
+    @Override
+    public Context getPoolContext() {
+      return null;
+    }
+
+    @Override
+    public Context getResourceContext(String name) {
+      return null;
     }
 
     @Override

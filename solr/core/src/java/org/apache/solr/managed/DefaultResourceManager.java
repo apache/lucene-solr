@@ -52,7 +52,7 @@ public class DefaultResourceManager extends ResourceManager {
   public static final String MAX_NUM_POOLS_PARAM = "maxNumPools";
 
   public static final int DEFAULT_MAX_POOLS = 100;
-  public static final int DEFAULT_SCHEDULE_DELAY_SECONDS = 30;
+  public static final int DEFAULT_SCHEDULE_DELAY_SECONDS = 10;
 
   public static final String NODE_SEARCHER_CACHE_POOL = "nodeSearcherCachePool";
 

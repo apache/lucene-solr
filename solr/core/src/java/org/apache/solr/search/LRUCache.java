@@ -79,7 +79,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
-  private int sizeLimit;
+  private int maxSize;
   private int initialSize;
   private ResourceId resourceId;
 
@@ -92,9 +92,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     super.init(args, regenerator);
     String str = (String)args.get(SIZE_PARAM);
-    this.sizeLimit = str==null ? 1024 : Integer.parseInt(str);
+    this.maxSize = str==null ? 1024 : Integer.parseInt(str);
     str = (String)args.get("initialSize");
-    initialSize = Math.min(str==null ? 1024 : Integer.parseInt(str), sizeLimit);
+    initialSize = Math.min(str==null ? 1024 : Integer.parseInt(str), maxSize);
     str = (String) args.get(MAX_RAM_MB_PARAM);
     this.maxRamBytes = str == null ? Long.MAX_VALUE : (long) (Double.parseDouble(str) * 1024L * 1024L);
     description = generateDescription();
@@ -119,7 +119,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
             // must return false according to javadocs of removeEldestEntry if we're modifying
             // the map ourselves
             return false;
-          } else if (size() > getSizeLimit()) {
+          } else if (size() > getMaxSize()) {
             Iterator<Map.Entry<K, V>> iterator = entrySet().iterator();
             do {
               Map.Entry<K, V> entry = iterator.next();
@@ -133,7 +133,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
               iterator.remove();
               evictions++;
               stats.evictions.increment();
-            } while (iterator.hasNext() && size() > getSizeLimit());
+            } while (iterator.hasNext() && size() > getMaxSize());
             // must return false according to javadocs of removeEldestEntry if we're modifying
             // the map ourselves
             return false;
@@ -153,8 +153,8 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     return persistence;
   }
 
-  public int getSizeLimit() {
-    return sizeLimit;
+  public int getMaxSize() {
+    return maxSize;
   }
 
   public long getMaxRamBytes() {
@@ -166,7 +166,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
    * @return Returns the description of this cache. 
    */
   private String generateDescription() {
-    String description = "LRU Cache(maxSize=" + getSizeLimit() + ", initialSize=" + initialSize;
+    String description = "LRU Cache(maxSize=" + getMaxSize() + ", initialSize=" + initialSize;
     if (isAutowarmingOn()) {
       description += ", " + getAutowarmDescription();
     }
@@ -186,7 +186,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public V put(K key, V value) {
-    if (sizeLimit == Integer.MAX_VALUE && maxRamBytes == Long.MAX_VALUE) {
+    if (maxSize == Integer.MAX_VALUE && maxRamBytes == Long.MAX_VALUE) {
       throw new IllegalStateException("Cache: " + getName() + " has neither size nor RAM limit!");
     }
     synchronized (map) {
@@ -319,12 +319,13 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       synchronized (map) {
         res.put("lookups", lookups);
         res.put("hits", hits);
-        res.put("hitratio", calcHitRatio(lookups,hits));
+        res.put(HIT_RATIO_PARAM, calcHitRatio(lookups,hits));
         res.put("inserts", inserts);
         res.put("evictions", evictions);
-        res.put("size", map.size());
-        res.put("ramBytesUsed", ramBytesUsed());
-        res.put("maxRamMB", maxRamBytes != Long.MAX_VALUE ? maxRamBytes / 1024L / 1024L : -1L);
+        res.put(SIZE_PARAM, map.size());
+        res.put(MAX_SIZE_PARAM, maxSize);
+        res.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
+        res.put(MAX_RAM_MB_PARAM, maxRamBytes != Long.MAX_VALUE ? maxRamBytes / 1024L / 1024L : -1L);
         res.put("evictionsRamUsage", evictionsRamUsage);
       }
       res.put("warmupTime", warmupTime);
@@ -374,13 +375,13 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   @Override
   public Map<String, Object> getResourceLimits() {
     Map<String, Object> limits = new HashMap<>();
-    limits.put(SIZE_PARAM, sizeLimit);
+    limits.put(MAX_SIZE_PARAM, maxSize);
     limits.put(MAX_RAM_MB_PARAM, maxRamBytes != Long.MAX_VALUE ? maxRamBytes / 1024L / 1024L : -1L);
     return limits;
   }
 
   @Override
-  public Map<String, Object> getMonitoredValues(Collection<String> tags) throws Exception {
+  public Map<String, Object> getMonitoredValues(Collection<String> params) throws Exception {
     return cacheMap.getValue();
   }
 
@@ -408,11 +409,11 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       throw new IllegalArgumentException("Invalid new value for limit '" + limitName +"': " + value);
     }
     switch (limitName) {
-      case SIZE_PARAM:
+      case MAX_SIZE_PARAM:
         if (value.intValue() > 0) {
-          sizeLimit = value.intValue();
+          maxSize = value.intValue();
         } else {
-          sizeLimit = Integer.MAX_VALUE;
+          maxSize = Integer.MAX_VALUE;
         }
         break;
       case MAX_RAM_MB_PARAM:

@@ -74,8 +74,8 @@ public interface ManagedResource {
 
   /**
    * Returns monitored values that are used for calculating optimal settings of managed resource limits.
-   * @param tags selected monitored tags, empty collection to return all monitored values
-   * @return map of tags to current values.
+   * @param params selected monitored parameters, empty collection to return all monitored values
+   * @return map of parameter names to current values.
    */
-  Map<String, Object> getMonitoredValues(Collection<String> tags) throws Exception;
+  Map<String, Object> getMonitoredValues(Collection<String> params) throws Exception;
 }

@@ -57,7 +57,6 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FastLRUCache.class);
 
-  public static final String MIN_SIZE_PARAM = "minSize";
   public static final String ACCEPTABLE_SIZE_PARAM = "acceptableSize";
   public static final String INITIAL_SIZE_PARAM = "initialSize";
   public static final String CLEANUP_THREAD_PARAM = "cleanupThread";
@@ -73,8 +72,8 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   private int showItems = 0;
 
   private long maxRamBytes;
-  private int sizeLimit;
-  private int minSizeLimit;
+  private int maxSize;
+  private int minSize;
   private int initialSize;
   private int acceptableSize;
   private boolean cleanupThread;
@@ -89,26 +88,26 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     super.init(args, regenerator);
     String str = (String) args.get(SIZE_PARAM);
-    sizeLimit = str == null ? 1024 : Integer.parseInt(str);
+    maxSize = str == null ? 1024 : Integer.parseInt(str);
     str = (String) args.get(MIN_SIZE_PARAM);
     if (str == null) {
-      minSizeLimit = (int) (sizeLimit * 0.9);
+      minSize = (int) (maxSize * 0.9);
     } else {
-      minSizeLimit = Integer.parseInt(str);
+      minSize = Integer.parseInt(str);
     }
     checkAndAdjustLimits();
 
     str = (String) args.get(ACCEPTABLE_SIZE_PARAM);
     if (str == null) {
-      acceptableSize = (int) (sizeLimit * 0.95);
+      acceptableSize = (int) (maxSize * 0.95);
     } else {
       acceptableSize = Integer.parseInt(str);
     }
     // acceptable limit should be somewhere between minLimit and limit
-    acceptableSize = Math.max(minSizeLimit, acceptableSize);
+    acceptableSize = Math.max(minSize, acceptableSize);
 
     str = (String) args.get(INITIAL_SIZE_PARAM);
-    initialSize = str == null ? sizeLimit : Integer.parseInt(str);
+    initialSize = str == null ? maxSize : Integer.parseInt(str);
     str = (String) args.get(CLEANUP_THREAD_PARAM);
     cleanupThread = str == null ? false : Boolean.parseBoolean(str);
 
@@ -124,8 +123,8 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
       cache = new ConcurrentLRUCache<>(ramLowerWatermark, maxRamBytes, cleanupThread, null);
     } else  {
       ramLowerWatermark = -1L;
-      description = generateDescription(sizeLimit, initialSize, minSizeLimit, acceptableSize, cleanupThread);
-      cache = new ConcurrentLRUCache<>(sizeLimit, minSizeLimit, acceptableSize, initialSize, cleanupThread, false, null);
+      description = generateDescription(maxSize, initialSize, minSize, acceptableSize, cleanupThread);
+      cache = new ConcurrentLRUCache<>(maxSize, minSize, acceptableSize, initialSize, cleanupThread, false, null);
     }
 
     cache.setAlive(false);
@@ -148,7 +147,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
     if (maxRamBytes != Long.MAX_VALUE) {
       return generateDescription(maxRamBytes, ramLowerWatermark, cleanupThread);
     } else {
-      return generateDescription(sizeLimit, initialSize, minSizeLimit, acceptableSize, cleanupThread);
+      return generateDescription(maxSize, initialSize, minSize, acceptableSize, cleanupThread);
     }
   }
 
@@ -280,13 +279,14 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
 
         map.put("lookups", lookups);
         map.put("hits", hits);
-        map.put("hitratio", calcHitRatio(lookups, hits));
+        map.put(HIT_RATIO_PARAM, calcHitRatio(lookups, hits));
         map.put("inserts", inserts);
         map.put("evictions", evictions);
-        map.put("size", size);
+        map.put(SIZE_PARAM, size);
         map.put("cleanupThread", cleanupThread);
-        map.put("ramBytesUsed", ramBytesUsed());
-        map.put("maxRamMB", maxRamBytes != Long.MAX_VALUE ? maxRamBytes / 1024L / 1024L : -1L);
+        map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
+        map.put(MAX_SIZE_PARAM, maxSize);
+        map.put(MAX_RAM_MB_PARAM, maxRamBytes != Long.MAX_VALUE ? maxRamBytes / 1024L / 1024L : -1L);
 
         map.put("warmupTime", warmupTime);
         map.put("cumulative_lookups", clookups);
@@ -339,8 +339,8 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   @Override
   public Map<String, Object> getResourceLimits() {
     Map<String, Object> limits = new HashMap<>();
-    limits.put(SIZE_PARAM, cache.getStats().getCurrentSize());
-    limits.put(MIN_SIZE_PARAM, minSizeLimit);
+    limits.put(MAX_SIZE_PARAM, maxSize);
+    limits.put(MIN_SIZE_PARAM, minSize);
     limits.put(ACCEPTABLE_SIZE_PARAM, acceptableSize);
     limits.put(CLEANUP_THREAD_PARAM, cleanupThread);
     limits.put(SHOW_ITEMS_PARAM, showItems);
@@ -349,7 +349,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   }
 
   @Override
-  public Map<String, Object> getMonitoredValues(Collection<String> tags) throws Exception {
+  public Map<String, Object> getMonitoredValues(Collection<String> params) throws Exception {
     return cacheMap.getValue();
   }
 
@@ -390,21 +390,21 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
       throw new IllegalArgumentException("Invalid new value for numeric limit '" + limitName +"': " + value);
     }
     switch (limitName) {
-      case SIZE_PARAM:
-        sizeLimit = value.intValue();
+      case MAX_SIZE_PARAM:
+        maxSize = value.intValue();
         checkAndAdjustLimits();
-        cache.setUpperWaterMark(sizeLimit);
-        cache.setLowerWaterMark(minSizeLimit);
+        cache.setUpperWaterMark(maxSize);
+        cache.setLowerWaterMark(minSize);
         break;
       case MIN_SIZE_PARAM:
-        minSizeLimit = value.intValue();
+        minSize = value.intValue();
         checkAndAdjustLimits();
-        cache.setUpperWaterMark(sizeLimit);
-        cache.setLowerWaterMark(minSizeLimit);
+        cache.setUpperWaterMark(maxSize);
+        cache.setLowerWaterMark(minSize);
         break;
       case ACCEPTABLE_SIZE_PARAM:
         acceptableSize = value.intValue();
-        acceptableSize = Math.max(minSizeLimit, acceptableSize);
+        acceptableSize = Math.max(minSize, acceptableSize);
         cache.setAcceptableWaterMark(acceptableSize);
         break;
       case MAX_RAM_MB_PARAM:
@@ -428,12 +428,12 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   }
 
   private void checkAndAdjustLimits() {
-    if (minSizeLimit <= 0) minSizeLimit = 1;
-    if (sizeLimit <= minSizeLimit) {
-      if (sizeLimit > 1) {
-        minSizeLimit = sizeLimit - 1;
+    if (minSize <= 0) minSize = 1;
+    if (maxSize <= minSize) {
+      if (maxSize > 1) {
+        minSize = maxSize - 1;
       } else {
-        sizeLimit = minSizeLimit + 1;
+        maxSize = minSize + 1;
       }
     }
   }

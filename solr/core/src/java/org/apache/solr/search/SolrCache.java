@@ -28,8 +28,19 @@ import java.util.Map;
  */
 public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer, ManagedResource {
 
+  /** Current size of the cache. */
   String SIZE_PARAM = "size";
+  /** Maximum size of the cache. */
+  String MAX_SIZE_PARAM = "maxSize";
+  /** Minimum size of the cache. */
+  String MIN_SIZE_PARAM = "minSize";
+  /** Maximum RAM use in MB. */
   String MAX_RAM_MB_PARAM = "maxRamMB";
+  /** Ram usage estimate. */
+  String RAM_BYTES_USED_PARAM = "ramBytesUsed";
+  // not camelCase for back-compat
+  /** Cache hit ratio. */
+  String HIT_RATIO_PARAM = "hitratio";
 
   /**
    * The initialization routine. Instance specific arguments are passed in

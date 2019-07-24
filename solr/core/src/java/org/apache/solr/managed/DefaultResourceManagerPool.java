@@ -38,11 +38,13 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, ManagedResource> resources = new ConcurrentHashMap<>();
+  private final Map<String, Context> resourceContexts = new ConcurrentHashMap<>();
   private Map<String, Object> poolLimits;
   private final String type;
   private final String name;
   private final ResourceManagerPlugin resourceManagerPlugin;
   private final Map<String, Object> args;
+  private final Context poolContext = new Context();
   private Map<String, Float> totalValues = null;
   private final ReentrantLock updateLock = new ReentrantLock();
   int scheduleDelaySeconds;
@@ -91,10 +93,12 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
     if (existing != null) {
       throw new IllegalArgumentException("Resource '" + managedResource.getResourceId() + "' already exists in pool '" + name + "' !");
     }
+    resourceContexts.putIfAbsent(managedResource.getResourceId().toString(), new Context());
   }
 
   @Override
   public boolean removeResource(String name) {
+    resourceContexts.remove(name);
     return resources.remove(name) != null;
   }
 
@@ -143,7 +147,7 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   }
 
   @Override
-  public Map<String, Float> getTotalValues() throws InterruptedException {
+  public Map<String, Number> getTotalValues() throws InterruptedException {
     updateLock.lockInterruptibly();
     try {
       return Collections.unmodifiableMap(totalValues);
@@ -163,6 +167,16 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   }
 
   @Override
+  public Context getPoolContext() {
+    return poolContext;
+  }
+
+  @Override
+  public Context getResourceContext(String name) {
+    return resourceContexts.get(name);
+  }
+
+  @Override
   public void run() {
     try {
       resourceManagerPlugin.manage(this);
@@ -177,5 +191,8 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
       scheduledFuture.cancel(true);
       scheduledFuture = null;
     }
+    resources.clear();
+    resourceContexts.clear();
+    poolContext.clear();
   }
 }
