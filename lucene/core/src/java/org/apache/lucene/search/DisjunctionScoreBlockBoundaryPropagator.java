@@ -46,7 +46,7 @@ final class DisjunctionScoreBlockBoundaryPropagator {
   private int leadIndex = 0;
 
   DisjunctionScoreBlockBoundaryPropagator(Collection<Scorer> scorers) throws IOException {
-    this.scorers = scorers.toArray(Scorer[]::new);
+    this.scorers = scorers.toArray(new Scorer[0]);
     for (Scorer scorer : this.scorers) {
       scorer.advanceShallow(0);
     }

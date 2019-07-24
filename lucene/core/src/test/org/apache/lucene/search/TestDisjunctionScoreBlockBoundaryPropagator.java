@@ -20,8 +20,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDisjunctionScoreBlockBoundaryPropagator extends LuceneTestCase {
@@ -31,6 +33,9 @@ public class TestDisjunctionScoreBlockBoundaryPropagator extends LuceneTestCase 
     FakeWeight() {
       super(new MatchNoDocsQuery());
     }
+
+    @Override
+    public void extractTerms(Set<Term> terms) {}
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
