@@ -37,14 +37,13 @@ import org.slf4j.LoggerFactory;
 public class DefaultResourceManagerPool implements ResourceManagerPool {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, ManagedResource> resources = new ConcurrentHashMap<>();
-  private final Map<String, Context> resourceContexts = new ConcurrentHashMap<>();
+  private final Map<String, ManagedComponent> resources = new ConcurrentHashMap<>();
   private Map<String, Object> poolLimits;
   private final String type;
   private final String name;
   private final ResourceManagerPlugin resourceManagerPlugin;
   private final Map<String, Object> args;
-  private final Context poolContext = new Context();
+  private final ResourceContext poolContext = new ResourceContext();
   private Map<String, Float> totalValues = null;
   private final ReentrantLock updateLock = new ReentrantLock();
   int scheduleDelaySeconds;
@@ -83,27 +82,25 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   }
 
   @Override
-  public void addResource(ManagedResource managedResource) {
-    Collection<String> types = managedResource.getManagedResourceTypes();
+  public void registerComponent(ManagedComponent managedComponent) {
+    Collection<String> types = managedComponent.getManagedResourceTypes();
     if (!types.contains(type)) {
-      log.debug("Pool type '" + type + "' is not supported by the resource " + managedResource.getResourceId());
+      log.debug("Pool type '" + type + "' is not supported by the resource " + managedComponent.getManagedComponentId());
       return;
     }
-    ManagedResource existing = resources.putIfAbsent(managedResource.getResourceId().toString(), managedResource);
+    ManagedComponent existing = resources.putIfAbsent(managedComponent.getManagedComponentId().toString(), managedComponent);
     if (existing != null) {
-      throw new IllegalArgumentException("Resource '" + managedResource.getResourceId() + "' already exists in pool '" + name + "' !");
+      throw new IllegalArgumentException("Resource '" + managedComponent.getManagedComponentId() + "' already exists in pool '" + name + "' !");
     }
-    resourceContexts.putIfAbsent(managedResource.getResourceId().toString(), new Context());
   }
 
   @Override
-  public boolean removeResource(String name) {
-    resourceContexts.remove(name);
+  public boolean unregisterComponent(String name) {
     return resources.remove(name) != null;
   }
 
   @Override
-  public Map<String, ManagedResource> getResources() {
+  public Map<String, ManagedComponent> getComponents() {
     return Collections.unmodifiableMap(resources);
   }
 
@@ -113,11 +110,11 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
     try {
       // collect current values
       Map<String, Map<String, Object>> currentValues = new HashMap<>();
-      for (ManagedResource resource : resources.values()) {
+      for (ManagedComponent managedComponent : resources.values()) {
         try {
-          currentValues.put(resource.getResourceId().toString(), resource.getMonitoredValues(resourceManagerPlugin.getMonitoredParams()));
+          currentValues.put(managedComponent.getManagedComponentId().toString(), managedComponent.getMonitoredValues(resourceManagerPlugin.getMonitoredParams()));
         } catch (Exception e) {
-          log.warn("Error getting managed values from " + resource.getResourceId(), e);
+          log.warn("Error getting managed values from " + managedComponent.getManagedComponentId(), e);
         }
       }
       // calculate totals
@@ -167,13 +164,8 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   }
 
   @Override
-  public Context getPoolContext() {
+  public ResourceContext getPoolContext() {
     return poolContext;
-  }
-
-  @Override
-  public Context getResourceContext(String name) {
-    return resourceContexts.get(name);
   }
 
   @Override
@@ -192,7 +184,6 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
       scheduledFuture = null;
     }
     resources.clear();
-    resourceContexts.clear();
     poolContext.clear();
   }
 }

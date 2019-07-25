@@ -431,9 +431,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     for (SolrCache cache : cacheList) {
       cache.initializeMetrics(metricManager, registryName, core.getMetricTag(), SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
       try {
-        resourceManager.addResource(DefaultResourceManager.NODE_SEARCHER_CACHE_POOL, cache);
+        resourceManager.registerComponent(DefaultResourceManager.NODE_SEARCHER_CACHE_POOL, cache);
       } catch (Exception e) {
-        log.warn("Exception adding cache '" + cache.getResourceId() + "' to the resource manager pool", e);
+        log.warn("Exception adding cache '" + cache.getManagedComponentId() + "' to the resource manager pool", e);
       }
     }
     initializeMetrics(metricManager, registryName, core.getMetricTag(), STATISTICS_KEY);
@@ -479,7 +479,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     for (SolrCache cache : cacheList) {
-      core.getCoreContainer().getResourceManager().removeResource(DefaultResourceManager.NODE_SEARCHER_CACHE_POOL, cache.getResourceId().toString());
+      core.getCoreContainer().getResourceManager().unregisterComponent(DefaultResourceManager.NODE_SEARCHER_CACHE_POOL, cache.getManagedComponentId().toString());
       cache.close();
     }
 

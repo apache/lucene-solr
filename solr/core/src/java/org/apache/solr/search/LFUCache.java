@@ -31,7 +31,7 @@ import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.managed.ResourceId;
+import org.apache.solr.managed.ManagedComponentId;
 import org.apache.solr.managed.plugins.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -83,7 +83,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
-  private ResourceId resourceId;
+  private ManagedComponentId managedComponentId;
 
   private int maxSize;
   private int minSize;
@@ -318,7 +318,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
       }
     });
     manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
-    resourceId = new ResourceId(tag, registryName, getCategory().toString(), scope);
+    managedComponentId = new ManagedComponentId(tag, registryName, getCategory().toString(), scope);
   }
 
   // for unit tests only
@@ -353,8 +353,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   }
 
   @Override
-  public ResourceId getResourceId() {
-    return resourceId;
+  public ManagedComponentId getManagedComponentId() {
+    return managedComponentId;
   }
 
   @Override

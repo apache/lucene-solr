@@ -33,7 +33,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.managed.ResourceId;
+import org.apache.solr.managed.ManagedComponentId;
 import org.apache.solr.managed.plugins.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -81,7 +81,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private MetricRegistry registry;
   private int maxSize;
   private int initialSize;
-  private ResourceId resourceId;
+  private ManagedComponentId managedComponentId;
 
   private long maxRamBytes = Long.MAX_VALUE;
   // The synchronization used for the map will be used to update this,
@@ -340,7 +340,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
     });
     manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
-    resourceId = new ResourceId(tag, registryName, getCategory().toString(), scope);
+    managedComponentId = new ManagedComponentId(tag, registryName, getCategory().toString(), scope);
   }
 
   // for unit tests only
@@ -386,8 +386,8 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   }
 
   @Override
-  public ResourceId getResourceId() {
-    return resourceId;
+  public ManagedComponentId getManagedComponentId() {
+    return managedComponentId;
   }
 
   @Override

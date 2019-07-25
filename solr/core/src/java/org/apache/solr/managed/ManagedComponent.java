@@ -24,19 +24,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A managed resource.
+ * A managed component.
  */
-public interface ManagedResource {
+public interface ManagedComponent {
   Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * Unique name of this resource. By convention id-s form a dot-separated hierarchy that
+   * Unique name of this component. By convention id-s form a dot-separated hierarchy that
    * follows the naming of metric registries and metric names.
    */
-  ResourceId getResourceId();
+  ManagedComponentId getManagedComponentId();
 
   /**
-   * Returns types of management plugins supported by this resource. This must always
+   * Returns types of management plugins supported by this component. This must always
    * return a non-null collection with at least one entry.
    */
   Collection<String> getManagedResourceTypes();
@@ -54,7 +54,7 @@ public interface ManagedResource {
         setResourceLimit(key, value);
       } catch (Exception e) {
         log.warn("Exception setting resource limit on {}: key={}, value={}, exception={}",
-            getResourceId(), key, value, e);
+            getManagedComponentId(), key, value, e);
       }
     });
   }
@@ -78,4 +78,10 @@ public interface ManagedResource {
    * @return map of parameter names to current values.
    */
   Map<String, Object> getMonitoredValues(Collection<String> params) throws Exception;
+
+  /**
+   * Component context used for managing additional component state.
+   * @return component's context
+   */
+  ResourceContext getManagedContext();
 }

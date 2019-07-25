@@ -20,7 +20,7 @@ import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.managed.ResourceId;
+import org.apache.solr.managed.ManagedComponentId;
 import org.apache.solr.managed.plugins.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -82,7 +82,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
-  private ResourceId resourceId;
+  private ManagedComponentId managedComponentId;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -310,7 +310,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
       }
     });
     manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
-    resourceId = new ResourceId(tag, registryName, getCategory().toString(), scope);
+    managedComponentId = new ManagedComponentId(tag, registryName, getCategory().toString(), scope);
   }
 
 
@@ -354,8 +354,8 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   }
 
   @Override
-  public ResourceId getResourceId() {
-    return resourceId;
+  public ManagedComponentId getManagedComponentId() {
+    return managedComponentId;
   }
 
   @Override

@@ -28,7 +28,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.managed.ManagedResource;
+import org.apache.solr.managed.ManagedComponent;
 import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.managed.ResourceManagerPool;
 import org.apache.solr.request.SolrQueryRequest;
@@ -134,10 +134,10 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
           NamedList<Object> perPool = new SimpleOrderedMap<>();
           result.add(p, perPool);
           perPool.add("type", pool.getType());
-          perPool.add("size", pool.getResources().size());
+          perPool.add("size", pool.getComponents().size());
           perPool.add("poolLimits", pool.getPoolLimits());
           perPool.add("poolParams", pool.getParams());
-          perPool.add("resources", pool.getResources().keySet());
+          perPool.add("resources", pool.getComponents().keySet());
         });
         break;
       case STATUS:
@@ -146,10 +146,10 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Pool '" + name + "' not found.");
         }
         result.add("type", pool.getType());
-        result.add("size", pool.getResources().size());
+        result.add("size", pool.getComponents().size());
         result.add("poolLimits", pool.getPoolLimits());
         result.add("poolParams", pool.getParams());
-        result.add("resources", pool.getResources().keySet());
+        result.add("resources", pool.getComponents().keySet());
         try {
           pool.getCurrentValues();
           result.add("totalValues", pool.getTotalValues());
@@ -237,7 +237,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
     NamedList<Object> result = new SimpleOrderedMap<>();
     switch (op) {
       case LIST:
-        pool.getResources().forEach((n, resource) -> {
+        pool.getComponents().forEach((n, resource) -> {
           NamedList<Object> perRes = new SimpleOrderedMap<>();
           result.add(n, perRes);
           perRes.add("class", resource.getClass().getName());
@@ -246,33 +246,33 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
         });
         break;
       case STATUS:
-        ManagedResource resource = pool.getResources().get(resName);
-        if (resource == null) {
+        ManagedComponent managedComponent = pool.getComponents().get(resName);
+        if (managedComponent == null) {
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Resource '" + resName + " not found in pool '" + poolName + "'.");
         }
-        result.add("class", resource.getClass().getName());
-        result.add("types", resource.getManagedResourceTypes());
-        result.add("resourceLimits", resource.getResourceLimits());
+        result.add("class", managedComponent.getClass().getName());
+        result.add("types", managedComponent.getManagedResourceTypes());
+        result.add("resourceLimits", managedComponent.getResourceLimits());
         try {
-          result.add("monitoredValues", resource.getMonitoredValues(Collections.emptySet()));
+          result.add("monitoredValues", managedComponent.getMonitoredValues(Collections.emptySet()));
         } catch (Exception e) {
           log.warn("Error getting monitored values of " + resName + "/" + poolName + " : " + e.toString(), e);
           result.add("error", "Error getting monitored values of " + resName + ": " + e.toString());
         }
         break;
       case GETLIMITS:
-        ManagedResource resource1 = pool.getResources().get(resName);
-        if (resource1 == null) {
+        ManagedComponent managedComponent1 = pool.getComponents().get(resName);
+        if (managedComponent1 == null) {
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Resource '" + resName + " not found in pool '" + poolName + "'.");
         }
-        result.add("resourceLimits", resource1.getResourceLimits());
+        result.add("resourceLimits", managedComponent1.getResourceLimits());
         break;
       case SETLIMITS:
-        ManagedResource resource2 = pool.getResources().get(resName);
-        if (resource2 == null) {
+        ManagedComponent managedComponent2 = pool.getComponents().get(resName);
+        if (managedComponent2 == null) {
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Resource '" + resName + " not found in pool '" + poolName + "'.");
         }
-        Map<String, Object> currentLimits = new HashMap<>(resource2.getResourceLimits());
+        Map<String, Object> currentLimits = new HashMap<>(managedComponent2.getResourceLimits());
         Map<String, Object> newLimits = getMap(params, LIMIT_PREFIX_PARAM);
         newLimits.forEach((k, v) -> {
           if (v == null) {
@@ -281,11 +281,11 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
             currentLimits.put(k, v);
           }
         });
-        resource2.setResourceLimits(newLimits);
+        managedComponent2.setResourceLimits(newLimits);
         result.add("success", newLimits);
         break;
       case DELETE:
-        result.add("success", pool.removeResource(resName) ? "removed" : "not found");
+        result.add("success", pool.unregisterComponent(resName) ? "removed" : "not found");
     }
     rsp.getValues().add("result", result);
   }

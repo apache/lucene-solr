@@ -197,34 +197,34 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
   public abstract void removePool(String name) throws Exception;
 
   /**
-   * Add managed resources to a pool.
+   * Add managed components to a pool.
    * @param pool existing pool name.
-   * @param managedResources resources to add
+   * @param managedComponents components to add
    */
-  public void addResources(String pool, Collection<ManagedResource> managedResources) throws Exception {
+  public void registerComponents(String pool, Collection<ManagedComponent> managedComponents) throws Exception {
     ensureActive();
-    for (ManagedResource resource : managedResources) {
-      addResource(pool, resource);
+    for (ManagedComponent managedComponent : managedComponents) {
+      registerComponent(pool, managedComponent);
     }
   }
 
   /**
-   * Add a managed resource to a pool.
+   * Add a managed component to a pool.
    * @param pool existing pool name.
-   * @param managedResource managed resource. The resource must support the management type
-   *                        (in its {@link ManagedResource#getManagedResourceTypes()}) used
-   *                        in the selected pool. The resource must not be already managed by
+   * @param managedComponent managed component. The component must support the management type
+   *                        (in its {@link ManagedComponent#getManagedResourceTypes()}) used
+   *                        in the selected pool. The component must not be already managed by
    *                        another pool of the same type.
    */
-  public abstract void addResource(String pool, ManagedResource managedResource) throws Exception;
+  public abstract void registerComponent(String pool, ManagedComponent managedComponent) throws Exception;
 
   /**
-   * Remove a managed resource from a pool.
+   * Remove a managed component from a pool.
    * @param pool existing pool name.
-   * @param resourceId resource id to remove
-   * @return true if a resource was actually registered and has been removed
+   * @param componentId component id to remove
+   * @return true if a component was actually registered and has been removed
    */
-  public abstract boolean removeResource(String pool, String resourceId);
+  public abstract boolean unregisterComponent(String pool, String componentId);
 
   protected void ensureActive() {
     if (isClosed()) {

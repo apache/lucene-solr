@@ -169,7 +169,7 @@ public class DefaultResourceManager extends ResourceManager {
   }
 
   @Override
-  public void addResource(String name, ManagedResource managedResource) {
+  public void registerComponent(String name, ManagedComponent managedComponent) {
     ensureActive();
     ResourceManagerPool pool = resourcePools.get(name);
     if (pool == null) {
@@ -181,22 +181,22 @@ public class DefaultResourceManager extends ResourceManager {
         return;
       }
       if (otherPool.getType().equals(type)) {
-        throw new IllegalArgumentException("Resource " + managedResource.getResourceId() +
+        throw new IllegalArgumentException("Resource " + managedComponent.getManagedComponentId() +
             " is already managed in another pool (" +
             otherPool.getName() + ") of the same type " + type);
       }
     });
-    pool.addResource(managedResource);
+    pool.registerComponent(managedComponent);
   }
 
   @Override
-  public boolean removeResource(String poolName, String resourceId) {
+  public boolean unregisterComponent(String poolName, String resourceId) {
     ensureActive();
     ResourceManagerPool pool = resourcePools.get(poolName);
     if (pool == null) {
       throw new IllegalArgumentException("Pool '" + poolName + "' doesn't exist.");
     }
-    return pool.removeResource(resourceId);
+    return pool.unregisterComponent(resourceId);
   }
 
   @Override

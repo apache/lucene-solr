@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.managed.ManagedResource;
+import org.apache.solr.managed.ManagedComponent;
 import org.apache.solr.metrics.SolrMetricProducer;
 
 import java.util.Map;
@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * Primary API for dealing with Solr's internal caches.
  */
-public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer, ManagedResource {
+public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer, ManagedComponent {
 
   /** Current size of the cache. */
   String SIZE_PARAM = "size";

@@ -22,14 +22,14 @@ import java.util.Arrays;
 import org.apache.solr.metrics.SolrMetricManager;
 
 /**
- * Hierarchical resource id.
+ * Hierarchical component id.
  */
-public class ResourceId {
+public class ManagedComponentId {
   private final String name;
   private final String[] path;
   private final String id;
 
-  public ResourceId(String name, String... path) {
+  public ManagedComponentId(String name, String... path) {
     this.name = name;
     this.path = path;
     this.id = SolrMetricManager.mkName(name, path);
@@ -47,7 +47,7 @@ public class ResourceId {
     return id;
   }
 
-  public ResourceId of(String fullName) {
+  public ManagedComponentId of(String fullName) {
     if (fullName == null || fullName.isEmpty()) {
       return null;
     }
@@ -55,9 +55,9 @@ public class ResourceId {
     if (parts.length > 1) {
       String name = parts[parts.length - 1];
       String[] path = Arrays.copyOfRange(parts, 0, parts.length - 1);
-      return new ResourceId(name, path);
+      return new ManagedComponentId(name, path);
     } else {
-      return new ResourceId(parts[0]);
+      return new ManagedComponentId(parts[0]);
     }
   }
 }

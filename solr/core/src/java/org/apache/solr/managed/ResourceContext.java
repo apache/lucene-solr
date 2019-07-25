@@ -16,32 +16,11 @@
  */
 package org.apache.solr.managed;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.solr.core.SolrInfoBean;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Convenience interface for {@link SolrInfoBean}-s that need to be managed.
+ *
  */
-public interface ManagedMetricProducer extends SolrInfoBean, ManagedComponent {
+public class ResourceContext extends ConcurrentHashMap<String, Object> {
 
-  @Override
-  default Map<String, Object> getMonitoredValues(Collection<String> params) {
-    Map<String, Object> metrics = getMetricsSnapshot();
-    if (metrics == null) {
-      return Collections.emptyMap();
-    }
-    Map<String, Object> result = new HashMap<>();
-    params.forEach(tag -> {
-      Object value = metrics.get(tag);
-      if (value == null) {
-        return;
-      }
-      result.put(tag, value);
-    });
-    return result;
-  }
 }

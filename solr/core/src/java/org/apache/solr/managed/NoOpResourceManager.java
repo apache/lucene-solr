@@ -44,17 +44,17 @@ public class NoOpResourceManager extends ResourceManager {
     }
 
     @Override
-    public void addResource(ManagedResource managedResource) {
+    public void registerComponent(ManagedComponent managedComponent) {
 
     }
 
     @Override
-    public boolean removeResource(String name) {
+    public boolean unregisterComponent(String name) {
       return false;
     }
 
     @Override
-    public Map<String, ManagedResource> getResources() {
+    public Map<String, ManagedComponent> getComponents() {
       return Collections.emptyMap();
     }
 
@@ -84,12 +84,7 @@ public class NoOpResourceManager extends ResourceManager {
     }
 
     @Override
-    public Context getPoolContext() {
-      return null;
-    }
-
-    @Override
-    public Context getResourceContext(String name) {
+    public ResourceContext getPoolContext() {
       return null;
     }
 
@@ -135,12 +130,12 @@ public class NoOpResourceManager extends ResourceManager {
   }
 
   @Override
-  public void addResource(String pool, ManagedResource managedResource) throws Exception {
+  public void registerComponent(String pool, ManagedComponent managedComponent) throws Exception {
 
   }
 
   @Override
-  public boolean removeResource(String pool, String resourceId) {
+  public boolean unregisterComponent(String pool, String componentId) {
     return false;
   }
 

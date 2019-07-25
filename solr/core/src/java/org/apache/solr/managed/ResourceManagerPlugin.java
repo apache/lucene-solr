@@ -30,12 +30,12 @@ public interface ResourceManagerPlugin {
   void init(Map<String, Object> params);
 
   /**
-   * Name of monitored parameters that {@link ManagedResource}-s managed by this plugin
+   * Name of monitored parameters that {@link ManagedComponent}-s managed by this plugin
    * are expected to support.
    */
   Collection<String> getMonitoredParams();
   /**
-   * Name of controlled parameters that {@link ManagedResource}-s managed by this plugin
+   * Name of controlled parameters that {@link ManagedComponent}-s managed by this plugin
    * are expected to support.
    */
   Collection<String> getControlledParams();
