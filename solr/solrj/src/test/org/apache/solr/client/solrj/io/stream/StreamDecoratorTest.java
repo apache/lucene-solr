@@ -3151,6 +3151,175 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
   }
 
+
+  @Test
+  public void testParseCSV() throws Exception {
+    String expr = "parseCSV(list(tuple(file=\"file1\", line=\"a,b,c\"), " +
+        "                        tuple(file=\"file1\", line=\"1,2,3\")," +
+        "                        tuple(file=\"file1\", line=\"\\\"hello, world\\\",9000,20\")," +
+        "                        tuple(file=\"file2\", line=\"field_1,field_2,field_3\"), "+
+        "                        tuple(file=\"file2\", line=\"8,9,\")))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  3);
+    assertEquals(tuples.get(0).getString("a"), "1");
+    assertEquals(tuples.get(0).getString("b"), "2");
+    assertEquals(tuples.get(0).getString("c"), "3");
+
+    assertEquals(tuples.get(1).getString("a"), "hello, world");
+    assertEquals(tuples.get(1).getString("b"), "9000");
+    assertEquals(tuples.get(1).getString("c"), "20");
+
+    assertEquals(tuples.get(2).getString("field_1"), "8");
+    assertEquals(tuples.get(2).getString("field_2"), "9");
+    assertNull(tuples.get(2).get("field_3"));
+  }
+
+
+  @Test
+  public void testParseTSV() throws Exception {
+    String expr = "parseTSV(list(tuple(file=\"file1\", line=\"a\tb\tc\"), " +
+        "                        tuple(file=\"file1\", line=\"1\t2\t3\")," +
+        "                        tuple(file=\"file1\", line=\"hello, world\t9000\t20\")," +
+        "                        tuple(file=\"file2\", line=\"field_1\tfield_2\tfield_3\"), "+
+        "                        tuple(file=\"file2\", line=\"8\t\t9\")))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  3);
+    assertEquals(tuples.get(0).getString("a"), "1");
+    assertEquals(tuples.get(0).getString("b"), "2");
+    assertEquals(tuples.get(0).getString("c"), "3");
+
+    assertEquals(tuples.get(1).getString("a"), "hello, world");
+    assertEquals(tuples.get(1).getString("b"), "9000");
+    assertEquals(tuples.get(1).getString("c"), "20");
+
+    assertEquals(tuples.get(2).getString("field_1"), "8");
+    assertNull(tuples.get(2).get("field_2"));
+    assertEquals(tuples.get(2).getString("field_3"), "9");
+
+  }
+
+
+  @Test
+  public void testDateTime() throws Exception {
+    String expr = "select(list(tuple(a=20001011:10:11:01), tuple(a=20071011:14:30:20)), dateTime(a, yyyyMMdd:kk:mm:ss) as date)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    String date = (String)tuples.get(0).get("date");
+    assertEquals(date, "2000-10-11T10:11:01Z");
+    date = (String)tuples.get(1).get("date");
+    assertEquals(date, "2007-10-11T14:30:20Z");
+  }
+
+  @Test
+  public void testDateTimeTZ() throws Exception {
+    String expr = "select(list(tuple(a=20001011), tuple(a=20071011)), dateTime(a, yyyyMMdd, UTC) as date, dateTime(a, yyyyMMdd, EST) as date1, dateTime(a, yyyyMMdd) as date2)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    String date = (String)tuples.get(0).get("date");
+    String date1 = (String)tuples.get(0).get("date1");
+    String date2 = (String)tuples.get(0).get("date2");
+
+    assertEquals(date, "2000-10-11T00:00:00Z");
+    assertEquals(date1, "2000-10-11T05:00:00Z");
+    assertEquals(date2, "2000-10-11T00:00:00Z");
+
+
+    date = (String)tuples.get(1).get("date");
+    date1 = (String)tuples.get(1).get("date1");
+    date2 = (String)tuples.get(1).get("date2");
+
+    assertEquals(date, "2007-10-11T00:00:00Z");
+    assertEquals(date1, "2007-10-11T05:00:00Z");
+    assertEquals(date2, "2007-10-11T00:00:00Z");
+  }
+
+
+
+  @Test
+  public void testDoubleLong() throws Exception {
+    String expr = "select(tuple(d=\"1.1\", l=\"5000\"), double(d) as d, long(l) as l)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  1);
+    assertTrue(tuples.get(0).get("d") instanceof Double);
+    assertTrue(tuples.get(0).get("l") instanceof Long);
+
+    assertEquals(tuples.get(0).getDouble("d"), 1.1D, 0);
+    assertEquals(tuples.get(0).getLong("l").longValue(), 5000L);
+
+  }
+
+
+  public void testDoubleLongArray() throws Exception {
+    String expr = "let(a=list(tuple(d=\"1.1\", l=\"5000\"), tuple(d=\"1.3\", l=\"7000\"))," +
+        "              b=col(a, d)," +
+        "              c=col(a, l)," +
+        "              tuple(doubles=double(b)," +
+        "                    longs=long(c)))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  1);
+
+    List<Double> doubles = (List<Double>)tuples.get(0).get("doubles");
+    List<Long> longs = (List<Long>)tuples.get(0).get("longs");
+    assertEquals(doubles.get(0), 1.1, 0);
+    assertEquals(doubles.get(1), 1.3, 0);
+
+    assertEquals(longs.get(0).longValue(), 5000L);
+    assertEquals(longs.get(1).longValue(), 7000L);
+  }
+
+
   @Test
   public void testCommitStream() throws Exception {
 

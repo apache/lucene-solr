@@ -292,6 +292,11 @@ public class Lang {
         .withFunctionName("isNull", IsNullEvaluator.class)
         .withFunctionName("matches", MatchesEvaluator.class)
         .withFunctionName("projectToBorder", ProjectToBorderEvaluator.class)
+        .withFunctionName("parseCSV", CsvStream.class)
+        .withFunctionName("parseTSV", TsvStream.class)
+        .withFunctionName("double", DoubleEvaluator.class)
+        .withFunctionName("long", LongEvaluator.class)
+        .withFunctionName("dateTime", DateEvaluator.class)
 
         // Boolean Stream Evaluators
 
