@@ -32,6 +32,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.managed.ManagedComponentId;
+import org.apache.solr.managed.ManagedContext;
 import org.apache.solr.managed.plugins.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -84,6 +85,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
   private ManagedComponentId managedComponentId;
+  private final ManagedContext managedContext = new ManagedContext();
 
   private int maxSize;
   private int minSize;
@@ -350,6 +352,11 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
           RamUsageEstimator.sizeOfObject(statsList) +
           RamUsageEstimator.sizeOfObject(cache);
     }
+  }
+
+  @Override
+  public ManagedContext getManagedContext() {
+    return managedContext;
   }
 
   @Override

@@ -21,6 +21,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.managed.ManagedComponentId;
+import org.apache.solr.managed.ManagedContext;
 import org.apache.solr.managed.plugins.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -83,6 +84,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
   private ManagedComponentId managedComponentId;
+  private final ManagedContext managedContext = new ManagedContext();
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -351,6 +353,11 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   @Override
   public Map<String, Object> getMonitoredValues(Collection<String> params) throws Exception {
     return cacheMap.getValue();
+  }
+
+  @Override
+  public ManagedContext getManagedContext() {
+    return managedContext;
   }
 
   @Override

@@ -34,6 +34,7 @@ import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.managed.ManagedComponentId;
+import org.apache.solr.managed.ManagedContext;
 import org.apache.solr.managed.plugins.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -82,6 +83,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private int maxSize;
   private int initialSize;
   private ManagedComponentId managedComponentId;
+  private final ManagedContext managedContext = new ManagedContext();
 
   private long maxRamBytes = Long.MAX_VALUE;
   // The synchronization used for the map will be used to update this,
@@ -383,6 +385,11 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   @Override
   public Map<String, Object> getMonitoredValues(Collection<String> params) throws Exception {
     return cacheMap.getValue();
+  }
+
+  @Override
+  public ManagedContext getManagedContext() {
+    return managedContext;
   }
 
   @Override

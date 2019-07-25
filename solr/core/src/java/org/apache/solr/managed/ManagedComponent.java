@@ -83,5 +83,5 @@ public interface ManagedComponent {
    * Component context used for managing additional component state.
    * @return component's context
    */
-  ResourceContext getManagedContext();
+  ManagedContext getManagedContext();
 }

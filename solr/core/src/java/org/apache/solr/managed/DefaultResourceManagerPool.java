@@ -43,7 +43,7 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   private final String name;
   private final ResourceManagerPlugin resourceManagerPlugin;
   private final Map<String, Object> args;
-  private final ResourceContext poolContext = new ResourceContext();
+  private final ManagedContext poolContext = new ManagedContext();
   private Map<String, Float> totalValues = null;
   private final ReentrantLock updateLock = new ReentrantLock();
   int scheduleDelaySeconds;
@@ -164,7 +164,7 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   }
 
   @Override
-  public ResourceContext getPoolContext() {
+  public ManagedContext getPoolContext() {
     return poolContext;
   }
 

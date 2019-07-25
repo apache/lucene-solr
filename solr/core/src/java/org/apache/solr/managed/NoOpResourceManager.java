@@ -84,7 +84,7 @@ public class NoOpResourceManager extends ResourceManager {
     }
 
     @Override
-    public ResourceContext getPoolContext() {
+    public ManagedContext getPoolContext() {
       return null;
     }
 

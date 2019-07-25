@@ -21,6 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  *
  */
-public class ResourceContext extends ConcurrentHashMap<String, Object> {
+public class ManagedContext extends ConcurrentHashMap<String, Object> {
 
 }
