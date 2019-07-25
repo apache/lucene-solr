@@ -452,16 +452,36 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
       }
     }
   }
-  
+
+  /**
+   * Holds all state required for {@link Lucene50PostingsReader} to produce a
+   * {@link org.apache.lucene.index.PostingsEnum} without re-seeking the terms dict.
+   *
+   * @lucene.internal
+   */
   public static final class IntBlockTermState extends BlockTermState {
-    public long docStartFP = 0;
-    public long posStartFP = 0;
-    public long payStartFP = 0;
-    public long skipOffset = -1;
-    public long lastPosBlockOffset = -1;
-    // docid when there is a single pulsed posting, otherwise -1
-    // freq is always implicitly totalTermFreq in this case.
-    public int singletonDocID = -1;
+    /** file pointer to the start of the doc ids enumeration, in {@link #DOC_EXTENSION} file */
+    public long docStartFP;
+    /** file pointer to the start of the positions enumeration, in {@link #POS_EXTENSION} file */
+    public long posStartFP;
+    /** file pointer to the start of the payloads enumeration, in {@link #PAY_EXTENSION} file */
+    public long payStartFP;
+    /** file offset for the start of the skip list, relative to docStartFP, if there are more
+     * than {@link #BLOCK_SIZE} docs; otherwise -1 */
+    public long skipOffset;
+    /** file offset for the last position in the last block, if there are more than
+     * {@link #BLOCK_SIZE} positions; otherwise -1 */
+    public long lastPosBlockOffset;
+    /** docid when there is a single pulsed posting, otherwise -1.
+     * freq is always implicitly totalTermFreq in this case. */
+    public int singletonDocID;
+
+    /** Sole constructor. */
+    public IntBlockTermState() {
+      skipOffset = -1;
+      lastPosBlockOffset = -1;
+      singletonDocID = -1;
+    }
 
     @Override
     public IntBlockTermState clone() {
