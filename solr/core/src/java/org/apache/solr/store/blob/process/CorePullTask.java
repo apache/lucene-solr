@@ -249,24 +249,24 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       }
 
       // TODO unknown core pulls in context of solr cloud
-//      if (!coreExists(pullCoreInfo.getCoreName())) {
-//        if (pullCoreInfo.shouldCreateCoreIfAbsent()) {
-//          // We set the core as created awaiting pull before creating it, otherwise it's too late.
-//          // If we get to this point, we're setting the "created not pulled yet" status of the core here (only place
-//          // in the code where this happens) and we're clearing it in the finally below.
-//          // We're not leaking entries in coresCreatedNotPulledYet that might stay there forever...
-//          synchronized (pullsInFlight) {
-//            synchronized (coresCreatedNotPulledYet) {
-//              coresCreatedNotPulledYet.add(pullCoreInfo.getSharedStoreName());
-//            }
-//          }
-//          createCore(pullCoreInfo);
-//        } else {
-//          syncStatus = CoreSyncStatus.LOCAL_MISSING_FOR_PULL;
-//          this.callback.finishedPull(this, blobMetadata, syncStatus, null);
-//          return;
-//        }
-//      }
+      if (!coreExists(pullCoreInfo.getCoreName())) {
+        if (pullCoreInfo.shouldCreateCoreIfAbsent()) {
+          // We set the core as created awaiting pull before creating it, otherwise it's too late.
+          // If we get to this point, we're setting the "created not pulled yet" status of the core here (only place
+          // in the code where this happens) and we're clearing it in the finally below.
+          // We're not leaking entries in coresCreatedNotPulledYet that might stay there forever...
+          synchronized (pullsInFlight) {
+            synchronized (coresCreatedNotPulledYet) {
+              coresCreatedNotPulledYet.add(pullCoreInfo.getSharedStoreName());
+            }
+          }
+          createCore(pullCoreInfo);
+        } else {
+          syncStatus = CoreSyncStatus.LOCAL_MISSING_FOR_PULL;
+          this.callback.finishedPull(this, blobMetadata, syncStatus, null);
+          return;
+        }
+      }
 
       // Get local metadata + resolve with blob metadata
       ServerSideMetadata serverMetadata = new ServerSideMetadata(pullCoreInfo.getCoreName(), coreContainer);

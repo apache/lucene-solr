@@ -6,12 +6,20 @@ import java.util.concurrent.*;
 import com.amazonaws.annotation.GuardedBy;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+
+import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 //import net.jcip.annotations.GuardedBy;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.PullInProgressException;
 import org.apache.solr.store.blob.process.*;
-
+import org.apache.solr.store.blob.util.BlobStoreUtils;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandles;
@@ -96,6 +104,52 @@ public class BlobCoreSyncer {
     public static boolean isEmptyCoreAwaitingPull(String coreName) {
         return CorePullTask.isEmptyCoreAwaitingPull(coreName);
     }
+    
+    public static void pull(String coreName, String shardName, String collectionName, CoreContainer cores,
+        boolean waitForSearcher, boolean emptyCoreAwaitingPull) {
+      // Initialize variables
+      SharedShardMetadataController sharedShardMetadataController = cores.getSharedStoreManager().getSharedShardMetadataController();
+      DocCollection collection = cores.getZkController().getClusterState().getCollection(collectionName);
+
+      Slice shard = collection.getSlicesMap().get(shardName);
+      if (shard != null) {
+        try {
+          if (!collection.getActiveSlices().contains(shard)) {
+            // unclear if there are side effects but logging for now
+            logger.warn("Pulling shard " + shardName + " that is inactive!");
+          }
+          logger.info("Pulling for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
+          // creates the metadata node if it doesn't exist
+          sharedShardMetadataController.ensureMetadataNodeExists(collectionName, shardName);
+
+          /*
+           * Get the metadataSuffix value from ZooKeeper or from a cache if an entry exists for the 
+           * given collection and shardName. If the leader has already changed, the conditional update
+           * later will fail and invalidate the cache entry if it exists. 
+           */
+          VersionedData data = sharedShardMetadataController.readMetadataValue(collectionName, shardName, 
+              /* readFromCache */ false);
+          Map<String, String> nodeUserData = (Map<String, String>) Utils.fromJSON(data.getData());
+          String metadataSuffix = nodeUserData.get(SharedShardMetadataController.SUFFIX_NODE_NAME);
+
+          String sharedShardName = (String) shard.get(ZkStateReader.SHARED_SHARD_NAME);
+
+          PushPullData pushPullData = new PushPullData.Builder()
+              .setCollectionName(collectionName)
+              .setShardName(shardName)
+              .setCoreName(coreName)
+              .setSharedStoreName(sharedShardName)
+              .setLastReadMetadataSuffix(metadataSuffix)
+              .setNewMetadataSuffix(BlobStoreUtils.generateMetadataSuffix())
+              .setZkVersion(data.getVersion())
+              .build();
+          pull(pushPullData, waitForSearcher, emptyCoreAwaitingPull);
+        } catch (Exception ex) {
+          // wrap every thrown exception in a solr exception
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error trying to push to blob store", ex);
+        }
+      }
+    }
 
     /**
      * This method is used to pull in updates from blob when there is no local copy of the core available and when a thread
@@ -116,7 +170,7 @@ public class BlobCoreSyncer {
      *
      * @throws PullInProgressException In case a thread does not wait or times out before the async pull is finished
      */
-    public void pull(PushPullData pushPullData, boolean waitForSearcher, boolean emptyCoreAwaitingPull) throws PullInProgressException {
+    public static void pull(PushPullData pushPullData, boolean waitForSearcher, boolean emptyCoreAwaitingPull) throws PullInProgressException {
         // Is there another thread already working on the async pull?
         final boolean pullAlreadyInProgress;
         // Indicates if thread waits for the pull to finish or too many waiters already
@@ -283,7 +337,7 @@ public class BlobCoreSyncer {
         notifyEndOfPull(sharedStoreName, pullException);
     }
 
-    private void throwPullInProgressException(String corename, String msgSuffix) throws PullInProgressException {
+    private static void throwPullInProgressException(String corename, String msgSuffix) throws PullInProgressException {
         String msg = SKIPPING_PULLING_CORE + " " + corename + " from blob " + msgSuffix;
         logger.info(msg);
         // Note that longer term, this is the place where we could decide that if the async

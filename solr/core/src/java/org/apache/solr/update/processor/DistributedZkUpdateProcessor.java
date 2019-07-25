@@ -198,6 +198,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     } else {
       // zk
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
+      readFromSharedStoreIfNecessary();
 
       List<SolrCmdDistributor.Node> useNodes = null;
       if (req.getParams().get(COMMIT_END_POINT) == null) {
