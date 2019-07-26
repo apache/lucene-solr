@@ -55,7 +55,7 @@ import javax.xml.xpath.XPathFactory;
 
 public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   protected static final HashMap<String,Object> defaults = new HashMap<>();
-  
+
   protected String latestType = "";
 
   private static Document doc;
@@ -66,7 +66,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   public static void beforeClassAbstractAnalysis() {
     xPathFact = XPathFactory.newInstance();
   }
-  
+
   @AfterClass
   public static void afterClassAbstractAnalysis() {
     xPathFact = null;
@@ -153,13 +153,13 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
     Long i = list.remove(idx);
     list.add(idx, i+1);
   }
-  
+
   public static String[] filter(String...args){
     List<String> l = new ArrayList<>();
     for( int i=0; i <args.length; i+=2){
-      if( args[i+1].equals("0") || args[i+1].equals("0.0") || 
+      if( args[i+1].equals("0") || args[i+1].equals("0.0") ||
           args[i+1].equals("1800-12-31T23:59:59Z") || args[i+1].equals("str0") ||
-          args[i+1].equals("this is the firststr0") || 
+          args[i+1].equals("this is the firststr0") ||
           args[i+1].equals("this is the secondstr0") ){
         continue;
       }
@@ -168,7 +168,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
     }
     return l.toArray(new String[0]);
   }
-  
+
   protected void setLatestType(String latestType) {
     this.latestType = latestType;
   }
@@ -289,19 +289,19 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
     }
     return Long.valueOf(miss);
   }
-  
+
   public static SolrQueryRequest request(String...args){
     return SolrTestCaseJ4.req( ObjectArrays.concat(BASEPARMS, args,String.class) );
   }
-  
+
   public static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };
 
-  
+
   public static String[] fileToStringArr(Class<?> clazz, String fileName) throws FileNotFoundException {
     InputStream in = clazz.getResourceAsStream("/solr/analytics/legacy/" + fileName);
     if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
     Scanner file = new Scanner(in, "UTF-8");
-    try { 
+    try {
       ArrayList<String> strList = new ArrayList<>();
       while (file.hasNextLine()) {
         String line = file.nextLine();
@@ -324,7 +324,7 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
       IOUtils.closeWhileHandlingException(file, in);
     }
   }
-  
+
   protected void removeNodes(String xPath, List<Double> string) throws XPathExpressionException {
     NodeList missingNodes = getNodes(xPath);
     List<Double> result = new ArrayList<Double>();
@@ -338,5 +338,5 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
     StringBuilder sb = new StringBuilder(xPath);
     return (NodeList) xPathFact.newXPath().compile(sb.toString()).evaluate(doc, XPathConstants.NODESET);
   }
-  
+
 }

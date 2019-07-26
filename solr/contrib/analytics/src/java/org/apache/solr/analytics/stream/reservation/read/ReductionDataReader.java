@@ -25,15 +25,15 @@ import java.io.IOException;
 public abstract class ReductionDataReader<A> {
   protected final DataInput inputStream;
   protected final A applier;
-  
+
   public ReductionDataReader(DataInput inputStream, A applier) {
     this.inputStream = inputStream;
     this.applier = applier;
   }
-  
+
   /**
    * Read a piece of data from the input stream and feed it to the applier.
-   * 
+   *
    * @throws IOException if an exception occurs while reading from the input stream
    */
   public abstract void read() throws IOException;

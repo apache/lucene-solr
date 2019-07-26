@@ -33,34 +33,34 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
   public void twoSingleValueParametersTest() {
     TestBooleanValue val1 = new TestBooleanValue();
     TestBooleanValue val2 = new TestBooleanValue();
-    
+
     AnalyticsValueStream uncasted = OrFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof BooleanValue);
     BooleanValue func = (BooleanValue) uncasted;
-    
+
     // Neither exists
     val1.setExists(false);
     val2.setExists(false);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     // One exists
     val1.setValue(true).setExists(true);
     val2.setExists(false);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     // Both exist
     val1.setValue(false).setExists(true);
     val2.setValue(false).setExists(true);
     assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
-    
+
     val1.setValue(true).setExists(true);
     val2.setValue(false).setExists(true);
     assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
-    
+
     val1.setValue(false).setExists(true);
     val2.setValue(true).setExists(true);
     assertEquals(true, func.getBoolean());
@@ -75,7 +75,7 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
   @Test
   public void oneMultiValueParameterTest() {
     TestBooleanValueStream val = new TestBooleanValueStream();
-    
+
     AnalyticsValueStream uncasted = OrFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof BooleanValue);
     BooleanValue func = (BooleanValue) uncasted;
@@ -84,7 +84,7 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     // One value
     val.setValues(true);
     assertEquals(true, func.getBoolean());
@@ -93,12 +93,12 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
     val.setValues(false);
     assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
-    
+
     // Multiple values
     val.setValues(false, false, true, false);
     assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
-    
+
     val.setValues(false, false, false);
     assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
@@ -108,7 +108,7 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiOneSingleValueParameterTest() {
     TestBooleanValue val1 = new TestBooleanValue();
     TestBooleanValueStream val2 = new TestBooleanValueStream();
-    
+
     AnalyticsValueStream uncasted = OrFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -119,14 +119,14 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, no value
     val1.setExists(false);
     val2.setValues(true, false);
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, one value
     val1.setValue(false).setExists(true);
     val2.setValues(true, false, true);
@@ -153,7 +153,7 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
     TestBooleanValue val2 = new TestBooleanValue();
     TestBooleanValue val3 = new TestBooleanValue();
     TestBooleanValue val4 = new TestBooleanValue();
-    
+
     AnalyticsValueStream uncasted = OrFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
     assertTrue(uncasted instanceof BooleanValue);
     BooleanValue func = (BooleanValue) uncasted;
@@ -165,7 +165,7 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
     val4.setExists(false);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     // Some exist
     val1.setExists(false);
     val2.setValue(true).setExists(true);
@@ -173,7 +173,7 @@ public class OrFunctionTest extends SolrTestCaseJ4 {
     val4.setValue(false).setExists(true);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     // All exist values, one value
     val1.setValue(false).setExists(true);
     val2.setValue(true).setExists(true);

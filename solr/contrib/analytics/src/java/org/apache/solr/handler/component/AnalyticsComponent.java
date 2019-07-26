@@ -33,7 +33,7 @@ import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
  */
 public class AnalyticsComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "analytics";
-  
+
   @Override
   public void init(NamedList args) {
     AnalyticsRequestParser.init();
@@ -55,7 +55,7 @@ public class AnalyticsComponent extends SearchComponent {
       rb._isOlapAnalytics = true;
       rb.doAnalytics = true;
     }
-    
+
     if (rb.doAnalytics) {
       AnalyticsRequestManager reqManager = (AnalyticsRequestManager)rb._analyticsRequestManager;
       // Check to see if the request is distributed
@@ -77,7 +77,7 @@ public class AnalyticsComponent extends SearchComponent {
     AnalyticsRequestManager reqManager = (AnalyticsRequestManager)rb._analyticsRequestManager;
     // Collect the data and generate a response
     AnalyticsDriver.drive(reqManager, rb.req.getSearcher(), rb.getResults().docSet.getTopFilter(), rb.req);
-    
+
     if (rb._isOlapAnalytics) {
       rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER, reqManager.createOldResponse());
     } else {
@@ -86,8 +86,8 @@ public class AnalyticsComponent extends SearchComponent {
 
     rb.doAnalytics = false;
   }
-  
-  
+
+
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
     if (!rb.doAnalytics || rb.stage != ResponseBuilder.STAGE_EXECUTE_QUERY) {
@@ -97,34 +97,34 @@ public class AnalyticsComponent extends SearchComponent {
     if (!reqManager.sendShards){
       return ResponseBuilder.STAGE_DONE;
     }
-    
+
     // Send out a request to each shard and merge the responses into our AnalyticsRequestManager
     reqManager.shardStream.sendRequests(rb.req.getCore().getCoreDescriptor().getCollectionName(),
         rb.req.getCore().getCoreContainer().getZkController().getZkServerAddress());
-    
+
     reqManager.sendShards = false;
-    
+
     return ResponseBuilder.STAGE_DONE;
   }
-  
+
   @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     // We don't want the shard requests to compute analytics, since we send
     // separate requests for that in distributedProcess() to the AnalyticsHandler
     sreq.params.remove(AnalyticsRequestParser.analyticsParamName);
     sreq.params.remove(OldAnalyticsParams.OLD_ANALYTICS);
-    
+
     super.modifyRequest(rb, who, sreq);
   }
-  
+
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
-    
+
     // NO-OP since analytics shard responses are handled through the AnalyticsResponseParser
-    
+
     super.handleResponses(rb, sreq);
   }
- 
+
   @Override
   public void finishStage(ResponseBuilder rb) {
     if (rb.doAnalytics && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
@@ -136,16 +136,16 @@ public class AnalyticsComponent extends SearchComponent {
         rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_HEADER, reqManager.createResponse());
       }
     }
-    
+
     super.finishStage(rb);
   }
-  
-  
+
+
   @Override
   public String getName() {
     return COMPONENT_NAME;
   }
-  
+
   @Override
   public String getDescription() {
     return "Perform analytics";

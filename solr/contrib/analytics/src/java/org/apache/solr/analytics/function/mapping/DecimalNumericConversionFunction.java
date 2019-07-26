@@ -39,15 +39,15 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
- * An abstract decimal numeric converting mapping function. For example "round()" would convert a float to an int and a double to a long. 
+ * An abstract decimal numeric converting mapping function. For example "round()" would convert a float to an int and a double to a long.
  * <p>
  * Takes a numeric Double or Float ValueStream or Value and returns a Long or Int ValueStream or Value, respectively.
  */
 public class DecimalNumericConversionFunction {
-  
+
   /**
    * Create a numeric conversion mapping function.
-   * 
+   *
    * @param name the name of the function
    * @param fconv the method to convert floats to ints
    * @param dconv the method to convert doubles to longs
@@ -76,7 +76,7 @@ public class DecimalNumericConversionFunction {
       throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a numeric parameter.");
     }
   }
-  
+
   /**
    * A numeric mapping function that returns the floor of the input.
    */
@@ -86,7 +86,7 @@ public class DecimalNumericConversionFunction {
       return DecimalNumericConversionFunction.createDecimalConversionFunction(name, val -> (int)Math.floor(val), val -> (long)Math.floor(val), params);
     });
   }
-  
+
   /**
    * A numeric mapping function that returns the ceiling of the input.
    */
@@ -96,7 +96,7 @@ public class DecimalNumericConversionFunction {
       return DecimalNumericConversionFunction.createDecimalConversionFunction(name, val -> (int)Math.ceil(val), val -> (long)Math.ceil(val), params);
     });
   }
-  
+
   /**
    * A numeric mapping function that returns the rounded input.
    */
@@ -111,7 +111,7 @@ public class DecimalNumericConversionFunction {
   public static interface ConvertFloatFunction {
     public int convert(float value);
   }
-  
+
   @FunctionalInterface
   public static interface ConvertDoubleFunction {
     public long convert(double value);
@@ -126,7 +126,7 @@ class ConvertFloatValueFunction extends AbstractIntValue {
   private final ConvertFloatFunction conv;
   private final String funcStr;
   private final ExpressionType funcType;
-  
+
   public ConvertFloatValueFunction(String name, FloatValue param, ConvertFloatFunction conv) {
     this.name = name;
     this.param = param;
@@ -166,7 +166,7 @@ class ConvertFloatStreamFunction extends AbstractIntValueStream {
   private final ConvertFloatFunction conv;
   private final String funcStr;
   private final ExpressionType funcType;
-  
+
   public ConvertFloatStreamFunction(String name, FloatValueStream param, ConvertFloatFunction conv) {
     this.name = name;
     this.param = param;
@@ -202,7 +202,7 @@ class ConvertDoubleValueFunction extends AbstractLongValue {
   private final ConvertDoubleFunction conv;
   private final String funcStr;
   private final ExpressionType funcType;
-  
+
   public ConvertDoubleValueFunction(String name, DoubleValue param, ConvertDoubleFunction conv) {
     this.name = name;
     this.param = param;
@@ -242,7 +242,7 @@ class ConvertDoubleStreamFunction extends AbstractLongValueStream {
   private final ConvertDoubleFunction conv;
   private final String funcStr;
   private final ExpressionType funcType;
-  
+
   public ConvertDoubleStreamFunction(String name, DoubleValueStream param, ConvertDoubleFunction conv) {
     this.name = name;
     this.param = param;
