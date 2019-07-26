@@ -32,6 +32,7 @@ import org.apache.lucene.util.DocIdSetBuilder;
 /**
  * Abstract class for range queries involving multiple ranges against physical points such as {@code IntPoints}
  * All ranges are logically ORed together
+ * TODO: Add capability for handling overlapping ranges at rewrite time
  * @lucene.experimental
  */
 public abstract class MultiRangeQuery extends Query {
@@ -132,6 +133,9 @@ public abstract class MultiRangeQuery extends Query {
     }
   }
 
+  /*
+   * TODO: Organize ranges similar to how EdgeTree does, to avoid linear scan of ranges
+   */
   @Override
   public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
