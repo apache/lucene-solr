@@ -40,6 +40,12 @@ Improvements
   docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
   indices (Atri Sharma, Adrien Grand, Simon Willnauer)
 
+* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
+
+* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
+
+* LUCENE-8769: Introduce Range Query For Multiple Connected Ranges (Atri Sharma)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
