@@ -217,15 +217,15 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         timer.getTime(), prop, expectedVersion, collection);
   }
 
-  public  static void execInparallel( List<? extends PerReplicaCallable> concurrentTasks, Consumer<ExecutorService> fun) {
+  public static void execInparallel(List<? extends PerReplicaCallable> concurrentTasks, Consumer<ExecutorService> fun) {
     int poolSize = Math.min(concurrentTasks.size(), 10);
     ExecutorService parallelExecutor =
         ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new DefaultSolrThreadFactory("solrHandlerExecutor"));
     try {
 
-     fun.accept(parallelExecutor);
+      fun.accept(parallelExecutor);
 
-    }  finally {
+    } finally {
       ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
     }
   }
@@ -601,7 +601,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         }
       } catch (Exception e) {
 
-        log.error( "error executing commands "+ Utils.toJSONString(ops) ,e);
+        log.error("error executing commands " + Utils.toJSONString(ops), e);
         resp.setException(e);
         resp.add(CommandOperation.ERR_MSGS, singletonList(SchemaManager.getErrorStr(e)));
       }
@@ -817,13 +817,13 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     private boolean verifyClass(CommandOperation op, String clz, SolrConfig.SolrPluginInfo pluginMeta) {
       if (clz == null) return true;
       PluginInfo info = new PluginInfo(pluginMeta.getCleanTag(), op.getDataMap());
-      if(info.getRuntimeLibType() != null && !RuntimeLib.isEnabled()){
+
+      if (info.isRuntimePlugin() && !RuntimeLib.isEnabled()) {
         op.addError("node not started with enable.runtime.lib=true");
         return false;
       }
 
-
-      if ( !"true".equals(String.valueOf(op.getStr(RuntimeLib.TYPE, null)))) {
+      if (!"true".equals(String.valueOf(op.getStr(RuntimeLib.TYPE, null)))) {
         //this is not dynamically loaded so we can verify the class right away
         try {
           req.getCore().createInitInstance(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()), pluginMeta.clazz, clz, "");

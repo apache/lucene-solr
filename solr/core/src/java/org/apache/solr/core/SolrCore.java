@@ -56,6 +56,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
@@ -94,6 +95,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -238,7 +240,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public volatile boolean searchEnabled = true;
   public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
-  private List<Runnable> globalClassLoaderListeners = new ArrayList<>();
+  private List<Pair<String ,Consumer<RuntimeLib>>> packageListeners = new ArrayList<>();
+
 
   public Set<String> getMetricNames() {
     return metricNames;
@@ -353,14 +356,14 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           .getPath();
     }
   }
-  void globalClassLoaderChanged(){
-    for (Runnable r : globalClassLoaderListeners) {
-      r.run();
 
+  void packageUpdated(RuntimeLib lib) {
+    for (Pair<String, Consumer<RuntimeLib>> pair : packageListeners) {
+      if(lib.equals(pair.first())) pair.second().accept(lib);
     }
   }
-  void addGlobalClassLoaderListener(Runnable r){
-    globalClassLoaderListeners.add(r);
+  void addPackageListener(String  pkg, Consumer<RuntimeLib> r){
+    packageListeners.add(new Pair<>(pkg, r));
   }
 
 
@@ -868,9 +871,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   public <T extends Object> T createInitInstance(PluginInfo info, Class<T> cast, String msg, String defClassName) {
     if (info == null) return null;
-    ResourceLoader resourceLoader = "global".equals(info.getRuntimeLibType())?
-        coreContainer.getClusterPropertiesListener().
-        getResourceLoader(): getResourceLoader();
+    String pkg = info.attributes.get(CommonParams.PACKAGE);
+    ResourceLoader resourceLoader = pkg != null?
+        coreContainer.getPackageManager().getResourceLoader(pkg):
+        getResourceLoader();
 
     T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, resourceLoader);
     if (o instanceof PluginInfoInitialized) {

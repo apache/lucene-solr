@@ -219,7 +219,7 @@ public class CoreContainer {
 
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
 
-  private final LibListener clusterPropertiesListener = new LibListener(this);
+  private final PackageManager clusterPropertiesListener = new PackageManager(this);
 
 
   // Bits for the state variable.
@@ -1796,7 +1796,7 @@ public class CoreContainer {
     return containerHandlers;
   }
 
-  public LibListener getClusterPropertiesListener(){
+  public PackageManager getPackageManager(){
     return clusterPropertiesListener;
   }
 
