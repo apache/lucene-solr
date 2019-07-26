@@ -58,7 +58,7 @@ import org.apache.solr.analytics.value.FillableTestValue.TestStringValueStream;
 import org.junit.Test;
 
 public class FillMissingFunctionTest extends SolrTestCaseJ4 {
-  
+
   @Test
   public void castingTest() {
     assertTrue(FillMissingFunction.creatorFunction.apply(new AnalyticsValueStream[] {new TestBooleanValue(), new TestStringValue()}) instanceof StringValue);
@@ -98,17 +98,17 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValue(false).setExists(true);
     assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
-    
+
     val.setValue(false).setExists(true);
     filler.setValue(false).setExists(true);
     assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
-    
+
     val.setValue(true).setExists(true);
     filler.setExists(false);
     assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
-    
+
     val.setValue(false).setExists(true);
     filler.setExists(false);
     assertEquals(false, func.getBoolean());
@@ -139,7 +139,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setExists(false);
     func.getInt();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue(21).setExists(true);
     filler.setValue(234).setExists(true);
@@ -150,7 +150,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValue(-234).setExists(true);
     assertEquals(-234, func.getInt());
     assertTrue(func.exists());
-    
+
     val.setValue(52334).setExists(true);
     filler.setExists(false);
     assertEquals(52334, func.getInt());
@@ -171,7 +171,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setExists(false);
     func.getLong();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue(21L).setExists(true);
     filler.setValue(234L).setExists(true);
@@ -182,7 +182,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValue(234L).setExists(true);
     assertEquals(234L, func.getLong());
     assertTrue(func.exists());
-    
+
     val.setValue(-52334L).setExists(true);
     filler.setExists(false);
     assertEquals(-52334L, func.getLong());
@@ -203,7 +203,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setExists(false);
     func.getFloat();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue(-21.324F).setExists(true);
     filler.setValue(23423.423342F).setExists(true);
@@ -214,7 +214,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValue(3124123.32F).setExists(true);
     assertEquals(3124123.32F, func.getFloat(), .00000001);
     assertTrue(func.exists());
-    
+
     val.setValue(2345.345543F).setExists(true);
     filler.setExists(false);
     assertEquals(2345.345543F, func.getFloat(), .00000001);
@@ -235,7 +235,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setExists(false);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue(-21.324).setExists(true);
     filler.setValue(23423.423342).setExists(true);
@@ -246,7 +246,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValue(3124123.32).setExists(true);
     assertEquals(3124123.32, func.getDouble(), .00000001);
     assertTrue(func.exists());
-    
+
     val.setValue(2345.345543).setExists(true);
     filler.setExists(false);
     assertEquals(2345.345543, func.getDouble(), .00000001);
@@ -258,7 +258,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     Date date1 = Date.from(Instant.parse("1810-12-02T10:30:15Z"));
     Date date2 = Date.from(Instant.parse("1950-02-23T14:54:34Z"));
     Date date3 = Date.from(Instant.parse("2023-11-01T20:30:15Z"));
-    
+
     TestDateValue val = new TestDateValue();
     TestDateValue filler = new TestDateValue();
 
@@ -271,7 +271,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setExists(false);
     func.getLong();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue("1810-12-02T10:30:15Z").setExists(true);
     filler.setValue("2023-11-01T20:30:15Z").setExists(true);
@@ -282,7 +282,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValue("1950-02-23T14:54:34Z").setExists(true);
     assertEquals(date2.getTime(), func.getLong());
     assertTrue(func.exists());
-    
+
     val.setValue("2023-11-01T20:30:15Z").setExists(true);
     filler.setExists(false);
     assertEquals(date3.getTime(), func.getLong());
@@ -303,7 +303,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setExists(false);
     func.getString();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue("abc123").setExists(true);
     filler.setValue("def456").setExists(true);
@@ -314,7 +314,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValue("abc456").setExists(true);
     assertEquals("abc456", func.getString());
     assertTrue(func.exists());
-    
+
     val.setValue("def123").setExists(true);
     filler.setExists(false);
     assertEquals("def123", func.getString());
@@ -335,7 +335,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setExists(false);
     func.getObject();
     assertFalse(func.exists());
-    
+
     // Value exists
     val.setValue("abc123").setExists(true);
     filler.setValue(new Date(123)).setExists(true);
@@ -346,7 +346,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     filler.setValue(Boolean.TRUE).setExists(true);
     assertEquals(Boolean.TRUE, func.getObject());
     assertTrue(func.exists());
-    
+
     val.setValue(234L).setExists(true);
     filler.setExists(false);
     assertEquals(234L, func.getObject());
@@ -368,7 +368,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues(true);
     filler.setValues(true, false);
@@ -413,7 +413,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     func.streamInts( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues(323, -9423);
     filler.setValues(-1234, 5433, -73843, 1245144);
@@ -458,7 +458,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues(323L, -9423L);
     filler.setValues(-1234L, -5433L, -73843L, 1245144L);
@@ -503,7 +503,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     func.streamFloats( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues(323.213F, -9423.5F);
     filler.setValues(-1234.9478F, -5433.234F, -73843F, 1245144.2342F);
@@ -548,7 +548,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues(323.213, -9423.5);
     filler.setValues(-1234.9478, -5433.234, -73843.0, 1245144.2342);
@@ -583,7 +583,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     Date date1 = Date.from(Instant.parse("1810-12-02T10:30:15Z"));
     Date date2 = Date.from(Instant.parse("1931-03-16T18:15:45Z"));
     Date date3 = Date.from(Instant.parse("2023-11-01T20:30:15Z"));
-    
+
     TestDateValueStream val = new TestDateValueStream();
     TestDateValueStream filler = new TestDateValueStream();
 
@@ -597,7 +597,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues("1810-12-02T10:30:15Z");
     filler.setValues("1931-03-16T18:15:45Z", "2023-11-01T20:30:15Z");
@@ -642,7 +642,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues("abc");
     filler.setValues("123", "def");
@@ -685,7 +685,7 @@ public class FillMissingFunctionTest extends SolrTestCaseJ4 {
     func.streamObjects( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Values exist
     val.setValues("asdfs");
     filler.setValues(new Date(12312), 213123L);

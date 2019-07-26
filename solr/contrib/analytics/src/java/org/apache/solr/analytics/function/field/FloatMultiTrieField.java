@@ -44,12 +44,12 @@ public class FloatMultiTrieField extends AnalyticsField implements CastingFloatV
     count = 0;
     values = new float[initialArrayLength];
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedSet(context.reader(), fieldName);
   }
-  
+
   @Override
   public void collect(int doc) throws IOException {
     count = 0;
@@ -63,7 +63,7 @@ public class FloatMultiTrieField extends AnalyticsField implements CastingFloatV
       }
     }
   }
-  
+
   private void resizeValues() {
     float[] newValues = new float[values.length*2];
     for (int i = 0; i < count; ++i) {
@@ -71,7 +71,7 @@ public class FloatMultiTrieField extends AnalyticsField implements CastingFloatV
     }
     values = newValues;
   }
-  
+
   @Override
   public void streamFloats(FloatConsumer cons) {
     for (int i = 0; i < count; ++i) {

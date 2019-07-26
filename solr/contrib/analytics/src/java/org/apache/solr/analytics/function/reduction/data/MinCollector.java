@@ -49,16 +49,16 @@ import org.apache.solr.analytics.value.StringValueStream;
 public abstract class MinCollector<T extends ReductionData> extends ReductionDataCollector<T> {
   public static final String name = "min";
   private final String exprStr;
-  
+
   protected MinCollector(AnalyticsValueStream param) {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
   }
-  
+
   private boolean exists;
-  
+
   /**
    * Returns true if any of the values being reduce exist, and false if none of them do.
-   * 
+   *
    * @return whether a min value exists
    */
   public boolean exists() {
@@ -86,7 +86,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
 
   public static class IntMinCollector extends MinCollector<IntMinCollector.MinData> {
     private IntValueStream param;
-    
+
     public IntMinCollector(IntValueStream param) {
       super(param);
       this.param = param;
@@ -100,10 +100,10 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
     }
 
     int min;
-    
+
     /**
      * Returns the min value of the set data.
-     * 
+     *
      * @return the min
      */
     public int min() {
@@ -129,7 +129,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
         data.exists = true;
       }
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new IntCheckedReservation(
@@ -155,17 +155,17 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
       super.setData(data);
       min = ((MinData)data).val;
     }
-    
+
     public static class MinData extends ReductionData {
       int val;
     }
   }
-  
+
 
 
   public static class LongMinCollector extends MinCollector<LongMinCollector.MinData> {
     private LongValueStream param;
-    
+
     public LongMinCollector(LongValueStream param) {
       super(param);
       this.param = param;
@@ -179,10 +179,10 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
     }
 
     long min;
-    
+
     /**
      * Returns the min value of the set data.
-     * 
+     *
      * @return the min
      */
     public long min() {
@@ -208,7 +208,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
         data.exists = true;
       }
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new LongCheckedReservation(
@@ -234,7 +234,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
       super.setData(data);
       min = ((MinData)data).val;
     }
-    
+
     public static class MinData extends ReductionData {
       long val;
     }
@@ -242,7 +242,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
 
   public static class FloatMinCollector extends MinCollector<FloatMinCollector.MinData> {
     private FloatValueStream param;
-    
+
     public FloatMinCollector(FloatValueStream param) {
       super(param);
       this.param = param;
@@ -256,10 +256,10 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
     }
 
     float min;
-    
+
     /**
      * Returns the min value of the set data.
-     * 
+     *
      * @return the min
      */
     public float min() {
@@ -285,7 +285,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
         data.exists = true;
       }
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new FloatCheckedReservation(
@@ -311,7 +311,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
       super.setData(data);
       min = ((MinData)data).val;
     }
-    
+
     public static class MinData extends ReductionData {
       float val;
     }
@@ -319,7 +319,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
 
   public static class DoubleMinCollector extends MinCollector<DoubleMinCollector.MinData> {
     private DoubleValueStream param;
-    
+
     public DoubleMinCollector(DoubleValueStream param) {
       super(param);
       this.param = param;
@@ -333,10 +333,10 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
     }
 
     double min;
-    
+
     /**
      * Returns the min value of the set data.
-     * 
+     *
      * @return the min
      */
     public double min() {
@@ -362,7 +362,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
         data.exists = true;
       }
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new DoubleCheckedReservation(
@@ -388,17 +388,17 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
       super.setData(data);
       min = ((MinData)data).val;
     }
-    
+
     public static class MinData extends ReductionData {
       double val;
     }
   }
-  
+
 
 
   public static class StringMinCollector extends MinCollector<StringMinCollector.MinData> {
     private StringValueStream param;
-    
+
     public StringMinCollector(StringValueStream param) {
       super(param);
       this.param = param;
@@ -412,10 +412,10 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
     }
 
     String min;
-    
+
     /**
      * Returns the min value of the set data.
-     * 
+     *
      * @return the min
      */
     public String min() {
@@ -441,7 +441,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
         data.exists = true;
       }
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new StringCheckedReservation(
@@ -467,7 +467,7 @@ public abstract class MinCollector<T extends ReductionData> extends ReductionDat
       super.setData(data);
       min = ((MinData)data).val;
     }
-    
+
     public static class MinData extends ReductionData {
       String val;
     }

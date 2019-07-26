@@ -33,32 +33,32 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
   public static final int DATE = 52;
   public static final int STRING = 28;
   public static final int NUM_LOOPS = 100;
-  
+
   //INT
-  static ArrayList<ArrayList<Integer>> intLongTestStart; 
-  static ArrayList<ArrayList<Integer>> intDoubleTestStart; 
-  static ArrayList<ArrayList<Integer>> intDateTestStart; 
-  
+  static ArrayList<ArrayList<Integer>> intLongTestStart;
+  static ArrayList<ArrayList<Integer>> intDoubleTestStart;
+  static ArrayList<ArrayList<Integer>> intDateTestStart;
+
   //FLOAT
-  static ArrayList<ArrayList<Float>> floatLongTestStart; 
-  static ArrayList<ArrayList<Float>> floatDoubleTestStart; 
-  static ArrayList<ArrayList<Float>> floatDateTestStart; 
-  
+  static ArrayList<ArrayList<Float>> floatLongTestStart;
+  static ArrayList<ArrayList<Float>> floatDoubleTestStart;
+  static ArrayList<ArrayList<Float>> floatDateTestStart;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
-    
+
     //INT
     intLongTestStart = new ArrayList<>();
     intDoubleTestStart = new ArrayList<>();
     intDateTestStart = new ArrayList<>();
-    
+
     //FLOAT
     floatLongTestStart = new ArrayList<>();
     floatDoubleTestStart = new ArrayList<>();
     floatDateTestStart = new ArrayList<>();
-    
+
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
       long l = j%LONG;
@@ -66,7 +66,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
       double d = j%DOUBLE;
       int dt = j%DATE;
       int s = j%STRING;
-      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f, 
+      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f,
           "double_dd", "" + d,  "date_dtd", (1000+dt) + "-01-01T23:59:59Z", "string_sd", "abc" + s));
       //Longs
       if (j-LONG<0) {
@@ -104,21 +104,21 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
         intDateTestStart.get(dt).add(i);
         floatDateTestStart.get(dt).add(f);
       }
-      
+
       if (usually()) {
         assertU(commit());  // to have several segments
       }
     }
-    
-    assertU(commit()); 
-    
+
+    assertU(commit());
+
     setResponse(h.query(request(fileToStringArr(LegacyRangeFacetTest.class, fileName))));
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void rangeTest() throws Exception {
-    
+
     //Int Long
     ArrayList<Long> intLong = getLongList("ri", "rangeFacets", "long_ld", "long", "count");
     ArrayList<Long> intLongTest = calculateStat(transformLists(intLongTestStart, 5, 30, 5
@@ -134,7 +134,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
     ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(transformLists(intDateTestStart, 7, 44, 7
                                                       , false, true, false, true, true), "count");
     assertEquals(getRawResponse(), intDate,intDateTest);
-    
+
     //Float Long
     ArrayList<Double> floatLong = getDoubleList("rf", "rangeFacets", "long_ld", "double", "median");
     ArrayList<Double> floatLongTest = calculateNumberStat(transformLists(floatLongTestStart, 0, 29, 4
@@ -146,7 +146,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
                                                                      , false, false, false, true, false), "count");
     assertEquals(getRawResponse(), floatDouble,floatDoubleTest);
   }
-  
+
 
   @SuppressWarnings("unchecked")
   @Test
@@ -166,7 +166,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
     ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(transformLists(intDateTestStart, 7, 44, 7
                                                       , true, true, false, true, true), "count");
     assertEquals(getRawResponse(), intDate,intDateTest);
-    
+
     //Float Long
     ArrayList<Double> floatLong = getDoubleList("hf", "rangeFacets", "long_ld", "double", "median");
     ArrayList<Double> floatLongTest = calculateNumberStat(transformLists(floatLongTestStart, 0, 29, 4
@@ -178,7 +178,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
                                                                      , true, false, false, true, false), "count");
     assertEquals(getRawResponse(), floatDouble,floatDoubleTest);
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
   public void multiGapTest() throws Exception {
@@ -197,7 +197,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
     ArrayList<Long> intDateTest = (ArrayList<Long>)calculateStat(transformLists(intDateTestStart, 7, 44, "2,7"
                                                       , false, true, false, true, true), "count");
     assertEquals(getRawResponse(), intDate,intDateTest);
-    
+
     //Float Long
     ArrayList<Double> floatLong = getDoubleList("mf", "rangeFacets", "long_ld", "double", "median");
     ArrayList<Double> floatLongTest = calculateNumberStat(transformLists(floatLongTestStart, 0, 29, "1,4"
@@ -209,7 +209,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
                                                           , false, false, false, true, false), "count");
     assertEquals(getRawResponse(), floatDouble,floatDoubleTest);
   }
-  
+
   private <T> ArrayList<ArrayList<T>> transformLists(ArrayList<ArrayList<T>> listsStart, int start, int end, int gap
       , boolean hardend, boolean incLow, boolean incUp, boolean incEdge, boolean incOut) {
     int off = (end-start)%gap;
@@ -264,7 +264,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
         between.addAll(listsStart.get(i));
       }
     }
-    
+
     if (incEdge && !incLow && start>=0) {
       lists.get(0).addAll(listsStart.get(start));
       between.addAll(listsStart.get(start));
@@ -288,7 +288,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
       for (int i = end; i<listsStart.size(); i++) {
         after.addAll(listsStart.get(i));
       }
-    } 
+    }
     else {
       for (int i = end+1; i<listsStart.size(); i++) {
         after.addAll(listsStart.get(i));
@@ -299,7 +299,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
     lists.add(between);
     return lists;
   }
-  
+
   private <T> ArrayList<ArrayList<T>> transformLists(ArrayList<ArrayList<T>> listsStart, int start, int end, String gapString
       , boolean hardend, boolean incLow, boolean incUp, boolean incEdge, boolean incOut) {
     String[] stringGaps = gapString.split(",");
@@ -316,7 +316,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
     if (!hardend && off>0) {
       end+=last-off;
     }
-    
+
     ArrayList<ArrayList<T>> lists = new ArrayList<>();
     ArrayList<T> between = new ArrayList<>();
     int gap = 0;
@@ -378,7 +378,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
         between.addAll(listsStart.get(i));
       }
     }
-    
+
     if (incEdge && !incLow && start>=0) {
       lists.get(0).addAll(listsStart.get(start));
       between.addAll(listsStart.get(start));
@@ -402,7 +402,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
       for (int i = end; i<listsStart.size(); i++) {
         after.addAll(listsStart.get(i));
       }
-    } 
+    }
     else {
       for (int i = end+1; i<listsStart.size(); i++) {
         after.addAll(listsStart.get(i));
@@ -413,5 +413,5 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
     lists.add(between);
     return lists;
   }
-  
+
 }

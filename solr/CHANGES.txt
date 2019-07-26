@@ -69,6 +69,8 @@ Other Changes
 
 * SOLR-10377: Add `debug.explain.structured` to Admin UI. (David Smiley, Munendra S N)
 
+* SOLR-13629: Clean trailing whitespace from 'analytics' contrib (Neal Sidhwaney via Jason Gerlowski)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
