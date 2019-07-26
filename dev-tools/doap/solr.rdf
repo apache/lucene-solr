@@ -73,6 +73,7 @@
         <created>2019-07-26</created>
         <revision>8.2.0</revision>
       </Version>
+   </release>
     <release>
       <Version>
         <name>solr-8.1.1</name>
