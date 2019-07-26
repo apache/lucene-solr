@@ -67,6 +67,13 @@
     </maintainer>
 
     <!-- NOTE: please insert releases in numeric order, NOT chronologically. -->
+   <release>
+      <Version>
+        <name>lucene-8.2.0</name>
+        <created>2019-07-26</created>
+        <revision>8.2.0</revision>
+      </Version>
+    </release>
     <release>
       <Version>
         <name>lucene-8.1.1</name>
