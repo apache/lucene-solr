@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.ja.dict;
 
 
 import java.io.IOException;
+import java.io.StringReader;
 
 import org.apache.lucene.analysis.ja.TestJapaneseTokenizer;
 import org.apache.lucene.util.LuceneTestCase;
@@ -76,5 +77,12 @@ public class UserDictionaryTest extends LuceneTestCase {
   public void testRead() throws IOException {
     UserDictionary dictionary = TestJapaneseTokenizer.readDict();
     assertNotNull(dictionary);
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void testReadInvalid1() throws IOException {
+    // the concatenated segment must not be longer than its surface form
+    String invalidEntry = "日経新聞,日本 経済 新聞,ニホン ケイザイ シンブン,カスタム名詞";
+    UserDictionary dictionary = UserDictionary.open(new StringReader(invalidEntry));
   }
 }
