@@ -4,7 +4,7 @@
 
 User dictionary now strictly validates if the (concatenated) segment is the same as the surface form. This change avoids
 unexpected runtime exceptions or behaviours.
-For example, those entries are not allowed at all and an exception is thrown when loading the dictionary file.
+For example, these entries are not allowed at all and an exception is thrown when loading the dictionary file.
 
 # concatenated "日本経済新聞" does not match the surface form "日経新聞"
 日経新聞,日本 経済 新聞,ニホン ケイザイ シンブン,カスタム名詞
