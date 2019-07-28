@@ -104,8 +104,8 @@ public final class UserDictionary implements Dictionary {
     long ord = 0;
     
     for (String[] values : featureEntries) {
-      String surface = values[0].replaceAll(" ", "");
-      String concatenatedSegment = values[1].replaceAll(" ", "");
+      String surface = values[0].replaceAll("\\s", "");
+      String concatenatedSegment = values[1].replaceAll("\\s", "");
       String[] segmentation = values[1].replaceAll("  *", " ").split(" ");
       String[] readings = values[2].replaceAll("  *", " ").split(" ");
       String pos = values[3];
