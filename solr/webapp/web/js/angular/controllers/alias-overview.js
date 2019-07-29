@@ -20,11 +20,7 @@ function($scope, $routeParams, Collections, Constants) {
   $scope.resetMenu("collection-overview", Constants.IS_COLLECTION_PAGE);
 
   $scope.refresh = function() {
-    Collections.status({}, function(data) {
-      $scope.selectedCollection = { collections: data.cluster.aliases[$routeParams.core]} ;
-      $scope.selectedCollection.name = $routeParams.core;
-      $scope.rootUrl = Constants.ROOT_URL;
-    });
+    $scope.selectedCollection = $scope.currentCollection;
   };
 
   $scope.refresh();

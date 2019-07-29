@@ -176,11 +176,10 @@ limitations under the License.
                     <a href="#~collections/{{coll}}">{{coll}}</a>{{$last ? '' : ', '}}
                   </span>
                 </dd>
-
-                <span ng-repeat="(key, value) in collection.properties">
+                <div ng-repeat="(key, value) in collection.properties">
                   <dt><span>{{ key }}</span></dt>
-                  <dd>{{ value }}</dd>
-                </span>
+                  <dd><span>{{ value }}</span></dd>
+                </div>
               </dl>
             </li>
           </ul>
