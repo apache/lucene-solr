@@ -118,6 +118,8 @@ Other Changes
 
 * SOLR-13629: Clean trailing whitespace from 'analytics' contrib (Neal Sidhwaney via Jason Gerlowski)
 
+* SOLR-13643: Add Getters/Setters in ResponseBuilder for analytics response handling (Neal Sidhwaney via Munendra S N)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
