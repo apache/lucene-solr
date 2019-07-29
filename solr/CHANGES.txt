@@ -57,6 +57,8 @@ Upgrade Notes
 
 * SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
 
+* SOLR-13649: When Basic Authentication is enabled, users will be required to enter credentials to access the Admin UI and associated operations by default. The blockUnknown parameter can still be set to false to disable the need to authenticate. (marcussorealheis) 
+  
 Other Changes
 ----------------------
 
