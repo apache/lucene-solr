@@ -37,7 +37,7 @@ import org.junit.After;
 import org.junit.Before;
 
 public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
-  
+
   protected static final String COLLECTIONORALIAS = "collection1";
   protected static final int TIMEOUT = DEFAULT_TIMEOUT;
   protected static final String id = "id";
@@ -51,7 +51,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1).process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTIONORALIAS, 2, 2);
   }
-  
+
   @After
   public void teardownCollection() throws Exception {
     shutdownCluster();
@@ -62,7 +62,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
         .deleteByQuery("*:*")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
-  
+
   protected static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };
 
   public static enum VAL_TYPE {
@@ -99,7 +99,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     QueryResponse resp = qreq.process(cluster.getSolrClient(), COLLECTIONORALIAS);
     return resp.getResponse();
   }
-  
+
   @SuppressWarnings("unchecked")
   protected <T> T getValue(NamedList<Object> response, String infoName, String exprName) {
     return (T)response.findRecursive(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER,

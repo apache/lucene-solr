@@ -56,6 +56,10 @@ API Changes
 * LUCENE-8909: IndexWriter#getFieldNames() method is used to get fields present in index. After LUCENE-8316, this
   method is no longer required. Hence, deprecate IndexWriter#getFieldNames() method. (Adrien Grand, Munendra S N)
 
+New Features
+
+* LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)
+
 Improvements
 
 * LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
@@ -70,6 +74,14 @@ Improvements
 
 * LUCENE-8916: GraphTokenStreamFiniteStrings preserves all Token attributes
   through its finite strings TokenStreams (Alan Woodward)
+
+Optimizations
+
+* LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
+  non-competitive hits. (Adrien Grand)
+
+* LUCENE-8935: BooleanQuery with no scoring clause can now early terminate the query when
+the total hits is not requested.
 
 Other
 

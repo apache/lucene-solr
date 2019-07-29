@@ -25,7 +25,7 @@ import org.apache.solr.analytics.stream.reservation.read.LongDataReader;
 import org.apache.solr.analytics.stream.reservation.write.LongDataWriter;
 
 public class LongReservation extends ReductionDataReservation<LongConsumer, LongSupplier> {
-  
+
   public LongReservation(LongConsumer applier, LongSupplier extractor) {
     super(applier, extractor);
   }

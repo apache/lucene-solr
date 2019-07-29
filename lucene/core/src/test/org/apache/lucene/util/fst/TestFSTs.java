@@ -1201,19 +1201,19 @@ public class TestFSTs extends LuceneTestCase {
   private void checkStopNodes(FST<Long> fst, PositiveIntOutputs outputs) throws Exception {
     final Long nothing = outputs.getNoOutput();
     FST.Arc<Long> startArc = fst.getFirstArc(new FST.Arc<Long>());
-    assertEquals(nothing, startArc.output);
-    assertEquals(nothing, startArc.nextFinalOutput);
+    assertEquals(nothing, startArc.output());
+    assertEquals(nothing, startArc.nextFinalOutput());
 
     FST.Arc<Long> arc = fst.readFirstTargetArc(startArc, new FST.Arc<Long>(),
                                                fst.getBytesReader());
-    assertEquals('a', arc.label);
-    assertEquals(17, arc.nextFinalOutput.longValue());
+    assertEquals('a', arc.label());
+    assertEquals(17, arc.nextFinalOutput().longValue());
     assertTrue(arc.isFinal());
 
     arc = fst.readNextArc(arc, fst.getBytesReader());
-    assertEquals('b', arc.label);
+    assertEquals('b', arc.label());
     assertFalse(arc.isFinal());
-    assertEquals(42, arc.output.longValue());
+    assertEquals(42, arc.output().longValue());
   }
 
   static final Comparator<Long> minLongComparator = new Comparator<Long> () {
@@ -1404,7 +1404,7 @@ public class TestFSTs extends LuceneTestCase {
         if (fst.findTargetArc((int) prefix.charAt(idx), arc, arc, reader) == null) {
           fail();
         }
-        prefixOutput += arc.output;
+        prefixOutput += arc.output();
       }
 
       final int topN = TestUtil.nextInt(random, 1, 10);
@@ -1526,7 +1526,7 @@ public class TestFSTs extends LuceneTestCase {
         if (fst.findTargetArc((int) prefix.charAt(idx), arc, arc, reader) == null) {
           fail();
         }
-        prefixOutput = outputs.add(prefixOutput, arc.output);
+        prefixOutput = outputs.add(prefixOutput, arc.output());
       }
 
       final int topN = TestUtil.nextInt(random, 1, 10);
@@ -1623,10 +1623,10 @@ public class TestFSTs extends LuceneTestCase {
     FST.BytesReader reader = fst.getBytesReader();
     arc = fst.findTargetArc((int) 'm', arc, arc, reader);
     assertNotNull(arc);
-    assertEquals(new BytesRef("m"), arc.output);
+    assertEquals(new BytesRef("m"), arc.output());
 
     // NOTE: illegal:
-    arc.output.length = 0;
+    arc.output().length = 0;
 
     fst.getFirstArc(arc);
     try {

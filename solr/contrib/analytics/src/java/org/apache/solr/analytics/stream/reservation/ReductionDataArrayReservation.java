@@ -27,7 +27,7 @@ import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
 public abstract class ReductionDataArrayReservation<A, E> extends ReductionDataReservation<A, E> {
   protected final IntConsumer sizeApplier;
   protected final IntSupplier sizeExtractor;
-  
+
   protected ReductionDataArrayReservation(A applier, IntConsumer sizeApplier, E extractor, IntSupplier sizeExtractor) {
     super(applier, extractor);
     this.sizeApplier = sizeApplier;

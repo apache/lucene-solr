@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import com.carrotsearch.ant.tasks.junit4.dependencies.com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -61,6 +60,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
+
 import static org.apache.solr.cloud.TestCryptoKeys.readFile;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
@@ -85,31 +86,28 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       if (i > 0) {
         Thread.sleep(100);
       }
+      SolrResponse rsp = null;
       try {
-        SolrResponse rsp = req.process(client);
-        try {
-          for (Object e : vals.entrySet()) {
-            Map.Entry entry = (Map.Entry) e;
-            String key = (String) entry.getKey();
-            Object val = entry.getValue();
-            Predicate p = val instanceof Predicate ? (Predicate) val : o -> {
-              String v = o == null ? null : String.valueOf(o);
-              return Objects.equals(val, o);
-            };
-            assertTrue("attempt: " + i + " Mismatch for value : '" + key + "' in response " + Utils.toJSONString(rsp),
-                p.test(rsp.getResponse()._get(key, null)));
-
-          }
-          return;
-        } catch (Exception e) {
-          if (i >= repeats - 1) throw e;
-          continue;
-        }
-
+        rsp = req.process(client);
       } catch (Exception e) {
         if (i >= repeats - 1) throw e;
-        continue;
       }
+      for (Object e : vals.entrySet()) {
+        Map.Entry entry = (Map.Entry) e;
+        String key = (String) entry.getKey();
+        Object val = entry.getValue();
+        Predicate p = val instanceof Predicate ? (Predicate) val : o -> {
+          String v = o == null ? null : String.valueOf(o);
+          return Objects.equals(val, o);
+        };
+        boolean isPass = p.test(rsp.getResponse()._get(key, null));
+        if(isPass) return;
+        else if (i >= repeats - 1) {
+          fail("attempt: " + i + " Mismatch for value : '" + key + "' in response " + Utils.toJSONString(rsp));
+        }
+
+      }
+
     }
 
 
@@ -195,7 +193,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
 
       payload = "{update-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar3.jar', " +
-          "sha512 : 'f67a7735a89b4348e273ca29e4651359d6d976ba966cb871c4b468ea1dbd452e42fcde9d188b7788e5a1ef668283c690606032922364759d19588666d5862653'}}";
+          "sha512 : '60ec88c2a2e9b409f7afc309273383810a0d07a078b482434eda9674f7e25b8adafa8a67c9913c996cbfb78a7f6ad2b9db26dbd4fe0ca4068f248d5db563f922'}}";
       new V2Request.Builder("/cluster")
           .withPayload(payload)
           .withMethod(SolrRequest.METHOD.POST)
@@ -301,8 +299,8 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           getObjectByPath(map, true, Arrays.asList("requestHandler", "bar", "class")));
 
       payload = "{update-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar3.jar', " +
-          "sig : 'BSx/v0eKWX+LzkWF+iIAzwGL9rezWMePsyRzi4TvV6boATZ9cSfeUAqUgRW50f/hAHX4/hrHr2Piy8za9tIUoXbLqn3xJNNroOqpcVEgwh1Zii4c7zPwUSB9gtd9zlAK4LAPLdjxILS8NXpTD2zLycc8kSpcyTpSTITqz6HA3HsPGC81WIq2k3IRqYAkacn46viW+nnEjA7OxDCOqoL//evjxDWQ6R1YggTGh4u5MSWZJCiCPJNQnTlPRzUZOAJjtX7PblDrKeiunKGbjtiOhFLYkupe1lSlIRLiJV/qqopO4TQGO1bhbxeCKAX2vEz5Ch5bGOa+VZLJJGaDo318UQ==' ," +
-          "sha512 : 'f67a7735a89b4348e273ca29e4651359d6d976ba966cb871c4b468ea1dbd452e42fcde9d188b7788e5a1ef668283c690606032922364759d19588666d5862653'}}";
+          "sig : 'YxFr6SpYrDwG85miDfRWHTjU9UltjtIWQZEhcV55C2rczRUVowCYBxmsDv5mAM8j0CTv854xpI1DtBT86wpoTdbF95LQuP9FJId4TS1j8bZ9cxHP5Cqyz1uBHFfUUNUrnpzTHQkVTp02O9NAjh3c2W41bL4U7j6jQ32+4CW2M+x00TDG0y0H75rQDR8zbLt31oWCz+sBOdZ3rGKJgAvdoGm/wVCTmsabZN+xoz4JaDeBXF16O9Uk9SSq4G0dz5YXFuLxHK7ciB5t0+q6pXlF/tdlDqF76Abze0R3d2/0MhXBzyNp3UxJmj6DiprgysfB0TbQtJG0XGfdSmx0VChvcA==' ," +
+          "sha512 : '60ec88c2a2e9b409f7afc309273383810a0d07a078b482434eda9674f7e25b8adafa8a67c9913c996cbfb78a7f6ad2b9db26dbd4fe0ca4068f248d5db563f922'}}";
 
       new V2Request.Builder("/cluster")
           .withPayload(payload)
@@ -378,8 +376,8 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           getObjectByPath(map, true, Arrays.asList("requestHandler", "bar", "class")));
 
       payload = "{update-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar3.jar', " +
-          "sig : 'pnH8uDHsTF0HWyQqABqVWmvo3rM/Mp2qpuo6S9YXZA9Ifg8NjHX8WzPe6EzlaqBcYcusrEV0b+5NCBx4AS0TGA==' ," +
-          "sha512 : 'f67a7735a89b4348e273ca29e4651359d6d976ba966cb871c4b468ea1dbd452e42fcde9d188b7788e5a1ef668283c690606032922364759d19588666d5862653'}}";
+          "sig : 'a400n4T7FT+2gM0SC6+MfSOExjud8MkhTSFylhvwNjtWwUgKdPFn434Wv7Qc4QEqDVLhQoL3WqYtQmLPti0G4Q==' ," +
+          "sha512 : '60ec88c2a2e9b409f7afc309273383810a0d07a078b482434eda9674f7e25b8adafa8a67c9913c996cbfb78a7f6ad2b9db26dbd4fe0ca4068f248d5db563f922'}}";
 
       new V2Request.Builder("/cluster")
           .withPayload(payload)
@@ -530,7 +528,6 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
               "loader", MemClassLoader.class.getName()));
 
 
-
       payload = "{update-runtimelib:{name : 'foo', url: 'http://localhost:" + port + "/jar2.jar', " +
           "sha512 : 'bc5ce45ad281b6a08fb7e529b1eb475040076834816570902acb6ebdd809410e31006efdeaa7f78a6c35574f3504963f5f7e4d92247d0eb4db3fc9abdda5d417'}}";
       new V2Request.Builder("/cluster")
@@ -540,13 +537,23 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "update-runtimelib/sha512"),
           getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "runtimeLib/foo/sha512"));
 
+      try {
+        new V2Request.Builder("/cluster")
+            .withPayload(payload)
+            .withMethod(SolrRequest.METHOD.POST)
+            .build().process(cluster.getSolrClient());
+        fail("should have failed");
+      } catch (BaseHttpSolrClient.RemoteExecutionException e) {
+        assertTrue("actual output : " + Utils.toJSONString(e.getMetaData()), e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("Trying to update a jar with the same sha512"));
+      }
+
 
       assertResponseValues(10,
           cluster.getSolrClient(),
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/get?abc=xyz", params),
           Utils.makeMap("get", "org.apache.solr.core.RuntimeLibSearchComponent",
-          "loader", MemClassLoader.class.getName(),
-          "Version","2"));
+              "loader", MemClassLoader.class.getName(),
+              "Version", "2"));
     } finally {
       cluster.deleteAllCollections();
       cluster.shutdown();

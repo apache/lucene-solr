@@ -87,7 +87,7 @@ public class RoundFunctionTest extends SolrTestCaseJ4 {
   @Test
   public void multiValueFloatParameterTest() {
     TestFloatValueStream val = new TestFloatValueStream();
-    
+
     AnalyticsValueStream uncasted = RoundFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof IntValueStream);
     IntValueStream func = (IntValueStream) uncasted;
@@ -97,7 +97,7 @@ public class RoundFunctionTest extends SolrTestCaseJ4 {
     func.streamInts( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(-4F);
     Iterator<Integer> values1 = Arrays.asList(-4).iterator();
@@ -106,7 +106,7 @@ public class RoundFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next().intValue(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val.setValues(4F, -10.9999F, 50.00001F, 74.99999F, 101.4999F, 105.5F);
     Iterator<Integer> values2 = Arrays.asList(4, -11, 50, 75, 101, 106).iterator();
@@ -120,7 +120,7 @@ public class RoundFunctionTest extends SolrTestCaseJ4 {
   @Test
   public void multiValueDoubleParameterTest() {
     TestDoubleValueStream val = new TestDoubleValueStream();
-    
+
     AnalyticsValueStream uncasted = RoundFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof LongValueStream);
     LongValueStream func = (LongValueStream) uncasted;
@@ -130,7 +130,7 @@ public class RoundFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(-4);
     Iterator<Long> values1 = Arrays.asList(-4L).iterator();
@@ -139,7 +139,7 @@ public class RoundFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next().longValue(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val.setValues(4, -10.9999, 50.000001, 74.99999, 101.4999, 105.5);
     Iterator<Long> values2 = Arrays.asList(4L, -11L, 50L, 75L, 101L, 106L).iterator();
@@ -154,7 +154,7 @@ public class RoundFunctionTest extends SolrTestCaseJ4 {
   public void nonDecimalParameterTest() {
     AnalyticsValueStream result;
     AnalyticsValueStream param;
-    
+
     param = new TestIntValue();
     result = RoundFunction.creatorFunction.apply(new AnalyticsValueStream[] {param});
     assertTrue(result instanceof IntValue);
@@ -175,6 +175,6 @@ public class RoundFunctionTest extends SolrTestCaseJ4 {
     assertTrue(result instanceof LongValueStream);
     assertEquals(param, result);
   }
-  
-  
+
+
 }

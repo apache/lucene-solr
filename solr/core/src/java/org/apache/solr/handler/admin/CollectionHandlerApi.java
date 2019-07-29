@@ -25,6 +25,7 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -59,6 +60,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.StrUtils.formatString;
+import static org.apache.solr.core.RuntimeLib.SHA512;
 
 public class CollectionHandlerApi extends BaseHandlerApiSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -204,7 +206,11 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       }
     } else {
       if (existing == null) {
-        op.addError(StrUtils.formatString("The jar with a name ''{0}'' doesn not exist", name));
+        op.addError(StrUtils.formatString("The jar with a name ''{0}'' does not exist", name));
+        return false;
+      }
+      if(Objects.equals( existing.get(SHA512) , op.getDataMap().get(SHA512))){
+        op.addError("Trying to update a jar with the same sha512");
         return false;
       }
     }
