@@ -80,6 +80,9 @@ Optimizations
 * LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
   non-competitive hits. (Adrien Grand)
 
+* LUCENE-8935: BooleanQuery with no scoring clause can now early terminate the query when
+the total hits is not requested.
+
 Other
 
 * LUCENE-8778 LUCENE-8911: Define analyzer SPI names as static final fields and document the names in Javadocs.
