@@ -131,6 +131,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
   SolrInputDocument getDoc(String prefix, String unique) {
     String secondLevel = "";
     if (random().nextBoolean()) {
+      prefix = prefix.substring(0, prefix.length()-1) + "/16!";  // change "foo!" into "foo/16!" to match 2 level compositeId
       secondLevel="" + random().nextInt(2) + "!";
     }
     return sdoc("id", prefix + secondLevel + unique);
