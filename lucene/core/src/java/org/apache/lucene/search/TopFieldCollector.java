@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -277,6 +278,98 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       };
     }
 
+  }
+
+  /**
+   * Implements a TopFieldCollector that terminates early based on a global
+   * scoreboard which is shared amongst multiple collectors.
+   * NOTE: This should ideally be outside of TopFieldCollector since it does
+   * not have private access, but we keep it here to limit the visibility
+   * of dependent classes
+   */
+  public static class SharedHitCountFieldCollector extends TopFieldCollector {
+
+    final Sort sort;
+    final FieldValueHitQueue<Entry> queue;
+    final AtomicInteger globalTotalHits;
+
+    public SharedHitCountFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits, int totalHitsThreshold,
+                                        AtomicInteger globalTotalHits) {
+      super(queue, numHits, totalHitsThreshold, sort.needsScores());
+      this.sort = sort;
+      this.queue = queue;
+      this.globalTotalHits = globalTotalHits;
+    }
+
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      docBase = context.docBase;
+
+      final LeafFieldComparator[] comparators = queue.getComparators(context);
+      final int[] reverseMul = queue.getReverseMul();
+      final Sort indexSort = context.reader().getMetaData().getSort();
+      final boolean canEarlyTerminate = canEarlyTerminate(sort, indexSort);
+
+      return new MultiComparatorLeafCollector(comparators, reverseMul) {
+
+        boolean collectedAllCompetitiveHits = false;
+
+        @Override
+        public void setScorer(Scorable scorer) throws IOException {
+          super.setScorer(scorer);
+          updateMinCompetitiveScore(scorer);
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+          // We still increment local hit count to set slots in priority queue correctly
+          ++totalHits;
+          if (queueFull) {
+            if (collectedAllCompetitiveHits || reverseMul * comparator.compareBottom(doc) <= 0) {
+              // since docs are visited in doc Id order, if compare is 0, it means
+              // this document is largest than anything else in the queue, and
+              // therefore not competitive.
+              if (canEarlyTerminate) {
+                // We do the entire procedure of increment/decrement to be able to use atomics
+                if (globalTotalHits.incrementAndGet() > totalHitsThreshold) {
+                  totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
+                  globalTotalHits.decrementAndGet();
+                  throw new CollectionTerminatedException();
+                } else {
+                  globalTotalHits.decrementAndGet();
+                  collectedAllCompetitiveHits = true;
+                }
+              } else if (totalHitsRelation == Relation.EQUAL_TO) {
+                // we just reached totalHitsThreshold, we can start setting the min
+                // competitive score now
+                updateMinCompetitiveScore(scorer);
+              }
+              return;
+            }
+
+            // This hit is competitive - replace bottom element in queue & adjustTop
+            comparator.copy(bottom.slot, doc);
+            updateBottom(doc);
+            comparator.setBottom(bottom.slot);
+            updateMinCompetitiveScore(scorer);
+            globalTotalHits.incrementAndGet();
+          } else {
+            // Startup transient: queue hasn't gathered numHits yet
+            final int slot = totalHits - 1;
+
+            // Copy hit into queue
+            comparator.copy(slot, doc);
+            add(slot, doc);
+            globalTotalHits.incrementAndGet();
+            if (queueFull) {
+              comparator.setBottom(bottom.slot);
+              updateMinCompetitiveScore(scorer);
+            }
+          }
+        }
+
+      };
+    }
   }
 
   private static final ScoreDoc[] EMPTY_SCOREDOCS = new ScoreDoc[0];
