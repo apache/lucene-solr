@@ -97,8 +97,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
-  private static final Map<String, SolrCacheHolder> NO_GENERIC_CACHES = Collections.emptyMap();
-  private static final SolrCacheHolder[] NO_CACHES = new SolrCacheHolder[0];
+  private static final Map<String,SolrCache> NO_GENERIC_CACHES = Collections.emptyMap();
+  private static final SolrCache[] NO_CACHES = new SolrCache[0];
 
   private final SolrCore core;
   private final IndexSchema schema;
@@ -117,15 +117,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final boolean useFilterForSortedQuery;
 
   private final boolean cachingEnabled;
-  private final SolrCacheHolder<Query, DocSet> filterCache;
-  private final SolrCacheHolder<QueryResultKey, DocList> queryResultCache;
-  private final SolrCacheHolder<String, UnInvertedField> fieldValueCache;
+  private final SolrCache<Query,DocSet> filterCache;
+  private final SolrCache<QueryResultKey,DocList> queryResultCache;
+  private final SolrCache<String,UnInvertedField> fieldValueCache;
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
-  private final Map<String, SolrCacheHolder> cacheMap;
+  private final Map<String,SolrCache> cacheMap;
 
   // list of all caches associated with this searcher.
-  private final SolrCacheHolder[] cacheList;
+  private final SolrCache[] cacheList;
 
   private DirectoryFactory directoryFactory;
 
@@ -266,7 +266,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     this.cachingEnabled = enableCache;
     if (cachingEnabled) {
-      final ArrayList<SolrCacheHolder> clist = new ArrayList<>();
+      final ArrayList<SolrCache> clist = new ArrayList<>();
       fieldValueCache = solrConfig.fieldValueCacheFactory == null ? null
           : solrConfig.fieldValueCacheFactory.create(core);
       if (fieldValueCache != null) clist.add( fieldValueCache);
@@ -275,7 +275,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       queryResultCache = solrConfig.queryResultCacheFactory == null ? null
           : solrConfig.queryResultCacheFactory.create(core);
       if (queryResultCache != null) clist.add(queryResultCache);
-      SolrCacheHolder<Integer, Document> documentCache = docFetcher.getDocumentCache();
+      SolrCache<Integer, Document> documentCache = docFetcher.getDocumentCache();
       if (documentCache != null) clist.add(documentCache);
 
       if (solrConfig.userCacheFactory.isEmpty()) {
@@ -283,7 +283,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } else {
         cacheMap = new HashMap<>(solrConfig.userCacheFactory.size());
         for (Map.Entry<String, SolrCacheHolder.Factory> e : solrConfig.userCacheFactory.entrySet()) {
-          SolrCacheHolder cache = e.getValue().create(core);
+          SolrCache cache = e.getValue().create(core);
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
             clist.add(cache);
@@ -291,7 +291,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
       }
 
-      cacheList = clist.toArray(new SolrCacheHolder[clist.size()]);
+      cacheList = clist.toArray(new SolrCache[clist.size()]);
     } else {
       this.filterCache = null;
       this.queryResultCache = null;
@@ -419,14 +419,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // register self
     infoRegistry.put(STATISTICS_KEY, this);
     infoRegistry.put(name, this);
-    for (SolrCacheHolder cache : cacheList) {
-      cache.get().setState(SolrCache.State.LIVE);
-      infoRegistry.put(cache.get().name(), cache.get());
+    for (SolrCache cache : cacheList) {
+      cache.setState(SolrCache.State.LIVE);
+      infoRegistry.put(cache.name(), cache);
     }
     metricManager = core.getCoreContainer().getMetricManager();
     registryName = core.getCoreMetricManager().getRegistryName();
-    for (SolrCacheHolder cache : cacheList) {
-      cache.get(). initializeMetrics(metricManager, registryName, core.getMetricTag(), SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+    for (SolrCache cache : cacheList) {
+      cache.initializeMetrics(metricManager, registryName, core.getMetricTag(), SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
     initializeMetrics(metricManager, registryName, core.getMetricTag(), STATISTICS_KEY);
     registerTime = new Date();
@@ -443,7 +443,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (cachingEnabled) {
         final StringBuilder sb = new StringBuilder();
         sb.append("Closing ").append(name);
-        for (SolrCacheHolder cache : cacheList) {
+        for (SolrCache cache : cacheList) {
           sb.append("\n\t");
           sb.append(cache);
         }
@@ -470,7 +470,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       core.getDeletionPolicy().releaseCommitPoint(cpg);
     }
 
-    for (SolrCacheHolder cache : cacheList) {
+    for (SolrCache cache : cacheList) {
       cache.close();
     }
 
@@ -495,7 +495,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return Iterables.transform(getFieldInfos(), fieldInfo -> fieldInfo.name);
   }
 
-  public SolrCacheHolder<Query,DocSet> getFilterCache() {
+  public SolrCache<Query,DocSet> getFilterCache() {
     return filterCache;
   }
 
@@ -613,7 +613,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   /** expert: internal API, subject to change */
   public SolrCache<String,UnInvertedField> getFieldValueCache() {
-    return fieldValueCache == null? null : fieldValueCache.get();
+    return fieldValueCache ;
   }
 
   /** Returns a weighted sort according to this searcher */
@@ -2173,15 +2173,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * return the named generic cache
    */
   public SolrCache getCache(String cacheName) {
-    SolrCacheHolder holder = cacheMap.get(cacheName);
-    return holder == null ?null: holder.get();
+    return cacheMap.get(cacheName);
   }
 
   /**
    * lookup an entry in a generic cache
    */
   public Object cacheLookup(String cacheName, Object key) {
-    SolrCacheHolder cache = cacheMap.get(cacheName);
+    SolrCache cache = cacheMap.get(cacheName);
     return cache == null ? null : cache.get(key);
   }
 
@@ -2189,7 +2188,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * insert an entry in a generic cache
    */
   public Object cacheInsert(String cacheName, Object key, Object val) {
-    SolrCacheHolder cache = cacheMap.get(cacheName);
+    SolrCache cache = cacheMap.get(cacheName);
     return cache == null ? null : cache.put(key, val);
   }
 

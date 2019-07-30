@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,22 +27,29 @@ import java.util.Map;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.DOMUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-public class SolrCacheHolder<K, V> {
+public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
+  private final Factory factory;
   protected volatile SolrCache<K, V> delegate;
 
-  public SolrCacheHolder(SolrCache<K, V> delegate) {
+  public SolrCacheHolder(SolrCache<K, V> delegate, Factory factory) {
     this.delegate = delegate;
+    this.factory = factory;
   }
 
   public int size() {
@@ -61,6 +69,23 @@ public class SolrCacheHolder<K, V> {
     delegate.clear();
   }
 
+  @Override
+  public void setState(State state) {
+    delegate.setState(state);
+  }
+
+  @Override
+  public State getState() {
+    return delegate.getState();
+  }
+
+  @Override
+  public void warm(SolrIndexSearcher searcher, SolrCache<K, V> old) {
+    if (old instanceof SolrCacheHolder) old = ((SolrCacheHolder) old).get();
+    delegate.warm(searcher, old);
+
+  }
+
   public SolrCache<K, V> get() {
     return delegate;
   }
@@ -69,13 +94,54 @@ public class SolrCacheHolder<K, V> {
     delegate.close();
   }
 
+  @Override
+  public Map<String, Object> getResourceLimits() {
+    return delegate.getResourceLimits();
+  }
+
+  @Override
+  public void setResourceLimit(String limitName, Object value) throws Exception {
+    delegate.setResourceLimit(limitName, value);
+
+  }
+
 
   public void warm(SolrIndexSearcher searcher, SolrCacheHolder src) {
     delegate.warm(searcher, src.get());
   }
 
+  @Override
+  public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
+    return null;
+  }
+
+  @Override
   public String name() {
     return delegate.name();
+  }
+
+
+  @Override
+  public String getName() {
+    return delegate.getName();
+  }
+
+  @Override
+  public String getDescription() {
+    return delegate.getDescription();
+  }
+
+  @Override
+  public Category getCategory() {
+    return delegate.getCategory();
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    log.debug("Going to register cachemetrics " + Utils.toJSONString(factory));
+
+    delegate.initializeMetrics(manager, registry, tag,scope);
+
   }
 
   public static class Factory implements MapWriter {
@@ -161,14 +227,12 @@ public class SolrCacheHolder<K, V> {
 
       inst.init(args, persistence[0], regen);
 
-
-      return new SolrCacheHolder<>(inst);
+      return new SolrCacheHolder<>(inst, this);
 
     }
 
     public void setDefaultRegenerator(CacheRegenerator regen) {
       this.defRegen = regen;
-
     }
 
     @Override
