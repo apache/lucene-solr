@@ -107,7 +107,6 @@ public class Lang {
 
             // tuple manipulation operations
         .withFunctionName("replace", ReplaceOperation.class)
-        .withFunctionName("concat", ConcatOperation.class)
 
             // stream reduction operations
         .withFunctionName("group", GroupOperation.class)
@@ -297,6 +296,7 @@ public class Lang {
         .withFunctionName("double", DoubleEvaluator.class)
         .withFunctionName("long", LongEvaluator.class)
         .withFunctionName("dateTime", DateEvaluator.class)
+        .withFunctionName("concat", ConcatEvaluator.class)
 
         // Boolean Stream Evaluators
 
