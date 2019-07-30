@@ -17,37 +17,22 @@
 
 package org.apache.solr.search;
 
-import javax.xml.xpath.XPathConstants;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.ConfigOverlay;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.util.DOMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  private final Factory factory;
+  private final CacheConfig factory;
   protected volatile SolrCache<K, V> delegate;
 
-  public SolrCacheHolder(SolrCache<K, V> delegate, Factory factory) {
+  public SolrCacheHolder(SolrCache<K, V> delegate, CacheConfig factory) {
     this.delegate = delegate;
     this.factory = factory;
   }
@@ -144,100 +129,4 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
 
   }
 
-  public static class Factory implements MapWriter {
-    final Map<String, String> args;
-    private CacheRegenerator defRegen;
-    private final String name;
-    private String cacheImpl, regenImpl;
-    private Object[] persistence = new Object[1];
-
-
-    public Factory(Map<String, String> args) {
-      this.args = copyValsAsString(args);
-      this.name = args.get(NAME);
-      this.cacheImpl = args.getOrDefault("class", "solr.LRUCache");
-      this.regenImpl = args.get("regenerator");
-    }
-    static Map<String,String> copyValsAsString(Map m){
-      Map<String,String> copy = new LinkedHashMap(m.size());
-      m.forEach((k, v) -> copy.put(String.valueOf(k), String.valueOf(v)));
-      return copy;
-    }
-
-    public static Factory create(SolrConfig solrConfig, String xpath) {
-      Node node = solrConfig.getNode(xpath, false);
-      if (node == null || !"true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
-        Map<String, String> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
-        if (m == null) return null;
-        return new Factory(m);
-      } else {
-        Map<String, String> attrs = DOMUtil.toMap(node.getAttributes());
-        attrs.put(NAME, node.getNodeName());
-        return new Factory(applyOverlay(xpath, solrConfig.getOverlay(), attrs));
-
-      }
-
-
-    }
-
-    private static Map applyOverlay(String xpath, ConfigOverlay overlay, Map args) {
-      Map<String, String> map = xpath == null ? null : overlay.getEditableSubProperties(xpath);
-      if (map != null) {
-        HashMap<String, String> mapCopy = new HashMap<>(args);
-        for (Map.Entry<String, String> e : map.entrySet()) {
-          mapCopy.put(e.getKey(), String.valueOf(e.getValue()));
-        }
-        return mapCopy;
-      }
-      return args;
-    }
-
-    public static Map<String, Factory> create(SolrConfig solrConfig, String configPath, boolean multiple) {
-      NodeList nodes = (NodeList) solrConfig.evaluate(configPath, XPathConstants.NODESET);
-      if (nodes == null || nodes.getLength() == 0) return new LinkedHashMap<>();
-      Map<String, Factory> result = new HashMap<>(nodes.getLength());
-      for (int i = 0; i < nodes.getLength(); i++) {
-        Map<String, String> args = DOMUtil.toMap(nodes.item(i).getAttributes());
-        result.put(args.get(NAME), new Factory(args));
-      }
-      return result;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-
-    public <K, V> SolrCacheHolder<K, V> create(SolrCore core) {
-      ResourceLoader loader = core.getResourceLoader();
-
-      SolrCache inst = null;
-      CacheRegenerator regen = null;
-      try {
-        inst = loader.findClass(cacheImpl, SolrCache.class).getConstructor().newInstance();
-        regen = null;
-        if (regenImpl != null) {
-          regen = loader.findClass(regenImpl, CacheRegenerator.class).getConstructor().newInstance();
-        }
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error loading cache " + jsonStr(), e);
-
-      }
-      if (regen == null && defRegen != null) regen = defRegen;
-
-      inst.init(args, persistence[0], regen);
-
-      return new SolrCacheHolder<>(inst, this);
-
-    }
-
-    public void setDefaultRegenerator(CacheRegenerator regen) {
-      this.defRegen = regen;
-    }
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      args.forEach(ew.getBiConsumer());
-    }
-  }
 }

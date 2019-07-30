@@ -111,27 +111,27 @@ public class TestConfig extends SolrTestCaseJ4 {
  public void testCacheEnablingDisabling() throws Exception {
    // ensure if cache is not defined in the config then cache is disabled 
    SolrConfig sc = new SolrConfig(new SolrResourceLoader(TEST_PATH().resolve("collection1")), "solrconfig-defaults.xml", null);
-   assertNull(sc.filterCacheFactory);
-   assertNull(sc.queryResultCacheFactory);
-   assertNull(sc.documentCacheFactory);
+   assertNull(sc.filterCacheConfig);
+   assertNull(sc.queryResultCacheConfig);
+   assertNull(sc.documentCacheConfig);
    
    // enable all the caches via system properties and verify 
    System.setProperty("filterCache.enabled", "true");
    System.setProperty("queryResultCache.enabled", "true");
    System.setProperty("documentCache.enabled", "true");
    sc = new SolrConfig(new SolrResourceLoader(TEST_PATH().resolve("collection1")), "solrconfig-cache-enable-disable.xml", null);
-   assertNotNull(sc.filterCacheFactory);
-   assertNotNull(sc.queryResultCacheFactory);
-   assertNotNull(sc.documentCacheFactory);
+   assertNotNull(sc.filterCacheConfig);
+   assertNotNull(sc.queryResultCacheConfig);
+   assertNotNull(sc.documentCacheConfig);
    
    // disable all the caches via system properties and verify
    System.setProperty("filterCache.enabled", "false");
    System.setProperty("queryResultCache.enabled", "false");
    System.setProperty("documentCache.enabled", "false");
    sc = new SolrConfig(new SolrResourceLoader(TEST_PATH().resolve("collection1")), "solrconfig-cache-enable-disable.xml", null);
-   assertNull(sc.filterCacheFactory);
-   assertNull(sc.queryResultCacheFactory);
-   assertNull(sc.documentCacheFactory);
+   assertNull(sc.filterCacheConfig);
+   assertNull(sc.queryResultCacheConfig);
+   assertNull(sc.documentCacheConfig);
    
    System.clearProperty("filterCache.enabled");
    System.clearProperty("queryResultCache.enabled");

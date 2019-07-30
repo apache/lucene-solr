@@ -61,9 +61,9 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrCache;
-import org.apache.solr.search.SolrCacheHolder;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -259,19 +259,19 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     
     useRangeVersionsForPeerSync = getBool("peerSync/useRangeVersions", true);
 
-    filterCacheFactory = SolrCacheHolder.Factory.create(this, "query/filterCache");
-    queryResultCacheFactory = SolrCacheHolder.Factory.create(this, "query/queryResultCache");
-    documentCacheFactory = SolrCacheHolder.Factory.create(this, "query/documentCache");
-    SolrCacheHolder.Factory conf = SolrCacheHolder.Factory.create(this, "query/fieldValueCache");
+    filterCacheConfig = CacheConfig.getConfig(this, "query/filterCache");
+    queryResultCacheConfig = CacheConfig.getConfig(this, "query/queryResultCache");
+    documentCacheConfig = CacheConfig.getConfig(this, "query/documentCache");
+    CacheConfig conf = CacheConfig.getConfig(this, "query/fieldValueCache");
     if (conf == null) {
       Map<String, String> args = new HashMap<>();
       args.put(NAME, "fieldValueCache");
       args.put("size", "10000");
       args.put("initialSize", "10");
       args.put("showItems", "-1");
-      conf = new SolrCacheHolder.Factory(args);
+      conf = new CacheConfig(args);
     }
-    fieldValueCacheFactory = conf;
+    fieldValueCacheConfig = conf;
     useColdSearcher = getBool("query/useColdSearcher", false);
     dataDir = get("dataDir", null);
     if (dataDir != null && dataDir.length() == 0) dataDir = null;
@@ -292,14 +292,14 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
     for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
 
-    Map<String, SolrCacheHolder.Factory> userCacheConfigs = SolrCacheHolder.Factory.create(this, "query/cache",true);
+    Map<String, CacheConfig> userCacheConfigs = CacheConfig.getConfig(this, "query/cache",true);
     List<PluginInfo> caches = getPluginInfos(SolrCache.class.getName());
     if (!caches.isEmpty()) {
       for (PluginInfo c : caches) {
-        userCacheConfigs.put(c.name, new SolrCacheHolder.Factory(c.attributes));
+        userCacheConfigs.put(c.name, new CacheConfig(c.attributes));
       }
     }
-    this.userCacheFactory = Collections.unmodifiableMap(userCacheConfigs);
+    this.userCacheConfig = Collections.unmodifiableMap(userCacheConfigs);
 
     updateHandlerInfo = loadUpdatehandlerInfo();
 
@@ -546,11 +546,11 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 //  public final int filtOptCacheSize;
 //  public final float filtOptThreshold;
   // SolrIndexSearcher - caches configurations
-  public final SolrCacheHolder.Factory filterCacheFactory;
-  public final SolrCacheHolder.Factory queryResultCacheFactory;
-  public final SolrCacheHolder.Factory documentCacheFactory;
-  public final SolrCacheHolder.Factory fieldValueCacheFactory;
-  public final Map<String, SolrCacheHolder.Factory> userCacheFactory;
+  public final CacheConfig filterCacheConfig;
+  public final CacheConfig queryResultCacheConfig;
+  public final CacheConfig documentCacheConfig;
+  public final CacheConfig fieldValueCacheConfig;
+  public final Map<String, CacheConfig> userCacheConfig;
   // SolrIndexSearcher - more...
   public final boolean useFilterForSortedQuery;
   public final int queryResultWindowSize;
@@ -918,7 +918,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
 
 
-    addCacheConfig(m, filterCacheFactory, queryResultCacheFactory, documentCacheFactory, fieldValueCacheFactory);
+    addCacheConfig(m, filterCacheConfig, queryResultCacheConfig, documentCacheConfig, fieldValueCacheConfig);
     m = new LinkedHashMap();
     result.put("requestDispatcher", m);
     m.put("handleSelect", handleSelect);
@@ -937,9 +937,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return result;
   }
 
-  private void addCacheConfig(Map queryMap, SolrCacheHolder.Factory... cache) {
+  private void addCacheConfig(Map queryMap, CacheConfig... cache) {
     if (cache == null) return;
-    for (SolrCacheHolder.Factory config : cache) if (config != null) queryMap.put(config.getName(), config);
+    for (CacheConfig config : cache) if (config != null) queryMap.put(config.getName(), config);
 
   }
 
