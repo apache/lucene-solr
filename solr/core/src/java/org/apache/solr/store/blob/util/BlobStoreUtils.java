@@ -6,11 +6,11 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
@@ -21,7 +21,6 @@ import org.apache.solr.store.blob.metadata.ServerSideMetadata;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil.SharedMetadataResolutionResult;
 import org.apache.solr.store.blob.process.BlobDeleteManager;
-import org.apache.solr.store.blob.process.CoreSyncStatus;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.slf4j.Logger;
@@ -52,8 +51,7 @@ public class BlobStoreUtils {
    * local content.
    * @throws SolrException if the local core was not successfully sync'd.
    */
-  public static void syncLocalCoreWithSharedStore(String collectionName, String coreName, String shardName, CoreContainer coreContainer) throws SolrException
-  {
+  public static void syncLocalCoreWithSharedStore(String collectionName, String coreName, String shardName, CoreContainer coreContainer) throws SolrException {
     assertTrue(coreContainer.isZooKeeperAware());
 
     ZkController zkController = coreContainer.getZkController();
@@ -61,12 +59,11 @@ public class BlobStoreUtils {
     DocCollection collection = zkController.getClusterState().getCollection(collectionName);
     CoreStorageClient blobClient = coreContainer.getSharedStoreManager().getBlobStorageProvider().getDefaultClient();
     log.info("sync intialized for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
-
-    CoreSyncStatus syncStatus = CoreSyncStatus.FAILURE;
-
+    
     Slice shard = collection.getSlicesMap().get(shardName);
     if (shard != null) {
       try {
+        sharedMetadataController.ensureMetadataNodeExists(collectionName, shardName);
         String sharedStoreName = (String)shard.get(ZkStateReader.SHARED_SHARD_NAME);
         // Fetch the latest metadata from ZK.
         // TODO: this can be optimized, depends on correct handling of leadership change.

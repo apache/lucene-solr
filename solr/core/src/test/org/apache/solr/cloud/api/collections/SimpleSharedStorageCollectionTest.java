@@ -20,12 +20,13 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests related to shared storage based collections, i.e. collections having only replicas of type {@link Replica.Type#SHARED}.
+ * Tests related to shared storage based collections, i.e. collections having only replicas of type {@link Type#SHARED}.
  */
 public class SimpleSharedStorageCollectionTest extends SolrCloudTestCase {
   

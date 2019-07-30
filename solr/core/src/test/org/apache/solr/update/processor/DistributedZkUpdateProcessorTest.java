@@ -20,33 +20,54 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import java.io.File;
+import java.nio.file.Path;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.process.CoreUpdateTracker;
+import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
  * Test for the {@link DistributedZkUpdateProcessor}.
  */
-public class DistributedZkUpdateProcessorTest extends SolrCloudTestCase {    
+public class DistributedZkUpdateProcessorTest extends SolrCloudSharedStoreTestCase {    
 
+  private static Path sharedStoreRootPath;
+  private static CoreStorageClient storageClient;
+  
+  @BeforeClass
+  public static void setupTestClass() throws Exception {    
+    sharedStoreRootPath = createTempDir("tempDir");
+    storageClient = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
+  }
+  
   @After
   public void teardownTest() throws Exception {
+    cluster.deleteAllCollections();
     shutdownCluster();
+    File blobPath = sharedStoreRootPath.toFile();
+    FileUtils.cleanDirectory(blobPath);
   }
   
   /**
@@ -57,17 +78,17 @@ public class DistributedZkUpdateProcessorTest extends SolrCloudTestCase {
   @Test
   public void testNonLeaderSharedReplicaFailsOnForwardedCommit() throws Exception {
     setupCluster(1);
+    setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), cluster.getJettySolrRunner(0));
     
     String collectionName = "sharedCollection";
     CloudSolrClient cloudClient = cluster.getSolrClient();
     
-    setupSharedCollection(collectionName, 2, 1, 2);
+    setupSharedCollectionWithShardNames(collectionName, 2, 2, "shard1");
     
     // get the replica that's not the leader for the shard
     DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName);
-    // there's only once slice object so just access it 
-    Slice slice = collection.getActiveSlicesArr()[0];
-    Replica leaderReplica = slice.getLeader();
+    Slice slice = collection.getSlice("shard1");
+    Replica leaderReplica = collection.getLeader("shard1");
     Replica follower = null;
     for (Replica repl : slice.getReplicas()) {
       if (repl.getName() != leaderReplica.getName()) {
@@ -113,16 +134,14 @@ public class DistributedZkUpdateProcessorTest extends SolrCloudTestCase {
   @Test
   public void testSharedReplicaUpdatesZk() throws Exception {
     setupCluster(1);
+    setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), cluster.getJettySolrRunner(0));
+    
     // Set collection name and create client
     String collectionName = "BlobBasedCollectionName1";
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     // Create collection
-    CollectionAdminRequest.Create create = CollectionAdminRequest
-        .createCollectionWithImplicitRouter(collectionName, "conf", "shard1", 0)
-          .setSharedIndex(true)
-          .setSharedReplicas(1);
-    create.process(cloudClient);
+    setupSharedCollectionWithShardNames(collectionName, 1, 1, "shard1");
 
     // Verify that collection was created
     waitForState("Timed-out wait for collection to be created", collectionName, clusterShape(1, 1));
@@ -160,8 +179,10 @@ public class DistributedZkUpdateProcessorTest extends SolrCloudTestCase {
   @Test
   public void testNRTReplicaUpdatesZk() throws Exception {
     setupCluster(1);
+    setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), cluster.getJettySolrRunner(0));
+    
     // Set collection name and create client
-    String collectionName = "BlobBasedCollectionName2";
+    String collectionName = "CollectionName2";
     CloudSolrClient cloudClient = cluster.getSolrClient();
     
     // Create collection
@@ -200,22 +221,56 @@ public class DistributedZkUpdateProcessorTest extends SolrCloudTestCase {
     verify(tracker, never()).persistShardIndexToSharedStore(any(), any(), any(), any()); 
   }
   
-  private static void setupSharedCollection(String collectionName, int maxShardsPerNode, int numShards, int numReplicas) throws Exception {
-    CollectionAdminRequest.Create create = CollectionAdminRequest
-      .createCollection(collectionName, numShards, 0)
-      .setMaxShardsPerNode(maxShardsPerNode)
-      .setSharedIndex(true)
-      .setSharedReplicas(numReplicas);
-    create.process(cluster.getSolrClient());
-
-    // Verify that collection was created
-    waitForState("Timed-out wait for collection to be created", collectionName, clusterShape(numShards, numReplicas));
+  /**
+   * Test update only happens on leader replica for a 1 shard shared collection
+   */
+  @Test
+  public void testSharedReplicaSimpleUpdateOnLeaderSuccess() throws Exception {
+    setupCluster(3);
+    
+    // configure same client for each runner, this isn't a concurrency test so this is fine
+    for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+      setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), runner);
+    }
+    
+    String collectionName = "sharedCollection";
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    
+    setupSharedCollectionWithShardNames(collectionName, 1, 2, "shard1");
+    
+    // do an update
+    UpdateRequest req = new UpdateRequest();
+    req.add("id", "1");
+    req.commit(cluster.getSolrClient(), collectionName);
+    
+    DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    Replica leaderReplica = collection.getLeader("shard1");
+    
+    Replica followerReplica = null;
+    for (Replica replica : collection.getReplicas()) {
+      if (!replica.getName().equals(leaderReplica.getName())) {
+        followerReplica = replica;
+        break;
+      }
+    }
+    
+    SolrCore leaderReplicaCore = null;
+    SolrCore followerReplicaCore = null;
+    try {
+      // verify this last update didn't happen on the follower
+      CoreContainer ccLeader = getCoreContainer(leaderReplica.getNodeName());
+      leaderReplicaCore = ccLeader.getCore(leaderReplica.getCoreName());
+      
+      CoreContainer ccFollower = getCoreContainer(followerReplica.getNodeName());
+      followerReplicaCore = ccFollower.getCore(followerReplica.getCoreName());
+      
+      // the follower's core should only have its default segment file from creation
+      assertEquals(1, followerReplicaCore.getDeletionPolicy().getLatestCommit().getFileNames().size());
+      // the commit should have only happened on the leader and it should have more index files than the default 
+      assertTrue(leaderReplicaCore.getDeletionPolicy().getLatestCommit().getFileNames().size() > 1);
+    } finally {
+      leaderReplicaCore.close();
+      followerReplicaCore.close();
+    }
   }
-  
-  private static void setupCluster(int nodes) throws Exception {
-    configureCluster(nodes)
-      .addConfig("conf", configset("cloud-minimal"))
-      .configure();
-  }
-  
 }

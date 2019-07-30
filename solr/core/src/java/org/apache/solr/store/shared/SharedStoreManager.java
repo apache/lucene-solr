@@ -18,6 +18,8 @@ package org.apache.solr.store.shared;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.store.blob.process.BlobDeleteManager;
+import org.apache.solr.store.blob.process.BlobProcessUtil;
+import org.apache.solr.store.blob.process.CorePullTracker;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 
@@ -34,9 +36,13 @@ public class SharedStoreManager {
   private SharedShardMetadataController sharedShardMetadataController;
   private BlobStorageProvider blobStorageProvider;
   private BlobDeleteManager blobDeleteManager;
+  private BlobProcessUtil blobProcessUtil;
+  private CorePullTracker corePullTracker;
   
   public SharedStoreManager(ZkController controller) {
     zkController = controller;
+    // initialize BlobProcessUtil with the SharedStoreManager for background processes to be ready
+    blobProcessUtil = new BlobProcessUtil(zkController.getCoreContainer());
   }
   
   @VisibleForTesting
@@ -75,5 +81,21 @@ public class SharedStoreManager {
     }
     blobDeleteManager = new BlobDeleteManager(getBlobStorageProvider().getDefaultClient());
     return blobDeleteManager;
+  }
+  
+  public BlobProcessUtil getBlobProcessManager() {
+    if (blobProcessUtil != null) {
+      return blobProcessUtil;
+    }
+    blobProcessUtil = new BlobProcessUtil(zkController.getCoreContainer());
+    return blobProcessUtil;
+  }
+  
+  public CorePullTracker getCorePullTracker() {
+    if (corePullTracker != null) {
+      return corePullTracker ;
+    }
+    corePullTracker = new CorePullTracker();
+    return corePullTracker ;
   }
 }

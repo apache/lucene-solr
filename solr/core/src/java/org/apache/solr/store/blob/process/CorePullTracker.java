@@ -42,8 +42,6 @@ public class CorePullTracker {
   @VisibleForTesting
   public static boolean isBackgroundPullEnabled = true; // TODO : make configurable
 
-  private static CorePullTracker INSTANCE = null;
-
   // Let's define these paths in yet another place in the code...
   private static final String QUERY_PATH_PREFIX = "/select";
   private static final String SPELLCHECK_PATH_PREFIX = "/spellcheck";
@@ -51,16 +49,6 @@ public class CorePullTracker {
   private static final String INDEXLOOKUP_PATH_PREFIX = "/indexLookup";
   private static final String HIGHLIGHT_PATH_PREFIX = "/highlight";
   private static final String BACKUP_PATH_PREFIX = "/backup";
-
-  /**
-   * Get the CorePullTracker instance to track cores that need to be pulled in from Blob.
-   */
-  public synchronized static CorePullTracker get() {
-    if (INSTANCE == null) {
-      INSTANCE = new CorePullTracker();
-    }
-    return INSTANCE;
-  }
 
   public CorePullTracker() {
     coresToPull = new DeduplicatingList<>(TRACKING_LIST_MAX_SIZE, new CorePullerFeeder.PullCoreInfoMerger());
@@ -70,7 +58,7 @@ public class CorePullTracker {
    * If the local core is stale, enqueues it to be pulled in from blob
    * TODO: add stricter checks so that we don't pull on every request
    */
-  public void enqueueForPullIfNecessary(HttpServletRequest request, SolrCore core, String collectionName,
+  public void enqueueForPullIfNecessary(String requestPath, SolrCore core, String collectionName,
       CoreContainer cores) throws IOException, SolrException {
     // Initialize variables
     String coreName = core.getName();
@@ -110,7 +98,8 @@ public class CorePullTracker {
             .setNewMetadataSuffix(BlobStoreUtils.generateMetadataSuffix())
             .setZkVersion(data.getVersion())
             .build();
-        enqueueForPullIfNecessary(request, pushPullData, cores);
+
+        enqueueForPullIfNecessary(requestPath, pushPullData, cores);
 
       } catch (Exception ex) {
         // wrap every thrown exception in a solr exception
@@ -123,13 +112,12 @@ public class CorePullTracker {
    * If the local core is stale, enqueues it to be pulled in from blob Note : If there is no coreName available in the
    * requestPath we simply ignore the request.
    */
-  public void enqueueForPullIfNecessary(HttpServletRequest request, PushPullData pushPullData, 
+  public void enqueueForPullIfNecessary(String requestPath, PushPullData pushPullData, 
       CoreContainer cores) throws IOException {
-    String servletPath = request.getServletPath();
-
     // TODO: do we need isBackgroundPullEnabled in addition to isBlobEnabled? If not we should remove this.
     // TODO: always pull for this hack - want to check if local core is up to date
-    if (isBackgroundPullEnabled && pushPullData.getSharedStoreName() != null && shouldPullStale(servletPath)) {
+    if (isBackgroundPullEnabled && pushPullData.getSharedStoreName() != null && shouldPullStale(requestPath)) {
+      logger.info("Enqueuing pull on path " + requestPath);
       enqueueForPull(pushPullData, false, false);
     }
   }
@@ -189,11 +177,9 @@ public class CorePullTracker {
    */
   private boolean shouldPullStale(String servletPath) {
     // get the request handler from the path (taken from SolrDispatchFilter)
-    int idx = servletPath.indexOf('/', 1);
-    if (idx > 1) {
+    int idx = servletPath.indexOf('/');
+    if (idx != -1) {
       String action = servletPath.substring(idx);
-      // Note: if new paths are added for new types of access to the searchserver, the set of paths that trigger
-      // a pull of a stale core below might have to be updated.
       return action.startsWith(QUERY_PATH_PREFIX)
           || action.startsWith(SPELLCHECK_PATH_PREFIX)
           // TODO || action.startsWith(SynonymDataHandler.SYNONYM_DATA_HANDLER_PATH)
@@ -202,6 +188,7 @@ public class CorePullTracker {
           || action.startsWith(HIGHLIGHT_PATH_PREFIX)
           || action.startsWith(BACKUP_PATH_PREFIX);
     } else {
+      logger.warn("Not pulling for specified path " + servletPath);
       return false;
     }
   }

@@ -47,7 +47,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
 
   @Override
   void feedTheMonsters() throws InterruptedException {
-    CorePullTracker tracker = CorePullTracker.get();
+    CorePullTracker tracker = cores.getSharedStoreManager().getCorePullTracker();
     final long minMsBetweenLogs = 15000;
     long lastLoggedTimestamp = 0L;
     long syncsEnqueuedSinceLastLog = 0; // This is the non-deduped count

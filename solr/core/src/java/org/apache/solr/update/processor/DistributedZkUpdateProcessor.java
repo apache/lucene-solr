@@ -102,7 +102,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
                                       SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    this(req,rsp,next, CoreUpdateTracker.get(req.getCore().getCoreContainer()));
+    this(req,rsp,next, new CoreUpdateTracker(req.getCore().getCoreContainer()));
   }
   
   @VisibleForTesting
@@ -198,7 +198,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     } else {
       // zk
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-      readFromSharedStoreIfNecessary();
+      if (replicaType.equals(Replica.Type.SHARED)) {
+        readFromSharedStoreIfNecessary();
+      }
 
       List<SolrCmdDistributor.Node> useNodes = null;
       if (req.getParams().get(COMMIT_END_POINT) == null) {

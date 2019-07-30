@@ -16,30 +16,48 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import java.nio.file.Path;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests related to shared storage based collections (collection having only replicas of type {@link Replica.Type#SHARED}).
+ * Tests related to shared storage based collections (collection having only replicas of type {@link Type#SHARED}).
  * and ensuring the expected shared collection specific metadata exists when creating collections, modifying collections, 
  * creating shards, or modifying shards for collections.
  */
-public class SharedStorageShardMetadataTest extends SolrCloudTestCase  {
+public class SharedStorageShardMetadataTest extends SolrCloudSharedStoreTestCase  {
   
   @BeforeClass
   public static void setupCluster() throws Exception {    
     configureCluster(3)
       .addConfig("conf", configset("cloud-minimal"))
       .configure();
+    
+    // we don't use this in testing
+    Path sharedStoreRootPath = createTempDir("tempDir");
+    CoreStorageClient storageClient = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
+    // configure same client for each runner, this isn't a concurrency test so this is fine
+    for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+      setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), runner);
+    }
+  }
+  
+  
+  @AfterClass
+  public static void teardownTest() throws Exception {
+    shutdownCluster();
   }
   
   /**

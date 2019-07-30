@@ -28,18 +28,19 @@ import org.slf4j.LoggerFactory;
  * changed locally and needs to be persisted to a shared store (blob store). 
  */
 public class CorePusher {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static CoreContainer coreContainer;
   
-  public static void init(CoreContainer coreContainer) {
-    CorePusher.coreContainer = coreContainer;
-    logger.info("EnableBlobBackgroundPushing is false, started CorePusher");
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
+  private CoreContainer coreContainer;
+  
+  public CorePusher(CoreContainer coreContainer) {
+    this.coreContainer = coreContainer;
   }
     
   /**
    * Pushes the local core updates to the Blob store and logs whether the push succeeded or failed.
    */
-  static void pushCoreToBlob(PushPullData pushPullData) throws Exception {
+  public void pushCoreToBlob(PushPullData pushPullData) throws Exception {
     BlobStorageProvider blobProvider = coreContainer.getSharedStoreManager().getBlobStorageProvider(); 
     CoreStorageClient blobClient = blobProvider.getDefaultClient(); // TODO, use a real client
     BlobDeleteManager deleteManager = coreContainer.getSharedStoreManager().getBlobDeleteManager(); // TODO, use a real client

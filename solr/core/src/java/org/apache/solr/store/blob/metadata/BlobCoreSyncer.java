@@ -99,7 +99,7 @@ public class BlobCoreSyncer {
     /**
      * Returns a _hint_ that the given core might be locally empty because it is awaiting pull from Blob store.
      * This is just a hint because as soon as the lock is released when the method returns, the status of the core could change.
-     * Because of that, in method {@link #pull(PushPullData, boolean, boolean)} we need to check again.
+     * Because of that, in method {@link #pull(PushPullData, boolean, boolean, CoreContainer)} we need to check again.
      */
     public static boolean isEmptyCoreAwaitingPull(String coreName) {
         return CorePullTask.isEmptyCoreAwaitingPull(coreName);
@@ -143,7 +143,7 @@ public class BlobCoreSyncer {
               .setNewMetadataSuffix(BlobStoreUtils.generateMetadataSuffix())
               .setZkVersion(data.getVersion())
               .build();
-          pull(pushPullData, waitForSearcher, emptyCoreAwaitingPull);
+          pull(pushPullData, waitForSearcher, emptyCoreAwaitingPull, cores);
         } catch (Exception ex) {
           // wrap every thrown exception in a solr exception
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error trying to push to blob store", ex);
@@ -170,7 +170,7 @@ public class BlobCoreSyncer {
      *
      * @throws PullInProgressException In case a thread does not wait or times out before the async pull is finished
      */
-    public static void pull(PushPullData pushPullData, boolean waitForSearcher, boolean emptyCoreAwaitingPull) throws PullInProgressException {
+    public static void pull(PushPullData pushPullData, boolean waitForSearcher, boolean emptyCoreAwaitingPull, CoreContainer cores) throws PullInProgressException {
         // Is there another thread already working on the async pull?
         final boolean pullAlreadyInProgress;
         // Indicates if thread waits for the pull to finish or too many waiters already
@@ -239,7 +239,8 @@ public class BlobCoreSyncer {
                 logger.info("About to enqueue pull of core " + pushPullData.getSharedStoreName() + " (countTotalWaiters=" + countTotalWaiters + ")");
 
                 // enqueue an async pull
-                CorePullTracker.get().enqueueForPull(pushPullData, true, waitForSearcher);
+                CorePullTracker corePullTracker = cores.getSharedStoreManager().getCorePullTracker();
+                corePullTracker.enqueueForPull(pushPullData, true, waitForSearcher);
 
             } catch (Exception e) {
                 // as mentioned above in case of failed enqueue we are responsible for clearing up all waiting state

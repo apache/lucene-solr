@@ -16,20 +16,6 @@
  */
 package org.apache.solr.servlet;
 
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ReadListener;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.UnavailableException;
-import javax.servlet.WriteListener;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,10 +35,21 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
-import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ReadListener;
+import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.UnavailableException;
+import javax.servlet.WriteListener;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
+
 import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.HttpClient;
@@ -73,17 +70,20 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.security.AuditEvent;
+import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.store.blob.process.BlobProcessUtil;
 import org.apache.solr.util.SolrFileCleaningTracker;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.security.AuditEvent.EventType;
+import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -107,8 +107,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private SolrMetricManager metricManager;
   private String registryName;
   private volatile boolean closeOnDestroy = true;
-  
-  private BlobProcessUtil blobProcessUtil;
 
   /**
    * Enum to define action that needs to be processed.
@@ -177,10 +175,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
       coresInit = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
                                        extraProperties);
-      
-      // sfdc blob change - this shouldn't happen here when writing blob replica type
-      blobProcessUtil = new BlobProcessUtil();
-      blobProcessUtil.init(coresInit);
       
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
@@ -311,7 +305,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
   
   public void close() {
-    blobProcessUtil.shutdown();
     CoreContainer cc = cores;
     cores = null;
     try {
@@ -338,6 +331,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         } finally {
           metricManager = null;
         }
+      }
+      
+      try {
+        cc.getSharedStoreManager().getBlobProcessManager().shutdown();
+      } catch (Exception e) {
+        log.warn("Exception closing BlobProcessManager", e);
       }
     } finally {
       if (cc != null) {

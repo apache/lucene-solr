@@ -1,10 +1,18 @@
 package org.apache.solr.store.blob.process;
 
 import java.io.File;
-import java.util.*;
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
-import com.google.common.base.Throwables;
-import com.google.common.collect.*;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.metadata.CorePushPull;
@@ -15,17 +23,12 @@ import org.apache.solr.store.blob.process.CorePullerFeeder.PullCoreInfo;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.store.blob.util.DeduplicatingList;
-
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrCore;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.lang.invoke.MethodHandles;
+
+import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 /**
  * Code for pulling updates on a specific core to the Blob store. see {@CorePushTask} for the push version of this.
@@ -230,7 +233,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       // Get blob metadata
       String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(pullCoreInfo.getLastReadMetadataSuffix());
       blobMetadata = blobClient.pullCoreMetadata(pullCoreInfo.getSharedStoreName(), blobCoreMetadataName);
-
+      
       // Handle callback
       if (blobMetadata == null) {
         syncStatus = CoreSyncStatus.BLOB_MISSING;
@@ -272,7 +275,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       ServerSideMetadata serverMetadata = new ServerSideMetadata(pullCoreInfo.getCoreName(), coreContainer);
       SharedMetadataResolutionResult resolutionResult = SharedStoreResolutionUtil.resolveMetadata(
           serverMetadata, blobMetadata);
-
+      
       // If there is nothing to pull, we should report SUCCESS_EQUIVALENT and do nothing.
       // If we call pullUpdateFromBlob with an empty list of files to pull, we'll see an NPE down the line.
       // TODO: might be better to handle this error in CorePushPull.pullUpdateFromBlob

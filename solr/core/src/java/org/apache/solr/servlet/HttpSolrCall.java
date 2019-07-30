@@ -288,10 +288,6 @@ public class HttpSolrCall {
             path = path.substring(idx);
           }
 
-          // TODO: limit the number of pulls we do
-          if (collection != null && collection.getSharedIndex()) {
-            CorePullTracker.get().enqueueForPullIfNecessary(req, core, collectionName, cores);
-          }
         } else {
           // if we couldn't find it locally, look on other nodes or pull from blob
           if (idx > 0) {
@@ -339,6 +335,17 @@ public class HttpSolrCall {
         // if not a /select, create the request
         if (solrReq == null) {
           solrReq = parser.parse(core, path, req);
+        }
+        
+        if (cores.isZooKeeperAware()) {
+          // collectionlist should be assigned in the solr cloud code above
+          String collectionName = collectionsList.isEmpty() ? null : collectionsList.get(0); // route to 1st
+          DocCollection collection = getCollection(collectionName);
+          // TODO: limit the number of pulls we do
+          if (collection != null && collection.getSharedIndex()) {
+            CorePullTracker corePullTracker = cores.getSharedStoreManager().getCorePullTracker();
+            corePullTracker.enqueueForPullIfNecessary(path, core, collectionName, cores);
+          }
         }
 
         invalidStates = checkStateVersionsAreValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));

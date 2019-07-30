@@ -17,15 +17,9 @@ public class BlobProcessUtil {
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private volatile CorePullerFeeder runningFeeder = null;
   
-  public BlobProcessUtil() {}
-
-  /**
-   * Initialize background blob processes
-   */
-  public void init(CoreContainer cores) {
+  public BlobProcessUtil(CoreContainer coreContainer) {
     // Start the Blob store sync core push and async core pull machinery
-    CorePusher.init(cores);
-    runningFeeder = initializeCorePullerFeeder(cores);
+    runningFeeder = initializeCorePullerFeeder(coreContainer);
   }
   
   /**

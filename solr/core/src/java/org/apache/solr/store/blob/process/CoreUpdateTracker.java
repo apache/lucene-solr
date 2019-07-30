@@ -24,23 +24,12 @@ import org.slf4j.LoggerFactory;
 public class CoreUpdateTracker {
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /** Guarded by class monitor */
-  private static CoreUpdateTracker INSTANCE = null;
-
+  private CoreContainer coreContainer;
   private SharedShardMetadataController shardSharedMetadataController; 
 
-  private CoreUpdateTracker(CoreContainer coreContainer) {
+  public CoreUpdateTracker(CoreContainer coreContainer) {
+    this.coreContainer = coreContainer;
     shardSharedMetadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
-  }
-
-  /**
-   * Get the CoreUpdateTracker instance to track core updates. This can later be refactored if we need more than one.
-   */
-  public synchronized static CoreUpdateTracker get(CoreContainer coreContainer) {
-    if (INSTANCE == null) {
-      INSTANCE = new CoreUpdateTracker(coreContainer);
-    }
-    return INSTANCE;
   }
 
   /**
@@ -98,7 +87,8 @@ public class CoreUpdateTracker {
             .setNewMetadataSuffix(BlobStoreUtils.generateMetadataSuffix())
             .setZkVersion(data.getVersion())
             .build();
-        CorePusher.pushCoreToBlob(pushPullData);
+        CorePusher pusher = new CorePusher(coreContainer);
+        pusher.pushCoreToBlob(pushPullData);
       } catch (Exception ex) {
         // wrap every thrown exception in a solr exception
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error trying to push to blob store", ex);
