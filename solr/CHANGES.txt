@@ -110,6 +110,10 @@ Bug Fixes
 * SOLR-11556: Backup and restore command really supports picking one of a few repositories by 
   repository parameter (Timothy Potter via Mikhail Khludnev) 
 
+* SOLR-13660: Fixed AbstractFullDistribZkTestBase.waitForActiveReplicaCount() to ensure
+  replicas are active. (hossman)
+
+
 Other Changes
 ----------------------
 
