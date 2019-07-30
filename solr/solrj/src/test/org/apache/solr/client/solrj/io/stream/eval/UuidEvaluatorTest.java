@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;

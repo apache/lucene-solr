@@ -75,9 +75,6 @@ public class TsvStream extends CsvStream implements Expressible {
 
   protected String[] split(String line) {
     String[] parts = line.split("\\t", -1);
-    for(String s : parts) {
-      System.out.println("part:"+s+":"+line.length()+":"+line+":");
-    }
     return parts;
   }
 
