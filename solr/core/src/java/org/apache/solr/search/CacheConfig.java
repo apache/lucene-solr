@@ -99,7 +99,7 @@ public class CacheConfig implements MapWriter {
   }
 
 
-  public <K, V> SolrCacheHolder<K, V> create(SolrCore core) {
+  public <K, V> SolrCacheHolder<K, V> newInstance(SolrCore core) {
     ResourceLoader loader = core.getResourceLoader();
 
     SolrCache inst = null;

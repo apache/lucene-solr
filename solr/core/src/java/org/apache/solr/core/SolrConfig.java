@@ -62,6 +62,7 @@ import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
+import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.ValueSourceParser;
@@ -269,6 +270,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       args.put("size", "10000");
       args.put("initialSize", "10");
       args.put("showItems", "-1");
+      args.put("class", FastLRUCache.class.getName());
       conf = new CacheConfig(args);
     }
     fieldValueCacheConfig = conf;
@@ -299,7 +301,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         userCacheConfigs.put(c.name, new CacheConfig(c.attributes));
       }
     }
-    this.userCacheConfig = Collections.unmodifiableMap(userCacheConfigs);
+    this.userCacheConfigs = Collections.unmodifiableMap(userCacheConfigs);
 
     updateHandlerInfo = loadUpdatehandlerInfo();
 
@@ -550,7 +552,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   public final CacheConfig queryResultCacheConfig;
   public final CacheConfig documentCacheConfig;
   public final CacheConfig fieldValueCacheConfig;
-  public final Map<String, CacheConfig> userCacheConfig;
+  public final Map<String, CacheConfig> userCacheConfigs;
   // SolrIndexSearcher - more...
   public final boolean useFilterForSortedQuery;
   public final int queryResultWindowSize;
