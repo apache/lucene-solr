@@ -40,6 +40,9 @@ Improvements
   docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
   indices (Atri Sharma, Adrien Grand, Simon Willnauer)
 
+* LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
+  (Adrien Gallou via Tomoko Uchida)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
