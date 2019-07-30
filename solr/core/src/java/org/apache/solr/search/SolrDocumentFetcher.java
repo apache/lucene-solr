@@ -86,7 +86,7 @@ public class SolrDocumentFetcher {
 
   private final boolean enableLazyFieldLoading;
 
-  private final SolrCacheHolder<Integer,Document> documentCache;
+  private final SolrCache<Integer,Document> documentCache;
 
   private final Set<String> allStored;
 
@@ -175,7 +175,7 @@ public class SolrDocumentFetcher {
     return enableLazyFieldLoading;
   }
 
-  public SolrCacheHolder<Integer, Document> getDocumentCache() {
+  public SolrCache<Integer, Document> getDocumentCache() {
     return documentCache;
   }
 
