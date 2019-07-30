@@ -86,7 +86,7 @@ public class SolrDocumentFetcher {
 
   private final boolean enableLazyFieldLoading;
 
-  private final SolrCache<Integer,Document> documentCache;
+  private final SolrCacheHolder<Integer,Document> documentCache;
 
   private final Set<String> allStored;
 
@@ -111,7 +111,8 @@ public class SolrDocumentFetcher {
     this.searcher = searcher;
     this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading;
     if (cachingEnabled) {
-      documentCache = solrConfig.documentCacheConfig == null ? null : solrConfig.documentCacheConfig.newInstance();
+      documentCache = solrConfig.documentCacheFactory == null ? null :
+          solrConfig.documentCacheFactory.create(searcher.getCore());
     } else {
       documentCache = null;
     }
@@ -174,7 +175,7 @@ public class SolrDocumentFetcher {
     return enableLazyFieldLoading;
   }
 
-  public SolrCache<Integer, Document> getDocumentCache() {
+  public SolrCacheHolder<Integer, Document> getDocumentCache() {
     return documentCache;
   }
 

@@ -97,8 +97,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
-  private static final Map<String,SolrCache> NO_GENERIC_CACHES = Collections.emptyMap();
-  private static final SolrCache[] NO_CACHES = new SolrCache[0];
+  private static final Map<String, SolrCacheHolder> NO_GENERIC_CACHES = Collections.emptyMap();
+  private static final SolrCacheHolder[] NO_CACHES = new SolrCacheHolder[0];
 
   private final SolrCore core;
   private final IndexSchema schema;
@@ -117,15 +117,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final boolean useFilterForSortedQuery;
 
   private final boolean cachingEnabled;
-  private final SolrCache<Query,DocSet> filterCache;
-  private final SolrCache<QueryResultKey,DocList> queryResultCache;
-  private final SolrCache<String,UnInvertedField> fieldValueCache;
+  private final SolrCacheHolder<Query, DocSet> filterCache;
+  private final SolrCacheHolder<QueryResultKey, DocList> queryResultCache;
+  private final SolrCacheHolder<String, UnInvertedField> fieldValueCache;
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
-  private final Map<String,SolrCache> cacheMap;
+  private final Map<String, SolrCacheHolder> cacheMap;
 
   // list of all caches associated with this searcher.
-  private final SolrCache[] cacheList;
+  private final SolrCacheHolder[] cacheList;
 
   private DirectoryFactory directoryFactory;
 
@@ -266,24 +266,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     this.cachingEnabled = enableCache;
     if (cachingEnabled) {
-      final ArrayList<SolrCache> clist = new ArrayList<>();
-      fieldValueCache = solrConfig.fieldValueCacheConfig == null ? null
-          : solrConfig.fieldValueCacheConfig.newInstance();
-      if (fieldValueCache != null) clist.add(fieldValueCache);
-      filterCache = solrConfig.filterCacheConfig == null ? null : solrConfig.filterCacheConfig.newInstance();
+      final ArrayList<SolrCacheHolder> clist = new ArrayList<>();
+      fieldValueCache = solrConfig.fieldValueCacheFactory == null ? null
+          : solrConfig.fieldValueCacheFactory.create(core);
+      if (fieldValueCache != null) clist.add( fieldValueCache);
+      filterCache = solrConfig.filterCacheFactory == null ? null : solrConfig.filterCacheFactory.create(core);
       if (filterCache != null) clist.add(filterCache);
-      queryResultCache = solrConfig.queryResultCacheConfig == null ? null
-          : solrConfig.queryResultCacheConfig.newInstance();
+      queryResultCache = solrConfig.queryResultCacheFactory == null ? null
+          : solrConfig.queryResultCacheFactory.create(core);
       if (queryResultCache != null) clist.add(queryResultCache);
-      SolrCache<Integer, Document> documentCache = docFetcher.getDocumentCache();
+      SolrCacheHolder<Integer, Document> documentCache = docFetcher.getDocumentCache();
       if (documentCache != null) clist.add(documentCache);
 
-      if (solrConfig.userCacheConfigs.isEmpty()) {
+      if (solrConfig.userCacheFactory.isEmpty()) {
         cacheMap = NO_GENERIC_CACHES;
       } else {
-        cacheMap = new HashMap<>(solrConfig.userCacheConfigs.size());
-        for (Map.Entry<String,CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
-          SolrCache cache = e.getValue().newInstance();
+        cacheMap = new HashMap<>(solrConfig.userCacheFactory.size());
+        for (Map.Entry<String, SolrCacheHolder.Factory> e : solrConfig.userCacheFactory.entrySet()) {
+          SolrCacheHolder cache = e.getValue().create(core);
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
             clist.add(cache);
@@ -291,7 +291,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
       }
 
-      cacheList = clist.toArray(new SolrCache[clist.size()]);
+      cacheList = clist.toArray(new SolrCacheHolder[clist.size()]);
     } else {
       this.filterCache = null;
       this.queryResultCache = null;
@@ -419,14 +419,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // register self
     infoRegistry.put(STATISTICS_KEY, this);
     infoRegistry.put(name, this);
-    for (SolrCache cache : cacheList) {
-      cache.setState(SolrCache.State.LIVE);
-      infoRegistry.put(cache.name(), cache);
+    for (SolrCacheHolder cache : cacheList) {
+      cache.get().setState(SolrCache.State.LIVE);
+      infoRegistry.put(cache.get().name(), cache.get());
     }
     metricManager = core.getCoreContainer().getMetricManager();
     registryName = core.getCoreMetricManager().getRegistryName();
-    for (SolrCache cache : cacheList) {
-      cache.initializeMetrics(metricManager, registryName, core.getMetricTag(), SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+    for (SolrCacheHolder cache : cacheList) {
+      cache.get(). initializeMetrics(metricManager, registryName, core.getMetricTag(), SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
     initializeMetrics(metricManager, registryName, core.getMetricTag(), STATISTICS_KEY);
     registerTime = new Date();
@@ -443,7 +443,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (cachingEnabled) {
         final StringBuilder sb = new StringBuilder();
         sb.append("Closing ").append(name);
-        for (SolrCache cache : cacheList) {
+        for (SolrCacheHolder cache : cacheList) {
           sb.append("\n\t");
           sb.append(cache);
         }
@@ -470,7 +470,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       core.getDeletionPolicy().releaseCommitPoint(cpg);
     }
 
-    for (SolrCache cache : cacheList) {
+    for (SolrCacheHolder cache : cacheList) {
       cache.close();
     }
 
@@ -495,71 +495,60 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return Iterables.transform(getFieldInfos(), fieldInfo -> fieldInfo.name);
   }
 
-  public SolrCache<Query,DocSet> getFilterCache() {
+  public SolrCacheHolder<Query,DocSet> getFilterCache() {
     return filterCache;
   }
 
   //
   // Set default regenerators on filter and query caches if they don't have any
   //
+
   public static void initRegenerators(SolrConfig solrConfig) {
-    if (solrConfig.fieldValueCacheConfig != null && solrConfig.fieldValueCacheConfig.getRegenerator() == null) {
-      solrConfig.fieldValueCacheConfig.setRegenerator(new CacheRegenerator() {
-        @Override
-        public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
-          if (oldVal instanceof UnInvertedField) {
-            UnInvertedField.getUnInvertedField((String) oldKey, newSearcher);
-          }
-          return true;
+    if (solrConfig.fieldValueCacheFactory != null) {
+      solrConfig.fieldValueCacheFactory.setDefaultRegenerator((newSearcher, newCache, oldCache, oldKey, oldVal) -> {
+        if (oldVal instanceof UnInvertedField) {
+          UnInvertedField.getUnInvertedField((String) oldKey, newSearcher);
         }
+        return true;
       });
     }
 
-    if (solrConfig.filterCacheConfig != null && solrConfig.filterCacheConfig.getRegenerator() == null) {
-      solrConfig.filterCacheConfig.setRegenerator(new CacheRegenerator() {
-        @Override
-        public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
-          newSearcher.cacheDocSet((Query) oldKey, null, false);
-          return true;
-        }
+    if (solrConfig.filterCacheFactory != null ) {
+      solrConfig.filterCacheFactory.setDefaultRegenerator((newSearcher, newCache, oldCache, oldKey, oldVal) -> {
+        newSearcher.cacheDocSet((Query) oldKey, null, false);
+        return true;
       });
     }
 
-    if (solrConfig.queryResultCacheConfig != null && solrConfig.queryResultCacheConfig.getRegenerator() == null) {
+    if (solrConfig.queryResultCacheFactory != null ) {
       final int queryResultWindowSize = solrConfig.queryResultWindowSize;
-      solrConfig.queryResultCacheConfig.setRegenerator(new CacheRegenerator() {
-        @Override
-        public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
-          QueryResultKey key = (QueryResultKey) oldKey;
-          int nDocs = 1;
-          // request 1 doc and let caching round up to the next window size...
-          // unless the window size is <=1, in which case we will pick
-          // the minimum of the number of documents requested last time and
-          // a reasonable number such as 40.
-          // TODO: make more configurable later...
+      solrConfig.queryResultCacheFactory.setDefaultRegenerator((newSearcher, newCache, oldCache, oldKey, oldVal) -> {
+        QueryResultKey key = (QueryResultKey) oldKey;
+        int nDocs = 1;
+        // request 1 doc and let caching round up to the next window size...
+        // unless the window size is <=1, in which case we will pick
+        // the minimum of the number of documents requested last time and
+        // a reasonable number such as 40.
+        // TODO: make more configurable later...
 
-          if (queryResultWindowSize <= 1) {
-            DocList oldList = (DocList) oldVal;
-            int oldnDocs = oldList.offset() + oldList.size();
-            // 40 has factors of 2,4,5,10,20
-            nDocs = Math.min(oldnDocs, 40);
-          }
-
-          int flags = NO_CHECK_QCACHE | key.nc_flags;
-          QueryCommand qc = new QueryCommand();
-          qc.setQuery(key.query)
-              .setFilterList(key.filters)
-              .setSort(key.sort)
-              .setLen(nDocs)
-              .setSupersetMaxDoc(nDocs)
-              .setFlags(flags);
-          QueryResult qr = new QueryResult();
-          newSearcher.getDocListC(qr, qc);
-          return true;
+        if (queryResultWindowSize <= 1) {
+          DocList oldList = (DocList) oldVal;
+          int oldnDocs = oldList.offset() + oldList.size();
+          // 40 has factors of 2,4,5,10,20
+          nDocs = Math.min(oldnDocs, 40);
         }
+
+        int flags = NO_CHECK_QCACHE | key.nc_flags;
+        QueryCommand qc = new QueryCommand();
+        qc.setQuery(key.query)
+            .setFilterList(key.filters)
+            .setSort(key.sort)
+            .setLen(nDocs)
+            .setSupersetMaxDoc(nDocs)
+            .setFlags(flags);
+        QueryResult qr = new QueryResult();
+        newSearcher.getDocListC(qr, qc);
+        return true;
       });
     }
   }
@@ -624,7 +613,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   /** expert: internal API, subject to change */
   public SolrCache<String,UnInvertedField> getFieldValueCache() {
-    return fieldValueCache;
+    return fieldValueCache == null? null : fieldValueCache.get();
   }
 
   /** Returns a weighted sort according to this searcher */
@@ -2184,14 +2173,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * return the named generic cache
    */
   public SolrCache getCache(String cacheName) {
-    return cacheMap.get(cacheName);
+    SolrCacheHolder holder = cacheMap.get(cacheName);
+    return holder == null ?null: holder.get();
   }
 
   /**
    * lookup an entry in a generic cache
    */
   public Object cacheLookup(String cacheName, Object key) {
-    SolrCache cache = cacheMap.get(cacheName);
+    SolrCacheHolder cache = cacheMap.get(cacheName);
     return cache == null ? null : cache.get(key);
   }
 
@@ -2199,7 +2189,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * insert an entry in a generic cache
    */
   public Object cacheInsert(String cacheName, Object key, Object val) {
-    SolrCache cache = cacheMap.get(cacheName);
+    SolrCacheHolder cache = cacheMap.get(cacheName);
     return cache == null ? null : cache.put(key, val);
   }
 
@@ -2469,7 +2459,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     @Override
     public int hashCode() {
-      return classHash() 
+      return classHash()
           + 31 * Objects.hashCode(topFilter)
           + 31 * Objects.hashCode(weights);
     }
