@@ -45,25 +45,25 @@ public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
   public static final String DEAD_BAND = "deadBand";
   public static final float DEFAULT_DEAD_BAND = 0.1f;
 
-  private static final Map<String, String> controlledToMonitored = new HashMap<>();
+  protected static final Map<String, String> controlledToMonitored = new HashMap<>();
 
   static {
     controlledToMonitored.put(SolrCache.MAX_RAM_MB_PARAM, SolrCache.RAM_BYTES_USED_PARAM);
     controlledToMonitored.put(SolrCache.MAX_SIZE_PARAM, SolrCache.SIZE_PARAM);
   }
 
-  private static final Collection<String> MONITORED_PARAMS = Arrays.asList(
+  protected static final Collection<String> MONITORED_PARAMS = Arrays.asList(
       SolrCache.SIZE_PARAM,
       SolrCache.HIT_RATIO_PARAM,
       SolrCache.RAM_BYTES_USED_PARAM
   );
 
-  private static final Collection<String> CONTROLLED_PARAMS = Arrays.asList(
+  protected static final Collection<String> CONTROLLED_PARAMS = Arrays.asList(
       SolrCache.MAX_RAM_MB_PARAM,
       SolrCache.MAX_SIZE_PARAM
   );
 
-  private float deadBand = DEFAULT_DEAD_BAND;
+  protected float deadBand = DEFAULT_DEAD_BAND;
 
   @Override
   public Collection<String> getMonitoredParams() {

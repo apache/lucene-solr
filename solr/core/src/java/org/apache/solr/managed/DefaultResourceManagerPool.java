@@ -108,7 +108,7 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   public Map<String, Map<String, Object>> getCurrentValues() throws InterruptedException {
     updateLock.lockInterruptibly();
     try {
-      // collect current values
+      // collect the current values
       Map<String, Map<String, Object>> currentValues = new HashMap<>();
       for (ManagedComponent managedComponent : resources.values()) {
         try {
@@ -117,7 +117,7 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
           log.warn("Error getting managed values from " + managedComponent.getManagedComponentId(), e);
         }
       }
-      // calculate totals
+      // calculate the totals
       Map<String, Float> newTotalValues = new HashMap<>();
       currentValues.values().forEach(map -> map.forEach((k, v) -> {
         // only calculate totals for numbers
