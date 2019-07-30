@@ -131,6 +131,7 @@ public class CsvStream extends TupleStream implements Expressible {
           throw new IOException("Headers and lines must have the same number of fields [file:"+file+" line number:"+lineNumber+"]");
         }
         Tuple out = new Tuple(new HashMap());
+        out.put("id", file+"_"+lineNumber);
         for(int i=0; i<headers.length; i++) {
           if(fields[i] != null && fields[i].length() > 0) {
             out.put(headers[i], fields[i]);
@@ -147,7 +148,7 @@ public class CsvStream extends TupleStream implements Expressible {
   }
 
   protected String[] split(String line) {
-    String[] fields = line.split(",(?=([^\"]|\"[^\"]*\")*$)",-1);
+    String[] fields = line.split(",(?=(?:[^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)",-1);
     for(int i=0; i<fields.length; i++) {
       String f = fields[i];
       if(f.startsWith("\"") && f.endsWith("\"")) {

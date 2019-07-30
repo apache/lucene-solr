@@ -87,7 +87,7 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     Assert.assertEquals(6.5D, result);
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void multTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;
@@ -97,7 +97,7 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     Assert.assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void multTwoFieldsWithNull() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;
@@ -121,7 +121,7 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     Assert.assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void multTwoFieldsWithMissingField() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;

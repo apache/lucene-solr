@@ -74,7 +74,7 @@ public class ModuloEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("mod(a)");
   }
   
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void modTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
     
@@ -82,7 +82,7 @@ public class ModuloEvaluatorTest extends SolrTestCase {
     evaluator.evaluate(new Tuple(values));
   }
   
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void modTwoFieldsWithNullDenominator() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
     
@@ -91,7 +91,7 @@ public class ModuloEvaluatorTest extends SolrTestCase {
     evaluator.evaluate(new Tuple(values));
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void modTwoFieldsWithNullNumerator() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
     
@@ -101,7 +101,7 @@ public class ModuloEvaluatorTest extends SolrTestCase {
   }
 
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void modTwoFieldsWithMissingDenominator() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
     
@@ -110,7 +110,7 @@ public class ModuloEvaluatorTest extends SolrTestCase {
     evaluator.evaluate(new Tuple(values));
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void modTwoFieldsWithMissingNumerator() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mod(a,b)");
     
