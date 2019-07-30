@@ -19,7 +19,9 @@ package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
+import java.util.Set;
 
+import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
@@ -109,6 +111,16 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   @Override
   public String getName() {
     return delegate.getName();
+  }
+
+  @Override
+  public MetricRegistry getMetricRegistry() {
+    return delegate.getMetricRegistry();
+  }
+
+  @Override
+  public Set<String> getMetricNames() {
+    return delegate.getMetricNames();
   }
 
   @Override
