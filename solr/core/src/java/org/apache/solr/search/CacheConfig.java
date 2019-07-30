@@ -83,7 +83,7 @@ public class CacheConfig implements MapWriter {
     return args;
   }
 
-  public static Map<String, CacheConfig> getConfig(SolrConfig solrConfig, String configPath, boolean multiple) {
+  public static Map<String, CacheConfig> getConfigs(SolrConfig solrConfig, String configPath) {
     NodeList nodes = (NodeList) solrConfig.evaluate(configPath, XPathConstants.NODESET);
     if (nodes == null || nodes.getLength() == 0) return new LinkedHashMap<>();
     Map<String, CacheConfig> result = new HashMap<>(nodes.getLength());
