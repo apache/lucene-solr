@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream.eval;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
