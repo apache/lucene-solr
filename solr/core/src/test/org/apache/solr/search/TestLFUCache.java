@@ -60,7 +60,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
   @Test
   public void testTimeDecayParams() throws IOException {
     h.getCore().withSearcher(searcher -> {
-      LFUCache cacheDecayTrue = (LFUCache) searcher.getCache("lfuCacheDecayTrue");
+      LFUCache cacheDecayTrue = (LFUCache) ((SolrCacheHolder) searcher.getCache("lfuCacheDecayTrue")).get();
       assertNotNull(cacheDecayTrue);
       Map<String,Object> stats = cacheDecayTrue.getMetricsMap().getValue();
       assertTrue((Boolean) stats.get("timeDecay"));
@@ -71,7 +71,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
       addCache(cacheDecayTrue, 11, 12, 13, 14, 15);
       assertCache(cacheDecayTrue, 1, 2, 3, 4, 5, 12, 13, 14, 15);
 
-      LFUCache cacheDecayDefault = (LFUCache) searcher.getCache("lfuCacheDecayDefault");
+      LFUCache cacheDecayDefault = (LFUCache) ((SolrCacheHolder) searcher.getCache("lfuCacheDecayDefault")).get();
       assertNotNull(cacheDecayDefault);
       stats = cacheDecayDefault.getMetricsMap().getValue();
       assertTrue((Boolean) stats.get("timeDecay"));
@@ -85,7 +85,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
       addCache(cacheDecayDefault, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
       assertCache(cacheDecayDefault, 1, 2, 3, 4, 5, 17, 18, 19, 20, 21);
 
-      LFUCache cacheDecayFalse = (LFUCache) searcher.getCache("lfuCacheDecayFalse");
+      LFUCache cacheDecayFalse = (LFUCache) ((SolrCacheHolder) searcher.getCache("lfuCacheDecayFalse")).get();
       assertNotNull(cacheDecayFalse);
       stats = cacheDecayFalse.getMetricsMap().getValue();
       assertFalse((Boolean) stats.get("timeDecay"));
