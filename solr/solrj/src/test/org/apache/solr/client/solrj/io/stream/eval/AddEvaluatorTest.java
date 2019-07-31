@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream.eval;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -69,7 +68,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     Assert.assertEquals(3.2D, result);
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void addTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("add(a,b)");
     Object result;
@@ -79,7 +78,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     Assert.assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void addTwoFieldsWithNull() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("add(a,b)");
     Object result;
@@ -103,7 +102,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     Assert.assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void addTwoFieldsWithMissingField() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("add(a,b)");
     Object result;

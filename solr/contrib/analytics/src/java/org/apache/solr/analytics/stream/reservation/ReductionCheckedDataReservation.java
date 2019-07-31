@@ -27,7 +27,7 @@ import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
  */
 public abstract class ReductionCheckedDataReservation<A, E> extends ReductionDataReservation<A, E> {
   protected final BooleanSupplier exists;
-  
+
   protected ReductionCheckedDataReservation(A applier, E extractor, BooleanSupplier exists) {
     super(applier, extractor);
     this.exists = exists;

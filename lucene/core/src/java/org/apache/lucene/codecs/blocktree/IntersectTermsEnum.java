@@ -111,7 +111,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
     f.prefix = 0;
     f.setState(0);
     f.arc = arc;
-    f.outputPrefix = arc.output;
+    f.outputPrefix = arc.output();
     f.load(fr.rootCode);
 
     // for assert:
@@ -186,14 +186,14 @@ final class IntersectTermsEnum extends BaseTermsEnum {
       // passed to findTargetArc
       arc = fr.index.findTargetArc(target, arc, getArc(1+idx), fstReader);
       assert arc != null;
-      output = fstOutputs.add(output, arc.output);
+      output = fstOutputs.add(output, arc.output());
       idx++;
     }
 
     f.arc = arc;
     f.outputPrefix = output;
     assert arc.isFinal();
-    f.load(fstOutputs.add(output, arc.nextFinalOutput));
+    f.load(fstOutputs.add(output, arc.nextFinalOutput()));
     return f;
   }
 

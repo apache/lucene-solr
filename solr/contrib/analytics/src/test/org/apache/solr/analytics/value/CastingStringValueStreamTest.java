@@ -28,10 +28,10 @@ public class CastingStringValueStreamTest extends SolrTestCaseJ4 {
   @Test
   public void objectStreamCastingTest() {
     TestStringValueStream val = new TestStringValueStream();
-    
+
     assertTrue(val instanceof AnalyticsValueStream);
     AnalyticsValueStream casted = (AnalyticsValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamObjects( value -> {
@@ -47,7 +47,7 @@ public class CastingStringValueStreamTest extends SolrTestCaseJ4 {
     });
     assertFalse(values.hasNext());
   }
-  
+
   @Test
   public void constantConversionTest() {
     AnalyticsValueStream val = new TestStringValueStream();

@@ -73,6 +73,27 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       return new BigDecimal(value.toString());
     }
     else if(value instanceof Collection){
+      //Let's first check to see if we have a List of Strings.
+      //If we do let's try and convert to a list of doubles and see what happens
+      try {
+        List<Number> vector = new ArrayList();
+        boolean allDoubles = true;
+        for(Object o : (Collection)value) {
+          if(o instanceof String) {
+            Double d = Double.parseDouble(o.toString());
+            vector.add(d);
+          } else {
+            allDoubles = false;
+            break;
+          }
+        }
+        if(allDoubles) {
+          return vector;
+        }
+      } catch(Exception e) {
+
+      }
+
       return ((Collection<?>)value).stream().map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
     }
     else if(value.getClass().isArray()){

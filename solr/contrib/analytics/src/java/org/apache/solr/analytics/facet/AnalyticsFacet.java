@@ -38,28 +38,28 @@ public abstract class AnalyticsFacet {
   protected final Map<String,ReductionDataCollection> reductionData;
   protected ReductionCollectionManager collectionManager;
   protected ExpressionCalculator expressionCalculator;
-  
+
   protected final String name;
-  
+
   public AnalyticsFacet(String name) {
     this.reductionData = new LinkedHashMap<>();
     this.name = name;
   }
-  
+
   /**
    * Set the {@link ReductionCollectionManager} that manages the collection of the expressions
    * calculated with this facet.
-   * 
+   *
    * @param collectionManager The manager for relevant expressions
    */
   public void setReductionCollectionManager(ReductionCollectionManager collectionManager) {
     this.collectionManager = collectionManager;
   }
-  
+
   /**
    * Set the {@link ExpressionCalculator} that calculates the collection of the expressions
    * requested for this facet.
-   * 
+   *
    * @param expressionCalculator The calculator for relevant expressions
    */
   public void setExpressionCalculator(ExpressionCalculator expressionCalculator) {
@@ -67,9 +67,9 @@ public abstract class AnalyticsFacet {
   }
 
   /**
-   * Import the shard data from a bit-stream, exported by the {@link #exportShardData} method 
+   * Import the shard data from a bit-stream, exported by the {@link #exportShardData} method
    * in the each of the collection's shards.
-   * 
+   *
    * @param input The bit-stream to import the data from
    * @throws IOException if an exception occurs while reading from the {@link DataInput}
    */
@@ -81,7 +81,7 @@ public abstract class AnalyticsFacet {
   }
   /**
    * Import the next facet value's set of {@link ReductionData}.
-   * 
+   *
    * @param input the bit-stream to import the reduction data from
    * @param facetValue the next facet value
    * @throws IOException if an exception occurs while reading from the input
@@ -93,14 +93,14 @@ public abstract class AnalyticsFacet {
     } else {
       collectionManager.prepareReductionDataIO(dataCollection);
     }
-    
+
     collectionManager.mergeData();
   }
 
   /**
-   * Export the shard data through a bit-stream, to be imported by the {@link #importShardData} method 
+   * Export the shard data through a bit-stream, to be imported by the {@link #importShardData} method
    * in the originating shard.
-   * 
+   *
    * @param output The bit-stream to output the data through
    * @throws IOException if an exception occurs while writing to the {@link DataOutput}
    */
@@ -112,21 +112,21 @@ public abstract class AnalyticsFacet {
   }
   /**
    * Export the next facet value's set of {@link ReductionData}.
-   * 
+   *
    * @param output the bit-stream to output the reduction data to
    * @param facetValue the next facet value
    * @throws IOException if an exception occurs while reading from the input
    */
   protected void exportFacetValue(DataOutput output, String facetValue) throws IOException {
     output.writeUTF(facetValue);
-    
+
     collectionManager.prepareReductionDataIO(reductionData.get(facetValue));
     collectionManager.exportData();
   }
-  
+
   /**
    * Create the old olap-style response of the facet to be returned in the overall analytics response.
-   * 
+   *
    * @return the response of the facet
    */
   public NamedList<Object> createOldResponse() {
@@ -137,10 +137,10 @@ public abstract class AnalyticsFacet {
     });
     return nl;
   }
-  
+
   /**
    * Create the response of the facet to be returned in the overall analytics response.
-   * 
+   *
    * @return the response of the facet
    */
   public Iterable<Map<String,Object>> createResponse() {
@@ -154,10 +154,10 @@ public abstract class AnalyticsFacet {
     });
     return list;
   }
-  
+
   /**
    * Get the name of the Facet. This is unique for the grouping.
-   * 
+   *
    * @return The name of the Facet
    */
   public String getName() {

@@ -23,7 +23,7 @@ import java.util.function.BooleanSupplier;
 import org.apache.solr.analytics.util.function.FloatSupplier;
 
 public class FloatCheckedDataWriter extends ReductionCheckedDataWriter<FloatSupplier> {
-  
+
   public FloatCheckedDataWriter(DataOutput output, FloatSupplier extractor, BooleanSupplier existsSupplier) {
     super(output, extractor, existsSupplier);
   }

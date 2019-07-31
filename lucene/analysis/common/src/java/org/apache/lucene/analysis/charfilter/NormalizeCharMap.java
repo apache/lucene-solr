@@ -50,10 +50,10 @@ public class NormalizeCharMap {
         final FST.BytesReader fstReader = map.getBytesReader();
         map.getFirstArc(scratchArc);
         if (FST.targetHasArcs(scratchArc)) {
-          map.readFirstRealTargetArc(scratchArc.target, scratchArc, fstReader);
+          map.readFirstRealTargetArc(scratchArc.target(), scratchArc, fstReader);
           while(true) {
-            assert scratchArc.label != FST.END_LABEL;
-            cachedRootArcs.put(Character.valueOf((char) scratchArc.label), new FST.Arc<CharsRef>().copyFrom(scratchArc));
+            assert scratchArc.label() != FST.END_LABEL;
+            cachedRootArcs.put(Character.valueOf((char) scratchArc.label()), new FST.Arc<CharsRef>().copyFrom(scratchArc));
             if (scratchArc.isLast()) {
               break;
             }

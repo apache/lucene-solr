@@ -30,7 +30,7 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
   @Test
   public void doubleCastingTest() {
     TestLongValue val = new TestLongValue();
-    
+
     assertTrue(val instanceof DoubleValue);
     DoubleValue casted = (DoubleValue)val;
 
@@ -46,7 +46,7 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
   @Test
   public void stringCastingTest() {
     TestLongValue val = new TestLongValue();
-    
+
     assertTrue(val instanceof StringValue);
     StringValue casted = (StringValue)val;
 
@@ -62,7 +62,7 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
   @Test
   public void objectCastingTest() {
     TestLongValue val = new TestLongValue();
-    
+
     assertTrue(val instanceof AnalyticsValue);
     AnalyticsValue casted = (AnalyticsValue)val;
 
@@ -78,10 +78,10 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
   @Test
   public void longStreamCastingTest() {
     TestLongValue val = new TestLongValue();
-    
+
     assertTrue(val instanceof LongValueStream);
     LongValueStream casted = (LongValueStream)val;
-    
+
     // No values
     val.setExists(false);
     casted.streamLongs( value -> {
@@ -101,10 +101,10 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
   @Test
   public void doubleStreamCastingTest() {
     TestLongValue val = new TestLongValue();
-    
+
     assertTrue(val instanceof DoubleValueStream);
     DoubleValueStream casted = (DoubleValueStream)val;
-    
+
     // No values
     val.setExists(false);
     casted.streamDoubles( value -> {
@@ -124,10 +124,10 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
   @Test
   public void stringStreamCastingTest() {
     TestLongValue val = new TestLongValue();
-    
+
     assertTrue(val instanceof StringValueStream);
     StringValueStream casted = (StringValueStream)val;
-    
+
     // No values
     val.setExists(false);
     casted.streamStrings( value -> {
@@ -147,10 +147,10 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
   @Test
   public void objectStreamCastingTest() {
     TestLongValue val = new TestLongValue();
-    
+
     assertTrue(val instanceof AnalyticsValueStream);
     AnalyticsValueStream casted = (AnalyticsValueStream)val;
-    
+
     // No values
     val.setExists(false);
     casted.streamObjects( value -> {
@@ -166,7 +166,7 @@ public class CastingLongValueTest extends SolrTestCaseJ4 {
     });
     assertFalse(values.hasNext());
   }
-  
+
   @Test
   public void constantConversionTest() {
     TestLongValue val = new TestLongValue(ExpressionType.CONST);
