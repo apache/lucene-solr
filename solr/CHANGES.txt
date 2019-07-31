@@ -77,6 +77,8 @@ Other Changes
 
 * SOLR-13643: Add Getters/Setters in ResponseBuilder for analytics response handling (Neal Sidhwaney via Munendra S N)
 
+* SOLR-13659: Refactor CacheConfig to lazily load the the implementation class (noble)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
