@@ -104,6 +104,8 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     System.setProperty("enable.update.log", "false");
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-non-stored-docvalues.xml", tmpSolrHome.getPath());
+
+    assertQ("sanity check", req("q", "*:*"), "//*[@numFound='0']");
   }
 
   @After

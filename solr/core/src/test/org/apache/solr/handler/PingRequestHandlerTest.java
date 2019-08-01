@@ -51,14 +51,12 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
   @Before
   public void before() throws IOException {
-    File tmpDir = initCoreDataDir;
     // by default, use relative file in dataDir
-    healthcheckFile = new File(tmpDir, fileName);
+    healthcheckFile = new File(initAndGetDataDir(), fileName);
     String fileNameParam = fileName;
 
     // sometimes randomly use an absolute File path instead 
     if (random().nextBoolean()) {
-      healthcheckFile = new File(tmpDir, fileName);
       fileNameParam = healthcheckFile.getAbsolutePath();
     } 
       
