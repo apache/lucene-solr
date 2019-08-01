@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.solr.analytics.util.function.FloatSupplier;
 
 public class FloatDataWriter extends ReductionDataWriter<FloatSupplier> {
-  
+
   public FloatDataWriter(DataOutput output, FloatSupplier extractor) {
     super(output, extractor);
   }

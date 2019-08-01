@@ -80,7 +80,7 @@ public class RoundEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("round(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void noValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("round(a)");
     
@@ -88,7 +88,7 @@ public class RoundEvaluatorTest extends SolrTestCase {
     Object result = evaluator.evaluate(new Tuple(values));
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void nullValue() throws Exception{
     test(null);
   }

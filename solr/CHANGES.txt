@@ -57,6 +57,78 @@ Upgrade Notes
 
 * SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
 
+* SOLR-11266: default Content-Type override for JSONResponseWriter from _default configSet is removed. Example has been
+  provided in sample_techproducts_configs to override content-type. (Ishan Chattopadhyaya, Munendra S N, Gus Heck)
+
+Other Changes
+----------------------
+
+* SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
+
+
+==================  8.3.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 2.0 and Velocity Tools 3.0
+Apache ZooKeeper 3.5.5
+Jetty 9.4.19.v20190610
+
+New Features
+----------------------
+
+* SOLR-13375: Two dimensional routed aliases are now available for organizing collections based on the data values
+  of two fields. (Gus Heck)
+
+* SOLR-13399: SPLITSHARD implements a new splitByPrefix option that takes into account the actual document distribution
+  when using compositeIds.  The id prefix should be indexed into the "id_prefix" field for this feature to work.
+  (yonik)
+
+* SOLR-13565: Node level runtime libs loaded from remote urls  (noble)
+
+* SOLR-13553: Node level custom RequestHandlers (noble)
+
+* SOLR-13622: Add files() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
+
+Improvements
+----------------------
+
+* SOLR-12368: Support InPlace DV updates for a field that does not yet exist in any documents
+(hossman, Simon Willnauer, Adrien Grand, Munendra S N)
+
+* SOLR-13558: Allow dynamic resizing of SolrCache-s. (ab)
+
+Bug Fixes
+----------------------
+
+* SOLR-13206: Fix AIOOBE when group.facet is specified with group.query and return proper error code. (Marek, Munendra S N)
+
+* SOLR-11556: Backup and restore command really supports picking one of a few repositories by 
+  repository parameter (Timothy Potter via Mikhail Khludnev) 
+
+* SOLR-13660: Fixed AbstractFullDistribZkTestBase.waitForActiveReplicaCount() to ensure
+  replicas are active. (hossman)
+
+
+Other Changes
+----------------------
+
+* SOLR-13585: Factor out SearchGroupsResultTransformer.[de]serializeOneSearchGroup methods. (Christine Poerschke, Diego Ceccarelli)
+
+* SOLR-12870: Use StandardCharsets instead of String values (Peter Somogyi via Munendra S N)
+
+* SOLR-10377: Add `debug.explain.structured` to Admin UI. (David Smiley, Munendra S N)
+
+* SOLR-13629: Clean trailing whitespace from 'analytics' contrib (Neal Sidhwaney via Jason Gerlowski)
+
+* SOLR-13643: Add Getters/Setters in ResponseBuilder for analytics response handling (Neal Sidhwaney via Munendra S N)
+
+* SOLR-13659: Refactor CacheConfig to lazily load the the implementation class (noble)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -163,7 +235,7 @@ Improvements
 * SOLR-13602 SOLR-13588: Add a field type for Estonian language to default managed_schema,
   document about Estonian language analysis in Solr Ref Guide (Tomoko Uchida)
 
-* SOLR-13003: Query Result Cache does not honour maxRamBytes parameter. (ab, Brian Ecker)
+* SOLR-13003: Query Result Cache does not honor maxRamBytes parameter. (ab, Brian Ecker)
 
 Bug Fixes
 ----------------------
@@ -206,10 +278,10 @@ Bug Fixes
 
 * SOLR-12979: Improve error message and change error code to 400 when collapse field is non-docValued and
   non-uninvertible (hossman, Munendra S N)
-  
+
 * SOLR-13574: Fix many test and test-framework classes to not fail on After/AfterClass cleanup if
   assumptions fail in Before/BeforeClass setup (hossman)
-  
+
 * SOLR-13280: Strengthen ScheduledTrigger's preferredOperation parameter validation. (Christine Poerschke)
 
 * SOLR-9409: Improve error message for unsupported field types and return 400 error code on
@@ -244,7 +316,7 @@ Other Changes
 
 * SOLR-13511: Add SearchHandler.newResponseBuilder method to facilitate custom plugins' maintenance
   of per-request state in a custom ResponseBuilder. (Ramsey Haddad, Christine Poerschke)
-  
+
 * SOLR-12988: SSLTestConfig has been changed to throw AssumptionViolatedException when tests/seeds
   request SSL but the JVM appears to be an OpenJDK version known to have SSL bugs (hossman, Cao Manh Dat)
 

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 public class StringCheckedDataReader extends ReductionCheckedDataReader<Consumer<String>> {
-  
+
   public StringCheckedDataReader(DataInput inputStream, Consumer<String> applier) {
     super(inputStream, applier);
   }

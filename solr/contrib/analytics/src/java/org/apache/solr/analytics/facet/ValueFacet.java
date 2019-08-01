@@ -37,7 +37,7 @@ public class ValueFacet extends SortableFacet implements StreamingFacet, Consume
   public void addFacetValueCollectionTargets() {
     expression.streamStrings(this);
   }
-    
+
   @Override
   public void accept(String t) {
     ReductionDataCollection collection = reductionData.get(t);
@@ -48,10 +48,10 @@ public class ValueFacet extends SortableFacet implements StreamingFacet, Consume
       collectionManager.addCollectTarget(collection);
     }
   }
-  
+
   /**
    * Get the expression used to create the facet values.
-   * 
+   *
    * @return a string mapping expression
    */
   public StringValueStream getExpression() {

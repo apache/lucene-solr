@@ -38,6 +38,7 @@ import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -705,7 +706,8 @@ public class SimpleFacets {
                                              String prefix,
                                              Predicate<BytesRef> termFilter) throws IOException {
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
-    final String groupField  = groupingSpecification != null ? groupingSpecification.getFields()[0] : null;
+    String[] groupFields = groupingSpecification != null? groupingSpecification.getFields(): null;
+    final String groupField = ArrayUtils.isNotEmpty(groupFields) ? groupFields[0] : null;
     if (groupField == null) {
       throw new SolrException (
           SolrException.ErrorCode.BAD_REQUEST,

@@ -50,8 +50,8 @@ import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
-import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
@@ -620,13 +620,27 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       String collections = req.getParams().get("collections");
       RoutedAlias routedAlias = null;
       Exception ex = null;
+      HashMap<String,Object> possiblyModifiedParams = new HashMap<>();
       try {
         // note that RA specific validation occurs here.
-        routedAlias = RoutedAlias.fromProps(alias, req.getParams().toMap(new HashMap<>()));
+        routedAlias = RoutedAlias.fromProps(alias, req.getParams().toMap(possiblyModifiedParams));
       } catch (SolrException e) {
         // we'll throw this later if we are in fact creating a routed alias.
         ex = e;
       }
+      @SuppressWarnings("unchecked")
+      ModifiableSolrParams finalParams = new ModifiableSolrParams();
+      for (Map.Entry<String, Object> entry : possiblyModifiedParams.entrySet()) {
+        if (entry.getValue().getClass().isArray() ) {
+          // v2 api hits this case
+          for (Object o : (Object[]) entry.getValue()) {
+            finalParams.add(entry.getKey(),o.toString());
+          }
+        } else {
+          finalParams.add(entry.getKey(),entry.getValue().toString());
+        }
+      }
+
       if (collections != null) {
         if (routedAlias != null) {
           throw new SolrException(BAD_REQUEST, "Collections cannot be specified when creating a routed alias.");
@@ -634,7 +648,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           //////////////////////////////////////
           // Regular alias creation indicated //
           //////////////////////////////////////
-          return copy(req.getParams().required(), null, NAME, "collections");
+          return copy(finalParams.required(), null, NAME, "collections");
         }
       }
 
@@ -648,14 +662,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       // Now filter out just the parameters we care about from the request
-      Map<String, Object> result = copy(req.getParams(), null, routedAlias.getRequiredParams());
-      copy(req.getParams(), result, routedAlias.getOptionalParams());
+      assert routedAlias != null;
+      Map<String, Object> result = copy(finalParams, null, routedAlias.getRequiredParams());
+      copy(finalParams, result, routedAlias.getOptionalParams());
 
       ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // without prefix
 
       // add to result params that start with "create-collection.".
       //   Additionally, save these without the prefix to createCollParams
-      for (Map.Entry<String, String[]> entry : req.getParams()) {
+      for (Map.Entry<String, String[]> entry : finalParams) {
         final String p = entry.getKey();
         if (p.startsWith(CREATE_COLLECTION_PREFIX)) {
           // This is what SolrParams#getAll(Map, Collection)} does
@@ -1061,11 +1076,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     BACKUP_OP(BACKUP, (req, rsp, h) -> {
       req.getParams().required().check(NAME, COLLECTION_PROP);
 
-      String extCollectionName = req.getParams().get(COLLECTION_PROP);
-      boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
-      String collectionName = followAliases ? h.coreContainer.getZkController().getZkStateReader()
+      final String extCollectionName = req.getParams().get(COLLECTION_PROP);
+      final boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
+      final String collectionName = followAliases ? h.coreContainer.getZkController().getZkStateReader()
           .getAliases().resolveSimpleAlias(extCollectionName) : extCollectionName;
-      ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
+      final ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
       if (!clusterState.hasCollection(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
       }
@@ -1086,7 +1101,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       // Check if the specified location is valid for this repository.
-      URI uri = repository.createURI(location);
+      final URI uri = repository.createURI(location);
       try {
         if (!repository.exists(uri)) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
@@ -1100,16 +1115,20 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown index backup strategy " + strategy);
       }
 
-      Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP, FOLLOW_ALIASES, CoreAdminParams.COMMIT_NAME);
+      final Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP, FOLLOW_ALIASES, CoreAdminParams.COMMIT_NAME);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
+      if (repo != null) {
+        params.put(CoreAdminParams.BACKUP_REPOSITORY, repo);
+      }
+
       params.put(CollectionAdminParams.INDEX_BACKUP_STRATEGY, strategy);
       return params;
     }),
     RESTORE_OP(RESTORE, (req, rsp, h) -> {
       req.getParams().required().check(NAME, COLLECTION_PROP);
 
-      String collectionName = SolrIdentifierValidator.validateCollectionName(req.getParams().get(COLLECTION_PROP));
-      ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
+      final String collectionName = SolrIdentifierValidator.validateCollectionName(req.getParams().get(COLLECTION_PROP));
+      final ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
       //We always want to restore into an collection name which doesn't  exist yet.
       if (clusterState.hasCollection(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' exists, no action taken.");
@@ -1118,9 +1137,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' is an existing alias, no action taken.");
       }
 
-      CoreContainer cc = h.coreContainer;
-      String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
-      BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+      final CoreContainer cc = h.coreContainer;
+      final String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
+      final BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
 
       String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
       if (location == null) {
@@ -1134,7 +1153,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       // Check if the specified location is valid for this repository.
-      URI uri = repository.createURI(location);
+      final URI uri = repository.createURI(location);
       try {
         if (!repository.exists(uri)) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
@@ -1143,7 +1162,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
       }
 
-      String createNodeArg = req.getParams().get(CREATE_NODE_SET);
+      final String createNodeArg = req.getParams().get(CREATE_NODE_SET);
       if (CREATE_NODE_SET_EMPTY.equals(createNodeArg)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -1155,8 +1174,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             "Cannot set both replicationFactor and nrtReplicas as they mean the same thing");
       }
 
-      Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP);
+      final Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
+      if (repo != null) {
+        params.put(CoreAdminParams.BACKUP_REPOSITORY, repo);
+      }
       // from CREATE_OP:
       copy(req.getParams(), params, COLL_CONF, REPLICATION_FACTOR, NRT_REPLICAS, TLOG_REPLICAS,
           PULL_REPLICAS, MAX_SHARDS_PER_NODE, STATE_FORMAT, AUTO_ADD_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);

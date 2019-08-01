@@ -23,16 +23,16 @@ import org.apache.solr.analytics.facet.SortableFacet.FacetBucket;
  */
 public class ExpressionComparator<T extends Comparable<T>> extends FacetResultsComparator {
   private final String expression;
-  
+
   /**
    * Create an entry comparator comparing the given expression.
-   * 
+   *
    * @param expression the name of the expression results to compare
    */
   public ExpressionComparator(String expression) {
     this.expression = expression;
   }
-  
+
   @SuppressWarnings("unchecked")
   public int compare(FacetBucket b1, FacetBucket b2) {
     T t1 = (T)b1.getResult(expression);

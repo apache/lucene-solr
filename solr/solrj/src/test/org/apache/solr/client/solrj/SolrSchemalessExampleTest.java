@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -56,7 +57,8 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     props.setProperty("name","collection1");
     OutputStreamWriter writer = null;
     try {
-      writer = new OutputStreamWriter(FileUtils.openOutputStream(new File(collection1Dir, "core.properties")), "UTF-8");
+      writer = new OutputStreamWriter(FileUtils.openOutputStream(
+          new File(collection1Dir, "core.properties")), StandardCharsets.UTF_8);
       props.store(writer, null);
     } finally {
       if (writer != null) {
@@ -79,7 +81,8 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     HttpClient httpClient = client.getHttpClient();
     HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
-    post.setEntity(new InputStreamEntity(new ByteArrayInputStream(json.getBytes("UTF-8")), -1));
+    post.setEntity(new InputStreamEntity(
+        new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
     HttpResponse response = httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
     Utils.consumeFully(response.getEntity());
     assertEquals(200, response.getStatusLine().getStatusCode());
@@ -105,7 +108,8 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     HttpClient httpClient = client.getHttpClient();
     HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
-    post.setEntity(new InputStreamEntity(new ByteArrayInputStream(json.getBytes("UTF-8")), -1));
+    post.setEntity(new InputStreamEntity(
+        new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
     HttpResponse response = httpClient.execute(post);
     assertEquals(200, response.getStatusLine().getStatusCode());
     client.commit();

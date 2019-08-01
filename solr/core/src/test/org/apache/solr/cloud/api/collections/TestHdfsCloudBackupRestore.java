@@ -93,6 +93,9 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
       "      <str name=\"solr.hdfs.home\">${solr.hdfs.home:}</str>\n" +
       "      <str name=\"solr.hdfs.confdir\">${solr.hdfs.confdir:}</str>\n" +
       "    </repository>\n" +
+      "    <repository  name=\"poisioned\" default=\"true\" "
+            + "class=\"org.apache.solr.cloud.api.collections.TestLocalFSCloudBackupRestore$PoinsionedRepository\"> \n" +
+      "    </repository>\n" +
       "  </backup>\n" +
       "  \n" +
       "</solr>\n";

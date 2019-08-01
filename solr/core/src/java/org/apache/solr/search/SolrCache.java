@@ -27,6 +27,9 @@ import java.util.Map;
  */
 public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
 
+  String SIZE_PARAM = "size";
+  String MAX_RAM_MB_PARAM = "maxRamMB";
+
   /**
    * The initialization routine. Instance specific arguments are passed in
    * the <code>args</code> map.
@@ -125,5 +128,21 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
 
   /** Frees any non-memory resources */
   public void close();
+
+  /** Report current resource limits. */
+  public Map<String, Object> getResourceLimits();
+
+  /** Set resource limits. */
+  default void setResourceLimits(Map<String, Object> limits) throws Exception {
+    if (limits == null || limits.isEmpty()) {
+      return;
+    }
+    for (Map.Entry<String, Object> entry : limits.entrySet()) {
+      setResourceLimit(entry.getKey(), entry.getValue());
+    }
+  }
+
+  /** Set a named resource limit. */
+  public void setResourceLimit(String limitName, Object value) throws Exception;
 
 }

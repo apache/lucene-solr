@@ -40,7 +40,7 @@ public class FloatField extends AnalyticsField implements CastingFloatValue {
   public FloatField(String fieldName) {
     super(fieldName);
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getNumeric(context.reader(), fieldName);
@@ -74,7 +74,7 @@ public class FloatField extends AnalyticsField implements CastingFloatValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public void streamFloats(FloatConsumer cons) {
     if (exists) {
