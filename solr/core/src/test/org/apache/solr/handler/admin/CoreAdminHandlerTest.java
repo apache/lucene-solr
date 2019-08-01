@@ -253,9 +253,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDeleteInstanceDir() throws Exception  {
-    File solrHomeDirectory = new File(initCoreDataDir, getClass().getName() + "-corex-"
-        + System.nanoTime());
-    solrHomeDirectory.mkdirs();
+    File solrHomeDirectory = createTempDir("solr-home").toFile();
     copySolrHomeToTemp(solrHomeDirectory, "corex");
     File corex = new File(solrHomeDirectory, "corex");
     FileUtils.write(new File(corex, "core.properties"), "", StandardCharsets.UTF_8);
@@ -317,9 +315,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testUnloadForever() throws Exception  {
-    File solrHomeDirectory = new File(initCoreDataDir, getClass().getName() + "-corex-"
-        + System.nanoTime());
-    solrHomeDirectory.mkdirs();
+    File solrHomeDirectory = createTempDir("solr-home").toFile();
     copySolrHomeToTemp(solrHomeDirectory, "corex");
     File corex = new File(solrHomeDirectory, "corex");
     FileUtils.write(new File(corex, "core.properties"), "", StandardCharsets.UTF_8);
@@ -362,9 +358,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testDeleteInstanceDirAfterCreateFailure() throws Exception  {
     assumeFalse("Ignore test on windows because it does not delete data directory immediately after unload", Constants.WINDOWS);
-    File solrHomeDirectory = new File(initCoreDataDir, getClass().getName() + "-corex-"
-        + System.nanoTime());
-    solrHomeDirectory.mkdirs();
+    File solrHomeDirectory = createTempDir("solr-home").toFile();
     copySolrHomeToTemp(solrHomeDirectory, "corex");
     File corex = new File(solrHomeDirectory, "corex");
     FileUtils.write(new File(corex, "core.properties"), "", StandardCharsets.UTF_8);

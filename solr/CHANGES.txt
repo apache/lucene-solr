@@ -78,6 +78,16 @@ Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
 Jetty 9.4.19.v20190610
 
+Upgrade Notes
+----------------------
+
+* Users who have written test cases that extend SolrTestCaseJ4 may see NullPointerExceptions if
+  their tests directly reference both SolrTestCaseJ4.initCoreDataDir and SolrTestCaseJ4.deleteCore().
+  This change in behavior is due to a bug fix in deleteCore() to ensure the dataDir is properly reset
+  in tests that call initCore()/deleteCore() multiple times in a given test (class).  initCoreDataDir
+  is now deprecated, and users are encouraged to use SolrTestCaseJ4.initAndGetDataDir() in it's place.
+  See SOLR-13664 for more details.
+
 New Features
 ----------------------
 
@@ -113,6 +123,8 @@ Bug Fixes
 * SOLR-13660: Fixed AbstractFullDistribZkTestBase.waitForActiveReplicaCount() to ensure
   replicas are active. (hossman)
 
+* SOLR-13664: Fixed SolrTestCaseJ4.deleteCore() to properly reset the dataDir used by initCore()
+  (hossman)
 
 Other Changes
 ----------------------
