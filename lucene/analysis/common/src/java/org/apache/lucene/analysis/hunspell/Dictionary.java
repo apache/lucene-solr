@@ -280,14 +280,14 @@ public class Dictionary {
         cp = Character.codePointAt(word, i, l);
         if (fst.findTargetArc(cp, arc, arc, bytesReader) == null) {
           return null;
-        } else if (arc.output != NO_OUTPUT) {
-          output = fst.outputs.add(output, arc.output);
+        } else if (arc.output() != NO_OUTPUT) {
+          output = fst.outputs.add(output, arc.output());
         }
       }
       if (fst.findTargetArc(FST.END_LABEL, arc, arc, bytesReader) == null) {
         return null;
-      } else if (arc.output != NO_OUTPUT) {
-        return fst.outputs.add(output, arc.output);
+      } else if (arc.output() != NO_OUTPUT) {
+        return fst.outputs.add(output, arc.output());
       } else {
         return output;
       }
@@ -1228,10 +1228,10 @@ public class Dictionary {
         if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {
           break;
         } else {
-          output = fst.outputs.add(output, arc.output);
+          output = fst.outputs.add(output, arc.output());
         }
         if (arc.isFinal()) {
-          longestOutput = fst.outputs.add(output, arc.nextFinalOutput);
+          longestOutput = fst.outputs.add(output, arc.nextFinalOutput());
           longestMatch = j;
         }
       }

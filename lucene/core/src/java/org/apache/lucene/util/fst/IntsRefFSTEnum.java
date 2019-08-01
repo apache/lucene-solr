@@ -81,7 +81,7 @@ public final class IntsRefFSTEnum<T> extends FSTEnum<T> {
   public InputOutput<T> seekExact(IntsRef target) throws IOException {
     this.target = target;
     targetLength = target.length;
-    if (super.doSeekExact()) {
+    if (doSeekExact()) {
       assert upto == 1+target.length;
       return setResult();
     } else {

@@ -35,7 +35,7 @@ public class ExistsFunction {
   public static final CreatorFunction creatorFunction = (params -> {
     if (params.length != 1) {
       throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 1 parameter.");
-    } 
+    }
     AnalyticsValueStream param = params[0];
     if (param instanceof AnalyticsValue) {
       return new ValueExistsFunction((AnalyticsValue)param);
@@ -51,13 +51,13 @@ class ValueStreamExistsFunction extends AbstractBooleanValue {
   public static final String name = ExistsFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public ValueStreamExistsFunction(AnalyticsValueStream param) throws SolrException {
     this.param = param;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
   }
-  
+
   private boolean exists;
   @Override
   public boolean getBoolean() {
@@ -91,13 +91,13 @@ class ValueExistsFunction extends AbstractBooleanValue {
   public static final String name = ExistsFunction.name;
   private final String exprStr;
   private final ExpressionType funcType;
-  
+
   public ValueExistsFunction(AnalyticsValue param) throws SolrException {
     this.param = param;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
     this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
   }
-  
+
   @Override
   public boolean getBoolean() {
     param.getObject();

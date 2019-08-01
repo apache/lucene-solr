@@ -249,8 +249,9 @@ public class ApiBag {
 
     @Override
     public Name getPermissionName(AuthorizationContext ctx) {
-      if (rh instanceof PermissionNameProvider) {
-        return ((PermissionNameProvider) rh).getPermissionName(ctx);
+      SolrRequestHandler handler = rh.get();
+      if (handler instanceof PermissionNameProvider) {
+        return ((PermissionNameProvider) handler).getPermissionName(ctx);
       }
       return null;
     }

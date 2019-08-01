@@ -681,11 +681,11 @@ public final class KoreanTokenizer extends Tokenizer {
           if (userFST.findTargetArc(ch, arc, arc, posAhead == pos, userFSTReader) == null) {
             break;
           }
-          output += arc.output.intValue();
+          output += arc.output().intValue();
           if (arc.isFinal()) {
             maxPosAhead = posAhead;
             outputMaxPosAhead = output;
-            arcFinalOutMaxPosAhead = arc.nextFinalOutput.intValue();
+            arcFinalOutMaxPosAhead = arc.nextFinalOutput().intValue();
             anyMatches = true;
           }
         }
@@ -720,7 +720,7 @@ public final class KoreanTokenizer extends Tokenizer {
             break;
           }
 
-          output += arc.output.intValue();
+          output += arc.output().intValue();
 
           // Optimization: for known words that are too-long
           // (compound), we should pre-compute the 2nd
@@ -729,7 +729,7 @@ public final class KoreanTokenizer extends Tokenizer {
           // match is found.
 
           if (arc.isFinal()) {
-            dictionary.lookupWordIds(output + arc.nextFinalOutput.intValue(), wordIdRef);
+            dictionary.lookupWordIds(output + arc.nextFinalOutput().intValue(), wordIdRef);
             if (VERBOSE) {
               System.out.println("    KNOWN word " + new String(buffer.get(pos, posAhead - pos + 1)) + " toPos=" + (posAhead + 1) + " " + wordIdRef.length + " wordIDs");
             }

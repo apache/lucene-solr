@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.function.LongConsumer;
 
 public class LongDataReader extends ReductionDataReader<LongConsumer> {
-  
+
   public LongDataReader(DataInput inputStream, LongConsumer applier) {
     super(inputStream, applier);
   }

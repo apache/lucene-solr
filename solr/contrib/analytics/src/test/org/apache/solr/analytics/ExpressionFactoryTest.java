@@ -30,11 +30,11 @@ import org.junit.Test;
 public class ExpressionFactoryTest extends SolrTestCaseJ4 {
 
   private static IndexSchema indexSchema;
-  
+
   @BeforeClass
   public static void createSchemaAndFields() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
-    assertU(adoc("id", "1", 
+    assertU(adoc("id", "1",
         "int_i", "1",
         "int_im", "1",
         "long_l", "1",
@@ -51,88 +51,88 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
         "boolean_bm", "false"
     ));
     assertU(commit());
-    
+
     indexSchema = h.getCore().getLatestSchema();
   }
-  
+
   private ExpressionFactory getExpressionFactory() {
     ExpressionFactory fact = new ExpressionFactory(indexSchema);
     fact.startRequest();
     return fact;
   }
-  
+
   @Test
   public void userDefinedVariableFunctionTest() {
     ExpressionFactory fact = getExpressionFactory();
-    
+
     // Single parameter function
     fact.startRequest();
     fact.addUserDefinedVariableFunction("single_func(a)", "sum(add(a,double_d,float_f))");
     assertEquals("div(sum(add(int_i,double_d,float_f)),count(string_s))", fact.createExpression("div(single_func(int_i),count(string_s))").getExpressionStr());
-    
+
     // Multi parameter function
     fact.startRequest();
     fact.addUserDefinedVariableFunction("multi_func(a,b,c)", "median(if(boolean_b,add(a,b),c))");
     assertEquals("div(median(if(boolean_b,add(int_i,double_d),float_f)),count(string_s))", fact.createExpression("div(multi_func(int_i,double_d,float_f),count(string_s))").getExpressionStr());
-    
+
     // Function within function
     fact.startRequest();
     fact.addUserDefinedVariableFunction("inner_func(a,b)", "div(add(a,b),b)");
     fact.addUserDefinedVariableFunction("outer_func(a,b,c)", "pow(inner_func(a,b),c)");
     assertEquals("div(median(pow(div(add(int_i,double_d),double_d),float_f)),count(string_s))", fact.createExpression("div(median(outer_func(int_i,double_d,float_f)),count(string_s))").getExpressionStr());
-    
+
     // Variable parameter function
     fact.startRequest();
     fact.addUserDefinedVariableFunction("var_func(a,b..)", "div(add(b),a)");
     assertEquals("unique(div(add(double_d,float_f),int_i))", fact.createExpression("unique(var_func(int_i,double_d,float_f))").getExpressionStr());
     assertEquals("unique(div(add(double_d,float_f,long_l),int_i))", fact.createExpression("unique(var_func(int_i,double_d,float_f,long_l))").getExpressionStr());
-    
+
     // Variable parameter function with for-each
     fact.startRequest();
     fact.addUserDefinedVariableFunction("var_func_fe(a,b..)", "div(add(b:abs(_)),a)");
     assertEquals("unique(div(add(abs(double_d),abs(float_f)),int_i))", fact.createExpression("unique(var_func_fe(int_i,double_d,float_f))").getExpressionStr());
     assertEquals("unique(div(add(abs(double_d),abs(float_f),abs(long_l)),int_i))", fact.createExpression("unique(var_func_fe(int_i,double_d,float_f,long_l))").getExpressionStr());
   }
-  
+
   @Test
   public void reuseFunctionsTest() {
     ExpressionFactory fact = getExpressionFactory();
 
     // Two ungrouped exactly the same expression
     fact.startRequest();
-    assertTrue("The objects of the two mapping expressions are not the same.", 
+    assertTrue("The objects of the two mapping expressions are not the same.",
         fact.createExpression("pow(int_i,double_d)") == fact.createExpression("pow(int_i,double_d)"));
-    assertTrue("The objects of the two reduced expressions are not the same.", 
+    assertTrue("The objects of the two reduced expressions are not the same.",
         fact.createExpression("unique(add(int_i,double_d))") == fact.createExpression("unique(add(int_i,double_d))"));
-    
+
     // Two ungrouped different expressions
     fact.startRequest();
-    assertFalse("The objects of the two mapping expressions are not the same.", 
+    assertFalse("The objects of the two mapping expressions are not the same.",
         fact.createExpression("pow(int_i,double_d)") == fact.createExpression("pow(int_i,float_f)"));
-    assertFalse("The objects of the two reduced expressions are not the same.", 
+    assertFalse("The objects of the two reduced expressions are not the same.",
         fact.createExpression("unique(add(int_i,double_d))") == fact.createExpression("unique(add(int_i,float_f))"));
-    
+
     // Grouped and ungrouped mapping expression
     fact.startRequest();
     Object ungrouped = fact.createExpression("pow(int_i,double_d)");
     fact.startGrouping();
     Object grouped = fact.createExpression("pow(int_i,double_d)");
     assertTrue("The objects of the two mapping expressions are not the same.", ungrouped == grouped);
-    
+
     // Grouped and ungrouped diferent mapping expressions
     fact.startRequest();
     ungrouped = fact.createExpression("pow(int_i,double_d)");
     fact.startGrouping();
     grouped = fact.createExpression("pow(int_i,float_f)");
     assertFalse("The objects of the two mapping expressions are not the same.", ungrouped == grouped);
-    
+
     // Grouped and ungrouped reduced expression.
     fact.startRequest();
     ungrouped = fact.createExpression("unique(add(int_i,double_d))");
     fact.startGrouping();
     grouped = fact.createExpression("unique(add(int_i,double_d))");
     assertTrue("The objects of the two mapping expressions are not the same.", ungrouped == grouped);
-    
+
     // Grouped and ungrouped different reduced expressions.
     fact.startRequest();
     ungrouped = fact.createExpression("unique(add(int_i,double_d))");
@@ -140,7 +140,7 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
     grouped = fact.createExpression("unique(add(int_i,float_f))");
     assertFalse("The objects of the two mapping expressions are the same.", ungrouped == grouped);
   }
-  
+
   @Test
   public void constantFunctionConversionTest() {
     ExpressionFactory fact = getExpressionFactory();
@@ -155,7 +155,7 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
     assertFalse(fact.createExpression("sum(int_i)") instanceof ConstantValue);
     assertFalse(fact.createExpression("sub(1,long_l)") instanceof ConstantValue);
   }
-  
+
   public void testReductionManager(ReductionCollectionManager manager, boolean hasExpressions, String... fields) {
     Set<String> usedFields = new HashSet<>(Arrays.asList(fields));
     manager.getUsedFields().forEach( field -> {
@@ -163,7 +163,7 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
     });
     assertEquals(hasExpressions, manager.needsCollection());
   }
-  
+
   @Test
   public void reductionManagerCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
@@ -176,25 +176,25 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
     fact.startRequest();
     fact.createExpression("sum(add(1,2))");
     testReductionManager(fact.createReductionManager(false), true);
-    
+
     // Multiple expressions
     fact.startRequest();
     fact.createExpression("unique(add(int_i,float_f))");
     fact.createExpression("sum(add(int_i,double_d))");
     testReductionManager(fact.createReductionManager(false), true, "int_i", "float_f", "double_d");
   }
-  
+
   @Test
   public void groupingReductionManagerCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
-    
+
     // No grouped expressions
     fact.startRequest();
     fact.createExpression("unique(add(int_i,float_f))");
     fact.createExpression("sum(add(int_i,double_d))");
     fact.startGrouping();
     testReductionManager(fact.createGroupingReductionManager(false), false);
-    
+
     // No grouped fields
     fact.startRequest();
     fact.createExpression("unique(add(int_i,float_f))");
@@ -217,7 +217,7 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
     fact.createExpression("unique(add(int_i,float_f))");
     fact.createExpression("sum(add(int_i,double_d))");
     testReductionManager(fact.createGroupingReductionManager(false), true, "int_i", "float_f", "double_d");
-    
+
     // Multiple groupings, no ungrouped
     fact.startRequest();
     fact.startGrouping();
@@ -230,7 +230,7 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
     fact.createExpression("unique(add(int_i,float_f))");
     fact.createExpression("ordinal(1,concat(string_s,'-extra'))");
     testReductionManager(fact.createGroupingReductionManager(false), true, "int_i", "float_f", "string_s");
-    
+
     // Multiple groupings, with grouped
     fact.startRequest();
     fact.createExpression("count(string_s)");

@@ -74,7 +74,7 @@ public class DivideEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("div(a)");
   }
   
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void divTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("div(a,b)");
     
@@ -82,7 +82,7 @@ public class DivideEvaluatorTest extends SolrTestCase {
     evaluator.evaluate(new Tuple(values));
   }
   
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void divTwoFieldsWithNullDenominator() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("div(a,b)");
     
@@ -91,7 +91,7 @@ public class DivideEvaluatorTest extends SolrTestCase {
     evaluator.evaluate(new Tuple(values));
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void divTwoFieldsWithNullNumerator() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("div(a,b)");
     
@@ -101,7 +101,7 @@ public class DivideEvaluatorTest extends SolrTestCase {
   }
 
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void divTwoFieldsWithMissingDenominator() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("div(a,b)");
     
@@ -110,7 +110,7 @@ public class DivideEvaluatorTest extends SolrTestCase {
     evaluator.evaluate(new Tuple(values));
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void divTwoFieldsWithMissingNumerator() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("div(a,b)");
     

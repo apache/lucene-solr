@@ -63,43 +63,43 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Class to manage the parsing of new-style analytics requests.
  */
 public class AnalyticsRequestParser {
-  
+
   private static ObjectMapper mapper = new ObjectMapper();
-  
+
   public static void init() {
     mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
     mapper.configure(DeserializationFeature.FAIL_ON_INVALID_SUBTYPE, true);
   }
-  
+
   public static final String analyticsParamName = "analytics";
 
   private static Predicate<String> sortAscending   = acceptNames("ascending", "asc", "a");
   private static Predicate<String> sortDescending  = acceptNames("descending", "desc", "d");
-  
+
   private static Predicate<String> acceptNames(String... names) {
     return Pattern.compile("^(?:" + Arrays.stream(names).reduce((a,b) -> a + "|" + b).orElse("") + ")$", Pattern.CASE_INSENSITIVE).asPredicate();
   }
-  
+
   // Defaults
   public static final String DEFAULT_SORT_DIRECTION = "ascending";
   public static final int DEFAULT_OFFSET = 0;
   public static final int DEFAULT_LIMIT = -1;
   public static final boolean DEFAULT_HARDEND = false;
-  
+
   @JsonInclude(Include.NON_EMPTY)
   public static class AnalyticsRequest {
     public Map<String, String> functions;
     public Map<String, String> expressions;
-    
+
     public Map<String, AnalyticsGroupingRequest> groupings;
   }
-  
+
   public static class AnalyticsGroupingRequest {
     public Map<String, String> expressions;
-    
+
     public Map<String, AnalyticsFacetRequest> facets;
   }
-  
+
   @JsonTypeInfo(
       use = JsonTypeInfo.Id.NAME,
       include = JsonTypeInfo.As.PROPERTY,
@@ -113,7 +113,7 @@ public class AnalyticsRequestParser {
   )
   @JsonInclude(Include.NON_EMPTY)
   public static interface AnalyticsFacetRequest { }
-  
+
   @JsonTypeName("value")
   public static class AnalyticsValueFacetRequest implements AnalyticsFacetRequest {
     public String expression;
@@ -124,7 +124,7 @@ public class AnalyticsRequestParser {
   public static class AnalyticsPivotFacetRequest implements AnalyticsFacetRequest {
     public List<AnalyticsPivotRequest> pivots;
   }
-  
+
   public static class AnalyticsPivotRequest {
     public String name;
     public String expression;
@@ -175,11 +175,11 @@ public class AnalyticsRequestParser {
   public static class AnalyticsQueryFacetRequest implements AnalyticsFacetRequest {
     public Map<String, String> queries;
   }
-  
+
   /* ***************
-   * Request & Groupings 
+   * Request & Groupings
    * ***************/
-  
+
   public static AnalyticsRequestManager parse(AnalyticsRequest request, ExpressionFactory expressionFactory, boolean isDistribRequest) throws SolrException {
     AnalyticsRequestManager manager = constructRequest(request, expressionFactory, isDistribRequest);
     if (isDistribRequest) {
@@ -191,7 +191,7 @@ public class AnalyticsRequestParser {
     }
     return manager;
   }
-  
+
   public static AnalyticsRequestManager parse(String rawRequest, ExpressionFactory expressionFactory, boolean isDistribRequest) throws SolrException {
     JsonParser parser;
     try {
@@ -214,15 +214,15 @@ public class AnalyticsRequestParser {
     }
     return manager;
   }
-  
+
   private static AnalyticsRequestManager constructRequest(AnalyticsRequest request, ExpressionFactory expressionFactory, boolean isDistribRequest) throws SolrException {
     expressionFactory.startRequest();
-    
+
     // Functions
     if (request.functions != null) {
       request.functions.forEach( (funcSig, retSig) -> expressionFactory.addUserDefinedVariableFunction(funcSig, retSig));
     }
-    
+
     // Expressions
     Map<String,AnalyticsExpression> topLevelExpressions;
     if (request.expressions != null) {
@@ -231,7 +231,7 @@ public class AnalyticsRequestParser {
       topLevelExpressions = new HashMap<>();
     }
     AnalyticsRequestManager manager = new AnalyticsRequestManager(expressionFactory.createReductionManager(isDistribRequest), topLevelExpressions.values());
-    
+
     // Groupings
     if (request.groupings != null) {
       request.groupings.forEach( (name, grouping) -> {
@@ -240,20 +240,20 @@ public class AnalyticsRequestParser {
     }
     return manager;
   }
-  
+
   private static AnalyticsGroupingManager constructGrouping(String name, AnalyticsGroupingRequest grouping, ExpressionFactory expressionFactory, boolean isDistribRequest) throws SolrException {
     expressionFactory.startGrouping();
-    
+
     // Expressions
     if (grouping.expressions == null || grouping.expressions.size() == 0) {
       throw new SolrException(ErrorCode.BAD_REQUEST,"Groupings must contain at least one expression, '" + name + "' has none.");
     }
-    
+
     Map<String,AnalyticsExpression> expressions = constructExpressions(grouping.expressions, expressionFactory);
-    AnalyticsGroupingManager manager = new AnalyticsGroupingManager(name, 
-                                                                    expressionFactory.createGroupingReductionManager(isDistribRequest), 
+    AnalyticsGroupingManager manager = new AnalyticsGroupingManager(name,
+                                                                    expressionFactory.createGroupingReductionManager(isDistribRequest),
                                                                     expressions.values());
-    
+
     if (grouping.facets == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST,"Groupings must contain at least one facet, '" + name + "' has none.");
     }
@@ -269,17 +269,17 @@ public class AnalyticsRequestParser {
         manager.addFacet(constructQueryFacet(facetName, (AnalyticsQueryFacetRequest) facet));
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST,"The facet type, '" + facet.getClass().toString() + "' in "
-            + "grouping '" + name + "' is not a valid type of facet"); 
+            + "grouping '" + name + "' is not a valid type of facet");
       }
     });
-    
+
     return manager;
   }
-  
+
   /* ***************
-   * Expression & Functions 
+   * Expression & Functions
    * ***************/
-  
+
   private static Map<String, AnalyticsExpression> constructExpressions(Map<String, String> rawExpressions, ExpressionFactory expressionFactory) throws SolrException {
     Map<String, AnalyticsExpression> expressions = new HashMap<>();
     rawExpressions.forEach( (name, expression) -> {
@@ -296,20 +296,20 @@ public class AnalyticsRequestParser {
     });
     return expressions;
   }
-  
+
   /* ***************
-   * FACETS 
+   * FACETS
    * ***************/
-  
+
   /*
    * Value Facets
    */
-  
+
   private static ValueFacet constructValueFacet(String name, AnalyticsValueFacetRequest facetRequest, ExpressionFactory expressionFactory, Map<String, AnalyticsExpression> expressions) throws SolrException {
     if (facetRequest.expression == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Value Facets must contain a mapping expression to facet over, '" + name + "' has none.");
     }
-    
+
     // The second parameter must be a mapping expression
     AnalyticsValueStream expr = expressionFactory.createExpression(facetRequest.expression);
     if (!expr.getExpressionType().isUnreduced()) {
@@ -320,9 +320,9 @@ public class AnalyticsRequestParser {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Value Facet expressions must be castable to string expressions, "
           + "the following expression in value facet '" + name + "' is not: " + facetRequest.expression);
     }
-    
+
     ValueFacet facet = new ValueFacet(name, (StringValueStream)expr);
-    
+
     // Check if the value facet is sorted
     if (facetRequest.sort != null) {
       facet.setSort(constructSort(facetRequest.sort, expressions));
@@ -333,23 +333,23 @@ public class AnalyticsRequestParser {
   /*
    * Pivot Facets
    */
-  
+
   private static PivotFacet constructPivotFacet(String name, AnalyticsPivotFacetRequest facetRequest, ExpressionFactory expressionFactory, Map<String, AnalyticsExpression> expressions) throws SolrException {
     PivotNode<?> topPivot = null;
-    
+
     // Pivots
     if (facetRequest.pivots == null || facetRequest.pivots.size() == 0) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Pivot Facets must contain at least one pivot to facet over, '" + name + "' has none.");
     }
-    
+
     ListIterator<AnalyticsPivotRequest> iter = facetRequest.pivots.listIterator(facetRequest.pivots.size());
     while (iter.hasPrevious()) {
       topPivot = constructPivot(iter.previous(), topPivot, expressionFactory, expressions);
     }
-    
+
     return new PivotFacet(name, topPivot);
   }
-  
+
   @SuppressWarnings({"unchecked", "rawtypes"})
   private static PivotNode<?> constructPivot(AnalyticsPivotRequest pivotRequest,
                                       PivotNode<?> childPivot,
@@ -361,7 +361,7 @@ public class AnalyticsRequestParser {
     if (pivotRequest.expression == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Pivots must have an expression to facet over, '" + pivotRequest.name + "' does not.");
     }
-    
+
     // The second parameter must be a mapping expression
     AnalyticsValueStream expr = expressionFactory.createExpression(pivotRequest.expression);
     if (!expr.getExpressionType().isUnreduced()) {
@@ -372,21 +372,21 @@ public class AnalyticsRequestParser {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Pivot expressions must be castable to string expressions, "
           + "the following expression in pivot '" + pivotRequest.name + "' is not: '" + pivotRequest.expression);
     }
-    
+
     PivotNode<?> pivot;
     if (childPivot == null) {
       pivot = new PivotNode.PivotLeaf(pivotRequest.name, (StringValueStream)expr);
     } else {
       pivot = new PivotNode.PivotBranch(pivotRequest.name, (StringValueStream)expr, childPivot);
     }
-    
+
     // Check if the pivot is sorted
     if (pivotRequest.sort != null) {
       pivot.setSort(constructSort(pivotRequest.sort, expressions));
     }
     return pivot;
   }
-  
+
   /*
    * Range Facets
    */
@@ -454,20 +454,20 @@ public class AnalyticsRequestParser {
   /*
    * Query Facets
    */
-  
+
   private static QueryFacet constructQueryFacet(String name, AnalyticsQueryFacetRequest facetRequest) throws SolrException {
     if (facetRequest.queries == null || facetRequest.queries.size() == 0) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Query Facets must be contain at least 1 query to facet over, '" + name + "' does not.");
     }
-    
+
     // The first param must be the facet name
     return new QueryFacet(name, facetRequest.queries);
   }
-  
+
   /*
    * Facet Sorting
    */
-  
+
   private static FacetSortSpecification constructSort(AnalyticsSortRequest sortRequest, Map<String, AnalyticsExpression> expressions) throws SolrException {
     if (sortRequest.criteria == null || sortRequest.criteria.size() == 0) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Sorts must be given at least 1 criteria.");
@@ -501,7 +501,7 @@ public class AnalyticsRequestParser {
     }
     return DelegatingComparator.joinComparators(comparators);
   }
-  
+
   private static FacetResultsComparator constructExpressionSortCriteria(AnalyticsExpressionSortRequest criterion, Map<String, AnalyticsExpression> expressions) {
     if (criterion.expression == null || criterion.expression.length() == 0) {
       throw new SolrException(ErrorCode.BAD_REQUEST,"Expression Sorts must contain an expression parameter, none given.");
@@ -516,7 +516,7 @@ public class AnalyticsRequestParser {
     }
     return ((ComparableValue)expression.getExpression()).getObjectComparator(expression.getName());
   }
-  
+
   private static FacetResultsComparator constructFacetValueSortCriteria(AnalyticsFacetValueSortRequest criterion) {
     return new FacetValueComparator();
   }

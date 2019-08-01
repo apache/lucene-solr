@@ -25,7 +25,7 @@ import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.util.function.FloatSupplier;
 
 public class FloatReservation extends ReductionDataReservation<FloatConsumer, FloatSupplier> {
-  
+
   public FloatReservation(FloatConsumer applier, FloatSupplier extractor) {
     super(applier, extractor);
   }

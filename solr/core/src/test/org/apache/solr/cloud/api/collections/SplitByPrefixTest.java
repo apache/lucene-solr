@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
 // This class tests higher level SPLITSHARD functionality when splitByPrefix is specified.
 // See SplitHandlerTest for random tests of lower-level split selection logic.
 //
+@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-13399")
 public class SplitByPrefixTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

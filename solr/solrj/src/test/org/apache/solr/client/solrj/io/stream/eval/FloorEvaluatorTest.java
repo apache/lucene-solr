@@ -76,14 +76,14 @@ public class FloorEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("floor(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void floorNoValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("floor(a)");
     
     values.clear();
     Object result = evaluator.evaluate(new Tuple(values));
   }
-  @Test(expected = IOException.class)
+  @Test(expected = NumberFormatException.class)
   public void floorNullValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("floor(a)");
     

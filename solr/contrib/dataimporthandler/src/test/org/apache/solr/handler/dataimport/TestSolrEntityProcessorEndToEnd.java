@@ -321,6 +321,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   private static class SolrInstance {
     File homeDir;
     File confDir;
+    File dataDir;
     
     public String getHomeDir() {
       return homeDir.toString();
@@ -331,7 +332,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     }
     
     public String getDataDir() {
-      return initCoreDataDir.toString();
+      return dataDir.toString();
     }
     
     public String getSolrConfigFile() {
@@ -344,11 +345,11 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
 
     public void setUp() throws Exception {
       homeDir = createTempDir().toFile();
-      initCoreDataDir = new File(homeDir + "/collection1", "data");
+      dataDir = new File(homeDir + "/collection1", "data");
       confDir = new File(homeDir + "/collection1", "conf");
       
       homeDir.mkdirs();
-      initCoreDataDir.mkdirs();
+      dataDir.mkdirs();
       confDir.mkdirs();
 
       FileUtils.copyFile(getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));

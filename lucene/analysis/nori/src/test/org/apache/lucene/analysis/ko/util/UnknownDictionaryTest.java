@@ -14,11 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.ko.dict;
+package org.apache.lucene.analysis.ko.util;
 
-
-import org.apache.lucene.analysis.ko.util.CSVUtil;
-import org.apache.lucene.analysis.ko.util.UnknownDictionaryWriter;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 

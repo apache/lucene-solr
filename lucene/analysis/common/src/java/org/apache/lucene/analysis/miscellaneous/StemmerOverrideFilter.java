@@ -132,11 +132,11 @@ public final class StemmerOverrideFilter extends TokenFilter {
         if (fst.findTargetArc(ignoreCase ? Character.toLowerCase(codePoint) : codePoint, scratchArc, scratchArc, fstReader) == null) {
           return null;
         }
-        pendingOutput = fst.outputs.add(pendingOutput, scratchArc.output);
+        pendingOutput = fst.outputs.add(pendingOutput, scratchArc.output());
         bufUpto += Character.charCount(codePoint);
       }
       if (scratchArc.isFinal()) {
-        matchOutput = fst.outputs.add(pendingOutput, scratchArc.nextFinalOutput);
+        matchOutput = fst.outputs.add(pendingOutput, scratchArc.nextFinalOutput());
       }
       return matchOutput;
     }
