@@ -35,7 +35,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.managed.ManagedComponentId;
 import org.apache.solr.managed.ManagedContext;
-import org.apache.solr.managed.plugins.CacheManagerPlugin;
+import org.apache.solr.managed.types.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
@@ -47,7 +47,7 @@ import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_U
 /**
  *
  */
-public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Accountable {
+public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(LRUCache.class);
@@ -163,6 +163,24 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     return maxRamBytes;
   }
 
+  public int getMaxRamMB() {
+    if (maxRamBytes != Long.MAX_VALUE) {
+      return (int)(maxRamBytes / MB);
+    } else {
+      return -1;
+    }
+  }
+
+  @Override
+  public int getSize() {
+    return map.size();
+  }
+
+  @Override
+  public float getHitRatio() {
+    return calcHitRatio(lookups, hits);
+  }
+
   /**
    * 
    * @return Returns the description of this cache. 
@@ -172,9 +190,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     if (isAutowarmingOn()) {
       description += ", " + getAutowarmDescription();
     }
-    if (getMaxRamBytes() != Long.MAX_VALUE)  {
-      description += ", maxRamMB=" + (getMaxRamBytes() / 1024L / 1024L);
-    }
+    description += ", maxRamMB=" + getMaxRamMB();
     description += ')';
     return description;
   }
@@ -327,7 +343,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
         res.put(SIZE_PARAM, map.size());
         res.put(MAX_SIZE_PARAM, maxSize);
         res.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
-        res.put(MAX_RAM_MB_PARAM, maxRamBytes != Long.MAX_VALUE ? maxRamBytes / 1024L / 1024L : -1L);
+        res.put(MAX_RAM_MB_PARAM, getMaxRamMB());
         res.put("evictionsRamUsage", evictionsRamUsage);
       }
       res.put("warmupTime", warmupTime);
@@ -375,19 +391,6 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   }
 
   @Override
-  public Map<String, Object> getResourceLimits() {
-    Map<String, Object> limits = new HashMap<>();
-    limits.put(MAX_SIZE_PARAM, maxSize);
-    limits.put(MAX_RAM_MB_PARAM, maxRamBytes != Long.MAX_VALUE ? maxRamBytes / 1024L / 1024L : -1L);
-    return limits;
-  }
-
-  @Override
-  public Map<String, Object> getMonitoredValues(Collection<String> params) throws Exception {
-    return cacheMap.getValue();
-  }
-
-  @Override
   public ManagedContext getManagedContext() {
     return managedContext;
   }
@@ -398,41 +401,23 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   }
 
   @Override
-  public Collection<String> getManagedResourceTypes() {
-    return Collections.singleton(CacheManagerPlugin.TYPE);
+  public void setMaxSize(int newMaxSize) {
+    if (newMaxSize > 0) {
+      maxSize = newMaxSize;
+    } else {
+      maxSize = Integer.MAX_VALUE;
+    }
+    generateDescription();
   }
 
   @Override
-  public void setResourceLimit(String limitName, Object val) {
-    if (!(val instanceof Number)) {
-      try {
-        val = Long.parseLong(String.valueOf(val));
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Unsupported value type (not a number) for limit '" + limitName + "': " + val + " (" + val.getClass().getName() + ")");
-      }
+  public void setMaxRamMB(int newMaxRamMB) {
+    if (newMaxRamMB > 0) {
+      maxRamBytes = newMaxRamMB * MB;
+    } else {
+      maxRamBytes = Long.MAX_VALUE;
     }
-    Number value = (Number)val;
-    if (value.longValue() > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException("Invalid new value for limit '" + limitName +"': " + value);
-    }
-    switch (limitName) {
-      case MAX_SIZE_PARAM:
-        if (value.intValue() > 0) {
-          maxSize = value.intValue();
-        } else {
-          maxSize = Integer.MAX_VALUE;
-        }
-        break;
-      case MAX_RAM_MB_PARAM:
-        if (value.intValue() > 0) {
-          maxRamBytes = value.intValue() * 1024L * 1024L;
-        } else {
-          maxRamBytes = Long.MAX_VALUE;
-        }
-        break;
-      default:
-        throw new IllegalArgumentException("Unsupported limit name '" + limitName + "'");
-    }
-    description = generateDescription();
+    generateDescription();
   }
+
 }

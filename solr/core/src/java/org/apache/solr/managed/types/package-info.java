@@ -14,34 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.managed;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.solr.core.SolrInfoBean;
 
 /**
- * Convenience interface for {@link SolrInfoBean}-s that need to be managed.
+ * Implementations of {@link org.apache.solr.managed.ResourceManagerPlugin}.
  */
-public interface ManagedMetricProducer extends SolrInfoBean, ManagedComponent {
-
-  @Override
-  default Map<String, Object> getMonitoredValues(Collection<String> params) {
-    Map<String, Object> metrics = getMetricsSnapshot();
-    if (metrics == null) {
-      return Collections.emptyMap();
-    }
-    Map<String, Object> result = new HashMap<>();
-    params.forEach(tag -> {
-      Object value = metrics.get(tag);
-      if (value == null) {
-        return;
-      }
-      result.put(tag, value);
-    });
-    return result;
-  }
-}
+package org.apache.solr.managed.types;

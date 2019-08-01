@@ -30,7 +30,7 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBasic() throws Exception {
+  public void testBasicRegistration() throws Exception {
 
   }
 }

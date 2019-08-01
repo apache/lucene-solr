@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.managed.ManagedComponent;
+import org.apache.solr.managed.types.ManagedCacheComponent;
 import org.apache.solr.metrics.SolrMetricProducer;
 
 import java.util.Map;
@@ -26,7 +27,7 @@ import java.util.Map;
 /**
  * Primary API for dealing with Solr's internal caches.
  */
-public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer, ManagedComponent {
+public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer, ManagedCacheComponent {
 
   /** Current size of the cache. */
   String SIZE_PARAM = "size";
@@ -41,6 +42,8 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer, Manage
   // not camelCase for back-compat
   /** Cache hit ratio. */
   String HIT_RATIO_PARAM = "hitratio";
+
+  long MB = 1024L * 1024L;
 
   /**
    * The initialization routine. Instance specific arguments are passed in

@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.managed.ManagedComponentId;
+import org.apache.solr.managed.ManagedContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,18 +82,6 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
     delegate.close();
   }
 
-  @Override
-  public Map<String, Object> getResourceLimits() {
-    return delegate.getResourceLimits();
-  }
-
-  @Override
-  public void setResourceLimit(String limitName, Object value) throws Exception {
-    delegate.setResourceLimit(limitName, value);
-
-  }
-
-
   public void warm(SolrIndexSearcher searcher, SolrCacheHolder src) {
     delegate.warm(searcher, src.get());
   }
@@ -139,4 +129,48 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
 
   }
 
+  @Override
+  public void setMaxSize(int size) {
+    delegate.setMaxSize(size);
+  }
+
+  @Override
+  public void setMaxRamMB(int maxRamMB) {
+    delegate.setMaxRamMB(maxRamMB);
+  }
+
+  @Override
+  public int getMaxSize() {
+    return delegate.getMaxSize();
+  }
+
+  @Override
+  public int getMaxRamMB() {
+    return delegate.getMaxRamMB();
+  }
+
+  @Override
+  public int getSize() {
+    return delegate.getSize();
+  }
+
+  @Override
+  public float getHitRatio() {
+    return delegate.getHitRatio();
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return delegate.ramBytesUsed();
+  }
+
+  @Override
+  public ManagedComponentId getManagedComponentId() {
+    return delegate.getManagedComponentId();
+  }
+
+  @Override
+  public ManagedContext getManagedContext() {
+    return delegate.getManagedContext();
+  }
 }

@@ -22,23 +22,27 @@ import java.util.Map;
 /**
  * A plugin that implements an algorithm for managing a pool of resources of a given type.
  */
-public interface ResourceManagerPlugin {
+public interface ResourceManagerPlugin<T extends ManagedComponent> {
 
-  /** Plugin type. */
+  /** Plugin symbolic type. */
   String getType();
 
   void init(Map<String, Object> params);
 
-  /**
-   * Name of monitored parameters that {@link ManagedComponent}-s managed by this plugin
-   * are expected to support.
-   */
-  Collection<String> getMonitoredParams();
-  /**
-   * Name of controlled parameters that {@link ManagedComponent}-s managed by this plugin
-   * are expected to support.
-   */
-  Collection<String> getControlledParams();
+  Map<String, Object> getMonitoredValues(T component) throws Exception;
+
+  default void setResourceLimits(T component, Map<String, Object> limits) throws Exception {
+    if (limits == null || limits.isEmpty()) {
+      return;
+    }
+    for (Map.Entry<String, Object> entry : limits.entrySet()) {
+      setResourceLimit(component, entry.getKey(), entry.getValue());
+    }
+  }
+
+  void setResourceLimit(T component, String limitName, Object value) throws Exception;
+
+  Map<String, Object> getResourceLimits(T component) throws Exception;
 
   /**
    * Manage resources in a pool. This method is called periodically by {@link ResourceManager},

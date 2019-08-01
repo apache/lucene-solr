@@ -101,7 +101,6 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.managed.DefaultResourceManager;
 import org.apache.solr.managed.NoOpResourceManager;
 import org.apache.solr.managed.ResourceManager;
-import org.apache.solr.managed.plugins.CacheManagerPlugin;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -676,7 +675,7 @@ public class CoreContainer {
     }
     try {
       resourceManager = ResourceManager.load(loader, TimeSource.NANO_TIME, DefaultResourceManager.class,
-          new PluginInfo("resourceManager", Collections.emptyMap()), poolConfigs);
+          new PluginInfo("resourceManager", Collections.emptyMap()), resManConfig);
     } catch (Exception e) {
       log.warn("Resource manager initialization error - disabling!", e);
       resourceManager = NoOpResourceManager.INSTANCE;

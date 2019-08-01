@@ -24,9 +24,21 @@ import java.util.Map;
 public interface ResourceManagerPluginFactory {
 
   /**
-   * Create a plugin of a given type.
-   * @param type plugin type
+   * Create a plugin of a given symbolic type.
+   * @param type plugin symbolic type
    * @param params plugin parameters
    */
-  ResourceManagerPlugin create(String type, Map<String, Object> params) throws Exception;
+  <T extends ManagedComponent> ResourceManagerPlugin<T> create(String type, Map<String, Object> params) throws Exception;
+
+  /**
+   * Get the implementation class for a component of a given symbolic type.
+   * @param type symbolic type
+   */
+  Class<? extends ManagedComponent> getComponentClassByType(String type);
+
+  /**
+   * Get the implementation class for a plugin of a given symbolic type.
+   * @param type symbolic type
+   */
+  Class<? extends ResourceManagerPlugin> getPluginClassByType(String type);
 }

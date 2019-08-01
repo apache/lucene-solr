@@ -36,9 +36,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Base class for a resource management. It uses a flat model where there are named
- * resource pools of a given type, each pool with its own defined resource limits. Resources can be added
- * to a pool for the management of a specific aspect of that resource using {@link ResourceManagerPlugin}.
+ * Base class for resource management. It uses a flat model where there are named
+ * resource pools of a given type, each pool with its own defined resource limits. Components can be added
+ * to a pool for the management of a specific aspect of that component using {@link ResourceManagerPlugin}.
  */
 public abstract class ResourceManager implements SolrCloseable, PluginInfoInitialized {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -212,11 +212,20 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
    * Add a managed component to a pool.
    * @param pool existing pool name.
    * @param managedComponent managed component. The component must support the management type
-   *                        (in its {@link ManagedComponent#getManagedResourceTypes()}) used
-   *                        in the selected pool. The component must not be already managed by
+   *                        used in the selected pool. The component must not be already managed by
    *                        another pool of the same type.
    */
   public abstract void registerComponent(String pool, ManagedComponent managedComponent) throws Exception;
+
+  /**
+   * Remove a managed component from a pool.
+   * @param pool existing pool name.
+   * @param componentId component id to remove
+   * @return true if a component was actually registered and has been removed
+   */
+  public boolean unregisterComponent(String pool, ManagedComponentId componentId) {
+    return unregisterComponent(pool, componentId.toString());
+  }
 
   /**
    * Remove a managed component from a pool.

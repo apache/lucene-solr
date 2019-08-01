@@ -30,8 +30,42 @@ public class NoOpResourceManager extends ResourceManager {
 
   public static final NoOpResourceManager INSTANCE = new NoOpResourceManager();
 
+  private static final class NoOpResourceManagerPlugin implements ResourceManagerPlugin {
+    static final NoOpResourceManagerPlugin INSTANCE = new NoOpResourceManagerPlugin();
+
+    @Override
+    public String getType() {
+      return NOOP;
+    }
+
+    @Override
+    public Map<String, Object> getMonitoredValues(ManagedComponent component) throws Exception {
+      return Collections.emptyMap();
+    }
+
+    @Override
+    public void setResourceLimit(ManagedComponent component, String limitName, Object value) throws Exception {
+      // no-op
+    }
+
+    @Override
+    public Map<String, Object> getResourceLimits(ManagedComponent component) throws Exception {
+      return Collections.emptyMap();
+    }
+
+    @Override
+    public void manage(ResourceManagerPool pool) throws Exception {
+      // no-op
+    }
+
+    @Override
+    public void init(Map params) {
+      // no-op
+    }
+  }
+
   private static final class NoOpResourcePool implements ResourceManagerPool {
-    static NoOpResourcePool INSTANCE = new NoOpResourcePool();
+    static final NoOpResourcePool INSTANCE = new NoOpResourcePool();
 
     @Override
     public String getName() {
@@ -44,8 +78,13 @@ public class NoOpResourceManager extends ResourceManager {
     }
 
     @Override
-    public void registerComponent(ManagedComponent managedComponent) {
+    public ResourceManagerPlugin getResourceManagerPlugin() {
+      return NoOpResourceManagerPlugin.INSTANCE;
+    }
 
+    @Override
+    public void registerComponent(ManagedComponent managedComponent) {
+      // no-op
     }
 
     @Override
@@ -80,7 +119,7 @@ public class NoOpResourceManager extends ResourceManager {
 
     @Override
     public void setPoolLimits(Map<String, Object> poolLimits) {
-
+      // no-op
     }
 
     @Override
@@ -90,23 +129,23 @@ public class NoOpResourceManager extends ResourceManager {
 
     @Override
     public void close() throws IOException {
-
+      // no-op
     }
 
     @Override
     public void run() {
-
+      // no-op
     }
   }
 
   @Override
   protected void doInit() throws Exception {
-
+    // no-op
   }
 
   @Override
   public void createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> args) throws Exception {
-
+    // no-op
   }
 
   @Override
@@ -121,17 +160,17 @@ public class NoOpResourceManager extends ResourceManager {
 
   @Override
   public void setPoolLimits(String name, Map<String, Object> poolLimits) throws Exception {
-
+    // no-op
   }
 
   @Override
   public void removePool(String name) throws Exception {
-
+    // no-op
   }
 
   @Override
   public void registerComponent(String pool, ManagedComponent managedComponent) throws Exception {
-
+    // no-op
   }
 
   @Override
@@ -141,6 +180,6 @@ public class NoOpResourceManager extends ResourceManager {
 
   @Override
   public void close() throws IOException {
-
+    // no-op
   }
 }

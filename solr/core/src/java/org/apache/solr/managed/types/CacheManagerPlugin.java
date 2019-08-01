@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.managed.plugins;
+package org.apache.solr.managed.types;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.managed.AbstractResourceManagerPlugin;
+import org.apache.solr.managed.ResourceManagerPlugin;
 import org.apache.solr.managed.ResourceManagerPool;
 import org.apache.solr.search.SolrCache;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * which can be adjusted using configuration parameter {@link #DEAD_BAND}. If monitored values don't
  * exceed the limits +/- the dead band then no action is taken.</p>
  */
-public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
+public class CacheManagerPlugin implements ResourceManagerPlugin<ManagedCacheComponent> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static String TYPE = "cache";
@@ -66,13 +66,45 @@ public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
   protected float deadBand = DEFAULT_DEAD_BAND;
 
   @Override
-  public Collection<String> getMonitoredParams() {
-    return MONITORED_PARAMS;
+  public void setResourceLimit(ManagedCacheComponent component, String limitName, Object val) {
+    if (!(val instanceof Number)) {
+      try {
+        val = Long.parseLong(String.valueOf(val));
+      } catch (Exception e) {
+        throw new IllegalArgumentException("Unsupported value type (not a number) for limit '" + limitName + "': " + val + " (" + val.getClass().getName() + ")");
+      }
+    }
+    Number value = (Number)val;
+    if (value.longValue() > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("Invalid new value for limit '" + limitName +"': " + value);
+    }
+    switch (limitName) {
+      case SolrCache.MAX_SIZE_PARAM:
+        component.setMaxSize(value.intValue());
+        break;
+      case SolrCache.MAX_RAM_MB_PARAM:
+        component.setMaxRamMB(value.intValue());
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported limit name '" + limitName + "'");
+    }
   }
 
   @Override
-  public Collection<String> getControlledParams() {
-    return CONTROLLED_PARAMS;
+  public Map<String, Object> getResourceLimits(ManagedCacheComponent component) {
+    Map<String, Object> limits = new HashMap<>();
+    limits.put(SolrCache.MAX_SIZE_PARAM, component.getMaxSize());
+    limits.put(SolrCache.MAX_RAM_MB_PARAM, component.getMaxRamMB());
+    return limits;
+  }
+
+  @Override
+  public Map<String, Object> getMonitoredValues(ManagedCacheComponent component) throws Exception {
+    Map<String, Object> values = new HashMap<>();
+    values.put(SolrCache.HIT_RATIO_PARAM, component.getHitRatio());
+    values.put(SolrCache.RAM_BYTES_USED_PARAM, component.ramBytesUsed());
+    values.put(SolrCache.SIZE_PARAM, component.getSize());
+    return values;
   }
 
   @Override
@@ -121,8 +153,8 @@ public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
 
       float changeRatio = poolLimitValue / totalValue.floatValue();
       // modify current limits by the changeRatio
-      pool.getComponents().forEach((name, resource) -> {
-        Map<String, Object> resourceLimits = resource.getResourceLimits();
+      pool.getComponents().forEach((name, component) -> {
+        Map<String, Object> resourceLimits = getResourceLimits((ManagedCacheComponent)component);
         Object limit = resourceLimits.get(poolLimitName);
         // XXX we could attempt here to control eg. ramBytesUsed by adjusting maxSize limit
         // XXX and vice versa if the current limit is undefined or unsupported
@@ -135,10 +167,10 @@ public class CacheManagerPlugin extends AbstractResourceManagerPlugin {
         }
         float newLimit = currentResourceLimit * changeRatio;
         try {
-          resource.setResourceLimit(poolLimitName, newLimit);
+          setResourceLimit((ManagedCacheComponent)component, poolLimitName, newLimit);
         } catch (Exception e) {
           log.warn("Failed to set managed limit " + poolLimitName +
-              " from " + currentResourceLimit + " to " + newLimit + " on " + resource.getManagedComponentId(), e);
+              " from " + currentResourceLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
         }
       });
     });

@@ -14,6 +14,8 @@ public interface ResourceManagerPool extends Runnable, Closeable {
   /** Pool type. */
   String getType();
 
+  ResourceManagerPlugin getResourceManagerPlugin();
+
   /** Add component to this pool. */
   void registerComponent(ManagedComponent managedComponent);
 

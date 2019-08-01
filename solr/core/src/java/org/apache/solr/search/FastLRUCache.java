@@ -22,7 +22,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.managed.ManagedComponentId;
 import org.apache.solr.managed.ManagedContext;
-import org.apache.solr.managed.plugins.CacheManagerPlugin;
+import org.apache.solr.managed.types.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLRUCache;
@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  * @see org.apache.solr.search.SolrCache
  * @since solr 1.4
  */
-public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>, Accountable {
+public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FastLRUCache.class);
@@ -339,23 +339,6 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   }
 
   @Override
-  public Map<String, Object> getResourceLimits() {
-    Map<String, Object> limits = new HashMap<>();
-    limits.put(MAX_SIZE_PARAM, maxSize);
-    limits.put(MIN_SIZE_PARAM, minSize);
-    limits.put(ACCEPTABLE_SIZE_PARAM, acceptableSize);
-    limits.put(CLEANUP_THREAD_PARAM, cleanupThread);
-    limits.put(SHOW_ITEMS_PARAM, showItems);
-    limits.put(MAX_RAM_MB_PARAM, maxRamBytes != Long.MAX_VALUE ? maxRamBytes / 1024L / 1024L : -1L);
-    return limits;
-  }
-
-  @Override
-  public Map<String, Object> getMonitoredValues(Collection<String> params) throws Exception {
-    return cacheMap.getValue();
-  }
-
-  @Override
   public ManagedContext getManagedContext() {
     return managedContext;
   }
@@ -363,75 +346,6 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   @Override
   public ManagedComponentId getManagedComponentId() {
     return managedComponentId;
-  }
-
-  @Override
-  public Collection<String> getManagedResourceTypes() {
-    return Collections.singleton(CacheManagerPlugin.TYPE);
-  }
-
-  @Override
-  public void setResourceLimit(String limitName, Object val) {
-    if (CLEANUP_THREAD_PARAM.equals(limitName)) {
-      Boolean value;
-      try {
-        value = Boolean.parseBoolean(val.toString());
-        cleanupThread = value;
-        cache.setRunCleanupThread(cleanupThread);
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Invalid new value for boolean limit '" + limitName + "': " + val);
-      }
-    }
-    Number value;
-    try {
-      value = Long.parseLong(String.valueOf(val));
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Invalid new value for numeric limit '" + limitName +"': " + val);
-    }
-    if (!limitName.equals(MAX_RAM_MB_PARAM)) {
-      if (value.intValue() <= 1) {
-        throw new IllegalArgumentException("Invalid new value for numeric limit '" + limitName +"': " + value);
-      }
-    }
-    if (value.longValue() > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException("Invalid new value for numeric limit '" + limitName +"': " + value);
-    }
-    switch (limitName) {
-      case MAX_SIZE_PARAM:
-        maxSize = value.intValue();
-        checkAndAdjustLimits();
-        cache.setUpperWaterMark(maxSize);
-        cache.setLowerWaterMark(minSize);
-        break;
-      case MIN_SIZE_PARAM:
-        minSize = value.intValue();
-        checkAndAdjustLimits();
-        cache.setUpperWaterMark(maxSize);
-        cache.setLowerWaterMark(minSize);
-        break;
-      case ACCEPTABLE_SIZE_PARAM:
-        acceptableSize = value.intValue();
-        acceptableSize = Math.max(minSize, acceptableSize);
-        cache.setAcceptableWaterMark(acceptableSize);
-        break;
-      case MAX_RAM_MB_PARAM:
-        long maxRamMB = value.intValue();
-        maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
-        if (maxRamMB < 0) {
-          ramLowerWatermark = Long.MIN_VALUE;
-        } else {
-          ramLowerWatermark = Math.round(maxRamBytes * 0.8);
-        }
-        cache.setRamUpperWatermark(maxRamBytes);
-        cache.setRamLowerWatermark(ramLowerWatermark);
-        break;
-      case SHOW_ITEMS_PARAM:
-        showItems = value.intValue();
-        break;
-      default:
-        throw new IllegalArgumentException("Unsupported limit '" + limitName + "'");
-    }
-    description = generateDescription();
   }
 
   private void checkAndAdjustLimits() {
@@ -443,6 +357,54 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
         maxSize = minSize + 1;
       }
     }
+  }
+
+  @Override
+  public void setMaxSize(int size) {
+    if (size < 1) {
+      throw new IllegalArgumentException("Invalid new value for maxSize: " + size);
+    }
+    maxSize = size;
+    checkAndAdjustLimits();
+    cache.setUpperWaterMark(maxSize);
+    cache.setLowerWaterMark(minSize);
+    generateDescription();
+  }
+
+  @Override
+  public void setMaxRamMB(int maxRamMB) {
+    maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * MB;
+    if (maxRamMB < 0) {
+      ramLowerWatermark = Long.MIN_VALUE;
+    } else {
+      ramLowerWatermark = Math.round(maxRamBytes * 0.8);
+    }
+    cache.setRamUpperWatermark(maxRamBytes);
+    cache.setRamLowerWatermark(ramLowerWatermark);
+    generateDescription();
+  }
+
+  @Override
+  public int getMaxSize() {
+    return maxSize;
+  }
+
+  @Override
+  public int getMaxRamMB() {
+    return maxRamBytes == Long.MAX_VALUE ? -1 : (int)(maxRamBytes / MB);
+  }
+
+  @Override
+  public int getSize() {
+    return cache.size();
+  }
+
+  @Override
+  public float getHitRatio() {
+    ConcurrentLRUCache.Stats stats = cache.getStats();
+    long lookups = stats.getCumulativeLookups();
+    long hits = stats.getCumulativeHits();
+    return calcHitRatio(lookups, hits);
   }
 }
 

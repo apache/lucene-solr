@@ -20,17 +20,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.managed.plugins.CacheManagerPlugin;
+import org.apache.solr.managed.types.CacheManagerPlugin;
+import org.apache.solr.managed.types.ManagedCacheComponent;
 
 /**
  * Default implementation of {@link ResourceManagerPluginFactory}.
  */
 public class DefaultResourceManagerPluginFactory implements ResourceManagerPluginFactory {
 
-  private static final Map<String, String> typeToClass = new HashMap<>();
+  private static final Map<String, Class<? extends ResourceManagerPlugin>> typeToPluginClass = new HashMap<>();
+  private static final Map<String, Class<? extends ManagedComponent>> typeToComponentClass = new HashMap<>();
 
   static {
-    typeToClass.put(CacheManagerPlugin.TYPE, CacheManagerPlugin.class.getName());
+    typeToPluginClass.put(CacheManagerPlugin.TYPE, CacheManagerPlugin.class);
+    typeToComponentClass.put(CacheManagerPlugin.TYPE, ManagedCacheComponent.class);
   }
 
   private final SolrResourceLoader loader;
@@ -40,13 +43,23 @@ public class DefaultResourceManagerPluginFactory implements ResourceManagerPlugi
   }
 
   @Override
-  public ResourceManagerPlugin create(String type, Map<String, Object> params) throws Exception {
-    String pluginClazz = typeToClass.get(type);
+  public <T extends ManagedComponent> ResourceManagerPlugin<T> create(String type, Map<String, Object> params) throws Exception {
+    Class<? extends ResourceManagerPlugin> pluginClazz = typeToPluginClass.get(type);
     if (pluginClazz == null) {
       throw new IllegalArgumentException("Unsupported plugin type '" + type + "'");
     }
-    ResourceManagerPlugin resourceManagerPlugin = loader.newInstance(pluginClazz, ResourceManagerPlugin.class);
+    ResourceManagerPlugin<T> resourceManagerPlugin = loader.newInstance(pluginClazz.getName(), ResourceManagerPlugin.class);
     resourceManagerPlugin.init(params);
     return resourceManagerPlugin;
+  }
+
+  @Override
+  public Class<? extends ManagedComponent> getComponentClassByType(String type) {
+    return typeToComponentClass.get(type);
+  }
+
+  @Override
+  public Class<? extends ResourceManagerPlugin> getPluginClassByType(String type) {
+    return typeToPluginClass.get(type);
   }
 }

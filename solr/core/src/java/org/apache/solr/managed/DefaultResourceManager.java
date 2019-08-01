@@ -33,7 +33,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.managed.plugins.CacheManagerPlugin;
+import org.apache.solr.managed.types.CacheManagerPlugin;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;

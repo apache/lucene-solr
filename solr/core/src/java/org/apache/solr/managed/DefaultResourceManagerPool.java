@@ -40,6 +40,7 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   private final Map<String, ManagedComponent> resources = new ConcurrentHashMap<>();
   private Map<String, Object> poolLimits;
   private final String type;
+  private final Class<? extends ManagedComponent> componentClass;
   private final String name;
   private final ResourceManagerPlugin resourceManagerPlugin;
   private final Map<String, Object> args;
@@ -62,6 +63,7 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
     this.name = name;
     this.type = type;
     this.resourceManagerPlugin = factory.create(type, args);
+    this.componentClass = factory.getComponentClassByType(type);
     this.poolLimits = new TreeMap<>(poolLimits);
     this.args = new HashMap<>(args);
   }
@@ -82,9 +84,13 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   }
 
   @Override
+  public ResourceManagerPlugin getResourceManagerPlugin() {
+    return resourceManagerPlugin;
+  }
+
+  @Override
   public void registerComponent(ManagedComponent managedComponent) {
-    Collection<String> types = managedComponent.getManagedResourceTypes();
-    if (!types.contains(type)) {
+    if (!componentClass.isAssignableFrom(managedComponent.getClass())) {
       log.debug("Pool type '" + type + "' is not supported by the resource " + managedComponent.getManagedComponentId());
       return;
     }
@@ -112,7 +118,7 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
       Map<String, Map<String, Object>> currentValues = new HashMap<>();
       for (ManagedComponent managedComponent : resources.values()) {
         try {
-          currentValues.put(managedComponent.getManagedComponentId().toString(), managedComponent.getMonitoredValues(resourceManagerPlugin.getMonitoredParams()));
+          currentValues.put(managedComponent.getManagedComponentId().toString(), resourceManagerPlugin.getMonitoredValues(managedComponent));
         } catch (Exception e) {
           log.warn("Error getting managed values from " + managedComponent.getManagedComponentId(), e);
         }
