@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import com.carrotsearch.ant.tasks.junit4.dependencies.com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -60,6 +59,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableMap;
 
 import static org.apache.solr.cloud.TestCryptoKeys.readFile;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
