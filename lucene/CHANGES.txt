@@ -78,6 +78,9 @@ Improvements
 * LUCENE-8916: GraphTokenStreamFiniteStrings preserves all Token attributes
   through its finite strings TokenStreams (Alan Woodward)
 
+* LUCENE-8906: Expose Lucene50PostingsFormat.IntBlockTermState as public so that other postings formats can re-use it.
+  (Bruno Roustant)
+
 Optimizations
 
 * LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
