@@ -30,6 +30,9 @@ API Changes
 * LUCENE-8909: The deprecated IndexWriter#getFieldNames() method has been removed.
   (Adrien Grand, Munendra S N)
 
+* LUCENE-8942: Remove redundant parameters and improve visibility strictness in
+  LRUQueryCache (Atri Sharma)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
