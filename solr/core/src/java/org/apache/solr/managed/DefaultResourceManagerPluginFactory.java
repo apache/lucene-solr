@@ -16,20 +16,28 @@
  */
 package org.apache.solr.managed;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.managed.types.CacheManagerPlugin;
 import org.apache.solr.managed.types.ManagedCacheComponent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of {@link ResourceManagerPluginFactory}.
  */
 public class DefaultResourceManagerPluginFactory implements ResourceManagerPluginFactory {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Map<String, Class<? extends ResourceManagerPlugin>> typeToPluginClass = new HashMap<>();
   private static final Map<String, Class<? extends ManagedComponent>> typeToComponentClass = new HashMap<>();
+
+  public static final String TYPE_TO_PLUGIN = "typeToPlugin";
+  public static final String TYPE_TO_COMPONENT = "typeToComponent";
 
   static {
     typeToPluginClass.put(CacheManagerPlugin.TYPE, CacheManagerPlugin.class);
@@ -38,8 +46,40 @@ public class DefaultResourceManagerPluginFactory implements ResourceManagerPlugi
 
   private final SolrResourceLoader loader;
 
-  public DefaultResourceManagerPluginFactory(SolrResourceLoader loader) {
+  public DefaultResourceManagerPluginFactory(SolrResourceLoader loader, Map<String, Object> config) {
     this.loader = loader;
+    Map<String, String> typeToPluginMap = (Map<String, String>)config.getOrDefault(TYPE_TO_PLUGIN, Collections.emptyMap());
+    Map<String, String> typeToComponentMap = (Map<String, String>)config.getOrDefault(TYPE_TO_COMPONENT, Collections.emptyMap());
+    Map<String, Class<? extends ResourceManagerPlugin>> newPlugins = new HashMap<>();
+    Map<String, Class<? extends ManagedComponent>> newComponents = new HashMap<>();
+    typeToPluginMap.forEach((type, className) -> {
+      try {
+        Class<? extends ResourceManagerPlugin> pluginClazz = loader.findClass(className, ResourceManagerPlugin.class);
+        newPlugins.put(type, pluginClazz);
+      } catch (Exception e) {
+        log.warn("Error finding plugin class", e);
+      }
+    });
+    typeToComponentMap.forEach((type, className) -> {
+      try {
+        Class<? extends ManagedComponent> componentClazz = loader.findClass(className, ManagedComponent.class);
+        if (typeToPluginClass.containsKey(type) || newPlugins.containsKey(type)) {
+          newComponents.put(type, componentClazz);
+        }
+      } catch (Exception e) {
+        log.warn("Error finding plugin class", e);
+        newPlugins.remove(type);
+      }
+    });
+    newPlugins.forEach((type, pluginClass) -> {
+      if (!newComponents.containsKey(type) && !typeToComponentClass.containsKey(type)) {
+        return;
+      }
+      typeToPluginClass.put(type, pluginClass);
+      if (newComponents.containsKey(type)) {
+        typeToComponentClass.put(type, newComponents.get(type));
+      }
+    });
   }
 
   @Override

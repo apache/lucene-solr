@@ -109,9 +109,6 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
   public void init(PluginInfo info) {
     if (info != null) {
       this.pluginInfo = info.copy();
-      if (pluginInfo.initArgs != null) {
-        SolrPluginUtils.invokeSetters(this, this.pluginInfo.initArgs);
-      }
     }
     if (!enabled) {
       log.debug("Resource manager " + getClass().getSimpleName() + " disabled.");

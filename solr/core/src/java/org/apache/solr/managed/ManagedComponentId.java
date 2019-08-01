@@ -47,7 +47,7 @@ public class ManagedComponentId {
     return id;
   }
 
-  public ManagedComponentId of(String fullName) {
+  public static ManagedComponentId of(String fullName) {
     if (fullName == null || fullName.isEmpty()) {
       return null;
     }

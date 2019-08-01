@@ -66,6 +66,16 @@ public class CacheManagerPlugin implements ResourceManagerPlugin<ManagedCacheCom
   protected float deadBand = DEFAULT_DEAD_BAND;
 
   @Override
+  public Collection<String> getMonitoredParams() {
+    return MONITORED_PARAMS;
+  }
+
+  @Override
+  public Collection<String> getControlledParams() {
+    return CONTROLLED_PARAMS;
+  }
+
+  @Override
   public void setResourceLimit(ManagedCacheComponent component, String limitName, Object val) {
     if (!(val instanceof Number)) {
       try {

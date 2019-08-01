@@ -97,7 +97,10 @@ public class DefaultResourceManager extends ResourceManager {
     scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
     scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     // TODO: make configurable based on plugin info
-    resourceManagerPluginFactory = new DefaultResourceManagerPluginFactory(loader);
+    resourceManagerPluginFactory = new DefaultResourceManagerPluginFactory(loader,
+        pluginInfo != null ?
+            (Map<String, Object>)pluginInfo.initArgs.toMap(new HashMap<>()).getOrDefault("plugins", Collections.emptyMap()) :
+            Collections.emptyMap());
     log.info("Resource manager initialized.");
   }
 

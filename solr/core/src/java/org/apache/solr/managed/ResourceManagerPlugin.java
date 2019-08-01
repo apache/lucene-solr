@@ -29,6 +29,17 @@ public interface ResourceManagerPlugin<T extends ManagedComponent> {
 
   void init(Map<String, Object> params);
 
+  /**
+   * Name of monitored parameters that {@link ManagedComponent}-s managed by this plugin
+   * are expected to support.
+   */
+  Collection<String> getMonitoredParams();
+  /**
+   * Name of controlled parameters that {@link ManagedComponent}-s managed by this plugin
+   * are expected to support.
+   */
+  Collection<String> getControlledParams();
+
   Map<String, Object> getMonitoredValues(T component) throws Exception;
 
   default void setResourceLimits(T component, Map<String, Object> limits) throws Exception {

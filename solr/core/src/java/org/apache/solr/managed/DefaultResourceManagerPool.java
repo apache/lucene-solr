@@ -18,7 +18,6 @@ package org.apache.solr.managed;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class DefaultResourceManagerPool implements ResourceManagerPool {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, ManagedComponent> resources = new ConcurrentHashMap<>();
+  private final Map<String, ManagedComponent> components = new ConcurrentHashMap<>();
   private Map<String, Object> poolLimits;
   private final String type;
   private final Class<? extends ManagedComponent> componentClass;
@@ -91,23 +90,23 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   @Override
   public void registerComponent(ManagedComponent managedComponent) {
     if (!componentClass.isAssignableFrom(managedComponent.getClass())) {
-      log.debug("Pool type '" + type + "' is not supported by the resource " + managedComponent.getManagedComponentId());
+      log.debug("Pool type '" + type + "' is not supported by the component " + managedComponent.getManagedComponentId());
       return;
     }
-    ManagedComponent existing = resources.putIfAbsent(managedComponent.getManagedComponentId().toString(), managedComponent);
+    ManagedComponent existing = components.putIfAbsent(managedComponent.getManagedComponentId().toString(), managedComponent);
     if (existing != null) {
-      throw new IllegalArgumentException("Resource '" + managedComponent.getManagedComponentId() + "' already exists in pool '" + name + "' !");
+      throw new IllegalArgumentException("Component '" + managedComponent.getManagedComponentId() + "' already exists in pool '" + name + "' !");
     }
   }
 
   @Override
   public boolean unregisterComponent(String name) {
-    return resources.remove(name) != null;
+    return components.remove(name) != null;
   }
 
   @Override
   public Map<String, ManagedComponent> getComponents() {
-    return Collections.unmodifiableMap(resources);
+    return Collections.unmodifiableMap(components);
   }
 
   @Override
@@ -116,7 +115,7 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
     try {
       // collect the current values
       Map<String, Map<String, Object>> currentValues = new HashMap<>();
-      for (ManagedComponent managedComponent : resources.values()) {
+      for (ManagedComponent managedComponent : components.values()) {
         try {
           currentValues.put(managedComponent.getManagedComponentId().toString(), resourceManagerPlugin.getMonitoredValues(managedComponent));
         } catch (Exception e) {
@@ -189,7 +188,7 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
       scheduledFuture.cancel(true);
       scheduledFuture = null;
     }
-    resources.clear();
+    components.clear();
     poolContext.clear();
   }
 }

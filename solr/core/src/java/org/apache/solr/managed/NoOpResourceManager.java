@@ -39,6 +39,16 @@ public class NoOpResourceManager extends ResourceManager {
     }
 
     @Override
+    public Collection<String> getMonitoredParams() {
+      return Collections.emptySet();
+    }
+
+    @Override
+    public Collection<String> getControlledParams() {
+      return Collections.emptySet();
+    }
+
+    @Override
     public Map<String, Object> getMonitoredValues(ManagedComponent component) throws Exception {
       return Collections.emptyMap();
     }
