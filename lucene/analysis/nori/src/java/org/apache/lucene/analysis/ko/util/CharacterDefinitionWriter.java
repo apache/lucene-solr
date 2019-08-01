@@ -17,10 +17,10 @@
 package org.apache.lucene.analysis.ko.util;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.apache.lucene.analysis.ko.dict.CharacterDefinition;
@@ -29,7 +29,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 
-public final class CharacterDefinitionWriter {
+final class CharacterDefinitionWriter {
 
   private final byte[] characterCategoryMap = new byte[0x10000];
   
@@ -39,7 +39,7 @@ public final class CharacterDefinitionWriter {
   /**
    * Constructor for building. TODO: remove write access
    */
-  public CharacterDefinitionWriter() {
+  CharacterDefinitionWriter() {
     Arrays.fill(characterCategoryMap, CharacterDefinition.DEFAULT);
   }
   
@@ -50,7 +50,7 @@ public final class CharacterDefinitionWriter {
    *            code point
    * @param characterClassName character class name
    */
-  public void putCharacterCategory(int codePoint, String characterClassName) {
+  void putCharacterCategory(int codePoint, String characterClassName) {
     characterClassName = characterClassName.split(" ")[0]; // use first
     // category
     // class
@@ -62,20 +62,17 @@ public final class CharacterDefinitionWriter {
     characterCategoryMap[codePoint] = CharacterDefinition.lookupCharacterClass(characterClassName);
   }
   
-  public void putInvokeDefinition(String characterClassName, int invoke, int group, int length) {
+  void putInvokeDefinition(String characterClassName, int invoke, int group, int length) {
     final byte characterClass = CharacterDefinition.lookupCharacterClass(characterClassName);
     invokeMap[characterClass] = invoke == 1;
     groupMap[characterClass] = group == 1;
     // TODO: length def ignored
   }
   
-  public void write(String baseDir) throws IOException {
-    String filename = baseDir + File.separator +
-      CharacterDefinition.class.getName().replace('.', File.separatorChar) + CharacterDefinition.FILENAME_SUFFIX;
-    new File(filename).getParentFile().mkdirs();
-    OutputStream os = new FileOutputStream(filename);
-    try {
-      os = new BufferedOutputStream(os);
+  public void write(Path baseDir) throws IOException {
+    Path path = baseDir.resolve(CharacterDefinition.class.getName().replace('.', '/') + CharacterDefinition.FILENAME_SUFFIX);
+    Files.createDirectories(path.getParent());
+    try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(path))){
       final DataOutput out = new OutputStreamDataOutput(os);
       CodecUtil.writeHeader(out, CharacterDefinition.HEADER, CharacterDefinition.VERSION);
       out.writeBytes(characterCategoryMap, 0, characterCategoryMap.length);
@@ -86,8 +83,6 @@ public final class CharacterDefinitionWriter {
         );
         out.writeByte(b);
       }
-    } finally {
-      os.close();
     }
   }
   

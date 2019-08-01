@@ -360,19 +360,13 @@ public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  public void testUnsupported_Xpaths() {
-    String xml = "<root><b><a x=\"a/b\" h=\"hello-A\"/>  </b></root>";
-    XPathRecordReader rr=null;
-    try {
-      rr = new XPathRecordReader("//b");
-      fail("A RuntimeException was expected: //b forEach cannot begin with '//'.");
-      }
-    catch (RuntimeException ex) {  }
-     try {
-      rr.addField("bold"  ,"b",        false);
-      fail("A RuntimeException was expected: 'b' xpaths must begin with '/'.");
-      }
-    catch (RuntimeException ex) {  }
+  public void testUnsupportedXPaths() {
+    RuntimeException ex = expectThrows(RuntimeException.class, () -> new XPathRecordReader("//b"));
+    assertEquals("forEach cannot start with '//': //b", ex.getMessage());
+
+    XPathRecordReader rr = new XPathRecordReader("/anyd/contenido");
+    ex = expectThrows(RuntimeException.class, () -> rr.addField("bold", "b", false));
+    assertEquals("xpath must start with '/' : b", ex.getMessage());
   }
 
   @Test
@@ -590,9 +584,7 @@ public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {
     XPathRecordReader rr = new XPathRecordReader("/root/node");
     rr.addField("id", "/root/node/id", true);
     rr.addField("desc", "/root/node/desc", true);
-   try {
-     rr.getAllRecords(new StringReader(malformedXml));
-     fail("A RuntimeException was expected: the input XML is invalid.");
-   } catch (Exception e) { }
+    RuntimeException e = expectThrows(RuntimeException.class, () -> rr.getAllRecords(new StringReader(malformedXml)));
+    assertTrue(e.getMessage().contains("Unexpected close tag </id>"));
  }
 }

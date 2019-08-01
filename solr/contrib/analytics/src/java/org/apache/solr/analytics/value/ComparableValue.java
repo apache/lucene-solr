@@ -24,7 +24,7 @@ import org.apache.solr.analytics.facet.compare.FacetResultsComparator;
 public interface ComparableValue extends AnalyticsValue {
   /**
    * Create an entry comparator used to sort the facet-value buckets of a facet.
-   * 
+   *
    * @param expression the name of the expression in the results array
    * @return a comparator to sort the buckets with
    */

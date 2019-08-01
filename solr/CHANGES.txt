@@ -57,6 +57,9 @@ Upgrade Notes
 
 * SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
 
+* SOLR-11266: default Content-Type override for JSONResponseWriter from _default configSet is removed. Example has been
+  provided in sample_techproducts_configs to override content-type. (Ishan Chattopadhyaya, Munendra S N, Gus Heck)
+
 Other Changes
 ----------------------
 
@@ -107,6 +110,10 @@ Bug Fixes
 * SOLR-11556: Backup and restore command really supports picking one of a few repositories by 
   repository parameter (Timothy Potter via Mikhail Khludnev) 
 
+* SOLR-13660: Fixed AbstractFullDistribZkTestBase.waitForActiveReplicaCount() to ensure
+  replicas are active. (hossman)
+
+
 Other Changes
 ----------------------
 
@@ -115,6 +122,12 @@ Other Changes
 * SOLR-12870: Use StandardCharsets instead of String values (Peter Somogyi via Munendra S N)
 
 * SOLR-10377: Add `debug.explain.structured` to Admin UI. (David Smiley, Munendra S N)
+
+* SOLR-13629: Clean trailing whitespace from 'analytics' contrib (Neal Sidhwaney via Jason Gerlowski)
+
+* SOLR-13643: Add Getters/Setters in ResponseBuilder for analytics response handling (Neal Sidhwaney via Munendra S N)
+
+* SOLR-13659: Refactor CacheConfig to lazily load the the implementation class (noble)
 
 ==================  8.2.0 ==================
 

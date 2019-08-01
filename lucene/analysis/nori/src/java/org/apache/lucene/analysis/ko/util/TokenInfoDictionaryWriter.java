@@ -19,31 +19,31 @@ package org.apache.lucene.analysis.ko.util;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.ko.dict.TokenInfoDictionary;
 import org.apache.lucene.util.fst.FST;
 
-public class TokenInfoDictionaryWriter extends BinaryDictionaryWriter {
+class TokenInfoDictionaryWriter extends BinaryDictionaryWriter {
   private FST<Long> fst;
 
-  public TokenInfoDictionaryWriter(int size) {
+  TokenInfoDictionaryWriter(int size) {
     super(TokenInfoDictionary.class, size);
   }
   
   public void setFST(FST<Long> fst) {
+    Objects.requireNonNull(fst, "dictionary must not be empty");
     this.fst = fst;
   }
   
   @Override
-  public void write(String baseDir) throws IOException {
+  public void write(Path baseDir) throws IOException {
     super.write(baseDir);
-    writeFST(getBaseFileName(baseDir) + TokenInfoDictionary.FST_FILENAME_SUFFIX);
+    writeFST(baseDir.resolve(getBaseFileName() + TokenInfoDictionary.FST_FILENAME_SUFFIX));
   }
   
-  protected void writeFST(String filename) throws IOException {
-    Path p = Paths.get(filename);
-    Files.createDirectories(p.getParent());
-    fst.save(p);
+  private void writeFST(Path path) throws IOException {
+    Files.createDirectories(path.getParent());
+    fst.save(path);
   }  
 }

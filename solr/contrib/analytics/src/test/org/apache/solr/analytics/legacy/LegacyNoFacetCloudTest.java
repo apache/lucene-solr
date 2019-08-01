@@ -32,31 +32,31 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
   static public final int DATE = 12;
   static public final int STRING = 28;
   static public final int NUM_LOOPS = 100;
-  
+
   //INT
-  static ArrayList<Integer> intTestStart; 
+  static ArrayList<Integer> intTestStart;
   static long intMissing = 0;
-  
+
   //LONG
-  static ArrayList<Long> longTestStart; 
+  static ArrayList<Long> longTestStart;
   static long longMissing = 0;
-  
+
   //FLOAT
-  static ArrayList<Float> floatTestStart; 
+  static ArrayList<Float> floatTestStart;
   static long floatMissing = 0;
-  
+
   //DOUBLE
-  static ArrayList<Double> doubleTestStart; 
+  static ArrayList<Double> doubleTestStart;
   static long doubleMissing = 0;
-  
+
   //DATE
-  static ArrayList<String> dateTestStart; 
+  static ArrayList<String> dateTestStart;
   static long dateMissing = 0;
-  
+
   //STR
-  static ArrayList<String> stringTestStart; 
+  static ArrayList<String> stringTestStart;
   static long stringMissing = 0;
-  
+
   @Before
   public void populate() throws Exception {
     intTestStart = new ArrayList<>();
@@ -71,7 +71,7 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     floatMissing = 0;
     dateMissing = 0;
     stringMissing = 0;
-    
+
     UpdateRequest req = new UpdateRequest();
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
@@ -82,32 +82,32 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
       String s = "str" + (j%STRING);
       List<String> fields = new ArrayList<>();
       fields.add("id"); fields.add("1000"+j);
-      
+
       if( i != 0 ){
         fields.add("int_id"); fields.add("" + i);
         intTestStart.add(i);
       } else intMissing++;
-      
+
       if( l != 0l ){
         fields.add("long_ld"); fields.add("" + l);
         longTestStart.add(l);
       } else longMissing++;
-      
+
       if( f != 0.0f ){
         fields.add("float_fd"); fields.add("" + f);
         floatTestStart.add(f);
       } else floatMissing++;
-      
+
       if( d != 0.0d ){
         fields.add("double_dd"); fields.add("" + d);
         doubleTestStart.add(d);
       } else doubleMissing++;
-      
+
       if( (j%DATE) != 0 ){
         fields.add("date_dtd"); fields.add(dt);
         dateTestStart.add(dt);
       } else dateMissing++;
-      
+
       if( (j%STRING) != 0 ){
         fields.add("string_sd"); fields.add(s);
         stringTestStart.add(s);
@@ -117,7 +117,7 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     }
     req.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
-      
+
   @Test
   public void sumTest() throws Exception {
     String[] params = new String[] {
@@ -128,30 +128,30 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int
     Double intResult = getValue(response, "sr", "int_id");
     Double intTest = (Double)calculateNumberStat(intTestStart, "sum");
     assertEquals(responseStr, intResult,intTest);
-    
+
     //Long
     Double longResult = getValue(response, "sr", "long_ld");
     Double longTest = (Double)calculateNumberStat(longTestStart, "sum");
     assertEquals(responseStr, longResult,longTest);
-    
+
     //Float
     Double floatResult = getValue(response, "sr", "float_fd");
     Double floatTest = (Double)calculateNumberStat(floatTestStart, "sum");
     assertEquals(responseStr, floatResult,floatTest);
-    
+
     //Double
     Double doubleResult = getValue(response, "sr", "double_dd");
         Double doubleTest = (Double) calculateNumberStat(doubleTestStart, "sum");
     assertEquals(responseStr, doubleResult,doubleTest);
   }
-  
+
   @Test
-  public void meanTest() throws Exception { 
+  public void meanTest() throws Exception {
     String[] params = new String[] {
         "o.mr.s.int_id", "mean(int_id)",
         "o.mr.s.long_ld", "mean(long_ld)",
@@ -160,30 +160,30 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int
     Double intResult = getValue(response, "mr", "int_id");
     Double intTest = (Double)calculateNumberStat(intTestStart, "mean");
     assertEquals(responseStr, intResult,intTest);
-    
+
     //Long
     Double longResult = getValue(response, "mr", "long_ld");
     Double longTest = (Double)calculateNumberStat(longTestStart, "mean");
     assertEquals(responseStr, longResult,longTest);
-    
+
     //Float
     Double floatResult = getValue(response, "mr", "float_fd");
     Double floatTest = (Double)calculateNumberStat(floatTestStart, "mean");
     assertEquals(responseStr, floatResult,floatTest);
-    
+
     //Double
     Double doubleResult = getValue(response, "mr", "double_dd");
     Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "mean");
     assertEquals(responseStr, doubleResult,doubleTest);
   }
-  
+
   @Test
-  public void stddevTest() throws Exception { 
+  public void stddevTest() throws Exception {
     String[] params = new String[] {
         "o.str.s.int_id", "stddev(int_id)",
         "o.str.s.long_ld", "stddev(long_ld)",
@@ -192,17 +192,17 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int
     Double intResult = getValue(response, "str", "int_id");
     Double intTest = (Double)calculateNumberStat(intTestStart, "stddev");
     assertEquals(responseStr, intResult, intTest, 0.00000000001);
-    
+
     //Long
     Double longResult = getValue(response, "str", "long_ld");
     Double longTest = (Double)calculateNumberStat(longTestStart, "stddev");
     assertEquals(responseStr, longResult, longTest, 0.00000000001);
-    
+
     //Float
     Double floatResult = getValue(response, "str", "float_fd");
     Double floatTest = (Double)calculateNumberStat(floatTestStart, "stddev");
@@ -214,9 +214,9 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "stddev");
     assertEquals(responseStr, doubleResult, doubleTest, 0.00000000001);
   }
-  
+
   @Test
-  public void medianTest() throws Exception { 
+  public void medianTest() throws Exception {
     String[] params = new String[] {
         "o.medr.s.int_id", "median(int_id)",
         "o.medr.s.long_ld", "median(long_ld)",
@@ -226,30 +226,30 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int
     Double intResult = getValue(response, "medr", "int_id");
     Double intTest = (Double)calculateNumberStat(intTestStart, "median");
     assertEquals(responseStr, intResult,intTest);
-    
+
     //Long
     Double longResult = getValue(response, "medr", "long_ld");
     Double longTest = (Double)calculateNumberStat(longTestStart, "median");
     assertEquals(responseStr, longResult,longTest);
-    
+
     //Float
     Double floatResult = getValue(response, "medr", "float_fd");
     Double floatTest = (Double)calculateNumberStat(floatTestStart, "median");
     assertEquals(responseStr, floatResult,floatTest);
-    
+
     //Double
     Double doubleResult = getValue(response, "medr", "double_dd");
     Double doubleTest = (Double)calculateNumberStat(doubleTestStart, "median");
     assertEquals(responseStr, doubleResult,doubleTest);
-    
+
     // TODO: Add test for date median
   }
-  
+
   @Test
   public void perc20Test() throws Exception {
     String[] params = new String[] {
@@ -262,7 +262,7 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int 20
     Integer intResult = getValue(response, "p2r", "int_id");
     Integer intTest = (Integer)calculateStat(intTestStart, "perc_20");
@@ -293,9 +293,9 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     String stringTest = (String)calculateStat(stringTestStart, "perc_20");
     assertEquals(responseStr, stringResult,stringTest);
   }
-  
+
   @Test
-  public void perc60Test() throws Exception { 
+  public void perc60Test() throws Exception {
     String[] params = new String[] {
         "o.p6r.s.int_id", "percentile(60,int_id)",
         "o.p6r.s.long_ld", "percentile(60,long_ld)",
@@ -306,7 +306,7 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int 60
     Integer intResult = getValue(response, "p6r", "int_id");
     Integer intTest = (Integer)calculateStat(intTestStart, "perc_60");
@@ -337,9 +337,9 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     String stringTest = (String)calculateStat(stringTestStart, "perc_60");
     assertEquals(responseStr, stringResult,stringTest);
   }
-  
+
   @Test
-  public void minTest() throws Exception { 
+  public void minTest() throws Exception {
     String[] params = new String[] {
         "o.mir.s.int_id", "min(int_id)",
         "o.mir.s.long_ld", "min(long_ld)",
@@ -350,7 +350,7 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int
     Integer intResult = getValue(response, "mir", "int_id");
     Integer intTest = (Integer)calculateStat(intTestStart, "min");
@@ -381,9 +381,9 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     String stringTest = (String)calculateStat(stringTestStart, "min");
     assertEquals(responseStr, stringResult,stringTest);
   }
-  
+
   @Test
-  public void maxTest() throws Exception { 
+  public void maxTest() throws Exception {
     String[] params = new String[] {
         "o.mar.s.int_id", "max(int_id)",
         "o.mar.s.long_ld", "max(long_ld)",
@@ -394,7 +394,7 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int
     Integer intResult = getValue(response, "mar", "int_id");
     Integer intTest = (Integer)calculateStat(intTestStart, "max");
@@ -425,9 +425,9 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     String stringTest = (String)calculateStat(stringTestStart, "max");
     assertEquals(responseStr, stringResult,stringTest);
   }
-  
+
   @Test
-  public void uniqueTest() throws Exception { 
+  public void uniqueTest() throws Exception {
     String[] params = new String[] {
         "o.ur.s.int_id", "unique(int_id)",
         "o.ur.s.long_ld", "unique(long_ld)",
@@ -438,7 +438,7 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int
     Long intResult = getValue(response, "ur", "int_id");
     Long intTest = (Long)calculateStat(intTestStart, "unique");
@@ -469,9 +469,9 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     Long stringTest = (Long)calculateStat(stringTestStart, "unique");
     assertEquals(responseStr, stringResult,stringTest);
   }
-  
+
   @Test
-  public void countTest() throws Exception { 
+  public void countTest() throws Exception {
     String[] params = new String[] {
         "o.cr.s.int_id", "count(int_id)",
         "o.cr.s.long_ld", "count(long_ld)",
@@ -482,7 +482,7 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int
     Long intResult = getValue(response, "cr", "int_id");
     Long intTest = (Long)calculateStat(intTestStart, "count");
@@ -512,10 +512,10 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     Long stringResult = getValue(response, "cr", "string_sd");
     Long stringTest = (Long)calculateStat(stringTestStart, "count");
     assertEquals(responseStr, stringResult,stringTest);
-  }  
-    
+  }
+
   @Test
-  public void missingDefaultTest() throws Exception { 
+  public void missingDefaultTest() throws Exception {
     String[] params = new String[] {
         "o.misr.s.int_id", "missing(int_id)",
         "o.misr.s.long_ld", "missing(long_ld)",
@@ -526,7 +526,7 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int
     long intResult = getValue(response, "misr", "int_id");
     assertEquals(responseStr, intMissing,intResult);
