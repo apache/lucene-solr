@@ -29,7 +29,10 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
+import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.containsString;
 
 /**
  * TODO? perhaps use:
@@ -221,12 +224,13 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "fl", "id", "group.format", "grouped", "group.limit", "-12",
         "sort", i1 + " asc, id asc");
 
+    ignoreException("'group.offset' parameter cannot be negative");
     SolrException exception = expectThrows(SolrException.class, () -> query("q", "*:*",
         "group", "true",
         "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.offset", "-1")
     );
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
-    assertTrue(exception.getMessage().contains("'group.offset' parameter cannot be negative"));
+    Assert.assertThat(exception.getMessage(), containsString("'group.offset' parameter cannot be negative"));
 
     query("q", "*:*",
         "group", "true",
