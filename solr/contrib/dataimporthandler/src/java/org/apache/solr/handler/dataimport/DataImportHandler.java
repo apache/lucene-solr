@@ -299,7 +299,7 @@ public class DataImportHandler extends RequestHandlerBase implements
         map.put(DataImporter.MSG.TOTAL_DOCS_SKIPPED, cumulative.skipDocCount);
       }
     });
-    manager.registerGauge(this, registryName, metrics, tag, true, "importer", getCategory().toString(), scope);
+     myGauges.add( manager.registerGauge(this, registryName, metrics, tag, true, "importer", getCategory().toString(), scope));
   }
 
   // //////////////////////SolrInfoMBeans methods //////////////////////

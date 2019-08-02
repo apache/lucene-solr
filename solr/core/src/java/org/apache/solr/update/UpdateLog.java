@@ -102,6 +102,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean debug = log.isDebugEnabled();
   private boolean trace = log.isTraceEnabled();
+  private final List<SolrMetricManager.GaugeWrapper> myGauges = new ArrayList<>();
+
 
   // TODO: hack
   public FileSystem getFs() {
@@ -451,13 +453,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     };
 
-    manager.registerGauge(null, registry, bufferedOpsGauge, tag, true, "ops", scope, "buffered");
-    manager.registerGauge(null, registry, () -> logs.size(), tag, true, "logs", scope, "replay", "remaining");
-    manager.registerGauge(null, registry, () -> getTotalLogsSize(), tag, true, "bytes", scope, "replay", "remaining");
+    myGauges.add(manager.registerGauge(null, registry, bufferedOpsGauge, tag, true, "ops", scope, "buffered"));
+    myGauges.add(manager.registerGauge(null, registry, () -> logs.size(), tag, true, "logs", scope, "replay", "remaining"));
+    myGauges.add(manager.registerGauge(null, registry, () -> getTotalLogsSize(), tag, true, "bytes", scope, "replay", "remaining"));
     applyingBufferedOpsMeter = manager.meter(null, registry, "ops", scope, "applyingBuffered");
     replayOpsMeter = manager.meter(null, registry, "ops", scope, "replay");
     copyOverOldUpdatesMeter = manager.meter(null, registry, "ops", scope, "copyOverOldUpdates");
-    manager.registerGauge(null, registry, () -> state.getValue(), tag, true, "state", scope);
+    myGauges.add(manager.registerGauge(null, registry, () -> state.getValue(), tag, true, "state", scope));
   }
 
   /**
@@ -1383,6 +1385,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
+  @Override
+  public void close() {
+    for (SolrMetricManager.GaugeWrapper gauge : myGauges) {
+      gauge.unregister();
+    }
+    myGauges.clear();
+  }
 
   static class Update {
     TransactionLog log;

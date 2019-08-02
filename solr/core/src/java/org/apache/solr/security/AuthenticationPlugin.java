@@ -41,7 +41,7 @@ import org.eclipse.jetty.client.api.Request;
  * 
  * @lucene.experimental
  */
-public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, SolrMetricProducer {
+public abstract class AuthenticationPlugin implements AutoCloseable, SolrInfoBean, SolrMetricProducer {
 
   final public static String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
   final public static String HTTP_HEADER_X_SOLR_AUTHDATA = "X-Solr-AuthData";

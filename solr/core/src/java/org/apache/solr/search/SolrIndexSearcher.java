@@ -120,6 +120,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final SolrCache<Query,DocSet> filterCache;
   private final SolrCache<QueryResultKey,DocList> queryResultCache;
   private final SolrCache<String,UnInvertedField> fieldValueCache;
+  private final List<SolrMetricManager.GaugeWrapper> myGauges = new ArrayList<>();
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final Map<String,SolrCache> cacheMap;
@@ -480,6 +481,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // do this at the end so it only gets done if there are no exceptions
     numCloses.incrementAndGet();
+    for (SolrMetricManager.GaugeWrapper gauge : myGauges) {
+      gauge.unregister();
+    }
+    myGauges.clear();
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -2270,20 +2275,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
     this.registryName = registry;
     this.metricManager = manager;
-    manager.registerGauge(this, registry, () -> name, tag, true, "searcherName", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> cachingEnabled, tag, true, "caching", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> openTime, tag, true, "openedAt", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> warmupTime, tag, true, "warmupTime", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> registerTime, tag, true, "registeredAt", Category.SEARCHER.toString(), scope);
+    myGauges.add(manager.registerGauge(this, registry, () -> name, tag, true, "searcherName", Category.SEARCHER.toString(), scope));
+    myGauges.add(manager.registerGauge(this, registry, () -> cachingEnabled, tag, true, "caching", Category.SEARCHER.toString(), scope));
+    myGauges.add(manager.registerGauge(this, registry, () -> openTime, tag, true, "openedAt", Category.SEARCHER.toString(), scope));
+    myGauges.add(manager.registerGauge(this, registry, () -> warmupTime, tag, true, "warmupTime", Category.SEARCHER.toString(), scope));
+    myGauges.add(manager.registerGauge(this, registry, () -> registerTime, tag, true, "registeredAt", Category.SEARCHER.toString(), scope));
     // reader stats
-    manager.registerGauge(this, registry, () -> reader.numDocs(), tag, true, "numDocs", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.maxDoc(), tag, true, "maxDoc", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.maxDoc() - reader.numDocs(), tag, true, "deletedDocs", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.toString(), tag, true, "reader", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.directory().toString(), tag, true, "readerDir", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.getVersion(), tag, true, "indexVersion", Category.SEARCHER.toString(), scope);
+    myGauges.add(manager.registerGauge(this, registry, () -> reader.numDocs(), tag, true, "numDocs", Category.SEARCHER.toString(), scope));
+    myGauges.add(manager.registerGauge(this, registry, () -> reader.maxDoc(), tag, true, "maxDoc", Category.SEARCHER.toString(), scope));
+    myGauges.add(manager.registerGauge(this, registry, () -> reader.maxDoc() - reader.numDocs(), tag, true, "deletedDocs", Category.SEARCHER.toString(), scope));
+    myGauges.add(manager.registerGauge(this, registry, () -> reader.toString(), tag, true, "reader", Category.SEARCHER.toString(), scope));
+    myGauges.add(manager.registerGauge(this, registry, () -> reader.directory().toString(), tag, true, "readerDir", Category.SEARCHER.toString(), scope));
+    myGauges.add(manager.registerGauge(this, registry, () -> reader.getVersion(), tag, true, "indexVersion", Category.SEARCHER.toString(), scope));
     // size of the currently opened commit
-    manager.registerGauge(this, registry, () -> {
+    myGauges.add(manager.registerGauge(this, registry, () -> {
       try {
         Collection<String> files = reader.getIndexCommit().getFileNames();
         long total = 0;
@@ -2294,7 +2299,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } catch (Exception e) {
         return -1;
       }
-    }, tag, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
+    }, tag, true, "indexCommitSize", Category.SEARCHER.toString(), scope));
 
   }
 

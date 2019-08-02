@@ -52,8 +52,7 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
 
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
-  private SolrMetricManager metricManager;
-  private String registryName;
+  private SolrMetricManager.GaugeWrapper myGauge;
 
   public HdfsLocalityReporter() {
     cache = new ConcurrentHashMap<>();
@@ -97,8 +96,6 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
    */
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    this.metricManager = manager;
-    this.registryName = registryName;
     registry = manager.registry(registryName);
     MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
       long totalBytes = 0;
@@ -149,7 +146,7 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
         map.put(LOCALITY_BLOCKS_RATIO, localCount / (double) totalCount);
       }
     });
-    manager.registerGauge(this, registryName, metricsMap, tag, true, "hdfsLocality", getCategory().toString(), scope);
+    myGauge = manager.registerGauge(this, registryName, metricsMap, tag, true, "hdfsLocality", getCategory().toString(), scope);
   }
 
   /**
@@ -195,4 +192,8 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
     }
   }
 
+  @Override
+  public void close() throws Exception {
+    if (myGauge != null) myGauge.unregister();
+  }
 }

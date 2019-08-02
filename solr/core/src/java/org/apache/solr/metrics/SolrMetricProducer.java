@@ -19,7 +19,14 @@ package org.apache.solr.metrics;
 /**
  * Used by objects that expose metrics through {@link SolrCoreMetricManager}.
  */
-public interface SolrMetricProducer {
+public interface SolrMetricProducer extends AutoCloseable {
+
+  // in 9.0 every lcass will be forced to implement close and release their gauges
+  @Override
+  default void close() throws Exception{
+
+
+  }
 
   /**
    * Initializes metrics specific to this producer

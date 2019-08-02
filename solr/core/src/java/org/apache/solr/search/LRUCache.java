@@ -47,6 +47,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(LRUCache.class);
+  private SolrMetricManager.GaugeWrapper myGauge;
 
   /* An instance of this class will be shared across multiple instances
    * of an LRUCache at the same time.  Make sure everything is thread safe.
@@ -286,6 +287,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public void close() {
+    if(myGauge != null) myGauge.unregister();
 
   }
 
@@ -334,7 +336,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       res.put("cumulative_evictions", stats.evictions.longValue());
       res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
     });
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    myGauge = manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
   }
 
   // for unit tests only

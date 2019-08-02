@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -82,6 +83,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private MetricRegistry registry;
   protected String registryName;
   protected SolrMetricManager metricManager;
+  protected final ArrayList<SolrMetricManager.GaugeWrapper> myGauges = new ArrayList<>();
 
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
@@ -157,10 +159,10 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     requests = manager.counter(this, registryName, "requests", getCategory().toString(), scope);
     MetricsMap metricsMap = new MetricsMap((detail, map) ->
       shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
-    manager.registerGauge(this, registryName, metricsMap, tag, true, "shardRequests", getCategory().toString(), scope);
+    myGauges.add(manager.registerGauge(this, registryName, metricsMap, tag, true, "shardRequests", getCategory().toString(), scope));
     requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
     totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);
-    manager.registerGauge(this, registryName, () -> handlerStart, tag, true, "handlerStart", getCategory().toString(), scope);
+    myGauges.add(manager.registerGauge(this, registryName, () -> handlerStart, tag, true, "handlerStart", getCategory().toString(), scope));
   }
 
   public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {
@@ -322,6 +324,14 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   @Override
   public Collection<Api> getApis() {
     return ImmutableList.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
+  }
+
+  @Override
+  public void close()  {
+    for (SolrMetricManager.GaugeWrapper gauge : myGauges) {
+      gauge.unregister();
+    }
+    myGauges.clear();
   }
 }
 

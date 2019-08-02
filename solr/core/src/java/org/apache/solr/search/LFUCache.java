@@ -86,6 +86,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private int initialSize;
   private int acceptableSize;
   private boolean cleanupThread;
+  private SolrMetricManager.GaugeWrapper myGauge;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -227,6 +228,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
     cache.destroy();
+    if(myGauge != null) myGauge.unregister();
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -311,7 +313,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
       }
     });
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    myGauge = manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
   }
 
   // for unit tests only

@@ -18,6 +18,7 @@ package org.apache.solr.metrics;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -665,30 +666,63 @@ public class SolrMetricManager {
    * wrappers with the matching tag using {@link #unregisterGauges(String, String)}.
    */
   public static class GaugeWrapper<T> implements Gauge<T> {
-    private final Gauge<T> gauge;
+    private final WeakReference<Gauge<T>> gauge;
     private final String tag;
+    private final String registry;
+    private final SolrMetricManager solrMetricManager;
+    private boolean isUnregistered = false;
+    private static final Gauge NULL_GAUGE = () -> null;
+    private final String className;
 
-    public GaugeWrapper(Gauge<T> gauge, String tag) {
-      this.gauge = gauge;
+    public GaugeWrapper(Gauge<T> gauge, String tag, String registry, SolrMetricManager solrMetricManager) {
+      this.gauge = new WeakReference<>(gauge);
       this.tag = tag;
+      this.registry = registry;
+      this.solrMetricManager = solrMetricManager;
+      this.className = gauge.getClass().getName();
     }
 
     @Override
     public T getValue() {
-      return gauge.getValue();
+      return getGauge().getValue();
     }
+
 
     public String getTag() {
       return tag;
     }
 
     public Gauge<T> getGauge() {
-      return gauge;
+      Gauge<T> val = gauge.get();
+      if (val == null && !isUnregistered) {
+        log.warn("POSSIBLE MEMORY LEAK.DID NOT UNREGISTER metrics by:  {}", className);
+        unregister();
+      }
+      return val == null ? NULL_GAUGE : val;
     }
+
+
+    public void unregister() {
+      if(isUnregistered) return;
+      MetricRegistry registry = solrMetricManager.registry(this.registry);
+      registry.removeMatching((name, metric) -> {
+        if (metric instanceof GaugeWrapper &&
+            this == metric) {
+          return true;
+        } else {
+          return false;
+        }
+      });
+      isUnregistered = true;
+    }
+
+
   }
 
-  public void registerGauge(SolrInfoBean info, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
-    registerMetric(info, registry, new GaugeWrapper(gauge, tag), force, metricName, metricPath);
+  public GaugeWrapper registerGauge(SolrInfoBean info, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
+    GaugeWrapper gaugeWrapper = new GaugeWrapper(gauge, tag, registry, this);
+    registerMetric(info, registry, gaugeWrapper, force, metricName, metricPath);
+    return gaugeWrapper;
   }
 
   public int unregisterGauges(String registryName, String tag) {

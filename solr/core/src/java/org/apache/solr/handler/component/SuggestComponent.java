@@ -350,19 +350,20 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     return "Suggester component";
   }
 
+  List<SolrMetricManager.GaugeWrapper> myGauges = new ArrayList<>();
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
     this.registryName = registryName;
     this.metricManager = manager;
     registry = manager.registry(registryName);
-    manager.registerGauge(this, registryName, () -> ramBytesUsed(), tag, true, "totalSizeInBytes", getCategory().toString(), scope);
+    myGauges.add(manager.registerGauge(this, registryName, () -> ramBytesUsed(), tag, true, "totalSizeInBytes", getCategory().toString(), scope));
     MetricsMap suggestersMap = new MetricsMap((detailed, map) -> {
       for (Map.Entry<String, SolrSuggester> entry : suggesters.entrySet()) {
         SolrSuggester suggester = entry.getValue();
         map.put(entry.getKey(), suggester.toString());
       }
     });
-    manager.registerGauge(this, registryName, suggestersMap, tag, true, "suggesters", getCategory().toString(), scope);
+    myGauges.add(manager.registerGauge(this, registryName, suggestersMap, tag, true, "suggesters", getCategory().toString(), scope));
   }
 
   @Override
@@ -373,7 +374,15 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     }
     return sizeInBytes;
   }
-  
+
+  @Override
+  public void close() throws Exception {
+    for (SolrMetricManager.GaugeWrapper gauge : myGauges) {
+      gauge.unregister();
+    }
+    myGauges.clear();
+  }
+
   @Override
   public Collection<Accountable> getChildResources() {
     return Accountables.namedAccountables("field", suggesters);

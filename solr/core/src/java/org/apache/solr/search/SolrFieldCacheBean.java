@@ -37,6 +37,7 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
 
   private MetricRegistry registry;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private SolrMetricManager.GaugeWrapper myGauge;
 
   @Override
   public String getName() { return this.getClass().getName(); }
@@ -72,6 +73,11 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
         map.put("entries_count", UninvertingReader.getUninvertedStatsSize());
       }
     });
-    manager.registerGauge(this, registryName, metricsMap, tag, true, "fieldCache", Category.CACHE.toString(), scope);
+    myGauge = manager.registerGauge(this, registryName, metricsMap, tag, true, "fieldCache", Category.CACHE.toString(), scope);
+  }
+
+  @Override
+  public void close() throws Exception {
+    if (myGauge != null) myGauge.unregister();
   }
 }

@@ -79,6 +79,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
+  private SolrMetricManager.GaugeWrapper myGauge;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -231,6 +232,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
     cache.destroy();
+    if(myGauge != null) myGauge.unregister();
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -304,7 +306,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
         }
       }
     });
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    myGauge = manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
   }
 
 
