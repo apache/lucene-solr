@@ -126,6 +126,8 @@ Bug Fixes
 * SOLR-13664: Fixed SolrTestCaseJ4.deleteCore() to properly reset the dataDir used by initCore()
   (hossman)
 
+* SOLR-13672: Cloud -> Zk Status page now parses response from Zookeeper 3.5.5 correctly (Jörn Franke, janhoy)
+
 Other Changes
 ----------------------
 
