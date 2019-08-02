@@ -44,7 +44,7 @@ public class LowerEvaluator extends RecursiveObjectEvaluator implements OneValue
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      return value.toString().toLowerCase();
+      return value.toString().toLowerCase(Locale.getDefault());
     }
   }
 }
