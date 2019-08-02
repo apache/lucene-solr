@@ -289,34 +289,41 @@ public class HttpSolrCall {
           }
 
         } else {
-          // if we couldn't find it locally, look on other nodes or pull from blob
+          // check pull from blob
           if (idx > 0) {
-            // if core is not present locally but ZK expects replica on this node, enqueue pull
-            Replica replica = getReplicaFromCurrentNode(collectionName);
-            if (replica != null) {
-              String coreName = replica.getCoreName();
-              String shardName = getShardName(collectionName, coreName);
-              BlobCoreSyncer.pull(coreName, shardName, collectionName, cores, true, false);
-              core = cores.getCore(coreName);
-              if (!retry) {
-                action = RETRY;
-                return;
+            // if the core belongs to a replica of a shared collection and if core is not 
+            // present locally but ZK expects replica on this node, enqueue pull
+            Replica replica = null;
+            if (collection != null && collection.getSharedIndex()) {
+              replica = getReplicaFromCurrentNode(collectionName);
+              if (replica != null) {
+                String coreName = replica.getCoreName();
+                String shardName = getShardName(collectionName, coreName);
+                BlobCoreSyncer.pull(coreName, shardName, collectionName, cores, true, false);
+                core = cores.getCore(coreName);
+                if (!retry) {
+                  action = RETRY;
+                  return;
+                }
               }
-            } else {
+            } 
+            
+            if (replica == null) {
+              // if we couldn't find it locally, look on other nodes
               extractRemotePath(collectionName, origCorename);
               if (action == REMOTEQUERY) {
                 path = path.substring(idx);
                 return;
               }
             }
-          } 
-          
+          }
           //core is not available locally or remotely
           autoCreateSystemColl(collectionName);
           if (action != null) return;
-        }
+        } 
       }
     }
+    
 
     // With a valid core...
     if (core != null) {

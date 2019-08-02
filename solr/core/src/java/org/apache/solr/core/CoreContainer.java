@@ -966,6 +966,10 @@ public class CoreContainer {
         if (metricManager != null) {
           metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.cluster));
         }
+        
+        if (sharedStoreManager != null) {
+          sharedStoreManager.getBlobProcessManager().shutdown();
+        }
       }
 
       try {

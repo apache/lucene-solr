@@ -333,11 +333,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
       
-      try {
-        cc.getSharedStoreManager().getBlobProcessManager().shutdown();
-      } catch (Exception e) {
-        log.warn("Exception closing BlobProcessManager", e);
-      }
     } finally {
       if (cc != null) {
         httpClient = null;

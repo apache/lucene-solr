@@ -52,6 +52,7 @@ public class BlobProcessUtil {
     final CoreSyncFeeder rf = runningFeeder;
     runningFeeder = null;
     if (rf != null) {
+      logger.info("Shutting down CorePullerFeeder");
       rf.close();
     }
   }
