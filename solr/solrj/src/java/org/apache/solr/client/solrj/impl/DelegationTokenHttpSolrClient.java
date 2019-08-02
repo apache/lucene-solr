@@ -99,7 +99,7 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
   @Override
   public void setQueryParams(Set<String> queryParams) {
     queryParams = queryParams == null ?
-        Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(DELEGATION_TOKEN_PARAM))): queryParams;
+        Set.copyOf(Arrays.asList(DELEGATION_TOKEN_PARAM)): queryParams;
     if (!queryParams.contains(DELEGATION_TOKEN_PARAM)) {
       queryParams = new HashSet<String>(queryParams);
       queryParams.add(DELEGATION_TOKEN_PARAM);
