@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.LuceneTestCase;
@@ -168,27 +170,33 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     CollectionProperties collectionProps = new CollectionProperties(zkClient());
 
     // Add a watcher to collection props
-    final Watcher watcher = new Watcher();
+    final Watcher watcher = new Watcher("Watcher", random().nextBoolean());
     zkStateReader.registerCollectionPropsWatcher(collectionName, watcher);
     assertEquals(0, watcher.waitForTrigger(TEST_NIGHTLY?2000:200));
 
     // Trigger a new znode event
+    log.info("setting value1");
     collectionProps.setCollectionProperty(collectionName, "property", "value1");
     assertEquals(1, watcher.waitForTrigger());
     assertEquals("value1", watcher.getProps().get("property"));
 
     // Trigger a value change event
+    log.info("setting value2");
     collectionProps.setCollectionProperty(collectionName, "property", "value2");
-    watcher.waitForTrigger();
+    log.info("(value2) waitForTrigger=={}", watcher.waitForTrigger());
     assertEquals("value2", watcher.getProps().get("property"));
 
     // Delete the properties znode
+    log.info("deleting props");
     zkStateReader.getZkClient().delete("/collections/" + collectionName + "/collectionprops.json", -1, true);
     assertEquals(1, watcher.waitForTrigger());
-    assertTrue(watcher.getProps().isEmpty());
+    final Map<String, String> props = watcher.getProps();
+    assertTrue(props.toString(), props.isEmpty());
 
     // Remove watcher and make sure that the watcher is not triggered
+    log.info("removing watcher");
     zkStateReader.removeCollectionPropsWatcher(collectionName, watcher);
+    log.info("setting value1 (again)");
     collectionProps.setCollectionProperty(collectionName, "property", "value1");
     assertEquals("ZK watcher was triggered after it was removed for collection " + collectionName, 0, watcher.waitForTrigger());
   }
@@ -202,49 +210,78 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     zkStateReader.registerCore(collectionName);
 
     // Subsequent watchers won't be triggered when adding
-    final Watcher watcher1 = new Watcher();
+    final Watcher watcher1 = new Watcher("Watcher1", random().nextBoolean());
     zkStateReader.registerCollectionPropsWatcher(collectionName, watcher1);
     watcher1.waitForTrigger(); // this might still get triggered because of registerCore
-    final Watcher watcher2 = new Watcher();
+    final Watcher watcher2 = new Watcher("Watcher2", random().nextBoolean());
     zkStateReader.registerCollectionPropsWatcher(collectionName, watcher2);
     assertEquals(0, watcher2.waitForTrigger(TEST_NIGHTLY?2000:200));
 
     // Make sure a value change triggers both watchers
+    log.info("setting value1");
     collectionProps.setCollectionProperty(collectionName, "property", "value1");
     assertEquals(1, watcher1.waitForTrigger());
     assertEquals(1, watcher2.waitForTrigger());
+    assertEquals("value1", watcher1.getProps().get("property"));
+    assertEquals("value1", watcher2.getProps().get("property"));
 
     // The watchers should be triggered when after the core is unregistered
     zkStateReader.unregisterCore(collectionName);
+    log.info("setting value2");
     collectionProps.setCollectionProperty(collectionName, "property", "value2");
     assertEquals(1, watcher1.waitForTrigger());
+    assertEquals(1, watcher2.waitForTrigger());
+    assertEquals("value2", watcher1.getProps().get("property"));
+    assertEquals("value2", watcher2.getProps().get("property"));
 
     // The watcher should be triggered after another watcher is removed
+    log.info("removing watcher2");
     zkStateReader.removeCollectionPropsWatcher(collectionName, watcher2);
+    log.info("setting value3");
     collectionProps.setCollectionProperty(collectionName, "property", "value3");
     assertEquals(1, watcher1.waitForTrigger());
+    assertEquals("value3", watcher1.getProps().get("property"));
 
     // The last watcher shouldn't be triggered after removed, even if the core is registered
     zkStateReader.registerCore(collectionName);
+    log.info("removing watcher1");
     zkStateReader.removeCollectionPropsWatcher(collectionName, watcher1);
+    log.info("setting value4");
     collectionProps.setCollectionProperty(collectionName, "property", "value4");
     assertEquals(0, watcher1.waitForTrigger(TEST_NIGHTLY?2000:200));
   }
 
   private class Watcher implements CollectionPropsWatcher {
-    private Map<String, String> props = null;
-    private AtomicInteger triggered = new AtomicInteger();
+    private final String name;
+    private final boolean forceReadPropsFromZk;
+    private volatile Map<String, String> props = Collections.emptyMap();
+    private final AtomicInteger triggered = new AtomicInteger();
 
+    public Watcher(final String name, final boolean forceReadPropsFromZk) {
+      this.name = name;
+      this.forceReadPropsFromZk = forceReadPropsFromZk;
+      log.info("Watcher '{}' initialized with forceReadPropsFromZk={}", name, forceReadPropsFromZk);
+    }
+    
     @Override
     public boolean onStateChanged(Map<String, String> collectionProperties) {
-      triggered.incrementAndGet();
-      final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-      props = zkStateReader.getCollectionProperties(collectionName);
+      log.info("{}: state changed...", name);
+      if (forceReadPropsFromZk) {
+        final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+        props = Collections.unmodifiableMap(new HashMap(zkStateReader.getCollectionProperties(collectionName)));
+        log.info("{}: Setting props from zk={}", name, props);
+      } else {
+        props = Collections.unmodifiableMap(new HashMap(collectionProperties));
+        log.info("{}: Setting props from caller={}", name, props);
+      }
+      
       synchronized (this) {
+        triggered.incrementAndGet();
+        log.info("{}: notifying", name);
         notifyAll();
       }
 
-
+      log.info("{}: done", name);
       return false;
     }
 
@@ -263,9 +300,8 @@ public class CollectionPropsTest extends SolrCloudTestCase {
         }
 
         wait(waitTime);
+        return triggered.getAndSet(0);
       }
-
-      return triggered.getAndSet(0);
     }
   }
 }
