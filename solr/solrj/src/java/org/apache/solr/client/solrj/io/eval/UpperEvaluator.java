@@ -44,7 +44,7 @@ public class UpperEvaluator extends RecursiveObjectEvaluator implements OneValue
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      return value.toString().toUpperCase();
+      return value.toString().toUpperCase(Locale.getDefault());
     }
   }
 }
