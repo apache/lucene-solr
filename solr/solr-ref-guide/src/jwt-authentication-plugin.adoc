@@ -28,12 +28,13 @@ The simplest possible `security.json` for registering the plugin without configu
 ----
 {
   "authentication": {
-    "class":"solr.JWTAuthPlugin"
+    "class":"solr.JWTAuthPlugin",
+    "blockUnknown":"false"
   }
 }
 ----
 
-The plugin will block anonymous traffic in this mode, since the default for `blockUnknown` is true. It is then possible to start configuring the plugin using REST API calls, which is described below.
+The plugin will block anonymous traffic in this mode if the `blockUnknown` property is not set to false as it is above, since the default for `blockUnknown` is true. It is then possible to start configuring the plugin using REST API calls, which is described below.
 
 == Configuration Parameters
 
