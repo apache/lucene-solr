@@ -231,6 +231,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     );
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
     Assert.assertThat(exception.getMessage(), containsString("'group.offset' parameter cannot be negative"));
+    resetExceptionIgnores();
 
     query("q", "*:*",
         "group", "true",
