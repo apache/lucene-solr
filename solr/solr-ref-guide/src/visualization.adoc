@@ -83,6 +83,10 @@ image::images/math-expressions/convex.png[]
 
 image::images/math-expressions/sqlagg.png[]
 
+=== Visualizing CSV Files
+
+image::images/math-expressions/csv.png[]
+
 === Matrices and Heat Maps
 
 image::images/math-expressions/heat.png[]
