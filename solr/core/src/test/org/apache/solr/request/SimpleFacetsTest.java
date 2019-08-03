@@ -490,22 +490,20 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         "*[count(//lst[@name='airport_s1']/int)=1]",
         "//lst[@name='airport_s1']/int[@name='ams'][.='2']"
     );
-    
-    try {
+
+    SolrException e = expectThrows(SolrException.class, () -> {
       h.query(
-           req(
-               "q", "*:*",
-               "fq", "id_i1:[2000 TO 2004]",
-               "group.facet", "true",
-               "facet", "true",
-               "facet.field", "airport_s1",
-               "facet.prefix", "a"
-           )
+          req(
+              "q", "*:*",
+              "fq", "id_i1:[2000 TO 2004]",
+              "group.facet", "true",
+              "facet", "true",
+              "facet.field", "airport_s1",
+              "facet.prefix", "a"
+          )
       );
-      fail("Exception should have been thrown");
-    } catch (SolrException e) {
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    }
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
   }
 
   @Test

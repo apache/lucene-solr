@@ -38,12 +38,8 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
   public void testFailsIfNoClassSpecifiedForWrappedPolicy() {
     final MergePolicyFactoryArgs args = new MergePolicyFactoryArgs();
     args.add(WrapperMergePolicyFactory.WRAPPED_PREFIX, "foo");
-    try {
-      new DefaultingWrapperMergePolicyFactory(resourceLoader, args, null).getMergePolicy();
-      fail("Should have failed when no 'class' specified for wrapped merge policy");
-    } catch (final IllegalArgumentException e) {
-      // Good!
-    }
+    expectThrows(IllegalArgumentException.class,
+        () -> new DefaultingWrapperMergePolicyFactory(resourceLoader, args, null).getMergePolicy());
   }
 
   public void testProperlyInitializesWrappedMergePolicy() {
