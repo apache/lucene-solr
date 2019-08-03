@@ -56,14 +56,10 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     // close() to ensure the written bytes are not buffered and counted
     // against the directory size
     out.close();
-    out = dir.createOutput("bar", IOContext.DEFAULT);
-    try {
-      out.writeBytes(bytes, bytes.length);
-      fail("should have failed on disk full");
-    } catch (IOException e) {
-      // expected
-    }
-    out.close();
+
+    IndexOutput out2 = dir.createOutput("bar", IOContext.DEFAULT);
+    expectThrows(IOException.class, () -> out2.writeBytes(bytes, bytes.length));
+    out2.close();
     dir.close();
     
     // test copyBytes
@@ -74,14 +70,10 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     // close() to ensure the written bytes are not buffered and counted
     // against the directory size
     out.close();
-    out = dir.createOutput("bar", IOContext.DEFAULT);
-    try {
-      out.copyBytes(new ByteArrayDataInput(bytes), bytes.length);
-      fail("should have failed on disk full");
-    } catch (IOException e) {
-      // expected
-    }
-    out.close();
+
+    IndexOutput out3 = dir.createOutput("bar", IOContext.DEFAULT);
+    expectThrows(IOException.class, () -> out3.copyBytes(new ByteArrayDataInput(bytes), bytes.length));
+    out3.close();
     dir.close();
   }
   

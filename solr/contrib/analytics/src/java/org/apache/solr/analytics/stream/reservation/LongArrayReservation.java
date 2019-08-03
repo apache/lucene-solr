@@ -28,7 +28,7 @@ import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 
 public class LongArrayReservation extends ReductionDataArrayReservation<LongConsumer, LongSupplier> {
-  
+
   public LongArrayReservation(LongConsumer applier, IntConsumer sizeApplier, LongSupplier extractor, IntSupplier sizeExtractor) {
     super(applier, sizeApplier, extractor, sizeExtractor);
   }

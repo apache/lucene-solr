@@ -32,15 +32,15 @@ import org.apache.solr.analytics.util.function.FloatConsumer;
 public interface IntValueStream extends AnalyticsValueStream {
   /**
    * Stream the int representations of all current values, if any exist.
-   * 
+   *
    * @param cons The consumer to accept the values
    */
   void streamInts(IntConsumer cons);
 
   /**
-   * An interface that represents all of the types a {@link IntValueStream} should be able to cast to. 
+   * An interface that represents all of the types a {@link IntValueStream} should be able to cast to.
    */
-  public static interface CastingIntValueStream extends IntValueStream, LongValueStream, FloatValueStream, 
+  public static interface CastingIntValueStream extends IntValueStream, LongValueStream, FloatValueStream,
                                                         DoubleValueStream, StringValueStream {}
 
   /**

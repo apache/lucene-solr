@@ -136,7 +136,7 @@ public abstract class PrimaryNode extends Node {
     message("top: now flushAndRefresh");
     Set<String> completedMergeFiles;
     synchronized(finishedMergedFiles) {
-      completedMergeFiles = Collections.unmodifiableSet(new HashSet<>(finishedMergedFiles));
+      completedMergeFiles = Set.copyOf(finishedMergedFiles);
     }
     mgr.maybeRefreshBlocking();
     boolean result = setCurrentInfos(completedMergeFiles);

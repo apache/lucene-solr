@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.function.DoubleConsumer;
 
 public class DoubleDataReader extends ReductionDataReader<DoubleConsumer> {
-  
+
   public DoubleDataReader(DataInput inputStream, DoubleConsumer applier) {
     super(inputStream, applier);
   }

@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 
 import java.io.File;
-import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +39,6 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.TimeSource;
@@ -97,12 +95,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
     }
     
     deleteCore();
-    
-    try {
-      FileUtils.deleteDirectory(initCoreDataDir);
-    } catch (IOException e) {
-      log.error("Exception deleting core directory.", e);
-    }
   }
 
   private Map<String, Metric> getMetrics() {

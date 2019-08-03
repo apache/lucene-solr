@@ -68,7 +68,7 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
   @Override
   public void inform(SolrCore core) {
     core.registerResponseWriter(AnalyticsShardResponseWriter.NAME, new AnalyticsShardResponseWriter());
-    
+
     indexSchema = core.getLatestSchema();
     AnalyticsRequestParser.init();
   }
@@ -83,24 +83,24 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
       }
       // The olap-style requests are converted to the current format in the AnalyticsComponent
       // so the AnalyticsHandler only needs to handle current format requests.
-      AnalyticsRequestManager manager = AnalyticsRequestParser.parse(req.getParams().get(AnalyticsRequestParser.analyticsParamName), 
+      AnalyticsRequestManager manager = AnalyticsRequestParser.parse(req.getParams().get(AnalyticsRequestParser.analyticsParamName),
                                                                 new ExpressionFactory(indexSchema),
                                                                 false);
       // Collect the reduction data for the request
       SolrIndexSearcher searcher = req.getSearcher();
       Filter filter = docs.getTopFilter();
       AnalyticsDriver.drive(manager, searcher, filter, req);
-      
+
       // Do not calculate results, instead export the reduction data for this shard.
       rsp.addResponse(new AnalyticsResponse(manager));
     } catch (SolrException e) {
       rsp.addResponse(new AnalyticsResponse(e));
     }
   }
-  
+
   /**
    * Get the documents returned by the query and filter queries included in the request.
-   * 
+   *
    * @param req the request sent to the handler
    * @return the set of documents matching the query
    * @throws SyntaxError if there is a syntax error in the queries
@@ -112,7 +112,7 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
 
     // Query Param
     String queryString = params.get( CommonParams.Q );
-    
+
     String defType = params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE);
 
     QParser parser = QParser.getParser(queryString, defType, req);
