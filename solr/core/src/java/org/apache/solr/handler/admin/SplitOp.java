@@ -47,6 +47,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.update.SplitIndexCommand;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -263,6 +264,11 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     public int compareTo(RangeCount o) {
       return this.range.compareTo(o.range);
     }
+
+    @Override
+    public String toString() {
+      return range.toString() + "=" + count;
+    }
   }
 
 
@@ -286,6 +292,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
   // Returns a list of range counts sorted by the range lower bound
   static Collection<RangeCount> getHashHistogram(SolrIndexSearcher searcher, String prefixField, DocRouter router, DocCollection collection) throws IOException {
+    RTimer timer = new RTimer();
     TreeMap<DocRouter.Range,RangeCount> counts = new TreeMap<>();
 
     Terms terms = MultiTerms.getTerms(searcher.getIndexReader(), prefixField);
@@ -293,19 +300,30 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       return counts.values();
     }
 
+    int numPrefixes = 0;
+    int numTriLevel = 0;
+    int numCollisions = 0;
+    long sumBuckets = 0;
+
     TermsEnum termsEnum = terms.iterator();
     for (;;) {
       BytesRef term = termsEnum.next();
       if (term == null) break;
+      numPrefixes++;
 
       String termStr = term.utf8ToString();
       int firstSep = termStr.indexOf(CompositeIdRouter.SEPARATOR);
       // truncate to first separator since we don't support multiple levels currently
+      // NOTE: this does not currently work for tri-level composite ids since the number of bits allocated to the first ID is 16 for a 2 part id
+      // and 8 for a 3 part id!
       if (firstSep != termStr.length()-1 && firstSep > 0) {
+        numTriLevel++;
         termStr = termStr.substring(0, firstSep+1);
       }
+
       DocRouter.Range range = router.getSearchRangeSingle(termStr, null, collection);
       int numDocs = termsEnum.docFreq();
+      sumBuckets += numDocs;
 
       RangeCount rangeCount = new RangeCount(range, numDocs);
 
@@ -313,8 +331,11 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       if (prev != null) {
         // we hit a hash collision or truncated a prefix to first level, so add the buckets together.
         rangeCount.count += prev.count;
+        numCollisions++;
       }
     }
+
+    log.info("Split histogram: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numTriLevel={} numCollisions={}", timer.getTime(), counts.size(), sumBuckets, numPrefixes, numTriLevel, numCollisions);
 
     return counts.values();
   }
@@ -322,7 +343,6 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
   // returns the list of recommended splits, or null if there is not enough information
   static Collection<DocRouter.Range> getSplits(Collection<RangeCount> rawCounts, DocRouter.Range currentRange) throws Exception {
-
     int totalCount = 0;
     RangeCount biggest = null; // keep track of the largest in case we need to split it out into it's own shard
     RangeCount last = null;  // keep track of what the last range is
