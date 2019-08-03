@@ -41,7 +41,7 @@ The plugin will block anonymous traffic in this mode, since the default for `blo
 [%header,format=csv,separator=;]
 |===
 Key                  ; Description                                             ; Default
-blockUnknown         ; Set to `true` in order to block requests from users without a token  ; `truee`
+blockUnknown         ; Set to `true` in order to block requests from users without a token  ; `true`
 wellKnownUrl         ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; (no default)
 clientId             ; Client identifier for use with OpenID Connect           ; (no default value) Required to authenticate with Admin UI
 realm                ; Name of the authentication realm to echo back in HTTP 401 responses. Will also be displayed in Admin UI login page ; 'solr-jwt'
