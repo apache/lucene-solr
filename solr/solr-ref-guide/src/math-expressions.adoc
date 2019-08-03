@@ -31,7 +31,7 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<loading.adoc#loading,Data Loading>>*: Visualizing, transforming and loading CSV files.
 
-*<<search-sample.adoc#search-sample,Searching, Sampling and Aggregation>>*: Searching, sampling and aggregation Streaming Expressions and visualization.
+*<<search-sample.adoc#search-sample,Searching, Sampling and Aggregation>>*: Searching, sampling, aggregation and visualization of result sets.
 
 *<<transform.adoc#transforming-data,Transforming Data>>*: Transforming and filtering result sets.
 
