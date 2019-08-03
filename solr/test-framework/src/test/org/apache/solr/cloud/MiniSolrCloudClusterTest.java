@@ -82,16 +82,10 @@ public class MiniSolrCloudClusterTest extends SolrTestCase {
       }
     };
 
-    try {
-      cluster.shutdown();
-      fail("Expected an exception to be thrown on MiniSolrCloudCluster shutdown");
-    }
-    catch (Exception e) {
-      assertEquals("Error shutting down MiniSolrCloudCluster", e.getMessage());
-      assertEquals("Expected one suppressed exception", 1, e.getSuppressed().length);
-      assertEquals("Fake IOException on shutdown!", e.getSuppressed()[0].getMessage());
-    }
-
+    Exception ex = expectThrows(Exception.class, cluster::shutdown);
+    assertEquals("Error shutting down MiniSolrCloudCluster", ex.getMessage());
+    assertEquals("Expected one suppressed exception", 1, ex.getSuppressed().length);
+    assertEquals("Fake IOException on shutdown!", ex.getSuppressed()[0].getMessage());
   }
 
   @Test

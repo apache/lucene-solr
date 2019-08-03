@@ -898,13 +898,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   private static void expectError(String name, Object val, String msg) {
-    try {
-      Clause.validate(name, val, true);
-      fail("expected exception containing " + msg);
-    } catch (Exception e) {
-      assertTrue("expected exception containing " + msg, e.getMessage().contains(msg));
-    }
-
+    Exception e = expectThrows(Exception.class, () -> Clause.validate(name, val, true));
+    assertTrue("expected exception containing " + msg, e.getMessage().contains(msg));
   }
 
   public void testOperands() {
