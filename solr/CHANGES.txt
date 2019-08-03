@@ -57,13 +57,8 @@ Upgrade Notes
 
 * SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
 
-<<<<<<< HEAD
-* SOLR-13649: When Basic Authentication is enabled, users will be required to enter credentials to enable HTTP access to SOLR. The blockUnknown parameter can still be set to false to disable the need to authenticate. (janhoy, marcussorealheis) 
+* SOLR-13649: BasicAuth property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need to revert to the previous default behavior, you need to explicitly set 'blockUnknown':'false' in the security.json. (janhoy, marcussorealheis) 
 
-=======
-* SOLR-13649: When Basic Authentication is enabled, users will be required to enter credentials to access the Admin UI and associated operations by default. The blockUnknown parameter can still be set to false to disable the need to authenticate. (marcussorealheis) 
-  
->>>>>>> 297baa055c28a196bca21e890c3034643e8af53b
 * SOLR-11266: default Content-Type override for JSONResponseWriter from _default configSet is removed. Example has been
   provided in sample_techproducts_configs to override content-type. (Ishan Chattopadhyaya, Munendra S N, Gus Heck)
 
@@ -71,7 +66,6 @@ Other Changes
 ----------------------
 
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
-
 
 ==================  8.3.0 ==================
 
