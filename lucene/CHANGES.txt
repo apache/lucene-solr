@@ -14,6 +14,8 @@ New Features
 
 * LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)
 
+* LUCENE-8764: Add "export all terms" feature to Luke. (Leonardo Menezes via Tomoko Uchida)
+
 Improvements
 
 * LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
