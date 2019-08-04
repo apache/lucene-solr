@@ -22,7 +22,7 @@
    Resolve analysis factories by name. See: SOLR-13593
    -->
 
-  <!-- A text field with face tokenizer factory. An exception should be thrown when loading this schema. -->
+  <!-- A text field with fake tokenizer factory. An exception should be thrown when loading this schema. -->
   <fieldType name="text_ws" class="solr.TextField" positionIncrementGap="100">
     <analyzer>
       <tokenizer name="bogus"/>
