@@ -220,7 +220,7 @@ public class FSTTester<T> {
           return null;
         }
       }
-      output = fst.outputs.add(output, arc.output);
+      output = fst.outputs.add(output, arc.output());
     }
 
     if (prefixLength != null) {
@@ -253,14 +253,14 @@ public class FSTTester<T> {
       arcs.clear();
 
       // accumulate output
-      output = fst.outputs.add(output, arc.output);
+      output = fst.outputs.add(output, arc.output());
 
       // append label
-      if (arc.label == FST.END_LABEL) {
+      if (arc.label() == FST.END_LABEL) {
         break;
       }
 
-      in.append(arc.label);
+      in.append(arc.label());
     }
 
     return output;
@@ -279,7 +279,7 @@ public class FSTTester<T> {
                                               allowRandomSuffixSharing ? TestUtil.nextInt(random, 1, 10) : Integer.MAX_VALUE,
                                               outputs,
                                               true,
-                                              15, true);
+                                              15);
 
     for(InputOutput<T> pair : pairs) {
       if (pair.output instanceof List) {

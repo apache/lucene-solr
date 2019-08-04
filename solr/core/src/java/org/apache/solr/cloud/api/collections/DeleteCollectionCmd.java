@@ -18,12 +18,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
-import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -57,6 +51,13 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final OverseerCollectionMessageHandler ocmh;
@@ -69,6 +70,10 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+    Object o = message.get(MaintainRoutedAliasCmd.INVOKED_BY_ROUTED_ALIAS);
+    if (o != null) {
+      ((Runnable)o).run(); // this will ensure the collection is removed from the alias before it disappears.
+    }
     final String extCollection = message.getStr(NAME);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
 
@@ -76,10 +81,17 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
     }
 
-    List<String> aliasReferences = checkAliasReference(zkStateReader, extCollection);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    List<String> aliasReferences = checkAliasReference(zkStateReader, extCollection, followAliases);
 
     Aliases aliases = zkStateReader.getAliases();
-    String collection = aliases.resolveSimpleAlias(extCollection);
+
+    String collection;
+    if (followAliases) {
+      collection = aliases.resolveSimpleAlias(extCollection);
+    } else {
+      collection = extCollection;
+    }
 
     checkNotColocatedWith(zkStateReader, collection);
 
@@ -118,8 +130,9 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       Set<String> okayExceptions = new HashSet<>(1);
       okayExceptions.add(NonExistentCoreException.class.getName());
+      ZkNodeProps internalMsg = message.plus(NAME, collection);
 
-      List<Replica> failedReplicas = ocmh.collectionCmd(message, params, results, null, asyncId, okayExceptions);
+      List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions);
       for (Replica failedReplica : failedReplicas) {
         boolean isSharedFS = failedReplica.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && failedReplica.get("dataDir") != null;
         if (isSharedFS) {
@@ -185,21 +198,22 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   // This method returns the single collection aliases to delete, if present, or null
-  private List<String> checkAliasReference(ZkStateReader zkStateReader, String extCollection) throws Exception {
+  private List<String> checkAliasReference(ZkStateReader zkStateReader, String extCollection, boolean followAliases) throws Exception {
     Aliases aliases = zkStateReader.getAliases();
-    List<String> aliasesRefs = referencedByAlias(extCollection, aliases);
+    List<String> aliasesRefs = referencedByAlias(extCollection, aliases, followAliases);
     List<String> aliasesToDelete = new ArrayList<>();
     if (aliasesRefs.size() > 0) {
       zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
       aliases = zkStateReader.getAliases();
-      aliasesRefs = referencedByAlias(extCollection, aliases);
+      aliasesRefs = referencedByAlias(extCollection, aliases, followAliases);
+      String collection = followAliases ? aliases.resolveSimpleAlias(extCollection) : extCollection;
       if (aliasesRefs.size() > 0) {
         for (String alias : aliasesRefs) {
           // for back-compat in 8.x we don't automatically remove other
           // aliases that point only to this collection
           if (!extCollection.equals(alias)) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Collection : " + extCollection + " is part of aliases: " + aliasesRefs + ", remove or modify the aliases before removing this collection.");
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "Collection : " + collection + " is part of aliases: " + aliasesRefs + ", remove or modify the aliases before removing this collection.");
           } else {
             aliasesToDelete.add(alias);
           }
@@ -209,11 +223,12 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     return aliasesToDelete;
   }
 
-  public static List<String> referencedByAlias(String extCollection, Aliases aliases) throws IllegalArgumentException {
+  public static List<String> referencedByAlias(String extCollection, Aliases aliases, boolean followAliases) throws IllegalArgumentException {
     Objects.requireNonNull(aliases);
     // this quickly produces error if the name is a complex alias
-    String collection = aliases.resolveSimpleAlias(extCollection);
+    String collection = followAliases ? aliases.resolveSimpleAlias(extCollection) : extCollection;
     return aliases.getCollectionAliasListMap().entrySet().stream()
+        .filter(e -> !e.getKey().equals(collection))
         .filter(e -> e.getValue().contains(collection) || e.getValue().contains(extCollection))
         .map(Map.Entry::getKey) // alias name
         .collect(Collectors.toList());

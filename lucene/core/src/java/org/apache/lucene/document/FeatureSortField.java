@@ -42,7 +42,7 @@ final class FeatureSortField extends SortField {
    * @param featureName The name of the feature to use for the sort value
    */
   public FeatureSortField(String field, String featureName) {
-    super(Objects.requireNonNull(field), SortField.Type.CUSTOM);
+    super(Objects.requireNonNull(field), SortField.Type.CUSTOM, true);
     this.featureName = Objects.requireNonNull(featureName);
   }
   
@@ -128,12 +128,12 @@ final class FeatureSortField extends SortField {
 
     @Override
     public int compare(int slot1, int slot2) {
-      return Float.compare(values[slot2], values[slot1]);
+      return Float.compare(values[slot1], values[slot2]);
     }
 
     @Override
     public int compareBottom(int doc) throws IOException {
-      return Float.compare(getValueForDoc(doc), bottom);
+      return Float.compare(bottom, getValueForDoc(doc));
     }
 
     @Override
@@ -158,7 +158,7 @@ final class FeatureSortField extends SortField {
 
     @Override
     public int compareTop(int doc) throws IOException {
-      return Float.compare(getValueForDoc(doc), topValue);
+      return Float.compare(topValue, getValueForDoc(doc));
     }
   }
 }

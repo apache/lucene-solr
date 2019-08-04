@@ -270,7 +270,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       args.put("size", "10000");
       args.put("initialSize", "10");
       args.put("showItems", "-1");
-      conf = new CacheConfig(FastLRUCache.class, args, null);
+      args.put("class", FastLRUCache.class.getName());
+      conf = new CacheConfig(args);
     }
     fieldValueCacheConfig = conf;
     useColdSearcher = getBool("query/useColdSearcher", false);
@@ -293,11 +294,11 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
     for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
 
-    Map<String, CacheConfig> userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
+    Map<String, CacheConfig> userCacheConfigs = CacheConfig.getConfigs(this, "query/cache");
     List<PluginInfo> caches = getPluginInfos(SolrCache.class.getName());
     if (!caches.isEmpty()) {
       for (PluginInfo c : caches) {
-        userCacheConfigs.put(c.name, CacheConfig.getConfig(this, "cache", c.attributes, null));
+        userCacheConfigs.put(c.name, new CacheConfig(c.attributes));
       }
     }
     this.userCacheConfigs = Collections.unmodifiableMap(userCacheConfigs);
@@ -377,7 +378,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           // and even then -- only if there is a single SpellCheckComponent
           // because of queryConverter.setIndexAnalyzer
       .add(new SolrPluginInfo(QueryConverter.class, "queryConverter", REQUIRE_NAME, REQUIRE_CLASS))
-      .add(new SolrPluginInfo(PluginBag.RuntimeLib.class, "runtimeLib", REQUIRE_NAME, MULTI_OK))
+      .add(new SolrPluginInfo(RuntimeLib.class, RuntimeLib.TYPE, REQUIRE_NAME, MULTI_OK))
           // this is hackish, since it picks up all SolrEventListeners,
           // regardless of when/how/why they are used (or even if they are
           // declared outside of the appropriate context) but there's no nice
@@ -940,7 +941,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   private void addCacheConfig(Map queryMap, CacheConfig... cache) {
     if (cache == null) return;
-    for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config);
+    for (CacheConfig config : cache) if (config != null) queryMap.put(config.getName(), config);
 
   }
 

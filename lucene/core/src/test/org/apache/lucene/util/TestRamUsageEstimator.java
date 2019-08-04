@@ -118,7 +118,7 @@ public class TestRamUsageEstimator extends LuceneTestCase {
     assertEquals((double)actual, (double)estimated, (double)actual * 0.1);
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8898")
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8898")
   public void testMap() {
     Map<String, Object> map = new HashMap<>();
     map.put("primitive", 1234L);
@@ -126,15 +126,16 @@ public class TestRamUsageEstimator extends LuceneTestCase {
     for (int i = 0; i < 100; i++) {
       map.put("complex " + i, new Term("foo " + i, "bar " + i));
     }
+    double errorFactor = COMPRESSED_REFS_ENABLED ? 0.2 : 0.3;
     long actual = sizeOf(map);
     long estimated = RamUsageEstimator.sizeOfObject(map);
-    assertEquals((double)actual, (double)estimated, (double)actual * 0.2);
+    assertEquals((double)actual, (double)estimated, (double)actual * errorFactor);
 
     // test recursion
     map.put("self", map);
     actual = sizeOf(map);
     estimated = RamUsageEstimator.sizeOfObject(map);
-    assertEquals((double)actual, (double)estimated, (double)actual * 0.2);
+    assertEquals((double)actual, (double)estimated, (double)actual * errorFactor);
   }
 
   public void testCollection() {

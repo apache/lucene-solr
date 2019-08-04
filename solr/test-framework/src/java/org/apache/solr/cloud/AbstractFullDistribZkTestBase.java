@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.util.Utils.makeMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -107,6 +105,8 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -399,13 +399,21 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     List<CollectionAdminRequest> createPullReplicaRequests = Collections.synchronizedList(new ArrayList<>());
     StringBuilder sb = new StringBuilder();
 
+    // HACK: Don't be fooled by the replication factor of '1'...
+    //
+    // This CREATE command asks for a repFactor of 1, but uses an empty nodeSet.
+    // This allows this method to create a collection with numShards == sliceCount,
+    // but no actual cores ... yet.  The actual replicas are added later (once the actual
+    // jetty instances are started)
     assertEquals(0, CollectionAdminRequest
-        .createCollection(DEFAULT_COLLECTION, "conf1", sliceCount, 1)
-        .setStateFormat(Integer.parseInt(getStateFormat()))
-        .setCreateNodeSet("")
-        .process(cloudClient).getStatus());
+                 .createCollection(DEFAULT_COLLECTION, "conf1", sliceCount, 1) // not real rep factor!
+                 .setStateFormat(Integer.parseInt(getStateFormat()))
+                 .setCreateNodeSet("") // empty node set prevents creation of cores
+                 .process(cloudClient).getStatus());
     
-    cloudClient.waitForState(DEFAULT_COLLECTION, 30, TimeUnit.SECONDS, (c) -> c != null && c.getSlices().size() == sliceCount);
+    cloudClient.waitForState(DEFAULT_COLLECTION, 30, TimeUnit.SECONDS,
+                             // expect sliceCount active shards, but no active replicas
+                             SolrCloudTestCase.activeClusterShape(sliceCount, 0));
     
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
 
@@ -583,17 +591,24 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected void waitForActiveReplicaCount(CloudSolrClient client, String collection, int expectedNumReplicas) throws TimeoutException, NotInClusterStateException {
+    log.debug("Waiting to see {} active replicas in collection: {}", expectedNumReplicas, collection);
     AtomicInteger nReplicas = new AtomicInteger();
     try {
-      client.getZkStateReader().waitForState(collection, 30, TimeUnit.SECONDS, (c) -> {
-        if (c == null)
-          return false;
-        int numReplicas = getTotalReplicas(c, c.getName());
-        nReplicas.set(numReplicas);
-        if (numReplicas == expectedNumReplicas) return true;
-
-        return false;
-      });
+      client.getZkStateReader().waitForState(collection, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+          if (collectionState == null) {
+            return false;
+          }
+          int activeReplicas = 0;
+          for (Slice slice : collectionState) {
+            for (Replica replica : slice) {
+              if (replica.isActive(liveNodes)) {
+                activeReplicas++;
+              }
+            }
+          }
+          nReplicas.set(activeReplicas);
+          return (activeReplicas == expectedNumReplicas);
+        });
     } catch (TimeoutException | InterruptedException e) {
       try {
         printLayout();
@@ -610,7 +625,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return 0;
   }
 
-  /* Total number of replicas (number of cores serving an index to the collection) shown by the cluster state */
+  /** 
+   * Total number of replicas for all shards as indicated by the cluster state, regardless of status.
+   *
+   * @deprecated This method is virtually useless as it does not consider the status of either
+   *             the shard or replica, nor wether the node hosting each replica is alive.
+   */
+  @Deprecated
   protected int getTotalReplicas(DocCollection c, String collection) {
     if (c == null) return 0;  // support for when collection hasn't been created yet
     int cnt = 0;

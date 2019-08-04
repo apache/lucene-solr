@@ -142,6 +142,8 @@ public abstract class EdgeTree {
       return Relation.CELL_OUTSIDE_QUERY;
     } else if (bx == cx && by == cy) {
       return componentRelateTriangle(bx, by, ax, ay, cx, cy);
+    } else if (ax == bx && ay == by) {
+      return componentRelateTriangle(bx, by, cx, cy, ax, ay);
     }
     return componentRelateTriangle(ax, ay, bx, by, cx, cy);
   }

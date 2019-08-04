@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
@@ -85,7 +86,8 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     // Currently no credentials on ZK connection, because those same VM-params are used for adding ACLs, and here we want
     // no (or completely open) ACLs added. Therefore hack your way into being authorized for creating anyway
-    zkClient.getSolrZooKeeper().addAuthInfo("digest", ("connectAndAllACLUsername:connectAndAllACLPassword").getBytes("UTF-8"));
+    zkClient.getSolrZooKeeper().addAuthInfo("digest", ("connectAndAllACLUsername:connectAndAllACLPassword")
+        .getBytes(StandardCharsets.UTF_8));
     zkClient.create("/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.makePath("/unprotectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
     zkClient.close();

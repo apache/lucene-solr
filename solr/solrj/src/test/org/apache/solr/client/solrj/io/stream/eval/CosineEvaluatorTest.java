@@ -76,7 +76,7 @@ public class CosineEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("cos(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void noValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("cos(a)");
     
@@ -84,7 +84,7 @@ public class CosineEvaluatorTest extends SolrTestCase {
     Object result = evaluator.evaluate(new Tuple(values));
     assertNull(result);
   }
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void nullValue() throws Exception{
     test(null);
   }

@@ -23,7 +23,7 @@ import java.util.function.IntConsumer;
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 
 public class BooleanDataArrayReader extends ReductionDataArrayReader<BooleanConsumer> {
-  
+
   public BooleanDataArrayReader(DataInput inputStream, BooleanConsumer applier, IntConsumer signal) {
     super(inputStream, applier, signal);
   }

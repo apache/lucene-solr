@@ -25,7 +25,7 @@ import org.apache.solr.analytics.stream.reservation.read.DoubleDataReader;
 import org.apache.solr.analytics.stream.reservation.write.DoubleDataWriter;
 
 public class DoubleReservation extends ReductionDataReservation<DoubleConsumer, DoubleSupplier> {
-  
+
   public DoubleReservation(DoubleConsumer applier, DoubleSupplier extractor) {
     super(applier, extractor);
   }

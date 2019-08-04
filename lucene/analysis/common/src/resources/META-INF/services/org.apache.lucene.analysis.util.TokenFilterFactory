@@ -45,6 +45,7 @@ org.apache.lucene.analysis.en.EnglishPossessiveFilterFactory
 org.apache.lucene.analysis.en.KStemFilterFactory
 org.apache.lucene.analysis.en.PorterStemFilterFactory
 org.apache.lucene.analysis.es.SpanishLightStemFilterFactory
+org.apache.lucene.analysis.es.SpanishMinimalStemFilterFactory
 org.apache.lucene.analysis.fa.PersianNormalizationFilterFactory
 org.apache.lucene.analysis.fi.FinnishLightStemFilterFactory
 org.apache.lucene.analysis.fr.FrenchLightStemFilterFactory

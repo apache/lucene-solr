@@ -53,7 +53,7 @@ public class MainEndResultTransformer implements EndResultTransformer {
       @SuppressWarnings("unchecked")
       TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) value;
       SolrDocumentList docList = new SolrDocumentList();
-      docList.setStart(rb.getGroupingSpec().getOffset());
+      docList.setStart(rb.getGroupingSpec().getGroupSortSpec().getOffset());
       docList.setNumFound(rb.totalHitCount);
 
       float maxScore = Float.NEGATIVE_INFINITY;
@@ -77,7 +77,7 @@ public class MainEndResultTransformer implements EndResultTransformer {
       SolrDocumentList docList = new SolrDocumentList();
       TopDocs topDocs = queryCommandResult.getTopDocs();
 
-      docList.setStart(rb.getGroupingSpec().getOffset());
+      docList.setStart(rb.getGroupingSpec().getGroupSortSpec().getOffset());
       docList.setNumFound(topDocs.totalHits.value);
       if (!Float.isNaN(queryCommandResult.getMaxScore())) {
         docList.setMaxScore(queryCommandResult.getMaxScore());

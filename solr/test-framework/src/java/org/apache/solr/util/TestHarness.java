@@ -19,6 +19,7 @@ package org.apache.solr.util;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -344,7 +345,7 @@ public class TestHarness extends BaseTestHarness {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(32000);
         BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) responseWriter;
         writer.write(byteArrayOutputStream, req, rsp);
-        return new String(byteArrayOutputStream.toByteArray(), "UTF-8");
+        return new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
       } else {
         StringWriter sw = new StringWriter(32000);
         responseWriter.write(sw,req,rsp);

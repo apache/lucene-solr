@@ -17,16 +17,19 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -62,12 +65,13 @@ import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
-import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
+import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 /**
@@ -246,6 +250,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   protected abstract static class AsyncCollectionSpecificAdminRequest extends AsyncCollectionAdminRequest {
 
     protected String collection;
+    protected Boolean followAliases;
 
     public AsyncCollectionSpecificAdminRequest(CollectionAction action, String collection) {
       super(action);
@@ -256,10 +261,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return collection;
     }
 
+    public void setFollowAliases(Boolean followAliases) {
+      this.followAliases = followAliases;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
       params.set(CoreAdminParams.NAME, collection);
+      params.setNonNull(CollectionAdminParams.FOLLOW_ALIASES, followAliases);
       return params;
     }
   }
@@ -1347,6 +1357,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String splitKey;
     protected String shard;
     protected String splitMethod;
+    protected Boolean splitByPrefix;
     protected Integer numSubShards;
     protected Float splitFuzz;
 
@@ -1410,6 +1421,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public Boolean getSplitByPrefix() {
+      return splitByPrefix;
+    }
+
+    public SplitShard setSplitByPrefix(Boolean splitByPrefix) {
+      this.splitByPrefix = splitByPrefix;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1429,6 +1449,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (splitFuzz != null) {
         params.set(CommonAdminParams.SPLIT_FUZZ, String.valueOf(splitFuzz));
+      }
+
+      if (splitByPrefix != null) {
+        params.set(CommonAdminParams.SPLIT_BY_PREFIX, splitByPrefix);
       }
 
       if(properties != null) {
@@ -1726,13 +1750,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     return new CreateTimeRoutedAlias(aliasName, routerField, start, interval, createCollTemplate);
   }
 
-  public static class CreateTimeRoutedAlias extends AsyncCollectionAdminRequest {
+  public static class CreateTimeRoutedAlias extends AsyncCollectionAdminRequest implements RoutedAliasAdminRequest {
     // TODO: This and other commands in this file seem to need to share some sort of constants class with core
     // to allow this stuff not to be duplicated. (this is pasted from CreateAliasCmd.java), however I think
     // a comprehensive cleanup of this for all the requests in this class should be done as a separate ticket.
 
-    public static final String ROUTER_TYPE_NAME = "router.name";
-    public static final String ROUTER_FIELD = "router.field";
     public static final String ROUTER_START = "router.start";
     public static final String ROUTER_INTERVAL = "router.interval";
     public static final String ROUTER_MAX_FUTURE = "router.maxFutureMs";
@@ -1804,19 +1826,29 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
 
       // merge the above with collectionParams.  Above takes precedence.
-      ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // output target
-      final SolrParams collParams = createCollTemplate.getParams();
-      final Iterator<String> pIter = collParams.getParameterNamesIterator();
-      while (pIter.hasNext()) {
-        String key = pIter.next();
-        if (key.equals(CollectionParams.ACTION) || key.equals("name")) {
-          continue;
-        }
-        createCollParams.set("create-collection." + key, collParams.getParams(key));
-      }
+      ModifiableSolrParams createCollParams = mergeCollParams(createCollTemplate);
       return SolrParams.wrapDefaults(params, createCollParams);
     }
 
+    @Override
+    public RoutedAliasTypes getType() {
+      return RoutedAliasTypes.TIME;
+    }
+
+    @Override
+    public String getRouterField() {
+      return routerField;
+    }
+
+    @Override
+    public java.util.List<String> getParamNames() {
+      return java.util.List.of(ROUTER_TYPE_NAME, ROUTER_FIELD, ROUTER_START, ROUTER_INTERVAL,ROUTER_MAX_FUTURE, ROUTER_PREEMPTIVE_CREATE_WINDOW, ROUTER_AUTO_DELETE_AGE, CommonParams.TZ);
+    }
+
+    @Override
+    public java.util.List<String> getRequiredParamNames() {
+      return java.util.List.of(ROUTER_TYPE_NAME, ROUTER_FIELD,ROUTER_START, ROUTER_INTERVAL);
+    }
   }
   /**
    * Returns a SolrRequest to create a category routed alias.
@@ -1834,10 +1866,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     return new CreateCategoryRoutedAlias(aliasName, routerField, maxCardinality, createCollTemplate);
   }
 
-  public static class CreateCategoryRoutedAlias extends AsyncCollectionAdminRequest {
+  public static class CreateCategoryRoutedAlias extends AsyncCollectionAdminRequest implements RoutedAliasAdminRequest {
 
-    public static final String ROUTER_TYPE_NAME = "router.name";
-    public static final String ROUTER_FIELD = "router.field";
     public static final String ROUTER_MAX_CARDINALITY = "router.maxCardinality";
     public static final String ROUTER_MUST_MATCH = "router.mustMatch";
 
@@ -1865,7 +1895,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.add(CommonParams.NAME, aliasName);
-      params.add(ROUTER_TYPE_NAME, "category");
+      params.add(ROUTER_TYPE_NAME, RoutedAliasTypes.CATEGORY.name());
       params.add(ROUTER_FIELD, routerField);
       params.add(ROUTER_MAX_CARDINALITY, maxCardinality.toString());
 
@@ -1874,7 +1904,45 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
 
       // merge the above with collectionParams.  Above takes precedence.
+      ModifiableSolrParams createCollParams = mergeCollParams(createCollTemplate);
+      return SolrParams.wrapDefaults(params, createCollParams);
+    }
+
+    @Override
+    public RoutedAliasTypes getType() {
+      return RoutedAliasTypes.CATEGORY;
+    }
+
+    @Override
+    public String getRouterField() {
+      return routerField;
+    }
+
+    @Override
+    public java.util.List<String> getParamNames() {
+      return java.util.List.of(ROUTER_TYPE_NAME, ROUTER_FIELD,ROUTER_MAX_CARDINALITY, ROUTER_MUST_MATCH);
+    }
+
+    @Override
+    public java.util.List<String> getRequiredParamNames() {
+      return java.util.List.of(ROUTER_TYPE_NAME, ROUTER_FIELD,ROUTER_MAX_CARDINALITY);
+    }
+  }
+
+  public interface RoutedAliasAdminRequest {
+    String ROUTER_TYPE_NAME = "router.name";
+    String ROUTER_FIELD = "router.field";
+
+    RoutedAliasTypes getType();
+    String getRouterField();
+    java.util.List<String> getParamNames();
+    java.util.List<String> getRequiredParamNames();
+    SolrParams getParams();
+    default ModifiableSolrParams mergeCollParams(Create createCollTemplate) {
       ModifiableSolrParams createCollParams = new ModifiableSolrParams(); // output target
+      if (createCollTemplate == null) {
+        return createCollParams;
+      }
       final SolrParams collParams = createCollTemplate.getParams();
       final Iterator<String> pIter = collParams.getParameterNamesIterator();
       while (pIter.hasNext()) {
@@ -1884,9 +1952,99 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         }
         createCollParams.set("create-collection." + key, collParams.getParams(key));
       }
+      return createCollParams;
+    }
+  }
+
+  /**
+   * Create a Dimensional Routed alias from two or more routed alias types.
+   *
+   * @param aliasName The name of the alias
+   * @param createCollTemplate a create command that will be used for all collections created
+   * @param dims Routed Alias requests. Note that the aliasName and collection templates inside dimensions
+   *             will be ignored and may be safely set to null
+   * @return An object representing a basic DimensionalRoutedAlias creation request.
+   */
+  public static DimensionalRoutedAlias createDimensionalRoutedAlias(String aliasName, Create createCollTemplate, RoutedAliasAdminRequest... dims) {
+    return new DimensionalRoutedAlias(aliasName, createCollTemplate, dims);
+  }
+
+  public static class DimensionalRoutedAlias extends AsyncCollectionAdminRequest implements RoutedAliasAdminRequest {
+
+    private String aliasName;
+    private final Create createCollTemplate;
+    private final RoutedAliasAdminRequest[] dims;
+
+    public DimensionalRoutedAlias(String aliasName, Create createCollTemplate, RoutedAliasAdminRequest... dims) {
+      super(CollectionAction.CREATEALIAS);
+      this.aliasName = aliasName;
+      this.createCollTemplate = createCollTemplate;
+      this.dims = dims;
+    }
+
+    public static void addDimensionIndexIfRequired(Set<String> params, int i, String param) {
+      params.add(withDimensionIndexIfRequired(param, i));
+    }
+
+    private static String withDimensionIndexIfRequired(String param, int index) {
+      if (param.startsWith(ROUTER_PREFIX)) {
+        return ROUTER_PREFIX + index + "." + param.split("\\.")[1];
+      } else {
+        return param;
+      }
+    }
+
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      java.util.List<String> types = new ArrayList<>();
+      java.util.List<String> fields = new ArrayList<>();
+      for (int i = 0; i < dims.length; i++) {
+        RoutedAliasAdminRequest dim = dims[i];
+        types.add(dim.getType().name());
+        fields.add(dim.getRouterField());
+        for (String param : dim.getParamNames()) {
+          String value = dim.getParams().get(param);
+          if (value != null) {
+            params.add(withDimensionIndexIfRequired(param, i), value);
+          } else {
+            if (dim.getRequiredParamNames().contains(param)) {
+              throw new IllegalArgumentException("Dimension of type " + dim.getType() + " requires a value for " + param);
+            }
+          }
+        }
+      }
+      params.add(CommonParams.NAME, aliasName);
+      params.add(ROUTER_TYPE_NAME, "Dimensional[" + String.join(",", types) + "]");
+      params.add(ROUTER_FIELD, String.join(",", fields));
+
+      // merge the above with collectionParams.  Above takes precedence.
+      ModifiableSolrParams createCollParams = mergeCollParams(createCollTemplate);
       return SolrParams.wrapDefaults(params, createCollParams);
     }
 
+
+
+    @Override
+    public RoutedAliasTypes getType() {
+      throw new UnsupportedOperationException("Dimensions of dimensions are not allowed, the multiverse might collapse!");
+    }
+
+    @Override
+    public String getRouterField() {
+      throw new UnsupportedOperationException("Dimensions of dimensions are not allowed, the multiverse might collapse!");
+    }
+
+    @Override
+    public java.util.List<String> getParamNames() {
+      throw new UnsupportedOperationException("Dimensions of dimensions are not allowed, the multiverse might collapse!");
+    }
+
+    @Override
+    public java.util.List<String> getRequiredParamNames() {
+      throw new UnsupportedOperationException("Dimensions of dimensions are not allowed, the multiverse might collapse!");
+    }
   }
 
   /**

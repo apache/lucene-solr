@@ -124,4 +124,7 @@ public interface CollectionAdminParams {
    * Prefix for {@link org.apache.solr.common.cloud.DocRouter} properties
    */
   String ROUTER_PREFIX = "router.";
+
+  /** Option to follow aliases when deciding the target of a collection admin command. */
+  String FOLLOW_ALIASES = "followAliases";
 }

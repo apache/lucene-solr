@@ -78,10 +78,10 @@ public class PercentileFunction {
       return new DoublePercentileFunction((DoubleValueStream)param, perc);
     } else if (param instanceof StringValueStream) {
       return new StringPercentileFunction((StringValueStream)param, perc);
-    } 
+    }
     throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a comparable parameter.");
   });
-  
+
   protected static String createPercentileExpressionString(AnalyticsValueStream param, double perc) {
     return String.format(Locale.ROOT, "%s(%s,%s)",
                          name,
@@ -94,7 +94,7 @@ class IntPercentileFunction extends AbstractIntValue implements ReductionFunctio
   private double percentile;
   public static final String name = PercentileFunction.name;
   private final String exprStr;
-  
+
   public IntPercentileFunction(IntValueStream param, double percentile) {
     this.collector = new SortedIntListCollector(param);
     this.percentile = percentile;
@@ -135,7 +135,7 @@ class LongPercentileFunction extends AbstractLongValue implements ReductionFunct
   private double percentile;
   public static final String name = PercentileFunction.name;
   private final String exprStr;
-  
+
   public LongPercentileFunction(LongValueStream param, double percentile) {
     this.collector = new SortedLongListCollector(param);
     this.percentile = percentile;
@@ -176,7 +176,7 @@ class FloatPercentileFunction extends AbstractFloatValue implements ReductionFun
   private double percentile;
   public static final String name = PercentileFunction.name;
   private final String exprStr;
-  
+
   public FloatPercentileFunction(FloatValueStream param, double percentile) {
     this.collector = new SortedFloatListCollector(param);
     this.percentile = percentile;
@@ -217,7 +217,7 @@ class DoublePercentileFunction extends AbstractDoubleValue implements ReductionF
   private double percentile;
   public static final String name = PercentileFunction.name;
   private final String exprStr;
-  
+
   public DoublePercentileFunction(DoubleValueStream param, double percentile) {
     this.collector = new SortedDoubleListCollector(param);
     this.percentile = percentile;
@@ -258,7 +258,7 @@ class DatePercentileFunction extends AbstractDateValue implements ReductionFunct
   private double percentile;
   public static final String name = PercentileFunction.name;
   private final String exprStr;
-  
+
   public DatePercentileFunction(LongValueStream param, double percentile) {
     this.collector = new SortedLongListCollector(param);
     this.percentile = percentile;
@@ -299,7 +299,7 @@ class StringPercentileFunction extends AbstractStringValue implements ReductionF
   private double percentile;
   public static final String name = PercentileFunction.name;
   private final String exprStr;
-  
+
   public StringPercentileFunction(StringValueStream param, double percentile) {
     this.collector = new SortedStringListCollector(param);
     this.percentile = percentile;

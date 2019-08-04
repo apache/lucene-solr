@@ -34,13 +34,13 @@ public interface FloatValue extends FloatValueStream, AnalyticsValue {
    * Get the float representation of the current value.
    * <p>
    * NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns {@code TRUE}.
-   * 
+   *
    * @return the current value
    */
   float getFloat();
 
   /**
-   * An interface that represents all of the types a {@link FloatValue} should be able to cast to. 
+   * An interface that represents all of the types a {@link FloatValue} should be able to cast to.
    */
   public static interface CastingFloatValue extends FloatValue, DoubleValue, StringValue, ComparableValue {}
 

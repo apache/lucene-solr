@@ -21,8 +21,9 @@ import java.util.Iterator;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -44,14 +45,16 @@ public class TestGraphTokenStreamFiniteStrings extends LuceneTestCase {
     assertNotNull(terms);
     assertNotNull(increments);
     assertEquals(terms.length, increments.length);
-    BytesTermAttribute termAtt = ts.getAttribute(BytesTermAttribute.class);
+    CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
     PositionIncrementAttribute incrAtt = ts.getAttribute(PositionIncrementAttribute.class);
+    PositionLengthAttribute lenAtt = ts.getAttribute(PositionLengthAttribute.class);
     int offset = 0;
     while (ts.incrementToken()) {
       // verify term and increment
       assert offset < terms.length;
-      assertEquals(terms[offset], termAtt.getBytesRef().utf8ToString());
+      assertEquals(terms[offset], termAtt.toString());
       assertEquals(increments[offset], incrAtt.getPositionIncrement());
+      assertEquals(1, lenAtt.getPositionLength());  // we always output linear token streams
       offset++;
     }
 

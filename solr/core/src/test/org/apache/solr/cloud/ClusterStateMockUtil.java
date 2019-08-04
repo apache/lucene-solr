@@ -17,8 +17,7 @@
 
 package org.apache.solr.cloud;
 
-
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -183,11 +182,7 @@ public class ClusterStateMockUtil {
     MockZkStateReader reader = new MockZkStateReader(clusterState, collectionStates.keySet());
 
     String json;
-    try {
-      json = new String(Utils.toJSON(clusterState), "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException("Unexpected");
-    }
+    json = new String(Utils.toJSON(clusterState), StandardCharsets.UTF_8);
     System.err.println(json);
 
     return reader;

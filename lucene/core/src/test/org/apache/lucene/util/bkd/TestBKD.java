@@ -1097,6 +1097,80 @@ public class TestBKD extends LuceneTestCase {
     }
   }
 
+  public void testCheckDataDimOptimalOrder() throws IOException {
+    Directory dir = newDirectory();
+    final int numValues = atLeast(5000);
+    final int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
+    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
+    final double maxMB = (float) 3.0 + (3*random().nextDouble());
+
+    final int numIndexDims = TestUtil.nextInt(random(), 1, 8);
+    final int numDataDims =  TestUtil.nextInt(random(), numIndexDims, 8);
+
+    final byte[] pointValue1 = new byte[numDataDims * numBytesPerDim];
+    final byte[] pointValue2 = new byte[numDataDims * numBytesPerDim];
+    random().nextBytes(pointValue1);
+    random().nextBytes(pointValue2);
+    // equal index dimensions but different data dimensions
+    for (int i = 0; i < numIndexDims; i++) {
+        System.arraycopy(pointValue1, i * numBytesPerDim, pointValue2, i * numBytesPerDim, numBytesPerDim);
+    }
+
+    BKDWriter w = new BKDWriter(2 * numValues, dir, "_temp", numDataDims, numIndexDims, numBytesPerDim, maxPointsInLeafNode,
+        maxMB, 2 * numValues);
+    for (int i = 0; i < numValues; ++i) {
+      w.add(pointValue1, i);
+      w.add(pointValue2, i);
+    }
+    final long indexFP;
+    try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
+      indexFP = w.finish(out);
+      w.close();
+    }
+
+    IndexInput pointsIn = dir.openInput("bkd", IOContext.DEFAULT);
+    pointsIn.seek(indexFP);
+    BKDReader points = new BKDReader(pointsIn);
+
+    points.intersect(new IntersectVisitor() {
+
+      byte[] previous = null;
+      boolean hasChanged = false;
+
+      @Override
+      public void visit(int docID) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void visit(int docID, byte[] packedValue) {
+        if (previous == null) {
+          previous = new byte[numDataDims * numBytesPerDim];
+          System.arraycopy(packedValue, 0, previous, 0, numDataDims * numBytesPerDim);
+        } else {
+          int mismatch = Arrays.mismatch(packedValue, previous);
+          if (mismatch != -1) {
+            if (hasChanged == false) {
+              hasChanged = true;
+              System.arraycopy(packedValue, 0, previous, 0, numDataDims * numBytesPerDim);
+            } else {
+              fail("Points are not in optimal order");
+            }
+          }
+        }
+      }
+
+      @Override
+      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+    });
+
+
+    pointsIn.close();
+    dir.close();
+  }
+
   public void test2DLongOrdsOffline() throws Exception {
     try (Directory dir = newDirectory()) {
       int numDocs = 100000;

@@ -25,7 +25,7 @@ import java.io.IOException;
 public abstract class ReductionDataWriter<E> {
   protected final DataOutput output;
   protected final E extractor;
-  
+
   public ReductionDataWriter(DataOutput output, E extractor) {
     this.output = output;
     this.extractor = extractor;
@@ -33,7 +33,7 @@ public abstract class ReductionDataWriter<E> {
 
   /**
    * Write a piece of data, retrieved from the extractor, to the output stream.
-   * 
+   *
    * @throws IOException if an exception occurs while writing to the output stream
    */
   public abstract void write() throws IOException;
