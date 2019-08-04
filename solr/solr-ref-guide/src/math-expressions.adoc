@@ -55,7 +55,7 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<numerical-analysis.adoc#numerical-analysis,Interpolation, Derivatives and Integrals>>*: Numerical analysis math expressions.
 
-*<<dsp.adoc#dsp,Digital Signal Processing>>*: Functions commonly used with digital signal processing.
+*<<dsp.adoc#dsp,Signal Processing>>*: Functions commonly used with digital signal processing.
 
 *<<curve-fitting.adoc#curve-fitting,Curve Fitting>>*: Polynomial, Harmonic and Gaussian curve fitting.
 

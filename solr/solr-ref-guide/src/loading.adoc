@@ -17,13 +17,62 @@
 // under the License.
 
 
+Streaming Expressions allows CSV and TSV formatted data to be visualized and transformed
+before loading it into Solr Cloud collections. A number of useful functions are provided
+for parsing dates, creating unique ids, cleaning data, analyzing text and visualizing
+data all before its loaded into Solr Cloud collections.
+
 == Reading Files
 
+The `cat` function can be used to read files under the "userfiles" directory in
+SOLR_HOME. The `cat` function takes two parameters. The first parameter is a comma
+delimited list of paths. If the path list contain directories, `cat` will crawl
+all the files in the directory and sub-directories. If the path list contains only
+files `cat` will operate crawl just the specific files.
+
+The second parameter, *maxLines*, tells `cat` how many lines to read in total. If
+*maxLines* is not provided, `cat` will read all lines from each file it crawls.
+
+The `cat` function reads each line (up to maxLines) in files and for each line
+emits a tuple with two fields:
+
+* line: The text in the line.
+* file: The relative path of the file under SOLR_HOME.
+
+Below is an example of `cat`.
+
+
 == Parsing CSV and TSV Files
+
+The `parseCSV` and `parseTSV` functions wrap the `cat` function and parse CSV
+(comma separated values) and TSV (tab separated values). Both of these functions
+expect a CSV or TSV header record at the beginning of each file.
+
+Both `parseCSV` and `parseTSV` emit tuples with header values mapped to their
+corresponding values in each line.
+
 
 == Visualizing
 
 == Transforming Data
+
+=== Selecting fields
+
+=== Unique ID's
+
+Both functions also emit an id field if one is not present in the records already.
+The id field is a concatenation of the file path and the line number. This is a
+convenent way to ensure that records have consistent reproducible id's if the one
+is not present in file.
+
+
+=== Parsing Dates
+
+=== Handling Nulls
+
+=== String Manipulation
+
+=== Text Analysis
 
 == Loading Data
 
