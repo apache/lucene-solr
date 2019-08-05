@@ -65,6 +65,11 @@ New Features
 
 * LUCENE-8764: Add "export all terms" feature to Luke. (Leonardo Menezes via Tomoko Uchida)
 
+* LUCENE-8747: Composite Matches from multiple subqueries now allow access to
+  their submatches, and a new NamedMatches API allows marking of subqueries
+  and a simple way to find which subqueries have matched on a given document
+  (Alan Woodward, Jim Ferenczi)
+
 Improvements
 
 * LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
