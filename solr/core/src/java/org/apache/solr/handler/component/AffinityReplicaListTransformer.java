@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * either explicitly configured hash routing parameter, or the hash of a query parameter (configurable, usually related
  * to the main query).
  */
-public class AffinityReplicaListTransformer implements ReplicaListTransformer {
+class AffinityReplicaListTransformer implements ReplicaListTransformer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
