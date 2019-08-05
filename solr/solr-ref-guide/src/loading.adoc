@@ -269,7 +269,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 === String Manipulation
 
-The `upper` `lower`, `split`, `valueAt` and `trim` functions can be used to manipulate
+The `upper`, `lower`, `split`, `valueAt`, `trim` and `concat` functions can be used to manipulate
 strings inside of the `select` function.
 
 The example below shows the `upper` function used to upper case the *species*
@@ -336,9 +336,14 @@ a split array.
 
 image::images/math-expressions/valueat.png[]
 
+
+=== Filtering Results
+
+
+
 === Handling Nulls
 
-In most cases nulls do not need to be handled unless there is specific logic needed
+In most cases nulls do not need to be handled directly unless there is specific logic needed
 to handle nulls during the load.
 
 The `select` function does not output fields that contain a null value. This means
@@ -350,10 +355,18 @@ will simply be left off the record.
 
 
 
-
-
 === Text Analysis
 
 == Loading Data
+
+When the data is ready to load, the `update` function can be used to send the
+data to a Solr Cloud collection for indexing. The `update` function adds documents to Solr in batches
+and returns a tuple for each batch with some summary information about the batch and load.
+
+In the example below the update expression is loaded using Zeppelin-Solr because the
+data set is small. For larger loads it's best to run the load from a curl command
+where the output of the `update` function can be spooled to disk.
+
+image::images/math-expressions/update.png[]
 
 
