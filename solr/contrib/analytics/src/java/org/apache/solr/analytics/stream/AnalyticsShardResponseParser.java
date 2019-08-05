@@ -31,17 +31,17 @@ import java.io.Reader;
 
 /**
  * This parser initiates a merge of an Analytics Shard Response, sent from the {@link AnalyticsHandler}.
- * 
+ *
  * The input stream is immediately sent to the given {@link AnalyticsRequestManager} to merge.
  */
 public class AnalyticsShardResponseParser extends ResponseParser {
   public static final String BINARY_CONTENT_TYPE = "application/octet-stream";
   public static final String STREAM = "application/octet-stream";
-  
+
   private final AnalyticsRequestManager manager;
 
   /**
-   * 
+   *
    * @param manager the manager of the current Analytics Request, will manage the merging of shard data
    */
   public AnalyticsShardResponseParser(AnalyticsRequestManager manager) {

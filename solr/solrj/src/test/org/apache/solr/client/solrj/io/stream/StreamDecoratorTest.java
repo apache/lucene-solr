@@ -3151,6 +3151,73 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
   }
 
+
+  @Test
+  public void testParseCSV() throws Exception {
+    String expr = "parseCSV(list(tuple(file=\"file1\", line=\"a,b,c\"), " +
+        "                        tuple(file=\"file1\", line=\"1,2,3\")," +
+        "                        tuple(file=\"file1\", line=\"\\\"hello, world\\\",9000,20\")," +
+        "                        tuple(file=\"file2\", line=\"field_1,field_2,field_3\"), "+
+        "                        tuple(file=\"file2\", line=\"8,9,\")))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  3);
+    assertEquals(tuples.get(0).getString("a"), "1");
+    assertEquals(tuples.get(0).getString("b"), "2");
+    assertEquals(tuples.get(0).getString("c"), "3");
+
+    assertEquals(tuples.get(1).getString("a"), "hello, world");
+    assertEquals(tuples.get(1).getString("b"), "9000");
+    assertEquals(tuples.get(1).getString("c"), "20");
+
+    assertEquals(tuples.get(2).getString("field_1"), "8");
+    assertEquals(tuples.get(2).getString("field_2"), "9");
+    assertNull(tuples.get(2).get("field_3"));
+  }
+
+
+  @Test
+  public void testParseTSV() throws Exception {
+    String expr = "parseTSV(list(tuple(file=\"file1\", line=\"a\tb\tc\"), " +
+        "                        tuple(file=\"file1\", line=\"1\t2\t3\")," +
+        "                        tuple(file=\"file1\", line=\"hello, world\t9000\t20\")," +
+        "                        tuple(file=\"file2\", line=\"field_1\tfield_2\tfield_3\"), "+
+        "                        tuple(file=\"file2\", line=\"8\t\t9\")))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  3);
+    assertEquals(tuples.get(0).getString("a"), "1");
+    assertEquals(tuples.get(0).getString("b"), "2");
+    assertEquals(tuples.get(0).getString("c"), "3");
+
+    assertEquals(tuples.get(1).getString("a"), "hello, world");
+    assertEquals(tuples.get(1).getString("b"), "9000");
+    assertEquals(tuples.get(1).getString("c"), "20");
+
+    assertEquals(tuples.get(2).getString("field_1"), "8");
+    assertNull(tuples.get(2).get("field_2"));
+    assertEquals(tuples.get(2).getString("field_3"), "9");
+
+  }
+
+
+
   @Test
   public void testCommitStream() throws Exception {
 

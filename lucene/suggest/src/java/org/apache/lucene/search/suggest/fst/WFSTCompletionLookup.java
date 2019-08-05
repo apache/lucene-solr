@@ -186,7 +186,7 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
     CharsRefBuilder spare = new CharsRefBuilder();
     if (exactFirst && arc.isFinal()) {
       spare.copyUTF8Bytes(scratch.get());
-      results.add(new LookupResult(spare.toString(), decodeWeight(prefixOutput + arc.nextFinalOutput)));
+      results.add(new LookupResult(spare.toString(), decodeWeight(prefixOutput + arc.nextFinalOutput())));
       if (--num == 0) {
         return results; // that was quick
       }
@@ -227,7 +227,7 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
       if (fst.findTargetArc(bytes[pos++] & 0xff, arc, arc, bytesReader) == null) {
         return null;
       } else {
-        output += arc.output.longValue();
+        output += arc.output().longValue();
       }
     }
     
@@ -250,7 +250,7 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
     if (result == null || !arc.isFinal()) {
       return null;
     } else {
-      return Integer.valueOf(decodeWeight(result + arc.nextFinalOutput));
+      return Integer.valueOf(decodeWeight(result + arc.nextFinalOutput()));
     }
   }
   

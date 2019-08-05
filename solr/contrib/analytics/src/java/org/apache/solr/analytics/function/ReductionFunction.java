@@ -29,7 +29,7 @@ public interface ReductionFunction extends AnalyticsValue {
   /**
    * Syncs the data collectors with shared versions across the entire Analytics Request
    * so that as little data as possible is sent across shards.
-   * 
+   *
    * @param sync a function that takes in a {@link ReductionDataCollector} and returns a shared version
    */
   void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync);

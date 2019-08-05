@@ -42,16 +42,16 @@ import org.apache.solr.common.SolrException.ErrorCode;
 public abstract class ConstantValue implements AnalyticsValue {
   private static final Pattern truePattern = Pattern.compile("^true|t$", Pattern.CASE_INSENSITIVE);
   private static final Pattern falsePattern = Pattern.compile("^false|f$", Pattern.CASE_INSENSITIVE);
-  
+
   public static final ConstantFunction creatorFunction = (param -> {
     param = param.trim();
-    
+
     // Try to create a string
     if ((param.charAt(0)=='"' && param.charAt(param.length()-1)=='"')
         || (param.charAt(0)=='\'' && param.charAt(param.length()-1)=='\'')) {
       return new ConstantStringValue(param.substring(1, param.length()-1));
     }
-    
+
     // Try to create a boolean
     Matcher m = truePattern.matcher(param);
     if (m.matches()) {
@@ -61,7 +61,7 @@ public abstract class ConstantValue implements AnalyticsValue {
     if (m.matches()) {
       return new ConstantBooleanValue(false);
     }
-    
+
     // Try to create a number
     try {
       long longTemp = Long.parseLong(param);
@@ -75,22 +75,22 @@ public abstract class ConstantValue implements AnalyticsValue {
         return new ConstantDoubleValue(Double.parseDouble(param));
       } catch (NumberFormatException e2) {}
     }
-    
+
     // Try to create a date
     try {
       return new ConstantDateValue(Instant.parse(param).toEpochMilli());
     } catch (DateTimeParseException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST,"The parameter "+param+" could not be cast to any constant.");
     }
-    
+
   });
-  
+
   @Override
   public AnalyticsValue convertToConstant() {
     return this;
   }
-  
-  static String createExpressionString(AnalyticsValueStream func, 
+
+  static String createExpressionString(AnalyticsValueStream func,
                                        Object param) {
     return String.format(Locale.ROOT,"%s(%s)",
                          func.getName(),

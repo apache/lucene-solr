@@ -201,30 +201,18 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
 
       try (HttpSolrClient solrClient = getHttpSolrClient(baseUrl)) {
-        try {
-          rsp = solrClient.request(reload);
-          fail("must have failed");
-        } catch (HttpSolrClient.RemoteSolrException e) {
-
-        }
+        expectThrows(HttpSolrClient.RemoteSolrException.class, () -> solrClient.request(reload));
         reload.setMethod(SolrRequest.METHOD.POST);
-        try {
-          rsp = solrClient.request(reload);
-          fail("must have failed");
-        } catch (HttpSolrClient.RemoteSolrException e) {
-
-        }
+        expectThrows(HttpSolrClient.RemoteSolrException.class, () -> solrClient.request(reload));
       }
       cluster.getSolrClient().request(CollectionAdminRequest.reloadCollection(COLLECTION)
           .setBasicAuthCredentials("harry", "HarryIsUberCool"));
 
-      try {
+      expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
         cluster.getSolrClient().request(CollectionAdminRequest.reloadCollection(COLLECTION)
             .setBasicAuthCredentials("harry", "Cool12345"));
-        fail("This should not succeed");
-      } catch (HttpSolrClient.RemoteSolrException e) {
-        assertAuthMetricsMinimums(14, 5, 8, 1, 0, 0);
-      }
+      });
+      assertAuthMetricsMinimums(14, 5, 8, 1, 0, 0);
 
       executeCommand(baseUrl + authzPrefix, cl,"{set-permission : { name : update , role : admin}}", "harry", "HarryIsUberCool");
 
@@ -242,10 +230,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       delQuery.setBasicAuthCredentials("harry","HarryIsUberCool");
       delQuery.process(aNewClient, COLLECTION);//this should succeed
       try {
-        delQuery = new UpdateRequest().deleteByQuery("*:*");
-        delQuery.process(aNewClient, COLLECTION);
-        fail("This should not have succeeded without credentials");
-      } catch (HttpSolrClient.RemoteSolrException e) {
+        HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+          new UpdateRequest().deleteByQuery("*:*").process(aNewClient, COLLECTION);
+        });
         assertTrue(e.getMessage().contains("Unauthorized request"));
       } finally {
         aNewClient.close();
@@ -377,9 +364,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     ArrayList<Replica> l = new ArrayList<>();
 
     for (Slice slice : coll.getSlices()) {
-      for (Replica replica : slice.getReplicas()) {
-        l.add(replica);
-      }
+      l.addAll(slice.getReplicas());
     }
     Collections.shuffle(l, random);
     return l.isEmpty() ? null : l.get(0);

@@ -162,9 +162,9 @@ public final class UserDictionary implements Dictionary {
         if (fst.findTargetArc(ch, arc, arc, i == 0, fstReader) == null) {
           break; // continue to next position
         }
-        output += arc.output.intValue();
+        output += arc.output().intValue();
         if (arc.isFinal()) {
-          final int finalOutput = output + arc.nextFinalOutput.intValue();
+          final int finalOutput = output + arc.nextFinalOutput().intValue();
           result.put(startOffset-off, segmentations[finalOutput]);
           found = true;
         }

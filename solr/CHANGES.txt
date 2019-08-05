@@ -57,6 +57,9 @@ Upgrade Notes
 
 * SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
 
+* SOLR-11266: default Content-Type override for JSONResponseWriter from _default configSet is removed. Example has been
+  provided in sample_techproducts_configs to override content-type. (Ishan Chattopadhyaya, Munendra S N, Gus Heck)
+
 Other Changes
 ----------------------
 
@@ -74,6 +77,16 @@ Carrot2 3.16.0
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
 Jetty 9.4.19.v20190610
+
+Upgrade Notes
+----------------------
+
+* Users who have written test cases that extend SolrTestCaseJ4 may see NullPointerExceptions if
+  their tests directly reference both SolrTestCaseJ4.initCoreDataDir and SolrTestCaseJ4.deleteCore().
+  This change in behavior is due to a bug fix in deleteCore() to ensure the dataDir is properly reset
+  in tests that call initCore()/deleteCore() multiple times in a given test (class).  initCoreDataDir
+  is now deprecated, and users are encouraged to use SolrTestCaseJ4.initAndGetDataDir() in it's place.
+  See SOLR-13664 for more details.
 
 New Features
 ----------------------
@@ -99,6 +112,8 @@ Improvements
 
 * SOLR-13558: Allow dynamic resizing of SolrCache-s. (ab)
 
+* SOLR-6305: Ability to set the replication factor for index files created by HDFSDirectoryFactory (Boris Pasko via Kevin Risden)
+
 Bug Fixes
 ----------------------
 
@@ -106,6 +121,15 @@ Bug Fixes
 
 * SOLR-11556: Backup and restore command really supports picking one of a few repositories by 
   repository parameter (Timothy Potter via Mikhail Khludnev) 
+
+* SOLR-13660: Fixed AbstractFullDistribZkTestBase.waitForActiveReplicaCount() to ensure
+  replicas are active. (hossman)
+
+* SOLR-13664: Fixed SolrTestCaseJ4.deleteCore() to properly reset the dataDir used by initCore()
+  (hossman)
+
+* SOLR-13679: Default style of ExplainDocTransformer registered via solrconfig.xml should be same as default style
+  of ExplainDocTransformer registered in defaultFactories (Munendra S N)
 
 Other Changes
 ----------------------
@@ -115,6 +139,12 @@ Other Changes
 * SOLR-12870: Use StandardCharsets instead of String values (Peter Somogyi via Munendra S N)
 
 * SOLR-10377: Add `debug.explain.structured` to Admin UI. (David Smiley, Munendra S N)
+
+* SOLR-13629: Clean trailing whitespace from 'analytics' contrib (Neal Sidhwaney via Jason Gerlowski)
+
+* SOLR-13643: Add Getters/Setters in ResponseBuilder for analytics response handling (Neal Sidhwaney via Munendra S N)
+
+* SOLR-13659: Refactor CacheConfig to lazily load the the implementation class (noble)
 
 ==================  8.2.0 ==================
 

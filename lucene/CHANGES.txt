@@ -46,6 +46,9 @@ Improvements
 
 * LUCENE-8769: Introduce Range Query For Multiple Connected Ranges (Atri Sharma)
 
+* LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
+  (Adrien Gallou via Tomoko Uchida)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -62,6 +65,12 @@ API Changes
 * LUCENE-8909: IndexWriter#getFieldNames() method is used to get fields present in index. After LUCENE-8316, this
   method is no longer required. Hence, deprecate IndexWriter#getFieldNames() method. (Adrien Grand, Munendra S N)
 
+New Features
+
+* LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)
+
+* LUCENE-8764: Add "export all terms" feature to Luke. (Leonardo Menezes via Tomoko Uchida)
+
 Improvements
 
 * LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
@@ -77,10 +86,16 @@ Improvements
 * LUCENE-8916: GraphTokenStreamFiniteStrings preserves all Token attributes
   through its finite strings TokenStreams (Alan Woodward)
 
+* LUCENE-8906: Expose Lucene50PostingsFormat.IntBlockTermState as public so that other postings formats can re-use it.
+  (Bruno Roustant)
+
 Optimizations
 
 * LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
   non-competitive hits. (Adrien Grand)
+
+* LUCENE-8935: BooleanQuery with no scoring clause can now early terminate the query when
+the total hits is not requested.
 
 Other
 

@@ -16,6 +16,9 @@
  */
 package org.apache.solr.servlet;
 
+import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
+import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -31,10 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServletRequest;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -45,16 +44,19 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.servlet.SolrRequestParsers.MultipartRequestParser;
 import org.apache.solr.servlet.SolrRequestParsers.FormDataRequestParser;
+import org.apache.solr.servlet.SolrRequestParsers.MultipartRequestParser;
 import org.apache.solr.servlet.SolrRequestParsers.RawRequestParser;
 import org.apache.solr.servlet.SolrRequestParsers.StandardRequestParser;
-import static org.mockito.Mockito.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class SolrRequestParserTest extends SolrTestCaseJ4 {
 
@@ -208,12 +210,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       "=hallo"         // missing key
     };
     for (String s : invalid) {
-      try {
-        SolrRequestParsers.parseQueryString(s);
-        fail("Should throw SolrException");
-      } catch (SolrException se) {
-        // pass
-      }
+      expectThrows(SolrException.class, () -> SolrRequestParsers.parseQueryString(s));
     }
   }
   
@@ -327,15 +324,12 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     when(request.getMethod()).thenReturn("POST");
     when(request.getInputStream()).thenReturn(new ByteServletInputStream(large.toString().getBytes(StandardCharsets.US_ASCII)));
 
-    FormDataRequestParser formdata = new FormDataRequestParser( limitKBytes );    
-    try {
-      formdata.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
-      fail("should throw SolrException");
-    } catch (SolrException solre) {
-      assertTrue(solre.getMessage().contains("upload limit"));
-      assertEquals(400, solre.code());
-    }
-
+    FormDataRequestParser formdata = new FormDataRequestParser( limitKBytes );
+    SolrException e = expectThrows(SolrException.class, () -> {
+      formdata.parseParamsAndFillStreams(request, new ArrayList<>());
+    });
+    assertTrue(e.getMessage().contains("upload limit"));
+    assertEquals(400, e.code());
     verify(request).getInputStream();
   }
   
@@ -363,14 +357,12 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       }
     });
 
-    FormDataRequestParser formdata = new FormDataRequestParser( 2048 );    
-    try {
-      formdata.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
-      fail("should throw SolrException");
-    } catch (SolrException solre) {
-      assertTrue(solre.getMessage().startsWith("Solr requires that request parameters"));
-      assertEquals(500, solre.code());
-    }
+    FormDataRequestParser formdata = new FormDataRequestParser( 2048 );
+    SolrException e = expectThrows(SolrException.class, () -> {
+      formdata.parseParamsAndFillStreams(request, new ArrayList<>());
+    });
+    assertTrue(e.getMessage().startsWith("Solr requires that request parameters"));
+    assertEquals(500, e.code());
     verify(request).getInputStream();
   }
   
@@ -382,14 +374,12 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     // we emulate Tomcat that throws IllegalStateException when parameters were parsed before:
     when(request.getInputStream()).thenThrow(new IllegalStateException());
 
-    FormDataRequestParser formdata = new FormDataRequestParser( 2048 );    
-    try {
-      formdata.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
-      fail("should throw SolrException");
-    } catch (SolrException solre) {
-      assertTrue(solre.getMessage().startsWith("Solr requires that request parameters"));
-      assertEquals(500, solre.code());
-    }
+    FormDataRequestParser formdata = new FormDataRequestParser( 2048 );
+    SolrException e = expectThrows(SolrException.class, () -> {
+      formdata.parseParamsAndFillStreams(request, new ArrayList<>());
+    });
+    assertTrue(e.getMessage().startsWith("Solr requires that request parameters"));
+    assertEquals(500, e.code());
     verify(request).getInputStream();
   }
   
@@ -431,10 +421,6 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       fail("should not throw SolrException");
     }
   }
-
-
-
-
 
   @Test
   public void testAutoDetect() throws Exception {

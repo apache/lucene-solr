@@ -76,15 +76,16 @@ public class ArcCosineEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("acos(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void noValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("acos(a)");
     
     values.clear();
     Object result = evaluator.evaluate(new Tuple(values));
+    assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void nullValue() throws Exception{
     test(null);
   }

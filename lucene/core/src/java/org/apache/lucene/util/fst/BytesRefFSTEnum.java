@@ -81,7 +81,7 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
   public InputOutput<T> seekExact(BytesRef target) throws IOException {
     this.target = target;
     targetLength = target.length;
-    if (super.doSeekExact()) {
+    if (doSeekExact()) {
       assert upto == 1+target.length;
       return setResult();
     } else {

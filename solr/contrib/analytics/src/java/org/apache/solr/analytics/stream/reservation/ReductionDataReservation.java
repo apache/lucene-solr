@@ -29,23 +29,23 @@ import org.apache.solr.analytics.stream.reservation.write.ReductionDataWriter;
 public abstract class ReductionDataReservation<A, E> {
   protected final A applier;
   protected final E extractor;
-  
+
   protected ReductionDataReservation(A applier, E extractor) {
     this.applier = applier;
     this.extractor = extractor;
   }
-  
+
   /**
    * Generate a {@link ReductionDataReader} that merges the set of data this reservation represents.
-   * 
+   *
    * @param input the shard input stream
    * @return a reader from the given input
    */
   public abstract ReductionDataReader<A> createReadStream(DataInput input);
-  
+
   /**
    * Generate a {@link ReductionDataWriter} that exports the set of data this reservation represents.
-   * 
+   *
    * @param output the shard output stream
    * @return a writer to the given output
    */

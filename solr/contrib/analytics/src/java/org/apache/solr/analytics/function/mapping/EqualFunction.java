@@ -34,7 +34,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
  * Uses:
  * <ul>
  * <li>If two Values are passed in, a {@link BooleanValue} representing the equality of the two values for each document is returned.
- * <li>If an {@link AnalyticsValue} and an {@link AnalyticsValueStream} are passed in, 
+ * <li>If an {@link AnalyticsValue} and an {@link AnalyticsValueStream} are passed in,
  * a {@link BooleanValueStream} representing the equality of the Value and each of the values of the ValueStream for the document is returned.
  * </ul>
  */
@@ -44,10 +44,10 @@ public class EqualFunction {
     if (params.length != 2) {
       throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 2 paramaters, " + params.length + " found.");
     }
-    
+
     AnalyticsValueStream paramA = params[0];
     AnalyticsValueStream paramB = params[1];
-    
+
     // Booleans aren't really comparable, so just enable the equal function
     if (paramA instanceof BooleanValueStream && paramB instanceof BooleanValueStream) {
       if (paramA instanceof BooleanValue) {
@@ -83,7 +83,7 @@ class BooleanValueEqualFunction extends AbstractBooleanValue {
   public static final String name = EqualFunction.name;
   private final String funcStr;
   private final ExpressionType funcType;
-  
+
   public BooleanValueEqualFunction(BooleanValue exprA, BooleanValue exprB) {
     this.exprA = exprA;
     this.exprB = exprB;
@@ -126,7 +126,7 @@ class BooleanStreamEqualFunction extends AbstractBooleanValueStream {
   public static final String name = EqualFunction.name;
   private final String funcStr;
   private final ExpressionType funcType;
-  
+
   public BooleanStreamEqualFunction(BooleanValue baseExpr, BooleanValueStream compExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.compExpr = compExpr;
@@ -164,7 +164,7 @@ class ValueEqualFunction extends AbstractBooleanValue {
   public static final String name = EqualFunction.name;
   private final String funcStr;
   private final ExpressionType funcType;
-  
+
   public ValueEqualFunction(AnalyticsValue exprA, AnalyticsValue exprB) {
     this.exprA = exprA;
     this.exprB = exprB;
@@ -207,7 +207,7 @@ class StreamEqualFunction extends AbstractBooleanValueStream {
   public static final String name = EqualFunction.name;
   private final String funcStr;
   private final ExpressionType funcType;
-  
+
   public StreamEqualFunction(AnalyticsValue baseExpr, AnalyticsValueStream compExpr) throws SolrException {
     this.baseExpr = baseExpr;
     this.compExpr = compExpr;

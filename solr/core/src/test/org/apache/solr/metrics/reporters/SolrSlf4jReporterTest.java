@@ -54,8 +54,10 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
 
     String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-slf4jreporter.xml").toFile(), "UTF-8");
     NodeConfig cfg = SolrXmlConfig.fromString(new SolrResourceLoader(home), solrXml);
-    CoreContainer cc = createCoreContainer(cfg,
-        new TestHarness.TestCoresLocator(DEFAULT_TEST_CORENAME, initCoreDataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml"));
+    CoreContainer cc = createCoreContainer(cfg, new TestHarness.TestCoresLocator
+                                           (DEFAULT_TEST_CORENAME, initAndGetDataDir().getAbsolutePath(),
+                                            "solrconfig.xml", "schema.xml"));
+                                           
     h.coreName = DEFAULT_TEST_CORENAME;
     SolrMetricManager metricManager = cc.getMetricManager();
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.node");

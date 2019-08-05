@@ -175,12 +175,7 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
     String testFile = "a => 1";
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, false);
     SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
-    try {
-      parser.parse(new StringReader(testFile));
-      fail("didn't get expected exception");
-    } catch (ParseException expected) {
-      // expected exc
-    }
+    expectThrows(ParseException.class, () -> parser.parse(new StringReader(testFile)));
     analyzer.close();
   }
 
@@ -191,12 +186,7 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
     String testFile = "a => b => c";
     Analyzer analyzer = new MockAnalyzer(random());
     SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
-    try {
-      parser.parse(new StringReader(testFile));
-      fail("didn't get expected exception");
-    } catch (ParseException expected) {
-     // expected exc
-    }
+    expectThrows(ParseException.class, () -> parser.parse(new StringReader(testFile)));
     analyzer.close();
   }
 
@@ -561,13 +551,10 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
   public void testZeroSyns() throws Exception {
     Tokenizer tokenizer = new MockTokenizer();
     tokenizer.setReader(new StringReader("aa bb"));
-    try {
-      new SynonymGraphFilter(tokenizer, new SynonymMap.Builder(true).build(), true);
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertEquals("fst must be non-null", iae.getMessage());
-    }
+
+    IllegalArgumentException ex = expectThrows(IllegalArgumentException.class, () ->
+        new SynonymGraphFilter(tokenizer, new SynonymMap.Builder(true).build(), true));
+    assertEquals("fst must be non-null", ex.getMessage());
   }
 
   public void testOutputHangsOffEnd() throws Exception {

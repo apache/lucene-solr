@@ -16,6 +16,17 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -32,17 +43,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
@@ -395,14 +395,11 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.set("distrib", "true");
     query.setFields("id", "text");
     query.set("shards", shard1 + "," + shard2 + "," + badShard);
-    try {
-      ignoreException("Server refused connection");
-      // verify that the request would fail if shards.tolerant=false
-      collection1.query(query);
-      fail("Expecting exception");
-    } catch (SolrException e) {
-      //expected
-    }
+
+    // verify that the request would fail if shards.tolerant=false
+    ignoreException("Server refused connection");
+    expectThrows(SolrException.class, () -> collection1.query(query));
+
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);
     assertTrue((Boolean)response.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));

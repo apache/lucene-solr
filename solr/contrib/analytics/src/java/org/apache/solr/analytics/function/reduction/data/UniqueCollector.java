@@ -35,7 +35,7 @@ import org.apache.solr.analytics.value.LongValueStream;
 import org.apache.solr.analytics.value.StringValueStream;
 
 /**
- * Collects the number of unique values that exist for the given parameter. 
+ * Collects the number of unique values that exist for the given parameter.
  * <p>
  * Supported types are:
  * <ul>
@@ -50,17 +50,17 @@ import org.apache.solr.analytics.value.StringValueStream;
 public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCollector.UniqueData<T>> {
   public static final String name = "unique";
   private final String exprStr;
-  
+
   public UniqueCollector(AnalyticsValueStream param) {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
     this.tempSet = new HashSet<T>();
   }
-  
+
   private long count;
 
   /**
    * Get the count of unique values in the set data.
-   * 
+   *
    * @return the count of unique values
    */
   public long count() {
@@ -74,13 +74,13 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
     data.exists = false;
     return data;
   }
-  
+
   Set<T> tempSet;
   @Override
   protected void apply(UniqueData<T> data) {
     data.set.addAll(tempSet);
   }
-  
+
   Iterator<T> iter;
   public int startExport() {
     iter = ioData.set.iterator();
@@ -108,14 +108,14 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
   public String getExpressionStr() {
     return exprStr;
   }
-  
+
   public static class UniqueData<T> extends ReductionData {
     Set<T> set;
   }
 
   public static class UniqueIntCollector extends UniqueCollector<Integer> {
     private IntValueStream param;
-    
+
     public UniqueIntCollector(IntValueStream param) {
       super(param);
       this.param = param;
@@ -126,7 +126,7 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
       tempSet.clear();
       param.streamInts( val -> tempSet.add(val) );
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new IntArrayReservation(
@@ -137,10 +137,10 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
         ));
     }
   }
-  
+
   public static class UniqueLongCollector extends UniqueCollector<Long> {
     private LongValueStream param;
-    
+
     public UniqueLongCollector(LongValueStream param) {
       super(param);
       this.param = param;
@@ -151,7 +151,7 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
       tempSet.clear();
       param.streamLongs( val -> tempSet.add(val) );
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new LongArrayReservation(
@@ -162,10 +162,10 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
         ));
     }
   }
-  
+
   public static class UniqueFloatCollector extends UniqueCollector<Float> {
     private FloatValueStream param;
-    
+
     public UniqueFloatCollector(FloatValueStream param) {
       super(param);
       this.param = param;
@@ -176,7 +176,7 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
       tempSet.clear();
       param.streamFloats( val -> tempSet.add(val) );
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new FloatArrayReservation(
@@ -187,10 +187,10 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
         ));
     }
   }
-  
+
   public static class UniqueDoubleCollector extends UniqueCollector<Double> {
     private DoubleValueStream param;
-    
+
     public UniqueDoubleCollector(DoubleValueStream param) {
       super(param);
       this.param = param;
@@ -201,7 +201,7 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
       tempSet.clear();
       param.streamDoubles( val -> tempSet.add(val) );
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new DoubleArrayReservation(
@@ -212,10 +212,10 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
         ));
     }
   }
-  
+
   public static class UniqueStringCollector extends UniqueCollector<String> {
     private StringValueStream param;
-    
+
     public UniqueStringCollector(StringValueStream param) {
       super(param);
       this.param = param;
@@ -226,7 +226,7 @@ public abstract class UniqueCollector<T> extends ReductionDataCollector<UniqueCo
       tempSet.clear();
       param.streamStrings( val -> tempSet.add(val) );
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new StringArrayReservation(

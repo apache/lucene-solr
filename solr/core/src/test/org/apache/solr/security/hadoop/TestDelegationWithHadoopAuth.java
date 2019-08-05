@@ -43,8 +43,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 2;
   protected static final String USER_1 = "foo";
@@ -381,23 +379,17 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
       ss.close();
     }
 
-    ss = new HttpSolrClient.Builder(primarySolrClient.getBaseURL().toString())
-        .withKerberosDelegationToken(token)
-        .withResponseParser(primarySolrClient.getParser())
-        .build();
-    try {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(primarySolrClient.getBaseURL())
+             .withKerberosDelegationToken(token)
+             .withResponseParser(primarySolrClient.getParser())
+             .build()) {
       // test with token via property
-      doSolrRequest(ss, request, HttpStatus.SC_OK);
+      doSolrRequest(client, request, HttpStatus.SC_OK);
 
       // test with param -- should throw an exception
       ModifiableSolrParams tokenParam = new ModifiableSolrParams();
       tokenParam.set("delegation", "invalidToken");
-      try {
-        doSolrRequest(ss, getAdminRequest(tokenParam), ErrorCode.FORBIDDEN.code);
-        Assert.fail("Expected exception");
-      } catch (IllegalArgumentException ex) {}
-    } finally {
-      ss.close();
+      expectThrows(IllegalArgumentException.class, () -> doSolrRequest(client, getAdminRequest(tokenParam), ErrorCode.FORBIDDEN.code));
     }
   }
 }
