@@ -130,10 +130,11 @@ public final class ManagedIndexSchema extends IndexSchema {
           throw new SolrException(ErrorCode.SERVER_ERROR, msg);
         }
       }
-      final FileOutputStream out = new FileOutputStream(managedSchemaFile);
-      writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
-      persist(writer);
-      log.info("Upgraded to managed schema at " + managedSchemaFile.getPath());
+      try (FileOutputStream out = new FileOutputStream(managedSchemaFile)) {
+        writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+        persist(writer);
+        log.info("Upgraded to managed schema at " + managedSchemaFile.getPath());
+      }
     } catch (IOException e) {
       final String msg = "Error persisting managed schema " + managedSchemaFile;
       log.error(msg, e);

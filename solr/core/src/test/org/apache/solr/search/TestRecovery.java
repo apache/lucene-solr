@@ -1286,9 +1286,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       h.close();
       files = ulog.getLogList(logDir);
       Arrays.sort(files);
-      RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length-1]), "rw");
-      raf.writeChars("This is a trashed log file that really shouldn't work at all, but we'll see...");
-      raf.close();
+      try (RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length - 1]), "rw")) {
+        raf.writeChars("This is a trashed log file that really shouldn't work at all, but we'll see...");
+      }
 
       ignoreException("Failure to open existing");
       createCore();
@@ -1337,11 +1337,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
       h.close();
       String[] files = ulog.getLogList(logDir);
       Arrays.sort(files);
-      RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length-1]), "rw");
-      raf.seek(raf.length());  // seek to end
-      raf.writeLong(0xffffffffffffffffL);
-      raf.writeChars("This should be appended to a good log file, representing a bad partially written record.");
-      raf.close();
+      try (RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length - 1]), "rw")) {
+        raf.seek(raf.length());  // seek to end
+        raf.writeLong(0xffffffffffffffffL);
+        raf.writeChars("This should be appended to a good log file, representing a bad partially written record.");
+      }
 
       logReplay.release(1000);
       logReplayFinish.drainPermits();
@@ -1398,11 +1398,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       String[] files = ulog.getLogList(logDir);
       Arrays.sort(files);
-      RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length-1]), "rw");
-      long len = raf.length();
-      raf.seek(0);  // seek to start
-      raf.write(new byte[(int)len]);  // zero out file
-      raf.close();
+      try (RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length - 1]), "rw")) {
+        long len = raf.length();
+        raf.seek(0);  // seek to start
+        raf.write(new byte[(int) len]);  // zero out file
+      }
 
 
       ignoreException("Failure to open existing log file");  // this is what the corrupted log currently produces... subject to change.
@@ -1475,16 +1475,16 @@ public class TestRecovery extends SolrTestCaseJ4 {
       String[] files = ulog.getLogList(logDir);
       Arrays.sort(files);
       String fname = files[files.length-1];
-      RandomAccessFile raf = new RandomAccessFile(new File(logDir, fname), "rw");
-      raf.seek(raf.length());  // seek to end
-      raf.writeLong(0xffffffffffffffffL);
-      raf.writeChars("This should be appended to a good log file, representing a bad partially written record.");
-      
-      byte[] content = new byte[(int)raf.length()];
-      raf.seek(0);
-      raf.readFully(content);
+      byte[] content;
+      try (RandomAccessFile raf = new RandomAccessFile(new File(logDir, fname), "rw")) {
+        raf.seek(raf.length());  // seek to end
+        raf.writeLong(0xffffffffffffffffL);
+        raf.writeChars("This should be appended to a good log file, representing a bad partially written record.");
 
-      raf.close();
+        content = new byte[(int) raf.length()];
+        raf.seek(0);
+        raf.readFully(content);
+      }
 
       // Now make a newer log file with just the IDs changed.  NOTE: this may not work if log format changes too much!
       findReplace("AAAAAA".getBytes(StandardCharsets.UTF_8), "aaaaaa".getBytes(StandardCharsets.UTF_8), content);
@@ -1497,10 +1497,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
           UpdateLog.LOG_FILENAME_PATTERN,
           UpdateLog.TLOG_NAME,
           logNumber + 1);
-      raf = new RandomAccessFile(new File(logDir, fname2), "rw");
-      raf.write(content);
-      raf.close();
-      
+      try (RandomAccessFile raf = new RandomAccessFile(new File(logDir, fname2), "rw")) {
+        raf.write(content);
+      }
 
       logReplay.release(1000);
       logReplayFinish.drainPermits();
