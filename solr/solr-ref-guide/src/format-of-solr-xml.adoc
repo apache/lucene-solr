@@ -203,6 +203,22 @@ If the threadpool uses a backing queue, what is its maximum size to use direct h
 `fairnessPolicy`::
 A boolean to configure if the threadpool favors fairness over throughput. Default is false to favor throughput.
 
+`replicaRouting`::
+A NamedList specifying replica routing preference configuration. This may be used to select and configure replica routing preferences. `default=true` may be used to set the default base replica routing preference. Only positive default status assertions are respected; i.e., `default=false` has no effect. If no explicit default base replica routing preference is configured, the implicit default will be `random`.
+----
+<shardHandlerFactory class="HttpShardHandlerFactory">
+  <lst name="replicaRouting">
+    <lst name="stable">
+      <!--
+      <bool name="default">true</bool>
+      -->
+      <str name="dividend">routingDividend</str> <!-- no default -->
+      <str name="hash">q</str> <!-- defaults to hash of String value of main query param -->
+    </lst>
+  </lst>
+</shardHandlerFactory>
+----
+Replica routing may also be specified (overriding defaults) per-request, via the `shards.preference` request parameter.
 
 === The <metrics> Element
 

@@ -22,7 +22,15 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
+ * Factory for constructing an {@link AffinityReplicaListTransformer} that reorders replica routing
+ * preferences deterministically, based on request parameters.
  *
+ * Default names of params that contain the values by which routing is determined may be configured
+ * at the time of {@link AffinityReplicaListTransformerFactory} construction, and may be
+ * overridden by the config spec passed to {@link #getInstance(String, SolrQueryRequest, ReplicaListTransformerFactory)}
+ *
+ * If no defaultHashParam name is specified at time of factory construction, the routing dividend will
+ * be derived by hashing the {@link String} value of the {@link CommonParams#Q} param.
  */
 class AffinityReplicaListTransformerFactory implements ReplicaListTransformerFactory {
   private final String defaultDividendParam;
