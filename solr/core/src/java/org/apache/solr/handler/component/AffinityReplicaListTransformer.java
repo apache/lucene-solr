@@ -56,13 +56,9 @@ class AffinityReplicaListTransformer implements ReplicaListTransformer {
    */
   public static ReplicaListTransformer getInstance(String dividendParam, String hashParam, SolrQueryRequest req) {
     SolrParams params = req.getOriginalParams();
-    String dividendVal;
-    if (dividendParam != null && (dividendVal = params.get(dividendParam)) != null && !dividendVal.isEmpty()) {
-      try {
-        return new AffinityReplicaListTransformer(Integer.parseInt(dividendVal));
-      } catch (NumberFormatException ex) {
-        log.warn("unable to parse int from " + dividendParam + "=" + dividendVal);
-      }
+    Integer dividendVal;
+    if (dividendParam != null && (dividendVal = params.getInt(dividendParam)) != null) {
+      return new AffinityReplicaListTransformer(dividendVal);
     }
     String hashVal;
     if (hashParam != null && (hashVal = params.get(hashParam)) != null && !hashVal.isEmpty()) {
