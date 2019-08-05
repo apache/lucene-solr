@@ -43,11 +43,28 @@ class AffinityReplicaListTransformerFactory implements ReplicaListTransformerFac
 
   public AffinityReplicaListTransformerFactory(String defaultDividendParam, String defaultHashParam) {
     this.defaultDividendParam = defaultDividendParam;
-    this.defaultHashParam = defaultHashParam == null ? CommonParams.Q : defaultHashParam;
+    this.defaultHashParam = defaultHashParam;
   }
 
   public AffinityReplicaListTransformerFactory(NamedList<?> c) {
-    this((String)c.get(ShardParams.ROUTING_DIVIDEND), (String)c.get(ShardParams.ROUTING_HASH));
+    this((String)c.get(ShardParams.ROUTING_DIVIDEND), translateHashParam((String)c.get(ShardParams.ROUTING_HASH)));
+  }
+
+  /**
+   * Null arg indicates no configuration, which should be translated to the default value {@link CommonParams#Q}.
+   * Empty String is translated to null, allowing users to explicitly disable hash-based stable routing.
+   *
+   * @param hashParam configured hash param (null indicates unconfigured).
+   * @return translated value to be used as default hash param in RLT.
+   */
+  private static String translateHashParam(String hashParam) {
+    if (hashParam == null) {
+      return CommonParams.Q;
+    } else if (hashParam.isEmpty()) {
+      return null;
+    } else {
+      return hashParam;
+    }
   }
 
   @Override

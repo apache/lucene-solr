@@ -209,16 +209,14 @@ A NamedList specifying replica routing preference configuration. This may be use
 <shardHandlerFactory class="HttpShardHandlerFactory">
   <lst name="replicaRouting">
     <lst name="stable">
-      <!--
       <bool name="default">true</bool>
-      -->
-      <str name="dividend">routingDividend</str> <!-- no default -->
-      <str name="hash">q</str> <!-- defaults to hash of String value of main query param -->
+      <str name="dividend">routingDividend</str>
+      <str name="hash">q</str>
     </lst>
   </lst>
 </shardHandlerFactory>
 ----
-Replica routing may also be specified (overriding defaults) per-request, via the `shards.preference` request parameter.
+Replica routing may also be specified (overriding defaults) per-request, via the `shards.preference` request parameter. If a request contains both dividend param and hash param, dividend param takes priority for routing. For configuring `stable` routing, the `hash` param implicitly defaults to a hash of the String value of the main query param (i.e., `q`). `dividend` param must be configured explicitly; there is no implicit default. If only `dividend` routing is desired, `hash` may be explicitly set to the empty string, entirely disabling implicit hash-based routing.
 
 === The <metrics> Element
 
