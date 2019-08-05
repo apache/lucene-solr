@@ -78,6 +78,9 @@ Bug Fixes
 * SOLR-13664: Fixed SolrTestCaseJ4.deleteCore() to properly reset the dataDir used by initCore()
   (hossman)
 
+* SOLR-13679: Default style of ExplainDocTransformer registered via solrconfig.xml should be same as default style
+  of ExplainDocTransformer registered in defaultFactories (Munendra S N)
+
 Other Changes
 ----------------------
 
