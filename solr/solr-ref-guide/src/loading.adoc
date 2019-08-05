@@ -152,24 +152,205 @@ image::images/math-expressions/csvtable.png[]
 
 image::images/math-expressions/csv.png[]
 
-
 == Transforming Data
 
-=== Selecting fields
+
+=== Selecting fields and Field Types
+
+The `select` function can be used to select specific fields from
+the CSV file and map them to other field names for indexing.
+
+Fields in the CSV file can be mapped to field names with
+dynamic field suffixes. This approach allows for fine grain
+control over schema field types without having to make any
+changes to schema files.
+
+Below is an example of selecting fields and mapping them
+to specific field types.
+
+image::images/math-expressions/csvselect.png[]
 
 === Unique ID's
 
-Both functions also emit an id field if one is not present in the records already.
-The id field is a concatenation of the file path and the line number. This is a
-convenent way to ensure that records have consistent reproducible id's if the one
+Both `parseCSV` and `parseTSV` emit an *id* field if one is not present in the records already.
+The *id* field is a concatenation of the file path and the line number. This is a
+convenient way to ensure that records have consistent ids if an id
 is not present in file.
+
+You can also map any fields in the file to the id field using the `select` function.
+The `concat` function can be used to concatenate two or more fields in file
+to create an id. Or a `uuid` function can be used to create a random unique id. If
+the `uuid` function is used the data cannot be reloaded without first deleting
+the data, as the `uuid` function does not produce the same id for each document
+on subsequent loads.
+
+Below is an example using the `concat` function to create a new id.
+
+image::images/math-expressions/selectconcat.png[]
+
+Below is an example using the `uuid` function to create a new id.
+
+image::images/math-expressions/selectuuid.png[]
 
 
 === Parsing Dates
 
-=== Handling Nulls
+The `dateTime` function can be used to parse dates into ISO 8601 format
+needed for loading into Solr date time field.
+
+We can first inspect the format of the data time field in the CSV file:
+
+[source,text]
+----
+select(parseCSV(cat("yr2017.csv", maxLines="2")),
+       id,
+       Created.Date)
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "id": "yr2017.csv_2",
+        "Created.Date": "01/01/2017 12:00:00 AM"
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+Then we can use the dateTime function to format the date time and
+map it to Solr date time field.
+
+The `dateTime` function takes three parameters. The field in the data
+with the date string, a template to parse the date in the data
+using the Java SimpleDateFormat template, and an optional time zone.
+
+If the time zone is not present the time zone defaults to GMT time unless
+it's included in the date string itself.
+
+Below is an example of the `dateTime` function applied to the date format
+in the example above.
+
+[source,text]
+----
+select(parseCSV(cat("yr2017.csv", maxLines="2")),
+       id,
+       dateTime(Created.Date, "MM/dd/yyyy hh:mm:ss a", "EST") as cdate_dt)
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "cdate_dt": "2017-01-01T05:00:00Z",
+        "id": "yr2017.csv_2"
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 1
+      }
+    ]
+  }
+}
+----
 
 === String Manipulation
+
+The `upper` `lower`, `split`, `valueAt` and `trim` functions can be used to manipulate
+strings inside of the `select` function.
+
+The example below shows the `upper` function used to upper case the *species*
+field.
+
+image::images/math-expressions/selectupper.png[]
+
+The example below shows the `split` function which splits a field on
+delimiter. This can be used to create multi-value fields from fields
+with an internal delimiter.
+
+The example below demonstrates this with a direct call to
+the /stream handler:
+
+[source,text]
+----
+select(parseCSV(cat("iris.csv")),
+       id,
+       split(id, "_") as parts_ss,
+       species as species_s,
+       sepal_length as sepal_length_d,
+       sepal_width as sepal_width_d,
+       petal_length as petal_length_d,
+       petal_width as petal_width_d)
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "petal_width_d": "0.2",
+        "sepal_width_d": "3.5",
+        "id": "iris.csv_2",
+        "petal_length_d": "1.4",
+        "species_s": "setosa",
+        "sepal_length_d": "5.1",
+        "parts_ss": [
+          "iris.csv",
+          "2"
+        ]
+      },
+      {
+        "petal_width_d": "0.2",
+        "sepal_width_d": "3",
+        "id": "iris.csv_3",
+        "petal_length_d": "1.4",
+        "species_s": "setosa",
+        "sepal_length_d": "4.9",
+        "parts_ss": [
+          "iris.csv",
+          "3"
+        ]
+      },
+      ...
+----
+
+The `valueAt` function can be used to select a specific index from
+a split array.
+
+image::images/math-expressions/valueat.png[]
+
+=== Handling Nulls
+
+In most cases nulls do not need to be handled unless there is specific logic needed
+to handle nulls during the load.
+
+The `select` function does not output fields that contain a null value. This means
+as nulls are encountered in the data the fields are not included in the tuples.
+
+The string manipulation functions all return null if they encounter a null. This means
+the null will be passed through to the `select` function and the fields with nulls
+will simply be left off the record.
+
+
+
+
 
 === Text Analysis
 
