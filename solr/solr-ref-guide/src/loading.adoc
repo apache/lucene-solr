@@ -148,7 +148,16 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Visualizing
 
+Once that data has been parsed into tuples with `parseCSV` or `parseTSV` it can be
+visualized using Zeppelin-Solr.
+
+The example below shows the output of the `parseCSV` function visualized as a table.
+
 image::images/math-expressions/csvtable.png[]
+
+Columns from the table can then be visualized using one of Apache Zeppelins
+visualizations. The example below shows a scatter plot of the petal_length and petal_width
+grouped by species.
 
 image::images/math-expressions/csv.png[]
 
