@@ -213,37 +213,37 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       return null;
     } else {
       if (extantDefaultRouting == null) {
-        return ShardParams.REPLICA_STABLE;
+        return setTo;
       } else {
         throw new IllegalArgumentException("more than one routing scheme marked as default");
       }
     }
   }
 
-  private void initReplicaListTransformers(NamedList args) {
+  private void initReplicaListTransformers(NamedList routingConfig) {
     String defaultRouting = null;
-    Object routingConfigObj;
-    if (args != null && (routingConfigObj = args.get("replicaRouting")) != null) {
-      NamedList routingConfig = getNamedList(routingConfigObj);
-      if (routingConfig.size() > 0) {
-        Iterator<Entry<String,?>> iter = routingConfig.iterator();
-        do {
-          Entry<String, ?> e = iter.next();
-          String key = e.getKey();
-          switch (key) {
-            case ShardParams.REPLICA_RANDOM:
-              defaultRouting = checkDefaultReplicaListTransformer(getNamedList(e.getValue()), key, defaultRouting);
-              break;
-            case ShardParams.REPLICA_STABLE:
-              NamedList<?> c = getNamedList(e.getValue());
-              defaultRouting = checkDefaultReplicaListTransformer(c, key, defaultRouting);
-              this.stableRltFactory = new AffinityReplicaListTransformerFactory(c);
-              break;
-            default:
-              throw new IllegalArgumentException("invalid replica routing spec name: " + key);
-          }
-        } while (iter.hasNext());
-      }
+    if (routingConfig != null && routingConfig.size() > 0) {
+      Iterator<Entry<String,?>> iter = routingConfig.iterator();
+      do {
+        Entry<String, ?> e = iter.next();
+        String key = e.getKey();
+        switch (key) {
+          case ShardParams.REPLICA_RANDOM:
+            // Only positive assertion of default status (i.e., default=true) is supported.
+            // "random" is currently the implicit default, so explicitly configuring
+            // "random" as default would not currently be useful, but if the implicit default
+            // changes in the future, checkDefault could be relevant here.
+            defaultRouting = checkDefaultReplicaListTransformer(getNamedList(e.getValue()), key, defaultRouting);
+            break;
+          case ShardParams.REPLICA_STABLE:
+            NamedList<?> c = getNamedList(e.getValue());
+            defaultRouting = checkDefaultReplicaListTransformer(c, key, defaultRouting);
+            this.stableRltFactory = new AffinityReplicaListTransformerFactory(c);
+            break;
+          default:
+            throw new IllegalArgumentException("invalid replica routing spec name: " + key);
+        }
+      } while (iter.hasNext());
     }
     if (this.stableRltFactory == null) {
       this.stableRltFactory = new AffinityReplicaListTransformerFactory();
@@ -288,7 +288,23 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy,sb);
     this.whitelistHostChecker = new WhitelistHostChecker(args == null? null: (String) args.get(INIT_SHARDS_WHITELIST), !getDisableShardsWhitelist());
     log.info("Host whitelist initialized: {}", this.whitelistHostChecker);
-    
+
+    this.httpListenerFactory = new InstrumentedHttpListenerFactory(this.metricNameStrategy);
+    int connectionTimeout = getParameter(args, HttpClientUtil.PROP_CONNECTION_TIMEOUT,
+        HttpClientUtil.DEFAULT_CONNECT_TIMEOUT, sb);
+    int maxConnectionsPerHost = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST,
+        HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST, sb);
+    int soTimeout = getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT,
+        HttpClientUtil.DEFAULT_SO_TIMEOUT, sb);
+
+    this.defaultClient = new Http2SolrClient.Builder()
+        .connectionTimeout(connectionTimeout)
+        .idleTimeout(soTimeout)
+        .maxConnectionsPerHost(maxConnectionsPerHost).build();
+    this.defaultClient.addListenerFactory(this.httpListenerFactory);
+    this.loadbalancer = new LBHttp2SolrClient(defaultClient);
+    initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
+
     log.debug("created with {}",sb);
     
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
@@ -308,22 +324,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         blockingQueue,
         new DefaultSolrThreadFactory("httpShardExecutor")
     );
-
-    this.httpListenerFactory = new InstrumentedHttpListenerFactory(this.metricNameStrategy);
-    int connectionTimeout = getParameter(args, HttpClientUtil.PROP_CONNECTION_TIMEOUT,
-        HttpClientUtil.DEFAULT_CONNECT_TIMEOUT, sb);
-    int maxConnectionsPerHost = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST,
-        HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST, sb);
-    int soTimeout = getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT,
-        HttpClientUtil.DEFAULT_SO_TIMEOUT, sb);
-
-    this.defaultClient = new Http2SolrClient.Builder()
-        .connectionTimeout(connectionTimeout)
-        .idleTimeout(soTimeout)
-        .maxConnectionsPerHost(maxConnectionsPerHost).build();
-    this.defaultClient.addListenerFactory(this.httpListenerFactory);
-    this.loadbalancer = new LBHttp2SolrClient(defaultClient);
-    initReplicaListTransformers(args);
   }
 
   @Override
