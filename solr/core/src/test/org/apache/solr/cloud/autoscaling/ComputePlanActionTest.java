@@ -581,18 +581,18 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     String setClusterPolicyCommand = "{" +
         " 'set-cluster-policy': [" +
         "      {'cores':'<" + (1 + numCollections * numShards) + "', 'node':'#ANY'}," +
-        "      {'replica':'#ALL', 'type':'PULL', 'sysprop.solrNodeType':'PULL'},"+
-        "      {'replica':'#ALL', 'type':'TLOG', 'sysprop.solrNodeType':'TLOG'},"+
-        "      {'replica':'#ALL', 'type':'NRT', 'sysprop.solrNodeType':'NRT'}," +
         "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
         "      {'nodeRole':'overseer', 'replica':0}" +
         "    ]" +
         "}";
 
-    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, setTriggerCommand, setClusterPolicyCommand);
+    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, setTriggerCommand, setClusterPolicyCommand, 0, 1, 0);
   }
 
   private void nodeAddedTriggerWithAddReplicaPreferredOp(String collectionNamePrefix, int numShards, int numCollections, String setTriggerCommand, String setClusterPolicyCommand) throws Exception {
+    nodeAddedTriggerWithAddReplicaPreferredOp(collectionNamePrefix, numShards, numCollections, setTriggerCommand, setClusterPolicyCommand, 1, null, null);
+  }
+  private void nodeAddedTriggerWithAddReplicaPreferredOp(String collectionNamePrefix, int numShards, int numCollections, String setTriggerCommand, String setClusterPolicyCommand, Integer nNrtReplicas, Integer nTlogReplicas, Integer nPullReplicas) throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
@@ -604,7 +604,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionNamePrefix + "_0",
-        "conf", numShards, 1).setMaxShardsPerNode(2);
+        "conf", numShards, nNrtReplicas, nTlogReplicas, nPullReplicas).setMaxShardsPerNode(2);
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
