@@ -22,20 +22,26 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ConfigRequest;
@@ -48,6 +54,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.MemClassLoader;
 import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.request.SolrRequestHandler;
@@ -59,8 +66,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableMap;
 
 import static org.apache.solr.cloud.TestCryptoKeys.readFile;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
@@ -81,12 +86,13 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   }
 
-  static void assertResponseValues(int repeats, SolrClient client, SolrRequest req, Map vals) throws Exception {
+  static SolrResponse assertResponseValues(int repeats, SolrClient client, SolrRequest req, Map vals) throws Exception {
+    SolrResponse rsp = null;
+
     for (int i = 0; i < repeats; i++) {
       if (i > 0) {
         Thread.sleep(100);
       }
-      SolrResponse rsp = null;
       try {
         rsp = req.process(client);
       } catch (Exception e) {
@@ -101,7 +107,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           return Objects.equals(val, o);
         };
         boolean isPass = p.test(rsp.getResponse()._get(key, null));
-        if(isPass) return;
+        if (isPass) return rsp;
         else if (i >= repeats - 1) {
           fail("attempt: " + i + " Mismatch for value : '" + key + "' in response " + Utils.toJSONString(rsp));
         }
@@ -109,8 +115,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       }
 
     }
-
-
+    return rsp;
   }
 
   private static Map<String, Object> assertVersionInSync(SolrZkClient zkClient, SolrClient solrClient) throws SolrServerException, IOException {
@@ -562,4 +567,89 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   }
 
+  public void testCacheFromGlobalLoader() throws Exception {
+    String COLLECTION_NAME = "globalCacheColl";
+    Map<String, Object> jars = Utils.makeMap(
+        "/jar1.jar", getFileContent("runtimecode/cache.jar.bin"),
+        "/jar2.jar", getFileContent("runtimecode/cache_v2.jar.bin"));
+
+    Pair<Server, Integer> server = runHttpServer(jars);
+    int port = server.second();
+
+    String overlay = "{" +
+        "    \"props\":{\"query\":{\"documentCache\":{\n" +
+        "          \"class\":\"org.apache.solr.core.MyDocCache\",\n" +
+        "          \"size\":\"512\",\n" +
+        "          \"initialSize\":\"512\" , \"package\":\"cache_pkg\"}}}}";
+    MiniSolrCloudCluster cluster = configureCluster(4)
+        .addConfig("conf", configset("cloud-minimal"),
+            Collections.singletonMap(ConfigOverlay.RESOURCE_NAME, overlay.getBytes()))
+        .configure();
+    try {
+      String payload = "{add-package:{name : 'cache_pkg', url: 'http://localhost:" + port + "/jar1.jar', " +
+          "sha512 : '1a3739b629ce85895c9b2a8c12dd7d98161ff47634b0693f1e1c5b444fb38343f95c6ee955cd99103bd24cfde6c205234b63823818660ac08392cdc626caf585'}}";
+
+      new V2Request.Builder("/cluster")
+          .withPayload(payload)
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "add-package/sha512"),
+          getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "package/cache_pkg/sha512"));
+
+      CollectionAdminRequest
+          .createCollection(COLLECTION_NAME, "conf", 2, 1)
+          .setMaxShardsPerNode(100)
+          .process(cluster.getSolrClient());
+
+
+      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
+      SolrParams params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME, WT, JAVABIN));
+
+      NamedList<Object> rsp = cluster.getSolrClient().request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/overlay", params));
+      assertEquals("org.apache.solr.core.MyDocCache", rsp._getStr("overlay/props/query/documentCache/class", null));
+      UpdateRequest req = new UpdateRequest();
+
+      req.add("id", "1", "desc_s", "document 1")
+          .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true)
+          .setWaitSearcher(true);
+      cluster.getSolrClient().request(req, COLLECTION_NAME);
+
+      SolrQuery solrQuery = new SolrQuery("q", "*:*", "collection", COLLECTION_NAME);
+      assertResponseValues(10,
+          cluster.getSolrClient(),
+          new QueryRequest(solrQuery),
+          Utils.makeMap("response[0]/id", "1"));
+
+
+      payload = "{update-package:{name : 'cache_pkg', url: 'http://localhost:" + port + "/jar2.jar', " +
+          "sha512 : 'aa3f42fb640636dd8126beca36ac389486d0fcb1c3a2e2c387d043d57637535ce8db3b17983853322f78bb8f447ed75fe7b405675debe652ed826ee95e8ce328'}}";
+      new V2Request.Builder("/cluster")
+          .withPayload(payload)
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "update-package/sha512"),
+          getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "package/cache_pkg/sha512"));
+
+      req = new UpdateRequest();
+      req.add("id", "2", "desc_s", "document 1")
+          .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true)
+          .setWaitSearcher(true);
+      cluster.getSolrClient().request(req, COLLECTION_NAME);
+
+
+      solrQuery = new SolrQuery("q", "id:2", "collection", COLLECTION_NAME);
+      SolrResponse result = assertResponseValues(10,
+          cluster.getSolrClient(),
+          new QueryRequest(solrQuery),
+          Utils.makeMap("response[0]/my_synthetic_fld_s", "version_2"));
+
+    } finally {
+      cluster.deleteAllCollections();
+      cluster.shutdown();
+      server.first().stop();
+    }
+
+
   }
+
+}

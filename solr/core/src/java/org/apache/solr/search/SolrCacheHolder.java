@@ -22,20 +22,33 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
+public class SolrCacheHolder<K, V> implements SolrCache<K, V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  SolrCache<K, V> delegate;
+  CacheConfig.CacheInfo cacheInfo;
 
+  public SolrCacheHolder(CacheConfig.CacheInfo cacheInfo) {
+    this.delegate = cacheInfo.cache;
+    this.cacheInfo = cacheInfo;
+    if (cacheInfo.pkg != null) {
+      cacheInfo.core.addPackageListener(cacheInfo.pkg, lib -> reload(lib));
+    }
+  }
 
-  private final CacheConfig factory;
-  protected volatile SolrCache<K, V> delegate;
-
-  public SolrCacheHolder(SolrCache<K, V> delegate, CacheConfig factory) {
-    this.delegate = delegate;
-    this.factory = factory;
+  private void reload(RuntimeLib lib) {
+    if (lib.getZnodeVersion() > cacheInfo.znodeVersion) {
+      CacheConfig.CacheInfo old = this.cacheInfo;
+      this.cacheInfo.cfg.persistence[0] = null;//  old objects may be using old classes . safer to just discard them
+      CacheConfig.CacheInfo cacheInfo = new CacheConfig.CacheInfo(this.cacheInfo.cfg, this.cacheInfo.core);
+      this.delegate = cacheInfo.cache;
+      this.cacheInfo = cacheInfo;
+      old.cache.close();
+    }
   }
 
   public int size() {
@@ -134,8 +147,7 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-
-    delegate.initializeMetrics(manager, registry, tag,scope);
+    delegate.initializeMetrics(manager, registry, tag, scope);
 
   }
 

@@ -362,7 +362,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       if(lib.equals(pair.first())) pair.second().accept(lib);
     }
   }
-  void addPackageListener(String  pkg, Consumer<RuntimeLib> r){
+  public void addPackageListener(String  pkg, Consumer<RuntimeLib> r){
     packageListeners.add(new Pair<>(pkg, r));
   }
 
