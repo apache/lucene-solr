@@ -31,25 +31,30 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMatchesIterator extends LuceneTestCase {
 
   protected IndexSearcher searcher;
   protected Directory directory;
-  protected IndexReader reader;
+  protected IndexReader reader = null;
 
   private static final String FIELD_WITH_OFFSETS = "field_offsets";
   private static final String FIELD_NO_OFFSETS = "field_no_offsets";
@@ -699,6 +704,65 @@ public class TestMatchesIterator extends LuceneTestCase {
         {3, 0, 0, 0, 2, 2, 2, 6, 8},
         {4}
     });
+  }
+
+  public void testMinimalSeekingWithWildcards() throws IOException {
+    SeekCountingLeafReader reader = new SeekCountingLeafReader(getOnlyLeafReader(this.reader));
+    this.searcher = new IndexSearcher(reader);
+    Query query = new PrefixQuery(new Term(FIELD_WITH_OFFSETS, "w"));
+    Weight w = searcher.createWeight(query.rewrite(reader), ScoreMode.COMPLETE, 1);
+
+    // docs 0-3 match several different terms here, but we only seek to the first term and
+    // then short-cut return; other terms are ignored until we try and iterate over matches
+    int[] expectedSeeks = new int[]{ 1, 1, 1, 1, 6, 6 };
+    int i = 0;
+    for (LeafReaderContext ctx : reader.leaves()) {
+      for (int doc = 0; doc < ctx.reader().maxDoc(); doc++) {
+        reader.seeks = 0;
+        w.matches(ctx, doc);
+        assertEquals("Unexpected seek count on doc " + doc, expectedSeeks[i], reader.seeks);
+        i++;
+      }
+    }
+  }
+
+  private static class SeekCountingLeafReader extends FilterLeafReader {
+
+    int seeks = 0;
+
+    public SeekCountingLeafReader(LeafReader in) {
+      super(in);
+    }
+
+    @Override
+    public Terms terms(String field) throws IOException {
+      Terms terms = super.terms(field);
+      if (terms == null) {
+        return null;
+      }
+      return new FilterTerms(terms) {
+        @Override
+        public TermsEnum iterator() throws IOException {
+          return new FilterTermsEnum(super.iterator()) {
+            @Override
+            public boolean seekExact(BytesRef text) throws IOException {
+              seeks++;
+              return super.seekExact(text);
+            }
+          };
+        }
+      };
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
+    }
   }
 
 }

@@ -42,6 +42,9 @@ Optimizations
 * LUCENE-8935: BooleanQuery with no scoring clause can now early terminate the query when
 the total hits is not requested.
 
+* LUCENE-8941: Matches on wildcard queries will defer building their full
+  disjunction until a MatchesIterator is pulled (Alan Woodward)
+
 Other
 
 * LUCENE-8778 LUCENE-8911: Define analyzer SPI names as static final fields and document the names in Javadocs.
