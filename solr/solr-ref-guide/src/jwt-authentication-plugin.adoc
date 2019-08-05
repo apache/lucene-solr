@@ -34,7 +34,7 @@ The simplest possible `security.json` for registering the plugin without configu
 }
 ----
 
-The plugin will block anonymous traffic in this mode if the `blockUnknown` property is not set to false as it is above, since the default for `blockUnknown` is true. It is then possible to start configuring the plugin using REST API calls, which is described below.
+The plugin will block anonymous traffic in this mode if the `blockUnknown` property is not set to false as it is above, since the default for `blockUnknown` is true. When the `blockUnknown` parameter is set to `false`, it is possible to start configuring the plugin using REST API calls, which is described below.
 
 == Configuration Parameters
 
