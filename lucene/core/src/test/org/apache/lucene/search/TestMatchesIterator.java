@@ -192,6 +192,46 @@ public class TestMatchesIterator extends LuceneTestCase {
     }
   }
 
+  private void checkSubMatches(Query q, Query[][] expectedLeafQueries) throws IOException {
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
+    for (int i = 0; i < expectedLeafQueries.length; i++) {
+      LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
+      int doc = i - ctx.docBase;
+      Matches matches = w.matches(ctx, doc);
+      if (matches == null) {
+        assertEquals("Expected to get no matches on document " + i, 0, expectedLeafQueries[i].length);
+      }
+      Set<Query> expectedQueries = new HashSet<>(Arrays.asList(expectedLeafQueries[i]));
+      Set<Query> actualQueries = collectLeafQueries(matches);
+      Set<Query> unexpected = new HashSet<>(actualQueries);
+      unexpected.removeAll(expectedQueries);
+      assertEquals("Unexpected matching leaf queries: " + unexpected, 0, unexpected.size());
+      Set<Query> missing = new HashSet<>(expectedQueries);
+      missing.removeAll(actualQueries);
+      assertEquals("Missing matching leaf queries: " + missing, 0, missing.size());
+    }
+  }
+
+  private Set<Query> collectLeafQueries(Matches matches) throws IOException {
+    Set<Query> qs = new HashSet<>();
+    if (matches != null) {
+      if (matches.getSubMatches().size() == 0) {
+        for (String field : matches) {
+          MatchesIterator mi = matches.getMatches(field);
+          if (mi.next()) {
+            qs.add(mi.getQuery());
+          }
+        }
+      }
+      else {
+        for (Matches sub : matches.getSubMatches()) {
+          qs.addAll(collectLeafQueries(sub));
+        }
+      }
+    }
+    return qs;
+  }
+
   private void assertIsLeafMatch(Query q, String field) throws IOException {
     Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
     for (int i = 0; i < searcher.reader.maxDoc(); i++) {
@@ -304,6 +344,7 @@ public class TestMatchesIterator extends LuceneTestCase {
     });
     checkLabelCount(q, FIELD_WITH_OFFSETS, new int[]{ 1, 1, 1, 1, 0, 0 });
     assertIsLeafMatch(q, FIELD_WITH_OFFSETS);
+    checkSubMatches(q, new Query[][]{ {q}, {q}, {q}, {q}, {}, {}});
   }
 
   public void testTermQueryNoStoredOffsets() throws IOException {
@@ -340,6 +381,7 @@ public class TestMatchesIterator extends LuceneTestCase {
     });
     checkLabelCount(q, FIELD_WITH_OFFSETS, new int[]{ 2, 2, 1, 2, 0, 0 });
     assertIsLeafMatch(q, FIELD_WITH_OFFSETS);
+    checkSubMatches(q, new Query[][]{ {w1, w3}, {w1, w3}, {w1}, {w1, w3}, {}, {}});
   }
 
   public void testDisjunctionNoPositions() throws IOException {
@@ -400,6 +442,7 @@ public class TestMatchesIterator extends LuceneTestCase {
     });
     checkLabelCount(q, FIELD_WITH_OFFSETS, new int[]{ 3, 1, 3, 3, 0, 0 });
     assertIsLeafMatch(q, FIELD_WITH_OFFSETS);
+    checkSubMatches(q, new Query[][]{ {w1, w3, w4}, {w3}, {w1, xx, w4}, {w1, w3, w4}, {}, {}});
   }
 
   public void testMinShouldMatchNoPositions() throws IOException {
@@ -544,6 +587,8 @@ public class TestMatchesIterator extends LuceneTestCase {
     assertEquals(2, fields.size());
     assertTrue(fields.contains(FIELD_WITH_OFFSETS));
     assertTrue(fields.contains("id"));
+
+    assertEquals(2, m.getSubMatches().size());
   }
 
   //  0         1         2         3         4         5         6         7

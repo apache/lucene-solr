@@ -18,6 +18,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 
 class AssertingMatches implements Matches {
@@ -34,6 +35,11 @@ class AssertingMatches implements Matches {
     if (mi == null)
       return null;
     return new AssertingMatchesIterator(mi);
+  }
+
+  @Override
+  public Collection<Matches> getSubMatches() {
+    return in.getSubMatches();
   }
 
   @Override
