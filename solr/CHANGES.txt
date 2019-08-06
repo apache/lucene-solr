@@ -45,8 +45,8 @@ New Features
   of two fields. (Gus Heck)
 
 * SOLR-13399: SPLITSHARD implements a new splitByPrefix option that takes into account the actual document distribution
-  when using compositeIds.  The id prefix should be indexed into the "id_prefix" field for this feature to work.
-  (yonik)
+  when using compositeIds.  Document distribution is calculated using the "id_prefix" field (if it exists) containing
+  just the compositeId prefixes, or directly from the indexed "id" field otherwise. (yonik)
 
 * SOLR-13565: Node level runtime libs loaded from remote urls  (noble)
 
