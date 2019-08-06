@@ -16,14 +16,14 @@
  */
 package org.apache.solr.update;
 
+import java.io.IOException;
+import java.util.concurrent.Callable;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.concurrent.Callable;
 
 public class TestUpdate extends SolrTestCaseJ4 {
   @BeforeClass
@@ -82,21 +82,14 @@ public class TestUpdate extends SolrTestCaseJ4 {
 
 
     long version2;
-    try {
-      // try bad version added as a field in the doc
-      version2 = addAndGetVersion(sdoc("id","1", "val_is",map("add",-100), "_version_",2), null);
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    SolrException se = expectThrows(SolrException.class,
+        () -> addAndGetVersion(sdoc("id","1", "val_is",map("add",-100), "_version_",2), null));
+    assertEquals(409, se.code());
 
-    try {
-      // try bad version added as a request param
-      version2 = addAndGetVersion(sdoc("id","1", "val_is",map("add",-100)), params("_version_","2"));
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
+    // try bad version added as a request param
+    se = expectThrows(SolrException.class,
+        () -> addAndGetVersion(sdoc("id","1", "val_is",map("add",-100)), params("_version_","2")));
+    assertEquals(409, se.code());
 
     // try good version added as a field in the doc
     version = addAndGetVersion(sdoc("id","1", "val_is",map("add",-100), "_version_",version), null);
@@ -130,15 +123,10 @@ public class TestUpdate extends SolrTestCaseJ4 {
     version = deleteAndGetVersion("1", null);
     afterUpdate.call();
 
-
-    try {
-      // test that updating a non-existing doc fails if we set _version_=1
-      version2 = addAndGetVersion(sdoc("id","1", "val_is",map("add",-101), "_version_","1"), null);
-      fail();
-    } catch (SolrException se) {
-      assertEquals(409, se.code());
-    }
-
+    // test that updating a non-existing doc fails if we set _version_=1
+    se = expectThrows(SolrException.class,
+        () -> addAndGetVersion(sdoc("id","1", "val_is",map("add",-101), "_version_","1"), null));
+    assertEquals(409, se.code());
 
     // test that by default we can update a non-existing doc
     version = addAndGetVersion(sdoc("id","1", "val_i",102, "val_is",map("add",-102)), null);
@@ -208,20 +196,14 @@ public class TestUpdate extends SolrTestCaseJ4 {
     );
 
     // test that updating a unique id results in failure.
-    try {
-      ignoreException("Invalid update of id field");
-      version = addAndGetVersion(sdoc(
-          "id", map("set","1"),
-          "val_is", map("inc","2000000000")
-      ),
-          null);
-
-      fail();
-    } catch (SolrException se) {
-      resetExceptionIgnores();
-      assertEquals(400, se.code());
-      assertTrue(se.getMessage().indexOf("Invalid update of id field") >= 0);
-    }
+    ignoreException("Invalid update of id field");
+    se = expectThrows(SolrException.class,
+        () -> addAndGetVersion(
+            sdoc("id", map("set","1"), "val_is", map("inc","2000000000")), null)
+    );
+    resetExceptionIgnores();
+    assertEquals(400, se.code());
+    assertTrue(se.getMessage().contains("Invalid update of id field"));
 
     afterUpdate.call();
 

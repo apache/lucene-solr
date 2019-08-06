@@ -38,4 +38,4 @@ Please review the following and check all that apply:
 - [ ] I have developed this patch against the `master` branch.
 - [ ] I have run `ant precommit` and the appropriate test suite.
 - [ ] I have added tests for my changes.
-- [ ] I have added documentation for the Ref Guide (for Solr changes only).
+- [ ] I have added documentation for the [Ref Guide](https://github.com/apache/lucene-solr/tree/master/solr/solr-ref-guide) (for Solr changes only).

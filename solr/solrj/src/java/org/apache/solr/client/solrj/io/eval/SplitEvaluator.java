@@ -17,42 +17,37 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class NotNullEvaluator extends RecursiveBooleanEvaluator implements ManyValueWorker {
+public class SplitEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public NotNullEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public SplitEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
 
-    if(containedEvaluators.size() != 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one parameter but found %d",expression,containedEvaluators.size()));
+    if(2 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 2 values but found %d",expression,containedEvaluators.size()));
     }
   }
 
-  public Object doWork(Object ... values) throws IOException {
-
-    if(values[0] == null) {
-      return false;
+  @Override
+  public Object doWork(Object value1, Object value2){
+    if(null == value1){
+      return null;
+    }
+    String s = value1.toString();
+    String p = value2.toString();
+    String[] tokens = s.split(p, -1);
+    List<String> strings = new ArrayList(tokens.length);
+    for(String tok : tokens) {
+      strings.add(tok);
     }
 
-    if(values[0] instanceof String) {
-      //Check to see if the this tuple had a null value for that string.
-      Map tupleContext = getStreamContext().getTupleContext();
-      String nullField = (String)tupleContext.get("null");
-      if(nullField != null && nullField.equals(values[0])) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  protected Checker constructChecker(Object value) throws IOException {
-    return null;
+    return strings;
   }
 }

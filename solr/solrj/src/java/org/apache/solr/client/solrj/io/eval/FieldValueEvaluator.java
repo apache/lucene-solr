@@ -91,7 +91,11 @@ public class FieldValueEvaluator extends SourceEvaluator {
 
     if(value == null) {
       if(sc != null) {sc.getTupleContext().put("null", fieldName);}
-      return fieldName;
+      if(fieldName.startsWith("\"") && fieldName.endsWith("\"")) {
+        return fieldName.substring(1, fieldName.length()-1);
+      } else {
+        return null;
+      }
     }
 
     return value;

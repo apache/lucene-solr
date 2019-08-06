@@ -76,7 +76,7 @@ public class CeilingEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("ceil(a,b)");
   }
 
-  @Test(expected = NumberFormatException.class)
+  @Test//(expected = NumberFormatException.class)
   public void ceilNoValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("ceil(a)");
     
@@ -85,7 +85,7 @@ public class CeilingEvaluatorTest extends SolrTestCase {
     assertNull(result);
   }
 
-  @Test(expected = NumberFormatException.class)
+  @Test//(expected = NumberFormatException.class)
   public void ceilNullValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("ceil(a)");
     

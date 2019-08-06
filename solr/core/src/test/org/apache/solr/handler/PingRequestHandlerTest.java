@@ -162,13 +162,8 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   }
   
   public void testBadActionRaisesException() throws Exception {
-    
-    try {
-      SolrQueryResponse rsp = makeRequest(handler, req("action", "badaction"));
-      fail("Should have thrown a SolrException for the bad action");
-    } catch (SolrException se){
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code,se.code());
-    }
+    SolrException se = expectThrows(SolrException.class, () -> makeRequest(handler, req("action", "badaction")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code,se.code());
   }
 
  public void testPingInClusterWithNoHealthCheck() throws Exception {

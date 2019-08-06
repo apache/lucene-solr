@@ -104,6 +104,9 @@ New Features
 
 * SOLR-13622: Add files() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
 
+* SOLR-11866: QueryElevationComponent can have query rules configured with match="subset" wherein the words need only
+  match a subset of the query's words and in any order.  (Bruno Roustant via David Smiley)
+
 Improvements
 ----------------------
 
@@ -111,6 +114,8 @@ Improvements
 (hossman, Simon Willnauer, Adrien Grand, Munendra S N)
 
 * SOLR-13558: Allow dynamic resizing of SolrCache-s. (ab)
+
+* SOLR-6305: Ability to set the replication factor for index files created by HDFSDirectoryFactory (Boris Pasko via Kevin Risden)
 
 Bug Fixes
 ----------------------
@@ -125,6 +130,9 @@ Bug Fixes
 
 * SOLR-13664: Fixed SolrTestCaseJ4.deleteCore() to properly reset the dataDir used by initCore()
   (hossman)
+
+* SOLR-13679: Default style of ExplainDocTransformer registered via solrconfig.xml should be same as default style
+  of ExplainDocTransformer registered in defaultFactories (Munendra S N)
 
 * SOLR-13672: Cloud -> Zk Status page now parses response from Zookeeper 3.5.5 correctly (Jörn Franke, janhoy)
 

@@ -114,13 +114,8 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
 
   public void testMisconfiguredField() {
     ignoreException("was indexed without offsets");
-    try {
-      assertQ("should fail, has no offsets",
-        req("q", "text2:document", "sort", "id asc", "hl", "true", "hl.fl", "text2"));
-      fail();
-    } catch (Exception expected) {
-      // expected
-    }
+    expectThrows(Exception.class, () ->
+        h.query(req("q", "text2:document", "sort", "id asc", "hl", "true", "hl.fl", "text2")));
     resetExceptionIgnores();
   }
   

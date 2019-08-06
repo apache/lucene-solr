@@ -17,42 +17,34 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class NotNullEvaluator extends RecursiveBooleanEvaluator implements ManyValueWorker {
+public class TrimEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public NotNullEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public TrimEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
 
-    if(containedEvaluators.size() != 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting one parameter but found %d",expression,containedEvaluators.size()));
+    if(1 != containedEvaluators.size()){
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 1 value but found %d",expression,containedEvaluators.size()));
     }
   }
 
-  public Object doWork(Object ... values) throws IOException {
-
-    if(values[0] == null) {
-      return false;
+  @Override
+  public Object doWork(Object value){
+    if(null == value){
+      return null;
     }
-
-    if(values[0] instanceof String) {
-      //Check to see if the this tuple had a null value for that string.
-      Map tupleContext = getStreamContext().getTupleContext();
-      String nullField = (String)tupleContext.get("null");
-      if(nullField != null && nullField.equals(values[0])) {
-        return false;
-      }
+    else if(value instanceof List){
+      return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
-
-    return true;
-  }
-
-  protected Checker constructChecker(Object value) throws IOException {
-    return null;
+    else{
+      return value.toString().trim();
+    }
   }
 }

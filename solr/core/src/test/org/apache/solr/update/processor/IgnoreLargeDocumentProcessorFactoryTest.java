@@ -43,20 +43,16 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
 
     IgnoreLargeDocumentProcessorFactory factory = new IgnoreLargeDocumentProcessorFactory();
     factory.init(args);
-    try {
-      UpdateRequestProcessor processor = factory.getInstance(null, null, null);
-      processor.processAdd(getUpdate(1024));
-      fail("Expected processor to ignore the update");
-    } catch (SolrException e) {
-      //expected
-    }
+
+    UpdateRequestProcessor processor = factory.getInstance(null, null, null);
+    expectThrows(SolrException.class, () -> processor.processAdd(getUpdate(1024)));
 
     args = new NamedList();
     args.add(IgnoreLargeDocumentProcessorFactory.LIMIT_SIZE_PARAM, 2);
     factory = new IgnoreLargeDocumentProcessorFactory();
     factory.init(args);
-    UpdateRequestProcessor processor = factory.getInstance(null, null, null);
-    processor.processAdd(getUpdate(1024));
+    UpdateRequestProcessor requestProcessor = factory.getInstance(null, null, null);
+    requestProcessor.processAdd(getUpdate(1024));
 
   }
 

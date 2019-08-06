@@ -16,12 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -30,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.impl.PreferenceRule;
@@ -44,6 +39,12 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory.WhitelistHostCh
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 
 /**
  * Tests specifying a custom ShardHandlerFactory
@@ -262,14 +263,12 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   public void testWhitelistHostCheckerDisabled() throws Exception {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://cde:8983", false);
     checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"abc-1.com:8983/solr"}));
-    
-    try {
-      checker = new WhitelistHostChecker("http://cde:8983", true);
-      checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"http://abc-1.com:8983/solr"}));
-      fail("Expecting exception");
-    } catch (SolrException se) {
-      assertThat(se.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-    }
+
+    WhitelistHostChecker whitelistHostChecker = new WhitelistHostChecker("http://cde:8983", true);
+    SolrException e = expectThrows(SolrException.class, () -> {
+      whitelistHostChecker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList("http://abc-1.com:8983/solr"));
+    });
+    assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
   }
   
   @Test
@@ -283,67 +282,60 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   @Test
   public void testWhitelistHostCheckerSingleHost() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983/solr", true);
-    checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"http://abc-1.com:8983/solr"}));
+    checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList("http://abc-1.com:8983/solr"));
   }
   
   @Test
   public void testWhitelistHostCheckerMultipleHost() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"http://abc-1.com:8983/solr"}));
+    checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList("http://abc-1.com:8983/solr"));
   }
   
   @Test
   public void testWhitelistHostCheckerMultipleHost2() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"http://abc-1.com:8983/solr", "http://abc-2.com:8983/solr"}));
+    checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList("http://abc-1.com:8983/solr", "http://abc-2.com:8983/solr"));
   }
   
   @Test
   public void testWhitelistHostCheckerNoProtocolInParameter() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    checker.checkWhitelist("abc-1.com:8983/solr", Arrays.asList(new String[]{"abc-1.com:8983/solr"}));
+    checker.checkWhitelist("abc-1.com:8983/solr", Arrays.asList("abc-1.com:8983/solr"));
   }
   
   @Test
   public void testWhitelistHostCheckerNonWhitelistedHost1() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    try {
-      checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"http://abc-4.com:8983/solr"}));
-      fail("Expected exception");
-    } catch (SolrException e) {
-      assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-      assertThat(e.getMessage(), containsString("not on the shards whitelist"));
-    }
+    SolrException e = expectThrows(SolrException.class, () -> {
+      checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList("http://abc-4.com:8983/solr"));
+    });
+    assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+    assertThat(e.getMessage(), containsString("not on the shards whitelist"));
   }
   
   @Test
   public void testWhitelistHostCheckerNonWhitelistedHost2() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    try {
-      checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"http://abc-1.com:8983/solr", "http://abc-4.com:8983/solr"}));
-      fail("Expected exception");
-    } catch (SolrException e) {
-      assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-      assertThat(e.getMessage(), containsString("not on the shards whitelist"));
-    }
+    SolrException e = expectThrows(SolrException.class, () -> {
+      checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList("http://abc-1.com:8983/solr", "http://abc-4.com:8983/solr"));
+    });
+    assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+    assertThat(e.getMessage(), containsString("not on the shards whitelist"));
+
   }
   
   @Test
   public void testWhitelistHostCheckerNonWhitelistedHostHttps() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    checker.checkWhitelist("https://abc-1.com:8983/solr", Arrays.asList(new String[]{"https://abc-1.com:8983/solr"}));
+    checker.checkWhitelist("https://abc-1.com:8983/solr", Arrays.asList("https://abc-1.com:8983/solr"));
   }
   
   @Test
   public void testWhitelistHostCheckerInvalidUrl() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    try {
-      checker.checkWhitelist("abc_1", Arrays.asList(new String[]{"abc_1"}));
-      fail("Expected exception");
-    } catch (SolrException e) {
-      assertThat(e.code(), is(SolrException.ErrorCode.BAD_REQUEST.code));
-      assertThat(e.getMessage(), containsString("Invalid URL syntax"));
-    }
+    SolrException e = expectThrows(SolrException.class, () -> checker.checkWhitelist("abc_1", Arrays.asList("abc_1")));
+    assertThat(e.code(), is(SolrException.ErrorCode.BAD_REQUEST.code));
+    assertThat(e.getMessage(), containsString("Invalid URL syntax"));
   }
   
   @Test
