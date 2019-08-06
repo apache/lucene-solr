@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
@@ -52,7 +51,7 @@ public class SkipSecondStepSearchGroupShardResponseProcessor extends SearchGroup
     TopGroupsShardResponseProcessor.fillResultIds(rb);
   }
 
-  protected static class SkipSecondStepSearchGroupsContainer extends SearchGroupsContainer {
+  private static class SkipSecondStepSearchGroupsContainer extends SearchGroupsContainer {
 
     private final Map<Object, String> docIdToShard = new HashMap<>();
 
@@ -78,14 +77,11 @@ public class SkipSecondStepSearchGroupShardResponseProcessor extends SearchGroup
     public void addSearchGroupToShards(ResponseBuilder rb, String groupField, Collection<SearchGroup<BytesRef>> mergedTopGroups) {
       super.addSearchGroupToShards(rb, groupField, mergedTopGroups);
 
-      final GroupingSpecification groupingSpecification = rb.getGroupingSpec();
-      final Sort groupSort = groupingSpecification.getGroupSortSpec().getSort();
-
-      GroupDocs<BytesRef>[] groups = new GroupDocs[mergedTopGroups.size()];
+      final GroupDocs<BytesRef>[] groups = new GroupDocs[mergedTopGroups.size()];
 
       // This is the max score found in any document on any group
-      float maxScore = 0;
-      int index = 0;
+      float maxScore = Float.MIN_VALUE;
+      int groupsIndex = 0;
 
       for (SearchGroup<BytesRef> group : mergedTopGroups) {
         maxScore = Math.max(maxScore, group.topDocScore);
@@ -96,19 +92,24 @@ public class SkipSecondStepSearchGroupShardResponseProcessor extends SearchGroup
         sdoc.id = group.topDocSolrId;
         sdoc.shard = shard;
 
-        groups[index++] = new GroupDocs<>(group.topDocScore,
+        groups[groupsIndex++] = new GroupDocs<>(
+            Float.NaN,
             group.topDocScore,
             new TotalHits(1, TotalHits.Relation.EQUAL_TO), /* we don't know the actual number of hits in the group- we set it to 1 as we only keep track of the top doc */
             new ShardDoc[] { sdoc }, /* only top doc */
             group.groupValue,
             group.sortValues);
       }
-      TopGroups<BytesRef> topMergedGroups = new TopGroups<BytesRef>(groupSort.getSort(),
-          rb.getGroupingSpec().getWithinGroupSortSpec().getSort().getSort(),
+
+      final GroupingSpecification groupingSpecification = rb.getGroupingSpec();
+
+      final TopGroups<BytesRef> topMergedGroups = new TopGroups<BytesRef>(
+          groupingSpecification.getGroupSortSpec().getSort().getSort(),
+          groupingSpecification.getWithinGroupSortSpec().getSort().getSort(),
           0, /*Set totalHitCount to 0 as we can't computed it as is */
           0, /*Set totalGroupedHitCount to 0 as we can't computed it as is*/
           groups,
-          maxScore);
+          groups.length > 0 ? maxScore : Float.NaN);
       rb.mergedTopGroups.put(groupField, topMergedGroups);
     }
   }

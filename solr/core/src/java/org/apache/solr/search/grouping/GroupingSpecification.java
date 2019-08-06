@@ -53,37 +53,36 @@ public class GroupingSpecification {
    * It will throw a SolrException the grouping specification is not valid, otherwise
    * it will return without side effects.
    */
-  public void validate(){
-    if (isSkipSecondGroupingStep()) {
-      validateSkipSecondGroupingStep(withinGroupSortSpec, groupSortSpec);
+  public void validate() throws SolrException {
+    if (skipSecondGroupingStep) {
+      validateSkipSecondGroupingStep();
     }
 
     // when group.format=grouped then, validate group.offset
     // for group.main=true and group.format=simple, start value is used instead of group.offset
-    // and start is already validate above for negative values
     if (!(main || responseFormat == Grouping.Format.simple) &&
        withinGroupSortSpec.getOffset() < 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'group.offset' parameter cannot be negative");
     }
   }
 
-  private void validateSkipSecondGroupingStep(final SortSpec withinGroupSpecification, final SortSpec groupSort) {
+  private void validateSkipSecondGroupingStep() {
     // Only possible if we only want one doc per group
-    final int limit =  withinGroupSpecification.getCount();
-    final int offset = withinGroupSpecification.getOffset();
+    final int limit =  withinGroupSortSpec.getCount();
+    final int offset = withinGroupSortSpec.getOffset();
     if (limit != 1) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND + " does not support " +
           GroupParams.GROUP_LIMIT + " != 1 ("+GroupParams.GROUP_LIMIT+" is "+limit+")");
     }
-    if (offset != 0){
+    if (offset != 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND + " does not support " + GroupParams.GROUP_OFFSET + " != 0 (" +
               GroupParams.GROUP_OFFSET + " is "+offset + ")");
     }
 
-    final SortField[] withinGroupSortFields = withinGroupSpecification.getSort().getSort();
-    final SortField[] groupSortFields = groupSort.getSort().getSort();
+    final SortField[] withinGroupSortFields = withinGroupSortSpec.getSort().getSort();
+    final SortField[] groupSortFields = groupSortSpec.getSort().getSort();
 
     // Within group sort must be the same as group sort because if we skip second step no sorting within group will be done.
     // This checks if withinGroupSortFields is a prefix of groupSortFields
@@ -185,8 +184,12 @@ public class GroupingSpecification {
     this.withinGroupSortSpec = withinGroupSortSpec;
   }
 
-  public boolean isSkipSecondGroupingStep() { return skipSecondGroupingStep; }
+  public boolean isSkipSecondGroupingStep() {
+    return skipSecondGroupingStep;
+  }
 
-  public void setSkipSecondGroupingStep(boolean skipSecondGroupingStep) { this.skipSecondGroupingStep = skipSecondGroupingStep; }
+  public void setSkipSecondGroupingStep(boolean skipSecondGroupingStep) {
+    this.skipSecondGroupingStep = skipSecondGroupingStep;
+  }
 
 }

@@ -74,6 +74,11 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return result;
   }
 
+  protected Object[] getSortValues(Object rawSearchGroupData) {
+    List sortValues = (List<Comparable>)rawSearchGroupData;
+    return sortValues.toArray(new Comparable[sortValues.size()]);
+  }
+
   protected SearchGroup<BytesRef> deserializeOneSearchGroup(SchemaField groupField, String groupValue,
                                                             SortField[] groupSortField, Object rawSearchGroupData) {
     SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
@@ -120,11 +125,6 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return result;
   }
 
-  protected Object[] getSortValues(Object groupDocs){
-    List docs = (List<Comparable>)groupDocs;
-    return docs.toArray(new Comparable[docs.size()]);
-  }
-
   protected Object serializeOneSearchGroup(SortField[] groupSortField, SearchGroup<BytesRef> searchGroup) {
     Object[] convertedSortValues = new Object[searchGroup.sortValues.length];
     for (int i = 0; i < searchGroup.sortValues.length; i++) {
@@ -157,16 +157,18 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     private static final String SORTVALUES_KEY = "sortValues";
 
     private final SchemaField uniqueField;
+    private final Set<String> uniqueFieldNameAsSet;
 
     public SkipSecondStepSearchResultResultTransformer(SolrIndexSearcher searcher) {
       super(searcher);
       this.uniqueField = searcher.getSchema().getUniqueKeyField();
+      this.uniqueFieldNameAsSet = Collections.singleton(this.uniqueField.getName());
     }
 
     @Override
-    protected Object[] getSortValues(Object groupDocs) {
-      NamedList<Object> groupInfo = (NamedList) groupDocs;
-      final ArrayList<?> sortValues = (ArrayList<?>) groupInfo.get(SORTVALUES_KEY);
+    protected Object[] getSortValues(Object rawSearchGroupData) {
+      NamedList<Object> groupInfo = (NamedList) rawSearchGroupData;
+      ArrayList<?> sortValues = (ArrayList<?>) groupInfo.get(SORTVALUES_KEY);
       return sortValues.toArray(new Comparable[sortValues.size()]);
     }
 
@@ -190,11 +192,11 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
        * to be unique so this is what we need to return to the federator
        **/
       try {
-        luceneDoc = searcher.doc(searchGroup.topDocLuceneId, Collections.singleton(uniqueField.getName()));
+        luceneDoc = searcher.doc(searchGroup.topDocLuceneId, uniqueFieldNameAsSet);
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot retrieve document for unique field " + uniqueField + " (" + e.toString() + ")");
       }
-      Object topDocSolrId = uniqueField.getType().toExternal(luceneDoc.getField(uniqueField.getName()));
+      String topDocSolrId = uniqueField.getType().toExternal(luceneDoc.getField(uniqueField.getName()));
       NamedList<Object> groupInfo = new NamedList<>();
       groupInfo.add(TOP_DOC_SCORE_KEY, searchGroup.topDocScore);
       groupInfo.add(TOP_DOC_SOLR_ID_KEY, topDocSolrId);

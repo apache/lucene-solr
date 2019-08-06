@@ -19,6 +19,7 @@ package org.apache.solr.search.grouping.endresulttransformer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.lucene.index.IndexableField;
@@ -56,6 +57,23 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
   public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
     NamedList<Object> commands = new SimpleOrderedMap<>();
     SortSpec withinGroupSortSpec = rb.getGroupingSpec().getWithinGroupSortSpec();
+    final BiFunction<BytesRef,FieldType,String> bytesRefToString;
+    if (rb.getGroupingSpec().isSkipSecondGroupingStep()) {
+      /**
+       * The QueryComponent.doProcessGroupedDistributedSearchSecondPhase call
+       * is skipped (because the second phase is skipped) and so we need to
+       * convert from indexed to readable group value here when the
+       * QueryComponent.groupedFinishStage call us.
+       */
+      bytesRefToString = (value, fieldType) -> { return fieldType.indexedToReadable(value.utf8ToString()); };
+    } else {
+      /**
+       * QueryComponent.doProcessGroupedDistributedSearchSecondPhase calls
+       * TopGroupsResultTransformer#serializeTopGroups which converts the
+       * indexed group value to a readable group value.
+       */
+      bytesRefToString = (value, fieldType) -> { return value.utf8ToString(); };
+    }
     for (Map.Entry<String, ?> entry : result.entrySet()) {
       Object value = entry.getValue();
       if (TopGroups.class.isInstance(value)) {
@@ -75,12 +93,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
           SimpleOrderedMap<Object> groupResult = new SimpleOrderedMap<>();
           if (group.groupValue != null) {
             // use createFields so that fields having doc values are also supported
-            final String groupValue;
-            if (rb.getGroupingSpec().isSkipSecondGroupingStep()) {
-              groupValue = groupField.getType().indexedToReadable(group.groupValue.utf8ToString());
-            } else {
-              groupValue = group.groupValue.utf8ToString();
-            }
+            final String groupValue = bytesRefToString.apply(group.groupValue, groupFieldType);
             List<IndexableField> fields = groupField.createFields(groupValue);
             if (CollectionUtils.isNotEmpty(fields)) {
               groupResult.add("groupValue", groupFieldType.toObject(fields.get(0)));
