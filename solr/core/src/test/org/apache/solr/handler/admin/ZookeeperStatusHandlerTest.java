@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -33,6 +34,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
@@ -41,6 +43,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentMatchers;
+import org.mockito.invocation.InvocationOnMock;
 import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +52,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -147,5 +151,20 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
         "    \"Could not execute mntr towards ZK host zoo3:2181. Add this line to the 'zoo.cfg' configuration file on each zookeeper node: '4lw.commands.whitelist=mntr,conf,ruok'. See also chapter 'Setting Up an External ZooKeeper Ensemble' in the Solr Reference Guide.\"],\n" +
         "  \"status\":\"yellow\"}";
     assertEquals(expected, JSONUtil.toJSON(mockStatus));
+  }
+
+  @Test(expected = SolrException.class)
+  public void validateNotWhitelisted() {
+    assumeWorkingMockito();
+    ZookeeperStatusHandler zkStatusHandler = mock(ZookeeperStatusHandler.class, withSettings().defaultAnswer(InvocationOnMock::callRealMethod));
+    zkStatusHandler.validateZkRawResponse(Collections.singletonList("mntr is not executed because it is not in the whitelist."),
+        "zoo1:2181", "mntr");
+  }
+
+  @Test(expected = SolrException.class)
+  public void validateEmptyResponse() {
+    assumeWorkingMockito();
+    ZookeeperStatusHandler zkStatusHandler = mock(ZookeeperStatusHandler.class, withSettings().defaultAnswer(InvocationOnMock::callRealMethod));
+    zkStatusHandler.validateZkRawResponse(Collections.emptyList(), "zoo1:2181", "mntr");
   }
 }

@@ -255,7 +255,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
    * @throws SolrException if validation fails
    */
   protected boolean validateZkRawResponse(List<String> response, String zkHostPort, String fourLetterWordCommand) {
-    if (response == null || response.isEmpty()) {
+    if (response == null || response.isEmpty() || (response.size() == 1 && response.get(0).isBlank())) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Empty response from Zookeeper " + zkHostPort);
     }
     if (response.size() == 1 && response.get(0).contains("not in the whitelist")) {
