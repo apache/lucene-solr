@@ -134,7 +134,7 @@ Bug Fixes
 * SOLR-13679: Default style of ExplainDocTransformer registered via solrconfig.xml should be same as default style
   of ExplainDocTransformer registered in defaultFactories (Munendra S N)
 
-* SOLR-13672: Cloud -> Zk Status page now parses response from Zookeeper 3.5.5 correctly (Jörn Franke, janhoy)
+* SOLR-13672: Cloud -> Zk Status page now parses response from Zookeeper 3.5.5 correctly (Jörn Franke, janhoy, Shawn Heisey)
 
 Other Changes
 ----------------------
