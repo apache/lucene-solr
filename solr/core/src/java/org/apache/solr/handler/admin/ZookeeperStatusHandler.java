@@ -187,11 +187,11 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     List<String> errors = new ArrayList<>();
     obj.put("host", zkHostPort);
     List<String> lines = getZkRawResponse(zkHostPort, "ruok");
-    validateZkRawResponse(lines, zkHostPort,"ruok");
+    validateZkRawResponse(lines, zkHostPort, "ruok");
     boolean ok = "imok".equals(lines.get(0));
     obj.put("ok", ok);
     lines = getZkRawResponse(zkHostPort, "mntr");
-    validateZkRawResponse(lines, zkHostPort,"mntr");
+    validateZkRawResponse(lines, zkHostPort, "mntr");
     for (String line : lines) {
       String[] parts = line.split("\t");
       if (parts.length >= 2) {
@@ -203,7 +203,7 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       }
     }
     lines = getZkRawResponse(zkHostPort, "conf");
-    validateZkRawResponse(lines, zkHostPort,"conf");
+    validateZkRawResponse(lines, zkHostPort, "conf");
     for (String line : lines) {
       String[] parts = line.split("=");
       if (parts.length >= 2) {
