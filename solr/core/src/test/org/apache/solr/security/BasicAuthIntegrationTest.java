@@ -24,8 +24,10 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricRegistry;
@@ -58,7 +60,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.SolrCLI;
+import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -180,8 +184,6 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       executeCommand(baseUrl + authzPrefix, cl,command, "solr", "SolrRocks");
       assertAuthMetricsMinimums(5, 2, 3, 0, 0, 0);
 
-      Thread.sleep(2000); // sad little wait to try and avoid other clients from hitting http noresponse after jetty restart
-      
       baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
 
@@ -345,8 +347,33 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     update.commit(cluster.getSolrClient(), COLLECTION);
   }
 
-  public static void executeCommand(String url, HttpClient cl, String payload, String user, String pwd)
-      throws IOException {
+  /** @see #executeCommand */
+  private static Map<String,Object> getAuthPlugins(String url) {
+    Map<String,Object> plugins = new HashMap<>();
+    if (url.endsWith("authentication")) {
+      for (JettySolrRunner r : cluster.getJettySolrRunners()) {
+        plugins.put(r.getNodeName(), r.getCoreContainer().getAuthenticationPlugin());
+      }
+    } else if (url.endsWith("authorization")) {
+      for (JettySolrRunner r : cluster.getJettySolrRunners()) {
+        plugins.put(r.getNodeName(), r.getCoreContainer().getAuthorizationPlugin());
+      }
+    } else {
+      fail("Test helper method assumptions broken: " + url);
+    }
+    return plugins;
+  }
+  
+  public static void executeCommand(String url, HttpClient cl, String payload,
+                                    String user, String pwd) throws Exception {
+
+    // HACK: (attempted) work around for SOLR-13464...
+    //
+    // note the authz/authn objects in use on each node before executing the command,
+    // then wait until we see new objects on every node *after* executing the command
+    // before returning...
+    final Set<Map.Entry<String,Object>> initialPlugins = getAuthPlugins(url).entrySet();
+    
     HttpPost httpPost;
     HttpResponse r;
     httpPost = new HttpPost(url);
@@ -358,6 +385,15 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     assertEquals("Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
     assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
     Utils.consumeFully(r.getEntity());
+
+    // HACK (continued)...
+    final TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    timeout.waitFor("core containers never fully updated their auth plugins",
+                    () -> {
+                      final Set<Map.Entry<String,Object>> tmpSet = getAuthPlugins(url).entrySet();
+                      tmpSet.retainAll(initialPlugins);
+                      return tmpSet.isEmpty();
+                    });
   }
 
   public static Replica getRandomReplica(DocCollection coll, Random random) {
