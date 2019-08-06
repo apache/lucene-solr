@@ -43,7 +43,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentMatchers;
-import org.mockito.invocation.InvocationOnMock;
 import org.noggit.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -155,16 +153,12 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
 
   @Test(expected = SolrException.class)
   public void validateNotWhitelisted() {
-    assumeWorkingMockito();
-    ZookeeperStatusHandler zkStatusHandler = mock(ZookeeperStatusHandler.class, withSettings().defaultAnswer(InvocationOnMock::callRealMethod));
-    zkStatusHandler.validateZkRawResponse(Collections.singletonList("mntr is not executed because it is not in the whitelist."),
+    new ZookeeperStatusHandler(null).validateZkRawResponse(Collections.singletonList("mntr is not executed because it is not in the whitelist."),
         "zoo1:2181", "mntr");
   }
 
   @Test(expected = SolrException.class)
   public void validateEmptyResponse() {
-    assumeWorkingMockito();
-    ZookeeperStatusHandler zkStatusHandler = mock(ZookeeperStatusHandler.class, withSettings().defaultAnswer(InvocationOnMock::callRealMethod));
-    zkStatusHandler.validateZkRawResponse(Collections.emptyList(), "zoo1:2181", "mntr");
+    new ZookeeperStatusHandler(null).validateZkRawResponse(Collections.emptyList(), "zoo1:2181", "mntr");
   }
 }
