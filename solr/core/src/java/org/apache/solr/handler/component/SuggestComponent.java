@@ -47,6 +47,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.metrics.GaugeRef;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -350,7 +351,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     return "Suggester component";
   }
 
-  List<SolrMetricManager.GaugeWrapper> myGauges = new ArrayList<>();
+  List<GaugeRef> myGauges = new ArrayList<>();
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
     this.registryName = registryName;
@@ -377,8 +378,8 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
 
   @Override
   public void close() throws Exception {
-    for (SolrMetricManager.GaugeWrapper gauge : myGauges) {
-      gauge.unregister();
+    for (GaugeRef g : myGauges) {
+      g.unregister();
     }
     myGauges.clear();
   }

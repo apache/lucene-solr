@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.GaugeRef;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -37,7 +38,7 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
 
   private MetricRegistry registry;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private SolrMetricManager.GaugeWrapper myGauge;
+  private GaugeRef myGauge;
 
   @Override
   public String getName() { return this.getClass().getName(); }

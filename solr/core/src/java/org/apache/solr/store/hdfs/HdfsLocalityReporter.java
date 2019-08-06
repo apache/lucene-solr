@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.GaugeRef;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -52,7 +53,7 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
 
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
-  private SolrMetricManager.GaugeWrapper myGauge;
+  private GaugeRef myGauge;
 
   public HdfsLocalityReporter() {
     cache = new ConcurrentHashMap<>();

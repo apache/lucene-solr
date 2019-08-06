@@ -23,11 +23,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ImmutableList;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.google.common.collect.ImmutableList;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.ApiSupport;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -36,6 +39,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.GaugeRef;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -44,9 +48,6 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.api.ApiSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +84,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private MetricRegistry registry;
   protected String registryName;
   protected SolrMetricManager metricManager;
-  protected final ArrayList<SolrMetricManager.GaugeWrapper> myGauges = new ArrayList<>();
+  protected final ArrayList<GaugeRef> myGauges = new ArrayList<>();
 
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
@@ -328,8 +329,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public void close()  {
-    for (SolrMetricManager.GaugeWrapper gauge : myGauges) {
-      gauge.unregister();
+    for (GaugeRef g : myGauges) {
+      g.unregister();
     }
     myGauges.clear();
   }

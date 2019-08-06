@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.GaugeRef;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -57,7 +58,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
   private MetricRegistry registry;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private long previous = System.nanoTime();
-  private SolrMetricManager.GaugeWrapper myGauge;
+  private GaugeRef myGauge;
 
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {

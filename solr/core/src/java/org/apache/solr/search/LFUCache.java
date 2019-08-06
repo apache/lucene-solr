@@ -18,10 +18,10 @@ package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +29,7 @@ import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.metrics.GaugeRef;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLFUCache;
@@ -86,7 +87,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private int initialSize;
   private int acceptableSize;
   private boolean cleanupThread;
-  private SolrMetricManager.GaugeWrapper myGauge;
+  private GaugeRef myGauge;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {

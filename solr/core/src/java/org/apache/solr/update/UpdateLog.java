@@ -63,6 +63,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.GaugeRef;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -102,7 +103,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean debug = log.isDebugEnabled();
   private boolean trace = log.isTraceEnabled();
-  private final List<SolrMetricManager.GaugeWrapper> myGauges = new ArrayList<>();
+  private final ArrayList<GaugeRef> myGauges = new ArrayList<>();
 
 
   // TODO: hack
@@ -1387,8 +1388,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   @Override
   public void close() {
-    for (SolrMetricManager.GaugeWrapper gauge : myGauges) {
-      gauge.unregister();
+    for (GaugeRef g : myGauges) {
+      g.unregister();
     }
     myGauges.clear();
   }

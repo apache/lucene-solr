@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import org.apache.http.config.Registry;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.solr.metrics.GaugeRef;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 
@@ -33,7 +34,7 @@ public class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpC
 
   private SolrMetricManager metricManager;
   private String registryName;
-  private final ArrayList<SolrMetricManager.GaugeWrapper> myGauges = new ArrayList<>() ;
+  private final ArrayList<GaugeRef> myGauges = new ArrayList<>() ;
 
   public InstrumentedPoolingHttpClientConnectionManager(Registry<ConnectionSocketFactory> socketFactoryRegistry) {
     super(socketFactoryRegistry);
@@ -57,8 +58,8 @@ public class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpC
   @Override
   public void close() {
     super.close();
-    for (SolrMetricManager.GaugeWrapper gauge : myGauges) {
-      gauge.unregister();
+    for (GaugeRef g : myGauges) {
+      g.unregister();
     }
     myGauges.clear();
   }

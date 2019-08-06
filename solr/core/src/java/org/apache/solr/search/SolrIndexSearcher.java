@@ -67,6 +67,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
+import org.apache.solr.metrics.GaugeRef;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -120,7 +121,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final SolrCache<Query,DocSet> filterCache;
   private final SolrCache<QueryResultKey,DocList> queryResultCache;
   private final SolrCache<String,UnInvertedField> fieldValueCache;
-  private final List<SolrMetricManager.GaugeWrapper> myGauges = new ArrayList<>();
+  private final List<GaugeRef> myGauges = new ArrayList<>();
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final Map<String,SolrCache> cacheMap;
@@ -481,8 +482,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // do this at the end so it only gets done if there are no exceptions
     numCloses.incrementAndGet();
-    for (SolrMetricManager.GaugeWrapper gauge : myGauges) {
-      gauge.unregister();
+    for (GaugeRef g : myGauges) {
+      g.unregister();
     }
     myGauges.clear();
     assert ObjectReleaseTracker.release(this);

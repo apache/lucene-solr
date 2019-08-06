@@ -43,6 +43,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.GaugeRef;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
@@ -93,7 +94,7 @@ public class SolrIndexWriter extends IndexWriter {
   private final String registryName;
   // merge diagnostics.
   private final Map<String, Long> runningMerges = new ConcurrentHashMap<>();
-  private final ArrayList<SolrMetricManager.GaugeWrapper> myGauges = new ArrayList<>();
+  private final ArrayList<GaugeRef> myGauges = new ArrayList<>();
 
   public static SolrIndexWriter create(SolrCore core, String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec) throws IOException {
 
@@ -307,8 +308,8 @@ public class SolrIndexWriter extends IndexWriter {
       }
       log.error("Error closing IndexWriter", t);
     } finally {
-      for (SolrMetricManager.GaugeWrapper gauge : myGauges) {
-        gauge.unregister();
+      for (GaugeRef g : myGauges) {
+        g.unregister();
       }
       myGauges.clear();
       cleanup();

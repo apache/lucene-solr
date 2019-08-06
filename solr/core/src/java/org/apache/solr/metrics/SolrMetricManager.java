@@ -696,13 +696,13 @@ public class SolrMetricManager {
       Gauge<T> val = gauge.get();
       if (val == null && !isUnregistered) {
         log.warn("POSSIBLE MEMORY LEAK.DID NOT UNREGISTER metrics by:  {}", className);
-        unregister();
+        _unregister();
       }
       return val == null ? NULL_GAUGE : val;
     }
 
 
-    public void unregister() {
+    private void _unregister() {
       if(isUnregistered) return;
       MetricRegistry registry = solrMetricManager.registry(this.registry);
       registry.removeMatching((name, metric) -> {
@@ -717,12 +717,21 @@ public class SolrMetricManager {
     }
 
 
+    public GaugeRef getGaugeRef() {
+
+      return new GaugeRef() {
+        @Override
+        public void unregister() {
+          _unregister();
+        }
+      };
+    }
   }
 
-  public GaugeWrapper registerGauge(SolrInfoBean info, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
+  public GaugeRef registerGauge(SolrInfoBean info, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
     GaugeWrapper gaugeWrapper = new GaugeWrapper(gauge, tag, registry, this);
     registerMetric(info, registry, gaugeWrapper, force, metricName, metricPath);
-    return gaugeWrapper;
+    return gaugeWrapper.getGaugeRef();
   }
 
   public int unregisterGauges(String registryName, String tag) {
