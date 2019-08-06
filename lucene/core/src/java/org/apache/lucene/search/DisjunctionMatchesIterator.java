@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -65,6 +66,34 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
         return terms.get(i++).bytes();
       }
     };
+  }
+
+  static void matchingTerms(LeafReaderContext context, int doc, String field, List<Term> terms, Consumer<Term> termsConsumer) throws IOException {
+    Objects.requireNonNull(field);
+    for (Term term : terms) {
+      if (Objects.equals(field, term.field()) == false) {
+        throw new IllegalArgumentException("Tried to generate iterator from terms in multiple fields: expected [" + field + "] but got [" + term.field() + "]");
+      }
+    }
+    matchingTerms(context, doc, field, asBytesRefIterator(terms), termsConsumer);
+  }
+
+  static void matchingTerms(LeafReaderContext context, int doc, String field, BytesRefIterator terms, Consumer<Term> termsConsumer) throws IOException {
+    Objects.requireNonNull(field);
+    Terms t = context.reader().terms(field);
+    if (t == null) {
+      return;
+    }
+    TermsEnum te = t.iterator();
+    PostingsEnum reuse = null;
+    for (BytesRef term = terms.next(); term != null; term = terms.next()) {
+      if (te.seekExact(term)) {
+        PostingsEnum pe = te.postings(reuse, PostingsEnum.FREQS);
+        if (pe.advance(doc) == doc) {
+          termsConsumer.accept(new Term(field, term));
+        }
+      }
+    }
   }
 
   /**

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -41,6 +42,8 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -275,13 +278,13 @@ public class MultiPhraseQuery extends Query {
 
         for (int pos=0; pos<postingsFreqs.length; pos++) {
           Term[] terms = termArrays[pos];
-          List<PostingsEnum> postings = new ArrayList<>();
+          List<PhraseQuery.TermPostingsEnum> postings = new ArrayList<>();
 
           for (Term term : terms) {
             TermState termState = termStates.get(term).get(context);
             if (termState != null) {
               termsEnum.seekExact(term.bytes(), termState);
-              postings.add(termsEnum.postings(null, exposeOffsets ? PostingsEnum.ALL : PostingsEnum.POSITIONS));
+              postings.add(PhraseQuery.wrapForTerm(term, termsEnum.postings(null, exposeOffsets ? PostingsEnum.ALL : PostingsEnum.POSITIONS)));
               totalMatchCost += PhraseQuery.termPositionsCost(termsEnum);
             }
           }
@@ -290,7 +293,7 @@ public class MultiPhraseQuery extends Query {
             return null;
           }
 
-          final PostingsEnum postingsEnum;
+          final PhraseQuery.TermPostingsEnum postingsEnum;
           if (postings.size() == 1) {
             postingsEnum = postings.get(0);
           } else {
@@ -309,6 +312,22 @@ public class MultiPhraseQuery extends Query {
           return new SloppyPhraseMatcher(postingsFreqs, slop, scoreMode, scorer, totalMatchCost, exposeOffsets);
         }
 
+      }
+
+      @Override
+      protected void getMatchingTerms(LeafReaderContext context, int doc, Consumer<Term> termsConsumer) throws IOException {
+        PhraseMatcher matcher = getPhraseMatcher(context, new SimScorer() {
+          @Override
+          public float score(float freq, long norm) {
+            return 1;
+          }
+        }, true);
+        if (matcher == null || matcher.approximation().advance(doc) != doc) {
+          return;
+        }
+        while (matcher.nextMatch()) {
+          matcher.collectTerms(termsConsumer);
+        }
       }
     };
   }
@@ -413,7 +432,7 @@ public class MultiPhraseQuery extends Query {
    * <p>
    * Note: positions are merged during freq()
    */
-  static class UnionPostingsEnum extends PostingsEnum {
+  static class UnionPostingsEnum extends PhraseQuery.TermPostingsEnum {
     /** queue ordered by docid */
     final DocsQueue docsQueue;
     /** cost of this enum: sum of its subs */
@@ -424,9 +443,9 @@ public class MultiPhraseQuery extends Query {
     /** current doc posQueue is working */
     int posQueueDoc = -2;
     /** list of subs (unordered) */
-    final PostingsEnum[] subs;
+    final PhraseQuery.TermPostingsEnum[] subs;
 
-    UnionPostingsEnum(Collection<PostingsEnum> subs) {
+    UnionPostingsEnum(Collection<PhraseQuery.TermPostingsEnum> subs) {
       docsQueue = new DocsQueue(subs.size());
       long cost = 0;
       for (PostingsEnum sub : subs) {
@@ -434,7 +453,7 @@ public class MultiPhraseQuery extends Query {
         cost += sub.cost();
       }
       this.cost = cost;
-      this.subs = subs.toArray(new PostingsEnum[subs.size()]);
+      this.subs = subs.toArray(new PhraseQuery.TermPostingsEnum[0]);
     }
 
     @Override
@@ -511,6 +530,11 @@ public class MultiPhraseQuery extends Query {
       return null; // payloads are unsupported
     }
 
+    @Override
+    Term getTerm() {
+      return null; // term collection is unsupported
+    }
+
     /**
      * disjunction of postings ordered by docid.
      */
@@ -569,11 +593,11 @@ public class MultiPhraseQuery extends Query {
   }
 
   static class PostingsAndPosition {
-    final PostingsEnum pe;
+    final PhraseQuery.TermPostingsEnum pe;
     int pos;
     int upto;
 
-    PostingsAndPosition(PostingsEnum pe) {
+    PostingsAndPosition(PhraseQuery.TermPostingsEnum pe) {
       this.pe = pe;
     }
   }
@@ -588,16 +612,16 @@ public class MultiPhraseQuery extends Query {
     final PriorityQueue<PostingsAndPosition> posQueue;
     final Collection<PostingsAndPosition> subs;
 
-    UnionFullPostingsEnum(List<PostingsEnum> subs) {
+    UnionFullPostingsEnum(List<PhraseQuery.TermPostingsEnum> subs) {
       super(subs);
-      this.posQueue = new PriorityQueue<PostingsAndPosition>(subs.size()) {
+      this.posQueue = new PriorityQueue<>(subs.size()) {
         @Override
         protected boolean lessThan(PostingsAndPosition a, PostingsAndPosition b) {
           return a.pos < b.pos;
         }
       };
       this.subs = new ArrayList<>();
-      for (PostingsEnum pe : subs) {
+      for (PhraseQuery.TermPostingsEnum pe : subs) {
         this.subs.add(new PostingsAndPosition(pe));
       }
     }
@@ -653,5 +677,9 @@ public class MultiPhraseQuery extends Query {
       return posQueue.top().pe.getPayload();
     }
 
+    @Override
+    Term getTerm() {
+      return posQueue.top().pe.getTerm();
+    }
   }
 }

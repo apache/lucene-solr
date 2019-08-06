@@ -30,6 +30,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.BytesRefIterator;
 
 /**
  * A Query that matches documents containing a term. This may be combined with
@@ -83,7 +84,7 @@ public class TermQuery extends Query {
       if (context.reader().terms(term.field()).hasPositions() == false) {
         return super.matches(context, doc);
       }
-      return MatchesUtils.forField(term.field(), () -> {
+      return MatchesUtils.forField(term.field(), consumer -> consumer.accept(term), () -> {
         PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
         if (pe.advance(doc) != doc) {
           return null;

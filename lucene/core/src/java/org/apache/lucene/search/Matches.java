@@ -19,6 +19,11 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.function.Consumer;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 
 /**
  * Reports the positions and optionally offsets of all matching terms in a query
@@ -43,5 +48,10 @@ public interface Matches extends Iterable<String> {
    * a composite, then this returns an empty list
    */
   Collection<Matches> getSubMatches();
+
+  /**
+   * Find all matching terms
+   */
+  void getMatchingTerms(Consumer<Term> termsConsumer) throws IOException;
 
 }

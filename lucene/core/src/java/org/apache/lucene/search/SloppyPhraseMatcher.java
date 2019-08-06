@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Impact;
@@ -71,6 +72,7 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
   private int leadOffset;
   private int leadEndOffset;
   private int leadOrd;
+  private Term leadTerm;
 
   private boolean hasRpts; // flag indicating that there are repetitions (as checked in first candidate doc)
   private boolean checkedRpts; // flag to only check for repetitions in first candidate doc
@@ -203,6 +205,7 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
     leadPosition = pp.position + pp.offset;
     leadOffset = pp.postings.startOffset();
     leadEndOffset = pp.postings.endOffset();
+    leadTerm = pp.postings.getTerm();
   }
 
   @Override
@@ -255,6 +258,16 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
       }
     }
     return endOffset;
+  }
+
+  @Override
+  void collectTerms(Consumer<Term> termsConsumer) {
+    termsConsumer.accept(leadTerm);
+    for (PhrasePositions pp : phrasePositions) {
+      if (pp.ord != leadOrd) {
+        termsConsumer.accept(pp.postings.getTerm());
+      }
+    }
   }
 
   /** advance a PhrasePosition and update 'end', return false if exhausted */

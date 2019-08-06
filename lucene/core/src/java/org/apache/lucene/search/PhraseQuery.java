@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
@@ -41,6 +42,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 
 /** A Query that matches documents containing a particular sequence of terms.
  * A PhraseQuery is built by QueryParser for input like <code>"new york"</code>.
@@ -304,14 +306,74 @@ public class PhraseQuery extends Query {
     v.consumeTerms(this, terms);
   }
 
+  static abstract class TermPostingsEnum extends PostingsEnum {
+
+    abstract Term getTerm();
+
+  }
+
+  static TermPostingsEnum wrapForTerm(Term term, PostingsEnum pe) {
+    return new TermPostingsEnum() {
+      @Override
+      Term getTerm() {
+        return term;
+      }
+
+      @Override
+      public int freq() throws IOException {
+        return pe.freq();
+      }
+
+      @Override
+      public int nextPosition() throws IOException {
+        return pe.nextPosition();
+      }
+
+      @Override
+      public int startOffset() throws IOException {
+        return pe.startOffset();
+      }
+
+      @Override
+      public int endOffset() throws IOException {
+        return pe.endOffset();
+      }
+
+      @Override
+      public BytesRef getPayload() throws IOException {
+        return pe.getPayload();
+      }
+
+      @Override
+      public int docID() {
+        return pe.docID();
+      }
+
+      @Override
+      public int nextDoc() throws IOException {
+        return pe.nextDoc();
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        return pe.advance(target);
+      }
+
+      @Override
+      public long cost() {
+        return pe.cost();
+      }
+    };
+  }
+
   static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
-    final PostingsEnum postings;
+    final TermPostingsEnum postings;
     final ImpactsEnum impacts;
     final int position;
     final Term[] terms;
     final int nTerms; // for faster comparisons
 
-    public PostingsAndFreq(PostingsEnum postings, ImpactsEnum impacts, int position, Term... terms) {
+    public PostingsAndFreq(TermPostingsEnum postings, ImpactsEnum impacts, int position, Term... terms) {
       this.postings = postings;
       this.impacts = impacts;
       this.position = position;
@@ -476,7 +538,7 @@ public class PhraseQuery extends Query {
             postingsEnum = te.postings(null, exposeOffsets ? PostingsEnum.OFFSETS : PostingsEnum.POSITIONS);
             impactsEnum = new SlowImpactsEnum(postingsEnum);
           }
-          postingsFreqs[i] = new PostingsAndFreq(postingsEnum, impactsEnum, positions[i], t);
+          postingsFreqs[i] = new PostingsAndFreq(wrapForTerm(t, postingsEnum), impactsEnum, positions[i], t);
           totalMatchCost += termPositionsCost(te);
         }
 
@@ -487,6 +549,13 @@ public class PhraseQuery extends Query {
         }
         else {
           return new SloppyPhraseMatcher(postingsFreqs, slop, scoreMode, scorer, totalMatchCost, exposeOffsets);
+        }
+      }
+
+      @Override
+      protected void getMatchingTerms(LeafReaderContext context, int doc, Consumer<Term> termsConsumer) {
+        for (Term term : terms) {
+          termsConsumer.accept(term);
         }
       }
     };

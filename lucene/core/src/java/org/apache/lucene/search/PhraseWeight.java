@@ -18,10 +18,13 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.util.BytesRefIterator;
 
 abstract class PhraseWeight extends Weight {
 
@@ -50,6 +53,8 @@ abstract class PhraseWeight extends Weight {
   protected abstract Similarity.SimScorer getStats(IndexSearcher searcher) throws IOException;
 
   protected abstract PhraseMatcher getPhraseMatcher(LeafReaderContext context, SimScorer scorer, boolean exposeOffsets) throws IOException;
+
+  protected abstract void getMatchingTerms(LeafReaderContext context, int doc, Consumer<Term> termsConsumer) throws IOException;
 
   @Override
   public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -85,7 +90,7 @@ abstract class PhraseWeight extends Weight {
 
   @Override
   public Matches matches(LeafReaderContext context, int doc) throws IOException {
-    return MatchesUtils.forField(field, () -> {
+    return MatchesUtils.forField(field, consumer -> getMatchingTerms(context, doc, consumer), () -> {
       PhraseMatcher matcher = getPhraseMatcher(context, stats, true);
       if (matcher == null || matcher.approximation().advance(doc) != doc) {
         return null;
