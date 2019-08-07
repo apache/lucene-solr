@@ -179,7 +179,9 @@ to specific field types.
 
 image::images/math-expressions/csvselect.png[]
 
-=== Unique ID's
+
+
+=== Unique ID
 
 Both `parseCSV` and `parseTSV` emit an *id* field if one is not present in the records already.
 The *id* field is a concatenation of the file path and the line number. This is a
@@ -200,6 +202,18 @@ image::images/math-expressions/selectconcat.png[]
 Below is an example using the `uuid` function to create a new id.
 
 image::images/math-expressions/selectuuid.png[]
+
+
+=== Record Number
+
+The `recNum` function can be used inside of a `select` function to add a record number
+to each tuple. The record number is useful for tracking location in the result set
+and can be used for filtering strategies such as skipping, paging and striding described in
+the *filtering* section below.
+
+The example below shows the syntax of the `recNum` function:
+
+image::images/math-expressions/recNum.png[]
 
 
 === Parsing Dates
@@ -345,10 +359,36 @@ a split array.
 
 image::images/math-expressions/valueat.png[]
 
-
 === Filtering Results
 
+The `having` function can be used to filter records. Filtering can be used to explore specific record sets before
+indexing or to filter records that are indexed. The `having` function wraps another stream and applies
+a boolean function to each tuple. If the logic function returns true the tuple is returned.
 
+The following boolean functions are supported: `eq`, `gt`, `gteq`, `lt`, `lteq`, `matches`, `and`, `or`,
+`not`, `notNull`, `isNull`.
+
+Below are some strategies for using the `having` function to filter records.
+
+==== Finding a Specific Id or Record Number
+
+image::images/math-expressions/havingId.png[]
+
+==== Skipping
+
+image::images/math-expressions/skipping.png[]
+
+==== Paging
+
+image::images/math-expressions/paging.png[]
+
+==== Striding
+
+image::images/math-expressions/striding.png[]
+
+==== Regex Matching
+
+image::images/math-expressions/matches.png[]
 
 === Handling Nulls
 
@@ -361,7 +401,6 @@ as nulls are encountered in the data the fields are not included in the tuples.
 The string manipulation functions all return null if they encounter a null. This means
 the null will be passed through to the `select` function and the fields with nulls
 will simply be left off the record.
-
 
 
 === Text Analysis
