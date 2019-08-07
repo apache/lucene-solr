@@ -94,6 +94,21 @@ public class ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
     initCore("solrconfig-basic.xml", "bad-schema-analyzer-by-name.xml");
   }
 
+  @Test(expected = SolrException.class)
+  public void testSchemaLoadingClassAndNameTokenizer() throws Exception {
+    initCore("solrconfig-basic.xml", "bad-schema-analyzer-class-and-name-tok.xml");
+  }
+
+  @Test(expected = SolrException.class)
+  public void testSchemaLoadingClassAndNameCharFilter() throws Exception {
+    initCore("solrconfig-basic.xml", "bad-schema-analyzer-class-and-name-cf.xml");
+  }
+
+  @Test(expected = SolrException.class)
+  public void testSchemaLoadingClassAndNameTokenFilter() throws Exception {
+    initCore("solrconfig-basic.xml", "bad-schema-analyzer-class-and-name-tf.xml");
+  }
+
   private void checkTokenizerName(SimpleOrderedMap<Object> analyzerProps, String name) {
     SimpleOrderedMap<Object> tokenizerProps = (SimpleOrderedMap<Object>)analyzerProps.get("tokenizer");
     assertNull(tokenizerProps.get("class"));

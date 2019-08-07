@@ -265,13 +265,15 @@ public final class FieldTypePluginLoader
         if (Objects.nonNull(name)) {
           factory = CharFilterFactory.forName(name, params);
           if (Objects.nonNull(className)) {
-            log.warn("Both of name: " + name + " and className: " + className + " is specified for charFilter. name (" + name + ") is used.");
+            log.error("Both of name: " + name + " and className: " + className + " are specified for charFilter.");
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Cannot create charFilter: Both of name and className are specified.");
           }
         } else if (Objects.nonNull(className)) {
           factory = loader.newInstance(className, CharFilterFactory.class, getDefaultPackages(), new Class[]{Map.class}, new Object[]{params});
         } else {
           log.error("Neither of name or className is specified for charFilter.");
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Cannot create charFilter: Neither of name or className is specified.");
         }
         factory.setExplicitLuceneMatchVersion(null != configuredVersion);
@@ -313,13 +315,15 @@ public final class FieldTypePluginLoader
         if (Objects.nonNull(name)) {
           factory = TokenizerFactory.forName(name, params);
           if (Objects.nonNull(className)) {
-            log.warn("Both of name: " + name + " and className: " + className + " is specified for tokenizer. name (" + name + ") is used.");
+            log.error("Both of name: " + name + " and className: " + className + " are specified for tokenizer.");
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Cannot create tokenizer: Both of name and className are specified.");
           }
         } else if (Objects.nonNull(className)) {
           factory = loader.newInstance(className, TokenizerFactory.class, getDefaultPackages(), new Class[]{Map.class}, new Object[]{params});
         } else {
           log.error("Neither of name or className is specified for tokenizer.");
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Cannot create tokenizer: Neither of name or className is specified.");
         }
         factory.setExplicitLuceneMatchVersion(null != configuredVersion);
@@ -365,13 +369,15 @@ public final class FieldTypePluginLoader
         if (Objects.nonNull(name)) {
           factory = TokenFilterFactory.forName(name, params);
           if (Objects.nonNull(className)) {
-            log.warn("Both of name: " + name + " and className: " + className + " is specified for tokenFilter. name (" + name + ") is used.");
+            log.error("Both of name: " + name + " and className: " + className + " are specified for tokenFilter.");
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Cannot create tokenFilter: Both of name and className are specified.");
           }
         } else if (Objects.nonNull(className)) {
           factory = loader.newInstance(className, TokenFilterFactory.class, getDefaultPackages(), new Class[]{Map.class}, new Object[]{params});
         } else {
           log.error("Neither of name or className is specified for tokenFilter.");
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Cannot create tokenFilter: Neither of name or className is specified.");
         }
         factory.setExplicitLuceneMatchVersion(null != configuredVersion);

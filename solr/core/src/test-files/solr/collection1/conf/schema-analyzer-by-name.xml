@@ -29,15 +29,6 @@
     </analyzer>
   </fieldType>
 
-  <!-- A text field with tokenizer/charfilter/tokenfilter that have 'name' and 'class' attributes. This should not cause error but warnings emitted. -->
-  <fieldType name="text_redundant" class="solr.TextField" positionIncrementGap="100">
-    <analyzer>
-      <charFilter name="htmlStrip" class="solr.MappingCharFilterFactory"/>
-      <tokenizer name="whitespace" class="solr.StandardTokenizerFactory"/>
-      <filter name="lowercase" class="solr.StopFilterFactory"/>
-    </analyzer>
-  </fieldType>
-
   <!-- A text field that uses WordDelimiterGraphFilter to enable splitting and matching of
       words on case-change, alpha numeric boundaries, and non-alphanumeric chars,
       so that a query of "wifi" or "wi fi" could match a document containing "Wi-Fi".
