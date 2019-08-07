@@ -22,11 +22,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ImmutableList;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.google.common.collect.ImmutableList;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.ApiSupport;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -43,9 +46,6 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.api.ApiSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +97,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    * <tr><td>appends</td><td>Contains all of the named arguments contained within the list element named "appends".</td></tr>
    * <tr><td>invariants</td><td>Contains all of the named arguments contained within the list element named "invariants".</td></tr>
    * </table>
-   *
+   * <p>
    * Example:
    * <pre>
    * &lt;lst name="defaults"&gt;
@@ -145,8 +145,14 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   }
 
+  protected MetricsInfo metricsInfo;
+
+
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, final String scope) {
+    metricsInfo = new MetricsInfo(manager, registryName, getUniqueMetricTag(tag)) ;
+    tag = metricsInfo.getTag();
+    getUniqueMetricTag(tag);
     this.metricManager = manager;
     this.registryName = registryName;
     this.registry = manager.registry(registryName);
@@ -286,16 +292,16 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   /**
    * Get the request handler registered to a given name.
-   *
+   * <p>
    * This function is thread safe.
    */
   public static SolrRequestHandler getRequestHandler(String handlerName, PluginBag<SolrRequestHandler> reqHandlers) {
-    if(handlerName == null) return null;
+    if (handlerName == null) return null;
     SolrRequestHandler handler = reqHandlers.get(handlerName);
     int idx = 0;
-    if(handler == null) {
+    if (handler == null) {
       for (; ; ) {
-        idx = handlerName.indexOf('/', idx+1);
+        idx = handlerName.indexOf('/', idx + 1);
         if (idx > 0) {
           String firstPart = handlerName.substring(0, idx);
           handler = reqHandlers.get(firstPart);
@@ -317,6 +323,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   public PluginInfo getPluginInfo(){
     return  pluginInfo;
+  }
+
+  @Override
+  public void close()  {
+    if (metricsInfo != null) metricsInfo.unregister();
   }
 
   @Override

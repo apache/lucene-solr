@@ -18,10 +18,10 @@ package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -227,6 +227,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
     cache.destroy();
+
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -254,8 +255,13 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     return "0." + hundredths;
   }
 
+
+  private MetricsInfo metricsInfo;
+
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    metricsInfo = new MetricsInfo(manager, registryName, getUniqueMetricTag(tag));
+    tag = metricsInfo.getTag();
     registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
@@ -311,7 +317,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
       }
     });
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    manager.registerGauge(this, registryName, cacheMap, metricsInfo.getTag(), true, scope, getCategory().toString());
   }
 
   // for unit tests only

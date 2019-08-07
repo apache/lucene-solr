@@ -16,13 +16,13 @@
  */
 package org.apache.solr.core;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.common.util.NamedList;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -44,6 +44,7 @@ public class MockQuerySenderListenerReqHandler extends RequestHandlerBase {
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
     super.initializeMetrics(manager, registryName, tag, scope);
+    tag = super.metricsInfo.getTag();
     manager.registerGauge(this, registryName, () -> initCounter.intValue(), tag, true, "initCount", getCategory().toString(), scope);
   }
 

@@ -16,6 +16,15 @@
  */
 package org.apache.solr.search;
 
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+
 import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -25,15 +34,6 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 
 /**
  * SolrCache based on ConcurrentLRUCache implementation.
@@ -227,6 +227,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
 
   @Override
   public void close() {
+    if(metricsInfo != null) metricsInfo.unregister();
     // add the stats to the cumulative stats object (the first in the statsList)
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
@@ -249,8 +250,11 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
     return metricNames;
   }
 
+  MetricsInfo metricsInfo;
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    metricsInfo = new MetricsInfo(manager, registryName, getUniqueMetricTag(tag));
+    tag = metricsInfo.getTag();
     registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {

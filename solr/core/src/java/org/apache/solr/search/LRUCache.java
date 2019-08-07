@@ -19,11 +19,11 @@ package org.apache.solr.search;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -286,6 +286,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public void close() {
+    if(metricsInfo != null) metricsInfo.unregister();
 
   }
 
@@ -308,8 +309,11 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     return metricNames;
   }
 
+  MetricsInfo metricsInfo;
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    metricsInfo = new MetricsInfo(manager, registryName, getUniqueMetricTag(tag));
+    tag = metricsInfo.getTag();
     registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, res) -> {
       synchronized (map) {

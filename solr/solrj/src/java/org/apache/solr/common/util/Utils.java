@@ -488,6 +488,14 @@ public class Utils {
 
   }
 
+  public static void close(AutoCloseable closeable) {
+    try {
+      if(closeable!= null) closeable.close();
+    } catch (Exception e) {
+      log.warn("Error closing  "+ closeable, e);
+    }
+  }
+
   static class MapWriterEntry<V> extends AbstractMap.SimpleEntry<CharSequence, V> implements MapWriter, Map.Entry<CharSequence, V> {
     MapWriterEntry(CharSequence key, V value) {
       super(key, value);

@@ -19,7 +19,6 @@ package org.apache.solr.security;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import java.io.Closeable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
@@ -29,19 +28,18 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import org.apache.http.HttpRequest;
+import org.apache.http.protocol.HttpContext;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
-
-import org.apache.http.HttpRequest;
-import org.apache.http.protocol.HttpContext;
 import org.eclipse.jetty.client.api.Request;
 
 /**
  * 
  * @lucene.experimental
  */
-public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, SolrMetricProducer {
+public abstract class AuthenticationPlugin implements SolrInfoBean, SolrMetricProducer {
 
   final public static String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
   final public static String HTTP_HEADER_X_SOLR_AUTHDATA = "X-Solr-AuthData";

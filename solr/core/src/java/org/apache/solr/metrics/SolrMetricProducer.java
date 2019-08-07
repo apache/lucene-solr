@@ -19,17 +19,58 @@ package org.apache.solr.metrics;
 /**
  * Used by objects that expose metrics through {@link SolrCoreMetricManager}.
  */
-public interface SolrMetricProducer {
+public interface SolrMetricProducer extends AutoCloseable {
+
+  /**
+   * Unique metric name is in the format of A/B/C
+   * A is the parent of B is the parent of C and so on.
+   * If object "B" is unregistered , C also must get unregistered.
+   * If object "A" is unregistered ,  B , C also must get unregistered.
+   *
+   * @param parentName
+   */
+  default String getUniqueMetricTag(String parentName) {
+    String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
+    return parentName == null ?
+        name :
+        parentName + "/" + name;
+  }
+
+  default void close() throws Exception{
+
+  }
+
 
   /**
    * Initializes metrics specific to this producer
-   * @param manager an instance of {@link SolrMetricManager}
+   *
+   * @param manager  an instance of {@link SolrMetricManager}
    * @param registry registry name where metrics are registered
-   * @param tag a symbolic tag that represents this instance of the producer,
-   * or a group of related instances that have the same life-cycle. This tag is
-   * used when managing life-cycle of some metrics and is set when
-   * {@link #initializeMetrics(SolrMetricManager, String, String, String)} is called.
-   * @param scope scope of the metrics (eg. handler name) to separate metrics of
+   * @param tag      a symbolic tag that represents this instance of the producer,
+   *                 or a group of related instances that have the same life-cycle. This tag is
+   *                 used when managing life-cycle of some metrics and is set when
+   *                 {@link #initializeMetrics(SolrMetricManager, String, String, String)} is called.
+   * @param scope    scope of the metrics (eg. handler name) to separate metrics of
    */
   void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope);
+
+  class MetricsInfo {
+    final String registry;
+    final SolrMetricManager metricManager;
+    final String myTag;
+
+    public MetricsInfo(SolrMetricManager metricManager, String registry, String tag) {
+      this.registry = registry;
+      this.metricManager = metricManager;
+      this.myTag = tag;
+    }
+
+    public String getTag(){
+      return myTag;
+    }
+
+    public void unregister() {
+      metricManager.unregisterGauges(registry, myTag);
+    }
+  }
 }
