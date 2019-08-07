@@ -64,6 +64,11 @@ API Changes
 * LUCENE-8909: IndexWriter#getFieldNames() method is used to get fields present in index. After LUCENE-8316, this
   method is no longer required. Hence, deprecate IndexWriter#getFieldNames() method. (Adrien Grand, Munendra S N)
 
+* LUCENE-8755: SpatialPrefixTreeFactory now consumes the "version" parsed with Lucene's Version class.  The quad
+  and packed quad prefix trees are sensitive to this.  It's recommended to pass the version like you
+  should do likewise for analysis components for tokenized text, or else changes to the encoding in future versions
+  may be incompatible with older indexes.  (Chongchen Chen, David Smiley)
+
 New Features
 
 * LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)
@@ -107,6 +112,14 @@ the total hits is not requested.
 
 * LUCENE-8941: Matches on wildcard queries will defer building their full
   disjunction until a MatchesIterator is pulled (Alan Woodward)
+
+* LUCENE-8755: spatial-extras quad and packed quad prefix trees now index points faster.
+  (Chongchen Chen, David Smiley)
+
+Bug Fixes
+
+* LUCENE-8755: spatial-extras quad and packed quad prefix trees could throw a
+  NullPointerException for certain cell edge coordinates (Chongchen Chen, David Smiley)
 
 Other
 
