@@ -82,7 +82,6 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-
 == Parsing CSV and TSV Files
 
 The `parseCSV` and `parseTSV` functions wrap the `cat` function and parse CSV
@@ -161,10 +160,7 @@ grouped by species.
 
 image::images/math-expressions/csv.png[]
 
-== Transforming Data
-
-
-=== Selecting fields and Field Types
+== Selecting fields and Field Types
 
 The `select` function can be used to select specific fields from
 the CSV file and map them to other field names for indexing.
@@ -179,7 +175,19 @@ to specific field types.
 
 image::images/math-expressions/csvselect.png[]
 
+== Loading Data
 
+When the data is ready to load, the `update` function can be used to send the
+data to a Solr Cloud collection for indexing. The `update` function adds documents to Solr in batches
+and returns a tuple for each batch with some summary information about the batch and load.
+
+In the example below the update expression is loaded using Zeppelin-Solr because the
+data set is small. For larger loads it's best to run the load from a curl command
+where the output of the `update` function can be spooled to disk.
+
+image::images/math-expressions/update.png[]
+
+== Transforming Data
 
 === Unique ID
 
@@ -202,7 +210,6 @@ image::images/math-expressions/selectconcat.png[]
 Below is an example using the `uuid` function to create a new id.
 
 image::images/math-expressions/selectuuid.png[]
-
 
 === Record Number
 
@@ -405,16 +412,6 @@ will simply be left off the record.
 
 === Text Analysis
 
-== Loading Data
 
-When the data is ready to load, the `update` function can be used to send the
-data to a Solr Cloud collection for indexing. The `update` function adds documents to Solr in batches
-and returns a tuple for each batch with some summary information about the batch and load.
-
-In the example below the update expression is loaded using Zeppelin-Solr because the
-data set is small. For larger loads it's best to run the load from a curl command
-where the output of the `update` function can be spooled to disk.
-
-image::images/math-expressions/update.png[]
 
 
