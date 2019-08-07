@@ -175,7 +175,7 @@ to specific field types.
 
 image::images/math-expressions/csvselect.png[]
 
-== Loading Data
+== Loading
 
 When the data is ready to load, the `update` function can be used to send the
 data to a Solr Cloud collection for indexing. The `update` function adds documents to Solr in batches
@@ -187,9 +187,9 @@ where the output of the `update` function can be spooled to disk.
 
 image::images/math-expressions/update.png[]
 
-== Transforming Data
+= Transforming Data
 
-=== Unique ID
+== Unique IDs
 
 Both `parseCSV` and `parseTSV` emit an *id* field if one is not present in the records already.
 The *id* field is a concatenation of the file path and the line number. This is a
@@ -211,7 +211,7 @@ Below is an example using the `uuid` function to create a new id.
 
 image::images/math-expressions/selectuuid.png[]
 
-=== Record Number
+== Record Numbers
 
 The `recNum` function can be used inside of a `select` function to add a record number
 to each tuple. The record number is useful for tracking location in the result set
@@ -223,7 +223,7 @@ The example below shows the syntax of the `recNum` function:
 image::images/math-expressions/recNum.png[]
 
 
-=== Parsing Dates
+== Parsing Dates
 
 The `dateTime` function can be used to parse dates into ISO 8601 format
 needed for loading into Solr date time field.
@@ -297,7 +297,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-=== String Manipulation
+== String Manipulation
 
 The `upper`, `lower`, `split`, `valueAt`, `trim` and `concat` functions can be used to manipulate
 strings inside of the `select` function.
@@ -366,7 +366,7 @@ a split array.
 
 image::images/math-expressions/valueat.png[]
 
-=== Filtering Results
+== Filtering Results
 
 The `having` function can be used to filter records. Filtering can be used to explore specific record sets before
 indexing or to filter records that are indexed. The `having` function wraps another stream and applies
@@ -377,27 +377,27 @@ The following boolean functions are supported: `eq`, `gt`, `gteq`, `lt`, `lteq`,
 
 Below are some strategies for using the `having` function to filter records.
 
-==== Finding a Specific Id or Record Number
+=== Finding a Specific Id or Record Number
 
 image::images/math-expressions/havingId.png[]
 
-==== Skipping
+=== Skipping
 
 image::images/math-expressions/skipping.png[]
 
-==== Paging
+=== Paging
 
 image::images/math-expressions/paging.png[]
 
-==== Striding
+=== Striding
 
 image::images/math-expressions/striding.png[]
 
-==== Regex Matching
+=== Regex Matching
 
 image::images/math-expressions/matches.png[]
 
-=== Handling Nulls
+== Handling Nulls
 
 In most cases nulls do not need to be handled directly unless there is specific logic needed
 to handle nulls during the load.
@@ -409,8 +409,7 @@ The string manipulation functions all return null if they encounter a null. This
 the null will be passed through to the `select` function and the fields with nulls
 will simply be left off the record.
 
-
-=== Text Analysis
+== Text Analysis
 
 
 
