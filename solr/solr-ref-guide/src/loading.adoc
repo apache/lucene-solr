@@ -189,6 +189,10 @@ image::images/math-expressions/update.png[]
 
 = Transforming Data
 
+Streaming Expressions and Math Expression provide a powerful set of functions
+for transforming data. The section below shows some useful transformations that
+can be applied while analyzing, visualizing and loading CSV and TSV files.
+
 == Unique IDs
 
 Both `parseCSV` and `parseTSV` emit an *id* field if one is not present in the records already.
@@ -368,9 +372,10 @@ image::images/math-expressions/valueat.png[]
 
 == Filtering Results
 
-The `having` function can be used to filter records. Filtering can be used to explore specific record sets before
-indexing or to filter records that are indexed. The `having` function wraps another stream and applies
-a boolean function to each tuple. If the logic function returns true the tuple is returned.
+The `having` function can be used to filter records. Filtering can be used to systematically
+explore specific record sets before indexing or to filter records that are indexed.
+The `having` function wraps another stream and applies
+a boolean function to each tuple. If the boolean logic function returns true the tuple is returned.
 
 The following boolean functions are supported: `eq`, `gt`, `gteq`, `lt`, `lteq`, `matches`, `and`, `or`,
 `not`, `notNull`, `isNull`.
@@ -379,21 +384,37 @@ Below are some strategies for using the `having` function to filter records.
 
 === Finding a Specific Id or Record Number
 
+The `eq` (equals) function can be used with the `having` expression to filter the result set
+to a single record number:
+
 image::images/math-expressions/havingId.png[]
 
 === Skipping
+
+The `gt` (greater than) function can be used on the `recNum` field to filter the result set to
+records with a recNum greater then a specific value:
 
 image::images/math-expressions/skipping.png[]
 
 === Paging
 
+The `and` function with nested `lt` and `gt` functions can be used to select records within a specific
+record number range:
+
 image::images/math-expressions/paging.png[]
 
 === Striding
 
+The `eq` and nested `mod` function can be used to stride through the data with specific
+record number intervals. This allows for samples to be taken at different intervals in the data set
+in a systematic way.
+
 image::images/math-expressions/striding.png[]
 
 === Regex Matching
+
+The `matches` function can be used to test if a field in record matches a specific
+regular expression. This provides a powerful *grep* like capability over the record set.
 
 image::images/math-expressions/matches.png[]
 
