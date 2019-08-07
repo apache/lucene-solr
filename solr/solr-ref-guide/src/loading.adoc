@@ -432,6 +432,23 @@ will simply be left off the record.
 
 == Text Analysis
 
+The `analyze` function can be used from inside a `select` function to analyze
+a text field with a Lucene/Solr analyze. The output of `analyze` is a
+list of analyzed tokens which can be added to each tuple as an multi-valued field.
+
+The multi-value field can then be sent to Solr for indexing or the `cartesianProduct`
+function can be used to list of tokens to a stream up tuples.
+
+There are a number of interesting use cases for the `analyze` function:
+
+- Previewing the output of different analyzers before indexing.
+- Annotating documents with NLP generated tokens (entity extraction etc...) before the documents reach the indexing pipeline.
+This removes heavy NLP processing from the servers that may also be handling queries. It also allows
+more compute resources to be applied to the NLP indexing then the search cluster may posses.
+- Using the `cartisianProduct` function the analyzed tokens can be indexed in individual documents which allows
+terms to be searched and aggregated as a graph.
+- Also using `cartisianProduct` the analyzed tokens can be aggregated, analyzed and visualized.
+
 
 
 
