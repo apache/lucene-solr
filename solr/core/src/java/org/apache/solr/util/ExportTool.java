@@ -50,6 +50,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrJSONWriter;
 
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
+import static org.apache.solr.common.params.CommonParams.JSON;
 
 public class ExportTool extends SolrCLI.ToolBase {
   @Override
@@ -65,7 +66,7 @@ public class ExportTool extends SolrCLI.ToolBase {
   @Override
   protected void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue("url");
-    String format = cli.getOptionValue("format", JAVABIN);
+    String format = cli.getOptionValue("format", JSON);
     int idx = url.lastIndexOf('/');
     String baseurl = url.substring(0, idx);
     String coll = url.substring(idx + 1);
@@ -87,17 +88,17 @@ public class ExportTool extends SolrCLI.ToolBase {
 
     SolrJSONWriter jsonw = new SolrJSONWriter(writer);
     jsonw.setIndent(false);
-    Consumer<SolrInputDocument> consumer = doc -> {
+    Consumer<SolrDocument> consumer = doc -> {
       try {
         Map m = new LinkedHashMap(doc.size());
         doc.forEach((s, field) -> {
-          Object value = field.getValue();
-          if (value instanceof List) {
-            if(((List) value).size() ==1){
-              value = ((List) value).get(0);
+          if (s.equals("_version_")) return;
+          if (field instanceof List) {
+            if (((List) field).size() == 1) {
+              field = ((List) field).get(0);
             }
           }
-          m.put(s, value);
+          m.put(s, field);
         });
         jsonw.writeObj(m);
         writer.append('\n');
@@ -125,9 +126,18 @@ public class ExportTool extends SolrCLI.ToolBase {
     codec.writeTag(JavaBinCodec.ITERATOR);
     long[] docsWritten = new long[1];
     docsWritten[0] = 0;
-    Consumer<SolrInputDocument> consumer = d -> {
+    Consumer<SolrDocument> consumer = doc -> {
       try {
-        codec.writeSolrInputDocument(d);
+        SolrInputDocument document = new SolrInputDocument();
+        doc.forEach((s, o) -> {
+          if (s.equals("_version_")) return;
+          if (o instanceof List) {
+            if (((List) o).size() == 1) o = ((List) o).get(0);
+          }
+          document.addField(s, o);
+        });
+
+        codec.writeSolrInputDocument(document);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -143,7 +153,7 @@ public class ExportTool extends SolrCLI.ToolBase {
   }
 
   private static void streamDocsWithCursorMark(String coll, long maxDocs, SolrClient solrClient,
-                                               Consumer<SolrInputDocument> consumer) throws SolrServerException, IOException {
+                                               Consumer<SolrDocument> consumer) throws SolrServerException, IOException {
     long[] docsWritten = new long[]{0};
     NamedList<Object> rsp1 = solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/schema/uniquekey",
         new MapSolrParams(Collections.singletonMap("collection", coll))));
@@ -163,16 +173,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       request.setResponseParser(new StreamingBinaryResponseParser(new StreamingResponseCallback() {
         @Override
         public void streamSolrDocument(SolrDocument doc) {
-          SolrInputDocument document = new SolrInputDocument();
-          doc.forEach((s, o) -> {
-            if (s.equals("_version_")) return;
-            if (o instanceof List) {
-              if(((List) o).size() ==1) o = ((List) o).get(0);
-            }
-            document.addField(s, o);
-          });
-
-          consumer.accept(document);
+          consumer.accept(doc);
           docsWritten[0]++;
         }
 
