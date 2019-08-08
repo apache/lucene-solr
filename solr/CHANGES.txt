@@ -102,7 +102,7 @@ New Features
 
 * SOLR-13553: Node level custom RequestHandlers (noble)
 
-* SOLR-13622: Add files() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
+* SOLR-13622: Add cat() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
 
 * SOLR-11866: QueryElevationComponent can have query rules configured with match="subset" wherein the words need only
   match a subset of the query's words and in any order.  (Bruno Roustant via David Smiley)
