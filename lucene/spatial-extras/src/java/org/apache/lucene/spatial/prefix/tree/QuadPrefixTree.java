@@ -180,6 +180,8 @@ public class QuadPrefixTree extends LegacyPrefixTree {
   }
 
   protected int battenberg(double xmid, double ymid, double xp, double yp){
+    // Z-Order
+    // http://en.wikipedia.org/wiki/Z-order_%28curve%29
     if (ymid <= yp){
       if (xmid >= xp){
         return 0;
@@ -191,6 +193,10 @@ public class QuadPrefixTree extends LegacyPrefixTree {
       }
       return 3;
     }
+    // possibly consider hilbert curve
+    // http://en.wikipedia.org/wiki/Hilbert_curve
+    // http://blog.notdot.net/2009/11/Damn-Cool-Algorithms-Spatial-indexing-with-Quadtrees-and-Hilbert-Curves
+    // if we actually use the range property in the query, this could be useful
   }
 
 
