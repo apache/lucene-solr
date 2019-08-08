@@ -417,6 +417,8 @@ public class SolrCLI implements CLIO {
       return new AuthTool();
     else if ("autoscaling".equals(toolType))
       return new AutoscalingTool();
+    else if ("export".equals(toolType))
+      return new ExportTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -448,6 +450,7 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("cp", getToolOptions(new ZkCpTool()));
     formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
     formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
+    formatter.printHelp("export", getToolOptions(new ExportTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
