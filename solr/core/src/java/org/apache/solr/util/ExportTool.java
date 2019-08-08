@@ -49,8 +49,8 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrJSONWriter;
 
+import static org.apache.solr.common.params.CommonParams.FL;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
-import static org.apache.solr.common.params.CommonParams.JSON;
 
 public class ExportTool extends SolrCLI.ToolBase {
   @Override
@@ -63,27 +63,42 @@ public class ExportTool extends SolrCLI.ToolBase {
     return OPTIONS;
   }
 
+  public static class Info {
+    String baseurl;
+    String format;
+    String query;
+    String coll;
+    String out;
+    String fields;
+    long limit;
+
+  }
+
   @Override
   protected void runImpl(CommandLine cli) throws Exception {
+    Info info = new Info();
     String url = cli.getOptionValue("url");
-    String format = cli.getOptionValue("format", JSON);
+    info.format = cli.getOptionValue("format", "jsonl");
+    info.query = cli.getOptionValue("query", "*:*");
+    info.fields = cli.getOptionValue("fields");
     int idx = url.lastIndexOf('/');
-    String baseurl = url.substring(0, idx);
-    String coll = url.substring(idx + 1);
-    String file = cli.getOptionValue("out",
-        JAVABIN.equals(format) ? coll + ".javabin" : coll + ".json");
-    String maxDocsStr = cli.getOptionValue("limit", String.valueOf(Long.MAX_VALUE));
-    long maxDocs = Long.parseLong(maxDocsStr);
-    if (JAVABIN.equals(format)) {
-      writeJavabinDocs(baseurl, coll, file, maxDocs);
+    info.baseurl = url.substring(0, idx);
+    info.coll = url.substring(idx + 1);
+    info.out = cli.getOptionValue("out",
+        JAVABIN.equals(info.format) ? info.coll + ".javabin" : info.coll + ".json");
+    String maxDocsStr = cli.getOptionValue("limit", "100");
+    info.limit = Long.parseLong(maxDocsStr);
+    if (info.limit == -1) info.limit = Long.MAX_VALUE;
+    if (JAVABIN.equals(info.format)) {
+      writeJavabinDocs(info);
     } else {
-      writeJsonLDocs(baseurl, coll, file, maxDocs);
+      writeJsonLDocs(info);
     }
   }
 
-  public static void writeJsonLDocs(String baseurl, String coll, String file, long maxDocs) throws IOException, SolrServerException {
-    SolrClient solrClient = new CloudSolrClient.Builder(Collections.singletonList(baseurl)).build();
-    FileOutputStream fos = new FileOutputStream(file);
+  public static void writeJsonLDocs(Info info) throws IOException, SolrServerException {
+    SolrClient solrClient = new CloudSolrClient.Builder(Collections.singletonList(info.baseurl)).build();
+    FileOutputStream fos = new FileOutputStream(info.out);
     Writer writer = FastWriter.wrap(new OutputStreamWriter(fos));
 
     SolrJSONWriter jsonw = new SolrJSONWriter(writer);
@@ -101,6 +116,7 @@ public class ExportTool extends SolrCLI.ToolBase {
           m.put(s, field);
         });
         jsonw.writeObj(m);
+        writer.flush();
         writer.append('\n');
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -108,16 +124,17 @@ public class ExportTool extends SolrCLI.ToolBase {
     };
 
     try {
-      streamDocsWithCursorMark(coll, maxDocs, solrClient, consumer);
+      streamDocsWithCursorMark(info, solrClient, consumer);
     } finally {
+      jsonw.close();
       solrClient.close();
       fos.close();
     }
   }
 
-  public static void writeJavabinDocs(String baseurl, String coll, String file, long maxDocs) throws IOException, SolrServerException {
-    SolrClient solrClient = new CloudSolrClient.Builder(Collections.singletonList(baseurl)).build();
-    FileOutputStream fos = new FileOutputStream(file);
+  public static void writeJavabinDocs(Info info) throws IOException, SolrServerException {
+    SolrClient solrClient = new CloudSolrClient.Builder(Collections.singletonList(info.baseurl)).build();
+    FileOutputStream fos = new FileOutputStream(info.out);
     JavaBinCodec codec = new JavaBinCodec(fos, null);
     codec.writeTag(JavaBinCodec.NAMED_LST, 2);
     codec.writeStr("params");
@@ -143,7 +160,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       }
     };
     try {
-      streamDocsWithCursorMark(coll, maxDocs, solrClient, consumer);
+      streamDocsWithCursorMark(info, solrClient, consumer);
     } finally {
       codec.writeTag(JavaBinCodec.END);
       solrClient.close();
@@ -152,22 +169,25 @@ public class ExportTool extends SolrCLI.ToolBase {
     }
   }
 
-  private static void streamDocsWithCursorMark(String coll, long maxDocs, SolrClient solrClient,
+  private static void streamDocsWithCursorMark(Info info, SolrClient solrClient,
                                                Consumer<SolrDocument> consumer) throws SolrServerException, IOException {
     long[] docsWritten = new long[]{0};
     NamedList<Object> rsp1 = solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/schema/uniquekey",
-        new MapSolrParams(Collections.singletonMap("collection", coll))));
+        new MapSolrParams(Collections.singletonMap("collection", info.coll))));
     String uniqueKey = (String) rsp1.get("uniqueKey");
     NamedList<Object> rsp;
-    SolrQuery q = (new SolrQuery("*:*"))
-        .setParam("collection", coll)
+    SolrQuery q = (new SolrQuery(info.query))
+        .setParam("collection", info.coll)
         .setRows(100)
         .setSort(SolrQuery.SortClause.asc(uniqueKey));
+    if (info.fields != null) {
+      q.setParam(FL, info.fields);
+    }
 
     String cursorMark = CursorMarkParams.CURSOR_MARK_START;
     boolean done = false;
     while (!done) {
-      if (docsWritten[0] >= maxDocs) break;
+      if (docsWritten[0] >= info.limit) break;
       QueryRequest request = new QueryRequest(q);
 
       request.setResponseParser(new StreamingBinaryResponseParser(new StreamingResponseCallback() {
@@ -206,12 +226,22 @@ public class ExportTool extends SolrCLI.ToolBase {
       OptionBuilder
           .hasArg()
           .isRequired(false)
-          .withDescription("format either json or javabin, default to javabin. file extension would be .javabin")
+          .withDescription("format  json/javabin, default to json. file extension would be .json")
           .create("format"),
       OptionBuilder
           .hasArg()
           .isRequired(false)
-          .withDescription("Max number of docs to download. by default it goes on till all docs are downloaded")
+          .withDescription("Max number of docs to download. default = 100, use -1 for all docs")
           .create("limit"),
+      OptionBuilder
+          .hasArg()
+          .isRequired(false)
+          .withDescription("A custom query, default is *:*")
+          .create("query"),
+      OptionBuilder
+          .hasArg()
+          .isRequired(false)
+          .withDescription("Comma separated fields. By default all fields are fetched")
+          .create("fields")
   };
 }
