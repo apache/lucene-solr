@@ -212,16 +212,14 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       if (message.getBool(CommonAdminParams.SPLIT_BY_PREFIX, true)) {
         t = timings.sub("getRanges");
 
-        log.info("Requesting split ranges from replica " + parentShardLeader.getName() + " as part of slice " + slice + " of collection "
-            + collectionName + " on " + parentShardLeader);
-
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.SPLIT.toString());
         params.set(CoreAdminParams.GET_RANGES, "true");
         params.set(CommonAdminParams.SPLIT_METHOD, splitMethod.toLower());
         params.set(CoreAdminParams.CORE, parentShardLeader.getStr("core"));
-        int numSubShards = message.getInt(NUM_SUB_SHARDS, DEFAULT_NUM_SUB_SHARDS);
-        params.set(NUM_SUB_SHARDS, Integer.toString(numSubShards));
+        // Only 2 is currently supported
+        // int numSubShards = message.getInt(NUM_SUB_SHARDS, DEFAULT_NUM_SUB_SHARDS);
+        // params.set(NUM_SUB_SHARDS, Integer.toString(numSubShards));
 
         {
           final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
@@ -236,7 +234,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
             NamedList shardRsp = (NamedList)successes.getVal(0);
             String splits = (String)shardRsp.get(CoreAdminParams.RANGES);
             if (splits != null) {
-              log.info("Resulting split range to be used is " + splits);
+              log.info("Resulting split ranges to be used: " + splits + " slice=" + slice + " leader=" + parentShardLeader);
               // change the message to use the recommended split ranges
               message = message.plus(CoreAdminParams.RANGES, splits);
             }

@@ -95,14 +95,17 @@ New Features
   of two fields. (Gus Heck)
 
 * SOLR-13399: SPLITSHARD implements a new splitByPrefix option that takes into account the actual document distribution
-  when using compositeIds.  The id prefix should be indexed into the "id_prefix" field for this feature to work.
-  (yonik)
+  when using compositeIds.  Document distribution is calculated using the "id_prefix" field (if it exists) containing
+  just the compositeId prefixes, or directly from the indexed "id" field otherwise. (yonik)
 
 * SOLR-13565: Node level runtime libs loaded from remote urls  (noble)
 
 * SOLR-13553: Node level custom RequestHandlers (noble)
 
-* SOLR-13622: Add files() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
+* SOLR-13622: Add cat() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
+
+* SOLR-11866: QueryElevationComponent can have query rules configured with match="subset" wherein the words need only
+  match a subset of the query's words and in any order.  (Bruno Roustant via David Smiley)
 
 Improvements
 ----------------------
@@ -111,6 +114,8 @@ Improvements
 (hossman, Simon Willnauer, Adrien Grand, Munendra S N)
 
 * SOLR-13558: Allow dynamic resizing of SolrCache-s. (ab)
+
+* SOLR-6305: Ability to set the replication factor for index files created by HDFSDirectoryFactory (Boris Pasko via Kevin Risden)
 
 Bug Fixes
 ----------------------
@@ -125,6 +130,15 @@ Bug Fixes
 
 * SOLR-13664: Fixed SolrTestCaseJ4.deleteCore() to properly reset the dataDir used by initCore()
   (hossman)
+
+* SOLR-13679: Default style of ExplainDocTransformer registered via solrconfig.xml should be same as default style
+  of ExplainDocTransformer registered in defaultFactories (Munendra S N)
+
+* SOLR-13672: Cloud -> Zk Status page now parses response from Zookeeper 3.5.5 correctly (Jörn Franke, janhoy, Shawn Heisey)
+
+* SOLR-13674: NodeAddedTrigger does not support configuration of replica type hint. A new replicaType property
+  has been added to NodeAddTrigger so that new replicas of the given type are added. The default value is `NRT`.
+  (Irena Shaigorodsky via shalin)
 
 Other Changes
 ----------------------

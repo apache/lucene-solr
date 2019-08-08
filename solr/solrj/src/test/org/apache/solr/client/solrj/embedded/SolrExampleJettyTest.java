@@ -19,9 +19,9 @@ package org.apache.solr.client.solrj.embedded;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
@@ -40,7 +40,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -62,17 +61,10 @@ public class SolrExampleJettyTest extends SolrExampleTests {
   }
 
   @Test
-  public void testBadSetup()
-  {
-    try {
-      // setup the server...
-      String url = "http" + (isSSLMode() ? "s" : "") +  "://127.0.0.1/?core=xxx";
-      HttpSolrClient client = getHttpSolrClient(url);
-      Assert.fail("HttpSolrServer should not allow a path with a parameter: " + client.getBaseURL());
-    }
-    catch( Exception ex ) {
-      // expected
-    }
+  public void testBadSetup() {
+    // setup the server...
+    String url = "http" + (isSSLMode() ? "s" : "") +  "://127.0.0.1/?core=xxx";
+    expectThrows(Exception.class, () -> getHttpSolrClient(url));
   }
 
   @Test

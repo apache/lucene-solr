@@ -74,7 +74,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("sub(a)");
   }
 
-  @Test(expected = NumberFormatException.class)
+  @Test//(expected = NumberFormatException.class)
   public void subTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sub(a,b)");
     Object result;
@@ -84,7 +84,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     Assert.assertNull(result);
   }
 
-  @Test(expected = NumberFormatException.class)
+  @Test//(expected = NumberFormatException.class)
   public void subTwoFieldsWithNull() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sub(a,b)");
     Object result;
@@ -108,7 +108,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     Assert.assertNull(result);
   }
 
-  @Test(expected = NumberFormatException.class)
+  @Test//(expected = NumberFormatException.class)
   public void subTwoFieldsWithMissingField() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sub(a,b)");
     Object result;

@@ -1512,10 +1512,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     List<String> params = Arrays.asList(ReplicationHandler.FILE, ReplicationHandler.CONF_FILE_SHORT, ReplicationHandler.TLOG_FILE);
     for (String param : params) {
       for (String filename : illegalFilenames) {
-        try {
-          invokeReplicationCommand(masterJetty.getLocalPort(), "filecontent&" + param + "=" + filename);
-          fail("Should have thrown exception on illegal path for param " + param + " and file name " + filename);
-        } catch (Exception e) {}
+        expectThrows(Exception.class, () ->
+            invokeReplicationCommand(masterJetty.getLocalPort(), "filecontent&" + param + "=" + filename));
       }
     }
   }
