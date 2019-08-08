@@ -16,7 +16,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
 Streaming Expressions allows CSV and TSV formatted data to be visualized and transformed
 before loading it into Solr Cloud collections. A number of useful functions are provided
 for parsing dates, creating unique ids, cleaning data, analyzing text and visualizing
@@ -25,19 +24,19 @@ data all before its loaded into Solr Cloud collections.
 == Reading Files
 
 The `cat` function can be used to read files under the "userfiles" directory in
-SOLR_HOME. The `cat` function takes two parameters. The first parameter is a comma
+$SOLR_HOME. The `cat` function takes two parameters. The first parameter is a comma
 delimited list of paths. If the path list contain directories, `cat` will crawl
 all the files in the directory and sub-directories. If the path list contains only
-files `cat` will operate crawl just the specific files.
+files `cat` will read just the specific files.
 
 The second parameter, *maxLines*, tells `cat` how many lines to read in total. If
 *maxLines* is not provided, `cat` will read all lines from each file it crawls.
 
-The `cat` function reads each line (up to maxLines) in files and for each line
+The `cat` function reads each line (up to maxLines) in the crawled files and for each line
 emits a tuple with two fields:
 
 * line: The text in the line.
-* file: The relative path of the file under SOLR_HOME.
+* file: The relative path of the file under $SOLR_HOME.
 
 Below is an example of `cat` on the iris.csv file with a maxLines of 5:
 
@@ -163,7 +162,7 @@ image::images/math-expressions/csv.png[]
 == Selecting fields and Field Types
 
 The `select` function can be used to select specific fields from
-the CSV file and map them to other field names for indexing.
+the CSV file and map them to new field names for indexing.
 
 Fields in the CSV file can be mapped to field names with
 dynamic field suffixes. This approach allows for fine grain
@@ -179,10 +178,10 @@ image::images/math-expressions/csvselect.png[]
 
 When the data is ready to load, the `update` function can be used to send the
 data to a Solr Cloud collection for indexing. The `update` function adds documents to Solr in batches
-and returns a tuple for each batch with some summary information about the batch and load.
+and returns a tuple for each batch with summary information about the batch and load.
 
 In the example below the update expression is loaded using Zeppelin-Solr because the
-data set is small. For larger loads it's best to run the load from a curl command
+data set is small. For larger loads its best to run the load from a curl command
 where the output of the `update` function can be spooled to disk.
 
 image::images/math-expressions/update.png[]
@@ -195,13 +194,13 @@ can be applied while analyzing, visualizing and loading CSV and TSV files.
 
 == Unique IDs
 
-Both `parseCSV` and `parseTSV` emit an *id* field if one is not present in the records already.
+Both `parseCSV` and `parseTSV` emit an *id* field if one is not present in the data already.
 The *id* field is a concatenation of the file path and the line number. This is a
 convenient way to ensure that records have consistent ids if an id
-is not present in file.
+is not present in the file.
 
 You can also map any fields in the file to the id field using the `select` function.
-The `concat` function can be used to concatenate two or more fields in file
+The `concat` function can be used to concatenate two or more fields in the file
 to create an id. Or a `uuid` function can be used to create a random unique id. If
 the `uuid` function is used the data cannot be reloaded without first deleting
 the data, as the `uuid` function does not produce the same id for each document
@@ -230,7 +229,7 @@ image::images/math-expressions/recNum.png[]
 == Parsing Dates
 
 The `dateTime` function can be used to parse dates into ISO 8601 format
-needed for loading into Solr date time field.
+needed for loading into a Solr date time field.
 
 We can first inspect the format of the data time field in the CSV file:
 
@@ -261,15 +260,15 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Then we can use the dateTime function to format the date time and
-map it to Solr date time field.
+Then we can use the dateTime function to format the datetime and
+map it to Solr datetime field.
 
 The `dateTime` function takes three parameters. The field in the data
-with the date string, a template to parse the date in the data
-using the Java SimpleDateFormat template, and an optional time zone.
+with the date string, a template to parse the date using a Java SimpleDateFormat template,
+and an optional time zone.
 
 If the time zone is not present the time zone defaults to GMT time unless
-it's included in the date string itself.
+its included in the date string itself.
 
 Below is an example of the `dateTime` function applied to the date format
 in the example above.
@@ -312,7 +311,7 @@ field.
 image::images/math-expressions/selectupper.png[]
 
 The example below shows the `split` function which splits a field on
-delimiter. This can be used to create multi-value fields from fields
+a delimiter. This can be used to create multi-value fields from fields
 with an internal delimiter.
 
 The example below demonstrates this with a direct call to
@@ -373,7 +372,7 @@ image::images/math-expressions/valueat.png[]
 == Filtering Results
 
 The `having` function can be used to filter records. Filtering can be used to systematically
-explore specific record sets before indexing or to filter records that are indexed.
+explore specific record sets before indexing or to filter records that are sent for indexing.
 The `having` function wraps another stream and applies
 a boolean function to each tuple. If the boolean logic function returns true the tuple is returned.
 
@@ -405,15 +404,15 @@ image::images/math-expressions/paging.png[]
 
 === Striding
 
-The `eq` and nested `mod` function can be used to stride through the data with specific
-record number intervals. This allows for samples to be taken at different intervals in the data set
+The `eq` and nested `mod` function can be used to stride through the data at specific
+record number intervals. This allows for a sample to be taken at different intervals in the data
 in a systematic way.
 
 image::images/math-expressions/striding.png[]
 
 === Regex Matching
 
-The `matches` function can be used to test if a field in record matches a specific
+The `matches` function can be used to test if a field in the record matches a specific
 regular expression. This provides a powerful *grep* like capability over the record set.
 
 image::images/math-expressions/matches.png[]
@@ -430,9 +429,34 @@ The string manipulation functions all return null if they encounter a null. This
 the null will be passed through to the `select` function and the fields with nulls
 will simply be left off the record.
 
+In certain scenarios it can be important to directly filter or replace nulls. The sections below cover these
+scenarios.
+
 === Filtering Nulls
 
+The `having` and `isNull`, `notNull` functions can be combined to filter records that can contain null
+values.
+
+In the example below the `having` function returns zero documents because the `notNull` function is applied to
+ *field_a* in each tuple.
+
+image::images/math-expressions/havingNotNull.png[]
+
+In the example below the `having` function returns all documents because the `isNull` function is applied to
+*field_a* in each tuple.
+
+image::images/math-expressions/havingIsNull.png[]
+
 === Replacing Nulls
+
+The `if` function and `isNull`, `notNull` functions can be combined to replace null values inside a `select` function.
+
+In the example below the `if` function applies the `isNull` boolean expression to two different fields.
+
+In the first example it replaces null *patel_width* values with 0, and returns the *petal_width* if present.
+In the second example it replace null *field1* values with the string literal "NA" and returns *field1* if present.
+
+image::images/math-expressions/ifIsNull.png[]
 
 == Text Analysis
 
