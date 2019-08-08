@@ -86,6 +86,10 @@ Bug Fixes
 
 * SOLR-13672: Cloud -> Zk Status page now parses response from Zookeeper 3.5.5 correctly (Jörn Franke, janhoy, Shawn Heisey)
 
+* SOLR-13674: NodeAddedTrigger does not support configuration of replica type hint. A new replicaType property
+  has been added to NodeAddTrigger so that new replicas of the given type are added. The default value is `NRT`.
+  (Irena Shaigorodsky via shalin)
+
 Other Changes
 ----------------------
 
