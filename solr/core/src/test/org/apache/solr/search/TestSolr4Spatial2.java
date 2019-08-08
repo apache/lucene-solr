@@ -61,7 +61,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     RetrievalCombo.idCounter = 0;
   }
 
-  public void testBug() {
+  public void testQuadTreeRobustness() {
     assertU(adoc("id", "0", "oslocation", "244502.06 639062.07"));
   }
 

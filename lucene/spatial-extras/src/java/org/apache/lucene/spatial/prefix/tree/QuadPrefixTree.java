@@ -154,42 +154,42 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     int levelLimit = level > maxLevels ? maxLevels : level;
     SpatialRelation rel = SpatialRelation.CONTAINS;
     for (int lvl = 0; lvl < levelLimit; lvl++){
-      char c = battenberg(currentXmid, currentYmid, xp, yp);
+      int c = battenberg(currentXmid, currentYmid, xp, yp);
       switch(c){
-        case 'A':
+        case 0:
           currentXmid -= levelW[lvl] / 2;
           currentYmid += levelH[lvl] / 2;
           break;
-        case 'B':
+        case 1:
           currentXmid += levelW[lvl] / 2;
           currentYmid += levelH[lvl] / 2;
           break;
-        case 'C':
+        case 2:
           currentXmid -= levelW[lvl] / 2;
           currentYmid -= levelH[lvl] / 2;
           break;
-        case 'D':
+        case 3:
           currentXmid += levelW[lvl] / 2;
           currentYmid -= levelH[lvl] / 2;
           break;
         default:
       }
-      str.bytes[str.length++] = (byte)c;
+      str.bytes[str.length++] = (byte)('A' + c);
     }
     return new QuadCell(str, rel);
   }
 
-  private char battenberg(double xmid, double ymid, double xp, double yp){
+  protected int battenberg(double xmid, double ymid, double xp, double yp){
     if (ymid <= yp){
       if (xmid >= xp){
-        return 'A';
+        return 0;
       }
-      return 'B';
+      return 1;
     }else{
       if (xmid >= xp){
-        return 'C';
+        return 2;
       }
-      return 'D';
+      return 3;
     }
   }
 

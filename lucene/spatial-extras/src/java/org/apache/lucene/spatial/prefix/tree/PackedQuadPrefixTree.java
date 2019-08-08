@@ -118,20 +118,6 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
     }
     return new PackedQuadCell(term, rel);
   }
-
-  private int battenberg(double xmid, double ymid, double xp, double yp){
-    if (ymid <= yp){
-      if (xmid >= xp){
-        return 0;
-      }
-      return 1;
-    }else{
-      if (xmid >= xp){
-        return 2;
-      }
-      return 3;
-    }
-  }
   
   @Override
   public Cell readCell(BytesRef term, Cell scratch) {
