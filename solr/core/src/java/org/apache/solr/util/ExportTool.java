@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -87,7 +89,17 @@ public class ExportTool extends SolrCLI.ToolBase {
     jsonw.setIndent(false);
     Consumer<SolrInputDocument> consumer = doc -> {
       try {
-        jsonw.writeObj(doc);
+        Map m = new LinkedHashMap(doc.size());
+        doc.forEach((s, field) -> {
+          Object value = field.getValue();
+          if (value instanceof List) {
+            if(((List) value).size() ==1){
+              value = ((List) value).get(0);
+            }
+          }
+          m.put(s, value);
+        });
+        jsonw.writeObj(m);
         writer.append('\n');
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -181,25 +193,21 @@ public class ExportTool extends SolrCLI.ToolBase {
 
   private static final Option[] OPTIONS = {
       OptionBuilder
-          .withArgName("#")
           .hasArg()
           .isRequired(true)
           .withDescription("Address of the collection, example http://localhost:8983/solr/gettingstarted")
           .create("url"),
       OptionBuilder
-          .withArgName("#")
           .hasArg()
           .isRequired(false)
           .withDescription("file name . defaults to collection-name.<format>")
           .create("out"),
       OptionBuilder
-          .withArgName("#")
           .hasArg()
           .isRequired(false)
           .withDescription("format either json or javabin, default to javabin. file extension would be .javabin")
           .create("format"),
       OptionBuilder
-          .withArgName("#")
           .hasArg()
           .isRequired(false)
           .withDescription("Max number of docs to download. by default it goes on till all docs are downloaded")
