@@ -30,6 +30,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
@@ -198,7 +199,7 @@ public class IndexSizeTrigger extends TriggerBase {
   }
   
   private boolean getValidBool(String str) throws Exception {
-    if (str != null && (str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
+    if (str != null && (str.toLowerCase(Locale.ROOT).equals("true") || str.toLowerCase(Locale.ROOT).equals("false"))) {
       return Boolean.parseBoolean(str);
     }
     throw new IllegalArgumentException("Expected a valid boolean value but got " + str);
