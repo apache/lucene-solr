@@ -90,6 +90,9 @@ Bug Fixes
   has been added to NodeAddTrigger so that new replicas of the given type are added. The default value is `NRT`.
   (Irena Shaigorodsky via shalin)
 
+* SOLR-13141: CDCR bootstrap does not replicate index to the replicas of target cluster.
+  (Krzysztof Watral, Amrit Sarkar, Tim, Tdspringsteen, shalin)
+
 Other Changes
 ----------------------
 
