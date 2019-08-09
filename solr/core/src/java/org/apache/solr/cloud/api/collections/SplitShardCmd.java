@@ -209,7 +209,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
 
 
-      if (message.getBool(CommonAdminParams.SPLIT_BY_PREFIX, true)) {
+      if (message.getBool(CommonAdminParams.SPLIT_BY_PREFIX, false)) {
         t = timings.sub("getRanges");
 
         ModifiableSolrParams params = new ModifiableSolrParams();
