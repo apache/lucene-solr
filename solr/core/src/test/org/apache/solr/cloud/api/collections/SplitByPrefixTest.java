@@ -40,10 +40,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-//
-// This class tests higher level SPLITSHARD functionality when splitByPrefix is specified.
-// See SplitHandlerTest for random tests of lower-level split selection logic.
-//
+/** 
+ *  This class tests higher level SPLITSHARD functionality when splitByPrefix is specified.
+ *  See SplitHandlerTest for random tests of lower-level split selection logic.
+ */
 public class SplitByPrefixTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -90,7 +90,9 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     }
   }
 
-  // find prefixes (shard keys) matching certain criteria
+  /**
+   * find prefixes (shard keys) matching certain criteria
+   */
   public static List<Prefix> findPrefixes(int numToFind, int lowerBound, int upperBound) {
     CompositeIdRouter router = new CompositeIdRouter();
 
@@ -115,7 +117,9 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     return prefixes;
   }
 
-  // remove duplicate prefixes from the sorted prefix list
+  /**
+   * remove duplicate prefixes from the SORTED prefix list
+   */
   public static List<Prefix> removeDups(List<Prefix> prefixes) {
     ArrayList<Prefix> result = new ArrayList<>();
     Prefix last = null;

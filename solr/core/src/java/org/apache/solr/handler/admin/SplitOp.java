@@ -385,16 +385,8 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
       // compare to current prefix bucket and see if this new term shares the same prefix
       if (term != null && term.length >= currPrefix.length && currPrefix.length > 0) {
-        int i = 0;
-        for (; i < currPrefix.length; i++) {
-          if (currPrefix.bytes[i] != term.bytes[term.offset + i]) {
-            break;
-          }
-        }
-
-        if (i == currPrefix.length) {
-          // prefix was the same (common-case fast path)
-          // int count = termsEnum.docFreq();
+        BytesRef termPrefix = new BytesRef(term.bytes, term.offset, currPrefix.length);
+        if (termPrefix.bytesEquals(currPrefix)) {
           bucketCount++;  // use 1 since we are dealing with unique ids
           continue;
         }
@@ -442,7 +434,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
     }
 
-    log.info("Split histogram from idField {}: ms={}, numBuckets={} sumBuckets={} numPrefixes={}numCollisions={}", idField, timer.getTime(), counts.size(), sumBuckets, numPrefixes, numCollisions);
+    log.info("Split histogram from idField {}: ms={}, numBuckets={} sumBuckets={} numPrefixes={} numCollisions={}", idField, timer.getTime(), counts.size(), sumBuckets, numPrefixes, numCollisions);
 
     return counts.values();
   }

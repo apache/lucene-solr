@@ -69,6 +69,7 @@ public class IndexSizeTrigger extends TriggerBase {
   public static final String MAX_OPS_PROP = "maxOps";
   public static final String SPLIT_FUZZ_PROP = CommonAdminParams.SPLIT_FUZZ;
   public static final String SPLIT_METHOD_PROP = CommonAdminParams.SPLIT_METHOD;
+  public static final String SPLIT_BY_PREFIX = CommonAdminParams.SPLIT_BY_PREFIX;
 
   public static final String BYTES_SIZE_PROP = "__bytes__";
   public static final String TOTAL_BYTES_SIZE_PROP = "__total_bytes__";
@@ -86,6 +87,7 @@ public class IndexSizeTrigger extends TriggerBase {
   private long aboveBytes, aboveDocs, belowBytes, belowDocs;
   private int maxOps;
   private SolrIndexSplitter.SplitMethod splitMethod;
+  private boolean splitByPrefix;
   private float splitFuzz;
   private CollectionParams.CollectionAction aboveOp, belowOp;
   private final Set<String> collections = new HashSet<>();
@@ -96,7 +98,7 @@ public class IndexSizeTrigger extends TriggerBase {
     super(TriggerEventType.INDEXSIZE, name);
     TriggerUtils.validProperties(validProperties,
         ABOVE_BYTES_PROP, ABOVE_DOCS_PROP, BELOW_BYTES_PROP, BELOW_DOCS_PROP,
-        COLLECTIONS_PROP, MAX_OPS_PROP, SPLIT_METHOD_PROP, SPLIT_FUZZ_PROP);
+        COLLECTIONS_PROP, MAX_OPS_PROP, SPLIT_METHOD_PROP, SPLIT_FUZZ_PROP, SPLIT_BY_PREFIX);
   }
 
   @Override
@@ -176,11 +178,10 @@ public class IndexSizeTrigger extends TriggerBase {
     } catch (Exception e) {
       throw new TriggerValidationException(getName(), MAX_OPS_PROP, "invalid value: '" + maxOpsStr + "': " + e.getMessage());
     }
-    String methodStr = (String)properties.getOrDefault(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.LINK.toLower());
+    String methodStr = (String)properties.getOrDefault(SPLIT_METHOD_PROP, SolrIndexSplitter.SplitMethod.LINK.toLower());
     splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
     if (splitMethod == null) {
-      throw new TriggerValidationException(getName(), SPLIT_METHOD_PROP, "Unknown value '" + CommonAdminParams.SPLIT_METHOD +
-          ": " + methodStr);
+      throw new TriggerValidationException(getName(), SPLIT_METHOD_PROP, "unrecognized value of: '" + methodStr + "'");
     }
     String fuzzStr = String.valueOf(properties.getOrDefault(SPLIT_FUZZ_PROP, 0.0f));
     try {
@@ -188,6 +189,19 @@ public class IndexSizeTrigger extends TriggerBase {
     } catch (Exception e) {
       throw new TriggerValidationException(getName(), SPLIT_FUZZ_PROP, "invalid value: '" + fuzzStr + "': " + e.getMessage());
     }
+    String splitByPrefixStr = String.valueOf(properties.getOrDefault(SPLIT_BY_PREFIX, false));
+    try {
+      splitByPrefix = getValidBool(splitByPrefixStr);
+    } catch (Exception e) {
+      throw new TriggerValidationException(getName(), SPLIT_BY_PREFIX, "invalid value: '" + splitByPrefixStr + "': " + e.getMessage());
+    }
+  }
+  
+  private boolean getValidBool(String str) throws Exception {
+    if (str != null && (str.toLowerCase().equals("true") || str.toLowerCase().equals("false"))) {
+      return Boolean.parseBoolean(str);
+    }
+    throw new IllegalArgumentException("Expected a valid boolean value but got " + str);
   }
 
   @Override
@@ -430,10 +444,11 @@ public class IndexSizeTrigger extends TriggerBase {
         TriggerEvent.Op op = new TriggerEvent.Op(aboveOp);
         op.addHint(Suggester.Hint.COLL_SHARD, new Pair<>(coll, r.getShard()));
         Map<String, Object> params = new HashMap<>();
-        params.put(CommonAdminParams.SPLIT_METHOD, splitMethod.toLower());
+        params.put(SPLIT_METHOD_PROP, splitMethod.toLower());
         if (splitFuzz > 0) {
-          params.put(CommonAdminParams.SPLIT_FUZZ, splitFuzz);
+          params.put(SPLIT_FUZZ_PROP, splitFuzz);
         }
+        params.put(SPLIT_BY_PREFIX, splitByPrefix);
         op.addHint(Suggester.Hint.PARAMS, params);
         ops.add(op);
         Long time = lastAboveEventMap.get(r.getCore());
