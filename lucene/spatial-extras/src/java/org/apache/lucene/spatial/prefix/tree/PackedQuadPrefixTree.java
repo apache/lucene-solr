@@ -60,7 +60,9 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
   public static class Factory extends QuadPrefixTree.Factory {
     @Override
     protected SpatialPrefixTree newSPT() {
-      return new PackedQuadPrefixTree(ctx, maxLevels != null ? maxLevels : MAX_LEVELS_POSSIBLE);
+      PackedQuadPrefixTree tree = new PackedQuadPrefixTree(ctx, maxLevels != null ? maxLevels : MAX_LEVELS_POSSIBLE);
+      tree.robust = robust;
+      return tree;
     }
   }
 
@@ -83,6 +85,11 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
 
   @Override
   public Cell getCell(Point p, int level) {
+    if (!robust){
+      List<Cell> cells = new ArrayList<>(1);
+      build(xmid, ymid, 0, cells, 0x0L, ctx.makePoint(p.getX(), p.getY()), level);
+      return cells.get(0);//note cells could be longer if p on edge
+    }
     double currentXmid = xmid;
     double currentYmid = ymid;
     double xp = p.getX();
@@ -118,7 +125,45 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
     }
     return new PackedQuadCell(term, rel);
   }
-  
+
+  protected void build(double x, double y, int level, List<Cell> matches, long term, Shape shape, int maxLevel) {
+    double w = levelW[level] / 2;
+    double h = levelH[level] / 2;
+
+    // Z-Order
+    // http://en.wikipedia.org/wiki/Z-order_%28curve%29
+    checkBattenberg(QUAD[0], x - w, y + h, level, matches, term, shape, maxLevel);
+    checkBattenberg(QUAD[1], x + w, y + h, level, matches, term, shape, maxLevel);
+    checkBattenberg(QUAD[2], x - w, y - h, level, matches, term, shape, maxLevel);
+    checkBattenberg(QUAD[3], x + w, y - h, level, matches, term, shape, maxLevel);
+  }
+
+  protected void checkBattenberg(byte quad, double cx, double cy, int level, List<Cell> matches,
+                                 long term, Shape shape, int maxLevel) {
+    // short-circuit if we find a match for the point (no need to continue recursion)
+    if (shape instanceof Point && !matches.isEmpty())
+      return;
+    double w = levelW[level] / 2;
+    double h = levelH[level] / 2;
+
+    SpatialRelation v = shape.relate(ctx.makeRectangle(cx - w, cx + w, cy - h, cy + h));
+
+    if (SpatialRelation.DISJOINT == v) {
+      return;
+    }
+
+    // set bits for next level
+    term |= (((long)(quad))<<(64-(++level<<1)));
+    // increment level
+    term = ((term>>>1)+1)<<1;
+
+    if (SpatialRelation.CONTAINS == v || (level >= maxLevel)) {
+      matches.add(new PackedQuadCell(term, v.transpose()));
+    } else {// SpatialRelation.WITHIN, SpatialRelation.INTERSECTS
+      build(cx, cy, level, matches, term, shape, maxLevel);
+    }
+  }
+
   @Override
   public Cell readCell(BytesRef term, Cell scratch) {
     PackedQuadCell cell = (PackedQuadCell) scratch;
