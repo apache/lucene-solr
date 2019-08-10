@@ -20,6 +20,7 @@ package org.apache.solr.util;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -72,6 +73,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     String fields;
     long limit = 100;
     long docsWritten = 0;
+    PrintStream output;
     //for testing purposes only
     public SolrClient solrClient;
 
@@ -135,6 +137,8 @@ public class ExportTool extends SolrCLI.ToolBase {
         String cursorMark = CursorMarkParams.CURSOR_MARK_START;
         boolean done = false;
         StreamingResponseCallback streamer = getStreamer(sink);
+
+        if(output!= null) output.println("Exporting data to : "+ out);
         while (!done) {
           if (docsWritten >= limit) break;
           QueryRequest request = new QueryRequest(q);
@@ -146,7 +150,9 @@ public class ExportTool extends SolrCLI.ToolBase {
             break;
           }
           cursorMark = nextCursorMark;
+          if(output!= null) output.print(".");
         }
+        if(output!= null) output.println("\n DONE!");
       } finally {
         sink.end();
         solrClient.close();
@@ -184,6 +190,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     info.setOutFormat(cli.getOptionValue("out"), cli.getOptionValue("format"));
     info.fields = cli.getOptionValue("fields");
     info.setLimit(cli.getOptionValue("limit", "100"));
+    info.output = super.stdout;
     info.exportDocsWithCursorMark();
   }
 
