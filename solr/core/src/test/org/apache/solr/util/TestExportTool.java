@@ -19,8 +19,9 @@ package org.apache.solr.util;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.lucene.util.TestUtil;
@@ -79,7 +80,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
       assertTrue(info.docsWritten >= 200);
       JsonRecordReader jsonReader = JsonRecordReader.getInst("/", Arrays.asList("$FQN:/**"));
-      Reader rdr = new FileReader(absolutePath);
+      Reader rdr = new InputStreamReader(new FileInputStream( absolutePath), StandardCharsets.UTF_8);
       try {
         int[] count = new int[]{0};
         jsonReader.streamRecords(rdr, (record, path) -> count[0]++);
@@ -97,7 +98,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
       assertTrue(info.docsWritten >= 1000);
       jsonReader = JsonRecordReader.getInst("/", Arrays.asList("$FQN:/**"));
-      rdr = new FileReader(absolutePath);
+      rdr = new InputStreamReader(new FileInputStream( absolutePath), StandardCharsets.UTF_8);
       try {
         int[] count = new int[]{0};
         jsonReader.streamRecords(rdr, (record, path) -> count[0]++);

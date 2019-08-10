@@ -889,7 +889,7 @@ Export all documents from a collection `gettingstarted` to a file called `gettin
 
 `bin/solr export -url http://localhost:8983/solr/gettingstarted limit -1`
 
-=== Arguments
+*Arguments*
 
 * `format` : `jsonl` (default) or `javabin`. `format=javabin` exports to a file with extension `.javabin` which is the native Solr format. This is compact & faster to import
 * `out` : export file name

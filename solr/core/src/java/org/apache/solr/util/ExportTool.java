@@ -21,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -248,7 +249,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
-      writer = FastWriter.wrap(new OutputStreamWriter(fos));
+      writer = FastWriter.wrap(new OutputStreamWriter(fos, StandardCharsets.UTF_8));
       jsonw = new SolrJSONWriter(writer);
       jsonw.setIndent(false);
 
