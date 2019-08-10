@@ -70,7 +70,108 @@ public class ExportTool extends SolrCLI.ToolBase {
     String coll;
     String out;
     String fields;
-    long limit;
+    long limit = 100;
+    long docsWritten = 0;
+    //for testing purposes only
+    public SolrClient solrClient;
+
+
+    public Info(String url) {
+      setUrl(url);
+      setOutFormat(null, "jsonl");
+
+    }
+
+    public void setUrl(String url) {
+      int idx = url.lastIndexOf('/');
+      baseurl = url.substring(0, idx);
+      coll = url.substring(idx + 1);
+      query = "*:*";
+    }
+
+    public void setLimit(String maxDocsStr) {
+      limit = Long.parseLong(maxDocsStr);
+      if (limit == -1) limit = Long.MAX_VALUE;
+    }
+
+    public void setOutFormat(String out, String format) {
+      this.format = format;
+      if (format == null) format = "jsonl";
+      if (!formats.contains(format)) {
+        throw new IllegalArgumentException("format must be one of :" + formats);
+      }
+
+      this.out = out;
+      if (this.out == null) {
+        this.out = JAVABIN.equals(format) ?
+            coll + ".javabin" :
+            coll + ".json";
+      }
+
+    }
+
+    DocsSink getSink() {
+      return JAVABIN.equals(format) ? new JavabinSink(this) : new JsonSink(this);
+    }
+
+    void exportDocsWithCursorMark() throws SolrServerException, IOException {
+      DocsSink sink = getSink();
+      solrClient = new CloudSolrClient.Builder(Collections.singletonList(baseurl)).build();
+      NamedList<Object> rsp1 = solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/schema/uniquekey",
+          new MapSolrParams(Collections.singletonMap("collection", coll))));
+      String uniqueKey = (String) rsp1.get("uniqueKey");
+
+      sink.start();
+      try {
+        NamedList<Object> rsp;
+        SolrQuery q = (new SolrQuery(query))
+            .setParam("collection", coll)
+            .setRows(100)
+            .setSort(SolrQuery.SortClause.asc(uniqueKey));
+        if (fields != null) {
+          q.setParam(FL, fields);
+        }
+
+        String cursorMark = CursorMarkParams.CURSOR_MARK_START;
+        boolean done = false;
+        StreamingResponseCallback streamer = getStreamer(sink);
+        while (!done) {
+          if (docsWritten >= limit) break;
+          QueryRequest request = new QueryRequest(q);
+          request.setResponseParser(new StreamingBinaryResponseParser(streamer));
+          q.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+          rsp = solrClient.request(request);
+          String nextCursorMark = (String) rsp.get(CursorMarkParams.CURSOR_MARK_NEXT);
+          if (nextCursorMark == null || Objects.equals(cursorMark, nextCursorMark)) {
+            break;
+          }
+          cursorMark = nextCursorMark;
+        }
+      } finally {
+        sink.end();
+        solrClient.close();
+
+      }
+    }
+
+    private StreamingResponseCallback getStreamer(DocsSink sink) {
+      return new StreamingResponseCallback() {
+        @Override
+        public void streamSolrDocument(SolrDocument doc) {
+          try {
+            sink.accept(doc);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+          docsWritten++;
+        }
+
+        @Override
+        public void streamDocListInfo(long numFound, long start, Float maxScore) {
+
+        }
+      };
+    }
 
   }
 
@@ -78,25 +179,12 @@ public class ExportTool extends SolrCLI.ToolBase {
 
   @Override
   protected void runImpl(CommandLine cli) throws Exception {
-    Info info = new Info();
-    String url = cli.getOptionValue("url");
-    info.format = cli.getOptionValue("format", "jsonl");
-    if (!formats.contains(info.format)) {
-      throw new IllegalArgumentException("format must be one of :" + formats);
-    }
+    Info info = new Info(cli.getOptionValue("url"));
     info.query = cli.getOptionValue("query", "*:*");
+    info.setOutFormat(cli.getOptionValue("out"), cli.getOptionValue("format"));
     info.fields = cli.getOptionValue("fields");
-    int idx = url.lastIndexOf('/');
-    info.baseurl = url.substring(0, idx);
-    info.coll = url.substring(idx + 1);
-    info.out = cli.getOptionValue("out",
-        JAVABIN.equals(info.format) ? info.coll + ".javabin" : info.coll + ".json");
-
-    String maxDocsStr = cli.getOptionValue("limit", "100");
-    info.limit = Long.parseLong(maxDocsStr);
-    if (info.limit == -1) info.limit = Long.MAX_VALUE;
-    DocsSink sink = JAVABIN.equals(info.format) ? new JavabinSink(info) : new JsonSink(info);
-    streamDocsWithCursorMark(info, sink);
+    info.setLimit(cli.getOptionValue("limit", "100"));
+    info.exportDocsWithCursorMark();
   }
 
   interface DocsSink {
@@ -105,61 +193,6 @@ public class ExportTool extends SolrCLI.ToolBase {
     void accept(SolrDocument document) throws IOException;
 
     void end() throws IOException;
-  }
-
-  private static void streamDocsWithCursorMark(Info info,
-                                               DocsSink sink) throws SolrServerException, IOException {
-    SolrClient solrClient = new CloudSolrClient.Builder(Collections.singletonList(info.baseurl)).build();
-    long[] docsWritten = new long[]{0};
-    NamedList<Object> rsp1 = solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/schema/uniquekey",
-        new MapSolrParams(Collections.singletonMap("collection", info.coll))));
-    String uniqueKey = (String) rsp1.get("uniqueKey");
-
-    sink.start();
-    try {
-      NamedList<Object> rsp;
-      SolrQuery q = (new SolrQuery(info.query))
-          .setParam("collection", info.coll)
-          .setRows(100)
-          .setSort(SolrQuery.SortClause.asc(uniqueKey));
-      if (info.fields != null) {
-        q.setParam(FL, info.fields);
-      }
-
-      String cursorMark = CursorMarkParams.CURSOR_MARK_START;
-      boolean done = false;
-      while (!done) {
-        if (docsWritten[0] >= info.limit) break;
-        QueryRequest request = new QueryRequest(q);
-
-        request.setResponseParser(new StreamingBinaryResponseParser(new StreamingResponseCallback() {
-          @Override
-          public void streamSolrDocument(SolrDocument doc) {
-            try {
-              sink.accept(doc);
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
-            docsWritten[0]++;
-          }
-
-          @Override
-          public void streamDocListInfo(long numFound, long start, Float maxScore) {
-
-          }
-        }));
-        q.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-        rsp = solrClient.request(request);
-        String nextCursorMark = (String) rsp.get(CursorMarkParams.CURSOR_MARK_NEXT);
-        if (nextCursorMark == null || Objects.equals(cursorMark, nextCursorMark)) {
-          break;
-        }
-        cursorMark = nextCursorMark;
-      }
-    } finally {
-      sink.end();
-
-    }
   }
 
   private static final Option[] OPTIONS = {
