@@ -160,6 +160,8 @@ Other Changes
 
 * SOLR-13659: Refactor CacheConfig to lazily load the the implementation class (noble)
 
+* SOLR-13680: Use try-with-resource to close the closeable resource (Furkan KAMACI, Munendra S N)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

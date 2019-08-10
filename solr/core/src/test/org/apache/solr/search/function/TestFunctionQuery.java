@@ -51,10 +51,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   void makeExternalFile(String field, String contents) {
     String dir = h.getCore().getDataDir();
     String filename = dir + "/external_" + field + "." + (start++);
-    try {
-      Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8);
+
+    try (Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {
       out.write(contents);
-      out.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

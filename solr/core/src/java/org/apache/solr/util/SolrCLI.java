@@ -568,14 +568,15 @@ public class SolrCLI implements CLIO {
     if (path.startsWith("file:") && path.contains("!")) {
       String[] split = path.split("!");
       URL jar = new URL(split[0]);
-      ZipInputStream zip = new ZipInputStream(jar.openStream());
-      ZipEntry entry;
-      while ((entry = zip.getNextEntry()) != null) {
-        if (entry.getName().endsWith(".class")) {
-          String className = entry.getName().replaceAll("[$].*", "")
-              .replaceAll("[.]class", "").replace('/', '.');
-          if (className.startsWith(packageName))
-            classes.add(className);
+      try (ZipInputStream zip = new ZipInputStream(jar.openStream())) {
+        ZipEntry entry;
+        while ((entry = zip.getNextEntry()) != null) {
+          if (entry.getName().endsWith(".class")) {
+            String className = entry.getName().replaceAll("[$].*", "")
+                .replaceAll("[.]class", "").replace('/', '.');
+            if (className.startsWith(packageName))
+              classes.add(className);
+          }
         }
       }
     }
