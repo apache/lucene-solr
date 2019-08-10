@@ -164,6 +164,8 @@ Other Changes
 
 * SOLR-13680: Use try-with-resource to close the closeable resource (Furkan KAMACI, Munendra S N)
 
+* SOLR-13573: Add SolrRangeQuery getters for upper, lower bound (Brian Rhees via Jason Gerlowski)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

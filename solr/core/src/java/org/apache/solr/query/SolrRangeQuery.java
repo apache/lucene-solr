@@ -80,6 +80,9 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     return field;
   }
 
+  public BytesRef getLower() { return lower; }
+  public BytesRef getUpper() { return upper; }
+
   public boolean includeLower() {
     return (flags & FLAG_INC_LOWER) != 0;
   }
