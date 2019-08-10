@@ -107,6 +107,8 @@ New Features
 * SOLR-11866: QueryElevationComponent can have query rules configured with match="subset" wherein the words need only
   match a subset of the query's words and in any order.  (Bruno Roustant via David Smiley)
 
+* SOLR-13682: command line option to export documents to a file (noble)
+
 Improvements
 ----------------------
 
