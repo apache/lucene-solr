@@ -22,8 +22,13 @@ API Changes
   byte[] that stores the UTF-8 bytes of the stored string.
   (Namgyu Kim via Adrien Grand)
 
-* LUCENE-8811: Deprecated BooleanQuery#setMaxClauseCount() and getMaxClauseCount
-  have been removed (Atri Sharma, Adrien Grand, Alan Woodward)
+* LUCENE-8811: BooleanQuery#setMaxClauseCount() and #getMaxClauseCount() have
+  moved to IndexSearcher. The checks are now implemented using a QueryVisitor
+  and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
+  Grand, Alan Woodward)
+
+* LUCENE-8909: The deprecated IndexWriter#getFieldNames() method has been removed.
+  (Adrien Grand, Munendra S N)
 
 * LUCENE-8948: Change "name" argument in ICU factories to "form". Here, "form" is
   named after "Unicode Normalization Form". (Tomoko Uchida)
@@ -38,6 +43,9 @@ Improvements
   docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
   indices (Atri Sharma, Adrien Grand, Simon Willnauer)
 
+* LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
+  (Adrien Gallou via Tomoko Uchida)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -47,6 +55,58 @@ Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
+======================= Lucene 8.3.0 =======================
+
+API Changes
+
+* LUCENE-8909: IndexWriter#getFieldNames() method is used to get fields present in index. After LUCENE-8316, this
+  method is no longer required. Hence, deprecate IndexWriter#getFieldNames() method. (Adrien Grand, Munendra S N)
+
+New Features
+
+* LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)
+
+* LUCENE-8764: Add "export all terms" feature to Luke. (Leonardo Menezes via Tomoko Uchida)
+
+* LUCENE-8747: Composite Matches from multiple subqueries now allow access to
+  their submatches, and a new NamedMatches API allows marking of subqueries
+  and a simple way to find which subqueries have matched on a given document
+  (Alan Woodward, Jim Ferenczi)
+
+Improvements
+
+* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
+
+* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
+
+* LUCENE-8914: move the logic for discarding inner modes to the IntersectVisitor so we take advantage
+  of the change introduced in LUCENE-7862. (Ignacio Vera)
+
+* LUCENE-8918: PhraseQuery throws exceptions at construction time if it is passed
+  null arguments. (Alan Woodward)
+
+* LUCENE-8916: GraphTokenStreamFiniteStrings preserves all Token attributes
+  through its finite strings TokenStreams (Alan Woodward)
+
+* LUCENE-8906: Expose Lucene50PostingsFormat.IntBlockTermState as public so that other postings formats can re-use it.
+  (Bruno Roustant)
+
+Optimizations
+
+* LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
+  non-competitive hits. (Adrien Grand)
+
+* LUCENE-8935: BooleanQuery with no scoring clause can now early terminate the query when
+the total hits is not requested.
+
+* LUCENE-8941: Matches on wildcard queries will defer building their full
+  disjunction until a MatchesIterator is pulled (Alan Woodward)
+
+Other
+
+* LUCENE-8778 LUCENE-8911: Define analyzer SPI names as static final fields and document the names in Javadocs.
+  (Tomoko Uchida, Uwe Schindler)
+
 ======================= Lucene 8.2.0 =======================
 
 API Changes
@@ -55,11 +115,6 @@ API Changes
   This change is fully backwards compatible since ExecutorService directly
   implements Executor. (Simon Willnauer)
 
-* LUCENE-8811: BooleanQuery#setMaxClauseCount() and #getMaxClauseCount() have
-  moved to IndexSearcher. The checks are now implemented using a QueryVisitor
-  and apply to all queries, rather than only booleans. (Atri Sharma, Adrien
-  Grand, Alan Woodward)
-
 * LUCENE-8856: Intervals queries have moved from the sandbox to the queries
   module. (Alan Woodward)
 
@@ -67,6 +122,9 @@ API Changes
   BytesRef rather than String. (Alan Woodward)
 
 New Features
+
+* LUCENE-8632: New XYShape Field and Queries for indexing and searching general cartesian
+  geometries. (Nick Knize)
 
 * LUCENE-8891: Snowball stemmer/analyzer for the Estonian language.
  (Gert Morten Paimla via Tomoko Uchida)
@@ -143,6 +201,9 @@ Improvements
 * LUCENE-8845: Allow Intervals.prefix() and Intervals.wildcard() to specify
   their maximum allowed expansions (Alan Woodward)
 
+* LUCENE-8875: Introduce a Collector optimized for use cases when large
+  number of hits are requested (Atri Sharma)
+
 * LUCENE-8848 LUCENE-7757 LUCENE-8492: The UnifiedHighlighter now detects that parts of the query are not understood by
   it, and thus it should not make optimizations that result in no highlights or slow highlighting.  This generally works
   best for WEIGHT_MATCHES mode.  Consequently queries produced by ComplexPhraseQueryParser and the surround QueryParser
@@ -150,11 +211,7 @@ Improvements
 
 * LUCENE-8793: Luke enhanced UI for CustomAnalyzer: show detailed analysis steps. (Jun Ohtani via Tomoko Uchida)
 
-* LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
-
 * LUCENE-8855: Add Accountable to some Query implementations (ab, Adrien Grand)
-
-* LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
 
 Optimizations
 
@@ -178,6 +235,11 @@ Optimizations
 * LUCENE-8901: Load frequencies lazily only when needed in BlockDocsEnum and
   BlockImpactsEverythingEnum (Mayya Sharipova).
 
+* LUCENE-8888: Optimize distribution of points with data dimensions in
+  BKD tree leaves. (Ignacio Vera)
+
+* LUCENE-8311: Phrase queries now leverage impacts. (Adrien Grand)
+
 Test Framework
 
 * LUCENE-8825: CheckHits now display the shard index in case of mismatch
@@ -191,9 +253,6 @@ Other
 * LUCENE-8861: Script to find open Github PRs that needs attention (janhoy)
 
 * LUCENE-8852: ReleaseWizard tool for release managers (janhoy)
-
-* LUCENE-8778: Define analyzer SPI names as static final fields and document the names in Javadocs.
-  (Tomoko Uchida, Uwe Schindler)
 
 * LUCENE-8838: Remove support for Steiner points on Tessellator. (Ignacio Vera)
 
