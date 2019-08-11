@@ -70,7 +70,6 @@ import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
@@ -697,8 +696,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     boolean assertClosed = random().nextBoolean();
     if (assertClosed) {
       byte[] allBytes = Files.readAllBytes(file.toPath());
-      
-      ContentStream contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
+
+      ContentStreamBase.ByteArrayStream contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
         @Override
         public InputStream getStream() throws IOException {
           opened [0]++;

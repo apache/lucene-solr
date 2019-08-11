@@ -114,6 +114,8 @@ Other Changes
 
 * SOLR-13573: Add SolrRangeQuery getters for upper, lower bound (Brian Rhees via Jason Gerlowski)
 
+* SOLR-13658: Precommit fail Java "var" until 9x. Fail "var...<>" constructs entirely (Erick Erickson)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
