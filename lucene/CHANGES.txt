@@ -25,6 +25,9 @@ API Changes
 * LUCENE-8811: Deprecated BooleanQuery#setMaxClauseCount() and getMaxClauseCount
   have been removed (Atri Sharma, Adrien Grand, Alan Woodward)
 
+* LUCENE-8948: Change "name" argument in ICU factories to "form". Here, "form" is
+  named after "Unicode Normalization Form". (Tomoko Uchida)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
