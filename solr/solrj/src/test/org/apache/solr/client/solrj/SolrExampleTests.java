@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj;
 
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -688,15 +689,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    var file = getFile("solrj/books.csv");
+    File file = getFile("solrj/books.csv");
     final int opened[] =  new int[] {0};
     final int closed[] =  new int[] {0};
 
-    var assertClosed = random().nextBoolean();
+    boolean assertClosed = random().nextBoolean();
     if (assertClosed) {
-      var allBytes = Files.readAllBytes(file.toPath());
-      
-      var contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
+      byte[] allBytes = Files.readAllBytes(file.toPath());
+
+      ContentStreamBase.ByteArrayStream contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
         @Override
         public InputStream getStream() throws IOException {
           opened [0]++;
