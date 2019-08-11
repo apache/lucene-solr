@@ -64,7 +64,8 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   @Test
   public void testQuadTreeRobustness() {
     assertU(adoc("id", "0", "oslocation", "244502.06 639062.07"));
-    assertFailedU(adoc("id", "0", "oslocationold", "244502.06 639062.07"));
+    // old (pre 8.3.0) still works
+    assertU(adoc("id", "0", "oslocationold", "244502.06 639062.07"));
   }
 
   @Test

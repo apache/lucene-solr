@@ -68,25 +68,24 @@ public abstract class SpatialPrefixTreeFactory {
         throw new RuntimeException(e);
       }
     }
-    try {
-      instance.init(args, ctx);
-    }catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    instance.init(args, ctx);
     return instance.newSPT();
   }
 
-  protected void init(Map<String, String> args, SpatialContext ctx) throws ParseException {
+  protected void init(Map<String, String> args, SpatialContext ctx) {
     this.args = args;
     this.ctx = ctx;
+    initVersion();
     initMaxLevels();
-    intVersion();
   }
 
-  protected void intVersion() throws ParseException {
+  protected void initVersion() {
     String versionStr = args.get(VERSION);
-    Version version = versionStr == null ? Version.LATEST : Version.parseLeniently(versionStr);
-    setVersion(version);
+    try {
+      setVersion(versionStr == null ? Version.LATEST : Version.parseLeniently(versionStr));
+    } catch (ParseException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   protected void initMaxLevels() {
