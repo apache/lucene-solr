@@ -30,6 +30,9 @@ API Changes
 * LUCENE-8909: The deprecated IndexWriter#getFieldNames() method has been removed.
   (Adrien Grand, Munendra S N)
 
+* LUCENE-8948: Change "name" argument in ICU factories to "form". Here, "form" is
+  named after "Unicode Normalization Form". (Tomoko Uchida)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
