@@ -22,6 +22,13 @@ public interface ResourceManagerPool extends Runnable, Closeable {
   /** Remove named component from this pool. */
   boolean unregisterComponent(String componentId);
 
+  /**
+   * Check whether a named component is registered in this pool.
+   * @param componentId component id
+   * @return true if the component with this name is registered, false otherwise.
+   */
+  boolean isRegistered(String componentId);
+
   /** Get components managed by this pool. */
   Map<String, ManagedComponent> getComponents();
 

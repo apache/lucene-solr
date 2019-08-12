@@ -178,15 +178,16 @@ public class DefaultResourceManager extends ResourceManager {
     if (pool == null) {
       throw new IllegalArgumentException("Pool '" + name + "' doesn't exist.");
     }
-    String type = pool.getType();
+    String poolType = pool.getType();
     resourcePools.forEach((poolName, otherPool) -> {
       if (otherPool == pool) {
         return;
       }
-      if (otherPool.getType().equals(type)) {
+      if (otherPool.isRegistered(managedComponent.getManagedComponentId().toString()) &&
+          otherPool.getType().equals(poolType)) {
         throw new IllegalArgumentException("Resource " + managedComponent.getManagedComponentId() +
             " is already managed in another pool (" +
-            otherPool.getName() + ") of the same type " + type);
+            otherPool.getName() + ") of the same type " + poolType);
       }
     });
     pool.registerComponent(managedComponent);

@@ -105,6 +105,11 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   }
 
   @Override
+  public boolean isRegistered(String componentId) {
+    return components.containsKey(componentId);
+  }
+
+  @Override
   public Map<String, ManagedComponent> getComponents() {
     return Collections.unmodifiableMap(components);
   }
