@@ -150,6 +150,13 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return result;
   }
 
+  /**
+   * {@inheritDoc}
+   * <p>
+   * Extends {@link SearchGroupsResultTransformer} and overrides the <code>serializeOneSearchGroup</code>,
+   * <code>deserializeOneSearchGroup</code> and <code>getSortValues</code> methods because additional data
+   * (top doc id and top doc score) needs to be transformed for each group.
+   */
   public static class SkipSecondStepSearchResultResultTransformer extends SearchGroupsResultTransformer {
 
     private static final String TOP_DOC_SOLR_ID_KEY = "topDocSolrId";
