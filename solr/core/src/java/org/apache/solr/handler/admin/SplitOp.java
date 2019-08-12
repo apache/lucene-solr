@@ -30,6 +30,7 @@ import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.SolrException;
@@ -385,8 +386,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
       // compare to current prefix bucket and see if this new term shares the same prefix
       if (term != null && term.length >= currPrefix.length && currPrefix.length > 0) {
-        BytesRef termPrefix = new BytesRef(term.bytes, term.offset, currPrefix.length);
-        if (termPrefix.bytesEquals(currPrefix)) {
+        if (StringHelper.startsWith(term, currPrefix)) {
           bucketCount++;  // use 1 since we are dealing with unique ids
           continue;
         }

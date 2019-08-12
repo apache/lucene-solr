@@ -251,18 +251,18 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     File lib = new File(tmpRoot.toFile(), "lib");
     lib.mkdirs();
 
-    JarOutputStream jar1 = new JarOutputStream(new FileOutputStream(new File(lib, "jar1.jar")));
-    jar1.putNextEntry(new JarEntry("defaultSharedLibFile"));
-    jar1.closeEntry();
-    jar1.close();
+    try (JarOutputStream jar1 = new JarOutputStream(new FileOutputStream(new File(lib, "jar1.jar")))) {
+      jar1.putNextEntry(new JarEntry("defaultSharedLibFile"));
+      jar1.closeEntry();
+    }
 
     File customLib = new File(tmpRoot.toFile(), "customLib");
     customLib.mkdirs();
 
-    JarOutputStream jar2 = new JarOutputStream(new FileOutputStream(new File(customLib, "jar2.jar")));
-    jar2.putNextEntry(new JarEntry("customSharedLibFile"));
-    jar2.closeEntry();
-    jar2.close();
+    try (JarOutputStream jar2 = new JarOutputStream(new FileOutputStream(new File(customLib, "jar2.jar")))) {
+      jar2.putNextEntry(new JarEntry("customSharedLibFile"));
+      jar2.closeEntry();
+    }
 
     final CoreContainer cc1 = init(tmpRoot, "<solr></solr>");
     try {

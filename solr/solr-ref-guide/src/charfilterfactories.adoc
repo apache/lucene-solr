@@ -116,7 +116,7 @@ This filter performs pre-tokenization Unicode normalization using http://site.ic
 
 Arguments:
 
-`name`:: A http://unicode.org/reports/tr15/[Unicode Normalization Form], one of `nfc`, `nfkc`, `nfkc_cf`. Default is `nfkc_cf`.
+`form`:: A http://unicode.org/reports/tr15/[Unicode Normalization Form], one of `nfc`, `nfkc`, `nfkc_cf`. Default is `nfkc_cf`.
 
 `mode`:: Either `compose` or `decompose`. Default is `compose`. Use `decompose` with `name="nfc"` or `name="nfkc"` to get NFD or NFKD, respectively.
 
