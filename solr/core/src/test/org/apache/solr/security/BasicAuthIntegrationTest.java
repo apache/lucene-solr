@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -347,32 +346,16 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     update.commit(cluster.getSolrClient(), COLLECTION);
   }
 
-  /** @see #executeCommand */
-  private static Map<String,Object> getAuthPlugins(String url) {
-    Map<String,Object> plugins = new HashMap<>();
-    if (url.endsWith("authentication")) {
-      for (JettySolrRunner r : cluster.getJettySolrRunners()) {
-        plugins.put(r.getNodeName(), r.getCoreContainer().getAuthenticationPlugin());
-      }
-    } else if (url.endsWith("authorization")) {
-      for (JettySolrRunner r : cluster.getJettySolrRunners()) {
-        plugins.put(r.getNodeName(), r.getCoreContainer().getAuthorizationPlugin());
-      }
-    } else {
-      fail("Test helper method assumptions broken: " + url);
-    }
-    return plugins;
-  }
-  
   public static void executeCommand(String url, HttpClient cl, String payload,
                                     String user, String pwd) throws Exception {
 
-    // HACK: (attempted) work around for SOLR-13464...
+    // HACK: work around for SOLR-13464...
     //
     // note the authz/authn objects in use on each node before executing the command,
     // then wait until we see new objects on every node *after* executing the command
     // before returning...
-    final Set<Map.Entry<String,Object>> initialPlugins = getAuthPlugins(url).entrySet();
+    final Set<Map.Entry<String,Object>> initialPlugins
+      = getAuthPluginsInUseForCluster(url).entrySet();
     
     HttpPost httpPost;
     HttpResponse r;
@@ -387,10 +370,11 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     Utils.consumeFully(r.getEntity());
 
     // HACK (continued)...
-    final TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     timeout.waitFor("core containers never fully updated their auth plugins",
                     () -> {
-                      final Set<Map.Entry<String,Object>> tmpSet = getAuthPlugins(url).entrySet();
+                      final Set<Map.Entry<String,Object>> tmpSet
+                        = getAuthPluginsInUseForCluster(url).entrySet();
                       tmpSet.retainAll(initialPlugins);
                       return tmpSet.isEmpty();
                     });
