@@ -114,6 +114,9 @@ Setting this parameter to a number greater than 0 enables caching for result gro
 +
 Testing has shown that group caching only improves search time with Boolean, wildcard, and fuzzy queries. For simple queries like term or "match all" queries, group caching degrades performance.
 
+`group.skip.second.step`::
+If `true`, ... details, conditions, caveats to follow ... The default value is `false`.
+
 Any number of group commands (e.g., `group.field`, `group.func`, `group.query`, etc.) may be specified in a single request.
 
 == Grouping Examples
