@@ -32,12 +32,13 @@ import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchGroupsResultTransformer;
+import org.apache.solr.search.grouping.distributed.shardresultserializer.SkipSecondStepSearchResultResultTransformer;
 
 public class SkipSecondStepSearchGroupShardResponseProcessor extends SearchGroupShardResponseProcessor {
 
   @Override
   protected SearchGroupsResultTransformer newSearchGroupsResultTransformer(SolrIndexSearcher solrIndexSearcher) {
-    return new SearchGroupsResultTransformer.SkipSecondStepSearchResultResultTransformer(solrIndexSearcher);
+    return new SkipSecondStepSearchResultResultTransformer(solrIndexSearcher);
   }
 
   @Override
@@ -122,3 +123,4 @@ public class SkipSecondStepSearchGroupShardResponseProcessor extends SearchGroup
   }
 
 }
+

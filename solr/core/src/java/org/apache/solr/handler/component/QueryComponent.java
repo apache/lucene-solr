@@ -103,6 +103,7 @@ import org.apache.solr.search.grouping.distributed.responseprocessor.SkipSecondS
 import org.apache.solr.search.grouping.distributed.responseprocessor.StoredFieldsShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.responseprocessor.TopGroupsShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchGroupsResultTransformer;
+import org.apache.solr.search.grouping.distributed.shardresultserializer.SkipSecondStepSearchResultResultTransformer;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.TopGroupsResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.EndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.GroupedEndResultTransformer;
@@ -1300,7 +1301,7 @@ public class QueryComponent extends SearchComponent
 
   protected SearchGroupsResultTransformer newSearchGroupsResultTransformer(ResponseBuilder rb, SolrIndexSearcher searcher) {
     if (rb.getGroupingSpec().isSkipSecondGroupingStep()) {
-      return new SearchGroupsResultTransformer.SkipSecondStepSearchResultResultTransformer(searcher);
+      return new SkipSecondStepSearchResultResultTransformer(searcher);
     } else {
       return new SearchGroupsResultTransformer(searcher);
     }
