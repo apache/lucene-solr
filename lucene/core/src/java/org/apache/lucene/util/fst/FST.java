@@ -197,6 +197,10 @@ public final class FST<T> implements Accountable {
       return flag(BIT_FINAL_ARC);
     }
 
+    public boolean isPackedArray() {
+      return bytesPerArc != 0 && arcIdx > Integer.MIN_VALUE;
+    }
+
     @Override
     public String toString() {
       StringBuilder b = new StringBuilder();
@@ -569,7 +573,6 @@ public final class FST<T> implements Accountable {
         return NON_FINAL_END_NODE;
       }
     }
-
     final long startAddress = builder.bytes.getPosition();
     //System.out.println("  startAddr=" + startAddress);
 
@@ -685,7 +688,6 @@ public final class FST<T> implements Accountable {
       int labelRange = nodeIn.arcs[nodeIn.numArcs - 1].label - nodeIn.arcs[0].label + 1;
       boolean writeDirectly = labelRange > 0 && labelRange < Builder.DIRECT_ARC_LOAD_FACTOR * nodeIn.numArcs;
 
-      //System.out.println("write int @pos=" + (fixedArrayStart-4) + " numArcs=" + nodeIn.numArcs);
       // create the header
       // TODO: clean this up: or just rewind+reuse and deal with it
       byte[] header = new byte[MAX_HEADER_SIZE];

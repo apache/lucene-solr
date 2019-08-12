@@ -38,23 +38,13 @@ public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {
       addAndGetVersion(sdoc("id", "1", "val_i", "42"), null);
       assertU(commit());
 
-      try {
-        ignoreException("updateLog");
-
-        // updating docs should fail
-        addAndGetVersion(sdoc("id", "1", "val_i", map("inc",-666)), null);
-        
-        fail("didn't get error about needing updateLog");
-      } catch (SolrException ex) {
-        assertEquals(400, ex.code());
-        // if the message doesn't match our expectation, wrap & rethrow
-        if (ex.getMessage().indexOf("unless <updateLog/> is configured") < 0) {
-          throw new RuntimeException("exception message is not expected", ex);
-        }
-      } finally {
-        resetExceptionIgnores();
-      }
-
+      // updating docs should fail
+      ignoreException("updateLog");
+      SolrException ex = expectThrows(SolrException.class,
+          () -> addAndGetVersion(sdoc("id", "1", "val_i", map("inc",-666)), null));
+      assertEquals(400, ex.code());
+      assertTrue(ex.getMessage().contains("unless <updateLog/> is configured"));
+      resetExceptionIgnores();
     } finally {
       System.clearProperty("enable.update.log");
       deleteCore();
@@ -68,30 +58,20 @@ public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {
       assertNotNull("this test requires an update chain named 'nodistrib'",
                     h.getCore().getUpdateProcessingChain("nodistrib")); 
 
-
       // creating docs should work fine
       addAndGetVersion(sdoc("id", "1", "val_i", "42"), 
                        params("update.chain","nodistrib"));
       assertU(commit());
 
-      try {
-        ignoreException("DistributedUpdateProcessorFactory");
-
-        // updating docs should fail
-        addAndGetVersion(sdoc("id", "1", "val_i", map("inc",-666)), 
-                         params("update.chain","nodistrib"));
-        
-        fail("didn't get error about needing DistributedUpdateProcessorFactory");
-      } catch (SolrException ex) {
-        assertEquals(400, ex.code());
-        // if the message doesn't match our expectation, wrap & rethrow
-        if (ex.getMessage().indexOf("DistributedUpdateProcessorFactory") < 0) {
-          throw new RuntimeException("exception message is not expected", ex);
-        }
-      } finally {
-        resetExceptionIgnores();
-      }
-
+      ignoreException("DistributedUpdateProcessorFactory");
+      // updating docs should fail
+      SolrException ex = expectThrows(SolrException.class, () -> {
+        addAndGetVersion(sdoc("id", "1", "val_i", map("inc",-666)),
+            params("update.chain","nodistrib"));
+      });
+      assertEquals(400, ex.code());
+      assertTrue(ex.getMessage().contains("DistributedUpdateProcessorFactory"));
+      resetExceptionIgnores();
     } finally {
       deleteCore();
     }
