@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
@@ -242,7 +243,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
    * <code>"authentication"</code> or <code>"authorization"</code> plugins in use each
    * node of the current cluster.
    * <p>
-   * This can be useful in a {@line TimeOut#waitFor} loop to monitor a cluster and "wait for"
+   * This can be useful in a {@link TimeOut#waitFor} loop to monitor a cluster and "wait for"
    * A change in security settings to affect all nodes by comparing the objects in the current 
    * Map with the one in use prior to executing some test command. (providing a work around 
    * for the security user experienence limitations identified in
