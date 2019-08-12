@@ -172,10 +172,16 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
       }
     }
 
+    /**
+     * This accumulates {@link ResponseBuilder#mergedSearchGroups} for use in the second step.
+     */
     public void addMergedSearchGroups(ResponseBuilder rb, String groupField, Collection<SearchGroup<BytesRef>> mergedTopGroups) {
       rb.mergedSearchGroups.put(groupField, mergedTopGroups);
     }
 
+    /**
+     * This accumulates {@link ResponseBuilder#searchGroupToShards} for use in the second step.
+     */
     public void addSearchGroupToShards(ResponseBuilder rb, String groupField, Collection<SearchGroup<BytesRef>> mergedTopGroups) {
       for (SearchGroup<BytesRef> mergedTopGroup : mergedTopGroups) {
         rb.searchGroupToShards.get(groupField).put(mergedTopGroup, tempSearchGroupToShards.get(groupField).get(mergedTopGroup));

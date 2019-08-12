@@ -68,11 +68,18 @@ public class SkipSecondStepSearchGroupShardResponseProcessor extends SearchGroup
       }
     }
 
+    /**
+     * This is overridden as a no-op since we need not accumulate {@link ResponseBuilder#mergedSearchGroups}
+     * for use in the second step because the second step is being skipped.
+     */
     @Override
     public void addMergedSearchGroups(ResponseBuilder rb, String groupField, Collection<SearchGroup<BytesRef>> mergedTopGroups ) {
-      // TODO: add comment or javadoc re: why this method is overridden as a no-op
+      // no-op
     }
 
+    /**
+     * This does accumulate {@link ResponseBuilder#mergedTopGroups} for use in the get-fields stage.
+     */
     @Override
     public void addSearchGroupToShards(ResponseBuilder rb, String groupField, Collection<SearchGroup<BytesRef>> mergedTopGroups) {
       super.addSearchGroupToShards(rb, groupField, mergedTopGroups);
