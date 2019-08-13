@@ -288,24 +288,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy,sb);
     this.whitelistHostChecker = new WhitelistHostChecker(args == null? null: (String) args.get(INIT_SHARDS_WHITELIST), !getDisableShardsWhitelist());
     log.info("Host whitelist initialized: {}", this.whitelistHostChecker);
-
-    this.httpListenerFactory = new InstrumentedHttpListenerFactory(this.metricNameStrategy);
-    int connectionTimeout = getParameter(args, HttpClientUtil.PROP_CONNECTION_TIMEOUT,
-        HttpClientUtil.DEFAULT_CONNECT_TIMEOUT, sb);
-    int maxConnectionsPerHost = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST,
-        HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST, sb);
-    int soTimeout = getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT,
-        HttpClientUtil.DEFAULT_SO_TIMEOUT, sb);
-
-    this.defaultClient = new Http2SolrClient.Builder()
-        .connectionTimeout(connectionTimeout)
-        .idleTimeout(soTimeout)
-        .maxConnectionsPerHost(maxConnectionsPerHost).build();
-    this.defaultClient.addListenerFactory(this.httpListenerFactory);
-    this.loadbalancer = new LBHttp2SolrClient(defaultClient);
-    initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
-
-    log.debug("created with {}",sb);
     
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
     String v = System.getProperty("tests.shardhandler.randomSeed");
@@ -324,6 +306,25 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         blockingQueue,
         new DefaultSolrThreadFactory("httpShardExecutor")
     );
+
+    this.httpListenerFactory = new InstrumentedHttpListenerFactory(this.metricNameStrategy);
+    int connectionTimeout = getParameter(args, HttpClientUtil.PROP_CONNECTION_TIMEOUT,
+        HttpClientUtil.DEFAULT_CONNECT_TIMEOUT, sb);
+    int maxConnectionsPerHost = getParameter(args, HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST,
+        HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST, sb);
+    int soTimeout = getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT,
+        HttpClientUtil.DEFAULT_SO_TIMEOUT, sb);
+
+    this.defaultClient = new Http2SolrClient.Builder()
+        .connectionTimeout(connectionTimeout)
+        .idleTimeout(soTimeout)
+        .maxConnectionsPerHost(maxConnectionsPerHost).build();
+    this.defaultClient.addListenerFactory(this.httpListenerFactory);
+    this.loadbalancer = new LBHttp2SolrClient(defaultClient);
+
+    initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
+
+    log.debug("created with {}",sb);
   }
 
   @Override
