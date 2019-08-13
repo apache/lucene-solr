@@ -27,7 +27,6 @@ dependencies {
   implementation project(':lucene:lucene-codecs')
   implementation project(':lucene:analysis:lucene-analyzers-icu')
   implementation project(':lucene:analysis:lucene-analyzers-smartcn')
-  implementation project(':lucene:analysis:lucene-analyzers-stempel')
   implementation project(':lucene:analysis:lucene-analyzers-morfologik')
   implementation project(':lucene:analysis:lucene-analyzers-opennlp')
   

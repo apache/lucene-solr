@@ -37,6 +37,7 @@ import org.gradle.api.tasks.TaskAction
 import java.nio.file.Files
 import java.util.stream.Stream
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import java.util.zip.ZipFile
@@ -47,13 +48,10 @@ class FindInSrc {
   protected static Pattern srcJar = Pattern.compile("(.*?)-sources.jar")
   protected static Pattern dotFilePattern = Pattern.compile("(.*?).jar.dot")
 
-  public FindInSrc() {
-  }
+  private Project project
+  private Set srcFiles
   
-  
-  public boolean find(Project project, String ourArtifactNameAndVersion, String searchText) {
-    AtomicBoolean foundInsrc = new AtomicBoolean(false)
-    
+  public FindInSrc(Project project) {
     def sources = project.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.collect { artifact ->
       project.dependencies.create( [
         group: artifact.moduleVersion.id.group,
@@ -62,27 +60,44 @@ class FindInSrc {
         classifier: 'sources'
       ] )
     }
-    def srcFiles = project.configurations.detachedConfiguration( sources as Dependency[] )
+    srcFiles = project.configurations.detachedConfiguration( sources as Dependency[] )
         .resolvedConfiguration.lenientConfiguration.getFiles( Specs.SATISFIES_ALL )
-    List listSrcFiles = new ArrayList()
-    listSrcFiles.addAll(srcFiles)
-    Stream.of(listSrcFiles.toArray())
+
+    this.project = project
+  }
+  
+  
+  public boolean find(String ourArtifactNameAndVersion, String searchText) {
+    AtomicBoolean foundInsrc = new AtomicBoolean(false)
+    AtomicInteger cnt = new AtomicInteger()
+    
+    Stream.of(srcFiles.toArray())
         .parallel()
         .forEach( { file ->
-          // if (!file.name.endsWith('-sources.jar')) return
-         // if (foundInsrc.get()) return // stop after we find first occurence(s)
+
+          if (!file.name.endsWith('-sources.jar')) return
+          
+          //println 'file:' + file.name
+          if (foundInsrc.get()) return // stop after we find first occurrence(s)
           Matcher nameMatcher = srcJar.matcher(file.name)
           if (nameMatcher.matches()) {
             String artifactName = nameMatcher.group(1)
+ 
+            //  println 'artifactName ' + artifactName
+            //  println 'ourArtifactNameAndVersion ' + ourArtifactNameAndVersion
+            
             if (ourArtifactNameAndVersion.equals(artifactName)) {
+            //  println 'equals' + artifactName
               return
             }
           }
           try {
             ZipFile zip = new ZipFile(file)
-            def entries = zip.entries()
-            entries.each { entry->
-       
+
+            zip.stream().parallel().forEach({ entry->
+              
+                if (foundInsrc.get()) return 
+ 
                 def exts = [
                   '.properties',
                   '.java',
@@ -107,17 +122,19 @@ class FindInSrc {
                     project.println "   -> Found ${searchText} in src: "
                     project.println "   ${zip.name} -> ${entry.name}"
                     foundInsrc.set(true)
+                    cnt.incrementAndGet()
                   }
                 } finally {
                   inputStream.close()
                 }
               }
-            }
+            })
+
           } catch (ZipException zipEx) {
             project.println "Unable to open file ${file.name}"
           }
         })
-    
+
     return foundInsrc.get()
   }
 }
