@@ -15,41 +15,55 @@
  * limitations under the License.
  */
 
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 apply plugin: org.apache.lucene.gradle.PartOfDist
 
+jar.enabled = false
+
 dependencies {
   
+  runtimeOnly ('com.lmax:disruptor')
+  runtimeOnly ('org.slf4j:jcl-over-slf4j')
+  runtimeOnly ('org.slf4j:jul-to-slf4j')
+  runtimeOnly ('org.slf4j:slf4j-api')
   
-  implementation ('org.apache.logging.log4j:log4j-1.2-api') { transitive = false }
-  implementation ('org.apache.logging.log4j:log4j-api') { transitive = false }
-  implementation ('org.apache.logging.log4j:log4j-core') { transitive = false }
-  implementation ('org.apache.logging.log4j:log4j-slf4j-impl') { transitive = false }
-  
-  implementation ('com.lmax:disruptor') { transitive = false }
-  implementation ('org.slf4j:jcl-over-slf4j') { transitive = false }
-  implementation ('org.slf4j:jul-to-slf4j') { transitive = false }
-  implementation ('org.slf4j:slf4j-api') { transitive = false }
+  implementation ('org.apache.logging.log4j:log4j-1.2-api')
+  implementation ('org.apache.logging.log4j:log4j-api')
+  implementation ('org.apache.logging.log4j:log4j-core')
+  implementation ('org.apache.logging.log4j:log4j-slf4j-impl')
   
   implementation ('io.dropwizard.metrics:metrics-core') { transitive = false }
   implementation ('io.dropwizard.metrics:metrics-graphite') { transitive = false }
   implementation ('io.dropwizard.metrics:metrics-jetty9') { transitive = false }
   implementation ('io.dropwizard.metrics:metrics-jvm') { transitive = false }
   
-  implementation ('org.eclipse.jetty:jetty-continuation') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-deploy') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-http') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-jmx') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-rewrite') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-security') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-server') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-servlet') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-servlets') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-util') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-webapp') { transitive = false }
-  implementation ('org.eclipse.jetty:jetty-xml') { transitive = false }
+  api ('org.eclipse.jetty:jetty-continuation')
+  api ('org.eclipse.jetty:jetty-deploy')
+  api ('org.eclipse.jetty:jetty-http')
+  api ('org.eclipse.jetty:jetty-io')
+  api ('org.eclipse.jetty:jetty-jmx')
+  api ('org.eclipse.jetty:jetty-rewrite')
+  api ('org.eclipse.jetty:jetty-security')
+  api ('org.eclipse.jetty:jetty-server')
+  api ('org.eclipse.jetty:jetty-servlet')
+  api ('org.eclipse.jetty:jetty-servlets')
+  api ('org.eclipse.jetty:jetty-util')
+  api ('org.eclipse.jetty:jetty-webapp')
+  api ('org.eclipse.jetty:jetty-xml')
+  runtimeOnly ('org.eclipse.jetty:jetty-alpn-java-server')
+  runtimeOnly ('org.eclipse.jetty:jetty-alpn-java-client')
+  api 'org.eclipse.jetty:jetty-alpn-server'
+  api 'org.eclipse.jetty:jetty-alpn-client'
   
-  implementation ('javax.servlet:javax.servlet-api') { transitive = false }
+  api ('org.eclipse.jetty.http2:http2-server')
+  api ('org.eclipse.jetty.http2:http2-common')
+  api ('org.eclipse.jetty.http2:http2-hpack')
+  api ('org.eclipse.jetty.http2:http2-http-client-transport')
   
+  implementation ('javax.servlet:javax.servlet-api')
+}
+
+unusedDeps {
+  jarExclude '.*?\\.jar' // solr-server creates no jar, so we don't currently check it
 }

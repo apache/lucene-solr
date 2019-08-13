@@ -37,6 +37,7 @@ import org.gradle.api.tasks.TaskAction
 
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import java.util.zip.ZipFile
@@ -58,7 +59,7 @@ class UnusedDeps extends DefaultTask {
   List<String> jarExcludes = new ArrayList<>()
   
   public UnusedDeps() {
-
+    
   }
   
   @TaskAction
@@ -98,11 +99,12 @@ class UnusedDeps extends DefaultTask {
     
     config.getAllDependencies().forEach({ dep ->
       if (dep instanceof DefaultProjectDependency) {
+        // println 'process project ' + dep.getDependencyProject()
         Project dProject = dep.getDependencyProject()
         def depTopLvlDProject = getTopLvlProject(dProject)
         
         Set<String> projectUsedDeps = getStaticallyReferencedDeps(depTopLvlDProject, dProject, distDir, jdepsDir)
-        
+        // println 'project deps: ' + projectUsedDeps
         usedStaticallyJarNames += projectUsedDeps
       }
     })
@@ -141,25 +143,25 @@ class UnusedDeps extends DefaultTask {
     
     println 'Direct deps that may be unused:'
     
-    boolean failTask = false;
+    boolean failTask = false
     
     unusedJarNames.forEach({
       if (!depsInDirectUse.contains(it) && ourImmediatelyDefinedDeps.contains(it)) {
         
         for (String exclude : jarExcludes) {
           if (it.matches(exclude)) {
-            println ' - excluded violation : ' + it
+            println ' - (excluded) violation : ' + it
             return
           }
         }
-
+        
         if (findInSrc(it)) {
-          println ' - ' + it + ' *'
+          println ' - violation : ' + it + ' *'
         } else {
           failTask = true
-          println ' - ' + it
+          println ' - violation : ' + it
         }
-
+        
       }
     })
     
@@ -187,7 +189,7 @@ class UnusedDeps extends DefaultTask {
     Set<File> ourDeps = new HashSet<>()
     
     if (config.isCanBeResolved()) {
-      config.getResolvedConfiguration().getResolvedArtifacts().forEach( { ra -> ourDeps.add(ra.getFile()) })
+      config.getResolvedConfiguration().getResolvedArtifacts().forEach( { ra -> if (ra.getFile().exists()) ourDeps.add(ra.getFile()) })
     }
     
     return ourDeps
@@ -216,6 +218,11 @@ class UnusedDeps extends DefaultTask {
   protected Set getDirectlyUsedJars(Project project, File dotFile) {
     Set<String> usedStaticallyJarNames = new HashSet<>()
     
+    if (!dotFile.exists()) {
+      println 'Could not find dotfile!! ' + dotFile
+      return Collections.emptySet()
+    }
+    
     def lines = dotFile.readLines()
     String lastName = ""
     for (String line : lines) {
@@ -236,33 +243,53 @@ class UnusedDeps extends DefaultTask {
       depsInDirectUse.addAll(getDirectlyUsedJars(project, it))
     }
   }
-
+  
   protected boolean findInSrc(String jarName) {
-    AtomicBoolean foundInsrc = new AtomicBoolean(false)
-    def files = project.configurations[configuration].resolvedConfiguration.getFiles()
+    println ''
+    println '   searching for occurrences in source ... (will only list some of them if found): ' + jarName
+    println ''
     
+    AtomicBoolean foundInsrc = new AtomicBoolean(false)
+    AtomicInteger cnt = new AtomicInteger()
+    
+    def files = project.configurations[configuration].resolvedConfiguration.getFiles()
+
+    FindInSrc findInSrc = new FindInSrc(project)
     Stream.of(files.toArray())
         .parallel()
         .forEach( { file ->
-          if (!file.name.equals(jarName)) return
-          try {
-            ZipFile zip = new ZipFile(file)
-            def entries = zip.entries()
-            entries.each { entry ->
-              if (!entry.isDirectory() && entry.getName().endsWith(".class") && !entry.getName().equals('module-info.class')) {
-                String className = entry.getName().replace('/', '.')
-                className = className.substring(0, className.length() - ".class".length())
-                
-                FindInSrc findInSrc = new FindInSrc()
-                def found = (findInSrc.find(project, jarName.substring(0, jarName.length() - ".jar".length()), className))
-                if (found) {
-                  foundInsrc.set(true)
-                }
+          if (!file.exists() || !file.name.equals(jarName)) return
+            try {
+              
+              // bail if we find one match for now
+              if (foundInsrc.get()) {
+                return
               }
+              ZipFile zip = new ZipFile(file)
+              
+              zip.stream().parallel()
+              .forEach( { entry ->
+                
+                // bail if we find one match for now
+                if (foundInsrc.get()) {
+                  return
+                }
+                
+                if (!entry.isDirectory() && entry.getName().endsWith(".class") && !entry.getName().equals('module-info.class')) {
+                  String className = entry.getName().replace('/', '.')
+                  className = className.substring(0, className.length() - ".class".length())
+                  //println 'class: ' + className
+                  
+                  def found = (findInSrc.find(jarName.substring(0, jarName.length() - ".jar".length()), className))
+                  if (found) {
+                    foundInsrc.set(true)
+                    cnt.incrementAndGet()
+                  }
+                }
+              })
+            } catch (ZipException zipEx) {
+              println "Unable to open file ${file.name}"
             }
-          } catch (ZipException zipEx) {
-            println "Unable to open file ${file.name}"
-          }
         })
     
     return foundInsrc.get()
@@ -270,9 +297,9 @@ class UnusedDeps extends DefaultTask {
   
   public UnusedDeps jarExclude(String... arg0) {
     for (String pattern : arg0) {
-      jarExcludes.add(pattern);
+      jarExcludes.add(pattern)
     }
-    return this;
+    return this
   }
   
   protected Project getTopLvlProject(Project proj) {

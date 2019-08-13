@@ -40,3 +40,9 @@ forbiddenApisMain {
 missingDeps {
   depExclude  '**/*' // demo does not make a jar
 }
+
+unusedDeps {
+  jarExclude 'asm-.*?\\.jar' // used by other asm libs
+  jarExclude 'asm-commons-.*?\\.jar' // used by other asm libs
+  jarExclude 'antlr4-runtime-.*?\\.jar' // used by other asm / hppc
+}
