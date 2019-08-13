@@ -309,7 +309,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       fos.close();
 
     }
-    private BiConsumer<String, Object> bic= new BiConsumer<>() {
+    private BiConsumer<String, Object> bic= new BiConsumer<String, Object>() {
       @Override
       public void accept(String s, Object o) {
         try {
