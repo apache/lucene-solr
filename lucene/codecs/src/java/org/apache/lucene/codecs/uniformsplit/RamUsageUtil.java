@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.codecs.lucene50.DeltaBaseTermStateSerializer;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -36,6 +35,8 @@ import static org.apache.lucene.util.RamUsageEstimator.shallowSizeOfInstance;
 /**
  * Utility methods to estimate the RAM usage of objects.
  * It relies on {@link RamUsageEstimator}.
+ *
+ * @lucene.experimental
  */
 public class RamUsageUtil {
 

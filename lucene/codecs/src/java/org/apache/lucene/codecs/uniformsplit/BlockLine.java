@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.uniformsplit;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.codecs.lucene50.DeltaBaseTermStateSerializer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -43,6 +42,8 @@ import org.apache.lucene.util.RamUsageEstimator;
  * to decode the details for each term. At read time, the {@link BlockLine.Serializer#readLine}
  * only reads the term and its offset to the details. The corresponding {@link BlockTermState}
  * is decoded on demand in the {@link BlockReader} (see {@link BlockReader#readTermStateIfNotRead}).
+ *
+ * @lucene.experimental
  */
 public class BlockLine implements Accountable {
 

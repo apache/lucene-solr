@@ -28,6 +28,7 @@ import org.apache.lucene.store.DataOutput;
  * For example, implementations may compress or encrypt.
  *
  * @see BlockDecoder
+ * @lucene.experimental
  */
 public interface BlockEncoder {
 

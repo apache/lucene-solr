@@ -46,6 +46,7 @@ import static org.apache.lucene.codecs.uniformsplit.UniformSplitPostingsFormat.V
  * A block-based terms index and dictionary based on the Uniform Split technique.
  *
  * @see UniformSplitTermsWriter
+ * @lucene.experimental
  */
 public class UniformSplitTermsReader extends FieldsProducer {
 

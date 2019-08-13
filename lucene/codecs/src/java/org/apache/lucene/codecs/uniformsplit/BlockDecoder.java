@@ -29,6 +29,7 @@ import org.apache.lucene.util.BytesRef;
  * For example, implementations may decompress or decrypt.
  *
  * @see BlockEncoder
+ * @lucene.experimental
  */
 public interface BlockDecoder {
 

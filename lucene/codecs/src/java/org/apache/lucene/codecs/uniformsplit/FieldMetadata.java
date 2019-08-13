@@ -34,7 +34,9 @@ import org.apache.lucene.util.RamUsageEstimator;
 /**
  * Metadata and stats for one field in the index.
  * <p>
- *  There is only one instance of {@link FieldMetadata} per {@link FieldInfo}.
+ * There is only one instance of {@link FieldMetadata} per {@link FieldInfo}.
+ *
+ * @lucene.experimental
  */
 public class FieldMetadata implements Accountable {
 

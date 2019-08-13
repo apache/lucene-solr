@@ -47,13 +47,15 @@ import org.apache.lucene.util.StringHelper;
  * "company" - MDP is "com" - incremental encoding suffix is "mpany".
  * <br>
  * "companies" - MDP is "compani" - incremental encoding suffix is "ies".
+ *
+ * @lucene.experimental
  */
 public class TermBytes implements Accountable {
 
   private static final long BASE_RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(TermBytes.class);
 
-  private int mdpLength;
-  private BytesRef term;
+  protected int mdpLength;
+  protected BytesRef term;
 
   public TermBytes(int mdpLength, BytesRef term) {
     reset(mdpLength, term);

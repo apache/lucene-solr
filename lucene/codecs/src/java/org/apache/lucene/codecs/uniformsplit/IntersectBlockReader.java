@@ -46,7 +46,8 @@ public class IntersectBlockReader extends BlockReader {
   protected final BytesRef commonPrefixRef;
   protected final BytesRef startTerm; // maybe null
 
-  protected BytesRef seekTerm; // set this when our current mode is seeking to this term.  Set to null after.
+  /** Set this when our current mode is seeking to this term.  Set to null after. */
+  protected BytesRef seekTerm;
 
   protected int blockPrefixRunAutomatonState;
   protected int blockPrefixLen;
@@ -293,31 +294,35 @@ public class IntersectBlockReader extends BlockReader {
     throw new UnsupportedOperationException();
   }
 
-  //This is a copy of AutomatonTermsEnum.  Since it's an inner class, the outer class can
-  //  call methods that ATE does not expose.  It'd be nice if ATE's logic could be more extensible.
-  private static class AutomatonNextTermCalculator {
+  /**
+   * This is a copy of AutomatonTermsEnum.  Since it's an inner class, the outer class can
+   * call methods that ATE does not expose.  It'd be nice if ATE's logic could be more extensible.
+   */
+  protected static class AutomatonNextTermCalculator {
     // a tableized array-based form of the DFA
-    private final ByteRunAutomaton runAutomaton;
+    protected final ByteRunAutomaton runAutomaton;
     // common suffix of the automaton
-    private final BytesRef commonSuffixRef;
+    protected final BytesRef commonSuffixRef;
     // true if the automaton accepts a finite language
-    private final boolean finite;
+    protected final boolean finite;
     // array of sorted transitions for each state, indexed by state number
-    private final Automaton automaton;
+    protected final Automaton automaton;
     // for path tracking: each long records gen when we last
     // visited the state; we use gens to avoid having to clear
-    private final long[] visited;
-    private long curGen;
+    protected final long[] visited;
+    protected long curGen;
     // the reference used for seeking forwards through the term dictionary
-    private final BytesRefBuilder seekBytesRef = new BytesRefBuilder();
+    protected final BytesRefBuilder seekBytesRef = new BytesRefBuilder();
     // true if we are enumerating an infinite portion of the DFA.
     // in this case it is faster to drive the query based on the terms dictionary.
     // when this is true, linearUpperBound indicate the end of range
     // of terms where we should simply do sequential reads instead.
-    private boolean linear = false;
-    private final BytesRef linearUpperBound = new BytesRef(10);
+    protected boolean linear = false;
+    protected final BytesRef linearUpperBound = new BytesRef(10);
+    protected Transition transition = new Transition();
+    protected final IntsRefBuilder savedStates = new IntsRefBuilder();
 
-    AutomatonNextTermCalculator(CompiledAutomaton compiled) {
+    protected AutomatonNextTermCalculator(CompiledAutomaton compiled) {
       if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
         throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
       }
@@ -332,12 +337,12 @@ public class IntersectBlockReader extends BlockReader {
     }
 
     /** True if the current state of the automata is best iterated linearly (without seeking). */
-    boolean isLinearState(BytesRef term) {
+    protected boolean isLinearState(BytesRef term) {
       return linear && term.compareTo(linearUpperBound) < 0;
     }
 
     /** @see org.apache.lucene.index.FilteredTermsEnum#nextSeekTerm(BytesRef) */
-    BytesRef nextSeekTerm(final BytesRef term) throws IOException {
+    protected BytesRef nextSeekTerm(final BytesRef term) throws IOException {
       //System.out.println("ATE.nextSeekTerm term=" + term);
       if (term == null) {
         assert seekBytesRef.length() == 0;
@@ -357,14 +362,12 @@ public class IntersectBlockReader extends BlockReader {
       }
     }
 
-    private Transition transition = new Transition();
-
     /**
      * Sets the enum to operate in linear fashion, as we have found
      * a looping transition at position: we set an upper bound and
      * act like a TermRangeQuery for this portion of the term space.
      */
-    private void setLinear(int position) {
+    protected void setLinear(int position) {
       assert linear == false;
 
       int state = 0;
@@ -398,8 +401,6 @@ public class IntersectBlockReader extends BlockReader {
       linear = true;
     }
 
-    private final IntsRefBuilder savedStates = new IntsRefBuilder();
-
     /**
      * Increments the byte buffer to the next String in binary order after s that will not put
      * the machine into a reject state. If such a string does not exist, returns
@@ -410,7 +411,7 @@ public class IntersectBlockReader extends BlockReader {
      *
      * @return true if more possible solutions exist for the DFA
      */
-    private boolean nextString() {
+    protected boolean nextString() {
       int state;
       int pos = 0;
       savedStates.grow(seekBytesRef.length()+1);
@@ -470,7 +471,7 @@ public class IntersectBlockReader extends BlockReader {
      * @return true if more possible solutions exist for the DFA from this
      *         position
      */
-    private boolean nextString(int state, int position) {
+    protected boolean nextString(int state, int position) {
       /*
        * the next lexicographic character must be greater than the existing
        * character, if it exists.
@@ -538,7 +539,7 @@ public class IntersectBlockReader extends BlockReader {
      * @param position current position in the input String
      * @return {@code position >= 0} if more possible solutions exist for the DFA
      */
-    private int backtrack(int position) {
+    protected int backtrack(int position) {
       while (position-- > 0) {
         int nextChar = seekBytesRef.byteAt(position) & 0xff;
         // if a character is 0xff it's a dead-end too,

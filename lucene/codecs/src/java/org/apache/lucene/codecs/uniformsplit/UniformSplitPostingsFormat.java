@@ -34,6 +34,7 @@ import org.apache.lucene.util.IOUtils;
  * {@link PostingsFormat} based on the Uniform Split technique.
  *
  * @see UniformSplitTermsWriter
+ * @lucene.experimental
  */
 public class UniformSplitPostingsFormat extends PostingsFormat {
 

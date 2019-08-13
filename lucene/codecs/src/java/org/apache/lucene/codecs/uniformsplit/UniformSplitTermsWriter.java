@@ -101,6 +101,8 @@ import static org.apache.lucene.codecs.uniformsplit.UniformSplitPostingsFormat.V
  * The {@link UniformSplitPostingsFormat#TERMS_DICTIONARY_EXTENSION dictionary file}
  * contains the trie ({@link org.apache.lucene.util.fst.FST} bytes) for each
  * field sequentially.
+ *
+ * @lucene.experimental
  */
 public class UniformSplitTermsWriter extends FieldsConsumer {
 

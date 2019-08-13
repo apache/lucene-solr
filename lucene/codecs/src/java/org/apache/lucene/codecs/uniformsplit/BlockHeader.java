@@ -30,12 +30,14 @@ import org.apache.lucene.util.RamUsageEstimator;
  * Holds the number of lines in the block.
  * <p>
  * Holds the base file pointers to apply delta base encoding to all the file
- * pointers in the block with {@link org.apache.lucene.codecs.lucene50.DeltaBaseTermStateSerializer}.
+ * pointers in the block with {@link DeltaBaseTermStateSerializer}.
  * <p>
  * Holds the offset to the details region of the block (the term states).
  * <p>
  * Holds the offset to the middle term of the block to divide the number
  * of terms to scan by 2.
+ *
+ * @lucene.experimental
  */
 public class BlockHeader implements Accountable {
 

@@ -37,6 +37,8 @@ import org.apache.lucene.util.BytesRef;
  * There is a single implementation of this interface, {@link FSTDictionary}.
  * However this interface allows you to plug easily a new kind of index dictionary
  * to experiment and improve the existing one.
+ *
+ * @lucene.experimental
  */
 public interface IndexDictionary extends Accountable {
 

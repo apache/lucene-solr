@@ -37,6 +37,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * (it is not loaded for a direct terms enumeration).
  *
  * @see UniformSplitTermsWriter
+ * @lucene.experimental
  */
 public class UniformSplitTerms extends Terms implements Accountable {
 

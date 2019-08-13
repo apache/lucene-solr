@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.lucene50.DeltaBaseTermStateSerializer;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
@@ -44,6 +43,8 @@ import org.apache.lucene.util.RamUsageEstimator;
  * terms in memory. The details region is lazily decoded with {@link #termStatesReadBuffer}
  * which shares the same byte array with {@link #blockReadBuffer}.
  * See {@link BlockWriter} and {@link BlockLine} for the block format.
+ *
+ * @lucene.experimental
  */
 public class BlockReader extends BaseTermsEnum implements Accountable {
 
@@ -210,7 +211,8 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   /**
    * Seeks to the provided term in this block.
    * <p>
-   * Does not exceed this block; {@link TermsEnum.SeekStatus#END} is returned if it follows the block.
+   * Does not exceed this block; {@link org.apache.lucene.index.TermsEnum.SeekStatus#END}
+   * is returned if it follows the block.
    * <p>
    * Compares the line terms with the <code>searchedTerm</code>, taking
    * advantage of the incremental encoding properties.

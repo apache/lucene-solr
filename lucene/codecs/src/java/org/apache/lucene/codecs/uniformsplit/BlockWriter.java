@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.codecs.lucene50.DeltaBaseTermStateSerializer;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
@@ -48,6 +47,8 @@ import org.apache.lucene.util.BytesRef;
  * all the {@link BlockLine} terms of a field. Then {@link #finishLastBlock}
  * is called. And then this {@link BlockWriter} can be reused to add the terms
  * of another field.
+ *
+ * @lucene.experimental
  */
 public class BlockWriter {
 

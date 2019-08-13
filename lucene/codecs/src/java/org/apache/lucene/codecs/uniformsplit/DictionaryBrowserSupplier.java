@@ -32,6 +32,8 @@ import org.apache.lucene.util.Accountable;
  * lazy loading allows us to load it only when {@link TermsEnum#seekCeil}
  * or {@link TermsEnum#seekExact} are called (it is not loaded for a direct
  * all-terms enumeration).
+ *
+ * @lucene.experimental
  */
 public class DictionaryBrowserSupplier implements Supplier<IndexDictionary.Browser>, Accountable {
 

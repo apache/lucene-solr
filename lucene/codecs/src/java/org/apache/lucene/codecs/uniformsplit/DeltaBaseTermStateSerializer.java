@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
+import org.apache.lucene.codecs.lucene50.Lucene50PostingsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermState;
@@ -36,22 +38,20 @@ import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.BLOCK_SIZ
  * to a base file pointer. It differs from {@link Lucene50PostingsWriter#encodeTerm}
  * which encodes each file pointer as a delta relative to the previous file pointer.
  * <p>
- *   It automatically sets the base file pointer to the first valid file pointer for
- *   doc start FP, pos start FP, pay start FP. These base file pointers have to
- *   be {@link #resetBaseStartFP() reset} by the caller before starting to write
- *   a new block.
- * <p>
- *   It belongs to the lucene50 package because it accesses the package private
- *   {@link Lucene50PostingsFormat.IntBlockTermState}.
+ * It automatically sets the base file pointer to the first valid file pointer for
+ * doc start FP, pos start FP, pay start FP. These base file pointers have to be
+ * {@link #resetBaseStartFP() reset} by the caller before starting to write a new block.
+ *
+ * @lucene.experimental
  */
 public class DeltaBaseTermStateSerializer implements Accountable {
 
   private static final long RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(DeltaBaseTermStateSerializer.class);
   private static final long INT_BLOCK_TERM_STATE_RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(IntBlockTermState.class);
 
-  private long baseDocStartFP;
-  private long basePosStartFP;
-  private long basePayStartFP;
+  protected long baseDocStartFP;
+  protected long basePosStartFP;
+  protected long basePayStartFP;
 
   public DeltaBaseTermStateSerializer() {
     resetBaseStartFP();

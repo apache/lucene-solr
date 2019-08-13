@@ -47,6 +47,8 @@ import org.apache.lucene.util.fst.Util;
  * With a compact dictionary in memory we can increase the number of blocks.
  * This allows us to reduce the average block size, which means faster scan
  * inside a block.
+ *
+ * @lucene.experimental
  */
 public class FSTDictionary implements IndexDictionary {
 
@@ -171,6 +173,11 @@ public class FSTDictionary implements IndexDictionary {
     }
   }
 
+  /**
+   * Builds an immutable {@link FSTDictionary}.
+   *
+   * @lucene.experimental
+   */
   public static class Builder implements IndexDictionary.Builder {
 
     protected final org.apache.lucene.util.fst.Builder<Long> fstBuilder;
