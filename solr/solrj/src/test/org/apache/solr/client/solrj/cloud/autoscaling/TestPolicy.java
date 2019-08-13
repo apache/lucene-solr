@@ -1101,6 +1101,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     suggester = session.getSuggester(MOVEREPLICA)
         .hint(Hint.SRC_NODE, "node1");
     operation = suggester.getSuggestion();
+    assertNotNull(operation);
     assertEquals("node2", operation.getParams().get("targetNode"));
     assertEquals("r1", operation.getParams().get("replica"));
 
@@ -1159,6 +1160,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     suggester = session.getSuggester(MOVEREPLICA)
         .hint(Hint.SRC_NODE, "node1");
     operation = suggester.getSuggestion();
+    assertNotNull(operation);
     assertEquals("node3", operation.getParams().get("targetNode"));
     assertEquals("r1", operation.getParams().get("replica"));
   }
