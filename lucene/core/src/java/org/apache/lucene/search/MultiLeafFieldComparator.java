@@ -89,4 +89,15 @@ final class MultiLeafFieldComparator implements LeafFieldComparator {
     }
   }
 
+  @Override
+  public Object leafValue(int docID) throws IOException {
+    Object[] valuesArray = new Object[comparators.length];
+
+    for (int i = 0; i < comparators.length; i++) {
+      valuesArray[i] = comparators[i].leafValue(docID);
+    }
+
+    return valuesArray;
+  }
+
 }

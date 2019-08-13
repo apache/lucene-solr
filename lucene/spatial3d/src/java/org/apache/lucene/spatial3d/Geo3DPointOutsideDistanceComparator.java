@@ -121,6 +121,11 @@ class Geo3DPointOutsideDistanceComparator extends FieldComparator<Double> implem
     return Double.compare(topValue, computeMinimumDistance(doc));
   }
 
+  @Override
+  public Double leafValue(int docID) throws IOException {
+    return computeMinimumDistance(docID);
+  }
+
   double computeMinimumDistance(final int doc) throws IOException {
     if (doc > currentDocs.docID()) {
       currentDocs.advance(doc);

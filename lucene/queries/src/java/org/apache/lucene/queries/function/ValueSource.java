@@ -442,5 +442,10 @@ public abstract class ValueSource {
       final double docValue = docVals.doubleVal(doc);
       return Double.compare(topValue, docValue);
     }
+
+    @Override
+    public Double leafValue(int docID) throws IOException {
+      return docVals.doubleVal(docID);
+    }
   }
 }

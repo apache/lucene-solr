@@ -160,5 +160,10 @@ final class FeatureSortField extends SortField {
     public int compareTop(int doc) throws IOException {
       return Float.compare(topValue, getValueForDoc(doc));
     }
+
+    @Override
+    public Float leafValue(int docID) throws IOException {
+      return getValueForDoc(docID);
+    }
   }
 }
