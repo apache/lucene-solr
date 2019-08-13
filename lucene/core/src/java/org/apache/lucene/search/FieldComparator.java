@@ -219,6 +219,11 @@ public abstract class FieldComparator<T> {
     public int compareTop(int doc) throws IOException {
       return Double.compare(topValue, getValueForDoc(doc));
     }
+
+    @Override
+    public Double leafValue(int docID) throws IOException {
+      return getValueForDoc(docID);
+    }
   }
 
   /** Parses field's values as float (using {@link
@@ -278,6 +283,11 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareTop(int doc) throws IOException {
       return Float.compare(topValue, getValueForDoc(doc));
+    }
+
+    @Override
+    public Float leafValue(int docID) throws IOException {
+      return getValueForDoc(docID);
     }
   }
 
@@ -341,6 +351,11 @@ public abstract class FieldComparator<T> {
     public int compareTop(int doc) throws IOException {
       return Integer.compare(topValue, getValueForDoc(doc));
     }
+
+    @Override
+    public Integer leafValue(int docID) throws IOException {
+      return getValueForDoc(docID);
+    }
   }
 
   /** Parses field's values as long (using {@link
@@ -400,6 +415,11 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareTop(int doc) throws IOException {
       return Long.compare(topValue, getValueForDoc(doc));
+    }
+
+    @Override
+    public Long leafValue(int docID) throws IOException {
+      return getValueForDoc(docID);
     }
   }
 
@@ -484,6 +504,11 @@ public abstract class FieldComparator<T> {
       assert !Float.isNaN(docValue);
       return Float.compare(docValue, topValue);
     }
+
+    @Override
+    public Float leafValue(int docID) throws IOException {
+      return scorer.score();
+    }
   }
 
   /** Sorts by ascending docID */
@@ -543,6 +568,11 @@ public abstract class FieldComparator<T> {
     public int compareTop(int doc) {
       int docValue = docBase + doc;
       return Integer.compare(topValue, docValue);
+    }
+
+    @Override
+    public Integer leafValue(int docID) throws IOException {
+      return docBase + docID;
     }
 
     @Override
@@ -684,6 +714,11 @@ public abstract class FieldComparator<T> {
       } else {
         return -1;
       }
+    }
+
+    @Override
+    public Integer leafValue(int docID) throws IOException {
+      return getOrdForDoc(docID);
     }
 
     @Override
@@ -927,5 +962,10 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void setScorer(Scorable scorer) {}
+
+    @Override
+    public BytesRef leafValue(int docID) throws IOException {
+      return getValueForDoc(docID);
+    }
   }
 }

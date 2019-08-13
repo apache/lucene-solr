@@ -217,6 +217,12 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     return minValue;
   }
 
+  //TODO: Implement this
+  @Override
+  public Double leafValue(int docID) throws IOException {
+    throw new UnsupportedOperationException("This comparator does not support getting leaf values");
+  }
+
   // second half of the haversin calculation, used to convert results from haversin1 (used internally
   // for sorting) for display purposes.
   static double haversin2(double partial) {
