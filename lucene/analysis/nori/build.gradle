@@ -34,25 +34,6 @@ dependencies {
   testImplementation project(':lucene:lucene-test-framework')
 }
 
-sourceSets {
-  tools {
-    compileClasspath += sourceSets.main.runtimeClasspath += configurations.tools
-    runtimeClasspath += sourceSets.main.runtimeClasspath
-  }
-  toolsTest {
-    compileClasspath += sourceSets.test.runtimeClasspath += sourceSets.tools.runtimeClasspath += configurations.tools
-    runtimeClasspath += sourceSets.test.runtimeClasspath
-  }
-
-  tools.java.srcDirs = ['src/tools/java']
-  toolsTest.java.srcDirs = ['src/tools/test']
-}
-
-
-compileToolsJava.options.encoding = "UTF-8"
-compileToolsTestJava.options.encoding = "UTF-8"
-
-
 def mecabVersion = "2.0.3-20170922"
 def mecabFilename = "mecab-ko-dic-${mecabVersion}"
 
@@ -76,7 +57,7 @@ task buildNoriDict(type: JavaExec) {
     tree.each { it.delete() }
   }
   
-  classpath = sourceSets.tools.runtimeClasspath
+  classpath = sourceSets.main.runtimeClasspath
   main = 'org.apache.lucene.analysis.ko.util.DictionaryBuilder'
   
   enableAssertions = false // TODO: an assertion fails if set to true!
@@ -94,10 +75,4 @@ task buildNoriDict(type: JavaExec) {
 task regenerate {
   dependsOn buildNoriDict
 }
-
-forbiddenApisTools {
-  bundledSignatures -= 'jdk-system-out'
-  exclude 'org/apache/lucene/**' // exclude until converted to NIO2
-}
-
 

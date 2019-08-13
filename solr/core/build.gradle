@@ -43,10 +43,11 @@ dependencies {
   implementation project(':lucene:lucene-misc')
   implementation project(':lucene:lucene-join')
   implementation project(':solr:solr-solrj')
+  implementation project(':solr:solr-server')
   
   // used for log4j2 async support
   runtimeOnly ('com.lmax:disruptor')
-  runtimeOnly ('org.slf4j:log4j-over-slf4j') // bridge for deps that use log4j12 directly
+  //runtimeOnly ('org.slf4j:log4j-over-slf4j') // bridge for deps that use log4j12 directly
   runtimeOnly ('org.slf4j:jcl-over-slf4j') // bridge java common logging to slf4j
 
   // kerb, kerby, and curator deps used for security and auth with zk/hdfs/kerberos
@@ -132,15 +133,8 @@ dependencies {
 
   implementation ('org.rrd4j:rrd4j')
   implementation ('org.bitbucket.b_c:jose4j')
-  
-  implementation ('org.eclipse.jetty:jetty-alpn-server')
-  implementation ('org.eclipse.jetty.http2:http2-server')
-  implementation ('org.eclipse.jetty.http2:http2-common')
-  implementation ('org.eclipse.jetty:jetty-server')
+
   implementation ('org.eclipse.jetty:jetty-client')
-  implementation ('org.eclipse.jetty:jetty-util')
-  implementation ('org.eclipse.jetty:jetty-servlet')
-  implementation ('org.eclipse.jetty:jetty-server')
   
   testImplementation ('org.restlet.jee:org.restlet.ext.servlet')
   

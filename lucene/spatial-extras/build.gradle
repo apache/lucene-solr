@@ -22,7 +22,7 @@ apply plugin: org.apache.lucene.gradle.PartOfDist
 dependencies {
   
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:lucene-spatial')
+  //implementation project(':lucene:lucene-spatial')
   implementation project(':lucene:lucene-spatial3d')
   
   implementation ('org.locationtech.spatial4j:spatial4j')

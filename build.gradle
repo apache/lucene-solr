@@ -121,6 +121,14 @@ configure(luceneSolrSubProjects) {
       classifier 'sources'
       from sourceSets.main.allJava
     }
+    jar.dependsOn sourceJar
+    
+    configurations {
+      sourceJarOutput
+    }
+    artifacts {
+      sourceJarOutput sourceJar
+    }
     
     // configure maven
     if (project.getPlugins().hasPlugin('publish-maven')) {
@@ -151,6 +159,8 @@ configure(rootProject) {
   }
   
   task pristineClean(type: org.apache.lucene.gradle.PristineClean) {}
+  
+  task jar {} // just so we can call it top level from sub module
 }
 
 // -> all projects config
@@ -218,6 +228,8 @@ configure(allprojects) {
       dependsOn unusedDeps
     }
     
+    project(':buildSrc').tasks.unusedDeps.enabled = false
+    
     task missingDependencies {
       group = 'Help'
       description = "Lists classes from this module with missing runtime dependencies (we ignore scanning some root deps (ie hadoop) and some violations (ie annotations)."
@@ -227,6 +239,8 @@ configure(allprojects) {
       missingDeps.dependsOn jdepsReport
       dependsOn missingDeps
     }
+    
+    project(':buildSrc').tasks.missingDeps.enabled = false
   }
 }
 
