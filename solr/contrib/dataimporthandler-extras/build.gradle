@@ -40,6 +40,10 @@ dependencies {
   testImplementation project(':solr:solr-test-framework')
 }
 
+unusedDeps {
+  jarExclude 'hsqldb-.*?\\.jar' // used by security components dynamically
+}
+
 missingDeps {
   addExclusionsFrom(project(':solr:contrib:solr-contrib-extraction'))
 }

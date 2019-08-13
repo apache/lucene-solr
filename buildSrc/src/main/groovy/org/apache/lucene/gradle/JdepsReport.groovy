@@ -26,6 +26,7 @@ import javax.inject.Inject
 import org.apache.tools.ant.types.resources.selectors.InstanceOf
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
+import org.gradle.jvm.tasks.Jar
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ModuleIdentifier
@@ -65,13 +66,9 @@ class JdepsReport extends DefaultTask {
       println "Writing output files to ${target}"
     }
     
-    // make sure all jars are built
-    project.rootProject.subprojects.each {subproject ->
-      def tasks = subproject.tasks.findByName('jar')
-      if (tasks != null) {
-        dependsOn tasks
-      }
-    }
+    // make sure all the jars are built
+    dependsOn project.rootProject.subprojects.collect { it.tasks.withType(Jar) }
+    outputs.upToDateWhen { false }
   }
   
   protected void makeDirs() {
@@ -109,11 +106,10 @@ class JdepsReport extends DefaultTask {
       })
       
       buildProjects.each {subproject ->
-        project.evaluationDependsOn(subproject.path)
+
         def topLvlProject = getTopLvlProject(subproject)
         
         if (subproject.getPlugins().hasPlugin(PartOfDist) && subproject.tasks.findByName('jar') && subproject.configurations.hasProperty(configuration)) {
-         //   subproject.tasks.findByName('jar')
            from(subproject.jar.outputs.files) {
             include "*.jar"
             into ({topLvlProject.name + '/' + topLvlProject.relativePath(subproject.projectDir)})

@@ -29,14 +29,12 @@ dependencies {
   implementation ('org.slf4j:slf4j-api')
   implementation ('org.apache.tika:tika-core') { transitive = false }
   implementation ('org.apache.tika:tika-parsers') { transitive = false }
-  implementation ('org.apache.tika:tika-xmp') { transitive = false }
-  implementation ('org.apache.tika:tika-java7') { transitive = false }
   implementation ('com.healthmarketscience.jackcess:jackcess') { transitive = false }
   implementation ('com.healthmarketscience.jackcess:jackcess-encrypt') { transitive = false }
   implementation ('org.gagravarr:vorbis-java-tika') { transitive = false }
   implementation ('org.gagravarr:vorbis-java-core') { transitive = false }
-  implementation ('org.apache.james:apache-mime4j-core') { transitive = false }
-  implementation ('org.apache.james:apache-mime4j-dom') { transitive = false }
+  //implementation ('org.apache.james:apache-mime4j-core') { transitive = false }
+  //implementation ('org.apache.james:apache-mime4j-dom') { transitive = false }
   implementation ('org.apache.commons:commons-compress') { transitive = false }
   implementation ('org.apache.pdfbox:pdfbox') { transitive = false }
   implementation ('org.apache.pdfbox:pdfbox-tools') { transitive = false }
@@ -75,6 +73,37 @@ dependencies {
   
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
+  
+}
+
+unusedDeps {
+  jarExclude 'dec-.*?\\.jar' // used by pdfbox
+  jarExclude 'fontbox-.*?\\.jar' // used by pdfbox
+  
+  jarExclude 'curvesapi-.*?\\.jar' // used by tikaparsers
+  jarExclude 'boilerpipe-.*?\\.jar' // used by tikaparsers
+  jarExclude 'bcmail-jdk15on-.*?\\.jar' // used by tikaparsers
+  jarExclude 'jackcess-.*?\\.jar' // used by tikaparsers
+  jarExclude 'jackcess-encrypt-.*?\\.jar' // used by tikaparsers
+  jarExclude 'java-libpst-.*?\\.jar' // used by tikaparsers
+  jarExclude 'jdom2-.*?\\.jar' // used by tikaparsers, rome
+  jarExclude 'jempbox-.*?\\.jar' // used by tikaparsers
+  jarExclude 'jmatio-.*?\\.jar' // used by tikaparsers, rome
+  jarExclude 'juniversalchardet-.*?\\.jar' // used by tikaparsers
+  jarExclude 'metadata-extractor-.*?\\.jar' // used by tikaparsers
+  jarExclude 'parso-.*?\\.jar' // used by tikaparsers
+  jarExclude 'pdfbox-.*?\\.jar' // used by tikaparsers
+  jarExclude 'vorbis-java-core-.*?\\.jar' // used by tikaparsers
+  jarExclude 'xmpcore-.*?\\.jar' // used by tika xmp
+  jarExclude 'xz-.*?\\.jar' // used by commons compress
+  jarExclude 'aspectjrt-.*?\\.jar' // used by isoparser
+  jarExclude 'icuj-.*?\\.jar' // used by tikaparsers
+  jarExclude 'vorbis-java-tika-.*?\\.jar' // used by tikaparsers
+  jarExclude 'poi-scratchpad-.*?\\.jar' // used by tika
+  jarExclude 'tagsoup-.*?\\.jar' // used by tikaparsers
+  jarExclude 'rome-.*?\\.jar' // used by tikaparsers
+  jarExclude 'isoparser-.*?\\.jar' // used by tikaparsers
+  jarExclude 'icu4j-.*?\\.jar' // used by tikaparsers
   
 }
 

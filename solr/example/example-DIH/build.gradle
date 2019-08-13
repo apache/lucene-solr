@@ -23,3 +23,8 @@ dependencies {
   implementation 'org.hsqldb:hsqldb'
   implementation 'org.apache.derby:derby'
 }
+
+unusedDeps {
+  jarExclude 'hsqldb-.*?\\.jar' // driver is used
+  jarExclude 'derby-.*?\\.jar' // driver may be used
+}

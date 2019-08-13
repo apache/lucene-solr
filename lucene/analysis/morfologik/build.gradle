@@ -33,3 +33,7 @@ dependencies {
   
   testImplementation project(':lucene:lucene-test-framework')
 }
+
+unusedDeps {
+  jarExclude 'morfologik-ukrainian-search.*\\.jar' // can be used by user I believe
+}
