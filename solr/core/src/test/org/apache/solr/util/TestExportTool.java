@@ -19,14 +19,18 @@ package org.apache.solr.util;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
@@ -34,6 +38,9 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JsonRecordReader;
 
@@ -71,82 +78,155 @@ public class TestExportTool extends SolrCloudTestCase {
       String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
 
 
-      ExportTool.Info info = new ExportTool.Info(url);
-
+      ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
       String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("200");
-      info.exportDocsWithCursorMark();
+      info.fields = "id,desc_s";
+      info.exportDocs();
 
-      assertTrue(info.docsWritten >= 200);
-      JsonRecordReader jsonReader = JsonRecordReader.getInst("/", Arrays.asList("$FQN:/**"));
-      Reader rdr = new InputStreamReader(new FileInputStream( absolutePath), StandardCharsets.UTF_8);
-      try {
-        int[] count = new int[]{0};
-        jsonReader.streamRecords(rdr, (record, path) -> count[0]++);
-        assertTrue(count[0] >= 200);
-      } finally {
-        rdr.close();
-      }
+      assertJsonDocsCount(info, 200);
 
-
-      info = new ExportTool.Info(url);
+      info = new ExportTool.MultiThreadedRunner(url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("-1");
-      info.exportDocsWithCursorMark();
+      info.fields = "id,desc_s";
+      info.exportDocs();
 
-      assertTrue(info.docsWritten >= 1000);
-      jsonReader = JsonRecordReader.getInst("/", Arrays.asList("$FQN:/**"));
-      rdr = new InputStreamReader(new FileInputStream( absolutePath), StandardCharsets.UTF_8);
-      try {
-        int[] count = new int[]{0};
-        jsonReader.streamRecords(rdr, (record, path) -> count[0]++);
-        assertTrue(count[0] >= 1000);
-      } finally {
-        rdr.close();
-      }
+      assertJsonDocsCount(info, 1000);
 
-
-      info = new ExportTool.Info(url);
+      info = new ExportTool.MultiThreadedRunner(url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
       info.setOutFormat(absolutePath, "javabin");
       info.setLimit("200");
-      info.exportDocsWithCursorMark();
-      assertTrue(info.docsWritten >= 200);
+      info.fields = "id,desc_s";
+      info.exportDocs();
 
-      FileInputStream fis = new FileInputStream(absolutePath);
-      try {
-        int[] count = new int[]{0};
-        FastInputStream in = FastInputStream.wrap(fis);
-        new JavaBinUpdateRequestCodec()
-            .unmarshal(in, (document, req, commitWithin, override) -> count[0]++);
-        assertTrue(count[0] >= 200);
-      } finally {
-        fis.close();
-      }
+      assertJavabinDocsCount(info, 200);
 
-      info = new ExportTool.Info(url);
+      info = new ExportTool.MultiThreadedRunner(url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
       info.setOutFormat(absolutePath, "javabin");
       info.setLimit("-1");
-      info.exportDocsWithCursorMark();
-      assertTrue(info.docsWritten >= 1000);
-
-      fis = new FileInputStream(absolutePath);
-      try {
-        int[] count = new int[]{0};
-        FastInputStream in = FastInputStream.wrap(fis);
-        new JavaBinUpdateRequestCodec()
-            .unmarshal(in, (document, req, commitWithin, override) -> count[0]++);
-        assertTrue(count[0] >= 1000);
-      } finally {
-        fis.close();
-      }
+      info.fields = "id,desc_s";
+      info.exportDocs();
+      assertJavabinDocsCount(info, 1000);
 
     } finally {
       cluster.shutdown();
 
+    }
+  }
+
+  @Nightly
+  public void testVeryLargeCluster() throws Exception {
+    String COLLECTION_NAME = "veryLargeColl";
+    MiniSolrCloudCluster cluster = configureCluster(4)
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
+
+    try {
+      CollectionAdminRequest
+          .createCollection(COLLECTION_NAME, "conf", 8, 1)
+          .setMaxShardsPerNode(10)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(COLLECTION_NAME, 8, 8);
+
+      String tmpFileLoc = new File(cluster.getBaseDir().toFile().getAbsolutePath() +
+          File.separator).getPath();
+      String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
+
+
+      int docCount = 0;
+
+      for (int j = 0; j < 4; j++) {
+        int bsz = 10000;
+        UpdateRequest ur = new UpdateRequest();
+        ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+        for (int i = 0; i < bsz; i++) {
+          ur.add("id", String.valueOf((j * bsz) + i), "desc_s", TestUtil.randomSimpleString(random(), 10, 50));
+        }
+        cluster.getSolrClient().request(ur, COLLECTION_NAME);
+        docCount += bsz;
+      }
+
+      QueryResponse qr = cluster.getSolrClient().query(COLLECTION_NAME, new SolrQuery("*:*").setRows(0));
+      assertEquals(docCount, qr.getResults().getNumFound());
+
+      DocCollection coll = cluster.getSolrClient().getClusterStateProvider().getCollection(COLLECTION_NAME);
+      HashMap<String, Long> docCounts = new HashMap<>();
+      long totalDocsFromCores = 0;
+      for (Slice slice : coll.getSlices()) {
+        Replica replica = slice.getLeader();
+        try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getBaseUrl()).build()) {
+          long count = ExportTool.getDocCount(replica.getCoreName(), client);
+          docCounts.put(replica.getCoreName(), count);
+          totalDocsFromCores += count;
+        }
+      }
+      assertEquals(docCount, totalDocsFromCores);
+
+      ExportTool.MultiThreadedRunner info = null;
+      String absolutePath = null;
+
+      info = new ExportTool.MultiThreadedRunner(url);
+      info.output = System.out;
+      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
+      info.setOutFormat(absolutePath, "javabin");
+      info.setLimit("-1");
+      info.exportDocs();
+      assertJavabinDocsCount(info, docCount);
+      for (Map.Entry<String, Long> e : docCounts.entrySet()) {
+        assertEquals(e.getValue().longValue(), info.corehandlers.get(e.getKey()).receivedDocs.get());
+      }
+      info = new ExportTool.MultiThreadedRunner(url);
+      info.output = System.out;
+      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      info.setOutFormat(absolutePath, "jsonl");
+      info.fields = "id,desc_s";
+      info.setLimit("-1");
+      info.exportDocs();
+      long actual = ((ExportTool.JsonSink) info.sink).docs.get();
+      assertTrue("docs written :" + actual + "docs produced : " + info.docsWritten.get(), actual >= docCount);
+      assertJsonDocsCount(info, docCount);
+    } finally {
+      cluster.shutdown();
+
+    }
+  }
+
+
+  private void assertJavabinDocsCount(ExportTool.Info info, int expected) throws IOException {
+    assertTrue("" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
+    FileInputStream fis = new FileInputStream(info.out);
+    try {
+      int[] count = new int[]{0};
+      FastInputStream in = FastInputStream.wrap(fis);
+      new JavaBinUpdateRequestCodec()
+          .unmarshal(in, (document, req, commitWithin, override) -> {
+            assertEquals(2, document.size());
+            count[0]++;
+          });
+      assertTrue(count[0] >= expected);
+    } finally {
+      fis.close();
+    }
+  }
+
+  private void assertJsonDocsCount(ExportTool.Info info, int expected) throws IOException {
+    assertTrue("" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
+
+    JsonRecordReader jsonReader;
+    Reader rdr;
+    jsonReader = JsonRecordReader.getInst("/", Arrays.asList("$FQN:/**"));
+    rdr = new InputStreamReader(new FileInputStream(info.out), StandardCharsets.UTF_8);
+    try {
+      int[] count = new int[]{0};
+      jsonReader.streamRecords(rdr, (record, path) -> count[0]++);
+      assertTrue(count[0] >= expected);
+    } finally {
+      rdr.close();
     }
   }
 }
