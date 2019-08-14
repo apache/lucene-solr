@@ -97,6 +97,8 @@ Bug Fixes
 * SOLR-13141: CDCR bootstrap does not replicate index to the replicas of target cluster.
   (Krzysztof Watral, Amrit Sarkar, Tim, Tdspringsteen, shalin)
 
+* SOLR-13694: IndexSizeEstimator NullPointerException. (ab, hossman)
+
 Other Changes
 ----------------------
 
