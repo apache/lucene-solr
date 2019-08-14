@@ -28,9 +28,9 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SloppyMath;
+import org.apache.lucene.util.bkd.BKDReader;
 import org.apache.lucene.util.bkd.BKDReader.IndexTree;
 import org.apache.lucene.util.bkd.BKDReader.IntersectState;
-import org.apache.lucene.util.bkd.BKDReader;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -106,7 +106,8 @@ class NearestNeighbor {
     private void maybeUpdateBBox() {
       if (setBottomCounter < 1024 || (setBottomCounter & 0x3F) == 0x3F) {
         NearestHit hit = hitQueue.peek();
-        Rectangle box = Rectangle.fromPointDistance(pointLat, pointLon, hit.distanceMeters);
+        Rectangle box = Rectangle.fromPointDistance(pointLat, pointLon,
+            SloppyMath.haversinMeters(hit.distanceSortKey));
         //System.out.println("    update bbox to " + box);
         minLat = box.minLat;
         maxLat = box.maxLat;
@@ -134,8 +135,6 @@ class NearestNeighbor {
         return;
       }
 
-      // TODO: work in int space, use haversinSortKey
-
       double docLatitude = decodeLatitude(packedValue, 0);
       double docLongitude = decodeLongitude(packedValue, Integer.BYTES);
 
@@ -147,21 +146,22 @@ class NearestNeighbor {
         return;
       }
 
-      double distanceMeters = SloppyMath.haversinMeters(pointLat, pointLon, docLatitude, docLongitude);
+      // Use the haversin sort key when comparing hits, as it is faster to compute than the true distance.
+      double distanceSortKey = SloppyMath.haversinSortKey(pointLat, pointLon, docLatitude, docLongitude);
 
-      //System.out.println("    visit docID=" + docID + " distanceMeters=" + distanceMeters + " docLat=" + docLatitude + " docLon=" + docLongitude);
+      //System.out.println("    visit docID=" + docID + " distanceSortKey=" + distanceSortKey + " docLat=" + docLatitude + " docLon=" + docLongitude);
 
       int fullDocID = curDocBase + docID;
 
       if (hitQueue.size() == topN) {
         // queue already full
         NearestHit hit = hitQueue.peek();
-        //System.out.println("      bottom distanceMeters=" + hit.distanceMeters);
+        //System.out.println("      bottom distanceSortKey=" + hit.distanceSortKey);
         // we don't collect docs in order here, so we must also test the tie-break case ourselves:
-        if (distanceMeters < hit.distanceMeters || (distanceMeters == hit.distanceMeters && fullDocID < hit.docID)) {
+        if (distanceSortKey < hit.distanceSortKey || (distanceSortKey == hit.distanceSortKey && fullDocID < hit.docID)) {
           hitQueue.poll();
           hit.docID = fullDocID;
-          hit.distanceMeters = distanceMeters;
+          hit.distanceSortKey = distanceSortKey;
           hitQueue.offer(hit);
           //System.out.println("      ** keep2, now bottom=" + hit);
           maybeUpdateBBox();
@@ -170,7 +170,7 @@ class NearestNeighbor {
       } else {
         NearestHit hit = new NearestHit();
         hit.docID = fullDocID;
-        hit.distanceMeters = distanceMeters;
+        hit.distanceSortKey = distanceSortKey;
         hitQueue.offer(hit);
         //System.out.println("      ** keep1, now bottom=" + hit);
       }
@@ -182,14 +182,18 @@ class NearestNeighbor {
     }
   }
 
-  /** Holds one hit from {@link LatLonPointPrototypeQueries#nearest} */
+  /** Holds one hit from {@link NearestNeighbor#nearest} */
   static class NearestHit {
     public int docID;
-    public double distanceMeters;
+
+    /**
+     * The distance from the hit to the query point, computed as a sort key through {@link SloppyMath#haversinSortKey}.
+     */
+    public double distanceSortKey;
 
     @Override
     public String toString() {
-      return "NearestHit(docID=" + docID + " distanceMeters=" + distanceMeters + ")";
+      return "NearestHit(docID=" + docID + " distanceSortKey=" + distanceSortKey + ")";
     }
   }
 
@@ -204,8 +208,8 @@ class NearestNeighbor {
     final PriorityQueue<NearestHit> hitQueue = new PriorityQueue<>(n, new Comparator<NearestHit>() {
         @Override
         public int compare(NearestHit a, NearestHit b) {
-          // sort by opposite distanceMeters natural order
-          int cmp = Double.compare(a.distanceMeters, b.distanceMeters);
+          // sort by opposite distanceSortKey natural order
+          int cmp = Double.compare(a.distanceSortKey, b.distanceSortKey);
           if (cmp != 0) {
             return -cmp;
           }
