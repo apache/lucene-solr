@@ -46,8 +46,9 @@ grant {
   permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,write,delete";
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,write,delete";
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
-  // gradle tmp out dir
-  permission java.io.FilePermission ".out${/}-", "read,write,delete";
+  
+  // gradle build dir
+  permission java.io.FilePermission "build${/}-", "read,write,delete,execute";
 
   // misc HardlinkCopyDirectoryWrapper needs this to test if hardlinks can be created
   permission java.nio.file.LinkPermission "hard";

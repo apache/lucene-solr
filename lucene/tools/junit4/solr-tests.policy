@@ -47,8 +47,8 @@ grant {
   permission java.io.FilePermission "${user.home}${/}.gradle${/}-", "read";
   permission java.nio.file.LinkPermission "hard";
   
-  // gradle tmp out dir
-  permission java.io.FilePermission ".out${/}-", "read,write,delete";
+  // gradle build dir
+  permission java.io.FilePermission "build${/}-", "read,write,delete,execute";
   
   // all possibilities of accepting/binding connections on localhost with ports >=1024:
   permission java.net.SocketPermission "localhost:1024-", "accept,listen";
