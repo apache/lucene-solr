@@ -23,6 +23,17 @@
 // PLEASE NOTE: You may need to enable other permissions when new tests are added,
 // everything not allowed here is forbidden!
 
+// Gradle needs permissions
+grant codeBase "file:${user.home}/.gradle/-" {
+     permission java.security.AllPermission;
+//   permission java.net.SocketPermission "*", "accept,listen,connect,resolve";
+//   permission java.lang.reflect.ReflectPermission "*";
+//   permission java.util.logging.LoggingPermission "control";
+//   permission java.util.PropertyPermission "*", "read,write";
+//   permission java.io.FilePermission "${user.home}${/}.gradle${/}-", "read,write,delete";
+};
+
+
 grant {
   // permissions for file access, write access only to sandbox:
   permission java.io.FilePermission "<<ALL FILES>>", "read,execute";
@@ -33,7 +44,11 @@ grant {
   permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,execute,write,delete";
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,execute,write,delete";
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
+  permission java.io.FilePermission "${user.home}${/}.gradle${/}-", "read";
   permission java.nio.file.LinkPermission "hard";
+  
+  // gradle tmp out dir
+  permission java.io.FilePermission ".out${/}-", "read,write,delete";
   
   // all possibilities of accepting/binding connections on localhost with ports >=1024:
   permission java.net.SocketPermission "localhost:1024-", "accept,listen";
