@@ -206,7 +206,7 @@ public class TestLRUCache extends SolrTestCase {
     }
     // no evictions yet
     assertEquals(6, cache.size());
-    cache.setResourceLimit(SolrCache.SIZE_PARAM, 5);
+    cache.setMaxSize(5);
     // should not happen yet - evictions are triggered by put
     assertEquals(6, cache.size());
     cache.put("6", new Accountable() {
@@ -219,7 +219,7 @@ public class TestLRUCache extends SolrTestCase {
     assertEquals(5, cache.size());
 
     // modify ram limit
-    cache.setResourceLimit(SolrCache.MAX_RAM_MB_PARAM, 3);
+    cache.setMaxRamMB(3);
     // should not happen yet - evictions are triggered by put
     assertEquals(5, cache.size());
     cache.put("7", new Accountable() {
@@ -235,7 +235,7 @@ public class TestLRUCache extends SolrTestCase {
 
     // scale up
 
-    cache.setResourceLimit(SolrCache.MAX_RAM_MB_PARAM, 4);
+    cache.setMaxRamMB(4);
     cache.put("8", new Accountable() {
       @Override
       public long ramBytesUsed() {
@@ -244,7 +244,7 @@ public class TestLRUCache extends SolrTestCase {
     });
     assertEquals(4, cache.size());
 
-    cache.setResourceLimit(SolrCache.SIZE_PARAM, 10);
+    cache.setMaxSize(10);
     for (int i = 0; i < 6; i++) {
       cache.put("new" + i, new Accountable() {
         @Override
