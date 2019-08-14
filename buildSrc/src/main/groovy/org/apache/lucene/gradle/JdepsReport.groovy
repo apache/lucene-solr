@@ -126,13 +126,13 @@ class JdepsReport extends DefaultTask {
     }
     
     if (result.getDidWork()) {
-      runJdeps(getTopLvlProject(project), project, project, distDir, jdepsDir)
+      runJdeps(project.getTopLvlProject(project), project, project, distDir, jdepsDir)
       
       Configuration config = project.configurations[this.configuration]
       config.getAllDependencies().forEach({ dep ->
         if (dep instanceof DefaultProjectDependency) {
           Project dProject = dep.getDependencyProject()
-          def depTopLvlProject = getTopLvlProject(dProject)
+          def depTopLvlProject = project.getTopLvlProject(dProject)
           
           runJdeps(depTopLvlProject, dProject, project, distDir, jdepsDir)
         }
