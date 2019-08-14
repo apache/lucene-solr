@@ -70,7 +70,7 @@ public class MaxFunction {
     if (param instanceof StringValueStream) {
       return new StringMaxFunction((StringValueStream)param);
     }
-    throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a comparable parameter. " + 
+    throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a comparable parameter. " +
           "Incorrect parameter: "+params[0].getExpressionStr());
   });
 }
@@ -78,7 +78,7 @@ class IntMaxFunction extends AbstractIntValue implements ReductionFunction {
   private IntMaxCollector collector;
   public static final String name = MaxFunction.name;
   private final String exprStr;
-  
+
   public IntMaxFunction(IntValueStream param) {
     this.collector = new IntMaxCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -115,7 +115,7 @@ class LongMaxFunction extends AbstractLongValue implements ReductionFunction {
   private LongMaxCollector collector;
   public static final String name = MaxFunction.name;
   private final String exprStr;
-  
+
   public LongMaxFunction(LongValueStream param) {
     this.collector = new LongMaxCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -152,7 +152,7 @@ class FloatMaxFunction extends AbstractFloatValue implements ReductionFunction {
   private FloatMaxCollector collector;
   public static final String name = MaxFunction.name;
   private final String exprStr;
-  
+
   public FloatMaxFunction(FloatValueStream param) {
     this.collector = new FloatMaxCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -189,7 +189,7 @@ class DoubleMaxFunction extends AbstractDoubleValue implements ReductionFunction
   private DoubleMaxCollector collector;
   public static final String name = MaxFunction.name;
   private final String exprStr;
-  
+
   public DoubleMaxFunction(DoubleValueStream param) {
     this.collector = new DoubleMaxCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -226,7 +226,7 @@ class DateMaxFunction extends AbstractDateValue implements ReductionFunction {
   private LongMaxCollector collector;
   public static final String name = MaxFunction.name;
   private final String exprStr;
-  
+
   public DateMaxFunction(LongValueStream param) {
     this.collector = new LongMaxCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -263,7 +263,7 @@ class StringMaxFunction extends AbstractStringValue implements ReductionFunction
   private StringMaxCollector collector;
   public static final String name = MaxFunction.name;
   private final String exprStr;
-  
+
   public StringMaxFunction(StringValueStream param) {
     this.collector = new StringMaxCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);

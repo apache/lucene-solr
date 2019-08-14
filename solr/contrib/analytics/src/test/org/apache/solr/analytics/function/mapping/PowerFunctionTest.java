@@ -34,23 +34,23 @@ public class PowerFunctionTest extends SolrTestCaseJ4 {
   public void twoSingleValueParametersTest() {
     TestIntValue base = new TestIntValue();
     TestFloatValue pow = new TestFloatValue();
-    
+
     AnalyticsValueStream uncasted = PowerFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, pow});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
-    
+
     // Neither exists
     base.setExists(false);
     pow.setExists(false);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // One exists
     base.setValue(30).setExists(true);
     pow.setExists(false);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // Both exist
     base.setValue(6).setExists(true);
     pow.setValue(2.56F).setExists(true);
@@ -62,7 +62,7 @@ public class PowerFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiOneSingleValueParameterTest() {
     TestLongValueStream base = new TestLongValueStream();
     TestDoubleValue pow = new TestDoubleValue();
-    
+
     AnalyticsValueStream uncasted = PowerFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, pow});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
@@ -73,14 +73,14 @@ public class PowerFunctionTest extends SolrTestCaseJ4 {
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, no value
     base.setValues(4L, 10023L);
     pow.setExists(false);
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, one value
     base.setValues(4L, 123L, 10L);
     pow.setValue(2.5F).setExists(true);
@@ -96,7 +96,7 @@ public class PowerFunctionTest extends SolrTestCaseJ4 {
   public void oneSingleOneMultiValueParameterTest() {
     TestDoubleValue base = new TestDoubleValue();
     TestLongValueStream pow = new TestLongValueStream();
-    
+
     AnalyticsValueStream uncasted = PowerFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, pow});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
@@ -107,14 +107,14 @@ public class PowerFunctionTest extends SolrTestCaseJ4 {
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, no value
     base.setExists(false);
     pow.setValues(4L, 10023L);
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, one value
     base.setValue(4.56F).setExists(true);
     pow.setValues(2L, 5L, 3L);

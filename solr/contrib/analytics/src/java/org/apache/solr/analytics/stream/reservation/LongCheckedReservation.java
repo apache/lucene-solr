@@ -26,7 +26,7 @@ import org.apache.solr.analytics.stream.reservation.read.LongCheckedDataReader;
 import org.apache.solr.analytics.stream.reservation.write.LongCheckedDataWriter;
 
 public class LongCheckedReservation extends ReductionCheckedDataReservation<LongConsumer, LongSupplier> {
-  
+
   public LongCheckedReservation(LongConsumer applier, LongSupplier extractor, BooleanSupplier exists) {
     super(applier, extractor, exists);
   }

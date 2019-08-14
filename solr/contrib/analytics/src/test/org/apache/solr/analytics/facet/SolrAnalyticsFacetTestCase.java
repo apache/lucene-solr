@@ -31,29 +31,29 @@ public class SolrAnalyticsFacetTestCase extends SolrAnalyticsTestCase {
   private Map<String, String> facets = new HashMap<>();
   private FVP fvp;
   private int fvp_num;
-  
+
   @Before
   protected void initData() {
     results = new HashMap<>();
     facets = new HashMap<>();
   }
-  
+
   protected void addFacet(String name, String json) {
     facets.put(name, json);
     facetResults = new ArrayList<>();
     results.put(name, facetResults);
     fvp_num = 0;
   }
-  
+
   protected void addFacetValue(String value) {
     fvp = new FVP(fvp_num++, value, new HashMap<>());
     facetResults.add(fvp);
   }
-  
+
   protected void addFacetResult(String expr, Comparable<?> result) {
     fvp.expectedResults.put(expr, result);
   }
-  
+
   protected void testGrouping(Map<String,String> expressions) {
     try {
       testGrouping("grouping", expressions, facets, results);
@@ -61,7 +61,7 @@ public class SolrAnalyticsFacetTestCase extends SolrAnalyticsTestCase {
       throw new RuntimeException(e);
     }
   }
-  
+
   protected void testGrouping(Map<String,String> expressions, boolean sortAscending) {
     try {
       testGrouping("grouping", expressions, facets, results, sortAscending);
@@ -69,7 +69,7 @@ public class SolrAnalyticsFacetTestCase extends SolrAnalyticsTestCase {
       throw new RuntimeException(e);
     }
   }
-  
+
   protected void testGrouping(Map<String,String> expressions, String sortExpression, boolean sortAscending) {
     try {
       testGrouping("grouping", expressions, facets, results, sortExpression, sortAscending);

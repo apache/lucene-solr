@@ -36,6 +36,10 @@ public class IsNullEvaluator extends RecursiveBooleanEvaluator implements ManyVa
 
   public Object doWork(Object ... values) throws IOException {
 
+    if(values[0] == null) {
+      return true;
+    }
+
     if(values[0] instanceof String) {
       //Check to see if the this tuple had a null value for that string.
       Map tupleContext = getStreamContext().getTupleContext();

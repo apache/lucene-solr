@@ -23,20 +23,20 @@ import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
  * The {@link ReductionCollectionManager} used for distributed requests.
  */
 public class MergingReductionCollectionManager extends ReductionCollectionManager {
-  
+
   public MergingReductionCollectionManager() {
     super();
   }
-  
+
   public MergingReductionCollectionManager(final ReductionDataCollector<?>[] reductionDataCollectors, final Iterable<AnalyticsField> fields) {
     super(reductionDataCollectors, fields);
   }
-  
+
   @Override
   protected ReductionCollectionManager createNewManager(final ReductionDataCollector<?>[] reductionDataCollectors, final Iterable<AnalyticsField> fields) {
     return new MergingReductionCollectionManager(reductionDataCollectors,fields);
   }
-  
+
   @Override
   public void setData(ReductionDataCollection dataCollection) {
     for (int i = 0; i < reductionDataCollectors.length; i++) {

@@ -94,4 +94,13 @@ public interface IndexTools {
    * @param dataDir - the directory path which contains sample documents (20 Newsgroups).
    */
   void createNewIndex(String dataDir);
+
+
+  /**
+   * Export terms from given field into a new file on the destination directory
+   * @param destDir - destination directory
+   * @param field - field name
+   * @return The file containing the export
+   */
+  String exportTerms(String destDir, String field);
 }

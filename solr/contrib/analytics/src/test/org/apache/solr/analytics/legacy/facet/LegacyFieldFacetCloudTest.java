@@ -40,51 +40,51 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
   public static final int STRING = 29;
   public static final int STRINGM = 41;
   public static final int NUM_LOOPS = 100;
-  
+
   //INT
-  private static ArrayList<ArrayList<Integer>> intDateTestStart; 
-  private static ArrayList<Long> intDateTestMissing; 
-  private static ArrayList<ArrayList<Integer>> intStringTestStart; 
-  private static ArrayList<Long> intStringTestMissing; 
-  
+  private static ArrayList<ArrayList<Integer>> intDateTestStart;
+  private static ArrayList<Long> intDateTestMissing;
+  private static ArrayList<ArrayList<Integer>> intStringTestStart;
+  private static ArrayList<Long> intStringTestMissing;
+
   //LONG
-  private static ArrayList<ArrayList<Long>> longDateTestStart; 
-  private static ArrayList<Long> longDateTestMissing; 
-  private static ArrayList<ArrayList<Long>> longStringTestStart; 
-  private static ArrayList<Long> longStringTestMissing; 
-  
+  private static ArrayList<ArrayList<Long>> longDateTestStart;
+  private static ArrayList<Long> longDateTestMissing;
+  private static ArrayList<ArrayList<Long>> longStringTestStart;
+  private static ArrayList<Long> longStringTestMissing;
+
   //FLOAT
-  private static ArrayList<ArrayList<Float>> floatDateTestStart; 
-  private static ArrayList<Long> floatDateTestMissing; 
-  private static ArrayList<ArrayList<Float>> floatStringTestStart; 
-  private static ArrayList<Long> floatStringTestMissing; 
-  
+  private static ArrayList<ArrayList<Float>> floatDateTestStart;
+  private static ArrayList<Long> floatDateTestMissing;
+  private static ArrayList<ArrayList<Float>> floatStringTestStart;
+  private static ArrayList<Long> floatStringTestMissing;
+
   //DOUBLE
-  private static ArrayList<ArrayList<Double>> doubleDateTestStart; 
-  private static ArrayList<Long> doubleDateTestMissing; 
-  private static ArrayList<ArrayList<Double>> doubleStringTestStart; 
-  private static ArrayList<Long> doubleStringTestMissing; 
-  
+  private static ArrayList<ArrayList<Double>> doubleDateTestStart;
+  private static ArrayList<Long> doubleDateTestMissing;
+  private static ArrayList<ArrayList<Double>> doubleStringTestStart;
+  private static ArrayList<Long> doubleStringTestMissing;
+
   //DATE
-  private static ArrayList<ArrayList<String>> dateIntTestStart; 
-  private static ArrayList<Long> dateIntTestMissing; 
-  private static ArrayList<ArrayList<String>> dateLongTestStart; 
-  private static ArrayList<Long> dateLongTestMissing; 
-  
+  private static ArrayList<ArrayList<String>> dateIntTestStart;
+  private static ArrayList<Long> dateIntTestMissing;
+  private static ArrayList<ArrayList<String>> dateLongTestStart;
+  private static ArrayList<Long> dateLongTestMissing;
+
   //String
-  private static ArrayList<ArrayList<String>> stringIntTestStart; 
-  private static ArrayList<Long> stringIntTestMissing; 
-  private static ArrayList<ArrayList<String>> stringLongTestStart; 
-  private static ArrayList<Long> stringLongTestMissing; 
-  
+  private static ArrayList<ArrayList<String>> stringIntTestStart;
+  private static ArrayList<Long> stringIntTestMissing;
+  private static ArrayList<ArrayList<String>> stringLongTestStart;
+  private static ArrayList<Long> stringLongTestMissing;
+
   //Multi-Valued
-  private static ArrayList<ArrayList<Integer>> multiLongTestStart; 
-  private static ArrayList<Long> multiLongTestMissing; 
-  private static ArrayList<ArrayList<Integer>> multiStringTestStart; 
-  private static ArrayList<Long> multiStringTestMissing; 
-  private static ArrayList<ArrayList<Integer>> multiDateTestStart; 
-  private static ArrayList<Long> multiDateTestMissing; 
-  
+  private static ArrayList<ArrayList<Integer>> multiLongTestStart;
+  private static ArrayList<Long> multiLongTestMissing;
+  private static ArrayList<ArrayList<Integer>> multiStringTestStart;
+  private static ArrayList<Long> multiStringTestMissing;
+  private static ArrayList<ArrayList<Integer>> multiDateTestStart;
+  private static ArrayList<Long> multiDateTestMissing;
+
   @Before
   public void beforeTest() throws Exception {
 
@@ -93,37 +93,37 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     intDateTestMissing = new ArrayList<>();
     intStringTestStart = new ArrayList<>();
     intStringTestMissing = new ArrayList<>();
-    
+
     //LONG
     longDateTestStart = new ArrayList<>();
     longDateTestMissing = new ArrayList<>();
     longStringTestStart = new ArrayList<>();
     longStringTestMissing = new ArrayList<>();
-    
+
     //FLOAT
     floatDateTestStart = new ArrayList<>();
     floatDateTestMissing = new ArrayList<>();
     floatStringTestStart = new ArrayList<>();
     floatStringTestMissing = new ArrayList<>();
-    
+
     //DOUBLE
     doubleDateTestStart = new ArrayList<>();
     doubleDateTestMissing = new ArrayList<>();
     doubleStringTestStart = new ArrayList<>();
     doubleStringTestMissing = new ArrayList<>();
-    
+
     //DATE
     dateIntTestStart = new ArrayList<>();
     dateIntTestMissing = new ArrayList<>();
     dateLongTestStart = new ArrayList<>();
     dateLongTestMissing = new ArrayList<>();
-    
+
     //String
     stringIntTestStart = new ArrayList<>();
     stringIntTestMissing = new ArrayList<>();
     stringLongTestStart = new ArrayList<>();
     stringLongTestMissing = new ArrayList<>();
-    
+
     //Multi-Valued
     multiLongTestStart = new ArrayList<>();
     multiLongTestMissing = new ArrayList<>();
@@ -131,7 +131,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     multiStringTestMissing = new ArrayList<>();
     multiDateTestStart = new ArrayList<>();
     multiDateTestMissing = new ArrayList<>();
-    
+
     boolean multiCanHaveDuplicates = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP);
 
     UpdateRequest req = new UpdateRequest();
@@ -148,7 +148,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
 
       List<String> fields = new ArrayList<>();
       fields.add("id"); fields.add("1000"+j);
-      
+
       if( i != 0 ) {
         fields.add("int_id"); fields.add("" + i);
       }
@@ -180,7 +180,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
         fields.add("string_sdm"); fields.add("str" + sm);
       }
       req.add(fields.toArray(new String[0]));
-      
+
       if( dt != 0 ) {
         //Dates
         if ( j-DATE < 0 ) {
@@ -206,7 +206,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
             floatDateTestMissing.add(0l);
           } else {
             floatDateTestMissing.add(1l);
-            
+
           }
           floatDateTestStart.add(list3);
           ArrayList<Double> list4 = new ArrayList<>();
@@ -223,7 +223,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
             multiDateTestMissing.add(0l);
           } else {
             multiDateTestMissing.add(1l);
-            
+
           }
           multiDateTestStart.add(list5);
         } else {
@@ -234,7 +234,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
           if( i != 0 ) multiDateTestStart.get(dt-1).add(i); else increment(multiDateTestMissing,dt-1);
         }
       }
-      
+
       if ( dtm != 0 ) {
         if ( j-DATEM < 0 && dtm != dt ) {
           ArrayList<Integer> list1 = new ArrayList<>();
@@ -249,7 +249,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
           if( i != 0 ) multiDateTestStart.get(dtm-1).add(i); else increment(multiDateTestMissing,dtm-1);
         }
       }
-      
+
       if( s != 0 ){
         //Strings
         if ( j-STRING < 0 ) {
@@ -301,7 +301,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
           if( i != 0 ) multiStringTestStart.get(s-1).add(i); else increment(multiStringTestMissing,s-1);
         }
       }
-      
+
       //Strings
       if( sm != 0 ){
         if ( j-STRINGM < 0 && sm != s ) {
@@ -317,7 +317,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
           if( i != 0 ) multiStringTestStart.get(sm-1).add(i); else increment(multiStringTestMissing,sm-1);
         }
       }
-      
+
       //Int
       if( i != 0 ) {
         if ( j-INT < 0 ) {
@@ -342,7 +342,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
           if( s != 0 ) stringIntTestStart.get(i-1).add("str"+s); else increment(stringIntTestMissing,i-1);
         }
       }
-      
+
       //Long
       if( l != 0 ) {
         if ( j-LONG < 0 ) {
@@ -376,7 +376,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
           if( i != 0 ) multiLongTestStart.get((int)l-1).add(i); else increment(multiLongTestMissing,(int)l-1);
         }
       }
-      
+
       //Long
       if( lm != 0 ) {
         if ( j-LONGM < 0 && lm != l ) {
@@ -392,16 +392,16 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
           if( i != 0 ) multiLongTestStart.get((int)lm-1).add(i); else increment( multiLongTestMissing,(int)lm-1);
         }
       }
-      
+
     }
 
     req.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-    
+
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
-  public void sumTest() throws Exception { 
+  public void sumTest() throws Exception {
     String[] params = new String[] {
         "o.sum.s.int", "sum(int_id)",
         "o.sum.s.long", "sum(long_ld)",
@@ -452,7 +452,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
 
   @SuppressWarnings("unchecked")
   @Test
-  public void meanTest() throws Exception { 
+  public void meanTest() throws Exception {
     String[] params = new String[] {
         "o.mean.s.int", "mean(int_id)",
         "o.mean.s.long", "mean(long_ld)",
@@ -463,7 +463,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int Date
     Collection<Double> intDate = getValueList(response, "mean", "fieldFacets", "date_dtd", "int", false);
     ArrayList<Double> intDateTest = calculateFacetedNumberStat(intDateTestStart, "mean");
@@ -500,10 +500,10 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     ArrayList<Double> doubleStringTest = calculateFacetedNumberStat(doubleStringTestStart, "mean");
     assertEquals(responseStr,doubleString,doubleStringTest);
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
-  public void stddevFacetAscTest() throws Exception { 
+  public void stddevFacetAscTest() throws Exception {
     String[] params = new String[] {
         "o.stddev.s.int", "stddev(int_id)",
         "o.stddev.s.long", "stddev(long_ld)",
@@ -513,7 +513,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
         "o.stddev.ff", "date_dtd"
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
-    
+
     //Int Date
     ArrayList<Double> intDate = getValueList(response, "stddev", "fieldFacets", "date_dtd", "int", false);
     ArrayList<Double> intDateTest = calculateFacetedNumberStat(intDateTestStart, "stddev");
@@ -550,10 +550,10 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     ArrayList<Double> doubleStringTest = calculateFacetedNumberStat(doubleStringTestStart, "stddev");
     checkStddevs(response, doubleString, doubleStringTest);
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
-  public void medianFacetAscTest() throws Exception { 
+  public void medianFacetAscTest() throws Exception {
     String[] params = new String[] {
         "o.median.s.int", "median(int_id)",
         "o.median.s.long", "median(long_ld)",
@@ -564,7 +564,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int Date
     Collection<Double> intDate = getValueList(response, "median","fieldFacets", "date_dtd", "int", false);
     ArrayList<Double> intDateTest = calculateFacetedNumberStat(intDateTestStart, "median");
@@ -604,7 +604,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
 
   @SuppressWarnings("unchecked")
   @Test
-  public void perc20Test() throws Exception { 
+  public void perc20Test() throws Exception {
     String[] params = new String[] {
         "o.percentile_20n.s.int", "percentile(20,int_id)",
         "o.percentile_20n.s.long", "percentile(20,long_ld)",
@@ -620,7 +620,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int Date
     Collection<Integer> intDate = getValueList(response, "percentile_20n", "fieldFacets", "date_dtd", "int", false);
     ArrayList<Integer> intDateTest = (ArrayList<Integer>)calculateFacetedStat(intDateTestStart, "perc_20");
@@ -678,7 +678,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
 
   @SuppressWarnings("unchecked")
   @Test
-  public void perc60Test() throws Exception { 
+  public void perc60Test() throws Exception {
     String[] params = new String[] {
         "o.percentile_60n.s.int", "percentile(60,int_id)",
         "o.percentile_60n.s.long", "percentile(60,long_ld)",
@@ -694,7 +694,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int Date
     Collection<Integer> intDate = getValueList(response, "percentile_60n", "fieldFacets", "date_dtd", "int", false);
     ArrayList<Integer> intDateTest = (ArrayList<Integer>)calculateFacetedStat(intDateTestStart, "perc_60");
@@ -752,7 +752,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
 
   @SuppressWarnings("unchecked")
   @Test
-  public void minTest() throws Exception { 
+  public void minTest() throws Exception {
     String[] params = new String[] {
         "o.minn.s.int", "min(int_id)",
         "o.minn.s.long", "min(long_ld)",
@@ -768,7 +768,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int Date
     Collection<Integer> intDate = getValueList(response, "minn", "fieldFacets", "date_dtd", "int", false);
     ArrayList<Integer> intDateTest = (ArrayList<Integer>)calculateFacetedStat(intDateTestStart, "min");
@@ -826,7 +826,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
 
   @SuppressWarnings("unchecked")
   @Test
-  public void maxTest() throws Exception { 
+  public void maxTest() throws Exception {
     String[] params = new String[] {
         "o.maxn.s.int", "max(int_id)",
         "o.maxn.s.long", "max(long_ld)",
@@ -842,12 +842,12 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int Date
     Collection<Integer> intDate = getValueList(response, "maxn", "fieldFacets", "date_dtd", "int", false);
     ArrayList<Integer> intDateTest = (ArrayList<Integer>)calculateFacetedStat(intDateTestStart, "max");
     assertEquals(responseStr,intDate,intDateTest);
-    
+
     //Int String
     Collection<Integer> intString = getValueList(response, "maxn", "fieldFacets", "string_sd", "int", false);
     ArrayList<Integer> intStringTest = (ArrayList<Integer>)calculateFacetedStat(intStringTestStart, "max");
@@ -857,7 +857,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Long> longDate = getValueList(response, "maxn", "fieldFacets", "date_dtd", "long", false);
     ArrayList<Long> longDateTest = (ArrayList<Long>)calculateFacetedStat(longDateTestStart, "max");
     assertEquals(responseStr,longDate,longDateTest);
-    
+
     //Long String
     Collection<Long> longString = getValueList(response, "maxn", "fieldFacets", "string_sd", "long", false);
     ArrayList<Long> longStringTest = (ArrayList<Long>)calculateFacetedStat(longStringTestStart, "max");
@@ -867,7 +867,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Float> floatDate = getValueList(response, "maxn", "fieldFacets", "date_dtd", "float", false);
     ArrayList<Float> floatDateTest = (ArrayList<Float>)calculateFacetedStat(floatDateTestStart, "max");
     assertEquals(responseStr,floatDate,floatDateTest);
-    
+
     //Float String
     Collection<Float> floatString = getValueList(response, "maxn", "fieldFacets", "string_sd", "float", false);
     ArrayList<Float> floatStringTest = (ArrayList<Float>)calculateFacetedStat(floatStringTestStart, "max");
@@ -877,17 +877,17 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Double> doubleDate = getValueList(response, "maxn", "fieldFacets", "date_dtd", "double", false);
     ArrayList<Double> doubleDateTest = (ArrayList<Double>)calculateFacetedStat(doubleDateTestStart, "max");
     assertEquals(responseStr,doubleDate,doubleDateTest);
-    
+
     //Double String
     Collection<Double> doubleString = getValueList(response, "maxn", "fieldFacets", "string_sd", "double", false);
     ArrayList<Double> doubleStringTest = (ArrayList<Double>)calculateFacetedStat(doubleStringTestStart, "max");
     assertEquals(responseStr,doubleString,doubleStringTest);
-    
+
     //String Int
     Collection<String> stringInt = getValueList(response, "max", "fieldFacets", "int_id", "str", false);
     ArrayList<String> stringIntTest = (ArrayList<String>)calculateFacetedStat(stringIntTestStart, "max");
     assertEquals(responseStr,stringInt,stringIntTest);
-    
+
     //String Long
     Collection<String> stringLong = getValueList(response, "max", "fieldFacets", "long_ld", "str", false);
     ArrayList<String> stringLongTest = (ArrayList<String>)calculateFacetedStat(stringLongTestStart, "max");
@@ -897,7 +897,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<String> dateInt = getValueList(response, "max", "fieldFacets", "int_id", "date", false);
     ArrayList<String> dateIntTest = (ArrayList<String>)calculateFacetedStat(dateIntTestStart, "max");
     assertEquals(responseStr,dateInt,dateIntTest);
-    
+
     //Date Long
     Collection<String> dateString = getValueList(response, "max", "fieldFacets", "long_ld", "date", false);
     ArrayList<String> dateLongTest = (ArrayList<String>)calculateFacetedStat(dateLongTestStart, "max");
@@ -907,7 +907,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
 
   @SuppressWarnings("unchecked")
   @Test
-  public void uniqueTest() throws Exception { 
+  public void uniqueTest() throws Exception {
     String[] params = new String[] {
         "o.uniquen.s.int", "unique(int_id)",
         "o.uniquen.s.long", "unique(long_ld)",
@@ -923,7 +923,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int Date
     Collection<Long> intDate = getValueList(response, "uniquen", "fieldFacets", "date_dtd", "int", false);
     ArrayList<Long> intDateTest = (ArrayList<Long>)calculateFacetedStat(intDateTestStart, "unique");
@@ -981,7 +981,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
 
   @SuppressWarnings("unchecked")
   @Test
-  public void countTest() throws Exception { 
+  public void countTest() throws Exception {
     String[] params = new String[] {
         "o.countn.s.int", "count(int_id)",
         "o.countn.s.long", "count(long_ld)",
@@ -997,12 +997,12 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int Date
     Collection<Long> intDate = getValueList(response, "countn", "fieldFacets", "date_dtd", "int", false);
     ArrayList<Long> intDateTest = (ArrayList<Long>)calculateFacetedStat(intDateTestStart, "count");
     assertEquals(responseStr,intDate,intDateTest);
-    
+
     //Int String
     Collection<Long> intString = getValueList(response, "countn", "fieldFacets", "string_sd", "int", false);
     ArrayList<Long> intStringTest = (ArrayList<Long>)calculateFacetedStat(intStringTestStart, "count");
@@ -1012,7 +1012,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Long> longDate = getValueList(response, "countn", "fieldFacets", "date_dtd", "long", false);
     ArrayList<Long> longDateTest = (ArrayList<Long>)calculateFacetedStat(longDateTestStart, "count");
     assertEquals(responseStr,longDate,longDateTest);
-    
+
     //Long String
     Collection<Long> longString = getValueList(response, "countn", "fieldFacets", "string_sd", "long", false);
     ArrayList<Long> longStringTest = (ArrayList<Long>)calculateFacetedStat(longStringTestStart, "count");
@@ -1022,7 +1022,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Long> floatDate = getValueList(response, "countn", "fieldFacets", "date_dtd", "float", false);
     ArrayList<Long> floatDateTest = (ArrayList<Long>)calculateFacetedStat(floatDateTestStart, "count");
     assertEquals(responseStr,floatDate,floatDateTest);
-    
+
     //Float String
     Collection<Long> floatString = getValueList(response, "countn", "fieldFacets", "string_sd", "float", false);
     ArrayList<Long> floatStringTest = (ArrayList<Long>)calculateFacetedStat(floatStringTestStart, "count");
@@ -1032,7 +1032,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Long> doubleDate = getValueList(response, "countn", "fieldFacets", "date_dtd", "double", false);
     ArrayList<Long> doubleDateTest = (ArrayList<Long>)calculateFacetedStat(doubleDateTestStart, "count");
     assertEquals(responseStr,doubleDate,doubleDateTest);
-    
+
     //Double String
     Collection<Long> doubleString = getValueList(response, "countn", "fieldFacets", "string_sd", "double", false);
     ArrayList<Long> doubleStringTest = (ArrayList<Long>)calculateFacetedStat(doubleStringTestStart, "count");
@@ -1042,7 +1042,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Long> dateInt = getValueList(response, "count", "fieldFacets", "int_id", "date", false);
     ArrayList<Long> dateIntTest = (ArrayList<Long>)calculateFacetedStat(dateIntTestStart, "count");
     assertEquals(responseStr,dateIntTest,dateInt);
-    
+
     //Date Long
     Collection<Long> dateLong = getValueList(response, "count", "fieldFacets", "long_ld", "date", false);
     ArrayList<Long> dateLongTest = (ArrayList<Long>)calculateFacetedStat(dateLongTestStart, "count");
@@ -1052,7 +1052,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Long> stringInt = getValueList(response, "count", "fieldFacets", "int_id", "str", false);
     ArrayList<Long> stringIntTest = (ArrayList<Long>)calculateFacetedStat(stringIntTestStart, "count");
     assertEquals(responseStr,stringInt,stringIntTest);
-    
+
     //String Long
     Collection<Long> stringLong = getValueList(response, "count", "fieldFacets", "long_ld", "str", false);
     ArrayList<Long> stringLongTest = (ArrayList<Long>)calculateFacetedStat(stringLongTestStart, "count");
@@ -1060,7 +1060,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
   }
 
   @Test
-  public void missingTest() throws Exception { 
+  public void missingTest() throws Exception {
     String[] params = new String[] {
         "o.missingn.s.int", "missing(int_id)",
         "o.missingn.s.long", "missing(long_ld)",
@@ -1076,12 +1076,12 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Int Date
     Collection<Long> intDate = getValueList(response, "missingn", "fieldFacets", "date_dtd", "int", false);
     setLatestType("int");
     assertEquals(responseStr,intDateTestMissing,intDate);
-    
+
     //Int String
     Collection<Long> intString = getValueList(response, "missingn", "fieldFacets", "string_sd", "int", false);
     assertEquals(responseStr,intStringTestMissing,intString);
@@ -1090,7 +1090,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Long> longDate = getValueList(response, "missingn", "fieldFacets", "date_dtd", "long", false);
     setLatestType("long");
     assertEquals(responseStr,longDateTestMissing,longDate);
-    
+
     //Long String
     Collection<Long> longString = getValueList(response, "missingn", "fieldFacets", "string_sd", "long", false);
     assertEquals(responseStr,longStringTestMissing,longString);
@@ -1099,7 +1099,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Long> floatDate = getValueList(response, "missingn", "fieldFacets", "date_dtd", "float", false);
     setLatestType("float");
     assertEquals(responseStr,floatDateTestMissing,floatDate);
-    
+
     //Float String
     Collection<Long> floatString = getValueList(response, "missingn", "fieldFacets", "string_sd", "float", false);
     assertEquals(responseStr,floatStringTestMissing,floatString);
@@ -1108,7 +1108,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Long> doubleDate = getValueList(response, "missingn", "fieldFacets", "date_dtd", "double", false);
     setLatestType("double");
     assertEquals(responseStr,doubleDateTestMissing,doubleDate);
-    
+
     //Double String
     Collection<Long> doubleString = getValueList(response, "missingn", "fieldFacets", "string_sd", "double", false);
     assertEquals(responseStr,doubleStringTestMissing,doubleString);
@@ -1117,7 +1117,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Long> dateInt = getValueList(response, "missing", "fieldFacets", "int_id", "date", false);
     setLatestType("date");
     assertEquals(responseStr,dateIntTestMissing,dateInt);
-    
+
     //Date Long
     Collection<Long> dateLong = getValueList(response, "missing", "fieldFacets", "long_ld", "date", false);
     assertEquals(responseStr,dateLongTestMissing,dateLong);
@@ -1126,15 +1126,15 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     Collection<Long> stringInt = getValueList(response, "missing", "fieldFacets", "int_id", "str", false);
     setLatestType("string");
     assertEquals(responseStr,stringIntTestMissing,stringInt);
-    
+
     //String Long
     Collection<Long> stringLong = getValueList(response, "missing", "fieldFacets", "long_ld", "str", false);
     assertEquals(responseStr,stringLongTestMissing,stringLong);
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
-  public void multiValueTest() throws Exception { 
+  public void multiValueTest() throws Exception {
     String[] params = new String[] {
         "o.multivalued.s.mean", "mean(int_id)",
         "o.multivalued.ff", "long_ldm",
@@ -1143,7 +1143,7 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //Long
     Collection<Double> lon = getValueList(response, "multivalued", "fieldFacets", "long_ldm", "mean", false);
     ArrayList<Double> longTest = calculateFacetedNumberStat(multiLongTestStart, "mean");
@@ -1157,10 +1157,10 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     ArrayList<Double> stringTest = calculateFacetedNumberStat(multiStringTestStart, "mean");
     assertEquals(responseStr,string,stringTest);
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
-  public void missingFacetTest() throws Exception { 
+  public void missingFacetTest() throws Exception {
     String[] params = new String[] {
         "o.missingf.s.mean", "mean(int_id)",
         "o.missingf.ff", "date_dtd",
@@ -1171,20 +1171,20 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     };
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     //int MultiDate
     assertTrue(responseStr, responseContainsFacetValue(response, "missingf", "fieldFacets", "date_dtdm", "(MISSING)"));
     ArrayList<Double> string = getValueList(response, "missingf", "fieldFacets", "date_dtdm", "mean", false);
     ArrayList<Double> stringTest = calculateFacetedNumberStat(multiDateTestStart, "mean");
     assertEquals(responseStr, string,stringTest);
-    
+
     //Int String
     assertTrue(responseStr, responseContainsFacetValue(response, "missingf", "fieldFacets", "string_sd", "(MISSING)"));
     assertTrue(responseStr, !responseContainsFacetValue(response, "missingf", "fieldFacets", "string_sd", "str0"));
     List<Double> intString = getValueList(response, "missingf", "fieldFacets", "string_sd", "mean", false);
     ArrayList<Double> intStringTest = calculateFacetedNumberStat(intStringTestStart, "mean");
     assertEquals(responseStr, intString,intStringTest);
-    
+
     //Int Date
     Collection<Double> intDate = getValueList(response, "missingf", "fieldFacets", "date_dtd", "mean", false);
     ArrayList<ArrayList<Double>> intDateMissingTestStart = (ArrayList<ArrayList<Double>>) intDateTestStart.clone();

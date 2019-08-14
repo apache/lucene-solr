@@ -34,13 +34,13 @@ public interface LongValue extends LongValueStream, AnalyticsValue {
    * Get the long representation of the current value.
    * <p>
    * NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns {@code TRUE}.
-   * 
+   *
    * @return the current value
    */
   long getLong();
 
   /**
-   * An interface that represents all of the types a {@link LongValue} should be able to cast to. 
+   * An interface that represents all of the types a {@link LongValue} should be able to cast to.
    */
   public static interface CastingLongValue extends LongValue, DoubleValue, StringValue, ComparableValue {}
 

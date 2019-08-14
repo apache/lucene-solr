@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -44,13 +45,18 @@ public final class MatchesUtils {
    */
   public static final Matches MATCH_WITH_NO_TERMS = new Matches() {
     @Override
-    public Iterator<String> iterator() {
-      return Collections.emptyIterator();
+    public MatchesIterator getMatches(String field) {
+      return null;
     }
 
     @Override
-    public MatchesIterator getMatches(String field) {
-      return null;
+    public Collection<Matches> getSubMatches() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+      return Collections.emptyIterator();
     }
   };
 
@@ -87,6 +93,11 @@ public final class MatchesUtils {
         // for each sub-match, iterate its fields (it's an Iterable of the fields), and return the distinct set
         return sm.stream().flatMap(m -> StreamSupport.stream(m.spliterator(), false)).distinct().iterator();
       }
+
+      @Override
+      public Collection<Matches> getSubMatches() {
+        return subMatches;
+      }
     };
   }
 
@@ -121,6 +132,11 @@ public final class MatchesUtils {
       @Override
       public Iterator<String> iterator() {
         return Collections.singleton(field).iterator();
+      }
+
+      @Override
+      public Collection<Matches> getSubMatches() {
+        return Collections.emptyList();
       }
     };
   }

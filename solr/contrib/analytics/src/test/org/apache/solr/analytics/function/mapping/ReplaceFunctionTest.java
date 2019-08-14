@@ -58,7 +58,7 @@ import org.apache.solr.analytics.value.FillableTestValue.TestStringValueStream;
 import org.junit.Test;
 
 public class ReplaceFunctionTest extends SolrTestCaseJ4 {
-  
+
   @Test
   public void castingTest() {
     assertTrue(ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {new TestBooleanValue(), new TestStringValue(), new TestStringValue()}) instanceof StringValue);
@@ -100,7 +100,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     fill.setValue(true).setExists(true);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     // Comp doesn't exist
     val.setValue(true).setExists(true);
     comp.setExists(false);
@@ -114,13 +114,13 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     fill.setValue(false).setExists(true);
     assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
-    
+
     val.setValue(true).setExists(true);
     comp.setValue(true).setExists(true);
     fill.setValue(false).setExists(true);
     assertEquals(false, func.getBoolean());
     assertTrue(func.exists());
-    
+
     val.setValue(false).setExists(true);
     comp.setValue(false).setExists(true);
     fill.setExists(false);
@@ -149,31 +149,31 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     fill.setValue(765).setExists(true);
     func.getInt();
     assertFalse(func.exists());
-    
+
     // Comp doesn't exist
     val.setValue(745).setExists(true);
     comp.setExists(false);
     fill.setValue(23423).setExists(true);
     assertEquals(745, func.getInt());
     assertTrue(func.exists());
-    
+
     // Value exists
     // Comp != Val
     val.setValue(21).setExists(true);
     comp.setValue(234).setExists(true);
-    
+
     fill.setValue(23423).setExists(true);
     assertEquals(21, func.getInt());
     assertTrue(func.exists());
-    
+
     fill.setExists(false);
     assertEquals(21, func.getInt());
     assertTrue(func.exists());
-    
+
     // Comp == Val
     val.setValue(-154).setExists(true);
     comp.setValue(-154).setExists(true);
-    
+
     fill.setExists(false);
     func.getInt();
     assertFalse(func.exists());
@@ -205,31 +205,31 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     fill.setValue(232584L).setExists(true);
     func.getLong();
     assertFalse(func.exists());
-    
+
     // Comp doesn't exist
     val.setValue(745L).setExists(true);
     comp.setExists(false);
     fill.setValue(23423L).setExists(true);
     assertEquals(745L, func.getLong());
     assertTrue(func.exists());
-    
+
     // Value exists
     // Comp != Val
     val.setValue(21L).setExists(true);
     comp.setValue(234L).setExists(true);
-    
+
     fill.setValue(23423L).setExists(true);
     assertEquals(21L, func.getLong());
     assertTrue(func.exists());
-    
+
     fill.setExists(false);
     assertEquals(21L, func.getLong());
     assertTrue(func.exists());
-    
+
     // Comp == Val
     val.setValue(-154L).setExists(true);
     comp.setValue(-154L).setExists(true);
-    
+
     fill.setExists(false);
     func.getLong();
     assertFalse(func.exists());
@@ -261,31 +261,31 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     fill.setValue(-32473.336F).setExists(true);
     func.getFloat();
     assertFalse(func.exists());
-    
+
     // Comp doesn't exist
     val.setValue(-745.234F).setExists(true);
     comp.setExists(false);
     fill.setValue(23423.324F).setExists(true);
     assertEquals(-745.234F, func.getFloat(), .0000001);
     assertTrue(func.exists());
-    
+
     // Value exists
     // Comp != Val
     val.setValue(3423.304F).setExists(true);
     comp.setValue(3423.303F).setExists(true);
-    
+
     fill.setValue(-23.764F).setExists(true);
     assertEquals(3423.304F, func.getFloat(), .0000001);
     assertTrue(func.exists());
-    
+
     fill.setExists(false);
     assertEquals(3423.304F, func.getFloat(), .0000001);
     assertTrue(func.exists());
-    
+
     // Comp == Val
     val.setValue(-154.45F).setExists(true);
     comp.setValue(-154.45F).setExists(true);
-    
+
     fill.setExists(false);
     func.getFloat();
     assertFalse(func.exists());
@@ -317,31 +317,31 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     fill.setValue(-13242.34).setExists(true);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // Comp doesn't exist
     val.setValue(-745.234).setExists(true);
     comp.setExists(false);
     fill.setValue(23423.324).setExists(true);
     assertEquals(-745.234, func.getDouble(), .0000001);
     assertTrue(func.exists());
-    
+
     // Value exists
     // Comp != Val
     val.setValue(34923.304).setExists(true);
     comp.setValue(34923.303).setExists(true);
-    
+
     fill.setValue(-23.764).setExists(true);
     assertEquals(34923.304, func.getDouble(), .0000001);
     assertTrue(func.exists());
-    
+
     fill.setExists(false);
     assertEquals(34923.304, func.getDouble(), .0000001);
     assertTrue(func.exists());
-    
+
     // Comp == Val
     val.setValue(-154.45).setExists(true);
     comp.setValue(-154.45).setExists(true);
-    
+
     fill.setExists(false);
     func.getDouble();
     assertFalse(func.exists());
@@ -355,7 +355,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
   public void singleValueDateTest() throws DateTimeParseException {
     Date date1 = Date.from(Instant.parse("1810-12-02T10:30:15Z"));
     Date date2 = Date.from(Instant.parse("1950-02-23T14:54:34Z"));
-    
+
     TestDateValue val = new TestDateValue();
     TestDateValue comp = new TestDateValue();
     TestDateValue fill = new TestDateValue();
@@ -376,31 +376,31 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     fill.setValue("1350-02-26T14:34:34Z").setExists(true);
     func.getLong();
     assertFalse(func.exists());
-    
+
     // Comp doesn't exist
     val.setValue("1950-02-23T14:54:34Z").setExists(true);
     comp.setExists(false);
     fill.setValue("1350-02-26T14:34:34Z").setExists(true);
     assertEquals(date2.getTime(), func.getLong());
     assertTrue(func.exists());
-    
+
     // Value exists
     // Comp != Val
     val.setValue("1950-02-23T14:54:34Z").setExists(true);
     comp.setValue("1350-02-26T14:34:34Z").setExists(true);
-    
+
     fill.setValue("2023-11-01T20:30:15Z").setExists(true);
     assertEquals(date2.getTime(), func.getLong());
     assertTrue(func.exists());
-    
+
     fill.setExists(false);
     assertEquals(date2.getTime(), func.getLong());
     assertTrue(func.exists());
-    
+
     // Comp == Val
     val.setValue("2023-11-01T20:30:15Z").setExists(true);
     comp.setValue("2023-11-01T20:30:15Z").setExists(true);
-    
+
     fill.setExists(false);
     func.getLong();
     assertFalse(func.exists());
@@ -432,31 +432,31 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     fill.setValue("not touched").setExists(true);
     func.getString();
     assertFalse(func.exists());
-    
+
     // Comp doesn't exist
     val.setValue("abcd").setExists(true);
     comp.setExists(false);
     fill.setValue("12234").setExists(true);
     assertEquals("abcd", func.getString());
     assertTrue(func.exists());
-    
+
     // Value exists
     // Comp != Val
     val.setValue("original").setExists(true);
     comp.setValue("different").setExists(true);
-    
+
     fill.setValue("anything").setExists(true);
     assertEquals("original", func.getString());
     assertTrue(func.exists());
-    
+
     fill.setExists(false);
     assertEquals("original", func.getString());
     assertTrue(func.exists());
-    
+
     // Comp == Val
     val.setValue("the same").setExists(true);
     comp.setValue("the same").setExists(true);
-    
+
     fill.setExists(false);
     func.getString();
     assertFalse(func.exists());
@@ -488,31 +488,31 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     fill.setValue("abc").setExists(true);
     func.getObject();
     assertFalse(func.exists());
-    
+
     // Comp doesn't exist
     val.setValue("abcd").setExists(true);
     comp.setExists(false);
     fill.setValue(new Date(123321)).setExists(true);
     assertEquals("abcd", func.getObject());
     assertTrue(func.exists());
-    
+
     // Value exists
     // Comp != Val
     val.setValue(new Date(1234)).setExists(true);
     comp.setValue(1234).setExists(true);
-    
+
     fill.setValue("not used").setExists(true);
     assertEquals(new Date(1234), func.getObject());
     assertTrue(func.exists());
-    
+
     fill.setExists(false);
     assertEquals(new Date(1234), func.getObject());
     assertTrue(func.exists());
-    
+
     // Comp == Val
     val.setValue(2342.324F).setExists(true);
     comp.setValue(2342.324F).setExists(true);
-    
+
     fill.setExists(false);
     func.getObject();
     assertFalse(func.exists());
@@ -539,14 +539,14 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     val.setValues();
     comp.setValue(true).setExists(true);
     fill.setValue(false).setExists(true);
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Comp doesn't exist
     val.setValues(false, true, false, true, true);
     comp.setExists(false);
@@ -557,7 +557,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Values exist
     val.setValues(false, true, false, true, true);
     comp.setValue(true).setExists(true);
@@ -604,7 +604,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     func.streamInts( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Comp doesn't exist
     val.setValues(1, 234, -234, 4439, -234, -3245);
     comp.setExists(false);
@@ -615,7 +615,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next().intValue(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Values exist
     val.setValues(1, 234, -234, 4439, -234, -3245);
     comp.setValue(-234).setExists(true);
@@ -662,7 +662,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Comp doesn't exist
     val.setValues(1L, 234L, -234L, 4439L, -234L, -3245L);
     comp.setExists(false);
@@ -673,7 +673,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next().longValue(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Values exist
     val.setValues(1L, 234L, -234L, 4439L, -234L, -3245L);
     comp.setValue(-234L).setExists(true);
@@ -720,7 +720,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     func.streamFloats( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Comp doesn't exist
     val.setValues(1423.3F, 423.4323F, -2349.2F, -343.43934F, 423.4323F);
     comp.setExists(false);
@@ -731,7 +731,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value, .000001);
     });
     assertFalse(values1.hasNext());
-    
+
     // Values exist
     val.setValues(1423.3F, 423.4323F, -2349.2F, -343.43934F, 423.4323F);
     comp.setValue(423.4323F).setExists(true);
@@ -778,7 +778,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Comp doesn't exist
     val.setValues(1423.3, 423.4323, -2349.2, -343.43934, 423.4323);
     comp.setExists(false);
@@ -789,7 +789,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value, .000001);
     });
     assertFalse(values1.hasNext());
-    
+
     // Values exist
     val.setValues(1423.3, 423.4323, -2349.2, -343.43934, 423.4323);
     comp.setValue(423.4323).setExists(true);
@@ -817,7 +817,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     Date date1 = Date.from(Instant.parse("1810-12-02T10:30:15Z"));
     Date date2 = Date.from(Instant.parse("1931-03-16T18:15:45Z"));
     Date date3 = Date.from(Instant.parse("2023-11-01T20:30:15Z"));
-    
+
     TestDateValueStream val = new TestDateValueStream();
     TestDateValue comp = new TestDateValue();
     TestDateValue fill = new TestDateValue();
@@ -840,7 +840,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Comp doesn't exist
     val.setValues("1810-12-02T10:30:15Z", "1931-03-16T18:15:45Z", "2023-11-01T20:30:15Z", "1931-03-16T18:15:45Z");
     comp.setExists(false);
@@ -851,7 +851,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next().longValue(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Values exist
     val.setValues("1810-12-02T10:30:15Z", "1931-03-16T18:15:45Z", "2023-11-01T20:30:15Z", "1931-03-16T18:15:45Z");
     comp.setValue("1931-03-16T18:15:45Z").setExists(true);
@@ -898,7 +898,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Comp doesn't exist
     val.setValues("abc", "123", "456", "def", "123");
     comp.setExists(false);
@@ -909,7 +909,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Values exist
     val.setValues("abc", "123", "456", "def", "123");
     comp.setValue("123").setExists(true);
@@ -954,7 +954,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     func.streamObjects( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Comp doesn't exist
     val.setValues("asdfs", new Date(12312), 213123L, new Date(12312));
     comp.setExists(false);
@@ -965,7 +965,7 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Values exist
     val.setValues("asdfs", new Date(12312), 213123L, new Date(12312));
     comp.setValue("asdfs").setExists(true);

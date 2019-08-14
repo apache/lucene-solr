@@ -22,7 +22,7 @@ import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 
 public class DoubleDataArrayReader extends ReductionDataArrayReader<DoubleConsumer> {
-  
+
   public DoubleDataArrayReader(DataInput inputStream, DoubleConsumer applier, IntConsumer signal) {
     super(inputStream, applier, signal);
   }
