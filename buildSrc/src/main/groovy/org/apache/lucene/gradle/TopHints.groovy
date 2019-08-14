@@ -23,7 +23,8 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
-class JUnit4 extends DefaultTask {
+// we may not end up using this with gradle
+class TopHints extends DefaultTask {
   
   
   @TaskAction

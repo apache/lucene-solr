@@ -22,6 +22,10 @@ test {
   group = 'Tests'
   description = "Runs project tests."
   
+  def rootProjectDir = project.rootProject.projectDir;
+  
+  useJUnit()
+  
   systemProperty 'java.security.egd', 'file:/dev/./urandom'
   
   filter {
@@ -37,6 +41,14 @@ test {
   // Enable assertions in system classes
   jvmArgs += "-esa"
   
+  def commonDir
+  if (project.ext.getTopLvlProject(project).equals(rootProject.project(":lucene"))) {
+    commonDir = rootProject.project(":lucene").projectDir
+  } else {
+    commonDir = rootProject.project(":solr").projectDir
+  }
+  
+  systemProperty 'common.dir', "${commonDir}"
   systemProperty 'tests.multiplier', '1'
   systemProperty 'tests.codec', 'random'
   systemProperty 'tests.postingsformat', 'random'
@@ -56,6 +68,17 @@ test {
   systemProperty 'tests.asserts', 'true'
   systemProperty 'tempDir', '.out/tests-temp'
   systemProperty 'java.io.tmpdir', '.out/tests-temp'
+  systemProperty 'java.awt.headless', 'true'
+  systemProperty 'jetty.testMode', '1'
+  systemProperty 'jetty.insecurerandom', '1'
+  systemProperty 'jdk.map.althashing.threshold', '0'
+  systemProperty 'tests.src.home', System.getenv('user.dir')
+  systemProperty 'tests.seed', project.ext.pickRandomSeed()
+  
+  // replaces default random source to the nonblocking variant 
+  systemProperty 'java.security.egd', 'file:/dev/./urandom'
+  systemProperty 'java.security.manager', 'org.apache.lucene.util.TestSecurityManager'
+  systemProperty 'java.security.policy', "${mfile(rootProjectDir, project.ext.testsPolicy)}"
   
   def testsJvms = project.ext.properties.tests_jvms
   if (testsJvms) {
@@ -70,6 +93,7 @@ test {
   }
 
 }
+
 
 // Some test resources and files are stored along the test sources
 // and are expected to exist next to classes during tests

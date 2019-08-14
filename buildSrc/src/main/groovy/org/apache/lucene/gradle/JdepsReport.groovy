@@ -160,16 +160,7 @@ class JdepsReport extends DefaultTask {
     
     return files
   }
-  
-  protected Project getTopLvlProject(Project proj) {
-    def topLvlProject
-    if (proj.group ==~ /.*?\.lucene(?:\.\w+)?/) {
-      topLvlProject = project.project(":lucene")
-    } else if (proj.group ==~ /.*?\.solr(?:\.\w+)?/) {
-      topLvlProject = project.project(":solr")
-    }
-    return topLvlProject
-  }
+
 }
 
 
