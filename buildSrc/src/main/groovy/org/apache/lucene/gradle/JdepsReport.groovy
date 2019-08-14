@@ -107,7 +107,7 @@ class JdepsReport extends DefaultTask {
       
       buildProjects.each {subproject ->
 
-        def topLvlProject = getTopLvlProject(subproject)
+        def topLvlProject = project.getTopLvlProject(subproject)
         
         if (subproject.getPlugins().hasPlugin(PartOfDist) && subproject.tasks.findByName('jar') && subproject.configurations.hasProperty(configuration)) {
            from(subproject.jar.outputs.files) {
