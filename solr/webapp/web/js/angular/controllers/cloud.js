@@ -530,7 +530,7 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
     $scope.initZookeeper = function() {
       ZookeeperStatus.monitor({}, function(data) {
         $scope.zkState = data.zkStatus;
-        $scope.mainKeys = ["ok", "clientPort", "zk_server_state", "zk_version", 
+        $scope.mainKeys = ["ok", "clientPort", "secureClientPort", "zk_server_state", "zk_version",
           "zk_approximate_data_size", "zk_znode_count", "zk_num_alive_connections"];
         $scope.detailKeys = ["dataDir", "dataLogDir", 
           "zk_avg_latency", "zk_max_file_descriptor_count", "zk_watch_count", 
@@ -538,7 +538,14 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
           "tickTime", "maxClientCnxns", "minSessionTimeout", "maxSessionTimeout"];
         $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort"];
         $scope.ensembleDetailKeys = ["peerType", "electionAlg", "initLimit", "syncLimit",
-          "zk_followers", "zk_synced_followers", "zk_pending_syncs"];
+          "zk_followers", "zk_synced_followers", "zk_pending_syncs",
+          "server.1", "server.2", "server.3", "server.4", "server.5"];
+        $scope.notEmptyRow = function(key) {
+          for (hostId in $scope.zkState.details) {
+            if (key in $scope.zkState.details[hostId]) return true;
+          }
+          return false;
+        };
       });
     };
 

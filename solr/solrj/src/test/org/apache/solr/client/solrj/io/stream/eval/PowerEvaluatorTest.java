@@ -94,7 +94,7 @@ public class PowerEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("pow(a)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void powTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("pow(a,b)");
     

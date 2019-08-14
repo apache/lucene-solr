@@ -66,6 +66,9 @@ public class SolrStream extends TupleStream {
   private String slice;
   private long checkpoint = -1;
   private CloseableHttpResponse closeableHttpResponse;
+  private boolean distrib = true;
+  private String user;
+  private String password;
 
   /**
    * @param baseUrl Base URL of the stream.
@@ -93,6 +96,11 @@ public class SolrStream extends TupleStream {
     this.numWorkers = context.numWorkers;
     this.workerID = context.workerID;
     this.cache = context.getSolrClientCache();
+  }
+
+  public void setCredentials(String user, String password) {
+    this.user = user;
+    this.password = password;
   }
 
   /**
@@ -261,6 +269,11 @@ public class SolrStream extends TupleStream {
     query.setPath(p);
     query.setResponseParser(new InputStreamResponseParser(wt));
     query.setMethod(SolrRequest.METHOD.POST);
+
+    if(user != null && password != null) {
+      query.setBasicAuthCredentials(user, password);
+    }
+
     NamedList<Object> genericResponse = server.request(query);
     InputStream stream = (InputStream) genericResponse.get("stream");
     this.closeableHttpResponse = (CloseableHttpResponse)genericResponse.get("closeableResponse");

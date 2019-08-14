@@ -78,21 +78,12 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBuildThrowsIllegalArgumentExceptionWhenContextIsConfiguredButNotImplemented() throws Exception {
-    try {
-      assertQ(
-          req("qt", rh,
-              SuggesterParams.SUGGEST_BUILD, "true",
-              SuggesterParams.SUGGEST_DICT, "suggest_context_filtering_not_implemented",
-              SuggesterParams.SUGGEST_Q, "examp")
-          ,
-          ""
-      );
-      fail("Expecting exception because ");
-    } catch (RuntimeException e) {
-      Throwable cause = e.getCause();
-      assertTrue(cause instanceof IllegalArgumentException);
-      assertThat(cause.getMessage(), is("this suggester doesn't support contexts"));
-    }
+    IllegalArgumentException ex = expectThrows(IllegalArgumentException.class, () -> {
+      h.query(req("qt", rh, SuggesterParams.SUGGEST_BUILD, "true",
+          SuggesterParams.SUGGEST_DICT, "suggest_context_filtering_not_implemented",
+          SuggesterParams.SUGGEST_Q, "examp"));
+    });
+    assertThat(ex.getMessage(), is("this suggester doesn't support contexts"));
 
     // When not building, no exception is thrown
     assertQ(req("qt", rh,
@@ -210,7 +201,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
             SuggesterParams.SUGGEST_Q, "examp"),
         "//lst[@name='suggest']/lst[@name='suggest_blended_infix_suggester_string']/lst[@name='examp']/int[@name='numFound'][.='0']");
 
-   assertQ(req("qt", rh,
+    assertQ(req("qt", rh,
             SuggesterParams.SUGGEST_BUILD, "true",
             SuggesterParams.SUGGEST_DICT, "suggest_blended_infix_suggester_string",
             SuggesterParams.SUGGEST_CONTEXT_FILTER_QUERY, "ctx4",

@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * MBean plugins for stats collection 
+
+/**
+ * MBean plugins for stats collection
  */
 package org.apache.solr.analytics.plugin;
 

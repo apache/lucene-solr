@@ -28,6 +28,16 @@ Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
 Jetty 9.4.19.v20190610
 
+Upgrade Notes
+----------------------
+
+* Users who have written test cases that extend SolrTestCaseJ4 may see NullPointerExceptions if
+  their tests directly reference both SolrTestCaseJ4.initCoreDataDir and SolrTestCaseJ4.deleteCore().
+  This change in behavior is due to a bug fix in deleteCore() to ensure the dataDir is properly reset
+  in tests that call initCore()/deleteCore() multiple times in a given test (class).  initCoreDataDir
+  is now deprecated, and users are encouraged to use SolrTestCaseJ4.initAndGetDataDir() in it's place.
+  See SOLR-13664 for more details.
+
 New Features
 ----------------------
 
@@ -35,14 +45,19 @@ New Features
   of two fields. (Gus Heck)
 
 * SOLR-13399: SPLITSHARD implements a new splitByPrefix option that takes into account the actual document distribution
-  when using compositeIds.  The id prefix should be indexed into the "id_prefix" field for this feature to work.
-  (yonik)
+  when using compositeIds.  Document distribution is calculated using the "id_prefix" field (if it exists) containing
+  just the compositeId prefixes, or directly from the indexed "id" field otherwise. (yonik, Megan Carey)
 
 * SOLR-13565: Node level runtime libs loaded from remote urls  (noble)
 
 * SOLR-13553: Node level custom RequestHandlers (noble)
 
-* SOLR-13622: Add files() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
+* SOLR-13622: Add cat() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
+
+* SOLR-11866: QueryElevationComponent can have query rules configured with match="subset" wherein the words need only
+  match a subset of the query's words and in any order.  (Bruno Roustant via David Smiley)
+
+* SOLR-13682: command line option to export documents to a file (noble)
 
 Improvements
 ----------------------
@@ -52,13 +67,35 @@ Improvements
 
 * SOLR-13558: Allow dynamic resizing of SolrCache-s. (ab)
 
+* SOLR-6305: Ability to set the replication factor for index files created by HDFSDirectoryFactory (Boris Pasko via Kevin Risden)
+
 Bug Fixes
 ----------------------
 
 * SOLR-13206: Fix AIOOBE when group.facet is specified with group.query and return proper error code. (Marek, Munendra S N)
 
-* SOLR-11556: Backup and restore command really supports picking one of a few repositories by 
-  repository parameter (Timothy Potter via Mikhail Khludnev) 
+* SOLR-11556: Backup and restore command really supports picking one of a few repositories by
+  repository parameter (Timothy Potter via Mikhail Khludnev)
+
+* SOLR-13647: Default solr.in.sh contains incorrect default value (John Ryan)
+
+* SOLR-13660: Fixed AbstractFullDistribZkTestBase.waitForActiveReplicaCount() to ensure
+  replicas are active. (hossman)
+
+* SOLR-13664: Fixed SolrTestCaseJ4.deleteCore() to properly reset the dataDir used by initCore()
+  (hossman)
+
+* SOLR-13679: Default style of ExplainDocTransformer registered via solrconfig.xml should be same as default style
+  of ExplainDocTransformer registered in defaultFactories (Munendra S N)
+
+* SOLR-13672: Cloud -> Zk Status page now parses response from Zookeeper 3.5.5 correctly (Jörn Franke, janhoy, Shawn Heisey)
+
+* SOLR-13674: NodeAddedTrigger does not support configuration of replica type hint. A new replicaType property
+  has been added to NodeAddTrigger so that new replicas of the given type are added. The default value is `NRT`.
+  (Irena Shaigorodsky via shalin)
+
+* SOLR-13141: CDCR bootstrap does not replicate index to the replicas of target cluster.
+  (Krzysztof Watral, Amrit Sarkar, Tim, Tdspringsteen, shalin)
 
 Other Changes
 ----------------------
@@ -68,6 +105,18 @@ Other Changes
 * SOLR-12870: Use StandardCharsets instead of String values (Peter Somogyi via Munendra S N)
 
 * SOLR-10377: Add `debug.explain.structured` to Admin UI. (David Smiley, Munendra S N)
+
+* SOLR-13629: Clean trailing whitespace from 'analytics' contrib (Neal Sidhwaney via Jason Gerlowski)
+
+* SOLR-13643: Add Getters/Setters in ResponseBuilder for analytics response handling (Neal Sidhwaney via Munendra S N)
+
+* SOLR-13659: Refactor CacheConfig to lazily load the the implementation class (noble)
+
+* SOLR-13680: Use try-with-resource to close the closeable resource (Furkan KAMACI, Munendra S N)
+
+* SOLR-13573: Add SolrRangeQuery getters for upper, lower bound (Brian Rhees via Jason Gerlowski)
+
+* SOLR-13658: Precommit fail Java "var" until 9x. Fail "var...<>" constructs entirely (Erick Erickson)
 
 ==================  8.2.0 ==================
 

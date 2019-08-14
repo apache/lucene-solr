@@ -14,20 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.update;
 
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.LogByteSizeMergePolicy;
+package org.apache.solr;
 
-/**
- * Dummy implementation of {@link org.apache.lucene.index.MergePolicy} which doesn't have an empty constructor and
- * is expected to fail if used within Solr
- */
-class DummyMergePolicy extends LogByteSizeMergePolicy {
+/** Test the test */
+public class TestSolrTestCaseJ4 extends SolrTestCaseJ4 {
 
-  private DummyMergePolicy() {}
+  public void testDeleteCore() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+    assertU(adoc("id", "1"));
+    assertU(commit());
+    assertQ(req("q", "*:*"), "//*[@numFound='1']");
 
-  public DummyMergePolicy(IndexWriter writer) {
-    super();
+    deleteCore();
+    initCore("solrconfig.xml","schema.xml");
+    assertQ(req("q", "*:*"), "//*[@numFound='0']");
   }
+
+
+
 }

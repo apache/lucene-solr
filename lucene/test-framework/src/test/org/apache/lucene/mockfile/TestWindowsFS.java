@@ -55,12 +55,9 @@ public class TestWindowsFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     InputStream is = Files.newInputStream(dir.resolve("stillopen"));
-    try {
-      Files.delete(dir.resolve("stillopen"));
-      fail("should have gotten exception");
-    } catch (IOException e) {
-      assertTrue(e.getMessage().contains("access denied"));
-    }
+
+    IOException e = expectThrows(IOException.class, () -> Files.delete(dir.resolve("stillopen")));
+    assertTrue(e.getMessage().contains("access denied"));
     is.close();
   }
   
@@ -72,12 +69,9 @@ public class TestWindowsFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     InputStream is = Files.newInputStream(dir.resolve("stillopen"));
-    try {
-      Files.deleteIfExists(dir.resolve("stillopen"));
-      fail("should have gotten exception");
-    } catch (IOException e) {
-      assertTrue(e.getMessage().contains("access denied"));
-    }
+
+    IOException e = expectThrows(IOException.class, () -> Files.deleteIfExists(dir.resolve("stillopen")));
+    assertTrue(e.getMessage().contains("access denied"));
     is.close();
   }
   
@@ -90,12 +84,10 @@ public class TestWindowsFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     InputStream is = Files.newInputStream(dir.resolve("stillopen"));
-    try {
-      Files.move(dir.resolve("stillopen"), dir.resolve("target"), StandardCopyOption.ATOMIC_MOVE);
-      fail("should have gotten exception");
-    } catch (IOException e) {
-      assertTrue(e.getMessage().contains("access denied"));
-    }
+
+    IOException e = expectThrows(IOException.class, () ->
+        Files.move(dir.resolve("stillopen"), dir.resolve("target"), StandardCopyOption.ATOMIC_MOVE));
+    assertTrue(e.getMessage().contains("access denied"));
     is.close();
   }
 

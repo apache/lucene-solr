@@ -43,7 +43,7 @@ import org.apache.solr.search.Filter;
 /**
  * The manager for faceted analytics. This class manages one grouping of facets and expressions to compute
  * over those facets.
- * 
+ *
  * <p>
  * This class will only manage generating faceted results, not overall results.
  */
@@ -53,9 +53,9 @@ public class AnalyticsGroupingManager {
 
   private final Collection<AnalyticsExpression> topLevelExpressions;
   private final ExpressionCalculator expressionCalculator;
-  
+
   private final Map<String, AnalyticsFacet> facets;
-  
+
   public AnalyticsGroupingManager(String name,
                                   ReductionCollectionManager reductionCollectionManager,
                                   Collection<AnalyticsExpression> topLevelExpressions) {
@@ -70,11 +70,11 @@ public class AnalyticsGroupingManager {
 
   // This is outside of the method, since it is used in the lambda and cannot be a local non-final variable
   private boolean hasStreamingFacets;
-  
+
   /**
    * Get the {@link StreamingFacet}s (e.g. {@link ValueFacet} and {@link PivotFacet}) contained within this grouping,
    * returning them through the given consumer.
-   * 
+   *
    * @param cons where the streaming facets are passed to
    * @return whether the grouping contains streaming facets
    */
@@ -93,12 +93,12 @@ public class AnalyticsGroupingManager {
    * Create the {@link FacetValueQueryExecuter}s for all {@link AbstractSolrQueryFacet}s
    * (e.g. {@link QueryFacet} and {@link RangeFacet}) contained within this grouping.
    * The executers are returned through the given consumer.
-   * 
+   *
    * <p>
    * One {@link FacetValueQueryExecuter} is created for each facet value to be returned for a facet.
    * Since every {@link AbstractSolrQueryFacet} has discrete and user-defined facet values,
    * unlike {@link StreamingFacet}s, a discrete number of {@link FacetValueQueryExecuter}s are created and returned.
-   * 
+   *
    * @param filter representing the overall Solr Query of the request,
    * will be combined with the facet value queries
    * @param queryRequest from the overall search request
@@ -111,10 +111,10 @@ public class AnalyticsGroupingManager {
       }
     });
   }
-  
+
   /**
    * Add a facet to the grouping. All expressions in this grouping will be computed over the facet.
-   * 
+   *
    * @param facet to compute expressions over
    */
   public void addFacet(AnalyticsFacet facet) {
@@ -122,11 +122,11 @@ public class AnalyticsGroupingManager {
     facet.setReductionCollectionManager(reductionCollectionManager);
     facets.put(facet.getName(), facet);
   }
-  
+
   /**
    * Import the shard data for this grouping from a bit-stream,
    * exported by the {@link #exportShardData} method in the each of the collection's shards.
-   * 
+   *
    * @param input The bit-stream to import the grouping data from
    * @throws IOException if an exception occurs while reading from the {@link DataInput}
    */
@@ -134,17 +134,17 @@ public class AnalyticsGroupingManager {
     // This allows mergeData() to import from the same input everytime it is called
     // while the facets are importing.
     reductionCollectionManager.setShardInput(input);
-    
+
     int sz = input.readInt();
     for (int i = 0; i < sz; ++i) {
       facets.get(input.readUTF()).importShardData(input);
     }
   }
-  
+
   /**
    * Export the shard data for this grouping through a bit-stream,
    * to be imported by the {@link #importShardData} method in the originating shard.
-   * 
+   *
    * @param output The bit-stream to output the grouping data through
    * @throws IOException if an exception occurs while writing to the {@link DataOutput}
    */
@@ -152,18 +152,18 @@ public class AnalyticsGroupingManager {
     // This allows exportData() to export to the same output everytime it is called
     // while the facets are exporting.
     reductionCollectionManager.setShardOutput(output);
-    
+
     output.writeInt(facets.size());
     for (Entry<String,AnalyticsFacet> facet : facets.entrySet()) {
       output.writeUTF(facet.getKey());
       facet.getValue().exportShardData(output);
     }
   }
-  
+
   /**
    * Get the {@link ReductionCollectionManager} that manages the collection of reduction data for the expressions
-   * contained within this grouping. 
-   * 
+   * contained within this grouping.
+   *
    * @return the grouping's reduction manager
    */
   public ReductionCollectionManager getReductionManager() {
@@ -172,18 +172,18 @@ public class AnalyticsGroupingManager {
 
   /**
    * Create the response for this grouping, a mapping from each of it's facets' names to the facet's response.
-   * 
+   *
    * @return the named list representation of the response
    */
   public Map<String,Object> createResponse() {
     Map<String,Object> response = new HashMap<>();
-    
+
     // Add the value facet buckets to the output
     facets.forEach( (name, facet) -> response.put(name, facet.createResponse()) );
 
     return response;
   }
-  
+
   /**
    * Create the response for this grouping, but in the old style of response.
    * This response has a bucket for the following if they are contained in the grouping:
@@ -192,13 +192,13 @@ public class AnalyticsGroupingManager {
    * <p>
    * Since groupings in the old notation must also return overall results, the overall results are
    * passed in and the values are used to populate the grouping response.
-   * 
+   *
    * @param overallResults of the expressions to add to the grouping response
    * @return the named list representation of the response
    */
   public NamedList<Object> createOldResponse(Map<String,Object> overallResults) {
     NamedList<Object> response = new NamedList<>();
-    
+
     topLevelExpressions.forEach( expression -> response.add(expression.getName(), overallResults.get(name + expression.getName())));
 
     NamedList<Object> fieldFacetResults = new NamedList<>();
@@ -230,7 +230,7 @@ public class AnalyticsGroupingManager {
 
   /**
    * Get the name of the grouping.
-   * 
+   *
    * @return the grouping name
    */
   public String getName() {

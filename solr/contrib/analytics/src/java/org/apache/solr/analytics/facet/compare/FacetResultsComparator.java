@@ -25,26 +25,26 @@ import org.apache.solr.analytics.facet.SortableFacet.FacetBucket;
  */
 public abstract class FacetResultsComparator implements Comparator<FacetBucket> {
   protected int resultMult;
-  
+
   /**
    * Create a results comparator assuming an ascending ordering.
    */
   public FacetResultsComparator() {
     setDirection(true);
   }
-  
+
   /**
    * Set the order direction for comparison.
-   * 
+   *
    * @param ascending whether to compare using an ascending ordering
    */
   public void setDirection(boolean ascending) {
     this.resultMult = ascending ? 1 : -1;
   }
-  
+
   /**
    * Compare one facet bucket to another.
-   * 
+   *
    * @param b1 the first bucket to compare
    * @param b2 the second bucket to compare
    */

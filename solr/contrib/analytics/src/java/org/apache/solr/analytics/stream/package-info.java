@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Classes to manage the I/O between shards.
  */
 package org.apache.solr.analytics.stream;

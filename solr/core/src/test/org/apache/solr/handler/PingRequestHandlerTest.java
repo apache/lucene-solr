@@ -51,14 +51,12 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
   @Before
   public void before() throws IOException {
-    File tmpDir = initCoreDataDir;
     // by default, use relative file in dataDir
-    healthcheckFile = new File(tmpDir, fileName);
+    healthcheckFile = new File(initAndGetDataDir(), fileName);
     String fileNameParam = fileName;
 
     // sometimes randomly use an absolute File path instead 
     if (random().nextBoolean()) {
-      healthcheckFile = new File(tmpDir, fileName);
       fileNameParam = healthcheckFile.getAbsolutePath();
     } 
       
@@ -164,13 +162,8 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   }
   
   public void testBadActionRaisesException() throws Exception {
-    
-    try {
-      SolrQueryResponse rsp = makeRequest(handler, req("action", "badaction"));
-      fail("Should have thrown a SolrException for the bad action");
-    } catch (SolrException se){
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code,se.code());
-    }
+    SolrException se = expectThrows(SolrException.class, () -> makeRequest(handler, req("action", "badaction")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code,se.code());
   }
 
  public void testPingInClusterWithNoHealthCheck() throws Exception {

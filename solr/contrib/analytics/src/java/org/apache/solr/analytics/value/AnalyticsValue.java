@@ -28,18 +28,18 @@ public interface AnalyticsValue extends AnalyticsValueStream {
    * Check whether the current value exists.
    * <br>
    * NOTE: The result of this method is only guaranteed after any {@code get<Type>()} method is called.
-   * 
+   *
    * @return whether the current value exists
    */
   boolean exists();
-  
+
   /**
    * Get the object representation of the current value.
-   * 
+   *
    * @return the current value
    */
   Object getObject();
-  
+
   /**
    * An abstract base for {@link AnalyticsValue} that automatically casts to castable types.
    */

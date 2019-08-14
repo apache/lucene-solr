@@ -17,13 +17,13 @@
 package org.apache.lucene.analysis.ko.util;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,15 +37,17 @@ import org.apache.lucene.util.ArrayUtil;
 
 import org.apache.lucene.analysis.ko.dict.BinaryDictionary;
 
-public abstract class BinaryDictionaryWriter {
-  protected final Class<? extends BinaryDictionary> implClazz;
+abstract class BinaryDictionaryWriter {
+  private final static int ID_LIMIT = 8192;
+
+  private final Class<? extends BinaryDictionary> implClazz;
   protected ByteBuffer buffer;
   private int targetMapEndOffset = 0, lastWordId = -1, lastSourceId = -1;
   private int[] targetMap = new int[8192];
   private int[] targetMapOffsets = new int[8192];
   private final ArrayList<String> posDict = new ArrayList<>();
 
-  public BinaryDictionaryWriter(Class<? extends BinaryDictionary> implClazz, int size) {
+  BinaryDictionaryWriter(Class<? extends BinaryDictionary> implClazz, int size) {
     this.implClazz = implClazz;
     buffer = ByteBuffer.allocate(size);
   }
@@ -116,7 +118,7 @@ public abstract class BinaryDictionaryWriter {
     if (posType != POS.Type.MORPHEME && expression.length() > 0) {
       String[] exprTokens = expression.split("\\+");
       for (int i = 0; i < exprTokens.length; i++) {
-        String[] tokenSplit = exprTokens[i].split("\\/");
+        String[] tokenSplit = exprTokens[i].split("/");
         assert tokenSplit.length == 3;
         String surfaceForm = tokenSplit[0].trim();
         if (surfaceForm.isEmpty() == false) {
@@ -137,8 +139,12 @@ public abstract class BinaryDictionaryWriter {
       flags |= BinaryDictionary.HAS_READING;
     }
 
-    assert leftId < 8192; // there are still unused bits
-    assert posType.ordinal() < 4;
+    if (leftId >= ID_LIMIT) {
+      throw new IllegalArgumentException("leftId >= " + ID_LIMIT + ": " + leftId);
+    }
+    if (posType.ordinal() >= 4) {
+      throw new IllegalArgumentException("posType.ordinal() >= " + 4 + ": " + posType.name());
+    }
     buffer.putShort((short)(leftId << 2 | posType.ordinal()));
     buffer.putShort((short) (rightId << 2 | flags));
     buffer.putShort(wordCost);
@@ -177,17 +183,18 @@ public abstract class BinaryDictionaryWriter {
     }
   }
 
-  public void addMapping(int sourceId, int wordId) {
-    assert wordId > lastWordId : "words out of order: " + wordId + " vs lastID: " + lastWordId;
+  void addMapping(int sourceId, int wordId) {
+    if (wordId <= lastWordId) {
+      throw new IllegalStateException("words out of order: " + wordId + " vs lastID: " + lastWordId);
+    }
 
     if (sourceId > lastSourceId) {
-      assert sourceId > lastSourceId : "source ids out of order: lastSourceId=" + lastSourceId + " vs sourceId=" + sourceId;
       targetMapOffsets = ArrayUtil.grow(targetMapOffsets, sourceId + 1);
       for (int i = lastSourceId + 1; i <= sourceId; i++) {
         targetMapOffsets[i] = targetMapEndOffset;
       }
-    } else {
-      assert sourceId == lastSourceId;
+    } else if (sourceId != lastSourceId) {
+      throw new IllegalStateException("source ids not in increasing order: lastSourceId=" + lastSourceId + " vs sourceId=" + sourceId);
     }
 
     targetMap = ArrayUtil.grow(targetMap, targetMapEndOffset + 1);
@@ -198,27 +205,26 @@ public abstract class BinaryDictionaryWriter {
     lastWordId = wordId;
   }
   
-  protected final String getBaseFileName(String baseDir) {
-    return baseDir + File.separator + implClazz.getName().replace('.', File.separatorChar);
+  final String getBaseFileName() {
+    return implClazz.getName().replace('.', '/');
   }
 
   /**
    * Write dictionary in file
    * @throws IOException if an I/O error occurs writing the dictionary files
    */
-  public void write(String baseDir) throws IOException {
-    final String baseName = getBaseFileName(baseDir);
-    writeDictionary(baseName + BinaryDictionary.DICT_FILENAME_SUFFIX);
-    writeTargetMap(baseName + BinaryDictionary.TARGETMAP_FILENAME_SUFFIX);
-    writePosDict(baseName + BinaryDictionary.POSDICT_FILENAME_SUFFIX);
+  public void write(Path baseDir) throws IOException {
+    final String baseName = getBaseFileName();
+    writeDictionary(baseDir.resolve(baseName + BinaryDictionary.DICT_FILENAME_SUFFIX));
+    writeTargetMap(baseDir.resolve(baseName + BinaryDictionary.TARGETMAP_FILENAME_SUFFIX));
+    writePosDict(baseDir.resolve(baseName + BinaryDictionary.POSDICT_FILENAME_SUFFIX));
   }
 
-  protected void writeTargetMap(String filename) throws IOException {
-    new File(filename).getParentFile().mkdirs();
-    OutputStream os = new FileOutputStream(filename);
-    try {
-      os = new BufferedOutputStream(os);
-      final DataOutput out = new OutputStreamDataOutput(os);
+  private void writeTargetMap(Path path) throws IOException {
+    Files.createDirectories(path.getParent());
+    try (OutputStream os = Files.newOutputStream(path);
+         OutputStream bos = new BufferedOutputStream(os)) {
+      final DataOutput out = new OutputStreamDataOutput(bos);
       CodecUtil.writeHeader(out, BinaryDictionary.TARGETMAP_HEADER, BinaryDictionary.VERSION);
 
       final int numSourceIds = lastSourceId + 1;
@@ -236,48 +242,45 @@ public abstract class BinaryDictionaryWriter {
         }
         prev += delta;
       }
-      assert sourceId == numSourceIds : "sourceId:"+sourceId+" != numSourceIds:"+numSourceIds;
-    } finally {
-      os.close();
+      if (sourceId != numSourceIds) {
+        throw new IllegalStateException("sourceId:" + sourceId + " != numSourceIds:" + numSourceIds);
+      }
     }
   }
 
-  protected void writePosDict(String filename) throws IOException {
-    new File(filename).getParentFile().mkdirs();
-    OutputStream os = new FileOutputStream(filename);
-    try {
-      os = new BufferedOutputStream(os);
-      final DataOutput out = new OutputStreamDataOutput(os);
+  private void writePosDict(Path path) throws IOException {
+    Files.createDirectories(path.getParent());
+    try (OutputStream os = Files.newOutputStream(path);
+         OutputStream bos = new BufferedOutputStream(os)) {
+      final DataOutput out = new OutputStreamDataOutput(bos);
       CodecUtil.writeHeader(out, BinaryDictionary.POSDICT_HEADER, BinaryDictionary.VERSION);
       out.writeVInt(posDict.size());
       for (String s : posDict) {
         if (s == null) {
           out.writeByte((byte) POS.Tag.UNKNOWN.ordinal());
         } else {
-          String data[] = CSVUtil.parse(s);
-          assert data.length == 2 : "malformed pos/semanticClass: " + s;
+          String[] data = CSVUtil.parse(s);
+          if (data.length != 2) {
+            throw new IllegalArgumentException("Malformed pos/inflection: " + s + "; expected 2 characters");
+          }
           out.writeByte((byte) POS.Tag.valueOf(data[0]).ordinal());
         }
       }
-    } finally {
-      os.close();
     }
   }
   
-  protected void writeDictionary(String filename) throws IOException {
-    new File(filename).getParentFile().mkdirs();
-    final FileOutputStream os = new FileOutputStream(filename);
-    try {
-      final DataOutput out = new OutputStreamDataOutput(os);
+  private void writeDictionary(Path path) throws IOException {
+    Files.createDirectories(path.getParent());
+    try (OutputStream os = Files.newOutputStream(path);
+         OutputStream bos = new BufferedOutputStream(os)) {
+      final DataOutput out = new OutputStreamDataOutput(bos);
       CodecUtil.writeHeader(out, BinaryDictionary.DICT_HEADER, BinaryDictionary.VERSION);
       out.writeVInt(buffer.position());
-      final WritableByteChannel channel = Channels.newChannel(os);
+      final WritableByteChannel channel = Channels.newChannel(bos);
       // Write Buffer
       buffer.flip();  // set position to 0, set limit to current position
       channel.write(buffer);
       assert buffer.remaining() == 0L;
-    } finally {
-      os.close();
     }
   }
 }

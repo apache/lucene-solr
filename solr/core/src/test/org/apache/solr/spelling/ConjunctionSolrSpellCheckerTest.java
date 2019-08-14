@@ -60,12 +60,7 @@ public class ConjunctionSolrSpellCheckerTest extends SolrTestCase {
     
     cssc.addChecker(checker1);
     cssc.addChecker(checker2);
-    try {
-      cssc.addChecker(checker3);
-      fail("ConjunctionSolrSpellChecker should have thrown an exception about non-identical StringDistances.");
-    } catch (IllegalArgumentException iae) {
-      // correct behavior
-    }
+    expectThrows(IllegalArgumentException.class, () -> cssc.addChecker(checker3));
   }
 
   static class MockSolrSpellChecker extends SolrSpellChecker {

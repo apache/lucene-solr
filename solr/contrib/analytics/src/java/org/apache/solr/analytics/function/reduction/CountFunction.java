@@ -46,12 +46,12 @@ public class CountFunction extends AbstractLongValue implements ReductionFunctio
     }
     throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function a max of 1 paramater, " + params.length + " given.");
   });
-  
+
   public CountFunction() {
     this.collector = new TotalCountCollector();
     this.exprStr = AnalyticsValueStream.createExpressionString(name);
   }
-  
+
   public CountFunction(AnalyticsValueStream param) {
     this.collector = new ExpressionCountCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);

@@ -39,9 +39,11 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
@@ -234,5 +236,38 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   public static void setAuthorizationHeader(AbstractHttpMessage httpMsg, String headerString) {
     httpMsg.setHeader(new BasicHeader("Authorization", headerString));
     log.info("Added Authorization Header {}", headerString);
+  }
+
+  /**
+   * This helper method can be used by tests to monitor the current state of either 
+   * <code>"authentication"</code> or <code>"authorization"</code> plugins in use each
+   * node of the current cluster.
+   * <p>
+   * This can be useful in a {@link TimeOut#waitFor} loop to monitor a cluster and "wait for"
+   * A change in security settings to affect all nodes by comparing the objects in the current 
+   * Map with the one in use prior to executing some test command. (providing a work around 
+   * for the security user experienence limitations identified in
+   * <a href="https://issues.apache.org/jira/browse/SOLR-13464">SOLR-13464</a> )
+   * </p>
+   * 
+   * @param url A REST url (or any arbitrary String) ending in 
+   *    <code>"authentication"</code> or <code>"authorization"</code> used to specify the type of
+   *    plugins to introspect
+   * @return A Map from <code>nodeName</code> to auth plugin
+   */
+  public static Map<String,Object> getAuthPluginsInUseForCluster(String url) {
+    Map<String,Object> plugins = new HashMap<>();
+    if (url.endsWith("authentication")) {
+      for (JettySolrRunner r : cluster.getJettySolrRunners()) {
+        plugins.put(r.getNodeName(), r.getCoreContainer().getAuthenticationPlugin());
+      }
+    } else if (url.endsWith("authorization")) {
+      for (JettySolrRunner r : cluster.getJettySolrRunners()) {
+        plugins.put(r.getNodeName(), r.getCoreContainer().getAuthorizationPlugin());
+      }
+    } else {
+      fail("Test helper method assumptions broken: " + url);
+    }
+    return plugins;
   }
 }

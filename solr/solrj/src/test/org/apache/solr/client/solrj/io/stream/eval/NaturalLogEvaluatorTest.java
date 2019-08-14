@@ -78,7 +78,7 @@ public class NaturalLogEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("log(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test
   public void logNoValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("log(a)");
 
@@ -87,7 +87,7 @@ public class NaturalLogEvaluatorTest extends SolrTestCase {
     assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test
   public void logNullValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("log(a)");
 
