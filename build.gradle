@@ -27,13 +27,16 @@ plugins {
 
 // TOC
 // -> defs and all project ext config
-// -> lucene-solr all project config
+// -> lucene-solr all module config
 // -> lucene-solr sub module config
 // -> lucene-solr root project config
 // -> all projects config
 // ->   lucene-solr IDE config
 // ->   dependencies
 // -> other config
+
+
+// *** defs and all project ext config
 
 buildDir = file("build")
 
@@ -43,55 +46,14 @@ def luceneSolrSubProjects = subprojects.findAll { project -> project.name != 'bu
 
 def rootProjectDir = project.rootProject.projectDir;
 
-public static String formatSeed(long seed) {
-  char [] HEX = "0123456789ABCDEF".toCharArray();
-  StringBuilder b = new StringBuilder();
-  while(true) {
-    b.append(HEX[(int) (seed & 0xF)]);
-    seed = seed >>> 4;
-    if (seed == 0) break
-  }
-  return b.reverse().toString();
-}
+// we add some custom ext methods here, including mfile
+apply from: file("${rootProjectDir}/buildSrc/common/configure-ext.gradle")
 
-// setup some basics - for other allproject work see below
-allprojects {
-  // make sure ant task logging shows up by default
-  ant.lifecycleLogLevel = "INFO"
-  // sugare file path handler - to deal with path.separator on string paths
-  ext.filePath = { path -> file(path).getAbsolutePath() }
-  // sugar multi part File
-  ext.mfile = { file1, file2 -> new File(file(file1), file2.toString()) }
-  
-  ext.getTopLvlProject = { proj ->
-    def topLvlProject
-    if (proj.group ==~ /.*?\.lucene(?:\.\w+)?/) {
-      topLvlProject = project.project(":lucene")
-    } else if (proj.group ==~ /.*?\.solr(?:\.\w+)?/) {
-      topLvlProject = project.project(":solr")
-    }
-    return topLvlProject
-  }
-  
-  ext.pickRandomSeed = {
-    def propertyName = 'tests.seed'
-    def seedValue = null
-    if (project.hasProperty(propertyName))  seedValue = project.getProperty(propertyName)
-    if (seedValue == null) {
-      seedValue = formatSeed(new Random().nextLong());
-      println("Picking master seed for property '" + propertyName + "': " + seedValue);
-      return seedValue
-    } else {
-      println("Seed property '" + propertyName + "' already defined: " + seedValue);
-      return seedValue
-    }
-  }
-}
-
+// build help tasks
 apply from: mfile(rootProjectDir, 'buildSrc/common/build-help.gradle')
 
 
-// -> lucene-solr all module config - configure all lucene-solr projects, including root project
+// *** lucene-solr all module config - configure all lucene-solr projects, including root project
 configure(luceneSolrProjects) {
   buildDir = file("build")
   
@@ -132,7 +94,7 @@ configure(luceneSolrProjects) {
 
 }
 
-// -> lucene-solr sub module config - configure all lucene-solr modules (excludes the root project)
+// *** lucene-solr sub module config - configure all lucene-solr modules (excludes the root project)
 configure(luceneSolrSubProjects) {
   
   plugins.withType(JavaPlugin) {
@@ -190,7 +152,7 @@ configure(luceneSolrSubProjects) {
   }
 }
 
-// -> lucene-solr root project config - configure the root project
+// *** lucene-solr root project config - configure the root project
 configure(rootProject) {
   
   // root project config
@@ -205,11 +167,10 @@ configure(rootProject) {
   }
   
   task pristineClean(type: org.apache.lucene.gradle.PristineClean) {}
-  
-  task jar {} // just so we can call it top level from sub module
+
 }
 
-// -> all projects config
+// *** all projects config
 configure(allprojects) {
   
   // -> lucene-solr IDE config - setup eclipse and idea
@@ -290,7 +251,7 @@ configure(allprojects) {
   }
 }
 
-// -> other config
+// *** other config
 
 
 // Single JavaDocs for all modules

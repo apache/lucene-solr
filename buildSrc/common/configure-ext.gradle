@@ -1,0 +1,44 @@
+public static String formatSeed(long seed) {
+  char [] HEX = "0123456789ABCDEF".toCharArray();
+  StringBuilder b = new StringBuilder();
+  while(true) {
+    b.append(HEX[(int) (seed & 0xF)]);
+    seed = seed >>> 4;
+    if (seed == 0) break
+  }
+  return b.reverse().toString();
+}
+
+// setup some basics - for other allproject work see below
+allprojects {
+  // make sure ant task logging shows up by default
+  ant.lifecycleLogLevel = "INFO"
+  // sugare file path handler - to deal with path.separator on string paths
+  ext.filePath = { path -> file(path).getAbsolutePath() }
+  // sugar multi part File
+  ext.mfile = { file1, file2 -> new File(file(file1), file2.toString()) }
+  
+  ext.getTopLvlProject = { proj ->
+    def topLvlProject
+    if (proj.group ==~ /.*?\.lucene(?:\.\w+)?/) {
+      topLvlProject = project.project(":lucene")
+    } else if (proj.group ==~ /.*?\.solr(?:\.\w+)?/) {
+      topLvlProject = project.project(":solr")
+    }
+    return topLvlProject
+  }
+  
+  ext.pickRandomSeed = {
+    def propertyName = 'tests.seed'
+    def seedValue = null
+    if (project.hasProperty(propertyName))  seedValue = project.getProperty(propertyName)
+    if (seedValue == null) {
+      seedValue = formatSeed(new Random().nextLong());
+      println("Picking master seed for property '" + propertyName + "': " + seedValue);
+      return seedValue
+    } else {
+      println("Seed property '" + propertyName + "' already defined: " + seedValue);
+      return seedValue
+    }
+  }
+}
