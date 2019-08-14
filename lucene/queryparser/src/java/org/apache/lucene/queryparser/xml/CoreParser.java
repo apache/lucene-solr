@@ -112,6 +112,10 @@ public class CoreParser implements QueryBuilder, SpanQueryBuilder {
     spanFactory.addBuilder("SpanFirst", sft);
     queryFactory.addBuilder("SpanFirst", sft);
 
+    SpanPositionRangeBuilder sprt = new SpanPositionRangeBuilder(spanFactory);
+    spanFactory.addBuilder("SpanPositionRange", sprt);
+    queryFactory.addBuilder("SpanPositionRange", sprt);
+
     SpanNotBuilder snot = new SpanNotBuilder(spanFactory);
     spanFactory.addBuilder("SpanNot", snot);
     queryFactory.addBuilder("SpanNot", snot);

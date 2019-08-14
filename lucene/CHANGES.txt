@@ -41,6 +41,8 @@ Improvements
 * LUCENE-8906: Expose Lucene50PostingsFormat.IntBlockTermState as public so that other postings formats can re-use it.
   (Bruno Roustant)
 
+* SOLR-13663: Introduce <SpanPositionRange> into XML Query Parser (Alessandro Benedetti via Mikhail Khludnev)
+
 Optimizations
 
 * LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
