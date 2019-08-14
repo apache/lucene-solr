@@ -17,12 +17,23 @@
 
 // Policy file for lucene tests. Please keep minimal and avoid wildcards.
 
+// Gradle needs permissions
+grant codeBase "file:${user.home}/.gradle/-" {
+     permission java.security.AllPermission;
+//   permission java.net.SocketPermission "*", "accept,listen,connect,resolve";
+//   permission java.lang.reflect.ReflectPermission "*";
+//   permission java.util.logging.LoggingPermission "control";
+//   permission java.util.PropertyPermission "*", "read,write";
+//   permission java.io.FilePermission "${user.home}${/}.gradle${/}-", "read,write,delete";
+};
+
 grant {
   // contain read access to only what we need:
   // 3rd party jar resources (where symlinks are not supported), test-files/ resources
   permission java.io.FilePermission "${common.dir}${/}-", "read";
   // 3rd party jar resources (where symlinks are supported)
   permission java.io.FilePermission "${user.home}${/}.ivy2${/}cache${/}-", "read";
+  permission java.io.FilePermission "${user.home}${/}.gradle${/}-", "read";
   // system jar resources, and let TestIndexWriterOnJRECrash fork its jvm
   permission java.io.FilePermission "${java.home}${/}-", "read,execute";
   // should be enclosed within common.dir, but just in case:
@@ -35,6 +46,8 @@ grant {
   permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,write,delete";
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,write,delete";
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
+  // gradle tmp out dir
+  permission java.io.FilePermission ".out${/}-", "read,write,delete";
 
   // misc HardlinkCopyDirectoryWrapper needs this to test if hardlinks can be created
   permission java.nio.file.LinkPermission "hard";
@@ -100,6 +113,10 @@ grant {
   // SSL related properties for jetty
   permission java.security.SecurityPermission "getProperty.ssl.KeyManagerFactory.algorithm";
   permission java.security.SecurityPermission "getProperty.ssl.TrustManagerFactory.algorithm";
+  
+  // Another one for jetty
+  permission java.util.PropertyPermission "jetty.git.hash", "write";
+  
   
   // allows LuceneTestCase#runWithRestrictedPermissions to execute with lower (or no) permission
   permission java.security.SecurityPermission "createAccessControlContext";
