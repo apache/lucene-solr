@@ -12,6 +12,21 @@ For example, these entries are not allowed at all and an exception is thrown whe
 # concatenated "日経新聞" does not match the surface form "日本経済新聞"
 日本経済新聞,日経 新聞,ニッケイ シンブン,カスタム名詞
 
+## Analysis factories now have customizable symbolic names (LUCENE-8778) ##
+
+The SPI names for concrete subclasses of TokenizerFactory, TokenFilterFactory, and CharfilterFactory are no longer
+derived from their class name. Instead, each factory must have a static "NAME" field like this:
+
+  /** o.a.l.a.standard.StandardTokenizerFactory's SPI name */
+  public static final String NAME = "standard";
+
+A factory can be resolved/instantiated with its NAME by using methods such as TokenizerFactory#lookupClass(String)
+or TokenizerFactory#forName(String, Map<String,String>).
+
+If there are any user-defined factory classes that don't have proper NAME field, an exception will be thrown
+when (re)loading factories. e.g., when calling TokenizerFactory#reloadTokenizers(ClassLoader).
+
+
 ## TermsEnum is now fully abstract (LUCENE-8292) ##
 
 TermsEnum has been changed to be fully abstract, so non-abstract subclass must implement all it's methods.
