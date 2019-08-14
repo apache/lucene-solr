@@ -79,10 +79,13 @@ public class UserDictionaryTest extends LuceneTestCase {
     assertNotNull(dictionary);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void testReadInvalid1() throws IOException {
     // the concatenated segment must not be longer than its surface form
     String invalidEntry = "日経新聞,日本 経済 新聞,ニホン ケイザイ シンブン,カスタム名詞";
-    UserDictionary dictionary = UserDictionary.open(new StringReader(invalidEntry));
+    RuntimeException e = expectThrows(RuntimeException.class,
+        "RuntimeException should be thrown when passed an invalid dictionary entry.",
+        () -> UserDictionary.open(new StringReader(invalidEntry)));
+    assertTrue(e.getMessage().contains("is longer than the surface form"));
   }
 }

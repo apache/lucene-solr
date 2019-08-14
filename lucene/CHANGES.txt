@@ -25,6 +25,8 @@ Improvements
 * LUCENE-8916: GraphTokenStreamFiniteStrings preserves all Token attributes
   through its finite strings TokenStreams (Alan Woodward)
 
+* LUCENE-8933: Check kuromoji user dictionary beforehand to avoid unexpected runtime exceptions. (Tomoko Uchida)
+
 Optimizations
 
 * LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
