@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.ja.dict;
 
 
 import java.io.IOException;
+import java.io.StringReader;
 
 import org.apache.lucene.analysis.ja.TestJapaneseTokenizer;
 import org.apache.lucene.util.LuceneTestCase;
@@ -76,5 +77,15 @@ public class UserDictionaryTest extends LuceneTestCase {
   public void testRead() throws IOException {
     UserDictionary dictionary = TestJapaneseTokenizer.readDict();
     assertNotNull(dictionary);
+  }
+
+  @Test
+  public void testReadInvalid1() throws IOException {
+    // the concatenated segment must not be longer than its surface form
+    String invalidEntry = "日経新聞,日本 経済 新聞,ニホン ケイザイ シンブン,カスタム名詞";
+    RuntimeException e = expectThrows(RuntimeException.class,
+        "RuntimeException should be thrown when passed an invalid dictionary entry.",
+        () -> UserDictionary.open(new StringReader(invalidEntry)));
+    assertTrue(e.getMessage().contains("is longer than the surface form"));
   }
 }
