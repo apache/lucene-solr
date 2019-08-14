@@ -26,8 +26,6 @@ test {
   
   useJUnit()
   
-  systemProperty 'java.security.egd', 'file:/dev/./urandom'
-  
   filter {
     includeTestsMatching "*.Test*"
     includeTestsMatching "*.*Test"
@@ -48,6 +46,8 @@ test {
     commonDir = rootProject.project(":solr").projectDir
   }
   
+  def tmpDir = file('build/tests-temp')
+
   systemProperty 'common.dir', "${commonDir}"
   systemProperty 'tests.multiplier', '1'
   systemProperty 'tests.codec', 'random'
@@ -57,24 +57,23 @@ test {
   systemProperty 'tests.timezone', 'random'
   systemProperty 'tests.directory', 'random'
   systemProperty 'tests.linedocsfile', 'europarl.lines.txt.gz'
-  systemProperty 'tests.loggingfile', './lucene/tools/junit4/logging.properties'
   systemProperty 'tests.nightly', 'false'
   systemProperty 'tests.weekly', 'false'
   systemProperty 'tests.monster', 'false'
-  systemProperty 'tests.slow', 'false'
+  systemProperty 'tests.slow', 'true'
   systemProperty 'tests.cleanthreads.sysprop', 'perMethod'
   systemProperty 'tests.verbose', 'false'
   systemProperty 'tests.filterstacks', 'true'
   systemProperty 'tests.asserts', 'true'
-  systemProperty 'tempDir', '.out/tests-temp'
-  systemProperty 'java.io.tmpdir', '.out/tests-temp'
+  systemProperty 'tempDir', tmpDir
+  systemProperty 'java.io.tmpdir', tmpDir
   systemProperty 'java.awt.headless', 'true'
   systemProperty 'jetty.testMode', '1'
   systemProperty 'jetty.insecurerandom', '1'
   systemProperty 'jdk.map.althashing.threshold', '0'
   systemProperty 'tests.src.home', System.getenv('user.dir')
   systemProperty 'tests.seed', project.ext.pickRandomSeed()
-  
+
   // replaces default random source to the nonblocking variant 
   systemProperty 'java.security.egd', 'file:/dev/./urandom'
   systemProperty 'java.security.manager', 'org.apache.lucene.util.TestSecurityManager'
@@ -82,7 +81,7 @@ test {
   
   def testsJvms = project.ext.properties.tests_jvms
   if (testsJvms) {
-    maxParallelForks = testsJvms
+    maxParallelForks = Integer.parseInt(testsJvms)
   } else {
     maxParallelForks = Runtime.runtime.availableProcessors() / 2
   }
