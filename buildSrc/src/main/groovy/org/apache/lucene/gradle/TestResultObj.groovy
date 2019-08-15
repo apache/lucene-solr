@@ -1,3 +1,4 @@
+package org.apache.lucene.gradle
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,36 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.queryparser.flexible.standard.config;
 
-import org.apache.lucene.search.FuzzyQuery;
-
-/**
- * Configuration parameters for {@link FuzzyQuery}s
- */
-public class FuzzyConfig {
+class TestResultObj {
   
-  private int prefixLength = FuzzyQuery.defaultPrefixLength;
-
-  @SuppressWarnings("deprecation")
-  private float minSimilarity = FuzzyQuery.defaultMinSimilarity;
+  private String summary
+  private boolean success
+  private String projectAndTask
   
-  public FuzzyConfig() {}
-
-  public int getPrefixLength() {
-    return prefixLength;
-  }
-
-  public void setPrefixLength(int prefixLength) {
-    this.prefixLength = prefixLength;
-  }
-
-  public float getMinSimilarity() {
-    return minSimilarity;
-  }
-
-  public void setMinSimilarity(float minSimilarity) {
-    this.minSimilarity = minSimilarity;
+  public TestResultObj(String projectAndTask, String summary, boolean success) {
+    this.summary = summary
+    this.success = success
+    this.projectAndTask = projectAndTask
   }
   
+  public String getSummary() {
+    return summary
+  }
+  
+  public boolean getSuccess() {
+    return success
+  }
+  
+  public String getProjectAndTask() {
+    return projectAndTask
+  }
 }
+

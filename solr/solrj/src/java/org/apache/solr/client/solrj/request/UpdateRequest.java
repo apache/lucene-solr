@@ -60,6 +60,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
    *   @deprecated Solr now always includes in the response the {@link #REPFACT}, this parameter
    *   doesn't need to be explicitly set
    */
+  @Deprecated
   public static final String MIN_REPFACT = "min_rf";
   public static final String VER = "ver";
   public static final String OVERWRITE = "ow";

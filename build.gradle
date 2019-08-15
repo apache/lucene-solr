@@ -108,6 +108,14 @@ configure(luceneSolrSubProjects) {
     project.compileJava.options.encoding = "UTF-8"
     project.compileTestJava.options.encoding = "UTF-8"
     
+    // project.compileJava.options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked'
+    // project.compileTestJava.options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked'
+    
+    // fail on basic compiler warnings
+    project.compileJava.options.compilerArgs << "-Werror"
+    project.compileTestJava.options.compilerArgs << "-Werror"
+    
+    
     project.sourceSets {
       main.java.srcDirs = ['src/java']
       main.resources.srcDirs = ['src/resources']
@@ -167,7 +175,16 @@ configure(rootProject) {
   }
   
   task pristineClean(type: org.apache.lucene.gradle.PristineClean) {}
-
+  
+  ext.testsResults = [] // We'll hold the summaries here
+  
+  gradle.buildFinished {
+      def allResults = ext.testsResults
+  
+      if (!allResults.isEmpty()) {
+          printResults allResults
+      }
+  }
 }
 
 // *** all projects config

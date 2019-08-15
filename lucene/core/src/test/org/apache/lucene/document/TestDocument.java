@@ -212,6 +212,7 @@ public class TestDocument extends LuceneTestCase {
     dir.close();
   }
 
+  @SuppressWarnings("deprecation")
   public void testGetValues() {
     Document doc = makeDocumentWithFields();
     assertEquals(new String[] {"test1", "test2"},

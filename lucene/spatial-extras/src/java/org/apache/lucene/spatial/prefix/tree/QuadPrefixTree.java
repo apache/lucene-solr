@@ -144,6 +144,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     return maxLevels;
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   public Cell getCell(Point p, int level) {
     List<Cell> cells = new ArrayList<>(1);
@@ -176,6 +177,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     // if we actually use the range property in the query, this could be useful
   }
 
+  @SuppressWarnings("deprecation")
   protected void checkBattenberg(
       char c,
       double cx,
@@ -269,6 +271,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
       return shape;
     }
 
+    @SuppressWarnings("deprecation")
     protected Rectangle makeShape() {
       BytesRef token = getTokenBytesNoLeaf(null);
       double xmin = QuadPrefixTree.this.xmin;

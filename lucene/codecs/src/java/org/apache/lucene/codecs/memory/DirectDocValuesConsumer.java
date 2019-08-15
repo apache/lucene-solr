@@ -65,6 +65,7 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     meta.writeVInt(field.number);
@@ -162,6 +163,7 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   public void addBinaryField(FieldInfo field, final DocValuesProducer valuesProducer) throws IOException {
     meta.writeVInt(field.number);
@@ -231,6 +233,7 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     meta.writeVInt(field.number);
@@ -242,6 +245,7 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
     addBinaryFieldValues(field, LegacyDocValuesIterables.valuesIterable(valuesProducer.getSorted(field)));
   }
   
+  @SuppressWarnings("deprecation")
   @Override
   public void addSortedNumericField(FieldInfo field, final DocValuesProducer valuesProducer) throws IOException {
 
@@ -267,6 +271,7 @@ class DirectDocValuesConsumer extends DocValuesConsumer {
   }
 
   // note: this might not be the most efficient... but it's fairly simple
+  @SuppressWarnings("deprecation")
   @Override
   public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     Iterable<BytesRef> values = LegacyDocValuesIterables.valuesIterable(valuesProducer.getSortedSet(field));

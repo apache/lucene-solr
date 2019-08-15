@@ -42,7 +42,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 /**
  * Reader for {@link DirectDocValuesFormat}
  */
-
+@SuppressWarnings("deprecation")
 class DirectDocValuesProducer extends DocValuesProducer {
   // metadata maps (just file pointers and minimal stuff)
   private final Map<String,NumericEntry> numerics = new HashMap<>();

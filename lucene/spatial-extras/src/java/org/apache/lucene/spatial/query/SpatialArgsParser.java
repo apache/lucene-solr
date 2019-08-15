@@ -112,6 +112,7 @@ public class SpatialArgsParser {
     args.setDistErr(readDouble(nameValPairs.remove(DIST_ERR)));
   }
 
+  @SuppressWarnings("deprecation")
   protected Shape parseShape(String str, SpatialContext ctx) throws ParseException {
     //return ctx.readShape(str);//still in Spatial4j 0.4 but will be deleted
     return ctx.readShapeFromWkt(str);

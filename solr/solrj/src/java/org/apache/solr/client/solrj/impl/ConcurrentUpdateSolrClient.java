@@ -218,6 +218,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     // Pull from the queue multiple times and streams over a single connection.
     // Exits on exception, interruption, or an empty queue to pull from.
     //
+    @SuppressWarnings({"deprecation", "unchecked"})
     void sendUpdateStream() throws Exception {
     
       while (!queue.isEmpty()) {
@@ -356,7 +357,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
             msg.append(response.getStatusLine().getReasonPhrase());
             msg.append("\n\n\n\n");
             msg.append("request: ").append(method.getURI());
-
+            
             SolrException solrExc;
             NamedList<String> metadata = null;
             // parse out the metadata from the SolrException
@@ -473,6 +474,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
 
+  @SuppressWarnings("rawtypes")
   @Override
   public NamedList<Object> request(final SolrRequest request, String collection)
       throws SolrServerException, IOException {

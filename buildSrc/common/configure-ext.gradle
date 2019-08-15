@@ -1,3 +1,25 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.gradle.internal.logging.text.StyledTextOutput;
+import org.gradle.internal.logging.text.StyledTextOutputFactory;
+import static org.gradle.internal.logging.text.StyledTextOutput.Style;
+
+
 public static String formatSeed(long seed) {
   char [] HEX = "0123456789ABCDEF".toCharArray();
   StringBuilder b = new StringBuilder();
@@ -34,11 +56,59 @@ allprojects {
     if (project.hasProperty(propertyName))  seedValue = project.getProperty(propertyName)
     if (seedValue == null) {
       seedValue = formatSeed(new Random().nextLong());
-      println("Picking master seed for property '" + propertyName + "': " + seedValue);
+      // println("Picking master seed for property '" + propertyName + "': " + seedValue);
       return seedValue
     } else {
-      println("Seed property '" + propertyName + "' already defined: " + seedValue);
+      // println("Seed property '" + propertyName + "' already defined: " + seedValue);
       return seedValue
     }
   }
+
+  ext.printResults = {results ->
+    
+    def allResults = new ArrayList()
+    results.collect { allResults.add(it.getProjectAndTask() + ' ' + it.getSummary()) }
+    
+    // max line length 
+    def maxLength = allResults*.readLines().flatten().collect { it.length() }.max()
+    
+    def out = services.get(StyledTextOutputFactory).create("out")
+    def borderStyle
+    def headerStyle
+    def topBorderStyle
+    
+    for (def i = 0; i < results.size(); i++) {
+      def result = results.get(i)
+      if (result.getSuccess()) {
+        borderStyle = Style.Normal
+        headerStyle = Style.SuccessHeader
+        topBorderStyle = Style.Identifier
+      } else {
+        borderStyle = Style.Failure
+        headerStyle = Style.FailureHeader
+        topBorderStyle = Style.Failure
+      }
+      
+      out.style(topBorderStyle).println("┌${"${"─" * maxLength}"}┐")
+
+      result.collect {
+        String projectAndTask = it.getProjectAndTask()
+        String summary = it.getSummary()
+        boolean success = it.getSuccess()
+        int line = 0
+        summary.readLines().collect {
+          line++
+          if (line == 1) {
+            out.style(borderStyle).text('│').style(headerStyle).text(projectAndTask).style(Style.Normal).text(' ' + it + ' ' * (maxLength - (projectAndTask.length() + 1 + it.length()))).style(borderStyle).println('│')
+          } else {
+            out.style(borderStyle).text('│').style(Style.Normal).text(it + ' ' * (maxLength - it.length())).style(borderStyle).println('│')
+          }
+        }.join("\n")
+      }.join("\n├${"${"─" * maxLength}"}┤\n") // Add separator between entries
+      println "└${"${"─" * maxLength}"}┘" // bottom border
+    }
+
+  
+  }
+  
 }

@@ -2005,6 +2005,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       TopDocs hits = searcher.search(query, 10);
       assertEquals(1, hits.scoreDocs.length);
+      @SuppressWarnings("deprecation")
       TokenStream stream = TokenSources.getAnyTokenStream(searcher.getIndexReader(), 0, FIELD_NAME, analyzer);
       if (random().nextBoolean()) {
         stream = new CachingTokenFilter(stream);//conceals detection of TokenStreamFromTermVector

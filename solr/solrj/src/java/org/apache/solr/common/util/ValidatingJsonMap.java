@@ -39,6 +39,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 
+@SuppressWarnings("unchecked")
 public class ValidatingJsonMap implements Map<String, Object> {
 
   private static final String INCLUDE = "#include";

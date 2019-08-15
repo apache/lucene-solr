@@ -23,19 +23,20 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.LuceneTestCase;
 
-import static junit.framework.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
  * Utility class for asserting expected hits in tests.
  */
+@SuppressWarnings("deprecation")
 public class CheckHits {
     
   /**
@@ -58,7 +59,7 @@ public class CheckHits {
       if (ignore.contains(Integer.valueOf(doc))) continue;
 
       Explanation exp = searcher.explain(q, doc);
-      assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
+      junit.framework.Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
                              exp);
       Assert.assertFalse("Explanation of [["+d+"]] for #"+doc+
                          " doesn't indicate non-match: " + exp.toString(),
@@ -632,7 +633,7 @@ public class CheckHits {
         if (twoPhase2 == null || twoPhase2.matches()) {
           Assert.assertTrue(twoPhase1 == null || twoPhase1.matches());
           float score = s2.score();
-          Assert.assertEquals(s1.score(), score);
+          Assert.assertEquals(s1.score(), score, .01);
           Assert.assertTrue(score + " > " + maxScore + " up to " + upTo, score <= maxScore);
 
           if (score >= minScore && random.nextInt(10) == 0) {
@@ -702,7 +703,7 @@ public class CheckHits {
         if (twoPhase2 == null || twoPhase2.matches()) {
           Assert.assertTrue(twoPhase1 == null || twoPhase1.matches());
           float score = s2.score();
-          Assert.assertEquals(s1.score(), score);
+          Assert.assertEquals(s1.score(), score, .01);
 
           if (doc2 > upTo) {
             upTo = s2.advanceShallow(doc2);

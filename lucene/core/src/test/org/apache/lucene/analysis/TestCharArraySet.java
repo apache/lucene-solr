@@ -57,6 +57,7 @@ public class TestCharArraySet extends LuceneTestCase {
     assertTrue(set.contains(new String(findme,1,4)));
   }
 
+  @SuppressWarnings("deprecation")
   @SuppressForbidden(reason = "Explicitly checking new Integers")
   public void testObjectContains() {
     CharArraySet set = new CharArraySet(10, true);
@@ -211,7 +212,6 @@ public class TestCharArraySet extends LuceneTestCase {
     }
   }
   
-  @SuppressWarnings("deprecated")
   public void testCopyCharArraySetBWCompat() {
     CharArraySet setIngoreCase = new CharArraySet(10, true);
     CharArraySet setCaseSensitive = new CharArraySet(10, false);

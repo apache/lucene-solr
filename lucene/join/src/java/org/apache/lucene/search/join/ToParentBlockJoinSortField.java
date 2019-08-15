@@ -107,6 +107,7 @@ public class ToParentBlockJoinSortField extends SortField {
   private FieldComparator<?> getStringComparator(int numHits) {
     return new FieldComparator.TermOrdValComparator(numHits, getField(), missingValue == STRING_LAST) {
 
+      @SuppressWarnings("deprecation")
       @Override
       protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
         SortedSetDocValues sortedSet = DocValues.getSortedSet(context.reader(), field);
@@ -126,6 +127,7 @@ public class ToParentBlockJoinSortField extends SortField {
 
   private FieldComparator<?> getIntComparator(int numHits) {
     return new FieldComparator.IntComparator(numHits, getField(), (Integer) missingValue) {
+      @SuppressWarnings("deprecation")
       @Override
       protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
         SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
@@ -144,6 +146,7 @@ public class ToParentBlockJoinSortField extends SortField {
 
   private FieldComparator<?> getLongComparator(int numHits) {
     return new FieldComparator.LongComparator(numHits, getField(), (Long) missingValue) {
+      @SuppressWarnings("deprecation")
       @Override
       protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
         SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
@@ -162,6 +165,7 @@ public class ToParentBlockJoinSortField extends SortField {
 
   private FieldComparator<?> getFloatComparator(int numHits) {
     return new FieldComparator.FloatComparator(numHits, getField(), (Float) missingValue) {
+      @SuppressWarnings("deprecation")
       @Override
       protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
         SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
@@ -186,6 +190,7 @@ public class ToParentBlockJoinSortField extends SortField {
 
   private FieldComparator<?> getDoubleComparator(int numHits) {
     return new FieldComparator.DoubleComparator(numHits, getField(), (Double) missingValue) {
+      @SuppressWarnings("deprecation")
       @Override
       protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
         SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
