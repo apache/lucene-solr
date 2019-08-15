@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @since solr 1.3
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class DocBuilder {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

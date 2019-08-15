@@ -68,6 +68,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @since solr 1.3
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class DataImporter {
 
   public enum Status {
@@ -187,6 +188,7 @@ public class DataImporter {
     config = loadDataConfig(configFile);
   }
 
+  @SuppressWarnings("deprecation")
   public DIHConfiguration loadDataConfig(InputSource configFile) {
 
     DIHConfiguration dihcfg = null;
@@ -327,7 +329,6 @@ public class DataImporter {
     return new DIHConfiguration(documentTags.get(0), this, functions, script, dataSources, pw);
   }
     
-  @SuppressWarnings("unchecked")
   private DIHProperties createPropertyWriter() {
     DIHProperties propWriter = null;
     PropertyWriter configPw = config.getPropertyWriter();
@@ -489,7 +490,6 @@ public class DataImporter {
     }
   }
 
-  @SuppressWarnings("unchecked")
   Map<String, String> getStatusMessages() {
     //this map object is a Collections.synchronizedMap(new LinkedHashMap()). if we
     // synchronize on the object it must be safe to iterate through the map

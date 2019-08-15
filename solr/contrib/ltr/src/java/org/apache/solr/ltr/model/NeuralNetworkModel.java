@@ -92,6 +92,7 @@ import org.apache.solr.util.SolrPluginUtils;
  * Proceedings of the 22nd International Conference on Machine Learning (ICML), ACM, 2005.</a>
  * </ul>
  */
+@SuppressWarnings("unchecked")
 public class NeuralNetworkModel extends LTRScoringModel {
 
   /**

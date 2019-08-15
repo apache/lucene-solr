@@ -129,6 +129,7 @@ public class LineEntityProcessor extends EntityProcessorBase {
     }
   }
   
+  @SuppressWarnings("deprecation")
   public void closeResources() {
     if (reader != null) {
       IOUtils.closeQuietly(reader);

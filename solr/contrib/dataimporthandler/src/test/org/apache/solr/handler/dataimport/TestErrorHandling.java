@@ -80,6 +80,7 @@ public class TestErrorHandling extends AbstractDataImportHandlerTestCase {
     assertQ(req("*:*"), "//*[@numFound='0']");
   }
 
+  @SuppressWarnings("unchecked")
   public void testTransformerErrorContinue() throws Exception {
     StringDataSource.xml = wellformedXml;
     List<Map<String, Object>> rows = new ArrayList<>();

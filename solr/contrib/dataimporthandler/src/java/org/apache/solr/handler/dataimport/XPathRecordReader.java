@@ -585,6 +585,7 @@ public class XPathRecordReader {
      * records values. If a fields value is a List then they have to be
      * deep-copied for thread safety
      */
+    @SuppressWarnings("unchecked")
     private static Map<String, Object> getDeepCopy(Map<String, Object> values) {
       Map<String, Object> result = new HashMap<>();
       for (Map.Entry<String, Object> entry : values.entrySet()) {

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.After;
 import org.junit.Before;

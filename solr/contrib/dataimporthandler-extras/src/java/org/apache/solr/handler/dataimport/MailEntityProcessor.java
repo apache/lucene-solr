@@ -52,6 +52,7 @@ import com.sun.mail.gimap.GmailRawSearchTerm;
  * 
  * @since solr 1.4
  */
+@SuppressWarnings("unchecked")
 public class MailEntityProcessor extends EntityProcessorBase {
   
   private static final SimpleDateFormat sinceDateParser = 
