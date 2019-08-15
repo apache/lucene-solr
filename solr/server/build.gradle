@@ -21,6 +21,10 @@ apply plugin: org.apache.lucene.gradle.PartOfDist
 
 jar.enabled = false
 
+configurations {
+  startJar
+}
+
 dependencies {
   
   runtimeOnly ('com.lmax:disruptor')
@@ -33,10 +37,10 @@ dependencies {
   implementation ('org.apache.logging.log4j:log4j-core')
   implementation ('org.apache.logging.log4j:log4j-slf4j-impl')
   
-  implementation ('io.dropwizard.metrics:metrics-core') { transitive = false }
-  implementation ('io.dropwizard.metrics:metrics-graphite') { transitive = false }
-  implementation ('io.dropwizard.metrics:metrics-jetty9') { transitive = false }
-  implementation ('io.dropwizard.metrics:metrics-jvm') { transitive = false }
+  implementation ('io.dropwizard.metrics:metrics-core')
+  implementation ('io.dropwizard.metrics:metrics-graphite')
+  implementation ('io.dropwizard.metrics:metrics-jetty9')
+  implementation ('io.dropwizard.metrics:metrics-jvm')
   
   api ('org.eclipse.jetty:jetty-continuation')
   api ('org.eclipse.jetty:jetty-deploy')
@@ -62,8 +66,11 @@ dependencies {
   api ('org.eclipse.jetty.http2:http2-http-client-transport')
   
   implementation ('javax.servlet:javax.servlet-api')
+  
+  startJar 'org.eclipse.jetty:jetty-start::shaded'
 }
 
 unusedDeps {
   jarExclude '.*?\\.jar' // solr-server creates no jar, so we don't currently check it
 }
+
