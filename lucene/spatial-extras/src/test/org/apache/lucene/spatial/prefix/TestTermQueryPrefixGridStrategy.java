@@ -30,9 +30,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
 
-
 public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
 
+  @SuppressWarnings("deprecation")
   @Test
   public void testNGramPrefixGridLosAngeles() throws IOException {
     SpatialContext ctx = SpatialContext.GEO;

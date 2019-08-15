@@ -36,6 +36,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
  * A base test class with utility methods to help test shapes.
  * Extends from RandomizedTest.
  */
+@SuppressWarnings("deprecation")
 public abstract class RandomizedShapeTestCase extends LuceneTestCase {
 
   protected static final double EPS = 10e-9;
@@ -55,7 +56,6 @@ public abstract class RandomizedShapeTestCase extends LuceneTestCase {
     this.ctx = ctx;
   }
 
-  @SuppressWarnings("unchecked")
   public static void checkShapesImplementEquals( Class<?>[] classes ) {
     for( Class<?> clazz : classes ) {
       try {

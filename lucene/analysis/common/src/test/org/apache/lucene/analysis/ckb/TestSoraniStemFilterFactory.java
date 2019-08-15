@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
  */
 public class TestSoraniStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   
+  @SuppressWarnings("resource")
   public void testStemming() throws Exception {
     Reader reader = new StringReader("پیاوەکان");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
