@@ -26,9 +26,9 @@ dependencies {
   implementation project(':lucene:lucene-queryparser')
   implementation project(':lucene:lucene-expressions')
   
-  runtimeOnly ('org.antlr:antlr4-runtime') { transitive = false }
-  runtimeOnly ('org.ow2.asm:asm') { transitive = false }
-  runtimeOnly ('org.ow2.asm:asm-commons') { transitive = false }
+  runtimeOnly ('org.antlr:antlr4-runtime')
+  runtimeOnly ('org.ow2.asm:asm')
+  runtimeOnly ('org.ow2.asm:asm-commons')
   
   testImplementation project(':lucene:lucene-test-framework')
 }
