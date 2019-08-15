@@ -20,6 +20,7 @@ import java.util.Arrays;
 
 
 public class TestCharsRef extends LuceneTestCase {
+  @SuppressWarnings("deprecation")
   public void testUTF16InUTF8Order() {
     final int numStrings = atLeast(1000);
     BytesRef utf8[] = new BytesRef[numStrings];

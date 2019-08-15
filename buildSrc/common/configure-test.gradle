@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-// we create new *Tran configurations that are transitive
-// and can be used between modules
+ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+ import org.gradle.api.tasks.testing.logging.TestLogEvent
+ import groovy.time.TimeCategory
+ import org.apache.lucene.gradle.TestResultObj
 
 test {
   group = 'Tests'
@@ -29,15 +31,51 @@ test {
   filter {
     includeTestsMatching "*.Test*"
     includeTestsMatching "*.*Test"
-    // so we can run with --tests wildcards
+    // so we can run with --tests wildcards from higher lvl dirs
     setFailOnNoMatchingTests(false)
   }
   
+  testLogging {
+    events TestLogEvent.FAILED
+    exceptionFormat TestExceptionFormat.FULL
+    showExceptions true
+    showCauses true
+    showStackTraces true
+  }
+
+  afterSuite { desc, result ->
+    if (desc.parent) return // Only summarize results for whole modules
+      String summary = "results: ${result.resultType} " +
+          "(" +
+          "${result.testCount} tests, " +
+          "${result.successfulTestCount} successes, " +
+          "${result.failedTestCount} failures, " +
+          "${result.skippedTestCount} skipped" +
+          ") " +
+          "in ${TimeCategory.minus(new Date(result.endTime), new Date(result.startTime))}" +
+          "\n" +
+          "Report file: ${project.tasks.test.reports.html.entryPoint}"
+    
+    TestResultObj testResult = new TestResultObj("${project.name}:${project.tasks.test.name}", summary, result.resultType == TestResult.ResultType.SUCCESS)
+    
+    // Add reports in `testsResults`, keep failed suites at the end
+    if (result.resultType == TestResult.ResultType.SUCCESS) {
+      rootProject.testsResults.add(0, testResult)
+    } else {
+      rootProject.testsResults += testResult
+    }
+  }
+  
+  minHeapSize = "256m"
   maxHeapSize = "512m"
   // Enable assertions
   jvmArgs += "-ea"
   // Enable assertions in system classes
   jvmArgs += "-esa"
+  
+  jvmArgs +=  "-XX:+UseG1GC"
+  jvmArgs += "-Xss2m"
+  jvmArgs +=  "-XX:+UseStringDeduplication"
   
   def commonDir
   if (project.ext.getTopLvlProject(project).equals(rootProject.project(":lucene"))) {
@@ -46,9 +84,17 @@ test {
     commonDir = rootProject.project(":solr").projectDir
   }
   
-  def tmpDir = file('build/tests-temp')
-
+  workingDir = project.mfile(project.projectDir, 'build/tests')
+  
+  def tmpDir = project.mfile(workingDir, 'temp')
+  
+  doFirst {
+    def success = workingDir.mkdirs()
+    tmpDir.mkdirs()
+  }
+  
   systemProperty 'common.dir', "${commonDir}"
+  systemProperty 'build.dir', project.buildDir
   systemProperty 'tests.multiplier', '1'
   systemProperty 'tests.codec', 'random'
   systemProperty 'tests.postingsformat', 'random'
@@ -72,6 +118,8 @@ test {
   systemProperty 'jetty.insecurerandom', '1'
   systemProperty 'jdk.map.althashing.threshold', '0'
   systemProperty 'tests.src.home', System.getenv('user.dir')
+  systemProperty 'solr.directoryFactory', 'org.apache.solr.core.MockDirectoryFactory'
+  
   systemProperty 'tests.seed', project.ext.pickRandomSeed()
 
   // replaces default random source to the nonblocking variant 
@@ -79,8 +127,8 @@ test {
   systemProperty 'java.security.manager', 'org.apache.lucene.util.TestSecurityManager'
   systemProperty 'java.security.policy', "${mfile(rootProjectDir, project.ext.testsPolicy)}"
   
-  def testsJvms = project.ext.properties.tests_jvms
-  if (testsJvms) {
+  if (project.ext.properties.containsKey('tests_jvms')) {
+    def testsJvms = project.ext.properties.tests_jvms
     maxParallelForks = Integer.parseInt(testsJvms)
   } else {
     maxParallelForks = Runtime.runtime.availableProcessors() / 2
@@ -92,7 +140,6 @@ test {
   }
 
 }
-
 
 // Some test resources and files are stored along the test sources
 // and are expected to exist next to classes during tests

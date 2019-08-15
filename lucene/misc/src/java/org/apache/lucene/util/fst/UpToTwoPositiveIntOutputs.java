@@ -83,6 +83,7 @@ public final class UpToTwoPositiveIntOutputs extends Outputs<Object> {
     }
   }
   
+  @SuppressWarnings("deprecation")
   private final static Long NO_OUTPUT = new Long(0);
 
   private final boolean doShare;

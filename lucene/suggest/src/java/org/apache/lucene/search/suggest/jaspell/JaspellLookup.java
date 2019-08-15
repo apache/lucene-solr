@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.Accountable;
@@ -39,6 +38,7 @@ import org.apache.lucene.util.CharsRefBuilder;
  * @deprecated Migrate to one of the newer suggesters which are much more RAM efficient.
  */
 @Deprecated
+@SuppressWarnings("deprecation")
 public class JaspellLookup extends Lookup implements Accountable {
   JaspellTernarySearchTrie trie = new JaspellTernarySearchTrie();
   private boolean usePrefix = true;
@@ -140,52 +140,52 @@ public class JaspellLookup extends Lookup implements Accountable {
   private static final byte HI_KID = 0x04;
   private static final byte HAS_VALUE = 0x08;
  
-  private void readRecursively(DataInput in, TSTNode node) throws IOException {
+  private void readRecursively(DataInput in, org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode node) throws IOException {
     node.splitchar = in.readString().charAt(0);
     byte mask = in.readByte();
     if ((mask & HAS_VALUE) != 0) {
       node.data = Long.valueOf(in.readLong());
     }
     if ((mask & LO_KID) != 0) {
-      TSTNode kid = new TSTNode('\0', node);
-      node.relatives[TSTNode.LOKID] = kid;
+      org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode kid = new org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode('\0', node);
+      node.relatives[org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode.LOKID] = kid;
       readRecursively(in, kid);
     }
     if ((mask & EQ_KID) != 0) {
-      TSTNode kid = new TSTNode('\0', node);
-      node.relatives[TSTNode.EQKID] = kid;
+      org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode kid = new org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode('\0', node);
+      node.relatives[org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode.EQKID] = kid;
       readRecursively(in, kid);
     }
     if ((mask & HI_KID) != 0) {
-      TSTNode kid = new TSTNode('\0', node);
-      node.relatives[TSTNode.HIKID] = kid;
+      org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode kid = new org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode('\0', node);
+      node.relatives[org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode.HIKID] = kid;
       readRecursively(in, kid);
     }
   }
 
-  private void writeRecursively(DataOutput out, TSTNode node) throws IOException {
+  private void writeRecursively(DataOutput out, org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode node) throws IOException {
     if (node == null) {
       return;
     }
     out.writeString(new String(new char[] {node.splitchar}, 0, 1));
     byte mask = 0;
-    if (node.relatives[TSTNode.LOKID] != null) mask |= LO_KID;
-    if (node.relatives[TSTNode.EQKID] != null) mask |= EQ_KID;
-    if (node.relatives[TSTNode.HIKID] != null) mask |= HI_KID;
+    if (node.relatives[org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode.LOKID] != null) mask |= LO_KID;
+    if (node.relatives[org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode.EQKID] != null) mask |= EQ_KID;
+    if (node.relatives[org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode.HIKID] != null) mask |= HI_KID;
     if (node.data != null) mask |= HAS_VALUE;
     out.writeByte(mask);
     if (node.data != null) {
       out.writeLong(((Number)node.data).longValue());
     }
-    writeRecursively(out, node.relatives[TSTNode.LOKID]);
-    writeRecursively(out, node.relatives[TSTNode.EQKID]);
-    writeRecursively(out, node.relatives[TSTNode.HIKID]);
+    writeRecursively(out, node.relatives[org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode.LOKID]);
+    writeRecursively(out, node.relatives[org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode.EQKID]);
+    writeRecursively(out, node.relatives[org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode.HIKID]);
   }
 
   @Override
   public boolean store(DataOutput output) throws IOException {
     output.writeVLong(count);
-    TSTNode root = trie.getRoot();
+    org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode root = trie.getRoot();
     if (root == null) { // empty tree
       return false;
     }
@@ -196,7 +196,7 @@ public class JaspellLookup extends Lookup implements Accountable {
   @Override
   public boolean load(DataInput input) throws IOException {
     count = input.readVLong();
-    TSTNode root = new TSTNode('\0', null);
+    org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode root = new org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode('\0', null);
     readRecursively(input, root);
     trie.setRoot(root);
     return true;

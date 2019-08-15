@@ -123,13 +123,14 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
 
   public void testURLStreamGZIP() throws IOException {
     File file = new File(createTempDir().toFile(), "README.gz");
-
-    try (InputStream is = new SolrResourceLoader().openResource("solrj/README");
-         FileOutputStream os = new FileOutputStream(file);
-         GZIPOutputStream zos = new GZIPOutputStream(os)) {
-      IOUtils.copy(is, zos);
+    try (SolrResourceLoader rl = new SolrResourceLoader()) {
+      try (InputStream is = rl.openResource("solrj/README");
+          FileOutputStream os = new FileOutputStream(file);
+          GZIPOutputStream zos = new GZIPOutputStream(os)) {
+        IOUtils.copy(is, zos);
+      }
     }
-
+    
     ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
     try (InputStream s = stream.getStream();
          FileInputStream fis = new FileInputStream(file);

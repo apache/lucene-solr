@@ -40,7 +40,6 @@ import org.apache.lucene.search.suggest.analyzing.FreeTextSuggester;
 import org.apache.lucene.search.suggest.analyzing.FuzzySuggester;
 import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
-import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
 import org.apache.lucene.search.suggest.tst.TSTLookup;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -53,12 +52,12 @@ import org.junit.Ignore;
  */
 @Ignore("COMMENT ME TO RUN BENCHMARKS!")
 public class LookupBenchmarkTest extends LuceneTestCase {
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("deprecation")
   private final List<Class<? extends Lookup>> benchmarkClasses = Arrays.asList(
       FuzzySuggester.class,
       AnalyzingSuggester.class,
       AnalyzingInfixSuggester.class,
-      JaspellLookup.class, 
+      org.apache.lucene.search.suggest.jaspell.JaspellLookup.class, 
       TSTLookup.class,
       FSTCompletionLookup.class,
       WFSTCompletionLookup.class,

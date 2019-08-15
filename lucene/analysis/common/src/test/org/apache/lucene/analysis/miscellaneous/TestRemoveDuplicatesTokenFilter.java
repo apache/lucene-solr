@@ -156,6 +156,7 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
         @Override
         protected TokenStreamComponents createComponents(String fieldName) {
           Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
+          @SuppressWarnings("deprecation")
           TokenStream stream = new SynonymFilter(tokenizer, map, ignoreCase);
           return new TokenStreamComponents(tokenizer, new RemoveDuplicatesTokenFilter(stream));
         }

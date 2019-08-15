@@ -243,6 +243,7 @@ public class ZkStateReader implements SolrCloseable {
    * @return current configuration from <code>autoscaling.json</code>. NOTE:
    * this data is retrieved from ZK on each call.
    */
+  @SuppressWarnings("unchecked")
   public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws KeeperException, InterruptedException {
     Stat stat = new Stat();
 
@@ -1103,10 +1104,19 @@ public class ZkStateReader implements SolrCloseable {
     return Collections.unmodifiableMap(clusterProperties);
   }
 
-  private final Watcher clusterPropertiesWatcher = event -> {
-    // session events are not change events, and do not remove the watcher
-    if (Watcher.Event.EventType.None.equals(event.getType())) {
-      return;
+  @SuppressWarnings("unchecked")
+  public synchronized void createClusterStateWatchersAndUpdate() throws KeeperException,
+      InterruptedException {
+    // We need to fetch the current cluster state and the set of live nodes
+
+    log.debug("Updating cluster state from ZooKeeper... ");
+
+    // Sanity check ZK structure.
+    if (!zkClient.exists(CLUSTER_STATE, true)) {
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+          "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready");
+    }
+
     }
     loadClusterProperties();
   };

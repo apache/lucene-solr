@@ -179,6 +179,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
     assertNull(object);
   }
 
+  @SuppressWarnings("rawtypes")
   private void checkSchema(String name) {
     ValidatingJsonMap spec = Utils.getSpec(name).getSpec();
     Map commands = (Map) spec.get("commands");

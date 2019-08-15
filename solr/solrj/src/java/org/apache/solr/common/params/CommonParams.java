@@ -273,6 +273,7 @@ public interface CommonParams {
    * When querying a node, prefer local node's cores for distributed queries.
    * @deprecated Use {@code ShardParams.SHARDS_PREFERENCE}
    */
+  @Deprecated
   String PREFER_LOCAL_SHARDS = "preferLocalShards";
 
   String JAVABIN = "javabin";
