@@ -938,7 +938,6 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest{
     assertEquals(getRawResponse(),stringLong,stringLongTest);
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void missingTest() throws Exception {
     //Int Date
@@ -1057,6 +1056,7 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest{
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static void assertEquals(String mes, Object actual, Object expected) {
     Collections.sort((List<Comparable>) actual);
     Collections.sort((List<Comparable>)  expected);

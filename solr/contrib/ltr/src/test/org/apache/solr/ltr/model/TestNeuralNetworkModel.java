@@ -314,6 +314,7 @@ public class TestNeuralNetworkModel extends TestRerankBase {
       }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected Layer createLayer(Object o) {
       final DefaultLayer layer = new DefaultLayer();

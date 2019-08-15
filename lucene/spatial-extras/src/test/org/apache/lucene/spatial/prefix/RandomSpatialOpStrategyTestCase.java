@@ -34,6 +34,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween
 /** Base test harness, ideally for SpatialStrategy impls that have exact results
  * (not grid approximated), hence "not fuzzy".
  */
+@SuppressWarnings("deprecation")
 public abstract class RandomSpatialOpStrategyTestCase extends StrategyTestCase {
 
   //Note: this is partially redundant with StrategyTestCase.runTestQuery & testOperation

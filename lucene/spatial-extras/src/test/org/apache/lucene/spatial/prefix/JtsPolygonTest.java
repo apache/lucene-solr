@@ -37,6 +37,7 @@ import org.junit.Test;
 import java.text.ParseException;
 import java.util.HashMap;
 
+@SuppressWarnings("deprecation")
 public class JtsPolygonTest extends StrategyTestCase {
 
   private static final double LUCENE_4464_distErrPct = SpatialArgs.DEFAULT_DISTERRPCT;//DEFAULT 2.5%

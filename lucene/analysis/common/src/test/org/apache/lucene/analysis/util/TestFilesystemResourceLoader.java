@@ -54,6 +54,7 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
         rl.newInstance("org.apache.lucene.analysis.util.RollingCharBuffer", Object.class).getClass().getName());
   }
   
+  @SuppressWarnings("deprecation")
   public void testBaseDir() throws Exception {
     final Path base = createTempDir("fsResourceLoaderBase");
     Writer os = Files.newBufferedWriter(base.resolve("template.txt"), StandardCharsets.UTF_8);
