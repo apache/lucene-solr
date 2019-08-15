@@ -38,6 +38,7 @@ public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
 
   long randomCalWindowMs;
 
+  @SuppressWarnings("deprecation")
   @Before
   public void setUp() throws Exception {
     super.setUp();

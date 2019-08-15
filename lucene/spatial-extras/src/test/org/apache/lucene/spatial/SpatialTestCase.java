@@ -119,6 +119,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     }
   }
 
+  @SuppressWarnings("deprecation")
   protected Point randomPoint() {
     final Rectangle WB = ctx.getWorldBounds();
     return ctx.makePoint(
@@ -130,6 +131,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     return randomRectangle(ctx.getWorldBounds());
   }
 
+  @SuppressWarnings("deprecation")
   protected Rectangle randomRectangle(Rectangle bounds) {
     double[] xNewStartAndWidth = randomSubRange(bounds.getMinX(), bounds.getWidth());
     double xMin = xNewStartAndWidth[0];
@@ -147,6 +149,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   }
 
   /** Returns new minStart and new length that is inside the range specified by the arguments. */
+  @SuppressWarnings("deprecation")
   protected double[] randomSubRange(double boundStart, double boundLen) {
     if (boundLen >= 3 && usually()) { // typical
       // prefer integers for ease of debugability ... and prefer 1/16th of bound

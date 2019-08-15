@@ -53,6 +53,7 @@ import org.locationtech.spatial4j.shape.Shape;
  * This class serves as example code to show how to use the Lucene spatial
  * module.
  */
+@SuppressWarnings("deprecation")
 public class SpatialExample extends LuceneTestCase {
 
   //Note: Test invoked via TestTestFramework.spatialExample()

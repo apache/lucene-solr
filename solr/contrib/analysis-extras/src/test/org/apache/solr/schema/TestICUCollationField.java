@@ -62,6 +62,7 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
    * look out for jvm differences with collation).
    * So it's preferable to create this file on-the-fly.
    */
+  @SuppressWarnings("deprecation")
   public static String setupSolrHome() throws Exception {
     String tmpFile = createTempDir().toFile().getAbsolutePath();
     // make data and conf dirs
