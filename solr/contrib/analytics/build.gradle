@@ -24,63 +24,63 @@ dependencies {
   implementation project(':solr:solr-solrj')
   implementation project(':lucene:lucene-core')
   
-  implementation ('com.fasterxml.jackson.core:jackson-core') { transitive = false }
-  implementation ('com.fasterxml.jackson.core:jackson-databind') { transitive = false }
-  implementation ('com.fasterxml.jackson.core:jackson-annotations') { transitive = false }
+  implementation ('com.fasterxml.jackson.core:jackson-core')
+  implementation ('com.fasterxml.jackson.core:jackson-databind')
+  implementation ('com.fasterxml.jackson.core:jackson-annotations')
   implementation ('com.google.guava:guava')
-  implementation ('commons-codec:commons-codec') { transitive = false }
-  implementation ('commons-io:commons-io') { transitive = false }
-  implementation ('org.apache.commons:commons-lang3') { transitive = false }
-  implementation ('io.dropwizard.metrics:metrics-core') { transitive = false }
+  implementation ('commons-codec:commons-codec')
+  implementation ('commons-io:commons-io')
+  implementation ('org.apache.commons:commons-lang3')
+  implementation ('io.dropwizard.metrics:metrics-core')
   
-  implementation ('org.slf4j:slf4j-api') { transitive = false }
+  implementation ('org.slf4j:slf4j-api')
   
   // if we try to make this compileOnly or testImplementation forbidden apis fails?
-  implementation ('javax.servlet:javax.servlet-api') { transitive = false }
+  implementation ('javax.servlet:javax.servlet-api')
   
-  testRuntimeOnly ('javax.servlet:javax.servlet-api') { transitive = false }
-  testRuntimeOnly ('commons-fileupload:commons-fileupload') { transitive = false }
-  testRuntimeOnly ('org.apache.httpcomponents:httpclient') { transitive = false }
-  testRuntimeOnly ('org.apache.httpcomponents:httpcore') { transitive = false }
-  testRuntimeOnly ('org.apache.zookeeper:zookeeper') { transitive = false }
+  testRuntimeOnly ('javax.servlet:javax.servlet-api')
+  testRuntimeOnly ('commons-fileupload:commons-fileupload')
+  testRuntimeOnly ('org.apache.httpcomponents:httpclient')
+  testRuntimeOnly ('org.apache.httpcomponents:httpcore')
+  testRuntimeOnly ('org.apache.zookeeper:zookeeper')
   testRuntimeOnly ('org.apache.zookeeper:zookeeper-jute')
-  testRuntimeOnly ('org.eclipse.jetty:jetty-server') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty:jetty-util') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty:jetty-client') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty:jetty-http') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty:jetty-io') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty:jetty-alpn-java-client') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty:jetty-alpn-client') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty:jetty-security') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty:jetty-servlet') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty:jetty-client') { transitive = false }
-  testRuntimeOnly ('org.apache.commons:commons-lang3') { transitive = false }
-  testRuntimeOnly ('org.rrd4j:rrd4j') { transitive = false }
+  testRuntimeOnly ('org.eclipse.jetty:jetty-server')
+  testRuntimeOnly ('org.eclipse.jetty:jetty-util')
+  testRuntimeOnly ('org.eclipse.jetty:jetty-client')
+  testRuntimeOnly ('org.eclipse.jetty:jetty-http')
+  testRuntimeOnly ('org.eclipse.jetty:jetty-io')
+  testRuntimeOnly ('org.eclipse.jetty:jetty-alpn-java-client')
+  testRuntimeOnly ('org.eclipse.jetty:jetty-alpn-client')
+  testRuntimeOnly ('org.eclipse.jetty:jetty-security')
+  testRuntimeOnly ('org.eclipse.jetty:jetty-servlet')
+  testRuntimeOnly ('org.eclipse.jetty:jetty-client')
+  testRuntimeOnly ('org.apache.commons:commons-lang3')
+  testRuntimeOnly ('org.rrd4j:rrd4j')
   
-  testRuntimeOnly ('io.dropwizard.metrics:metrics-jvm') { transitive = false }
-  testRuntimeOnly ('io.dropwizard.metrics:metrics-jmx') { transitive = false }
+  testRuntimeOnly ('io.dropwizard.metrics:metrics-jvm')
+  testRuntimeOnly ('io.dropwizard.metrics:metrics-jmx')
   
-  testRuntimeOnly ('org.eclipse.jetty:jetty-alpn-server') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty.http2:http2-server') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty.http2:http2-client') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty.http2:http2-http-client-transport') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty.http2:http2-common') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty.http2:http2-hpack') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty:jetty-http') { transitive = false }
-  testRuntimeOnly ('org.eclipse.jetty:jetty-client') { transitive = false }
+  testRuntimeOnly ('org.eclipse.jetty:jetty-alpn-server')
+  testRuntimeOnly ('org.eclipse.jetty.http2:http2-server')
+  testRuntimeOnly ('org.eclipse.jetty.http2:http2-client')
+  testRuntimeOnly ('org.eclipse.jetty.http2:http2-http-client-transport')
+  testRuntimeOnly ('org.eclipse.jetty.http2:http2-common')
+  testRuntimeOnly ('org.eclipse.jetty.http2:http2-hpack')
+  testRuntimeOnly ('org.eclipse.jetty:jetty-http')
+  testRuntimeOnly ('org.eclipse.jetty:jetty-client')
   
-  testRuntimeOnly ('io.dropwizard.metrics:metrics-core') { transitive = false }
-  testRuntimeOnly ('io.dropwizard.metrics:metrics-jvm') { transitive = false }
-  testRuntimeOnly ('io.dropwizard.metrics:metrics-jmx') { transitive = false }
+  testRuntimeOnly ('io.dropwizard.metrics:metrics-core')
+  testRuntimeOnly ('io.dropwizard.metrics:metrics-jvm')
+  testRuntimeOnly ('io.dropwizard.metrics:metrics-jmx')
   
-  testRuntimeOnly ('org.apache.httpcomponents:httpmime') { transitive = false }
+  testRuntimeOnly ('org.apache.httpcomponents:httpmime')
   
-  testRuntimeOnly ('org.restlet.jee:org.restlet') { transitive = false }
-  testRuntimeOnly ('org.restlet.jee:org.restlet.ext.servlet') { transitive = false }
+  testRuntimeOnly ('org.restlet.jee:org.restlet')
+  testRuntimeOnly ('org.restlet.jee:org.restlet.ext.servlet')
   
-  testRuntimeOnly ('commons-collections:commons-collections') { transitive = false }
-  testRuntimeOnly ('commons-io:commons-io') { transitive = false }
-  testRuntimeOnly ('org.slf4j:jcl-over-slf4j') { transitive = false }
+  testRuntimeOnly ('commons-collections:commons-collections')
+  testRuntimeOnly ('commons-io:commons-io')
+  testRuntimeOnly ('org.slf4j:jcl-over-slf4j')
   
   testRuntimeOnly project(':lucene:analysis:lucene-analyzers-common')
   testRuntimeOnly project(':lucene:lucene-codecs')

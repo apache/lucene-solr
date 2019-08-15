@@ -25,7 +25,7 @@ dependencies {
   implementation project(':lucene:lucene-core')
   implementation project(':lucene:analysis:lucene-analyzers-common')
   
-  api ('org.apache.opennlp:opennlp-tools') { transitive = false }
+  api ('org.apache.opennlp:opennlp-tools')
   
   testImplementation project(':lucene:lucene-test-framework')
 }

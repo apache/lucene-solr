@@ -26,18 +26,18 @@ dependencies {
   implementation project(':lucene:lucene-core')
   implementation project(':lucene:analysis:lucene-analyzers-common')
   
-  implementation ('org.slf4j:slf4j-api') { transitive = false }
-  implementation ('org.restlet.jee:org.restlet') { transitive = false }
-  implementation ('commons-io:commons-io') { transitive = false }
+  implementation ('org.slf4j:slf4j-api')
+  implementation ('org.restlet.jee:org.restlet')
+  implementation ('commons-io:commons-io')
   implementation ('com.google.guava:guava')
-  implementation ('commons-codec:commons-codec') { transitive = false }
+  implementation ('commons-codec:commons-codec')
   
-  testRuntimeOnly ("org.slf4j:jcl-over-slf4j") { transitive = false }
+  testRuntimeOnly ("org.slf4j:jcl-over-slf4j")
   
-  testImplementation ('org.mockito:mockito-core') { transitive = false }
-  testImplementation ('net.bytebuddy:byte-buddy') { transitive = false }
-  testImplementation ('org.objenesis:objenesis') { transitive = false }
-  testImplementation ('org.restlet.jee:org.restlet.ext.servlet') { transitive = false }
+  testImplementation ('org.mockito:mockito-core')
+  testImplementation ('net.bytebuddy:byte-buddy')
+  testImplementation ('org.objenesis:objenesis')
+  testImplementation ('org.restlet.jee:org.restlet.ext.servlet')
   testImplementation 'org.apache.zookeeper:zookeeper'
   testImplementation ('org.apache.zookeeper:zookeeper-jute')
   

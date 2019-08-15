@@ -29,7 +29,7 @@ dependencies {
   implementation project(':lucene:lucene-core')
   implementation project(':lucene:analysis:lucene-analyzers-common')
   
-  tools ('com.ibm.icu:icu4j') { transitive = false }
+  tools ('com.ibm.icu:icu4j')
   
   testImplementation project(':lucene:lucene-test-framework')
 }

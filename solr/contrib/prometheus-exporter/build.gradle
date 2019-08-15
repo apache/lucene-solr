@@ -26,14 +26,14 @@ dependencies {
   implementation project(':lucene:lucene-core')
   implementation project(':lucene:analysis:lucene-analyzers-common')
   
-  implementation ('io.prometheus:simpleclient') { transitive = false }
-  implementation ('io.prometheus:simpleclient_common') { transitive = false }
-  implementation ('io.prometheus:simpleclient_httpserver') { transitive = false }
+  implementation ('io.prometheus:simpleclient')
+  implementation ('io.prometheus:simpleclient_common')
+  implementation ('io.prometheus:simpleclient_httpserver')
   implementation ('com.fasterxml.jackson.core:jackson-core')
   implementation ('com.fasterxml.jackson.core:jackson-databind')
   implementation ('com.fasterxml.jackson.core:jackson-annotations')
-  implementation ('net.thisptr:jackson-jq') { transitive = false }
-  implementation ('net.sourceforge.argparse4j:argparse4j') { transitive = false }
+  implementation ('net.thisptr:jackson-jq')
+  implementation ('net.sourceforge.argparse4j:argparse4j')
   implementation ('org.slf4j:slf4j-api')
   implementation ('com.google.guava:guava')
   implementation ('org.apache.zookeeper:zookeeper')
