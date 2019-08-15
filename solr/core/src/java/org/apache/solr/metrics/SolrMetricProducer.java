@@ -19,7 +19,7 @@ package org.apache.solr.metrics;
 /**
  * Used by objects that expose metrics through {@link SolrCoreMetricManager}.
  */
-public interface SolrMetricProducer extends AutoCloseable {
+public interface SolrMetricProducer  {
 
   /**
    * Unique metric name is in the format of A/B/C
@@ -27,17 +27,12 @@ public interface SolrMetricProducer extends AutoCloseable {
    * If object "B" is unregistered , C also must get unregistered.
    * If object "A" is unregistered ,  B , C also must get unregistered.
    *
-   * @param parentName
    */
   default String getUniqueMetricTag(String parentName) {
     String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
     return parentName == null ?
         name :
-        parentName + "/" + name;
-  }
-
-  default void close() throws Exception{
-
+        parentName + "." + name;
   }
 
 

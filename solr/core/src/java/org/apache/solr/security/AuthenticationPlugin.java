@@ -19,6 +19,7 @@ package org.apache.solr.security;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import java.io.Closeable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
@@ -39,7 +40,7 @@ import org.eclipse.jetty.client.api.Request;
  * 
  * @lucene.experimental
  */
-public abstract class AuthenticationPlugin implements SolrInfoBean, SolrMetricProducer {
+public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, SolrMetricProducer {
 
   final public static String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
   final public static String HTTP_HEADER_X_SOLR_AUTHDATA = "X-Solr-AuthData";
