@@ -16,10 +16,13 @@ package org.apache.lucene.gradle
  * limitations under the License.
  */
 
+import javax.inject.Inject
+
 import org.apache.lucene.gradle.PartOfDist
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.InputDirectory
@@ -29,7 +32,10 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Compression
 
 class PackageLuceneSolrDist extends DefaultTask {
-  
+  @Input
+  @Optional
+  List<String> additionalIncludes = Collections.synchronizedList(new ArrayList<>())
+
   PackageLuceneSolrDist() {
     def distDir = 'dist'
     
@@ -68,6 +74,13 @@ class PackageLuceneSolrDist extends DefaultTask {
         standardIncludes.each {
           include it
         }
+        
+//        for(int i = 0; i < additionalIncludes.size(); i++) {
+//          println 'additional include ' + i
+//          include additionalIncludes.get(i)
+//        }
+        
+
         standardExcludes.each {
           exclude it
         }
@@ -151,6 +164,15 @@ class PackageLuceneSolrDist extends DefaultTask {
   @TaskAction
   void pack() {
   }
+  
+  public PackageLuceneSolrDist includeArtifacts(String... arg0) {
+    for (String pattern : arg0) {
+      project.packZip.include(arg0)
+      project.packTar.include(arg0)
+    }
+    return this;
+  }
+
 }
 
 
