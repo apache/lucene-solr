@@ -81,16 +81,24 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   }
 
   @Override
-  public Map<String, Object> getResourceLimits() {
-    return delegate.getResourceLimits();
+  public int getMaxSize() {
+    return delegate.getMaxSize();
   }
 
   @Override
-  public void setResourceLimit(String limitName, Object value) throws Exception {
-    delegate.setResourceLimit(limitName, value);
-
+  public void setMaxSize(int maxSize) {
+    delegate.setMaxSize(maxSize);
   }
 
+  @Override
+  public int getMaxRamMB() {
+    return delegate.getMaxRamMB();
+  }
+
+  @Override
+  public void setMaxRamMB(int maxRamMB) {
+    delegate.setMaxRamMB(maxRamMB);
+  }
 
   public void warm(SolrIndexSearcher searcher, SolrCacheHolder src) {
     delegate.warm(searcher, src.get());

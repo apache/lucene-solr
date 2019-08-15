@@ -23,6 +23,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.codecs.StoredFieldsReader;
+import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.index.CodecReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -124,6 +132,23 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
         double delta = (double) size * 0.5;
         assertEquals("sampled size of " + field + " is wildly off", (double)size, (double)sampledSize, delta);
       });
+      // verify the reader is still usable - SOLR-13694
+      IndexReader reader = searcher.getRawReader();
+      for (LeafReaderContext context : reader.leaves()) {
+        LeafReader leafReader = context.reader();
+        assertTrue("unexpected LeafReader class: " + leafReader.getClass().getName(), leafReader instanceof CodecReader);
+        Bits liveDocs = leafReader.getLiveDocs();
+        CodecReader codecReader = (CodecReader) leafReader;
+        StoredFieldsReader storedFieldsReader = codecReader.getFieldsReader();
+        StoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
+        assertNotNull(storedFieldsReader);
+        for (int docId = 0; docId < leafReader.maxDoc(); docId++) {
+          if (liveDocs != null && !liveDocs.get(docId)) {
+            continue;
+          }
+          storedFieldsReader.visitDocument(docId, visitor);
+        }
+      }
     } finally {
       searcherRef.decref();
       core.close();

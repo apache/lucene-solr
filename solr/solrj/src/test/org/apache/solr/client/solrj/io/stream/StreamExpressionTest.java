@@ -3064,10 +3064,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testFileStreamSingleFile() throws Exception {
-    final String fileStream = "files(\"topLevel1.txt\")";
+  public void testCatStreamSingleFile() throws Exception {
+    final String catStream = "cat(\"topLevel1.txt\")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", fileStream);
+    paramsLoc.set("expr", catStream);
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
 
@@ -3086,10 +3086,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testFileStreamMaxLines() throws Exception {
-    final String fileStream = "files(\"topLevel1.txt\", maxLines=2)";
+  public void testCatStreamMaxLines() throws Exception {
+    final String catStream = "cat(\"topLevel1.txt\", maxLines=2)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", fileStream);
+    paramsLoc.set("expr", catStream);
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
 
@@ -3108,10 +3108,10 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testFileStreamDirectoryCrawl() throws Exception {
-    final String fileStream = "files(\"directory1\")";
+  public void testCatStreamDirectoryCrawl() throws Exception {
+    final String catStream = "cat(\"directory1\")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", fileStream);
+    paramsLoc.set("expr", catStream);
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
 
@@ -3122,24 +3122,26 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertEquals(8, tuples.size());
 
+    final String expectedSecondLevel1Path = "directory1" + File.separator + "secondLevel1.txt";
     for (int i = 0; i < 4; i++) {
       Tuple t = tuples.get(i);
       assertEquals("secondLevel1.txt line " + String.valueOf(i+1), t.get("line"));
-      assertEquals("directory1/secondLevel1.txt", t.get("file"));
+      assertEquals(expectedSecondLevel1Path, t.get("file"));
     }
 
+    final String expectedSecondLevel2Path = "directory1" + File.separator + "secondLevel2.txt";
     for (int i = 4; i < 8; i++) {
       Tuple t = tuples.get(i);
       assertEquals("secondLevel2.txt line " + String.valueOf(i - 3), t.get("line"));
-      assertEquals("directory1/secondLevel2.txt", t.get("file"));
+      assertEquals(expectedSecondLevel2Path, t.get("file"));
     }
   }
 
   @Test
-  public void testFileStreamMultipleExplicitFiles() throws Exception {
-    final String fileStream = "files(\"topLevel1.txt,directory1/secondLevel2.txt\")";
+  public void testCatStreamMultipleExplicitFiles() throws Exception {
+    final String catStream = "cat(\"topLevel1.txt,directory1" + File.separator + "secondLevel2.txt\")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", fileStream);
+    paramsLoc.set("expr", catStream);
     paramsLoc.set("qt", "/stream");
     String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
 
@@ -3156,10 +3158,11 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals("topLevel1.txt", t.get("file"));
     }
 
+    final String expectedSecondLevel2Path = "directory1" + File.separator + "secondLevel2.txt";
     for (int i = 4; i < 8; i++) {
       Tuple t = tuples.get(i);
       assertEquals("secondLevel2.txt line " + String.valueOf(i - 3), t.get("line"));
-      assertEquals("directory1/secondLevel2.txt", t.get("file"));
+      assertEquals(expectedSecondLevel2Path, t.get("file"));
     }
   }
 

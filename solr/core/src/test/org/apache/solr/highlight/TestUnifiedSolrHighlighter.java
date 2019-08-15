@@ -69,17 +69,12 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
   }
 
   public void testImpossibleOffsetSource() {
-    try {
-      assertQ("impossible offset source",
-          req("q", "text2:document", "hl.offsetSource", "postings", "hl.fl", "text2", "sort", "id asc", "hl", "true"),
-          "count(//lst[@name='highlighting']/*)=2",
-          "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
-          "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
-      fail("Did not encounter exception for no offsets");
-    } catch (Exception e) {
-      assertTrue("Cause should be illegal argument", e.getCause() instanceof IllegalArgumentException);
-      assertTrue("Should warn no offsets", e.getCause().getMessage().contains("indexed without offsets"));
-    }
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
+      h.query(req("q", "text2:document", "hl.offsetSource", "postings",
+          "hl.fl", "text2", "sort", "id asc", "hl", "true"));
+    });
+    assertTrue("Should warn no offsets", e.getMessage().contains("indexed without offsets"));
+
   }
 
   public void testMultipleSnippetsReturned() {

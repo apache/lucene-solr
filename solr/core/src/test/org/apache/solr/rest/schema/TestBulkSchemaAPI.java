@@ -191,6 +191,62 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertEquals("5.0.0", String.valueOf(analyzer.get("luceneMatchVersion")));
   }
 
+  public void testAnalyzerByName() throws Exception {
+
+    String addFieldTypeAnalyzer = "{\n" +
+        "'add-field-type' : {" +
+        "    'name' : 'myNewTextField',\n" +
+        "    'class':'solr.TextField',\n" +
+        "    'analyzer' : {\n" +
+        "        'charFilters' : [{\n" +
+        "                'name':'patternReplace',\n" +
+        "                'replacement':'$1$1',\n" +
+        "                'pattern':'([a-zA-Z])\\\\\\\\1+'\n" +
+        "            }],\n" +
+        "        'tokenizer' : { 'name':'whitespace' },\n" +
+        "        'filters' : [{ 'name':'asciiFolding' }]\n" +
+        "    }\n"+
+        "}}";
+
+    String response = restTestHarness.post("/schema", json(addFieldTypeAnalyzer));
+    Map map = (Map) fromJSONString(response);
+    assertNull(response, map.get("error"));
+
+    map = getObj(restTestHarness, "myNewTextField", "fieldTypes");
+    assertNotNull(map);
+    Map analyzer = (Map)map.get("analyzer");
+    Map tokenizer = (Map)analyzer.get("tokenizer");
+    List charFilters = (List)analyzer.get("charFilters");
+    List tokenFilters = (List)analyzer.get("filters");
+    assertEquals("whitespace", String.valueOf(tokenizer.get("name")));
+    assertEquals("patternReplace", String.valueOf(((Map)charFilters.get(0)).get("name")));
+    assertEquals("asciiFolding", String.valueOf(((Map)tokenFilters.get(0)).get("name")));
+  }
+
+  public void testAnalyzerByBogusName() throws Exception {
+
+    String addFieldTypeAnalyzer = "{\n" +
+        "'add-field-type' : {" +
+        "    'name' : 'myNewTextField',\n" +
+        "    'class':'solr.TextField',\n" +
+        "    'analyzer' : {\n" +
+        "        'tokenizer' : { 'name':'bogus' }\n" +
+        "    }\n"+
+        "}}";
+
+    String response = restTestHarness.post("/schema", json(addFieldTypeAnalyzer));
+    Map map = (Map) fromJSONString(response);
+    Map error = (Map)map.get("error");
+    assertNotNull("No errors", error);
+    List details = (List)error.get("details");
+    assertNotNull("No details", details);
+    assertEquals("Wrong number of details", 1, details.size());
+    List errorList = (List)((Map)details.get(0)).get("errorMessages");
+    assertEquals(1, errorList.size());
+    assertTrue (((String)errorList.get(0)).contains
+        ("A SPI class of type org.apache.lucene.analysis.util.TokenizerFactory with name 'bogus' does not exist."));
+  }
+
   public void testAddFieldMatchingExistingDynamicField() throws Exception {
     RestTestHarness harness = restTestHarness;
 
