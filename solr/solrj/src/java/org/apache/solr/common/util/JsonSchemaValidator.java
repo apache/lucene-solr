@@ -34,6 +34,7 @@ import java.util.function.Function;
  * It validates most aspects of json schema but it is NOT A FULLY COMPLIANT JSON schema parser or validator.
  * This validator borrow some design's idea from https://github.com/networknt/json-schema-validator
  */
+@SuppressWarnings("unchecked")
 public class JsonSchemaValidator {
 
   private List<Validator> validators;

@@ -210,6 +210,7 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     assertFalse(query3.equals(query4));
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testRewrite() throws IOException {
     SpanMultiTermQueryWrapper fiv = new SpanMultiTermQueryWrapper(new WildcardQuery(new Term("field", "fiv*")));
     SpanMultiTermQueryWrapper hund = new SpanMultiTermQueryWrapper(new WildcardQuery(new Term("field", "hund*")));

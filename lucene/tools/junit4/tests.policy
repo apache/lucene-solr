@@ -48,7 +48,10 @@ grant {
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
   
   // gradle build dir
-  permission java.io.FilePermission "build${/}-", "read,write,delete,execute";
+  permission java.io.FilePermission "${build.dir}${/}-", "execute";
+  permission java.io.FilePermission "${build.dir}${/}tests", "execute";
+  permission java.io.FilePermission "${tempDir}", "read,write,delete,execute";
+  permission java.io.FilePermission "${tempDir}${/}-", "read,write,delete,execute";
 
   // misc HardlinkCopyDirectoryWrapper needs this to test if hardlinks can be created
   permission java.nio.file.LinkPermission "hard";

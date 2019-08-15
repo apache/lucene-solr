@@ -66,7 +66,6 @@ public class Geo3dShapeFactory implements S2ShapeFactory {
   private static final double DEFAULT_CIRCLE_ACCURACY = 1e-4;
   private double circleAccuracy = DEFAULT_CIRCLE_ACCURACY;
 
-  @SuppressWarnings("unchecked")
   public Geo3dShapeFactory(SpatialContext context, SpatialContextFactory factory) {
     this.context = context;
     this.planetModel = ((Geo3dSpatialContextFactory) factory).planetModel;
@@ -197,6 +196,7 @@ public class Geo3dShapeFactory implements S2ShapeFactory {
   }
 
   @Override
+  @Deprecated // use a builder
   public Shape lineString(List<Point> list, double distance) {
     LineStringBuilder builder = lineString();
     for (Point point : list) {
@@ -207,6 +207,7 @@ public class Geo3dShapeFactory implements S2ShapeFactory {
   }
 
   @Override
+  @Deprecated // use a builder
   public <S extends Shape> ShapeCollection<S> multiShape(List<S> list) {
     throw new UnsupportedOperationException();
   }
@@ -326,7 +327,6 @@ public class Geo3dShapeFactory implements S2ShapeFactory {
       }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Shape build() {
       GeoPolygonFactory.PolygonDescription description = new GeoPolygonFactory.PolygonDescription(points, polyHoles);

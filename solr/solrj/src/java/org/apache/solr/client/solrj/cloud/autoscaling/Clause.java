@@ -56,6 +56,7 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 /**
  * Represents a set of conditions in the policy
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class Clause implements MapWriter, Comparable<Clause> {
   public static final String NODESET = "nodeset";
   static final Set<String> IGNORE_TAGS = new HashSet<>(Arrays.asList(REPLICA, COLLECTION, SHARD, "strict", "type", "put", NODESET));

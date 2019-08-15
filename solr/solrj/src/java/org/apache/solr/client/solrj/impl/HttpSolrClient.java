@@ -93,6 +93,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 /**
  * A SolrClient implementation that talks directly to a Solr server via HTTP
  */
+@SuppressWarnings("unchecked")
 public class HttpSolrClient extends BaseHttpSolrClient {
 
   private static final String UTF_8 = StandardCharsets.UTF_8.name();

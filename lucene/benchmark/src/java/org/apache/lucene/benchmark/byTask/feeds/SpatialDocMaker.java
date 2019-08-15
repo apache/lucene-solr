@@ -169,6 +169,7 @@ public class SpatialDocMaker extends DocMaker {
     final boolean bbox = config.get(configKeyPrefix + "bbox", false);
 
     return new ShapeConverter() {
+      @SuppressWarnings("deprecation")
       @Override
       public Shape convert(Shape shape) {
         if (shape instanceof Point && (radiusDegrees != 0.0 || plusMinus != 0.0)) {
@@ -217,6 +218,7 @@ public class SpatialDocMaker extends DocMaker {
     return doc;
   }
 
+  @SuppressWarnings("deprecation")
   public static Shape makeShapeFromString(SpatialStrategy strategy, String name, String shapeStr) {
     if (shapeStr != null && shapeStr.length() > 0) {
       try {

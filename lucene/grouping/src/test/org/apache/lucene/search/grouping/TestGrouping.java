@@ -287,9 +287,11 @@ public class TestGrouping extends LuceneTestCase {
 
   private Collection<SearchGroup<BytesRef>> getSearchGroups(FirstPassGroupingCollector<?> c, int groupOffset) throws IOException {
     if (TermGroupSelector.class.isAssignableFrom(c.getGroupSelector().getClass())) {
+      @SuppressWarnings("unchecked")
       FirstPassGroupingCollector<BytesRef> collector = (FirstPassGroupingCollector<BytesRef>) c;
       return collector.getTopGroups(groupOffset);
     } else if (ValueSourceGroupSelector.class.isAssignableFrom(c.getGroupSelector().getClass())) {
+      @SuppressWarnings("unchecked")
       FirstPassGroupingCollector<MutableValue> collector = (FirstPassGroupingCollector<MutableValue>) c;
       Collection<SearchGroup<MutableValue>> mutableValueGroups = collector.getTopGroups(groupOffset);
       if (mutableValueGroups == null) {
@@ -404,7 +406,6 @@ public class TestGrouping extends LuceneTestCase {
     };
   }
 
-  @SuppressWarnings({"unchecked","rawtypes"})
   private Comparable<?>[] fillFields(GroupDoc d, Sort sort) {
     final SortField[] sortFields = sort.getSort();
     final Comparable<?>[] fields = new Comparable[sortFields.length];
@@ -490,7 +491,7 @@ public class TestGrouping extends LuceneTestCase {
     final int limit = Math.min(groupOffset + topNGroups, groups.size());
 
     final Comparator<GroupDoc> docSortComp = getComparator(docSort);
-    @SuppressWarnings({"unchecked","rawtypes"})
+    @SuppressWarnings({"unchecked"})
     final GroupDocs<BytesRef>[] result = new GroupDocs[limit-groupOffset];
     int totalGroupedHitCount = 0;
     for(int idx=groupOffset;idx < limit;idx++) {
@@ -1042,7 +1043,7 @@ public class TestGrouping extends LuceneTestCase {
         }
         // Get block grouping result:
         sBlocks.search(query, c4);
-        @SuppressWarnings({"unchecked","rawtypes"})
+        @SuppressWarnings({"unchecked"})
         final TopGroups<BytesRef> tempTopGroupsBlocks = (TopGroups<BytesRef>) c3.getTopGroups(docSort, groupOffset, docOffset, docOffset+docsPerGroup);
         final TopGroups<BytesRef> groupsResultBlocks;
         if (doAllGroups && tempTopGroupsBlocks != null) {
@@ -1198,7 +1199,7 @@ public class TestGrouping extends LuceneTestCase {
 
     if (mergedTopGroups != null) {
       // Now 2nd pass:
-      @SuppressWarnings({"unchecked","rawtypes"})
+      @SuppressWarnings({"unchecked"})
       final TopGroups<BytesRef>[] shardTopGroups = new TopGroups[subSearchers.length];
       for(int shardIDX=0;shardIDX<subSearchers.length;shardIDX++) {
         final TopGroupsCollector<?> secondPassCollector = createSecondPassCollector(firstPassGroupingCollectors.get(shardIDX),

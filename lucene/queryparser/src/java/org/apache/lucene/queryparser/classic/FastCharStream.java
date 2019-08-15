@@ -23,6 +23,7 @@ import java.io.*;
  * character position of the token in the input, as required by Lucene's {@link
  * org.apache.lucene.analysis.tokenattributes.OffsetAttribute} API.
  * */
+@SuppressWarnings("deprecation")
 public final class FastCharStream implements CharStream {
   char[] buffer = null;
 
@@ -109,7 +110,12 @@ public final class FastCharStream implements CharStream {
   public final int getColumn() {
     return bufferStart + bufferPosition;
   }
+  /**
+   * @deprecated
+   * @see #getEndLine
+   */
   @Override
+  @Deprecated
   public final int getLine() {
     return 1;
   }

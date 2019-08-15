@@ -42,6 +42,7 @@ import org.apache.lucene.search.SortField;
  *
  *
  */
+@SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
 public abstract class ValueSource {
 
   /**

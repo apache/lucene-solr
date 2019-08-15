@@ -102,6 +102,7 @@ public class WithinPrefixTreeQuery extends AbstractVisitingPrefixTreeQuery {
   /** Returns a new shape that is larger than shape by at distErr.
    */
   //TODO move this generic code elsewhere?  Spatial4j?
+  @SuppressWarnings("deprecation")
   protected Shape bufferShape(Shape shape, double distErr) {
     if (distErr <= 0)
       throw new IllegalArgumentException("distErr must be > 0");

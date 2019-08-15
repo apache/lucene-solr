@@ -79,6 +79,7 @@ public class Policy implements MapWriter {
   public static final String CLUSTER_POLICY = "cluster-policy";
   public static final String CLUSTER_PREFERENCES = "cluster-preferences";
   public static final Set<String> GLOBAL_ONLY_TAGS = Set.of("cores", CollectionAdminParams.WITH_COLLECTION);
+  @SuppressWarnings("unchecked")
   public static final List<Preference> DEFAULT_PREFERENCES = Collections.unmodifiableList(
       Arrays.asList(
           // NOTE - if you change this, make sure to update the solrcloud-autoscaling-overview.adoc which
@@ -277,6 +278,7 @@ public class Policy implements MapWriter {
     return newPolicies;
   }
 
+  @SuppressWarnings("rawtypes")
   static void setApproxValuesAndSortNodes(List<Preference> clusterPreferences, List<Row> matrix) {
     List<Row> matrixCopy = new ArrayList<>(matrix);
     List<Row> deadNodes = null;
@@ -528,6 +530,7 @@ public class Policy implements MapWriter {
     }
 
 
+    @SuppressWarnings("unchecked")
     Session(SolrCloudManager cloudManager, Transaction transaction) {
       this.transaction = transaction;
       ClusterState state = null;
