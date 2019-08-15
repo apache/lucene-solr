@@ -32,15 +32,14 @@ public class LicenseCheckTask extends DefaultTask {
   private static final int CHECKSUM_BUFFER_SIZE = 8 * 1024;
   private static final int CHECKSUM_BYTE_MASK = 0xFF;
   private static final String FAILURE_MESSAGE = "License check failed. Check the logs.\n"
-      + "If you recently modified ivy-versions.properties or any module's build.gradle,\n"
-      + "make sure you run \"ant clean-jars jar-checksums\" before running precommit.";
+      + "If you recently modified version.props or in some cases a module's build.gradle,\n"
+      + "make sure you run \"gw jarChecksums\" to regenerate checksum files.";
   private static final Map<Pattern, String> REPLACE_PATTERNS = new HashMap<>();
   static {
     REPLACE_PATTERNS.put(Pattern.compile("jetty([^/]+)$"), "jetty");
     REPLACE_PATTERNS.put(Pattern.compile("asm([^/]+)$"), "asm");
     REPLACE_PATTERNS.put(Pattern.compile("slf4j-([^/]+)$"), "slf4j");
-    REPLACE_PATTERNS.put(Pattern.compile("javax\\.servlet([^/]+)$"), "javax.servlet");
-    REPLACE_PATTERNS.put(Pattern.compile("(bcmail|bcprov)-([^/]+)$"), "\1");
+    REPLACE_PATTERNS.put(Pattern.compile("(?:bcmail|bcprov)-([^\\.]+)$"), "$1");
   }
 
   private Pattern skipRegexChecksum;
@@ -211,7 +210,9 @@ public class LicenseCheckTask extends DefaultTask {
     outer:
     for (LicenseType licenseType : LicenseType.values()) {
       String artifactName = artifact.getModuleVersion().getId().getName();
+      //System.out.println("artifact name:" + artifactName);
       for (Map.Entry<Pattern, String> entry : REPLACE_PATTERNS.entrySet()) {
+        //System.out.println("replace with:" + entry.getValue());
         artifactName = entry.getKey().matcher(artifactName).replaceAll(entry.getValue());
       }
       File licensePath = new File(licenseDirectory,
