@@ -26,7 +26,7 @@ dependencies {
   implementation project(':lucene:lucene-core')
   implementation project(':lucene:analysis:lucene-analyzers-common')
   
-  implementation ('commons-codec:commons-codec') { transitive = false }
+  implementation ('commons-codec:commons-codec')
   
   testImplementation project(':lucene:lucene-test-framework')
 }

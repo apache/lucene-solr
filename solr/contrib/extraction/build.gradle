@@ -27,8 +27,8 @@ dependencies {
   implementation project(':lucene:analysis:lucene-analyzers-common')
   
   implementation ('org.slf4j:slf4j-api')
-  implementation ('org.apache.tika:tika-core') { transitive = false }
-  implementation ('org.apache.tika:tika-parsers') { transitive = false }
+  api ('org.apache.tika:tika-core') { transitive = false }
+  api ('org.apache.tika:tika-parsers') { transitive = false }
   implementation ('com.healthmarketscience.jackcess:jackcess') { transitive = false }
   implementation ('com.healthmarketscience.jackcess:jackcess-encrypt') { transitive = false }
   implementation ('org.gagravarr:vorbis-java-tika') { transitive = false }

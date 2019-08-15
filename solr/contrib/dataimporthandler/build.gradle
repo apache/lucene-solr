@@ -40,14 +40,14 @@ dependencies {
   implementation project(':lucene:analysis:lucene-analyzers-common')
   implementation project(':lucene:lucene-join')
   
-  implementation ('org.slf4j:slf4j-api') { transitive = false }
-  implementation ('commons-io:commons-io') { transitive = false }
+  implementation ('org.slf4j:slf4j-api')
+  implementation ('commons-io:commons-io')
   implementation ('com.google.guava:guava')
   implementation ('org.apache.httpcomponents:httpclient')
   implementation ('org.apache.httpcomponents:httpcore')
-  implementation ('org.apache.zookeeper:zookeeper') { transitive = false }
+  implementation ('org.apache.zookeeper:zookeeper')
   implementation ('org.apache.zookeeper:zookeeper-jute')
-  implementation ('io.dropwizard.metrics:metrics-core') { transitive = false }
+  implementation ('io.dropwizard.metrics:metrics-core')
   
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
