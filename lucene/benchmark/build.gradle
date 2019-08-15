@@ -31,11 +31,11 @@ dependencies {
   implementation project(':lucene:lucene-spatial-extras')
   implementation project(':lucene:lucene-queryparser')
   
-  implementation ("org.apache.commons:commons-compress") { transitive = false }
-  implementation ("xerces:xercesImpl") { transitive = false }
-  implementation ("net.sourceforge.nekohtml:nekohtml") { transitive = false }
-  implementation ("com.ibm.icu:icu4j") { transitive = false }
-  implementation ("org.locationtech.spatial4j:spatial4j") { transitive = false }
+  implementation ("org.apache.commons:commons-compress")
+  implementation ("xerces:xercesImpl")
+  implementation ("net.sourceforge.nekohtml:nekohtml")
+  implementation ("com.ibm.icu:icu4j")
+  implementation ("org.locationtech.spatial4j:spatial4j")
   
   testImplementation project(':lucene:lucene-test-framework')
 }

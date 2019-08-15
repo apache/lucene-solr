@@ -26,13 +26,13 @@ dependencies {
   implementation project(':lucene:analysis:lucene-analyzers-common')
   implementation project(':solr:contrib:solr-contrib-extraction')
   
-  implementation ('org.slf4j:slf4j-api') { transitive = false }
-  implementation ('javax.activation:activation') { transitive = false }
-  implementation ('com.sun.mail:javax.mail') { transitive = false }
-  implementation ('com.sun.mail:gimap') { transitive = false }
-  implementation ('commons-io:commons-io') { transitive = false }
+  implementation ('org.slf4j:slf4j-api')
+  implementation ('javax.activation:activation')
+  implementation ('com.sun.mail:javax.mail')
+  implementation ('com.sun.mail:gimap')
+  implementation ('commons-io:commons-io')
   
-  implementation ('org.apache.tika:tika-core') { transitive = false }
+  implementation ('org.apache.tika:tika-core')
   implementation 'org.apache.tika:tika-parsers'
   
   testImplementation project(path: ':solr:contrib:solr-contrib-dataimporthandler', configuration: 'testOutput')
