@@ -41,6 +41,8 @@ class RatSources extends DefaultTask {
   
   @TaskAction
   void rat() {
+    ant.lifecycleLogLevel = "ERROR"
+    
     File logFile = File.createTempFile("temp",".tmp")
     logFile.deleteOnExit()
     
@@ -52,7 +54,7 @@ class RatSources extends DefaultTask {
       excludeString += it
     }
     
-    ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', classpath: project.rootProject.allprojects.find { project -> project.name == 'buildSrc'}.configurations.rat.asPath)
+    ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', classpath: project.rootProject.project(":buildSrc").configurations.rat.asPath)
     
     ant.report(reportFile: logFile.getAbsolutePath(), addDefaultLicenseMatchers: 'true') {
       ant.fileset(dir: ".", includes: "*.xml", excludes: excludeString)
