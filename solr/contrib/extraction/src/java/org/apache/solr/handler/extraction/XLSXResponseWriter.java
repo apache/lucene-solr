@@ -85,6 +85,7 @@ public class XLSXResponseWriter extends RawResponseWriter {
   }
 }
 
+@SuppressWarnings("rawtypes")
 class XLSXWriter extends TabularResponseWriter {
 
   static class SerialWriteWorkbook {
@@ -144,7 +145,7 @@ class XLSXWriter extends TabularResponseWriter {
       } catch (IOException e) {
         StringWriter sw = new StringWriter();
         e.printStackTrace(new PrintWriter(sw));
-        String stacktrace = sw.toString();
+        String cd  = sw.toString();
       }finally {
         swb.dispose();
       }
@@ -232,6 +233,7 @@ class XLSXWriter extends TabularResponseWriter {
 
   //NOTE: a document cannot currently contain another document
   List tmpList;
+  @SuppressWarnings({"unchecked"})
   @Override
   public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
     if (tmpList == null) {

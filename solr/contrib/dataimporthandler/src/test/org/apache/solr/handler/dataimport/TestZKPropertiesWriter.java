@@ -93,6 +93,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
     zkDir = null;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   @SuppressForbidden(reason = "Needs currentTimeMillis to construct date stamps")
   @Test
   public void testZKPropertiesWriter() throws Exception {

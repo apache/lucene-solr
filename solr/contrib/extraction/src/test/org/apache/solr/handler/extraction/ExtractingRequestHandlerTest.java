@@ -461,6 +461,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   // Note: If you load a plain text file specifying neither MIME type nor filename, extraction will silently fail. This is because Tika's
   // automatic MIME type detection will fail, and it will default to using an empty-string-returning default parser
 
+  @SuppressWarnings("rawtypes")
   @Test
   public void testExtractOnly() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
@@ -498,6 +499,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
   }
 
+  @SuppressWarnings("rawtypes")
   @Test
   public void testXPath() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");

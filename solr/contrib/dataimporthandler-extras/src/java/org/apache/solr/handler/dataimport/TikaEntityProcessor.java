@@ -124,6 +124,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
     spatialMetadataField = context.getResolvedEntityAttribute("spatialMetadataField");
   }
 
+  @SuppressWarnings({"unchecked", "deprecation"})
   @Override
   public Map<String, Object> nextRow() {
     if(done) return null;

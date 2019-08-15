@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.tika.language.LanguageIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,12 +43,13 @@ public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpd
     super(req, rsp, next);
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   protected List<DetectedLanguage> detectLanguage(Reader solrDocReader) {
     String content = SolrInputDocumentReader.asString(solrDocReader);
     List<DetectedLanguage> languages = new ArrayList<>();
     if (content.length() != 0) {
-      LanguageIdentifier identifier = new LanguageIdentifier(content);
+      org.apache.tika.language.LanguageIdentifier identifier = new  org.apache.tika.language.LanguageIdentifier(content);
       // FIXME: Hack - we get the distance from toString and calculate our own certainty score
       Double distance = Double.parseDouble(tikaSimilarityPattern.matcher(identifier.toString()).replaceFirst("$1"));
       // This formula gives: 0.02 => 0.8, 0.1 => 0.5 which is a better sweetspot than isReasonablyCertain()

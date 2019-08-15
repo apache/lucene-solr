@@ -384,6 +384,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   /*
   Utility test method to process a clone of a document
    */
+  @SuppressWarnings("rawtypes")
   private SolrInputDocument process(SolrInputDocument origDoc) {
     SolrInputDocument modifiedDoc = origDoc.deepCopy();
     if (random().nextBoolean()) {
