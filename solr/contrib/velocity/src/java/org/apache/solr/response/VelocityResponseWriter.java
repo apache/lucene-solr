@@ -18,7 +18,6 @@ package org.apache.solr.response;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -58,6 +57,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
+@SuppressWarnings("rawtypes")
 public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAware {
   // init param names, these are _only_ loaded at init time (no per-request control of these)
   //   - multiple different named writers could be created with different init params
@@ -128,7 +128,6 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   public void inform(SolrCore core) {
     // need to leverage SolrResourceLoader, so load init.properties.file here instead of init()
     if (initPropertiesFileName != null) {
-      InputStream is = null;
       try {
         velocityInitProps.load(new InputStreamReader(core.getResourceLoader().openResource(initPropertiesFileName), StandardCharsets.UTF_8));
       } catch (IOException e) {
@@ -195,6 +194,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     }
   }
 
+  @SuppressWarnings("unchecked")
   private VelocityContext createContext(SolrQueryRequest request, SolrQueryResponse response) {
     VelocityContext context = new VelocityContext();
 

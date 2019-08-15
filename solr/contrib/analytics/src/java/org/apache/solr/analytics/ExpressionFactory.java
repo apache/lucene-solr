@@ -465,6 +465,7 @@ public class ExpressionFactory {
    * @return an analytics representation of the field
    * @throws SolrException if the field is not supported by the analytics framework
    */
+  @SuppressWarnings("deprecation")
   private AnalyticsField createField(SchemaField field) throws SolrException {
     String fieldName = field.getName();
     if (fields.containsKey(fieldName)) {
@@ -577,6 +578,7 @@ public class ExpressionFactory {
    * @return an array of param strings
    * @throws SolrException if the function has incorrect syntax
    */
+  @SuppressWarnings("unused")
   private static String[] getFunctionParams(String function) throws SolrException {
     return getParams(function, null, null);
   }

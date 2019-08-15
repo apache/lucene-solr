@@ -40,10 +40,10 @@ import org.junit.Test;
  *
  * @since solr 1.3
  */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   @Test
-  @SuppressWarnings("unchecked")
   public void testSimple() throws IOException {
     File tmpdir = createTempDir().toFile();
 
@@ -119,7 +119,6 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
     assertEquals(l, new HashSet<>(fList));
   }
 
-  @SuppressWarnings("unchecked")
   static List<String> getFiles(VariableResolver resolver, Map attrs) {
     Context c = getContext(null,
             resolver, null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);

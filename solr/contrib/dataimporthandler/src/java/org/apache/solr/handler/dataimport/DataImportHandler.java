@@ -65,6 +65,7 @@ import static org.apache.solr.handler.dataimport.DataImporter.IMPORT_CMD;
  *
  * @since solr 1.3
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class DataImportHandler extends RequestHandlerBase implements
         SolrCoreAware {
 
@@ -89,7 +90,6 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void init(NamedList args) {
     super.init(args);
     Map<String,String> macro = new HashMap<>();
@@ -98,7 +98,6 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {
     try {
       String name = getPluginInfo().name;
@@ -116,7 +115,6 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
           throws Exception {
     rsp.setHttpCaching(false);
@@ -250,7 +248,6 @@ public class DataImportHandler extends RequestHandlerBase implements
         && !writerClassStr.equals(DocBuilder.class.getPackage().getName() + "."
             + DEFAULT_WRITER_NAME)) {
       try {
-        @SuppressWarnings("unchecked")
         Class<DIHWriter> writerClass = DocBuilder.loadClass(writerClassStr, req.getCore());
         Constructor<DIHWriter> cnstr = writerClass.getConstructor(new Class[] {
             UpdateRequestProcessor.class, SolrQueryRequest.class});
