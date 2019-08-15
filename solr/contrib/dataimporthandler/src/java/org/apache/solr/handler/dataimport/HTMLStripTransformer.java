@@ -35,7 +35,7 @@ import java.util.Map;
 public class HTMLStripTransformer extends Transformer {
 
   @Override
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Object transformRow(Map<String, Object> row, Context context) {
     List<Map<String, String>> fields = context.getAllEntityFields();
     for (Map<String, String> field : fields) {

@@ -100,6 +100,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
 
   }
 
+  @SuppressWarnings("deprecation")
   private void initXpathReader(VariableResolver resolver) {
     reinitXPathReader = false;
     useSolrAddXml = Boolean.parseBoolean(context
@@ -183,7 +184,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       }
     }
     String url = context.getEntityAttribute(URL);
-    List<String> l = url == null ? Collections.EMPTY_LIST : resolver.getVariables(url);
+    List<String> l = url == null ? Collections.emptyList() : resolver.getVariables(url);
     for (String s : l) {
       if (s.startsWith(entityName + ".")) {
         if (placeHolderVariables == null)
@@ -224,7 +225,6 @@ public class XPathEntityProcessor extends EntityProcessorBase {
     readUsefulVars(r);
   }
 
-  @SuppressWarnings("unchecked")
   private Map<String, Object> fetchNextRow() {
     Map<String, Object> r = null;
     while (true) {
@@ -283,6 +283,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
 
   }
 
+  @SuppressWarnings("unchecked")
   private void initQuery(String s) {
     Reader data = null;
     try {
@@ -355,6 +356,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected Map<String, Object> readRow(Map<String, Object> record, String xpath) {
     if (useSolrAddXml) {
       List<String> names = (List<String>) record.get("name");
@@ -391,7 +393,6 @@ public class XPathEntityProcessor extends EntityProcessorBase {
 
   }
 
-  @SuppressWarnings("unchecked")
   private Map<String, Object> readUsefulVars(Map<String, Object> r) {
     Object val = r.get(HAS_MORE);
     if (val != null)

@@ -28,7 +28,7 @@ import static org.noggit.JSONParser.*;
 /**
  * A Streaming parser for json to emit one record at a time.
  */
-
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class JsonRecordReader {
   public static final String DELIM = ".";
 

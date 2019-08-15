@@ -42,7 +42,6 @@ public class DateFormatTransformer extends Transformer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> aRow, Context context) {
 
     for (Map<String, String> map : context.getAllEntityFields()) {
@@ -68,6 +67,7 @@ public class DateFormatTransformer extends Transformer {
       try {
         Object o = aRow.get(srcCol);
         if (o instanceof List) {
+          @SuppressWarnings("rawtypes")
           List inputs = (List) o;
           List<Date> results = new ArrayList<>();
           for (Object input : inputs) {

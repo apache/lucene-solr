@@ -42,7 +42,7 @@ public class TestClobTransformer extends AbstractDataImportHandlerTestCase {
     f.put(ClobTransformer.CLOB, "true");
     f.put(DataImporter.NAME, "description");
     flds.add(f);
-    Context ctx = getContext(null, new VariableResolver(), null, Context.FULL_DUMP, flds, Collections.EMPTY_MAP);
+    Context ctx = getContext(null, new VariableResolver(), null, Context.FULL_DUMP, flds, Collections.emptyMap());
     Transformer t = new ClobTransformer();
     Map<String, Object> row = new HashMap<>();
     Clob clob = (Clob) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[]{Clob.class}, new InvocationHandler() {

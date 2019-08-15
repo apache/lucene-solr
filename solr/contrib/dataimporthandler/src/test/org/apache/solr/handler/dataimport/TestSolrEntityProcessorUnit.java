@@ -27,6 +27,7 @@ import org.junit.Test;
 /**
  * Unit test of SolrEntityProcessor. A very basic test outside of the DIH.
  */
+@SuppressWarnings("rawtypes")
 public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCase {
 
   private static final class NoNextMockProcessor extends SolrEntityProcessor {
@@ -66,6 +67,7 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
     }
   }
 
+  @SuppressWarnings("serial")
   private MockSolrEntityProcessor createAndInit(List<Doc> docs, int rowsNum) {
     MockSolrEntityProcessor processor = new MockSolrEntityProcessor(docs, rowsNum);
     HashMap<String,String> entityAttrs = new HashMap<String,String>(){{put(SolrEntityProcessor.SOLR_SERVER,"http://route:66/no");}};
@@ -97,6 +99,7 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
       processor.destroy();
     }
   }
+  @SuppressWarnings("serial")
   @Test (expected = DataImportHandlerException.class)
   public void testNoQuery() {
     SolrEntityProcessor processor = new SolrEntityProcessor();
@@ -111,6 +114,7 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
     }
   }
   
+  @SuppressWarnings("serial")
   public void testPagingQuery() {
     SolrEntityProcessor processor = new NoNextMockProcessor() ;
     
@@ -135,6 +139,7 @@ public class TestSolrEntityProcessorUnit extends AbstractDataImportHandlerTestCa
     }
   }
   
+  @SuppressWarnings("serial")
   public void testCursorQuery() {
     SolrEntityProcessor processor = new NoNextMockProcessor() ;
     

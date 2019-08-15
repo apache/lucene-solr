@@ -35,6 +35,7 @@ import java.util.Map;
  *
  * @since solr 1.3
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
 
   @Test

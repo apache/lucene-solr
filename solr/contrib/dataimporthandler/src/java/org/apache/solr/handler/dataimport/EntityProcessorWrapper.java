@@ -40,6 +40,7 @@ import java.util.Map;
  *
  * @since solr 1.4
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class EntityProcessorWrapper extends EntityProcessor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -78,7 +79,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
 
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("serial")
   void loadTransformers() {
     String transClasses = context.getEntityAttribute(TRANSFORMER);
 
@@ -149,7 +150,6 @@ public class EntityProcessorWrapper extends EntityProcessor {
     }
   }
 
-  @SuppressWarnings("unchecked")
   static class ReflectionTransformer extends Transformer {
     final Method meth;
 
@@ -185,7 +185,6 @@ public class EntityProcessorWrapper extends EntityProcessor {
     return r;
   }
 
-  @SuppressWarnings("unchecked")
   protected Map<String, Object> applyTransformer(Map<String, Object> row) {
     if(row == null) return null;
     if (transformers == null)

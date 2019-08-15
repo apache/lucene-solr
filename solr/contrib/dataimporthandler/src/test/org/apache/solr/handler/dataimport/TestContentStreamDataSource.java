@@ -65,6 +65,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
     super.tearDown();
   }
 
+  @SuppressWarnings("rawtypes")
   @Test
   public void testSimple() throws Exception {
     DirectXmlRequest req = new DirectXmlRequest("/dataimport", xml);
