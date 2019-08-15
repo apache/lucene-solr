@@ -404,6 +404,7 @@ public class DrillSideways {
   }
 
   /** Runs a search, using a {@link CollectorManager} to gather and merge search results */
+  @SuppressWarnings("unchecked")
   public <R> ConcurrentDrillSidewaysResult<R> search(final DrillDownQuery query,
           final CollectorManager<?, R> hitCollectorManager) throws IOException {
 

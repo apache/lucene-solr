@@ -51,6 +51,7 @@ public abstract class ReplicatorTestCase extends LuceneTestCase {
    * Returns a new {@link Server HTTP Server} instance. To obtain its port, use
    * {@link #serverPort(Server)}.
    */
+  @SuppressWarnings("deprecation")
   public static synchronized Server newHttpServer(Handler handler) throws Exception {
     // if this property is true, then jetty will be configured to use SSL
     // leveraging the same system properties as java to specify

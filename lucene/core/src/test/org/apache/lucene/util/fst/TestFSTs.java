@@ -567,7 +567,7 @@ public class TestFSTs extends LuceneTestCase {
               } else {
                 // Get by output
                 final Long output = (Long) getOutput(intsRef.get(), ord);
-                @SuppressWarnings("unchecked") final IntsRef actual = Util.getByOutput((FST<Long>) fst, output.longValue());
+                @SuppressWarnings({"unchecked", "deprecation"}) final IntsRef actual = Util.getByOutput((FST<Long>) fst, output.longValue());
                 if (actual == null) {
                   throw new RuntimeException("unexpected null input from output=" + output);
                 }
@@ -787,6 +787,7 @@ public class TestFSTs extends LuceneTestCase {
   }
   */
 
+  @SuppressWarnings("deprecation")
   public void testSimple() throws Exception {
 
     // Get outputs -- passing true means FST will share

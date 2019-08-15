@@ -66,6 +66,7 @@ public class Pair<T1, T2> implements Serializable, MapWriter {
     ew.put("second", second);
   }
 
+  @SuppressWarnings("unchecked")
   public static Pair parse(Map m) {
     return new Pair(m.get("first"), m.get("second"));
   }

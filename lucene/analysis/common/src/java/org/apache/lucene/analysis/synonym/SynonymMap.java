@@ -210,6 +210,7 @@ public class SynonymMap {
     /**
      * Builds an {@link SynonymMap} and returns it.
      */
+    @SuppressWarnings("deprecation")
     public SynonymMap build() throws IOException {
       ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
       // TODO: are we using the best sharing options?

@@ -38,6 +38,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+@SuppressWarnings("deprecation")
 public class TestWordBreakSpellChecker extends LuceneTestCase {
   private Directory dir;
   private Analyzer analyzer;

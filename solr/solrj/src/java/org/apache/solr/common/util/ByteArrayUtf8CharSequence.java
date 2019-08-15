@@ -180,6 +180,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     return new ByteArrayUtf8CharSequence(bytes, 0, length, utf16, hashCode);
   }
 
+  @SuppressWarnings("unchecked")
   public static Map.Entry convertCharSeq(Map.Entry e) {
     if (e.getKey() instanceof Utf8CharSequence || e.getValue() instanceof Utf8CharSequence) {
       return new AbstractMap.SimpleEntry(convertCharSeq(e.getKey()), convertCharSeq(e.getValue()));
@@ -188,6 +189,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
 
   }
 
+  @SuppressWarnings("unchecked")
   public static Collection convertCharSeq(Collection vals) {
     if (vals == null) return vals;
     boolean needsCopy = false;

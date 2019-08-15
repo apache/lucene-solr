@@ -33,8 +33,6 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.search.PhraseQuery;
 
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
-
 /**
  * Factory for {@link WordDelimiterFilter}.
  * <pre class="prettyprint">
@@ -76,31 +74,31 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
     super(args);
     int flags = 0;
     if (getInt(args, "generateWordParts", 1) != 0) {
-      flags |= GENERATE_WORD_PARTS;
+      flags |= org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.GENERATE_WORD_PARTS;
     }
     if (getInt(args, "generateNumberParts", 1) != 0) {
-      flags |= GENERATE_NUMBER_PARTS;
+      flags |= org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.GENERATE_NUMBER_PARTS;
     }
     if (getInt(args, "catenateWords", 0) != 0) {
-      flags |= CATENATE_WORDS;
+      flags |= org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.CATENATE_WORDS;
     }
     if (getInt(args, "catenateNumbers", 0) != 0) {
-      flags |= CATENATE_NUMBERS;
+      flags |= org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.CATENATE_NUMBERS;
     }
     if (getInt(args, "catenateAll", 0) != 0) {
-      flags |= CATENATE_ALL;
+      flags |= org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.CATENATE_ALL;
     }
     if (getInt(args, "splitOnCaseChange", 1) != 0) {
-      flags |= SPLIT_ON_CASE_CHANGE;
+      flags |= org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.SPLIT_ON_CASE_CHANGE;
     }
     if (getInt(args, "splitOnNumerics", 1) != 0) {
-      flags |= SPLIT_ON_NUMERICS;
+      flags |= org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.SPLIT_ON_NUMERICS;
     }
     if (getInt(args, "preserveOriginal", 0) != 0) {
-      flags |= PRESERVE_ORIGINAL;
+      flags |= org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.PRESERVE_ORIGINAL;
     }
     if (getInt(args, "stemEnglishPossessive", 1) != 0) {
-      flags |= STEM_ENGLISH_POSSESSIVE;
+      flags |= org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.STEM_ENGLISH_POSSESSIVE;
     }
     wordFiles = get(args, PROTECTED_TOKENS);
     types = get(args, TYPES);
@@ -162,17 +160,17 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
   
   private Byte parseType(String s) {
     if (s.equals("LOWER"))
-      return LOWER;
+      return org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.LOWER;
     else if (s.equals("UPPER"))
-      return UPPER;
+      return org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.UPPER;
     else if (s.equals("ALPHA"))
-      return ALPHA;
+      return org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.ALPHA;
     else if (s.equals("DIGIT"))
-      return DIGIT;
+      return org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.DIGIT;
     else if (s.equals("ALPHANUM"))
-      return ALPHANUM;
+      return org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.ALPHANUM;
     else if (s.equals("SUBWORD_DELIM"))
-      return SUBWORD_DELIM;
+      return org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.SUBWORD_DELIM;
     else
       return null;
   }
