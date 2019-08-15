@@ -75,6 +75,7 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     implTestOriginalScoreResponseDocsCheck("origScore", "origScore", "c2", "2.0");
   }
 
+  @SuppressWarnings("unchecked")
   public static void implTestOriginalScoreResponseDocsCheck(String modelName,
       String origScoreFeatureName,
       String nonScoringFeatureName, String nonScoringFeatureValue) throws Exception {

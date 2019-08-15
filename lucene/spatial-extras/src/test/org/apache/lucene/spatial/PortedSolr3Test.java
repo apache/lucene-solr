@@ -40,6 +40,7 @@ import org.locationtech.spatial4j.shape.Shape;
 /**
  * Based off of Solr 3's SpatialFilterTest.
  */
+@SuppressWarnings("deprecation")
 public class PortedSolr3Test extends StrategyTestCase {
 
   @ParametersFactory(argumentFormatting = "strategy=%s")
