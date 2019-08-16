@@ -121,6 +121,8 @@ Improvements
 
 * SOLR-6305: Ability to set the replication factor for index files created by HDFSDirectoryFactory (Boris Pasko via Kevin Risden)
 
+* SOLR-13702: Some components register twice their metric names (janhoy)
+
 Bug Fixes
 ----------------------
 

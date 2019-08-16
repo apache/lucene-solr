@@ -158,8 +158,6 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
     numMissingCredentials = manager.counter(this, registryName, "failMissingCredentials", getCategory().toString(), scope);
     requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
     totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);
-    metricNames.addAll(Arrays.asList("errors", "requests", "authenticated", "passThrough",
-        "failWrongCredentials", "failMissingCredentials", "requestTimes", "totalTime"));
   }
   
   @Override
