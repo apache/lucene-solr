@@ -85,6 +85,15 @@ override=true
 suspend=true
 vf.version=3
 """
+
+      def uiPrefFile = project.mfile(project.rootProject.project(":buildSrc").projectDir, "ide/resources/org.eclipse.jdt.ui.prefs")
+      def resourcePrefFile = project.mfile(project.rootProject.project(":buildSrc").projectDir, "ide/resources/org.eclipse.core.resources.prefs")
+      def corePrefFile = mfile(project(":buildSrc").projectDir, "ide/resources/org.eclipse.jdt.core.prefs")
+      copy {
+         from uiPrefFile, resourcePrefFile, corePrefFile
+         into file('.settings')
+       }
+
       if (project.name == 'buildSrc') {
         project.tasks.pluginUnderTestMetadata
       }
