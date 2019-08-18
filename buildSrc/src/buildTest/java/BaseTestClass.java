@@ -17,9 +17,9 @@
 import static org.junit.Assume.assumeTrue;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,7 +30,6 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 public abstract class BaseTestClass extends Assert {
   
@@ -88,13 +87,8 @@ public abstract class BaseTestClass extends Assert {
       throws Exception {
     return runCmd(cmd, Collections.emptyMap(), cmdIsNoop, trace);
   }
-  
+
   public static PbResult runCmd(String[] cmd, Map<String,String> env,
-      boolean cmdIsNoop, boolean trace) throws Exception {
-    return runCmd(cmd, env, null, cmdIsNoop, trace);
-  }
-  
-  public static PbResult runCmd(String[] cmd, Map<String,String> env, File cwd,
       boolean cmdIsNoop, boolean trace) throws Exception {
     if (trace) System.out.println("execute cmd: " + Arrays.asList(cmd));
     if (cmdIsNoop) return new PbResult();
@@ -117,27 +111,18 @@ public abstract class BaseTestClass extends Assert {
   
   public static PbResult runCmd(String[] cmd, Map<String,String> env,
       boolean cmdIsNoop, boolean trace, boolean returnOutput) throws Exception {
-    return runCmd(cmd, env, null, cmdIsNoop, trace, returnOutput);
-  }
-  
-  public static PbResult runCmd(String[] cmd, Map<String,String> env, File cwd,
-      boolean cmdIsNoop, boolean trace, boolean returnOutput) throws Exception {
     if (trace) System.out.println("execute cmd: " + Arrays.asList(cmd));
     if (cmdIsNoop) return new PbResult();
     ProcessBuilder pb = new ProcessBuilder(cmd);
-    return processPb(env, pb, cwd, returnOutput);
+    return processPb(env, pb, returnOutput);
   }
   
   private static PbResult processPb(Map<String,String> env, ProcessBuilder pb, boolean returnOutput)
       throws Exception {
-    return processPb(env, pb, null, returnOutput);
-  }
-  
-  private static PbResult processPb(Map<String,String> env, ProcessBuilder pb, File cwd, boolean returnOutput)
-      throws Exception {
     try {
       pb.environment().putAll(env);
-      pb.environment().put("PATH", System.getenv().get("PATH") + File.pathSeparator + "/usr/local/bin" + File.pathSeparator + "/usr/bin");
+      //pb.environment().put("user.dir", "/home/lucene");
+      pb.environment().put("PATH", System.getenv().get("PATH") + System.getProperty("path.separator") + "/usr/local/bin" + System.getProperty("path.separator") + "/usr/bin");
       System.out.println(System.getenv());
      // pb.environment().put("UID", System.getenv().get("UID"));
     } catch (Exception e) {
@@ -145,9 +130,9 @@ public abstract class BaseTestClass extends Assert {
       throw e;
     }
     pb.redirectErrorStream(true);
-    if (cwd == null) {
-      pb.directory(cwd);
-    }
+    
+    pb.directory(null);
+
     pb.inheritIO();
     Process p = null;
     try {
@@ -156,7 +141,7 @@ public abstract class BaseTestClass extends Assert {
       throw new RuntimeException(e);
     }
 
-    BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+    BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), "UTF-8"));
     StringBuilder sb = new StringBuilder();
     String line = null;
     while ((line = br.readLine()) != null) {

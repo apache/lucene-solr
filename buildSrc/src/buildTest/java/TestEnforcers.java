@@ -51,7 +51,7 @@ public class TestEnforcers extends BaseTestClass {
     System.out.println("Start test-rat-sources.sh test in Docker container (" + env + ") ...");
     String[] cmd = new String[]{"bash", "test-build-wdocker/test-rat-sources.sh"};
     PbResult result = runCmd(cmd, env, false, false, false);
-    assertEquals("Testing test-build.sh failed", 0, result.returnCode);
+    assertEquals("Testing test-rat-sources.sh failed", 0, result.returnCode);
   }
 
   @Test
@@ -59,6 +59,6 @@ public class TestEnforcers extends BaseTestClass {
     System.out.println("Start test-check-sources.sh test in Docker container (" + env + ") ...");
     String[] cmd = new String[]{"bash", "test-build-wdocker/test-check-sources.sh"};
     PbResult result = runCmd(cmd, env, false, false, false);
-    assertEquals("Testing test-build.sh failed", 0, result.returnCode);
+    assertEquals("Testing test-check-sources.sh failed", 0, result.returnCode);
   }
 }
