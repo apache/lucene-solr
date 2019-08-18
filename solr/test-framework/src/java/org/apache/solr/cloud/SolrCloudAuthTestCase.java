@@ -119,16 +119,13 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     expectedCounts.put("failMissingCredentials", (long) failMissingCredentials);
     expectedCounts.put("errors", (long) errors);
 
-    Map<String, Long> counts = countSecurityMetrics(cluster, prefix, AUTH_METRICS_KEYS);
-    boolean success = isMetricsEqualOrLarger(AUTH_METRICS_TO_COMPARE, expectedCounts, counts);
-    if (!success) {
-      log.info("First metrics count assert failed, pausing 2s before re-attempt");
-      Thread.sleep(2000);
-      counts = countSecurityMetrics(cluster, prefix, AUTH_METRICS_KEYS);
-      success = isMetricsEqualOrLarger(AUTH_METRICS_TO_COMPARE, expectedCounts, counts);
-    }
+    final Map<String, Long> counts = countSecurityMetrics(cluster, prefix, AUTH_METRICS_KEYS);
+    final boolean success = isMetricsEqualOrLarger(AUTH_METRICS_TO_COMPARE, expectedCounts, counts);
     
-    assertTrue("Expected metric minimums for prefix " + prefix + ": " + expectedCounts + ", but got: " + counts, success);
+    assertTrue("Expected metric minimums for prefix " + prefix + ": " + expectedCounts +
+               ", but got: " + counts + "(Possible cause is delay in loading modified " +
+               "security.json; see SOLR-13464 for test work around)",
+               success);
     
     if (counts.get("requests") > 0) {
       assertTrue("requestTimes count not > 1", counts.get("requestTimes") > 1);
