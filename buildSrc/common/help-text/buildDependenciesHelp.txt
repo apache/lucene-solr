@@ -3,16 +3,16 @@
 - Dependency Managment -
 ------------------------
 
-Except in buildSrc, dependencies are defined in build.gradle (the dependencies block should be one of the first) with no version. Versions are specified in the root project versions.props.
+Except in buildSrc (where versions are specified directly), dependencies are defined in build.gradle (the dependencies block should be one of the first) with no version. Versions are specified in the root project versions.props.
 
   i.e.
   com.epam:parso=2.0.9
   com.fasterxml.jackson*:*=2.9.8
 
-This version will be the minimum version used. Gradle will choose the highest version neccessary to satisify all of our dependencies and our minimum version. Where that behavior is not ideal it can be overridden. However, we prefer not forcing version constraints unless neccessary. In a complex web of interconnected software projects with security vulnerabilites and performance bugs and overlapping dependencies, we want to favor updating our dependencies at the rate our dependencies update them.
+This version will be the minimum version used. Gradle will choose the highest version neccessary to satisify all of our dependencies and our minimum version. Where that behavior is not ideal, it can be overridden. However, we prefer not forcing version constraints unless neccessary. In a complex web of interconnected software projects with security vulnerabilites and performance bugs and overlapping dependencies, we want to favor updating our dependencies at the rate our dependencies update them.
 
 Support for this is implemented via the plugin https://github.com/palantir/gradle-consistent-versions
-This plugin provides support for placing versions in versions.props, ensures all versions for dependencies across all modules are consistent and also enforces version locking via a single root project lock file that lists all dependencies and their versions (versions.lock)
+This plugin provides support for placing versions in versions.props, ensures all versions for dependencies across all modules are consistent and also enforces version locking via a single root project lock file that lists all dependencies and their versions (versions.lock), each dependency on a single line.
 
 If you modify dependencies - add them, remove them, or change versions - you will need to run gradlew --write-locks and commit an updated versions.lock file that will show a clear summary of the total dependency change set.
 
@@ -37,7 +37,6 @@ You can use this to get a list of objects in a module that are referenced but ca
 You can use this to track down where a dependency comes from. Run it at the level of the module you are searching, i.e. gradlew -q solr:solr-core:dependencyInsight
 
   i.e.
-  gradlew -q dependencyInsight --dependency stax
   gradlew -q dependencyInsight --configuration testRuntimeClasspath --dependency zookeeper
 
 By default it will search the UnifiedClasspath, but you can specify which configuration to look at, i.e. runtime, testRuntime, runtimeClasspath, etc
@@ -45,5 +44,11 @@ By default it will search the UnifiedClasspath, but you can specify which config
   dependencies - Displays all dependencies declared in root project _lucene-solr.
 
 This will show all the dependencies in a tree view.
+
+  why - you pass this a hash from versions.props and it will tell you which dependencies are responsible for bringing the dependency for the hash.
+  
+  i.e.
+  gradlew why --hash e3159ee6 
+  
 
   

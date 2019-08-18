@@ -45,38 +45,41 @@ exec() {
 
 set -x
 
-# NOTE: we don't clean right now, as it would wipe out buildSrc/build on us for the host
+exec_args=""
+gradle_args="--console=plain -x verifyLocks"
+
+# NOTE: we don't clean right now, as it would wipe out buildSrc/build on us for the host, but buildTest dependsOn clean
 
 # build without unit tests
-cmd="cd /home/lucene/project;./gradlew build -x test"
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} build -x test"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test regenerate task
-cmd="cd /home/lucene/project;./gradlew regenerate"
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} regenerate"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test forbiddenApis task
-cmd="cd /home/lucene/project;./gradlew forbiddenApis"
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} forbiddenApis"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test eclipse tasks
-cmd="cd /home/lucene/project;./gradlew cleanEclipse eclipse"
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} cleanEclipse eclipse"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test unusedDependencies task
-cmd="cd /home/lucene/project;./gradlew solr:solr-core:unusedDependencies"
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} solr:solr-core:unusedDependencies"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # try deeper structure
-cmd="cd /home/lucene/project;./gradlew solr:contrib:solr-contrib-clustering:unusedDependencies"
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} solr:contrib:solr-contrib-clustering:unusedDependencies"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test missingDependencies task
-cmd="cd /home/lucene/project;./gradlew solr:solr-core:missingDependencies"
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} solr:solr-core:missingDependencies"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # we should still be able to build now
-cmd="cd /home/lucene/project;./gradlew build -x test"
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} build -x test -x verifyLocks"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 

@@ -41,9 +41,9 @@ class RatSources extends DefaultTask {
   
   @TaskAction
   void rat() {
-    ant.lifecycleLogLevel = "ERROR"
+    ant.lifecycleLogLevel = "ERROR" // so we don't output ugly ant warnings about redefining a task
     
-    File logFile = File.createTempFile("temp",".tmp")
+    File logFile = File.createTempFile("rat-",".log")
     logFile.deleteOnExit()
     
     def excludeString = ""
@@ -54,10 +54,10 @@ class RatSources extends DefaultTask {
       excludeString += it
     }
     
-    ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', classpath: project.rootProject.project(":buildSrc").configurations.rat.asPath)
+    ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', classpath: project.configurations.rat.asPath)
     
     ant.report(reportFile: logFile.getAbsolutePath(), addDefaultLicenseMatchers: 'true') {
-      ant.fileset(dir: ".", includes: "*.xml", excludes: excludeString)
+      ant.fileset(dir: project.projectDir.getAbsolutePath(), includes: "*.xml", excludes: excludeString)
       
       if (project.sourceSets.hasProperty('main') && project.sourceSets.main.hasProperty('java')) {
         project.sourceSets.main.java.srcDirs.each { dir ->        
@@ -70,6 +70,8 @@ class RatSources extends DefaultTask {
           ant.fileset(dir: dir, excludes: excludeString, erroronmissingdir: "false")
         }
       }
+      
+      // TODO: resources
       
       // BSD-like stuff
       ant.substringMatcher(licenseFamilyCategory: "BSD  ", licenseFamilyName: "Modified BSD License") {

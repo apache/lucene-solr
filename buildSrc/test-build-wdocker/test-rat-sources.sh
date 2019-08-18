@@ -45,31 +45,27 @@ exec() {
 
 set -x
 
-# NOTE: we don't clean right now, as it would wipe out buildSrc/build on us for the host
+exec_args=""
+gradle_args="--console=plain -x verifyLocks"
+
+# NOTE: we don't clean right now, as it would wipe out buildSrc/build on us for the host, but buildTest dependsOn clean
 
 # first check that rat passes
-cmd="cd /home/lucene/project;./gradlew ratSources"
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} ratSources"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # create an xml file with no license in lucene
-cmd="ls /home/lucene/project;touch /home/lucene/project/lucene/core/src/java/org/no_license_test_file.xml"
+cmd="touch /home/lucene/project/lucene/core/src/java/org/no_license_test_file.xml"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test that rat fails on our test file
-cmd="cd /home/lucene/project;./gradlew ratSources"
-if [ exec "${cmd}" "${exec_args}" ]; then
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} ratSources"
+if exec "${cmd}" "${exec_args}"; then
+  echo "rat should fail!"
   exit 1 # rat should fail!
-else
-  exit 0	
 fi
 
 # clean test file
 cmd="rm /home/lucene/project/lucene/core/src/java/org/no_license_test_file.xml"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
-# create a java file with no license in solr tests
-cmd="ls /home/lucene/project;touch /home/lucene/project/solr/core/src/test/org/no_license_test_file.java"
-if [ exec "${cmd}" "${exec_args}" ]; then
-  echo rat should fail!
-  exit 1 
-fi
