@@ -153,6 +153,8 @@ Bug Fixes
 
 * SOLR-13700: Fixed a race condition when initializing metrics for new security plugins on security.json change (hossman)
 
+* SOLR-13701: Fixed JWTAuthPlugin to update metrics prior to continuing w/other filters or returning error (hossman)
+
 Other Changes
 ----------------------
 
