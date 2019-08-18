@@ -45,20 +45,23 @@ exec() {
 
 set -x
 
-# NOTE: we don't clean right now, as it would wipe out buildSrc/build on us for the host
+exec_args=""
+gradle_args="--console=plain -x verifyLocks"
+
+# NOTE: we don't clean right now, as it would wipe out buildSrc/build on us for the host, but buildTest dependsOn clean
 
 # first check that checkSourcePatterns passes
-cmd="cd /home/lucene/project;./gradlew checkSourcePatterns"
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} checkSourcePatterns"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # create an xml file with no license in lucene
-cmd="ls /home/lucene/project;echo \\"\t\\" >> /home/lucene/project/solr/contrib/clustering/src/java/org/tab_file.xml"
+cmd="ls /home/lucene/project;echo -e '\t' >> /home/lucene/project/solr/contrib/clustering/src/java/org/tab_file.xml"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test that checkSourcePatterns fails on our test file
-cmd="cd /home/lucene/project;./gradlew checkSourcePatterns"
-if [ exec "${cmd}" "${exec_args}" ]; then
-  echocheckSourcePatterns should fail!
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} checkSourcePatterns"
+if exec "${cmd}" "${exec_args}"; then
+  echo "checkSourcePatterns should fail!"
   exit 1
 fi
 

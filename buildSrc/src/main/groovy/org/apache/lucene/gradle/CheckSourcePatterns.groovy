@@ -41,13 +41,14 @@ class CheckSourcePatterns extends DefaultTask {
   
   @TaskAction
   void check() {
+    ant.lifecycleLogLevel = "INFO"
     ant.fileScanner{
       fileset(dir: baseDir) {
         exts.each{
           //include(name: 'lucene/**/*.' + it)
           //include(name: 'solr/**/*.' + it)
           //include(name: 'dev-tools/**/*.' + it)
-          include(name: '*.' + it)
+          include(name: '**/*.' + it)
         }
         // TODO: For now we don't scan txt files, so we
         // check licenses in top-level folders separately:
@@ -55,6 +56,7 @@ class CheckSourcePatterns extends DefaultTask {
         include(name: '*/*.txt')
         // excludes:
         exclude(name: '**/build/**')
+        exclude(name: '**/bin/**')
         exclude(name: '**/dist/**')
         exclude(name: '**/.out/**')
         exclude(name: '**/.settings/**')
@@ -161,7 +163,7 @@ class CheckSourcePatterns extends DefaultTask {
   protected def found = 0
   protected def violations = new TreeSet()
   protected def reportViolation = { f, name ->
-  log.error(name + ': ' + f.toString().substring(baseDir.length() + 1).replace(File.separatorChar, (char)'/'))
+    log.error(name + ': ' + f.toString().substring(baseDir.length() + 1).replace(File.separatorChar, (char)'/'))
     violations.add(name)
     found++
   }
