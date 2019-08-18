@@ -395,6 +395,7 @@ public class CoreContainer {
           getResourceLoader().newInstance(klas, AuditLoggerPlugin.class));
 
       newAuditloggerPlugin.plugin.init(auditConf);
+      newAuditloggerPlugin.plugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/auditlogging");
     } else {
       log.debug("Security conf doesn't exist. Skipping setup for audit logging module.");
     }
@@ -451,6 +452,8 @@ public class CoreContainer {
     if (authenticationPlugin != null) {
       authenticationPlugin.plugin.init(authenticationConfig);
       setupHttpClientForAuthPlugin(authenticationPlugin.plugin);
+      authenticationPlugin.plugin.initializeMetrics
+        (metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication");
     }
     this.authenticationPlugin = authenticationPlugin;
     try {
@@ -628,6 +631,7 @@ public class CoreContainer {
       getZkController().getZkStateReader().registerClusterPropertiesListener(clusterPropertiesListener);
       pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
+      pkiAuthenticationPlugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication/pki");
       TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
     }
 
@@ -871,16 +875,7 @@ public class CoreContainer {
     SecurityConfHandler.SecurityConfig securityConfig = securityConfHandler.getSecurityConfig(false);
     initializeAuthorizationPlugin((Map<String, Object>) securityConfig.getData().get("authorization"));
     initializeAuthenticationPlugin((Map<String, Object>) securityConfig.getData().get("authentication"));
-    if (authenticationPlugin != null) {
-      authenticationPlugin.plugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication");
-    }
-    if (pkiAuthenticationPlugin != null && pkiAuthenticationPlugin.getMetricRegistry() == null) {
-      pkiAuthenticationPlugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication/pki");
-    }
     initializeAuditloggerPlugin((Map<String, Object>) securityConfig.getData().get("auditlogging"));
-    if (auditloggerPlugin != null) {
-      auditloggerPlugin.plugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/auditlogging");
-    }
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {

@@ -99,6 +99,8 @@ Bug Fixes
 
 * SOLR-13694: IndexSizeEstimator NullPointerException. (ab, hossman)
 
+* SOLR-13700: Fixed a race condition when initializing metrics for new security plugins on security.json change (hossman)
+
 Other Changes
 ----------------------
 
