@@ -80,6 +80,9 @@ configurations {
   buildTestRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
+project.ext.properties.tests_jvms = 1
+project.ext.properties.tests_failfast = true
+
 task buildTest(type: Test) {
   group = LifecycleBasePlugin.VERIFICATION_GROUP
   description = 'Runs the build tests (if using a unix env and docker is available). Ideally, run pristineClean first.'
@@ -90,7 +93,6 @@ task buildTest(type: Test) {
   classpath = sourceSets.buildTest.runtimeClasspath
 
   outputs.upToDateWhen { false }
-  mustRunAfter tasks.test
   dependsOn project.rootProject.clean
 }
 

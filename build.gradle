@@ -22,7 +22,7 @@ import org.apache.commons.io.FilenameUtils
 import com.google.common.base.Strings
 
 plugins {
-  id "com.palantir.consistent-versions" version "1.8.0"
+  id "com.palantir.consistent-versions" version "1.11.0"
 }
 
 // TOC
@@ -41,8 +41,11 @@ plugins {
 buildDir = file("build")
 
 // define lucene-solr project lists that exclude buildSrc
-def luceneSolrProjects = allprojects.findAll { project -> project.name != 'buildSrc'};
-def luceneSolrSubProjects = subprojects.findAll { project -> project.name != 'buildSrc'}
+
+def excludeProjects = ['buildSrc', 'lucene', 'solr', 'lucene-analysis']
+
+def luceneSolrProjects = allprojects - excludeProjects;
+def luceneSolrSubProjects = subprojects - excludeProjects;
 
 def rootProjectDir = project.rootProject.projectDir;
 
@@ -53,52 +56,72 @@ apply from: file("${rootProjectDir}/buildSrc/common/configure-ext.gradle")
 apply from: mfile(rootProjectDir, 'buildSrc/common/build-help.gradle')
 
 
-// *** lucene-solr all module config - configure all lucene-solr projects, including root project
+// *** lucene-solr all module config - configure all lucene-solr projects, including root project, excluding aggregate modules
 configure(luceneSolrProjects) {
   buildDir = file("build")
   
   // setup repositories
   apply from: mfile(rootProjectDir, 'buildSrc/common/configure-repositories.gradle')
+
   
-  apply plugin: 'idea'
-  apply plugin: 'eclipse'
+  // we can't safely directly access another projects configuration, so we do this
+  configurations {
+    rat
+  }
+  
+  dependencies {
+    rat project(':buildSrc')
+  }
   
   task ratSources(type: org.apache.lucene.gradle.RatSources) {
-    group = 'Verification'
-    description = "Checks source files for proper license headers."
-    excludes = ['**/TODO', '**/*.txt,', '**/*.iml']
-    check.dependsOn ratSources
+      group = 'Verification'
+      description = "Checks source files for proper license headers."
+      excludes = [
+        '**/TODO',
+        '**/*.txt,',
+        '**/*.iml'
+      ]
+      check.dependsOn ratSources
   }
-  
-  task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
-    group = 'Verification'
-    description = "Checks source files for project violations."
-    baseDir = projectDir
-    check.dependsOn checkSourcePatterns
-  }
-  
-  task checkMissingJavaDocs {
-    group = 'Verification'
-    description = "Checks for missing JavaDocs."
-    
-    doLast {
-      project.exec {
-        workingDir project.projectDir.getAbsolutePath()
-        executable "${python_exe}"
-        args = ['-B', rootProjectDir.getAbsolutePath() + '/dev-tools/scripts/checkJavaDocs.py', project.projectDir.getAbsolutePath(), 'class']
-      }
-    }
-  }
-  
-  // TODO: check.dependsOn checkMissingJavaDocs
-
 }
 
 // *** lucene-solr sub module config - configure all lucene-solr modules (excludes the root project)
 configure(luceneSolrSubProjects) {
+
+// TODO: prob wont go here    
+//  task checkMissingJavaDocs {
+//    group = 'Verification'
+//    description = "Checks for missing JavaDocs."
+//    
+//    doLast {
+//      project.exec {
+//        workingDir project.projectDir.getAbsolutePath()
+//        executable "${python_exe}"
+//        args = [
+//          '-B',
+//          rootProjectDir.getAbsolutePath() + '/dev-tools/scripts/checkJavaDocs.py',
+//          project.projectDir.getAbsolutePath(),
+//          'class'
+//        ]
+//      }
+//    }
+//  }
   
+  // TODO: check.dependsOn checkMissingJavaDocs
+  
+  configurations {
+    sourceJarOutput
+  }
+    
   plugins.withType(JavaPlugin) {
 
+    task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
+      group = 'Verification'
+      description = "Checks source files for project violations."
+      baseDir = projectDir
+      check.dependsOn checkSourcePatterns
+    }
+      
     project.plugins.apply(LuceneSolrForbiddenApisPlugin)
     
     sourceCompatibility = "11"
@@ -176,7 +199,7 @@ configure(rootProject) {
   
   task pristineClean(type: org.apache.lucene.gradle.PristineClean) {}
   
-  ext.testsResults = [] // We'll hold the summaries here
+  ext.testsResults = [] // test result summaries
   
   gradle.buildFinished {
       def allResults = ext.testsResults
