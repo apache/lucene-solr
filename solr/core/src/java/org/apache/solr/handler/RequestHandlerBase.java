@@ -40,6 +40,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -139,27 +140,27 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   }
 
-  protected MetricsInfo metricsInfo;
+  protected SolrMetrics solrMetrics;
 
   @Override
-  public MetricsInfo getMetricsInfo() {
-    return metricsInfo;
+  public SolrMetrics getMetrics() {
+    return solrMetrics;
   }
 
   @Override
-  public void initializeMetrics(MetricsInfo info) {
-    this.metricsInfo = info.getChildInfo(this);
-    numErrors = metricsInfo.meter(this, "errors", getCategory().toString());
-    numServerErrors = metricsInfo.meter(this, "serverErrors", getCategory().toString());
-    numClientErrors = metricsInfo.meter(this, "clientErrors", getCategory().toString());
-    numTimeouts = metricsInfo.meter(this, "timeouts", getCategory().toString());
-    requests = metricsInfo.counter(this, "requests", getCategory().toString());
+  public void initializeMetrics(SolrMetrics m) {
+    this.solrMetrics = m.getChildInfo(this);
+    numErrors = solrMetrics.meter(this, "errors", getCategory().toString());
+    numServerErrors = solrMetrics.meter(this, "serverErrors", getCategory().toString());
+    numClientErrors = solrMetrics.meter(this, "clientErrors", getCategory().toString());
+    numTimeouts = solrMetrics.meter(this, "timeouts", getCategory().toString());
+    requests = solrMetrics.counter(this, "requests", getCategory().toString());
     MetricsMap metricsMap = new MetricsMap((detail, map) ->
         shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
-    metricsInfo.gauge(this, metricsMap, true, "shardRequests", getCategory().toString());
-    requestTimes = metricsInfo.timer(this,"requestTimes", getCategory().toString());
-    totalTime = metricsInfo.counter(this, "totalTime", getCategory().toString());
-    metricsInfo.gauge(this, () -> handlerStart, true, "handlerStart", getCategory().toString());
+    solrMetrics.gauge(this, metricsMap, true, "shardRequests", getCategory().toString());
+    requestTimes = solrMetrics.timer(this,"requestTimes", getCategory().toString());
+    totalTime = solrMetrics.counter(this, "totalTime", getCategory().toString());
+    solrMetrics.gauge(this, () -> handlerStart, true, "handlerStart", getCategory().toString());
   }
 
   public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {
@@ -275,7 +276,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return metricsInfo.getRegistry();
+    return solrMetrics.getRegistry();
   }
 
   @Override

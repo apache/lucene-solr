@@ -46,6 +46,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -120,10 +121,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   @Override
-  public void initializeMetrics(MetricsInfo info) {
-    super.initializeMetrics(info);
-    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, metricsInfo.metricManager.registry(metricsInfo.registry),
-        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(),metricsInfo.scope, "threadPool"));
+  public void initializeMetrics(SolrMetrics m) {
+    super.initializeMetrics(m);
+    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, solrMetrics.getRegistry(),
+        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(), solrMetrics.scope, "threadPool"));
   }
   @Override
   public Boolean registerV2() {

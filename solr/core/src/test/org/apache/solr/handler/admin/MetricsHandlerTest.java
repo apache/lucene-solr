@@ -31,7 +31,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -391,7 +391,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   static class RefreshablePluginHolder extends PluginBag.PluginHolder<SolrRequestHandler> {
 
     private DumpRequestHandler rh;
-    private SolrMetricProducer.MetricsInfo metricsInfo;
+    private SolrMetrics metricsInfo;
 
     public RefreshablePluginHolder(PluginInfo info, DumpRequestHandler rh) {
       super(info);
@@ -404,9 +404,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     }
 
     void closeHandler() throws Exception {
-      this.metricsInfo = rh.getMetricsInfo();
+      this.metricsInfo = rh.getMetrics();
       if(metricsInfo.tag.contains(String.valueOf(rh.hashCode()))){
-        //this created a new child metricsInfo
+        //this created a new child metrics
         metricsInfo = metricsInfo.getParent();
       }
       this.rh.close();
@@ -440,14 +440,11 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void initializeMetrics(MetricsInfo info) {
-      super.initializeMetrics(info);
-      MetricsMap metrics = new MetricsMap((detailed, map) -> {
-        map.putAll(gaugevals);
-      });
-      metricsInfo.metricManager.registerGauge(this,
-          metricsInfo.registry, metrics, metricsInfo.tag, true, "dumphandlergauge", getCategory().toString(),
-          metricsInfo.scope);
+    public void initializeMetrics(SolrMetrics m) {
+      super.initializeMetrics(m);
+      MetricsMap metrics = new MetricsMap((detailed, map) -> map.putAll(gaugevals));
+      solrMetrics.gauge(this,
+           metrics,  true, "dumphandlergauge", getCategory().toString());
 
     }
 

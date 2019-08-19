@@ -29,6 +29,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -246,15 +247,15 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   }
 
 
-  MetricsInfo metricsInfo;
+  SolrMetrics metricsInfo;
 
   @Override
-  public MetricsInfo getMetricsInfo() {
+  public SolrMetrics getMetrics() {
     return metricsInfo;
   }
 
   @Override
-  public void initializeMetrics(MetricsInfo info) {
+  public void initializeMetrics(SolrMetrics info) {
     metricsInfo = info.getChildInfo(this);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {

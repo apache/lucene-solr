@@ -36,6 +36,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -274,8 +275,8 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   @Override
-  public void initializeMetrics(MetricsInfo info) {
-    super.initializeMetrics(info);
+  public void initializeMetrics(SolrMetrics m) {
+    super.initializeMetrics(m);
     metrics = new MetricsMap((detailed, map) -> {
       if (importer != null) {
         DocBuilder.Statistics cumulative = importer.cumulativeStatistics;
@@ -298,7 +299,7 @@ public class DataImportHandler extends RequestHandlerBase implements
         map.put(DataImporter.MSG.TOTAL_DOCS_SKIPPED, cumulative.skipDocCount);
       }
     });
-    metricsInfo.gauge(this, metrics, true, "importer", getCategory().toString());
+    solrMetrics.gauge(this, metrics, true, "importer", getCategory().toString());
   }
 
   // //////////////////////SolrInfoMBeans methods //////////////////////

@@ -49,6 +49,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.suggest.SolrSuggester;
 import org.apache.solr.spelling.suggest.SuggesterOptions;
@@ -346,15 +347,15 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     return "Suggester component";
   }
 
-  protected MetricsInfo metricsInfo;
+  protected SolrMetrics metricsInfo;
 
   @Override
-  public MetricsInfo getMetricsInfo() {
+  public SolrMetrics getMetrics() {
     return metricsInfo;
   }
 
   @Override
-  public void initializeMetrics(MetricsInfo info) {
+  public void initializeMetrics(SolrMetrics info) {
     this.metricsInfo = info.getChildInfo(this);
 
     metricsInfo.metricManager.registerGauge(this, info.registry, () -> ramBytesUsed(), metricsInfo.tag, true, "totalSizeInBytes", getCategory().toString(), metricsInfo.scope);

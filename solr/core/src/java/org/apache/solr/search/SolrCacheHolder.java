@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.metrics.SolrMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,7 +141,7 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   }
 
   @Override
-  public void initializeMetrics(MetricsInfo info) {
+  public void initializeMetrics(SolrMetrics info) {
     delegate.initializeMetrics(info);
 
   }

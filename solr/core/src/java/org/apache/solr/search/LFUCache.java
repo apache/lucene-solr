@@ -29,6 +29,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.util.ConcurrentLFUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -224,7 +225,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
     cache.destroy();
-    if (metricsInfo != null) metricsInfo.unregister();
+    if (solrMetrics != null) solrMetrics.unregister();
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -253,16 +254,16 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   }
 
 
-  private MetricsInfo metricsInfo;
+  private SolrMetrics solrMetrics;
 
   @Override
-  public MetricsInfo getMetricsInfo() {
-    return metricsInfo;
+  public SolrMetrics getMetrics() {
+    return solrMetrics;
   }
 
   @Override
-  public void initializeMetrics(MetricsInfo info) {
-    metricsInfo = info.getChildInfo(this);
+  public void initializeMetrics(SolrMetrics info) {
+    solrMetrics = info.getChildInfo(this);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         ConcurrentLFUCache.Stats stats = cache.getStats();
@@ -323,7 +324,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
       }
     });
-    metricsInfo.metricManager.registerGauge(this, metricsInfo.registry, cacheMap, metricsInfo.getTag(), true, metricsInfo.scope, getCategory().toString());
+    solrMetrics.metricManager.registerGauge(this, solrMetrics.registry, cacheMap, solrMetrics.getTag(), true, solrMetrics.scope, getCategory().toString());
   }
 
   // for unit tests only
@@ -338,7 +339,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return metricsInfo == null ? null : metricsInfo.getRegistry();
+    return solrMetrics == null ? null : solrMetrics.getRegistry();
 
   }
 
