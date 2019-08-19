@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.metrics.SolrMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,16 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   public SolrCacheHolder(CacheConfig.CacheInfo cacheInfo) {
     this.info = cacheInfo;
     this.delegate = cacheInfo.cache;
+    if(info.pkg != null){
+      info.core.addPackageListener(info.pkg, lib -> reloadCache(lib));
+    }
+  }
+
+  private void reloadCache(RuntimeLib lib) {
+    if (lib.getZnodeVersion() > info.znodeVersion) {
+      info = new CacheConfig.CacheInfo(info.cfg, info.core);
+      delegate = info.cache;
+    }
   }
 
   public int size() {
