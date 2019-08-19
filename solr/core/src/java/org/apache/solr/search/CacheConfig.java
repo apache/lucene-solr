@@ -110,7 +110,7 @@ public class CacheConfig implements MapWriter {
 
 
   public <K, V> SolrCacheHolder<K, V> newInstance(SolrCore core) {
-    return new SolrCacheHolder<>(new CacheInfo(this, core));
+    return new SolrCacheHolder(new CacheInfo(this, core));
   }
 
   static class CacheInfo {
