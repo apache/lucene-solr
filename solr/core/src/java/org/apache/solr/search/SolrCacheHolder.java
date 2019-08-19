@@ -30,12 +30,14 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  private final CacheConfig factory;
+  private CacheConfig.CacheInfo info;
   protected volatile SolrCache<K, V> delegate;
 
-  public SolrCacheHolder(SolrCache<K, V> delegate, CacheConfig factory) {
-    this.delegate = delegate;
-    this.factory = factory;
+
+
+  public SolrCacheHolder(CacheConfig.CacheInfo cacheInfo) {
+    this.info = cacheInfo;
+    this.delegate = cacheInfo.cache;
   }
 
   public int size() {
