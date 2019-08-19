@@ -24,18 +24,20 @@ This section of the user guide provides an overview of time series *aggregation*
 The `timeseries` function performs fast, distributed time
 series aggregation leveraging Solr's builtin faceting and date math capabilities.
 
-The example below performs a monthly time series aggregation:
+The example below performs a monthly time series aggregation over a collection of
+daily stock price data.  In this example the average monthly closing price is calculated for the stock
+ticker *amzn* between a specific date range.
 
 [source,text]
 ----
-timeseries(collection1,
-           q=*:*,
-           field="recdate_dt",
-           start="2012-01-20T17:33:18Z",
-           end="2012-12-20T17:33:18Z",
+timeseries(stocks,
+           q=ticker_s:amzn,
+           field="date_dt",
+           start="2010-01-01T00:00:00Z",
+           end="2017-11-01T00:00:00Z",
            gap="+1MONTH",
            format="YYYY-MM",
-           count(*))
+           avg(close_d))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -46,57 +48,41 @@ When this expression is sent to the `/stream` handler it responds with:
   "result-set": {
     "docs": [
       {
-        "recdate_dt": "2012-01",
-        "count(*)": 8703
+        "date_dt": "2010-01",
+        "avg(close_d)": 127.42315789473685
       },
       {
-        "recdate_dt": "2012-02",
-        "count(*)": 8648
+        "date_dt": "2010-02",
+        "avg(close_d)": 118.02105263157895
       },
       {
-        "recdate_dt": "2012-03",
-        "count(*)": 8621
+        "date_dt": "2010-03",
+        "avg(close_d)": 130.89739130434782
       },
       {
-        "recdate_dt": "2012-04",
-        "count(*)": 8533
+        "date_dt": "2010-04",
+        "avg(close_d)": 141.07
       },
       {
-        "recdate_dt": "2012-05",
-        "count(*)": 8792
+        "date_dt": "2010-05",
+        "avg(close_d)": 127.606
       },
       {
-        "recdate_dt": "2012-06",
-        "count(*)": 8598
+        "date_dt": "2010-06",
+        "avg(close_d)": 121.66681818181816
       },
       {
-        "recdate_dt": "2012-07",
-        "count(*)": 8679
+        "date_dt": "2010-07",
+        "avg(close_d)": 117.5190476190476
       },
-      {
-        "recdate_dt": "2012-08",
-        "count(*)": 8469
-      },
-      {
-        "recdate_dt": "2012-09",
-        "count(*)": 8637
-      },
-      {
-        "recdate_dt": "2012-10",
-        "count(*)": 8536
-      },
-      {
-        "recdate_dt": "2012-11",
-        "count(*)": 8785
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 16
-      }
-    ]
-  }
-}
+      ...
 ----
+
+Using Zeppelin-Solr this time series can be visualized using a line chart or other visualization.
+
+image::images/math-expressions/timeseries1.png[]
+
+
 
 == Vectorizing the Time Series
 
@@ -116,7 +102,7 @@ let(a=timeseries(collection1,
                  start="2012-01-20T17:33:18Z",
                  end="2012-12-20T17:33:18Z",
                  gap="+1MONTH",
-                 format="YYYY-MM",
+                 format="yyyy-MM",
                  count(*)),
     b=col(a, count(*)))
 ----
@@ -321,6 +307,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
+
 == Differencing
 
 Differencing is often used to remove the
@@ -429,3 +416,8 @@ Expression is sent to the `/stream` handler it responds with:
   }
 }
 ----
+
+== Anomaly Detection
+
+== Forecasting
+
