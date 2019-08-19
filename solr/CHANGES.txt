@@ -121,6 +121,8 @@ Improvements
 
 * SOLR-6305: Ability to set the replication factor for index files created by HDFSDirectoryFactory (Boris Pasko via Kevin Risden)
 
+* SOLR-13677: All Metrics Gauges should be unregistered by the objects that registered them (noble)
+
 Bug Fixes
 ----------------------
 
