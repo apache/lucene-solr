@@ -537,12 +537,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "//doc[3]/str[@name='id'][.='54']");
 
     // adding value from a field
-    // 0 would be returned for negative values
+    // 0 would be returned for negative values or docs w/o a value
     assertQ(req("q", "*:*", "qf", "text_sw", "defType", "edismax",
-        "bf", "foo_i", "fq", "id:[47 TO 49]", "fl", "id,score"),
-        "//doc[1]/str[@name='id'][.='48']",
-        "//doc[2]/str[@name='id'][.='47']",
-        "//doc[3]/str[@name='id'][.='49']");
+                "bf", "foo_i", "fq", "id:[47 TO 49]", "fl", "id,score"),
+            "//doc[1]/str[@name='id'][.='48']",
+            // these should have identical score, in non-deterministic order
+            "//doc[str[@name='id'][.='47'] and float[@name='score'][.='1.0']]",
+            "//doc[str[@name='id'][.='49'] and float[@name='score'][.='1.0']]");
   }
 
   @Test
