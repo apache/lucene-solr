@@ -83,7 +83,6 @@ Using Zeppelin-Solr this time series can be visualized using a line chart or oth
 image::images/math-expressions/timeseries1.png[]
 
 
-
 == Vectorizing the Time Series
 
 Before a time series result can be operated on by math expressions
@@ -257,6 +256,22 @@ Expression is sent to the `/stream` handler it responds with:
 ----
 
 == Anomaly Detection
+
+
+The `movingMAD` (moving mean absolute deviation) can be used to
+detecting
+
+image::images/math-expressions/anomaly.png[]
+
+image::images/math-expressions/mad.png[]
+
+image::images/math-expressions/madsort.png[]
+
+image::images/math-expressions/maddist.png[]
+
+image::images/math-expressions/outliers.png[]
+
+
 
 == Forecasting
 
