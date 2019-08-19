@@ -233,7 +233,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private final CoreContainer coreContainer;
 
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private String metricTag = Integer.toHexString(hashCode());
+  private final String metricTag = getUniqueMetricTag(null);
 
   public volatile boolean searchEnabled = true;
   public volatile boolean indexEnabled = true;
