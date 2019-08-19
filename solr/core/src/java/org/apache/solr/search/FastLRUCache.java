@@ -16,23 +16,23 @@
  */
 package org.apache.solr.search;
 
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+
 import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 
 /**
  * SolrCache based on ConcurrentLRUCache implementation.
@@ -42,12 +42,11 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Also see <a href="http://wiki.apache.org/solr/SolrCaching">SolrCaching</a>
  *
- *
  * @see org.apache.solr.util.ConcurrentLRUCache
  * @see org.apache.solr.search.SolrCache
  * @since solr 1.4
  */
-public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>, Accountable {
+public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>, Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FastLRUCache.class);
@@ -61,7 +60,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   private long warmupTime = 0;
 
   private String description = "Concurrent LRU Cache";
-  private ConcurrentLRUCache<K,V> cache;
+  private ConcurrentLRUCache<K, V> cache;
   private int showItems = 0;
 
   private long maxRamBytes;
@@ -75,7 +74,6 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
 
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricRegistry registry;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -117,7 +115,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
     str = (String) args.get(MAX_RAM_MB_PARAM);
     long maxRamMB = str == null ? -1 : (long) Double.parseDouble(str);
     this.maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
-    if (maxRamBytes != Long.MAX_VALUE)  {
+    if (maxRamBytes != Long.MAX_VALUE) {
       ramLowerWatermark = Math.round(maxRamBytes * 0.8);
       description = generateDescription(maxRamBytes, ramLowerWatermark, cleanupThread);
       cache = new ConcurrentLRUCache<>(ramLowerWatermark, maxRamBytes, cleanupThread, null, maxIdleTimeSec);
@@ -213,7 +211,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
    */
   protected String generateDescription(int limit, int initialSize, int minLimit, int acceptableLimit, boolean newThread) {
     String description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize +
-        ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+", cleanupThread="+newThread;
+        ", minSize=" + minLimit + ", acceptableSize=" + acceptableLimit + ", cleanupThread=" + newThread;
     if (isAutowarmingOn()) {
       description += ", " + getAutowarmDescription();
     }
@@ -274,10 +272,9 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
       for (int i = itemsArr.length - 1; i >= 0; i--) {
         try {
           boolean continueRegen = regenerator.regenerateItem(searcher,
-                  this, old, itemsArr[i].getKey(), itemsArr[i].getValue());
+              this, old, itemsArr[i].getKey(), itemsArr[i].getValue());
           if (!continueRegen) break;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
           SolrException.log(log, "Error during auto-warming of key:" + itemsArr[i].getKey(), e);
         }
       }
@@ -288,6 +285,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
 
   @Override
   public void close() {
+    if (metricsInfo != null) metricsInfo.unregister();
     // add the stats to the cumulative stats object (the first in the statsList)
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
@@ -310,10 +308,18 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
     return metricNames;
   }
 
+
+  SolrMetrics metricsInfo;
+
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    registry = manager.registry(registryName);
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+  public SolrMetrics getMetrics() {
+    return metricsInfo;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetrics metricsInfo) {
+    this.metricsInfo = metricsInfo;
+    metricsInfo.metricManager.registerGauge(this, metricsInfo.registry, cacheMap, metricsInfo.tag, true, metricsInfo.scope, getCategory().toString());
   }
 
   // for unit tests only
@@ -323,7 +329,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return registry;
+    return metricsInfo == null ? null : metricsInfo.getRegistry();
   }
 
   @Override
