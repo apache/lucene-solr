@@ -302,8 +302,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     if (jwtConsumer == null) {
       if (header == null && !blockUnknown) {
         log.info("JWTAuth not configured, but allowing anonymous access since {}==false", PARAM_BLOCK_UNKNOWN);
-        filterChain.doFilter(request, response);
         numPassThrough.inc();
+        filterChain.doFilter(request, response);
         return true;
       }
       // Retry config
@@ -342,22 +342,22 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
         }
         if (log.isDebugEnabled())
           log.debug("Authentication SUCCESS");
-        filterChain.doFilter(wrapper, response);
         numAuthenticated.inc();
+        filterChain.doFilter(wrapper, response);
         return true;
 
       case PASS_THROUGH:
         if (log.isDebugEnabled())
           log.debug("Unknown user, but allow due to {}=false", PARAM_BLOCK_UNKNOWN);
-        filterChain.doFilter(request, response);
         numPassThrough.inc();
+        filterChain.doFilter(request, response);
         return true;
 
       case AUTZ_HEADER_PROBLEM:
       case JWT_PARSE_ERROR:
         log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), authResponse.getAuthCode().getMsg());
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
         numErrors.mark();
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
         return false;
 
       case CLAIM_MISMATCH:
@@ -365,25 +365,25 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       case JWT_VALIDATION_EXCEPTION:
       case PRINCIPAL_MISSING:
         log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), exceptionMessage);
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         numWrongCredentials.inc();
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         return false;
 
       case SIGNATURE_INVALID:
         log.warn("Signature validation failed: {}", exceptionMessage);
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         numWrongCredentials.inc();
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         return false;
 
       case SCOPE_MISSING:
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.insufficient_scope);
         numWrongCredentials.inc();
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.insufficient_scope);
         return false;
 
       case NO_AUTZ_HEADER:
       default:
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, null);
         numMissingCredentials.inc();
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, null);
         return false;
     }
   }

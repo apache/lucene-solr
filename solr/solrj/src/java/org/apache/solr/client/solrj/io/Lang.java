@@ -296,6 +296,10 @@ public class Lang {
         .withFunctionName("long", LongEvaluator.class)
         .withFunctionName("dateTime", DateEvaluator.class)
         .withFunctionName("concat", ConcatEvaluator.class)
+        .withFunctionName("lower", LowerEvaluator.class)
+        .withFunctionName("upper", UpperEvaluator.class)
+        .withFunctionName("split", SplitEvaluator.class)
+        .withFunctionName("trim", TrimEvaluator.class)
 
         // Boolean Stream Evaluators
 

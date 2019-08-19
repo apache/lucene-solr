@@ -898,13 +898,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   private static void expectError(String name, Object val, String msg) {
-    try {
-      Clause.validate(name, val, true);
-      fail("expected exception containing " + msg);
-    } catch (Exception e) {
-      assertTrue("expected exception containing " + msg, e.getMessage().contains(msg));
-    }
-
+    Exception e = expectThrows(Exception.class, () -> Clause.validate(name, val, true));
+    assertTrue("expected exception containing " + msg, e.getMessage().contains(msg));
   }
 
   public void testOperands() {
@@ -1106,6 +1101,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     suggester = session.getSuggester(MOVEREPLICA)
         .hint(Hint.SRC_NODE, "node1");
     operation = suggester.getSuggestion();
+    assertNotNull(operation);
     assertEquals("node2", operation.getParams().get("targetNode"));
     assertEquals("r1", operation.getParams().get("replica"));
 
@@ -1164,6 +1160,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     suggester = session.getSuggester(MOVEREPLICA)
         .hint(Hint.SRC_NODE, "node1");
     operation = suggester.getSuggestion();
+    assertNotNull(operation);
     assertEquals("node3", operation.getParams().get("targetNode"));
     assertEquals("r1", operation.getParams().get("replica"));
   }

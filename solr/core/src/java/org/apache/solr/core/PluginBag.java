@@ -196,10 +196,11 @@ public class PluginBag<T> implements AutoCloseable {
     PluginHolder<T> pluginHolder = new PluginHolder<>(null, plugin);
     pluginHolder.registerAPI = false;
     PluginHolder<T> old = put(name, pluginHolder);
+    if(old != null)  closeQuietly(old);
     return old == null ? null : old.get();
   }
 
-  PluginHolder<T> put(String name, PluginHolder<T> plugin) {
+  public PluginHolder<T> put(String name, PluginHolder<T> plugin) {
     Boolean registerApi = null;
     Boolean disableHandler = null;
     if (plugin.pluginInfo != null) {

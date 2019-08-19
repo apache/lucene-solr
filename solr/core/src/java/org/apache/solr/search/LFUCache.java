@@ -17,11 +17,10 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -30,7 +29,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.util.ConcurrentLFUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,9 +78,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private Boolean timeDecay = true;
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricRegistry registry;
 
-  private int sizeLimit;
+  private int maxSize;
   private int minSizeLimit;
   private int initialSize;
   private int acceptableSize;
@@ -93,10 +91,10 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     this.regenerator = regenerator;
     name = (String) args.get(NAME);
     String str = (String) args.get(SIZE_PARAM);
-    sizeLimit = str == null ? 1024 : Integer.parseInt(str);
+    maxSize = str == null ? 1024 : Integer.parseInt(str);
     str = (String) args.get(MIN_SIZE_PARAM);
     if (str == null) {
-      minSizeLimit = (int) (sizeLimit * 0.9);
+      minSizeLimit = (int) (maxSize * 0.9);
     } else {
       minSizeLimit = Integer.parseInt(str);
     }
@@ -104,7 +102,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
     str = (String) args.get(ACCEPTABLE_SIZE_PARAM);
     if (str == null) {
-      acceptableSize = (int) (sizeLimit * 0.95);
+      acceptableSize = (int) (maxSize * 0.95);
     } else {
       acceptableSize = Integer.parseInt(str);
     }
@@ -112,7 +110,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     acceptableSize = Math.max(minSizeLimit, acceptableSize);
 
     str = (String) args.get(INITIAL_SIZE_PARAM);
-    initialSize = str == null ? sizeLimit : Integer.parseInt(str);
+    initialSize = str == null ? maxSize : Integer.parseInt(str);
     str = (String) args.get(AUTOWARM_COUNT_PARAM);
     autowarmCount = str == null ? 0 : Integer.parseInt(str);
     str = (String) args.get(CLEANUP_THREAD_PARAM);
@@ -127,7 +125,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
     description = generateDescription();
 
-    cache = new ConcurrentLFUCache<>(sizeLimit, minSizeLimit, acceptableSize, initialSize, cleanupThread, false, null, timeDecay);
+    cache = new ConcurrentLFUCache<>(maxSize, minSizeLimit, acceptableSize, initialSize, cleanupThread, false, null, timeDecay);
     cache.setAlive(false);
 
     statsList = (List<ConcurrentLFUCache.Stats>) persistence;
@@ -145,7 +143,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   }
 
   private String generateDescription() {
-    String descr = "Concurrent LFU Cache(maxSize=" + sizeLimit + ", initialSize=" + initialSize +
+    String descr = "Concurrent LFU Cache(maxSize=" + maxSize + ", initialSize=" + initialSize +
         ", minSize=" + minSizeLimit + ", acceptableSize=" + acceptableSize + ", cleanupThread=" + cleanupThread +
         ", timeDecay=" + Boolean.toString(timeDecay);
     if (autowarmCount > 0) {
@@ -227,6 +225,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
     cache.destroy();
+    if (solrMetrics != null) solrMetrics.unregister();
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -254,9 +253,17 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     return "0." + hundredths;
   }
 
+
+  private SolrMetrics solrMetrics;
+
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    registry = manager.registry(registryName);
+  public SolrMetrics getMetrics() {
+    return solrMetrics;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetrics info) {
+    solrMetrics = info.getChildInfo(this);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         ConcurrentLFUCache.Stats stats = cache.getStats();
@@ -266,16 +273,22 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
         long evictions = stats.getCumulativeEvictions();
         long size = stats.getCurrentSize();
 
-        map.put("lookups", lookups);
-        map.put("hits", hits);
-        map.put("hitratio", calcHitRatio(lookups, hits));
-        map.put("inserts", inserts);
-        map.put("evictions", evictions);
-        map.put("size", size);
+        map.put(LOOKUPS_PARAM, lookups);
+        map.put(HITS_PARAM, hits);
+        map.put(HIT_RATIO_PARAM, calcHitRatio(lookups, hits));
+        map.put(INSERTS_PARAM, inserts);
+        map.put(EVICTIONS_PARAM, evictions);
+        map.put(SIZE_PARAM, size);
+        map.put(MAX_SIZE_PARAM, maxSize);
+        map.put(MIN_SIZE_PARAM, minSizeLimit);
+        map.put(ACCEPTABLE_SIZE_PARAM, acceptableSize);
+        map.put(AUTOWARM_COUNT_PARAM, autowarmCount);
+        map.put(CLEANUP_THREAD_PARAM, cleanupThread);
+        map.put(SHOW_ITEMS_PARAM, showItems);
+        map.put(TIME_DECAY_PARAM, timeDecay);
+
 
         map.put("warmupTime", warmupTime);
-        map.put("timeDecay", timeDecay);
-        map.put("cleanupThread", cleanupThread);
 
         long clookups = 0;
         long chits = 0;
@@ -294,7 +307,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
         map.put("cumulative_hitratio", calcHitRatio(clookups, chits));
         map.put("cumulative_inserts", cinserts);
         map.put("cumulative_evictions", cevictions);
-        map.put("ramBytesUsed", ramBytesUsed());
+        map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
 
         if (detailed && showItems != 0) {
           Map items = cache.getMostUsedItems(showItems == -1 ? Integer.MAX_VALUE : showItems);
@@ -311,7 +324,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
       }
     });
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    solrMetrics.metricManager.registerGauge(this, solrMetrics.registry, cacheMap, solrMetrics.getTag(), true, solrMetrics.scope, getCategory().toString());
   }
 
   // for unit tests only
@@ -326,7 +339,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return registry;
+    return solrMetrics == null ? null : solrMetrics.getRegistry();
+
   }
 
   @Override
@@ -346,85 +360,40 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   }
 
   @Override
-  public Map<String, Object> getResourceLimits() {
-    Map<String, Object> limits = new HashMap<>();
-    limits.put(SIZE_PARAM, cache.getStats().getCurrentSize());
-    limits.put(MIN_SIZE_PARAM, minSizeLimit);
-    limits.put(ACCEPTABLE_SIZE_PARAM, acceptableSize);
-    limits.put(AUTOWARM_COUNT_PARAM, autowarmCount);
-    limits.put(CLEANUP_THREAD_PARAM, cleanupThread);
-    limits.put(SHOW_ITEMS_PARAM, showItems);
-    limits.put(TIME_DECAY_PARAM, timeDecay);
-    return limits;
+  public int getMaxSize() {
+    return maxSize != Integer.MAX_VALUE ? maxSize : -1;
   }
 
   @Override
-  public synchronized void setResourceLimit(String limitName, Object val) {
-    if (TIME_DECAY_PARAM.equals(limitName) || CLEANUP_THREAD_PARAM.equals(limitName)) {
-      Boolean value;
-      try {
-        value = Boolean.parseBoolean(String.valueOf(val));
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Invalid value of boolean limit '" + limitName + "': " + val);
-      }
-      switch (limitName) {
-        case TIME_DECAY_PARAM:
-          timeDecay = value;
-          cache.setTimeDecay(timeDecay);
-          break;
-        case CLEANUP_THREAD_PARAM:
-          cleanupThread = value;
-          cache.setRunCleanupThread(cleanupThread);
-          break;
-      }
+  public void setMaxSize(int maxSize) {
+    if (maxSize > 0) {
+      this.maxSize = maxSize;
     } else {
-      Number value;
-      try {
-        value = Long.parseLong(String.valueOf(val));
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Invalid new value for numeric limit '" + limitName +"': " + val);
-      }
-      if (value.intValue() <= 1 || value.longValue() > Integer.MAX_VALUE) {
-        throw new IllegalArgumentException("Out of range new value for numeric limit '" + limitName +"': " + value);
-      }
-      switch (limitName) {
-        case SIZE_PARAM:
-          sizeLimit = value.intValue();
-          checkAndAdjustLimits();
-          cache.setUpperWaterMark(sizeLimit);
-          cache.setLowerWaterMark(minSizeLimit);
-          break;
-        case MIN_SIZE_PARAM:
-          minSizeLimit = value.intValue();
-          checkAndAdjustLimits();
-          cache.setUpperWaterMark(sizeLimit);
-          cache.setLowerWaterMark(minSizeLimit);
-          break;
-        case ACCEPTABLE_SIZE_PARAM:
-          acceptableSize = value.intValue();
-          acceptableSize = Math.max(minSizeLimit, acceptableSize);
-          cache.setAcceptableWaterMark(acceptableSize);
-          break;
-        case AUTOWARM_COUNT_PARAM:
-          autowarmCount = value.intValue();
-          break;
-        case SHOW_ITEMS_PARAM:
-          showItems = value.intValue();
-          break;
-        default:
-          throw new IllegalArgumentException("Unsupported numeric limit '" + limitName + "'");
-      }
+      this.maxSize = Integer.MAX_VALUE;
     }
+    checkAndAdjustLimits();
+    cache.setUpperWaterMark(maxSize);
+    cache.setLowerWaterMark(minSizeLimit);
     description = generateDescription();
+  }
+
+  @Override
+  public int getMaxRamMB() {
+    return -1;
+  }
+
+  @Override
+  public void setMaxRamMB(int maxRamMB) {
+    // no-op
   }
 
   private void checkAndAdjustLimits() {
     if (minSizeLimit <= 0) minSizeLimit = 1;
-    if (sizeLimit <= minSizeLimit) {
-      if (sizeLimit > 1) {
-        minSizeLimit = sizeLimit - 1;
+    if (maxSize <= minSizeLimit) {
+      if (maxSize > 1) {
+        minSizeLimit = maxSize - 1;
       } else {
-        sizeLimit = minSizeLimit + 1;
+        maxSize = minSizeLimit + 1;
       }
     }
   }

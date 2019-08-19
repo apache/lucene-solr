@@ -30,8 +30,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -45,13 +43,13 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   public void setupCluster() throws Exception {
     configureCluster(1)
         .addConfig("conf", configset("cloud-minimal"))
+        .withSecurityJson(STD_CONF)
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 4, 1)
         .setMaxShardsPerNode(100)
+        .setBasicAuthCredentials("solr", "solr")
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 4, 4);
-
-    zkClient().setData("/security.json", STD_CONF.getBytes(UTF_8), true);
 
     JettySolrRunner jetty = cluster.getJettySolrRunner(0);
     jetty.stop();

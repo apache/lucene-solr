@@ -50,6 +50,7 @@ public interface AutoScalingParams {
   String ABOVE = "above";
   String BELOW = "below";
   String PREFERRED_OP = "preferredOperation";
+  String REPLICA_TYPE = "replicaType";
 
   // commands
   String CMD_SET_TRIGGER = "set-trigger";
