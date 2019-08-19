@@ -17,10 +17,10 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -29,7 +29,6 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLFUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +77,6 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private Boolean timeDecay = true;
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricRegistry registry;
 
   private int maxSize;
   private int minSizeLimit;
@@ -226,6 +224,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
     cache.destroy();
+    if (metricsInfo != null) metricsInfo.unregister();
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -253,9 +252,17 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     return "0." + hundredths;
   }
 
+
+  private MetricsInfo metricsInfo;
+
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    registry = manager.registry(registryName);
+  public MetricsInfo getMetricsInfo() {
+    return metricsInfo;
+  }
+
+  @Override
+  public void initializeMetrics(MetricsInfo info) {
+    metricsInfo = info.getChildInfo(this);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         ConcurrentLFUCache.Stats stats = cache.getStats();
@@ -316,7 +323,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
       }
     });
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    metricsInfo.metricManager.registerGauge(this, metricsInfo.registry, cacheMap, metricsInfo.getTag(), true, metricsInfo.scope, getCategory().toString());
   }
 
   // for unit tests only
@@ -331,7 +338,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return registry;
+    return metricsInfo == null ? null : metricsInfo.getRegistry();
+
   }
 
   @Override

@@ -19,7 +19,6 @@ package org.apache.solr.security;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import java.io.Closeable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
@@ -29,29 +28,24 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
-
 import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.eclipse.jetty.client.api.Request;
 
 /**
  * 
  * @lucene.experimental
  */
-public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, SolrMetricProducer {
+public abstract class AuthenticationPlugin implements SolrInfoBean, SolrMetricProducer {
 
   final public static String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
   final public static String HTTP_HEADER_X_SOLR_AUTHDATA = "X-Solr-AuthData";
 
   // Metrics
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricRegistry registry;
 
-  protected String registryName;
-  protected SolrMetricManager metricManager;
   protected Meter numErrors = new Meter();
   protected Counter requests = new Counter();
   protected Timer requestTimes = new Timer();
@@ -66,7 +60,7 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
    * @param pluginConfig Config parameters, possibly from a ZK source
    */
   public abstract void init(Map<String, Object> pluginConfig);
- 
+
   /**
    * This method attempts to authenticate the request. Upon a successful authentication, this
    * must call the next filter in the filter chain and set the user principal of the request,
@@ -107,10 +101,10 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
    * delegate to {@link PKIAuthenticationPlugin}. Return true to indicate that your plugin
    * did handle the request, or false to signal that PKI plugin should handle it. This method
    * will be called by {@link PKIAuthenticationPlugin}'s interceptor.
-   * 
+   *
    * <p>
    *   If not overridden, this method will return true for plugins implementing {@link HttpClientBuilderPlugin}.
-   *   This method can be overridden by subclasses e.g. to set HTTP headers, even if you don't use a clientBuilder. 
+   *   This method can be overridden by subclasses e.g. to set HTTP headers, even if you don't use a clientBuilder.
    * </p>
    * @param httpRequest the httpRequest that is about to be sent to another internal Solr node
    * @param httpContext the context of that request.
@@ -137,31 +131,35 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
   protected boolean interceptInternodeRequest(Request request) {
     return this instanceof HttpClientBuilderPlugin;
   }
-  
+
   /**
    * Cleanup any per request  data
    */
   public void closeRequest() {
   }
+  protected MetricsInfo metricsInfo;
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, final String scope) {
-    this.metricManager = manager;
-    this.registryName = registryName;
+  public MetricsInfo getMetricsInfo() {
+    return metricsInfo;
+  }
+
+  @Override
+  public void initializeMetrics(MetricsInfo info) {
+    metricsInfo = info.getChildInfo(this);
     // Metrics
-    registry = manager.registry(registryName);
-    numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope);
-    requests = manager.counter(this, registryName, "requests", getCategory().toString(), scope);
-    numAuthenticated = manager.counter(this, registryName, "authenticated", getCategory().toString(), scope);
-    numPassThrough = manager.counter(this, registryName, "passThrough", getCategory().toString(), scope);
-    numWrongCredentials = manager.counter(this, registryName, "failWrongCredentials", getCategory().toString(), scope);
-    numMissingCredentials = manager.counter(this, registryName, "failMissingCredentials", getCategory().toString(), scope);
-    requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
-    totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);
+    numErrors = metricsInfo.meter(this, "errors", getCategory().toString());
+    requests = metricsInfo.counter(this, "requests", getCategory().toString());
+    numAuthenticated = metricsInfo.counter(this, "authenticated",getCategory().toString());
+    numPassThrough = metricsInfo.counter(this, "passThrough",  getCategory().toString());
+    numWrongCredentials = metricsInfo.counter(this, "failWrongCredentials",getCategory().toString());
+    numMissingCredentials = metricsInfo.counter(this,  "failMissingCredentials",getCategory().toString());
+    requestTimes = metricsInfo.timer(this,"requestTimes", getCategory().toString());
+    totalTime = metricsInfo.counter(this,"totalTime", getCategory().toString());
     metricNames.addAll(Arrays.asList("errors", "requests", "authenticated", "passThrough",
         "failWrongCredentials", "failMissingCredentials", "requestTimes", "totalTime"));
   }
-  
+
   @Override
   public String getName() {
     return this.getClass().getName();
@@ -184,7 +182,7 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return registry;
+    return metricsInfo == null ? null : metricsInfo.getRegistry();
   }
-  
+
 }

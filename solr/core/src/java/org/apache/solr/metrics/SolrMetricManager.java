@@ -599,10 +599,14 @@ public class SolrMetricManager {
    */
   public Meter meter(SolrInfoBean info, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
+    return meter(info, registry(registry), name);
+  }
+
+  public Meter meter(SolrInfoBean info, MetricRegistry registry, String metricsPath) {
     if (info != null) {
-      info.registerMetricName(name);
+      info.registerMetricName(metricsPath);
     }
-    return registry(registry).meter(name, meterSupplier);
+    return registry.meter(metricsPath, meterSupplier);
   }
 
   /**
@@ -622,6 +626,14 @@ public class SolrMetricManager {
     return registry(registry).timer(name, timerSupplier);
   }
 
+  public Timer timer(SolrInfoBean info, MetricRegistry registry, String name) {
+    if (info != null) {
+      info.registerMetricName(name);
+    }
+    return registry.timer(name, timerSupplier);
+
+  }
+
   /**
    * Create or get an existing named {@link Counter}
    *
@@ -633,10 +645,15 @@ public class SolrMetricManager {
    */
   public Counter counter(SolrInfoBean info, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
+    return counter(info, registry(registry), name);
+  }
+
+  public Counter counter(SolrInfoBean info, MetricRegistry registry, String name) {
     if (info != null) {
       info.registerMetricName(name);
     }
-    return registry(registry).counter(name, counterSupplier);
+    return registry.counter(name, counterSupplier);
+
   }
 
   /**
@@ -682,13 +699,27 @@ public class SolrMetricManager {
     }
   }
 
-  /**
-   * This is a wrapper for {@link Gauge} metrics, which are usually implemented as
-   * lambdas that often keep a reference to their parent instance. In order to make sure that
-   * all such metrics are removed when their parent instance is removed / closed the
-   * metric is associated with an instance tag, which can be used then to remove
-   * wrappers with the matching tag using {@link #unregisterGauges(String, String)}.
-   */
+  public void registerGauge(SolrInfoBean info, MetricRegistry registry, Gauge<?> g, boolean force, String name) {
+    if (info != null) {
+      info.registerMetricName(name);
+    }
+    synchronized (registry) {
+      if (force && registry.getMetrics().containsKey(name)) {
+        registry.remove(name);
+      }
+      registry.register(name, g);
+    }
+
+  }
+
+
+    /**
+     * This is a wrapper for {@link Gauge} metrics, which are usually implemented as
+     * lambdas that often keep a reference to their parent instance. In order to make sure that
+     * all such metrics are removed when their parent instance is removed / closed the
+     * metric is associated with an instance tag, which can be used then to remove
+     * wrappers with the matching tag using {@link #unregisterGauges(String, String)}.
+     */
   public static class GaugeWrapper<T> implements Gauge<T> {
     private final Gauge<T> gauge;
     private final String tag;
@@ -716,20 +747,22 @@ public class SolrMetricManager {
     registerMetric(info, registry, new GaugeWrapper(gauge, tag), force, metricName, metricPath);
   }
 
-  public int unregisterGauges(String registryName, String tag) {
-    if (tag == null) {
+  public int unregisterGauges(String registryName, String tagSegment) {
+    if (tagSegment == null) {
       return 0;
     }
     MetricRegistry registry = registry(registryName);
+    if (registry == null) return 0;
     AtomicInteger removed = new AtomicInteger();
     registry.removeMatching((name, metric) -> {
-      if (metric instanceof GaugeWrapper &&
-          tag.equals(((GaugeWrapper) metric).getTag())) {
-        removed.incrementAndGet();
-        return true;
-      } else {
-        return false;
+      if (metric instanceof GaugeWrapper) {
+        GaugeWrapper wrapper = (GaugeWrapper) metric;
+        boolean toRemove = tagSegment.equals(wrapper.getTag()) || wrapper.getTag().contains(tagSegment);
+        if (toRemove) removed.incrementAndGet();
+        return toRemove;
       }
+      return false;
+
     });
     return removed.get();
   }
@@ -744,10 +777,16 @@ public class SolrMetricManager {
    * segments prepended to the name.
    */
   public static String mkName(String name, String... path) {
+    return makeName(path == null || path.length == 0 ? Collections.emptyList() : Arrays.asList(path),
+        name);
+
+  }
+
+  public static String makeName(List<String> path, String name) {
     if (name == null || name.isEmpty()) {
       throw new IllegalArgumentException("name must not be empty");
     }
-    if (path == null || path.length == 0) {
+    if (path == null || path.size() == 0) {
       return name;
     } else {
       StringBuilder sb = new StringBuilder();
@@ -766,6 +805,7 @@ public class SolrMetricManager {
       sb.append(name);
       return sb.toString();
     }
+
   }
 
   /**

@@ -863,9 +863,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    super.initializeMetrics(manager, registry, tag, scope);
-
+  public void initializeMetrics(MetricsInfo info) {
+    super.initializeMetrics(info);
+    SolrMetricManager manager = metricsInfo.metricManager;
+    String registry = metricsInfo.registry;
+    String scope = metricsInfo.scope;
+    String tag = metricsInfo.tag;
     manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
         tag, true, "indexSize", getCategory().toString(), scope);
     manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
@@ -1387,7 +1390,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     });
   }
 
-  public void close() {
+  public void shutdown() {
     if (executorService != null) executorService.shutdown();
     if (pollingIndexFetcher != null) {
       pollingIndexFetcher.destroy();

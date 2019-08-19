@@ -18,11 +18,11 @@ package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -32,7 +32,6 @@ import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +73,6 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private String description="LRU Cache";
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricRegistry registry;
   private int maxSize;
   private int initialSize;
 
@@ -281,9 +279,8 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public void close() {
-
+    if(metricsInfo != null) metricsInfo.unregister();
   }
-
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
@@ -303,9 +300,16 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     return metricNames;
   }
 
+  MetricsInfo metricsInfo;
+
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    registry = manager.registry(registryName);
+  public MetricsInfo getMetricsInfo() {
+    return metricsInfo;
+  }
+
+  @Override
+  public void initializeMetrics(MetricsInfo info) {
+    metricsInfo = info.getChildInfo(this);
     cacheMap = new MetricsMap((detailed, res) -> {
       synchronized (map) {
         res.put(LOOKUPS_PARAM, lookups);
@@ -330,7 +334,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       res.put("cumulative_evictions", stats.evictions.longValue());
       res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
     });
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    metricsInfo.metricManager.registerGauge(this, metricsInfo.registry, cacheMap, metricsInfo.tag, true, metricsInfo.scope, getCategory().toString());
   }
 
   // for unit tests only
@@ -340,7 +344,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return registry;
+    return metricsInfo ==null ?null:metricsInfo.getRegistry();
   }
 
   @Override
