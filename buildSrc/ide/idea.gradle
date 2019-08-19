@@ -15,6 +15,59 @@
  * limitations under the License.
  */
 
+def rootProjectDir = project.rootProject.projectDir
+def projectDir = project.projectDir
+
 idea {
+    module {
+
+        iml.beforeMerged {
+            // copy IDEA configuration / template files
+            if (projectDir.name == "buildSrc") {
+                copy {
+                    from file("${rootProjectDir}/dev-tools/idea/.idea")
+                    into file("${rootProjectDir}/.idea")
+                }
+                copy {
+                    from file("${rootProjectDir}/dev-tools/idea/parent.iml")
+                    into file("${rootProjectDir}")
+                }
+                copy {
+                    from file("${rootProjectDir}/dev-tools/idea/dev-tools/scripts")
+                    into file("${rootProjectDir}/dev-tools/scripts")
+                }
+            } else {
+                copy {
+                    def tmplPath = projectDir.canonicalPath.replaceFirst(rootProjectDir.canonicalPath, "")
+                    from file("${rootProjectDir}/dev-tools/idea${tmplPath}")
+                    into file("${projectDir}")
+                }
+            }
+        }
+
+        iml.whenMerged {
+            // if .iml exists, fix module name
+            def imlFiles = fileTree(dir: ".", include: "*.iml").files.name
+            if (!imlFiles.isEmpty()) {
+                def imlFile = imlFiles.get(0)
+                name = imlFile.substring(0, imlFile.length() - 4)
+            }
+        }
+    }
 
 }
+
+
+task cleanUpCustomConfig() {
+    doLast {
+        if (projectDir.name == "buildSrc") {
+            delete file("${rootProjectDir}/.idea")
+            delete file("${rootProjectDir}/parent.iml")
+            delete file("${rootProjectDir}/dev-tools/scripts/scripts.iml")
+        } else {
+            delete fileTree(".") { include "**/*.iml" }
+        }
+    }
+}
+
+tasks.cleanIdea.dependsOn cleanUpCustomConfig
