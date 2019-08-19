@@ -94,49 +94,8 @@ to copy a numeric column from a list of tuples into an array.
 
 The expression below demonstrates the vectorization of the count(*) field.
 
-[source,text]
-----
-let(a=timeseries(collection1,
-                 q=*:*,
-                 field="test_dt",
-                 start="2012-01-20T17:33:18Z",
-                 end="2012-12-20T17:33:18Z",
-                 gap="+1MONTH",
-                 format="yyyy-MM",
-                 count(*)),
-    b=col(a, count(*)))
-----
+image::images/math-expressions/timeseries2.png[]
 
-When this expression is sent to the `/stream` handler it responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "b": [
-          8703,
-          8648,
-          8621,
-          8533,
-          8792,
-          8598,
-          8679,
-          8469,
-          8637,
-          8536,
-          8785
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 5
-      }
-    ]
-  }
-}
-----
 
 == Smoothing
 
@@ -164,48 +123,8 @@ begin generating results at the 3rd value. The prior values are not included in 
 
 This is true for all the sliding window functions.
 
-[source,text]
-----
-let(a=timeseries(collection1,
-                 q=*:*,
-                 field="test_dt",
-                 start="2012-01-20T17:33:18Z",
-                 end="2012-12-20T17:33:18Z",
-                 gap="+1MONTH",
-                 format="YYYY-MM",
-                 count(*)),
-    b=col(a, count(*)),
-    c=movingAvg(b, 3))
-----
 
-When this expression is sent to the `/stream` handler it responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "c": [
-          8657.333333333334,
-          8600.666666666666,
-          8648.666666666666,
-          8641,
-          8689.666666666666,
-          8582,
-          8595,
-          8547.333333333334,
-          8652.666666666666
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 7
-      }
-    ]
-  }
-}
-----
+image::images/math-expressions/movingavg.png[]
 
 === Exponential Moving Average
 
@@ -215,47 +134,8 @@ less of a lagging indicator then the simple moving average.
 
 Below is an example that computes an exponential moving average:
 
-[source,text]
-----
-let(a=timeseries(collection1, q=*:*,
-                 field="test_dt",
-                 start="2012-01-20T17:33:18Z",
-                 end="2012-12-20T17:33:18Z",
-                 gap="+1MONTH",
-                 format="YYYY-MM",
-                 count(*)),
-    b=col(a, count(*)),
-    c=expMovingAvg(b, 3))
-----
+image::images/math-expressions/expmoving.png[]
 
-When this expression is sent to the `/stream` handler it responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "c": [
-          8657.333333333334,
-          8595.166666666668,
-          8693.583333333334,
-          8645.791666666668,
-          8662.395833333334,
-          8565.697916666668,
-          8601.348958333334,
-          8568.674479166668,
-          8676.837239583334
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 5
-      }
-    ]
-  }
-}
-----
 
 === Moving Median
 
@@ -264,48 +144,7 @@ In many cases the moving median will be more *robust* to outliers then moving av
 
 Below is an example computing the moving median:
 
-[source,text]
-----
-let(a=timeseries(collection1,
-                 q=*:*,
-                 field="test_dt",
-                 start="2012-01-20T17:33:18Z",
-                 end="2012-12-20T17:33:18Z",
-                 gap="+1MONTH",
-                 format="YYYY-MM",
-                 count(*)),
-    b=col(a, count(*)),
-    c=movingMedian(b, 3))
-----
-
-When this expression is sent to the `/stream` handler it responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "c": [
-          8648,
-          8621,
-          8621,
-          8598,
-          8679,
-          8598,
-          8637,
-          8536,
-          8637
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 7
-      }
-    ]
-  }
-}
-----
+image::images/math-expressions/movingMedian.png[]
 
 
 == Differencing
