@@ -157,6 +157,8 @@ Bug Fixes
 
 * SOLR-13701: Fixed JWTAuthPlugin to update metrics prior to continuing w/other filters or returning error (hossman)
 
+* SOLR-6328: facet.missing=true should return missing count even when facet.limit=0 (hossman, Munendra S N)
+
 Other Changes
 ----------------------
 
