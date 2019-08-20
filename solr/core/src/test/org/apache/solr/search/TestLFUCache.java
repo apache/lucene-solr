@@ -472,7 +472,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
     // no evictions yet
     assertEquals(6, cache.size());
     // this sets minSize = 4, evictions will target minSize
-    cache.setResourceLimit(SolrCache.SIZE_PARAM, 5);
+    cache.setMaxSize(5);
     // should not happen yet - evictions are triggered by put
     assertEquals(6, cache.size());
     cache.put("6", "foo 6");
@@ -487,7 +487,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
 
     // scale up
 
-    cache.setResourceLimit(SolrCache.SIZE_PARAM, 10);
+    cache.setMaxSize(10);
     for (int i = 0; i < 6; i++) {
       cache.put("new" + i, "bar " + i);
     }

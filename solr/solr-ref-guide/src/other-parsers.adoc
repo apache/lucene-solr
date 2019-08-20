@@ -1042,6 +1042,7 @@ The XmlQParser implementation uses the {solr-javadocs}/solr-core/org/apache/solr
 |<MatchAllDocsQuery> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/MatchAllDocsQueryBuilder.html[MatchAllDocsQueryBuilder]
 |<RangeQuery> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/RangeQueryBuilder.html[RangeQueryBuilder]
 |<SpanFirst> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/SpanFirstBuilder.html[SpanFirstBuilder]
+|<SpanPositionRange> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/SpanPositionRangeBuilder.html[SpanPositionRangeBuilder]
 |<SpanNear> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/SpanNearBuilder.html[SpanNearBuilder]
 |<SpanNot> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/SpanNotBuilder.html[SpanNotBuilder]
 |<SpanOr> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/SpanOrBuilder.html[SpanOrBuilder]

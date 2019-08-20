@@ -30,6 +30,11 @@ API Changes
 * LUCENE-8909: The deprecated IndexWriter#getFieldNames() method has been removed.
   (Adrien Grand, Munendra S N)
 
+* LUCENE-8948: Change "name" argument in ICU factories to "form". Here, "form" is
+  named after "Unicode Normalization Form". (Tomoko Uchida)
+
+* LUCENE-8933: Validate JapaneseTokenizer user dictionary entry. (Tomoko Uchida)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -63,6 +68,13 @@ New Features
 
 * LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)
 
+* LUCENE-8764: Add "export all terms" feature to Luke. (Leonardo Menezes via Tomoko Uchida)
+
+* LUCENE-8747: Composite Matches from multiple subqueries now allow access to
+  their submatches, and a new NamedMatches API allows marking of subqueries
+  and a simple way to find which subqueries have matched on a given document
+  (Alan Woodward, Jim Ferenczi)
+
 Improvements
 
 * LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
@@ -81,6 +93,8 @@ Improvements
 * LUCENE-8906: Expose Lucene50PostingsFormat.IntBlockTermState as public so that other postings formats can re-use it.
   (Bruno Roustant)
 
+* SOLR-13663: Introduce <SpanPositionRange> into XML Query Parser (Alessandro Benedetti via Mikhail Khludnev)
+
 Optimizations
 
 * LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
@@ -88,6 +102,9 @@ Optimizations
 
 * LUCENE-8935: BooleanQuery with no scoring clause can now early terminate the query when
 the total hits is not requested.
+
+* LUCENE-8941: Matches on wildcard queries will defer building their full
+  disjunction until a MatchesIterator is pulled (Alan Woodward)
 
 Other
 

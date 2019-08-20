@@ -46,7 +46,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FilesStream extends TupleStream implements Expressible {
+public class CatStream extends TupleStream implements Expressible {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String commaDelimitedFilepaths;
@@ -60,11 +60,11 @@ public class FilesStream extends TupleStream implements Expressible {
   private CrawlFile currentFilePath;
   private LineIterator currentFileLines;
 
-  public FilesStream(StreamExpression expression, StreamFactory factory) throws IOException {
+  public CatStream(StreamExpression expression, StreamFactory factory) throws IOException {
     this(factory.getValueOperand(expression, 0), factory.getIntOperand(expression, "maxLines", -1));
   }
 
-  public FilesStream(String commaDelimitedFilepaths, int maxLines) {
+  public CatStream(String commaDelimitedFilepaths, int maxLines) {
     if (commaDelimitedFilepaths == null) {
       throw new IllegalArgumentException("No filepaths provided to stream");
     }

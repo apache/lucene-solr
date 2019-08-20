@@ -149,19 +149,18 @@ public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
 
 
   public static ByteBuffer generateZip(Class... classes) throws IOException {
-    ZipOutputStream zipOut = null;
     SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
-    zipOut = new ZipOutputStream(bos);
-    zipOut.setLevel(ZipOutputStream.DEFLATED);
-    for (Class c : classes) {
-      String path = c.getName().replace('.', '/').concat(".class");
-      ZipEntry entry = new ZipEntry(path);
-      ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
-      zipOut.putNextEntry(entry);
-      zipOut.write(b.array(), 0, b.limit());
-      zipOut.closeEntry();
+    try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
+      zipOut.setLevel(ZipOutputStream.DEFLATED);
+      for (Class c : classes) {
+        String path = c.getName().replace('.', '/').concat(".class");
+        ZipEntry entry = new ZipEntry(path);
+        ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
+        zipOut.putNextEntry(entry);
+        zipOut.write(b.array(), 0, b.limit());
+        zipOut.closeEntry();
+      }
     }
-    zipOut.close();
     return bos.getByteBuffer();
   }
 
