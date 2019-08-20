@@ -903,7 +903,11 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       tag = tag.replace("/", "");
       if (plugin.options.contains(PluginOpts.REQUIRE_NAME)) {
         LinkedHashMap items = new LinkedHashMap();
-        for (PluginInfo info : infos) items.put(info.name, info);
+        for (PluginInfo info : infos) {
+          //TODO remove after fixing https://issues.apache.org/jira/browse/SOLR-13706
+          if (info.type.equals("searchComponent") && info.name.equals("highlight")) continue;
+          items.put(info.name, info);
+        }
         for (Map.Entry e : overlay.getNamedPlugins(plugin.tag).entrySet()) items.put(e.getKey(), e.getValue());
         result.put(tag, items);
       } else {
