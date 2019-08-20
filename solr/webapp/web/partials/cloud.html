@@ -67,7 +67,7 @@ limitations under the License.
               {{host[key]}}
             </td>
           </tr>
-          <tr ng-repeat="key in ensembleDetailKeys" ng-show="showDetails && zkState.mode === 'ensemble'">
+          <tr ng-repeat="key in ensembleDetailKeys | filter: notEmptyRow" ng-show="showDetails && zkState.mode === 'ensemble'">
             <td>{{key}}</td>
             <td ng-repeat="host in zkState.details">
               {{host[key]}}

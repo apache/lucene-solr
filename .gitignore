@@ -28,4 +28,5 @@ pom.xml
 .pydevproject
 __pycache__
 /dev-tools/scripts/scripts.iml
+.DS_Store
 

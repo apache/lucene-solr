@@ -95,6 +95,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
     PluginInfo pi2 = new PluginInfo(nodeWithAClass, "Node with a Class", false, true);
     assertTrue(pi2.className.equals("myName"));
   }
+
   @Test
   public void testIsEnabled() throws Exception {
     Node node = getNode("<plugin enable=\"true\" />", "plugin");
@@ -105,6 +106,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
     assertFalse(pi.isEnabled());
     
   }
+
   @Test
   public void testIsDefault() throws Exception {
     Node node = getNode("<plugin default=\"true\" />", "plugin");
@@ -115,6 +117,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
     assertFalse(pi.isDefault());
     
   }
+
   @Test
   public void testNoChildren() throws Exception{
     Node node = getNode(configWithNoChildren, "/plugin");
@@ -143,9 +146,8 @@ public class PluginInfoTest extends DOMUtilTestBase {
     PluginInfo pi2 = new PluginInfo(node2, "with No Children", false, false);
     PluginInfo noChild = pi2.getChild("long");
     assertNull(noChild);
-    
-    
   }
+
   @Test
   public void testChildren() throws Exception {
     Node node = getNode(configWith2Children, "plugin");
@@ -157,6 +159,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
       assertTrue( childInfo instanceof PluginInfo );
     }
   }
+
   @Test
   public void testInitArgsCount() throws Exception {
     Node node = getNode(configWithNoChildren, "plugin");

@@ -22,7 +22,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.core.RuntimeLib;
+import org.apache.solr.metrics.SolrMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,12 +31,24 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  private final CacheConfig factory;
+  private CacheConfig.CacheInfo info;
   protected volatile SolrCache<K, V> delegate;
 
-  public SolrCacheHolder(SolrCache<K, V> delegate, CacheConfig factory) {
-    this.delegate = delegate;
-    this.factory = factory;
+
+
+  public SolrCacheHolder(CacheConfig.CacheInfo cacheInfo) {
+    this.info = cacheInfo;
+    this.delegate = cacheInfo.cache;
+    if(info.pkg != null){
+      info.core.addPackageListener(info.pkg, lib -> reloadCache(lib));
+    }
+  }
+
+  private void reloadCache(RuntimeLib lib) {
+    if (lib.getZnodeVersion() > info.znodeVersion) {
+      info = new CacheConfig.CacheInfo(info.cfg, info.core);
+      delegate = info.cache;
+    }
   }
 
   public int size() {
@@ -81,16 +94,24 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   }
 
   @Override
-  public Map<String, Object> getResourceLimits() {
-    return delegate.getResourceLimits();
+  public int getMaxSize() {
+    return delegate.getMaxSize();
   }
 
   @Override
-  public void setResourceLimit(String limitName, Object value) throws Exception {
-    delegate.setResourceLimit(limitName, value);
-
+  public void setMaxSize(int maxSize) {
+    delegate.setMaxSize(maxSize);
   }
 
+  @Override
+  public int getMaxRamMB() {
+    return delegate.getMaxRamMB();
+  }
+
+  @Override
+  public void setMaxRamMB(int maxRamMB) {
+    delegate.setMaxRamMB(maxRamMB);
+  }
 
   public void warm(SolrIndexSearcher searcher, SolrCacheHolder src) {
     delegate.warm(searcher, src.get());
@@ -133,9 +154,8 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-
-    delegate.initializeMetrics(manager, registry, tag,scope);
+  public void initializeMetrics(SolrMetrics info) {
+    delegate.initializeMetrics(info);
 
   }
 

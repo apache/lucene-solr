@@ -83,6 +83,7 @@ public abstract class AbstractAnalysisFactory {
       }
     }
     args.remove(CLASS_NAME);  // consume the class arg
+    args.remove(SPI_NAME);    // consume the spi arg
   }
   
   public final Map<String,String> getOriginalArgs() {
@@ -316,6 +317,8 @@ public abstract class AbstractAnalysisFactory {
   }
 
   private static final String CLASS_NAME = "class";
+
+  private static final String SPI_NAME = "name";
   
   /**
    * @return the string used to specify the concrete class name in a serialized representation: the class arg.  

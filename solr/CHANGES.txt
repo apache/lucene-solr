@@ -60,6 +60,8 @@ Upgrade Notes
 * SOLR-11266: default Content-Type override for JSONResponseWriter from _default configSet is removed. Example has been
   provided in sample_techproducts_configs to override content-type. (Ishan Chattopadhyaya, Munendra S N, Gus Heck)
 
+* SOLR-13593: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
+
 Other Changes
 ----------------------
 
@@ -78,6 +80,16 @@ Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
 Jetty 9.4.19.v20190610
 
+Upgrade Notes
+----------------------
+
+* Users who have written test cases that extend SolrTestCaseJ4 may see NullPointerExceptions if
+  their tests directly reference both SolrTestCaseJ4.initCoreDataDir and SolrTestCaseJ4.deleteCore().
+  This change in behavior is due to a bug fix in deleteCore() to ensure the dataDir is properly reset
+  in tests that call initCore()/deleteCore() multiple times in a given test (class).  initCoreDataDir
+  is now deprecated, and users are encouraged to use SolrTestCaseJ4.initAndGetDataDir() in it's place.
+  See SOLR-13664 for more details.
+
 New Features
 ----------------------
 
@@ -85,14 +97,22 @@ New Features
   of two fields. (Gus Heck)
 
 * SOLR-13399: SPLITSHARD implements a new splitByPrefix option that takes into account the actual document distribution
-  when using compositeIds.  The id prefix should be indexed into the "id_prefix" field for this feature to work.
-  (yonik)
+  when using compositeIds.  Document distribution is calculated using the "id_prefix" field (if it exists) containing
+  just the compositeId prefixes, or directly from the indexed "id" field otherwise. (yonik, Megan Carey)
 
 * SOLR-13565: Node level runtime libs loaded from remote urls  (noble)
 
 * SOLR-13553: Node level custom RequestHandlers (noble)
 
-* SOLR-13622: Add files() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
+* SOLR-13622: Add cat() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
+
+* SOLR-11866: QueryElevationComponent can have query rules configured with match="subset" wherein the words need only
+  match a subset of the query's words and in any order.  (Bruno Roustant via David Smiley)
+
+* SOLR-13682: command line option to export documents to a file (noble)
+
+* SOLR-13650: Solr now can define and add "packages" with plugins. Each plugin can choose to
+  load from one of those packages & updating packages can reload those plugins independently (noble)
 
 Improvements
 ----------------------
@@ -100,19 +120,49 @@ Improvements
 * SOLR-12368: Support InPlace DV updates for a field that does not yet exist in any documents
 (hossman, Simon Willnauer, Adrien Grand, Munendra S N)
 
-* SOLR-13558: Allow dynamic resizing of SolrCache-s. (ab)
+* SOLR-13558, SOLR-13693: Allow dynamic resizing of SolrCache-s. (ab)
+
+* SOLR-6305: Ability to set the replication factor for index files created by HDFSDirectoryFactory (Boris Pasko via Kevin Risden)
+
+* SOLR-13677: All Metrics Gauges should be unregistered by the objects that registered them (noble)
 
 Bug Fixes
 ----------------------
 
 * SOLR-13206: Fix AIOOBE when group.facet is specified with group.query and return proper error code. (Marek, Munendra S N)
 
-* SOLR-11556: Backup and restore command really supports picking one of a few repositories by 
-  repository parameter (Timothy Potter via Mikhail Khludnev) 
+* SOLR-11556: Backup and restore command really supports picking one of a few repositories by
+  repository parameter (Timothy Potter via Mikhail Khludnev)
+
+* SOLR-13647: Default solr.in.sh contains incorrect default value (John Ryan)
 
 * SOLR-13660: Fixed AbstractFullDistribZkTestBase.waitForActiveReplicaCount() to ensure
   replicas are active. (hossman)
 
+* SOLR-13664: Fixed SolrTestCaseJ4.deleteCore() to properly reset the dataDir used by initCore()
+  (hossman)
+
+* SOLR-13679: Default style of ExplainDocTransformer registered via solrconfig.xml should be same as default style
+  of ExplainDocTransformer registered in defaultFactories (Munendra S N)
+
+* SOLR-13672: Cloud -> Zk Status page now parses response from Zookeeper 3.5.5 correctly (Jörn Franke, janhoy, Shawn Heisey)
+
+* SOLR-13674: NodeAddedTrigger does not support configuration of replica type hint. A new replicaType property
+  has been added to NodeAddTrigger so that new replicas of the given type are added. The default value is `NRT`.
+  (Irena Shaigorodsky via shalin)
+
+* SOLR-13141: CDCR bootstrap does not replicate index to the replicas of target cluster.
+  (Krzysztof Watral, Amrit Sarkar, Tim, Tdspringsteen, shalin)
+
+* SOLR-13694: IndexSizeEstimator NullPointerException. (ab, hossman)
+
+* SOLR-13700: Fixed a race condition when initializing metrics for new security plugins on security.json change (hossman)
+
+* SOLR-13701: Fixed JWTAuthPlugin to update metrics prior to continuing w/other filters or returning error (hossman)
+
+* SOLR-6328: facet.missing=true should return missing count even when facet.limit=0 (hossman, Munendra S N)
+
+* SOLR-13704: Improve error message and change error code to 400 for client errors in ExpandComponent (Munendra S N)
 
 Other Changes
 ----------------------
@@ -128,6 +178,12 @@ Other Changes
 * SOLR-13643: Add Getters/Setters in ResponseBuilder for analytics response handling (Neal Sidhwaney via Munendra S N)
 
 * SOLR-13659: Refactor CacheConfig to lazily load the the implementation class (noble)
+
+* SOLR-13680: Use try-with-resource to close the closeable resource (Furkan KAMACI, Munendra S N)
+
+* SOLR-13573: Add SolrRangeQuery getters for upper, lower bound (Brian Rhees via Jason Gerlowski)
+
+* SOLR-13658: Precommit fail Java "var" until 9x. Fail "var...<>" constructs entirely (Erick Erickson)
 
 ==================  8.2.0 ==================
 

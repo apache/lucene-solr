@@ -690,13 +690,9 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
   private void assertBadInterval(String fieldName, String intervalStr, String errorMsg) {
     SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
-    try {
-      new FacetInterval(f, intervalStr, new ModifiableSolrParams());
-      fail("Expecting SyntaxError for interval String: " + intervalStr);
-    } catch (SyntaxError e) {
-      assertTrue("Unexpected error message for interval String: " + intervalStr + ": " +
-          e.getMessage(), e.getMessage().contains(errorMsg));
-    }
+    SyntaxError e = expectThrows(SyntaxError.class,  () -> new FacetInterval(f, intervalStr, new ModifiableSolrParams()));
+    assertTrue("Unexpected error message for interval String: " + intervalStr + ": " +
+        e.getMessage(), e.getMessage().contains(errorMsg));
   }
 
   private void assertInterval(String fieldName, String intervalStr, long[] included, long[] lowerThanStart, long[] graterThanEnd) throws SyntaxError {
