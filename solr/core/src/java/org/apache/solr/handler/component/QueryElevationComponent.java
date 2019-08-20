@@ -1222,7 +1222,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         }
 
         @Override
-        public Integer leafValue(int docID) throws IOException {
+        public Integer getDocValue(int docID) throws IOException {
           return docVal(docID);
         }
       };

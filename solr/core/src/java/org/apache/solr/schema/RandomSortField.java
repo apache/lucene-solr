@@ -156,7 +156,7 @@ public class RandomSortField extends FieldType {
         }
 
         @Override
-        public Integer leafValue(int docID) throws IOException {
+        public Integer getDocValue(int docID) throws IOException {
           return hash(docID + seed);
         }
       };

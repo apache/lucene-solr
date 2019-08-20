@@ -219,7 +219,7 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
 
   //TODO: Implement this
   @Override
-  public Double leafValue(int docID) throws IOException {
+  public Double getDocValue(int docID) throws IOException {
     throw new UnsupportedOperationException("This comparator does not support getting leaf values");
   }
 

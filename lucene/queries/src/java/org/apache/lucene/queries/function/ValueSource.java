@@ -444,7 +444,7 @@ public abstract class ValueSource {
     }
 
     @Override
-    public Double leafValue(int docID) throws IOException {
+    public Double getDocValue(int docID) throws IOException {
       return docVals.doubleVal(docID);
     }
   }
