@@ -74,8 +74,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     credentials = new LinkedHashMap<>();
     Map<String,String> users = (Map<String,String>) pluginConfig.get("credentials");
     if (users == null) {
-      log.debug("No users configured yet");
-      return;
+      throw new IllegalStateException("No users configured yet. At least one user must be configured in security.json");
     }
     for (Map.Entry<String, String> e : users.entrySet()) {
       String v = e.getValue();
@@ -142,7 +141,15 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
           cmd.addError("No such user(s) " +names );
           return null;
         }
-        for (String name : names) map.remove(name);
+        for (String name : names) {
+          if (map.containsKey(name)) {
+            if (map.size() == 1){
+              cmd.addError("You cannot delete the last user. At least one user must be configured at all times.");
+              return null;
+            }
+          }
+          map.remove(name);
+        }
         return latestConf;
       }
       if ("set-user".equals(cmd.name) ) {
