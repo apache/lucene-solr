@@ -208,15 +208,64 @@ image::images/math-expressions/seasondiff.png[]
 
 == Anomaly Detection
 
+The `movingMAD` (moving mean absolute deviation) function can be used to surface anomalies
+in a time series by measuring dispersion (deviation from the mean) within a sliding window.
 
-The `movingMAD` (moving mean absolute deviation) can be used to
-detecting
+The `movingMAD` function operates in a similar manner as a moving average, except it
+measures the mean absolute deviation within the window rather then the average. By
+looking for unusually high or low dispersion we can find anomalies in the time
+series.
+
+For this example we'll be working with daily stock prices for Amazon over a two year
+period. The daily stock data will provide a larger data set to study.
+
+In the example below the `search` expression is used to return the daily closing price
+for the ticker *amzn* over a two year period.
 
 image::images/math-expressions/anomaly.png[]
 
+The next step is to apply the `movingMAD` function to the data to calculate
+the moving mean absolute deviation over a 10 day window. The example below shows the function being
+applied and visualized.
+
 image::images/math-expressions/mad.png[]
 
+Once the moving MAD has been calculated we can visualize the distribution of dispersion
+with the `empiricalDistribution` function. The example below plots the empirical
+distribution with 10 bins, creating a 10 bin histogram of the dispersion of the
+time series.
+
+This visualization shows that most of the mean absolute deviations fall between 0 and
+9.2 with the mean of the final bin at 11.94.
+
 image::images/math-expressions/maddist.png[]
+
+The final step is to detect outliers in the data set using the `outliers` function.
+The `outliers` function takes four parameters:
+
+* Probability distribution
+* Numeric vector
+* Low probability threshold
+* High probablity threshold
+* List of results that the vector of numbers was selected from.
+
+The `outliers` function iterates the numeric vector and uses the probability
+distribution to calculate the cumulative probability of each value. If the cumulative
+value is below the low probability threshold or above the high threshold it considers
+the value an outlier. When the `outliers` function encounters an outlier it returns
+the corresponding result from the list of results provided as the fifth parameter.
+It also includes the cumulative probability and the value of the outlier.
+
+The example below shows the `outliers` function applied to the Amazon stock
+price data set. The empirical distribution of the moving mean absolute deviation is
+the first parameter. The vector containing the moving mean absolute
+deviations is the second parameter. -1 is the low and .99 is the high probability
+thresholds. -1 means that low outliers will not be considered. The final parameter
+is the original result set containing the *close_d* and *date_dt* fields.
+
+The output of the `outliers` function contains the results where an outlier was detected.
+In this case 5 results above the .99 probability threshold were detected.
+
 
 image::images/math-expressions/outliers.png[]
 
