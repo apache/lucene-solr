@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.search.CollapsingQParserPlugin;
 import org.junit.Before;
@@ -44,8 +45,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-
-
   @Test
   public void testExpand() throws Exception {
     List<String> groups = new ArrayList<>();
@@ -57,7 +56,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
 
     String hint = (random().nextBoolean() ? " hint="+ CollapsingQParserPlugin.HINT_TOP_FC : "");
 
-     _testExpand(groups.get(0), floatAppend, hint);
+    _testExpand(groups.get(0), floatAppend, hint);
   }
 
   @Test
@@ -77,7 +76,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
 
     String hint = "";
 
-      _testExpand(groups.get(0), floatAppend, hint);
+    _testExpand(groups.get(0), floatAppend, hint);
   }
 
   private void _testExpand(String group, String floatAppend, String hint) throws Exception {
@@ -330,5 +329,52 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("expand.rows", "10");
 
     assertQ(req(params), "*[count(//doc)=0]");
+  }
+
+  @Test
+  public void testErrorCases() {
+    String[] doc = {"id","1", "term_s", "YYYY", "text_t", "bleh bleh", "test_i", "5000", "test_l", "100", "test_f", "200"};
+    assertU(adoc(doc));
+    assertU(commit());
+    String[] doc1 = {"id","2", "term_s", "YYYY", "text_t", "bleh bleh", "test_i", "500", "test_l", "1000", "test_f", "2000"};
+    assertU(adoc(doc1));
+
+    ignoreException("missing expand field");
+    ignoreException("Expected identifier at pos 2");
+    ignoreException("Can't determine a Sort Order");
+    ignoreException("Expand not supported for fieldType:'text'");
+
+    // no expand field
+    SolrException e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertEquals("missing expand field", e.getMessage());
+
+    // query and filter syntax errors
+    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+        "expand.field", "term_s", "expand.q", "{!")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("Expected identifier at pos 2 str='{!'"));
+
+    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+        "expand.field", "term_s", "expand.q", "*:*", "expand.fq", "{!")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("Expected identifier at pos 2 str='{!'"));
+
+    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+        "expand.field", "term_s", "expand.q", "*:*", "expand.fq", "{!")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("Expected identifier at pos 2 str='{!'"));
+
+    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+        "expand.field", "term_s", "expand.q", "*:*", "expand.sort", "bleh")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("Can't determine a Sort Order (asc or desc) in sort spec 'bleh'"));
+
+    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+        "expand.field", "text_t", "expand.q", "*:*")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertEquals("Expand not supported for fieldType:'text'", e.getMessage());
+
+    resetExceptionIgnores();
   }
 }

@@ -110,6 +110,8 @@ Bug Fixes
 
 * SOLR-6328: facet.missing=true should return missing count even when facet.limit=0 (hossman, Munendra S N)
 
+* SOLR-13704: Improve error message and change error code to 400 for client errors in ExpandComponent (Munendra S N)
+
 Other Changes
 ----------------------
 
