@@ -84,7 +84,6 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
     }
   }
 
-  @Test(expected = IllegalStateException.class)
   public void testBasicAuthDeleteFinalUser() throws IOException {
     try (BasicAuthPlugin basicAuthPlugin = new BasicAuthPlugin()) {
       Map<String, Object> config =
@@ -92,8 +91,11 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
       basicAuthPlugin.init(config);
       assertTrue(basicAuthPlugin.authenticate("solr", "SolrRocks"));
 
-      CommandOperation deleteUser = new CommandOperation("delete-user", Collections.singletonMap("", Arrays.asList("solr")));
+      CommandOperation deleteUser = new CommandOperation("delete-user", "solr");
+      assertFalse(deleteUser.hasError());
       basicAuthPlugin.edit(config, Arrays.asList(deleteUser));
+      assertTrue(deleteUser.hasError());
+      assertTrue(deleteUser.getErrors().contains(Sha256AuthenticationProvider.CANNOT_DELETE_LAST_USER_ERROR));
     }
   }
 

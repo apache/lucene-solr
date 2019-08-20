@@ -40,6 +40,8 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
 
 public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  BasicAuthPlugin.AuthenticationProvider {
+
+  static String CANNOT_DELETE_LAST_USER_ERROR = "You cannot delete the last user. At least one user must be configured at all times.";
   private Map<String, String> credentials;
   private String realm;
   private Map<String, String> promptHeader;
@@ -144,7 +146,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
         for (String name : names) {
           if (map.containsKey(name)) {
             if (map.size() == 1){
-              cmd.addError("You cannot delete the last user. At least one user must be configured at all times.");
+              cmd.addError(CANNOT_DELETE_LAST_USER_ERROR);
               return null;
             }
           }
