@@ -87,10 +87,6 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
         throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid value for parameter " + FORWARD_CREDENTIALS);
       }
     }
-    ///scratch paper
-
-
-    ///end scratch paper
 
     authenticationProvider = getAuthenticationProvider(pluginConfig);
   }
