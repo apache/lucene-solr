@@ -164,49 +164,16 @@ The result array length is one value smaller then the original array.
 This is because the `diff` function only returns a result for values
 where the prior value has been subtracted.
 
-[source,text]
-----
-let(a=timeseries(collection1,
-                 q=*:*,
-                 field="test_dt",
-                 start="2012-01-20T17:33:18Z",
-                 end="2012-12-20T17:33:18Z",
-                 gap="+1MONTH",
-                 format="YYYY-MM",
-                 count(*)),
-    b=col(a, count(*)),
-    c=diff(b))
-----
 
-When this expression is sent to the `/stream` handler it responds with:
+image::images/math-expressions/timecompare.png[]
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "c": [
-          -55,
-          -27,
-          -88,
-          259,
-          -194,
-          81,
-          -210,
-          168,
-          -101,
-          249
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 11
-      }
-    ]
-  }
-}
-----
+image::images/math-expressions/diff1.png[]
+
+image::images/math-expressions/diffzoom.png[]
+
+image::images/math-expressions/diffcorr.png[]
+
+
 
 === Lagged Differences
 
@@ -222,38 +189,10 @@ behind the current index. Notice that result set size is the original array size
 This is because the `diff` function only returns results for values where the lag of 4
 is possible to compute.
 
-[source,text]
-----
-let(a=array(1,2,5,2,1,2,5,2,1,2,5),
-     b=diff(a, 4))
-----
+image::images/math-expressions/season.png[]
 
-Expression is sent to the `/stream` handler it responds with:
+image::images/math-expressions/seasondiff.png[]
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "b": [
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
 
 == Anomaly Detection
 
@@ -265,13 +204,17 @@ image::images/math-expressions/anomaly.png[]
 
 image::images/math-expressions/mad.png[]
 
-image::images/math-expressions/madsort.png[]
-
 image::images/math-expressions/maddist.png[]
 
 image::images/math-expressions/outliers.png[]
 
 
+== Modeling
+
+image::images/math-expressions/timemodel.png[]
+
+
 
 == Forecasting
 
+image::images/math-expressions/forecast.png[]
