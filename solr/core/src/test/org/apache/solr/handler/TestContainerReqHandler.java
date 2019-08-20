@@ -67,6 +67,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.cloud.TestCryptoKeys.readFile;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
@@ -583,7 +584,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
         "          \"initialSize\":\"512\" , \"package\":\"cache_pkg\"}}}}";
     MiniSolrCloudCluster cluster = configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"),
-            Collections.singletonMap(ConfigOverlay.RESOURCE_NAME, overlay.getBytes()))
+            Collections.singletonMap(ConfigOverlay.RESOURCE_NAME, overlay.getBytes(UTF_8)))
         .configure();
     try {
       String payload = "{add-package:{name : 'cache_pkg', url: 'http://localhost:" + port + "/jar1.jar', " +
