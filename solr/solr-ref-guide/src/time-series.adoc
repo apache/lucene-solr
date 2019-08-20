@@ -148,9 +148,8 @@ image::images/math-expressions/movingMedian.png[]
 
 == Differencing
 
-Differencing is often used to remove the
-trend or seasonality from a time series. This is known as making a time series
-*stationary*.
+Differencing can be used to make
+a time series stationary by removing the trend or seasonality from data.
 
 === First Difference
 
@@ -159,17 +158,30 @@ original values. The *first difference* takes the difference between a value and
 that came directly before it. The first difference is often used to remove the trend
 from a time series.
 
-In the example below, the `diff` function computes the first difference of a time series.
-The result array length is one value smaller then the original array.
-This is because the `diff` function only returns a result for values
-where the prior value has been subtracted.
+The examples below use the first difference to make two time series stationary so they can be compared
+without the trend.
 
+In this example we'll be comparing the average monthly closing price for two stocks: Amazon and Google.
+The image below plots both time series before differencing is applied.
 
 image::images/math-expressions/timecompare.png[]
 
+In the next example the `diff` function is applied to both time series inside the `zplot` function.
+The `diff` can be applied inside the `zplot` function or like any other function inside of the `let`
+function.
+
+Notice that both time series now have the trend removed and the monthly movements of the stock price
+can be studied without being influenced by the trend.
+
 image::images/math-expressions/diff1.png[]
 
+In the next example the `zoom` function of the time series visualization is used to zoom into a specific
+range of months. This allows for closer inspection of the data. With closer inspection of the data there appears
+to be some correlation between the monthly movements of the two stocks.
+
 image::images/math-expressions/diffzoom.png[]
+
+In the final example the differenced time series are correlated with the `corr` function.
 
 image::images/math-expressions/diffcorr.png[]
 
