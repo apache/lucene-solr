@@ -117,6 +117,11 @@ public interface LeafFieldComparator<T> {
   void setScorer(Scorable scorer) throws IOException;
 
   /** Publishes feature values for the given docID
+   *  The passed in docID values should only move ahead --
+   *  DocValues do not support reverse iterations.
+   *  WARNING: Can be a costly API, especially for sorted fields
+   *
+   *  @param doc docID relative to current reader
    */
-  T leafValue(int doc) throws IOException;
+  T getDocValue(int doc) throws IOException;
 }

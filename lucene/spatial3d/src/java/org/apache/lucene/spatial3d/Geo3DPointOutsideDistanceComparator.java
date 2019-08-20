@@ -122,7 +122,7 @@ class Geo3DPointOutsideDistanceComparator extends FieldComparator<Double> implem
   }
 
   @Override
-  public Double leafValue(int docID) throws IOException {
+  public Double getDocValue(int docID) throws IOException {
     return computeMinimumDistance(docID);
   }
 

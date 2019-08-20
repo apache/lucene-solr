@@ -196,7 +196,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
         public void setScorer(Scorable scorer) {}
 
         @Override
-        public Integer leafValue(int docID) throws IOException {
+        public Integer getDocValue(int docID) throws IOException {
           return docVal(docID);
         }
       };

@@ -221,7 +221,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public Double leafValue(int docID) throws IOException {
+    public Double getDocValue(int docID) throws IOException {
       return getValueForDoc(docID);
     }
   }
@@ -286,7 +286,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public Float leafValue(int docID) throws IOException {
+    public Float getDocValue(int docID) throws IOException {
       return getValueForDoc(docID);
     }
   }
@@ -353,7 +353,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public Integer leafValue(int docID) throws IOException {
+    public Integer getDocValue(int docID) throws IOException {
       return getValueForDoc(docID);
     }
   }
@@ -418,7 +418,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public Long leafValue(int docID) throws IOException {
+    public Long getDocValue(int docID) throws IOException {
       return getValueForDoc(docID);
     }
   }
@@ -506,7 +506,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public Float leafValue(int docID) throws IOException {
+    public Float getDocValue(int docID) throws IOException {
       return scorer.score();
     }
   }
@@ -571,7 +571,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public Integer leafValue(int docID) throws IOException {
+    public Integer getDocValue(int docID) throws IOException {
       return docBase + docID;
     }
 
@@ -717,7 +717,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public Integer leafValue(int docID) throws IOException {
+    public Integer getDocValue(int docID) throws IOException {
       return getOrdForDoc(docID);
     }
 
@@ -964,7 +964,7 @@ public abstract class FieldComparator<T> {
     public void setScorer(Scorable scorer) {}
 
     @Override
-    public BytesRef leafValue(int docID) throws IOException {
+    public BytesRef getDocValue(int docID) throws IOException {
       return getValueForDoc(docID);
     }
   }

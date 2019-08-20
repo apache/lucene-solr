@@ -151,7 +151,7 @@ class Geo3DPointDistanceComparator extends FieldComparator<Double> implements Le
   }
 
   @Override
-  public Double leafValue(int docID) throws IOException {
+  public Double getDocValue(int docID) throws IOException {
     return computeMinimumDistance(docID);
   }
 
