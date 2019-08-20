@@ -59,6 +59,9 @@ New Features
 
 * SOLR-13682: command line option to export documents to a file (noble)
 
+* SOLR-13650: Solr now can define and add "packages" with plugins. Each plugin can choose to
+  load from one of those packages & updating packages can reload those plugins independently (noble)
+
 Improvements
 ----------------------
 
