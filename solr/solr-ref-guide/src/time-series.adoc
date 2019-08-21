@@ -292,7 +292,7 @@ The example below uses the `polyfit` function (polynomial regression) to
 fit a non-linear model to a time series. The data set being used is the
 monthly average closing price for Amazon over an eight year period.
 
-In this example the `polyfit` function returns a fitted model of the *y*
+In this example the `polyfit` function returns a fitted model for the *y*
 axis, which is the average monthly closing prices, using a 4 degree polynomial.
 The degree of the polynomial determines the number of curves in the
 model. The fitted model is set to the variable *y1*. The fitted model
