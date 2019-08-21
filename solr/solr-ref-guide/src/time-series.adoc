@@ -89,7 +89,9 @@ Before a time series result can be smoothed or modeled the data will need to be 
 The `col` function can be used
 to copy column of data from a list of tuples into an array.
 
-The expression below demonstrates the vectorization of the *date_dt* and *avg(close_d)* field.
+The expression below demonstrates the vectorization of the *date_dt* and *avg(close_d)* fields.
+The `zplot` function is then used to plot the months on the x axis and the average closing prices
+on the y axis.
 
 image::images/math-expressions/timeseries2.png[]
 
