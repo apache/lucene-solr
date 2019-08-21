@@ -3138,6 +3138,36 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testOr() throws Exception {
+    final String catStream = "or(false, false, true)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    String retVal = tuples.get(0).getString("return-value");
+    assertEquals("true", retVal);
+  }
+
+  @Test
+  public void testOr2() throws Exception {
+    final String catStream = "or(false, false, false)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    String retVal = tuples.get(0).getString("return-value");
+    assertEquals("false", retVal);
+  }
+
+  @Test
   public void testCatStreamMultipleExplicitFiles() throws Exception {
     final String catStream = "cat(\"topLevel1.txt,directory1" + File.separator + "secondLevel2.txt\")";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
