@@ -45,15 +45,19 @@ image::images/math-expressions/quantiles.png[]
 
 === Time Series
 
-image::images/math-expressions/timeseries.png[]
+image::images/math-expressions/timeseries1.png[]
 
-=== Time Series With Linear Trend Line
+=== Time Series With Moving Average
 
-image::images/math-expressions/trend.png[]
+image::images/math-expressions/movingavg.png[]
+
+=== Time Series With Non-Linear Trend Line
+
+image::images/math-expressions/timemodel.png[]
 
 === Multiple Time Lines
 
-image::images/math-expressions/multitime1.png[]
+image::images/math-expressions/timecompare.png[]
 
 === Geospatial Search and Mapping
 
