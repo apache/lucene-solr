@@ -85,7 +85,7 @@ image::images/math-expressions/timeseries1.png[]
 
 == Vectorizing the Time Series
 
-Before a time series result can be smoothed or modeled the data will need to be vectorized.
+Before a time series can be smoothed or modeled the data will need to be vectorized.
 The `col` function can be used
 to copy column of data from a list of tuples into an array.
 
