@@ -27,7 +27,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -60,6 +62,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -186,6 +189,61 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     return Boolean.getBoolean(INIT_SOLR_DISABLE_SHARDS_WHITELIST);
   }
 
+  private static NamedList<?> getNamedList(Object val) {
+    if (val instanceof NamedList) {
+      return (NamedList<?>)val;
+    } else {
+      throw new IllegalArgumentException("Invalid config for replicaRouting; expected NamedList, but got " + val);
+    }
+  }
+
+  private static String checkDefaultReplicaListTransformer(NamedList<?> c, String setTo, String extantDefaultRouting) {
+    if (!Boolean.TRUE.equals(c.getBooleanArg("default"))) {
+      return null;
+    } else {
+      if (extantDefaultRouting == null) {
+        return setTo;
+      } else {
+        throw new IllegalArgumentException("more than one routing scheme marked as default");
+      }
+    }
+  }
+
+  private void initReplicaListTransformers(NamedList routingConfig) {
+    String defaultRouting = null;
+    if (routingConfig != null && routingConfig.size() > 0) {
+      Iterator<Entry<String,?>> iter = routingConfig.iterator();
+      do {
+        Entry<String, ?> e = iter.next();
+        String key = e.getKey();
+        switch (key) {
+          case ShardParams.REPLICA_RANDOM:
+            // Only positive assertion of default status (i.e., default=true) is supported.
+            // "random" is currently the implicit default, so explicitly configuring
+            // "random" as default would not currently be useful, but if the implicit default
+            // changes in the future, checkDefault could be relevant here.
+            defaultRouting = checkDefaultReplicaListTransformer(getNamedList(e.getValue()), key, defaultRouting);
+            break;
+          case ShardParams.REPLICA_STABLE:
+            NamedList<?> c = getNamedList(e.getValue());
+            defaultRouting = checkDefaultReplicaListTransformer(c, key, defaultRouting);
+            this.stableRltFactory = new AffinityReplicaListTransformerFactory(c);
+            break;
+          default:
+            throw new IllegalArgumentException("invalid replica routing spec name: " + key);
+        }
+      } while (iter.hasNext());
+    }
+    if (this.stableRltFactory == null) {
+      this.stableRltFactory = new AffinityReplicaListTransformerFactory();
+    }
+    if (ShardParams.REPLICA_STABLE.equals(defaultRouting)) {
+      this.defaultRltFactory = this.stableRltFactory;
+    } else {
+      this.defaultRltFactory = this.randomRltFactory;
+    }
+  }
+
   @Override
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
@@ -223,9 +281,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy,sb);
     this.whitelistHostChecker = new WhitelistHostChecker(args == null? null: (String) args.get(INIT_SHARDS_WHITELIST), !getDisableShardsWhitelist());
     log.info("Host whitelist initialized: {}", this.whitelistHostChecker);
-    
-    log.debug("created with {}",sb);
-    
+
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
     String v = System.getProperty("tests.shardhandler.randomSeed");
     if (v != null) {
@@ -247,8 +303,17 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     ModifiableSolrParams clientParams = getClientParams();
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(this.metricNameStrategy);
     clientConnectionManager = new InstrumentedPoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
-    this.defaultClient = HttpClientUtil.createClient(clientParams, clientConnectionManager, false, httpRequestExecutor);
-    this.loadbalancer = createLoadbalancer(defaultClient);
+
+    this.defaultClient = new Http2SolrClient.Builder()
+        .connectionTimeout(connectionTimeout)
+        .idleTimeout(soTimeout)
+        .maxConnectionsPerHost(maxConnectionsPerHost).build();
+    this.defaultClient.addListenerFactory(this.httpListenerFactory);
+    this.loadbalancer = new LBHttp2SolrClient(defaultClient);
+
+    initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
+
+    log.debug("created with {}",sb);
   }
 
   protected ModifiableSolrParams getClientParams() {
@@ -340,58 +405,110 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   /**
-   * A distributed request is made via {@link LBHttpSolrClient} to the first live server in the URL list.
+   * A distributed request is made via {@link LBSolrClient} to the first live server in the URL list.
    * This means it is just as likely to choose current host as any of the other hosts.
    * This function makes sure that the cores are sorted according to the given list of preferences.
-   * E.g. If all nodes prefer local cores then a bad/heavily-loaded node will receive less requests from 
-   * healthy nodes. This will help prevent a distributed deadlock or timeouts in all the healthy nodes due 
+   * E.g. If all nodes prefer local cores then a bad/heavily-loaded node will receive less requests from
+   * healthy nodes. This will help prevent a distributed deadlock or timeouts in all the healthy nodes due
    * to one bad node.
+   *
+   * Optional final preferenceRule is *not* used for pairwise sorting, but instead defines how "equivalent"
+   * replicas will be ordered (the base ordering). Defaults to "random"; may specify "stable".
    */
   static class NodePreferenceRulesComparator implements Comparator<Object> {
-    private static class PreferenceRule {
-      public final String name;
-      public final String value;
-
-      public PreferenceRule(String name, String value) {
-        this.name = name;
-        this.value = value;
-      }
-    }
 
     private final SolrQueryRequest request;
-    private List<PreferenceRule> preferenceRules;
+    private final NodesSysPropsCacher sysPropsCache;
+    private final String nodeName;
+    private final List<PreferenceRule> sortRules;
+    private final List<PreferenceRule> preferenceRules;
     private String localHostAddress = null;
+    private final ReplicaListTransformer baseReplicaListTransformer;
 
-    public NodePreferenceRulesComparator(final List<String> sortRules, final SolrQueryRequest request) {
+    public NodePreferenceRulesComparator(final List<PreferenceRule> preferenceRules, final SolrQueryRequest request,
+                                         final ReplicaListTransformerFactory defaultRltFactory, final ReplicaListTransformerFactory randomRltFactory,
+                                         final ReplicaListTransformerFactory stableRltFactory) {
       this.request = request;
-      this.preferenceRules = new ArrayList<PreferenceRule>(sortRules.size());
-      sortRules.forEach(rule -> {
-        String[] parts = rule.split(":", 2);
-        if (parts.length != 2) {
-          throw new IllegalArgumentException("Invalid " + ShardParams.SHARDS_PREFERENCE + " rule: " + rule);
+      final SolrCore core; // explicit check for null core (temporary?, for tests)
+      if (request != null && (core = request.getCore()) != null && core.getCoreContainer().getZkController() != null) {
+        ZkController zkController = request.getCore().getCoreContainer().getZkController();
+        sysPropsCache = zkController.getSysPropsCacher();
+        nodeName = zkController.getNodeName();
+      } else {
+        sysPropsCache = null;
+        nodeName = null;
+      }
+      this.preferenceRules = preferenceRules;
+      final int maxIdx = preferenceRules.size() - 1;
+      final PreferenceRule lastRule = preferenceRules.get(maxIdx);
+      if (!ShardParams.SHARDS_PREFERENCE_REPLICA_BASE.equals(lastRule.name)) {
+        this.sortRules = preferenceRules;
+        this.baseReplicaListTransformer = defaultRltFactory.getInstance(null, request, randomRltFactory);
+      } else {
+        if (maxIdx == 0) {
+          this.sortRules = null;
+        } else {
+          this.sortRules = preferenceRules.subList(0, maxIdx);
         }
-        this.preferenceRules.add(new PreferenceRule(parts[0], parts[1])); 
-      });
-    }
-    @Override
-    public int compare(Object left, Object right) {
-      for (PreferenceRule preferenceRule: this.preferenceRules) {
-        final boolean lhs;
-        final boolean rhs;
-        switch (preferenceRule.name) {
-          case ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE:
-            lhs = hasReplicaType(left, preferenceRule.value);
-            rhs = hasReplicaType(right, preferenceRule.value);
+        String[] parts = lastRule.value.split(":", 2);
+        switch (parts[0]) {
+          case ShardParams.REPLICA_RANDOM:
+            this.baseReplicaListTransformer = randomRltFactory.getInstance(parts.length == 1 ? null : parts[1], request, null);
             break;
-          case ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION:
-            lhs = hasCoreUrlPrefix(left, preferenceRule.value);
-            rhs = hasCoreUrlPrefix(right, preferenceRule.value);
+          case ShardParams.REPLICA_STABLE:
+            this.baseReplicaListTransformer = stableRltFactory.getInstance(parts.length == 1 ? null : parts[1], request, randomRltFactory);
             break;
           default:
-            throw new IllegalArgumentException("Invalid " + ShardParams.SHARDS_PREFERENCE + " type: " + preferenceRule.name);
+            throw new IllegalArgumentException("Invalid base replica order spec");
         }
-        if (lhs != rhs) {
-          return lhs ? -1 : +1;
+      }
+    }
+    private static final ReplicaListTransformer NOOP_RLT = (List<?> choices) -> { /* noop */ };
+    private static final ReplicaListTransformerFactory NOOP_RLTF = (String configSpec, SolrQueryRequest request,
+                                                                    ReplicaListTransformerFactory fallback) -> NOOP_RLT;
+    /**
+     * For compatibility with tests, which expect this constructor to have no effect on the *base* order.
+     */
+    NodePreferenceRulesComparator(final List<PreferenceRule> sortRules, final SolrQueryRequest request) {
+      this(sortRules, request, NOOP_RLTF, null, null);
+    }
+
+    public ReplicaListTransformer getBaseReplicaListTransformer() {
+      return baseReplicaListTransformer;
+    }
+
+    @Override
+    public int compare(Object left, Object right) {
+      if (this.sortRules != null) {
+        for (PreferenceRule preferenceRule: this.sortRules) {
+          final boolean lhs;
+          final boolean rhs;
+          switch (preferenceRule.name) {
+            case ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE:
+              lhs = hasReplicaType(left, preferenceRule.value);
+              rhs = hasReplicaType(right, preferenceRule.value);
+              break;
+            case ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION:
+              lhs = hasCoreUrlPrefix(left, preferenceRule.value);
+              rhs = hasCoreUrlPrefix(right, preferenceRule.value);
+              break;
+            case ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP:
+              if (sysPropsCache == null) {
+                throw new IllegalArgumentException("Unable to get the NodesSysPropsCacher" +
+                    " on sorting replicas by preference:"+ preferenceRule.value);
+              }
+              lhs = hasSameMetric(left, preferenceRule.value);
+              rhs = hasSameMetric(right, preferenceRule.value);
+              break;
+            case ShardParams.SHARDS_PREFERENCE_REPLICA_BASE:
+              throw new IllegalArgumentException("only one base replica order may be specified in "
+                  + ShardParams.SHARDS_PREFERENCE + ", and it must be specified last");
+            default:
+              throw new IllegalArgumentException("Invalid " + ShardParams.SHARDS_PREFERENCE + " type: " + preferenceRule.name);
+          }
+          if (lhs != rhs) {
+            return lhs ? -1 : +1;
+          }
         }
       }
       return 0;
@@ -435,8 +552,91 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     }
   }
 
+  private final ReplicaListTransformerFactory randomRltFactory = (String configSpec, SolrQueryRequest request,
+      ReplicaListTransformerFactory fallback) -> shufflingReplicaListTransformer;
+  private ReplicaListTransformerFactory stableRltFactory;
+  private ReplicaListTransformerFactory defaultRltFactory;
+
+  /**
+   * Private class responsible for applying pairwise sort based on inherent replica attributes,
+   * and subsequently reordering any equivalent replica sets according to behavior specified
+   * by the baseReplicaListTransformer.
+   */
+  private static final class TopLevelReplicaListTransformer implements ReplicaListTransformer {
+
+    private final NodePreferenceRulesComparator replicaComp;
+    private final ReplicaListTransformer baseReplicaListTransformer;
+
+    public TopLevelReplicaListTransformer(NodePreferenceRulesComparator replicaComp, ReplicaListTransformer baseReplicaListTransformer) {
+      this.replicaComp = replicaComp;
+      this.baseReplicaListTransformer = baseReplicaListTransformer;
+    }
+
+    @Override
+    public void transform(List<?> choices) {
+      if (choices.size() > 1) {
+        if (log.isDebugEnabled()) {
+          log.debug("Applying the following sorting preferences to replicas: {}",
+              Arrays.toString(replicaComp.preferenceRules.toArray()));
+        }
+
+        // First, sort according to comparator rules.
+        try {
+          choices.sort(replicaComp);
+        } catch (IllegalArgumentException iae) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              iae.getMessage()
+          );
+        }
+
+        // Next determine all boundaries between replicas ranked as "equivalent" by the comparator
+        Iterator<?> iter = choices.iterator();
+        Object prev = iter.next();
+        Object current;
+        int idx = 1;
+        int boundaryCount = 0;
+        int[] boundaries = new int[choices.size() - 1];
+        do {
+          current = iter.next();
+          if (replicaComp.compare(prev, current) != 0) {
+            boundaries[boundaryCount++] = idx;
+          }
+          prev = current;
+          idx++;
+        } while (iter.hasNext());
+
+        // Finally inspect boundaries to apply base transformation, where necessary (separate phase to avoid ConcurrentModificationException)
+        int startIdx = 0;
+        int endIdx;
+        for (int i = 0; i < boundaryCount; i++) {
+          endIdx = boundaries[i];
+          if (endIdx - startIdx > 1) {
+            baseReplicaListTransformer.transform(choices.subList(startIdx, endIdx));
+          }
+          startIdx = endIdx;
+        }
+
+        if (log.isDebugEnabled()) {
+          log.debug("Applied sorting preferences to replica list: {}",
+              Arrays.toString(choices.toArray()));
+        }
+      }
+    }
+  }
+
   protected ReplicaListTransformer getReplicaListTransformer(final SolrQueryRequest req) {
     final SolrParams params = req.getParams();
+    final SolrCore core = req.getCore(); // explicit check for null core (temporary?, for tests)
+    ZkController zkController = core == null ? null : core.getCoreContainer().getZkController();
+    String defaultShardPreference = "";
+    if (zkController != null) {
+      defaultShardPreference = zkController.getZkStateReader().getClusterProperties()
+          .getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "")
+          .toString();
+    }
+
+
     @SuppressWarnings("deprecation")
     final boolean preferLocalShards = params.getBool(CommonParams.PREFER_LOCAL_SHARDS, false);
     final String shardsPreferenceSpec = params.get(ShardParams.SHARDS_PREFERENCE, "");
@@ -453,34 +653,18 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         preferenceRules.add(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":" + ShardParams.REPLICA_LOCAL);
       }
 
-      return new ShufflingReplicaListTransformer(r) {
-        @Override
-        public void transform(List<?> choices)
-        {
-          if (choices.size() > 1) {
-            super.transform(choices);
-            if (log.isDebugEnabled()) {
-              log.debug("Applying the following sorting preferences to replicas: {}",
-                  Arrays.toString(preferenceRules.toArray()));
-            }
-            try {
-              choices.sort(new NodePreferenceRulesComparator(preferenceRules, req));
-            } catch (IllegalArgumentException iae) {
-              throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST,
-                iae.getMessage()
-              );
-            }
-            if (log.isDebugEnabled()) {
-              log.debug("Applied sorting preferences to replica list: {}",
-                  Arrays.toString(choices.toArray()));
-            }
-          }
-        }
-      };
+      NodePreferenceRulesComparator replicaComp = new NodePreferenceRulesComparator(preferenceRules, req,
+          defaultRltFactory, randomRltFactory, stableRltFactory);
+      ReplicaListTransformer baseReplicaListTransformer = replicaComp.getBaseReplicaListTransformer();
+      if (replicaComp.sortRules == null) {
+        // only applying base transformation
+        return baseReplicaListTransformer;
+      } else {
+        return new TopLevelReplicaListTransformer(replicaComp, baseReplicaListTransformer);
+      }
     }
 
-    return shufflingReplicaListTransformer;
+    return defaultRltFactory.getInstance(null, req, randomRltFactory);
   }
 
   /**
