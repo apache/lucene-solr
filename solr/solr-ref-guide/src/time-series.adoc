@@ -122,8 +122,8 @@ begin generating results at the 5th value. The prior values are not included in 
 
 The `zplot` function is then used to plot the months on the x axis, and the average close and moving
 average on the y axis. Notice that the `ltrim` function is used to trim the first 4 values from
-the x axis the average closing prices. This is needed because the moving average will start from the
-5th value.
+the x axis and the average closing prices. This is done to line up the three arrays so they start
+from the 5th value.
 
 image::images/math-expressions/movingavg.png[]
 
