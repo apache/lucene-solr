@@ -99,7 +99,7 @@ image::images/math-expressions/timeseries2.png[]
 == Smoothing
 
 Time series smoothing is often used to remove the noise from a time series and help
-spot the underlying trends.
+spot the underlying trend.
 The math expressions library has three *sliding window* approaches
 for time series smoothing. The *sliding window* approaches use a summary value
 from a sliding window of the data to calculate a new set of smoothed data points.
@@ -120,7 +120,7 @@ then the original vector. This is because results are generated only when a full
 is available for computing the average. With a window size of five the moving average will
 begin generating results at the 5th value. The prior values are not included in the result.
 
-The `zplot` function is then used to pot the months on the x axis, and the average close and moving
+The `zplot` function is then used to plot the months on the x axis, and the average close and moving
 average on the y axis. Notice that the `ltrim` function is used to trim the first 4 values from
 the x axis the average closing prices. This is needed because the moving average will start from the
 5th value.
