@@ -260,7 +260,7 @@ The `outliers` function iterates the numeric vector and uses the probability
 distribution to calculate the cumulative probability of each value. If the cumulative
 probability is below the low probability threshold or above the high threshold it considers
 the value an outlier. When the `outliers` function encounters an outlier it returns
-the corresponding result from the list of results provided as the fifth parameter.
+the corresponding result from the list of results provided by the fifth parameter.
 It also includes the cumulative probability and the value of the outlier.
 
 The example below shows the `outliers` function applied to the Amazon stock
