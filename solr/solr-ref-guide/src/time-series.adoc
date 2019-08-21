@@ -205,7 +205,7 @@ image::images/math-expressions/season.png[]
 
 In this example we remove this pattern using
 the `diff` function with a lag of 4. This will subtract the value lagging four indexes
-behind the current index. Notice that result set size is the original array size minus the lag.
+behind the current index. Notice that the result set size is the original array size minus the lag.
 This is because the `diff` function only returns results for values where the lag of 4
 is possible to compute.
 
@@ -283,7 +283,7 @@ Math Expressions has a number of functions that can be used to
 model a time series. These functions include linear regression,
 polynomial and harmonic curve fitting, loess regression and KNN regression.
 
-Each of the these functions can model a time series and be used for
+Each of these functions can model a time series and be used for
 interpolation (predicting values within the dataset) and several
 can be used for extrapolation (predicting values beyond the data set).
 
