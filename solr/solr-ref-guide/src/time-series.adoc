@@ -287,7 +287,7 @@ Each of the these functions can model a time series and be used for
 interpolation (predicting values within the dataset) and several
 can be used for extrapolation (predicting values beyond the data set).
 
-Each of these functions are covered in detail in the Linear Regression, Curve
+The various regression functions are covered in detail in the Linear Regression, Curve
 Fitting and Machine Learning sections of the user guide.
 
 The example below uses the `polyfit` function (polynomial regression) to
