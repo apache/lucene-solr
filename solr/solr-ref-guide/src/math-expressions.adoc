@@ -59,7 +59,7 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<curve-fitting.adoc#curve-fitting,Curve Fitting>>*: Polynomial, Harmonic and Gaussian curve fitting.
 
-*<<time-series.adoc#time-series,Time Series>>*: Time series aggregation, smoothing, differencing, anomaly detection and forecasting.
+*<<time-series.adoc#time-series,Time Series>>*: Time series aggregation, visualization, smoothing, differencing, anomaly detection and forecasting.
 
 *<<machine-learning.adoc#machine-learning,Machine Learning>>*: Functions used in machine learning.
 

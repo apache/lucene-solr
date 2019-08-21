@@ -17,7 +17,7 @@
 // under the License.
 
 This section of the user guide provides an overview of time series *aggregation*,
-*smoothing*, *differencing*, *anomaly detection*, *modeling* and *forecasting*.
+*visualization*, *smoothing*, *differencing*, *anomaly detection*, *modeling* and *forecasting*.
 
 == Time Series Aggregation
 
