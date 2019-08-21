@@ -114,6 +114,9 @@ New Features
 * SOLR-13650: Solr now can define and add "packages" with plugins. Each plugin can choose to
   load from one of those packages & updating packages can reload those plugins independently (noble)
 
+* SOLR-13257: Support deterministic replica routing preferences for better cache usage (Michael Gibney
+  via Christine Poerschke, Tomás Fernández Löbbe)
+
 Improvements
 ----------------------
 
