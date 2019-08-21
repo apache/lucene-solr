@@ -121,8 +121,8 @@ is available for computing the average. With a window size of five the moving av
 begin generating results at the 5th value. The prior values are not included in the result.
 
 The `zplot` function is then used to pot the months on the x axis, and the average close and moving
-averages on the y axis. Notice that the `ltrim` function is used to trim the first 4 values from
-the x axis the average closing price. This is needed because the moving average will start from the
+average on the y axis. Notice that the `ltrim` function is used to trim the first 4 values from
+the x axis the average closing prices. This is needed because the moving average will start from the
 5th value.
 
 image::images/math-expressions/movingavg.png[]
@@ -153,7 +153,7 @@ image::images/math-expressions/movingMedian.png[]
 == Differencing
 
 Differencing can be used to make
-a time series stationary by removing the trend or seasonality from data.
+a time series stationary by removing the trend or seasonality from the series.
 
 === First Difference
 
@@ -244,18 +244,19 @@ This visualization shows that most of the mean absolute deviations fall between 
 
 image::images/math-expressions/maddist.png[]
 
-The final step is to detect outliers in the data set using the `outliers` function.
+The final step is to detect outliers in the series using the `outliers` function.
+The `outliers` function uses a probability distribution to find outliers in a numeric vector.
 The `outliers` function takes four parameters:
 
 * Probability distribution
 * Numeric vector
 * Low probability threshold
 * High probablity threshold
-* List of results that the vector of numbers was selected from.
+* List of results that the numeric vector was selected from.
 
 The `outliers` function iterates the numeric vector and uses the probability
 distribution to calculate the cumulative probability of each value. If the cumulative
-value is below the low probability threshold or above the high threshold it considers
+probability is below the low probability threshold or above the high threshold it considers
 the value an outlier. When the `outliers` function encounters an outlier it returns
 the corresponding result from the list of results provided as the fifth parameter.
 It also includes the cumulative probability and the value of the outlier.
