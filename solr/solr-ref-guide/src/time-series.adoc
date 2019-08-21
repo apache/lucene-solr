@@ -321,9 +321,9 @@ The new x axis is stored in the variable x10.
 The `predict` function uses the fitted model to predict values for the new x axis stored in
 variable x10.
 
-The `zplot` function is used to plot x10 vector on the x axis and y10 and extrapolated
+The `zplot` function is then used to plot the x10 vector on the x axis and the y10 vector and extrapolated
 model on the y axis. Notice that the y10 vector drops to zero where the observed data
-ends, but the forecast continues along the curve
-of the fitted model.
+ends, but the forecast continues along the fitted curve
+of the model.
 
 image::images/math-expressions/forecast.png[]
