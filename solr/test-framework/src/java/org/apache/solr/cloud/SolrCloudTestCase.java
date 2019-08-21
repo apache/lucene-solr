@@ -316,6 +316,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * @param predicate   a predicate to match against the collection state
    */
   protected static void waitForState(String message, String collection, CollectionStatePredicate predicate, int timeout, TimeUnit timeUnit) {
+    log.info("waitForState ({}): {}", collection, message);
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
@@ -455,6 +456,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
+    log.info("waitForResponse: {}", request);
     int i = 0;
     for (; i < numRetries; i++) {
       try {
