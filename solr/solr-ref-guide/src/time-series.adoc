@@ -199,13 +199,15 @@ lag in the past. Lagged differences are often used to remove seasonality from a 
 
 The simple example below demonstrates how lagged differencing works.
 Notice that the array in the example follows a simple repeated pattern. This type of pattern
-is often displayed with seasonality. In this example we can remove this pattern using
+is often displayed with seasonality.
+
+image::images/math-expressions/season.png[]
+
+In this example we remove this pattern using
 the `diff` function with a lag of 4. This will subtract the value lagging four indexes
 behind the current index. Notice that result set size is the original array size minus the lag.
 This is because the `diff` function only returns results for values where the lag of 4
 is possible to compute.
-
-image::images/math-expressions/season.png[]
 
 image::images/math-expressions/seasondiff.png[]
 
