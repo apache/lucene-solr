@@ -78,7 +78,7 @@ When this expression is sent to the `/stream` handler it responds with:
       ...
 ----
 
-Using Zeppelin-Solr this time series can be visualized using a line chart or other visualization.
+Using Zeppelin-Solr this time series can be visualized using a line chart.
 
 image::images/math-expressions/timeseries1.png[]
 
@@ -87,7 +87,7 @@ image::images/math-expressions/timeseries1.png[]
 
 Before a time series result can be operated on by math expressions
  the data will need to be vectorized. Specifically
-in the example above, the aggregation field count(*) will need to by moved into an array.
+in the example above, the aggregation field avg(close_d) will need to by moved into an array.
 As described in the Streams and Vectorization section of the user guide, the `col` function can be used
 to copy a numeric column from a list of tuples into an array.
 
