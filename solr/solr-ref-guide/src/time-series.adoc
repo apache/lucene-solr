@@ -17,7 +17,7 @@
 // under the License.
 
 This section of the user guide provides an overview of time series *aggregation*,
-*smoothing* and *differencing*.
+*smoothing*, *differencing*, *anomaly detection*, *modeling* and *forecasting*.
 
 == Time Series Aggregation
 
@@ -112,16 +112,18 @@ functions are often used to confirm the direction of the trend.
 === Moving Average
 
 The `movingAvg` function computes a simple moving average over a sliding window of data.
-The example below generates a time series, vectorizes the count(*) field and computes the
-moving average with a window size of 3.
+The example below generates a time series, vectorizes the avg(close_d) field and computes the
+moving average with a window size of 5.
 
 The moving average function returns an array that is of shorter length
-then the original data set. This is because results are generated only when a full window of data
-is available for computing the average. With a window size of three the moving average will
-begin generating results at the 3rd value. The prior values are not included in the result.
+then the original vector. This is because results are generated only when a full window of data
+is available for computing the average. With a window size of five the moving average will
+begin generating results at the 5th value. The prior values are not included in the result.
 
-This is true for all the sliding window functions.
-
+The `zplot` function is then used to pot the months on the x axis, and the average close and moving
+averages on the y axis. Notice that the `ltrim` function is used to trim the first 4 values from
+the x axis the average closing price. This is needed because the moving average will start from the
+5th value.
 
 image::images/math-expressions/movingavg.png[]
 
@@ -131,7 +133,9 @@ The `expMovingAvg` function uses a different formula for computing the moving av
 responds faster to changes in the underlying data. This means that it is
 less of a lagging indicator then the simple moving average.
 
-Below is an example that computes an exponential moving average:
+Below is an example that computes a moving average and exponential moving average and plots them
+along with the original y values. Notice how the exponential moving average is more sensitive
+to changes in the y values.
 
 image::images/math-expressions/expmoving.png[]
 
@@ -272,10 +276,51 @@ image::images/math-expressions/outliers.png[]
 
 == Modeling
 
+Math Expressions has a number of functions that can be used to
+model a time series. These functions include linear regression,
+polynomial and harmonic curve fitting, loess regression and KNN regression.
+
+Each of the these functions can model a time series and be used for
+interpolation (predicting values within the dataset) and several
+can be used for extrapolation (predicting values beyond the data set).
+
+Each of these functions are covered in detail in the Linear Regression, Curve
+Fitting and Machine Learning sections of the user guide.
+
+The example below uses the `polyfit` function (polynomial regression) to
+fit a non-linear model to a time series. The data set being used is the
+monthly average closing price for Amazon over an eight year period.
+
+In this example the `polyfit` function returns a fitted model of the *y*
+axis, which is the average monthly closing prices, using a 4 degree polynomial.
+The degree of the polynomial determines the number of curves in the
+model. The fitted model is set to the variable *y1*. The fitted model
+is then directly plotted with `zplot` along with the original *y*
+values.
+
+The visualization shows the smooth line fit through the average closing
+price data.
+
 image::images/math-expressions/timemodel.png[]
 
 
-
 == Forecasting
+
+The `polyfit` function can also be used to extrapolate a time series to forecast
+future stock prices. The example below demonstrates a 10 month forecast.
+
+In the example the `polyfit` function fits a model to the *y* access and the model
+is set to the variable *m*. Then to create a forecast 10 zeros are appended
+to the *y* axis to create new vector called y10. Then a new x axis is created using
+the `natural` function which returns a sequence of whole numbers 0 to the length of y10.
+The new x axis is stored in the variable x10.
+
+The `predict` function uses the fitted model to predict values for the new x axis stored in
+variable x10.
+
+The `zplot` function is used to plot x10 vector on the x axis and y10 and extrapolated
+model on the y axis. Notice that the y10 vector drops to zero where the observed data
+ends, but the forecast continues along the curve
+of the fitted model.
 
 image::images/math-expressions/forecast.png[]
