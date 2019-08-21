@@ -160,7 +160,7 @@ grouped by species.
 
 image::images/math-expressions/csv.png[]
 
-== Selecting fields and Field Types
+== Selecting Fields and Field Types
 
 The `select` function can be used to select specific fields from
 the CSV file and map them to new field names for indexing.
