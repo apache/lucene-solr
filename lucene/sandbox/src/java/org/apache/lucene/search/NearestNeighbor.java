@@ -178,6 +178,15 @@ class NearestNeighbor {
 
     @Override
     public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+      double cellMinLat = decodeLatitude(minPackedValue, 0);
+      double cellMinLon = decodeLongitude(minPackedValue, Integer.BYTES);
+      double cellMaxLat = decodeLatitude(maxPackedValue, 0);
+      double cellMaxLon = decodeLongitude(maxPackedValue, Integer.BYTES);
+
+      if (cellMaxLat < minLat || maxLat < cellMinLat || ((cellMaxLon < minLon || maxLon < cellMinLon) && cellMaxLon < minLon2)) {
+        // this cell is outside our search bbox; don't bother exploring any more
+        return Relation.CELL_OUTSIDE_QUERY;
+      }
       return Relation.CELL_CROSSES_QUERY;
     }
   }
@@ -258,13 +267,7 @@ class NearestNeighbor {
         //System.out.println("    non-leaf");
         // Non-leaf block: split into two cells and put them back into the queue:
 
-        double cellMinLat = decodeLatitude(cell.minPacked, 0);
-        double cellMinLon = decodeLongitude(cell.minPacked, Integer.BYTES);
-        double cellMaxLat = decodeLatitude(cell.maxPacked, 0);
-        double cellMaxLon = decodeLongitude(cell.maxPacked, Integer.BYTES);
-
-        if (cellMaxLat < visitor.minLat || visitor.maxLat < cellMinLat || ((cellMaxLon < visitor.minLon || visitor.maxLon < cellMinLon) && cellMaxLon < visitor.minLon2)) {
-          // this cell is outside our search bbox; don't bother exploring any more
+        if (visitor.compare(cell.minPacked, cell.maxPacked) == Relation.CELL_OUTSIDE_QUERY) {
           continue;
         }
         
