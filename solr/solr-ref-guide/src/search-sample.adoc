@@ -38,30 +38,38 @@ image::images/math-expressions/search1.png[]
 
 ==== Searching and Sorting
 
-Once we see the format of the records we can add parameters to the *search* function to begin analyzing
+Once the format of the records is known, parameters can be added to the *search* function to begin analyzing
 the data.
 
-In the example below a search query (q), field list (fl), rows and sort have been added to the search
-function. Now we are searching for records which contain weather in the abstract_t field and returning
-a result set of 500 sorted by a timestamp descending. We have also limited the result set to only three
+In the example below a search query, field list, rows and sort have been added to the search
+function. Now the search is limited to records within a specific time range and returns
+a max result set of 750 records sorted by tdate_dt ascending. We have also limited the result set to three specific
 fields.
 
 image::images/math-expressions/search-sort.png[]
 
 
-Once we have a the data loaded into the table we can switch to a scatter plot of the filesize_d column
+Once we have a the data loaded into the table we can switch to a scatter plot and plot the filesize_d column
 on the *x axis* and the response_d column on the *y axis*.
 
 image::images/math-expressions/search-sort-plot.png[]
 
 This allows us to quickly visualize the relationship between two variables
-select from the a very specific slice of the index. In this example it's the
-500 most recent documents by timestamp, that match the term *weather*.
+selected from the a a specific slice of the index.
 
 === Scoring
 
+The `search` function will score and rank documents when a query is performed on
+a text field. The example below shows an example of this scoring and ranking of results.
+
+image::images/math-expressions/scoring.png[]
+
+
 
 == Sampling
+
+
+
 
 === Univariate Scatter Plots
 
