@@ -494,12 +494,11 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       SolrParams params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "componentName","json1",
           "meta","true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
-          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/queryResponseWriter", params),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/queryResponseWriter/json1", params),
           Utils.makeMap(
               "/config/queryResponseWriter/json1/_packageinfo_/url", url,
               "/config/queryResponseWriter/json1/_meta_/sha512", sha512
@@ -507,12 +506,11 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "componentName","get",
           "meta","true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
-          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/searchComponent", params),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/searchComponent/get", params),
           Utils.makeMap(
               "config/searchComponent/get/_packageinfo_/url", url,
               "config/searchComponent/get/_packageinfo_/sha512", sha512
@@ -520,12 +518,11 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "componentName","/runtime",
           "meta","true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
-          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/requestHandler", params),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/requestHandler/runtime", params),
           Utils.makeMap(
               ":config:requestHandler:/runtime:_packageinfo_:url", url,
               ":config:requestHandler:/runtime:_packageinfo_:sha512", sha512
@@ -594,12 +591,11 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "componentName","json1",
           "meta","true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
-          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/queryResponseWriter", params),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/queryResponseWriter/json1", params),
           Utils.makeMap(
               "/config/queryResponseWriter/json1/_packageinfo_/url", url,
               "/config/queryResponseWriter/json1/_packageinfo_/sha512", sha512
@@ -607,12 +603,11 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "componentName","get",
           "meta","true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
-          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/searchComponent", params),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/searchComponent/get", params),
           Utils.makeMap(
               "/config/searchComponent/get/_packageinfo_/url", url,
               "/config/searchComponent/get/_packageinfo_/sha512", sha512
@@ -620,12 +615,11 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "componentName","/runtime",
           "meta","true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
-          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/requestHandler", params),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/requestHandler/runtime", params),
           Utils.makeMap(
               ":config:requestHandler:/runtime:_packageinfo_:url", url,
               ":config:requestHandler:/runtime:_packageinfo_:sha512", sha512
@@ -658,7 +652,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13650")
+//  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13650")
   public void testCacheLoadFromPackage() throws Exception {
     String COLLECTION_NAME = "globalCacheColl";
     Map<String, Object> jars = Utils.makeMap(
@@ -706,12 +700,11 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "componentName","documentCache",
           "meta","true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
-          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/query", params),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/query/documentCache", params),
           Utils.makeMap(
               "/config/query/documentCache/_packageinfo_/url", url,
               "/config/query/documentCache/_packageinfo_/sha512", sha512
@@ -745,12 +738,11 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "componentName","documentCache",
           "meta","true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
-          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/query", params),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/query/documentCache", params),
           Utils.makeMap(
               "/config/query/documentCache/_packageinfo_/url", url,
               "/config/query/documentCache/_packageinfo_/sha512", sha512

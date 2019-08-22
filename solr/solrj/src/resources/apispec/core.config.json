@@ -12,7 +12,8 @@
       "/config/jmx",
       "/config/requestDispatcher",
       "/config/znodeVersion",
-      "/config/{plugin}"
+      "/config/{plugin}",
+      "/config/{plugin}/{pluginName}"
     ]
   }
 }

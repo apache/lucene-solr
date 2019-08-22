@@ -510,9 +510,16 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     private Map<String, Object> getConfigDetails(String componentType, SolrQueryRequest req) {
       String componentName = componentType == null ? null : req.getParams().get("componentName");
+      if(componentName == null && parts.size() > 2){
+        componentName = parts.get(2);
+        if(SolrRequestHandler.TYPE.equals(componentType)){
+          componentName = "/"+componentName;
+        }
+      }
+
       boolean showParams = req.getParams().getBool("expandParams", false);
       Map<String, Object> map = this.req.getCore().getSolrConfig().toMap(new LinkedHashMap<>());
-      if (componentType != null && SolrRequestHandler.TYPE.equals(componentType)) {
+      if (SolrRequestHandler.TYPE.equals(componentType) || componentType == null) {
         Map reqHandlers = (Map) map.get(SolrRequestHandler.TYPE);
         if (reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers = new LinkedHashMap<>());
         List<PluginInfo> plugins = this.req.getCore().getImplicitHandlers();
