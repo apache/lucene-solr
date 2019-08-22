@@ -41,7 +41,8 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
   @Override
   protected PointValues.Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                                         int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    return rectangle2D.relateRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    return rectangle2D.relateRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle,
+        queryRelation == QueryRelation.INTERSECTS);
   }
 
   /** returns true if the query matches the encoded triangle */
