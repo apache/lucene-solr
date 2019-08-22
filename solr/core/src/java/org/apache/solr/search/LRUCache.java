@@ -27,11 +27,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -335,7 +337,8 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       res.put("cumulative_evictions", stats.evictions.longValue());
       res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
     });
-    solrMetrics.metricManager.registerGauge(this, solrMetrics.registry, cacheMap, solrMetrics.tag, true, solrMetrics.scope, getCategory().toString());
+    String metricName = SolrMetricManager.makeName(ImmutableList.of(getCategory().toString()), solrMetrics.scope);
+    solrMetrics.gauge(this, cacheMap, true, metricName);
   }
 
   // for unit tests only

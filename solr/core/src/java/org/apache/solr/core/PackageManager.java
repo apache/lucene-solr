@@ -67,6 +67,10 @@ public class PackageManager implements ClusterPropertiesListener {
     Package p = pkgs.get(pkg);
     return p == null ? -1 : p.lib.getZnodeVersion();
   }
+  public RuntimeLib getLib(String name){
+    Package p = pkgs.get(name);
+    return p == null? null: p.lib;
+  }
 
   static class Package implements MapWriter {
     final RuntimeLib lib;
@@ -90,12 +94,8 @@ public class PackageManager implements ClusterPropertiesListener {
 
 
     public boolean isModified(Map map) {
-      if ((Objects.equals(lib.getSha512(), (map).get(SHA512)) &&
-          Objects.equals(lib.getSig(), (map).get(SHA512)))) {
-        return false;
-      } else {
-        return true;
-      }
+      return (!Objects.equals(lib.getSha512(), (map).get(SHA512)) ||
+          !Objects.equals(lib.getSig(), (map).get(SHA512)));
     }
   }
 
@@ -153,7 +153,7 @@ public class PackageManager implements ClusterPropertiesListener {
   private boolean updatePackages(Map<String, Object> properties, int ver) {
     Map m = (Map) properties.getOrDefault(PACKAGE, Collections.emptyMap());
     if (pkgs.isEmpty() && m.isEmpty()) return false;
-    boolean needsReload[] = new boolean[1];
+    boolean[] needsReload = new boolean[1];
     if (m.size() == pkgs.size()) {
       m.forEach((k, v) -> {
         if (v instanceof Map) {
@@ -361,11 +361,8 @@ public class PackageManager implements ClusterPropertiesListener {
 
       public boolean shouldReload(Map metaData, Map<String, Package> pkgs) {
         Package p = pkgs.get(pkg);
-        if (meta.equals(metaData) && p != null && p.lib.getZnodeVersion() <= zkversion) {
-          //the metadata is same and the package has not changed since we last loaded
-          return false;
-        }
-        return true;
+        //the metadata is same and the package has not changed since we last loaded
+        return !meta.equals(metaData) || p == null || p.lib.getZnodeVersion() > zkversion;
       }
     }
   }

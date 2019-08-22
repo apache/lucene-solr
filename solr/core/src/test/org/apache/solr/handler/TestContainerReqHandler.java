@@ -53,6 +53,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.MemClassLoader;
@@ -98,16 +99,19 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
         rsp = req.process(client);
       } catch (Exception e) {
         if (i >= repeats - 1) throw e;
+        continue;
       }
       for (Object e : vals.entrySet()) {
         Map.Entry entry = (Map.Entry) e;
-        String key = (String) entry.getKey();
+        String k = (String) entry.getKey();
+        List<String> key = StrUtils.split(k, '/');
+
         Object val = entry.getValue();
         Predicate p = val instanceof Predicate ? (Predicate) val : o -> {
           String v = o == null ? null : String.valueOf(o);
           return Objects.equals(val, o);
         };
-        boolean isPass = p.test(rsp.getResponse()._get(key, null));
+        boolean isPass = p.test(rsp._get(key, null));
         if (isPass) return rsp;
         else if (i >= repeats - 1) {
           fail("attempt: " + i + " Mismatch for value : '" + key + "' in response " + Utils.toJSONString(rsp));
@@ -442,7 +446,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   }
 
-  public void testPluginGlobalLoader() throws Exception {
+  public void testPluginFrompackage() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
     Map<String, Object> jars = Utils.makeMap(
         "/jar1.jar", getFileContent("runtimecode/runtimelibs.jar.bin"),
@@ -469,7 +473,10 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           .withPayload(payload)
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
-      assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "add-package/sha512"),
+      String sha512 = (String) getObjectByPath(Utils.fromJSONString(payload), true, "add-package/sha512");
+      String url = (String) getObjectByPath(Utils.fromJSONString(payload), true, "add-package/url");
+
+      assertEquals(sha512,
           getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "package/global/sha512"));
 
 
@@ -485,8 +492,47 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
         }
       });
 
+      SolrParams params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+          WT, JAVABIN,
+          "componentName","json1",
+          "meta","true"));
 
-      SolrParams params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME, WT, JAVABIN));
+      assertResponseValues(10,
+          cluster.getSolrClient(),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/queryResponseWriter", params),
+          Utils.makeMap(
+              "/config/queryResponseWriter/json1/_packageinfo_/url", url,
+              "/config/queryResponseWriter/json1/_meta_/sha512", sha512
+          ));
+
+      params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+          WT, JAVABIN,
+          "componentName","get",
+          "meta","true"));
+
+      assertResponseValues(10,
+          cluster.getSolrClient(),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/searchComponent", params),
+          Utils.makeMap(
+              "config/searchComponent/get/_packageinfo_/url", url,
+              "config/searchComponent/get/_packageinfo_/sha512", sha512
+          ));
+
+      params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+          WT, JAVABIN,
+          "componentName","/runtime",
+          "meta","true"));
+
+      assertResponseValues(10,
+          cluster.getSolrClient(),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/requestHandler", params),
+          Utils.makeMap(
+              ":config:requestHandler:/runtime:_packageinfo_:url", url,
+              ":config:requestHandler:/runtime:_packageinfo_:sha512", sha512
+          ));
+
+
+      params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME, WT, JAVABIN));
       assertResponseValues(10,
           cluster.getSolrClient(),
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/overlay", params),
@@ -540,8 +586,52 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           .withPayload(payload)
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
-      assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "update-package/sha512"),
+      sha512 = (String) getObjectByPath(Utils.fromJSONString(payload), true, "update-package/sha512");
+      url = (String) getObjectByPath(Utils.fromJSONString(payload), true, "update-package/url");
+
+      assertEquals(sha512,
           getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "package/global/sha512"));
+
+      params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+          WT, JAVABIN,
+          "componentName","json1",
+          "meta","true"));
+
+      assertResponseValues(10,
+          cluster.getSolrClient(),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/queryResponseWriter", params),
+          Utils.makeMap(
+              "/config/queryResponseWriter/json1/_packageinfo_/url", url,
+              "/config/queryResponseWriter/json1/_packageinfo_/sha512", sha512
+          ));
+
+      params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+          WT, JAVABIN,
+          "componentName","get",
+          "meta","true"));
+
+      assertResponseValues(10,
+          cluster.getSolrClient(),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/searchComponent", params),
+          Utils.makeMap(
+              "/config/searchComponent/get/_packageinfo_/url", url,
+              "/config/searchComponent/get/_packageinfo_/sha512", sha512
+          ));
+
+      params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+          WT, JAVABIN,
+          "componentName","/runtime",
+          "meta","true"));
+
+      assertResponseValues(10,
+          cluster.getSolrClient(),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/requestHandler", params),
+          Utils.makeMap(
+              ":config:requestHandler:/runtime:_packageinfo_:url", url,
+              ":config:requestHandler:/runtime:_packageinfo_:sha512", sha512
+          ));
+
+
 
       try {
         new V2Request.Builder("/cluster")
@@ -569,7 +659,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
   }
 
   @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13650")
-  public void testCacheFromGlobalLoader() throws Exception {
+  public void testCacheLoadFromPackage() throws Exception {
     String COLLECTION_NAME = "globalCacheColl";
     Map<String, Object> jars = Utils.makeMap(
         "/jar1.jar", getFileContent("runtimecode/cache.jar.bin"),
@@ -609,6 +699,25 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       NamedList<Object> rsp = cluster.getSolrClient().request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/overlay", params));
       assertEquals("org.apache.solr.core.MyDocCache", rsp._getStr("overlay/props/query/documentCache/class", null));
+
+      String sha512 = (String) getObjectByPath(Utils.fromJSONString(payload), true, "add-package/sha512");
+      String url = (String) getObjectByPath(Utils.fromJSONString(payload), true, "add-package/url");
+
+
+      params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+          WT, JAVABIN,
+          "componentName","documentCache",
+          "meta","true"));
+
+      assertResponseValues(10,
+          cluster.getSolrClient(),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/query", params),
+          Utils.makeMap(
+              "/config/query/documentCache/_packageinfo_/url", url,
+              "/config/query/documentCache/_packageinfo_/sha512", sha512
+          ));
+
+
       UpdateRequest req = new UpdateRequest();
 
       req.add("id", "1", "desc_s", "document 1")
@@ -629,9 +738,23 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           .withPayload(payload)
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
+      sha512 = (String) getObjectByPath(Utils.fromJSONString(payload), true, "update-package/sha512");
+      url = (String) getObjectByPath(Utils.fromJSONString(payload), true, "update-package/url");
       assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "update-package/sha512"),
           getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "package/cache_pkg/sha512"));
 
+      params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+          WT, JAVABIN,
+          "componentName","documentCache",
+          "meta","true"));
+
+      assertResponseValues(10,
+          cluster.getSolrClient(),
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/query", params),
+          Utils.makeMap(
+              "/config/query/documentCache/_packageinfo_/url", url,
+              "/config/query/documentCache/_packageinfo_/sha512", sha512
+          ));
       req = new UpdateRequest();
       req.add("id", "2", "desc_s", "document 1")
           .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true)

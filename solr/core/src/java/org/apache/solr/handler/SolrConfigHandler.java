@@ -154,7 +154,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     NamedList configSetProperties = core.getConfigSetProperties();
     if (configSetProperties == null) return false;
     Object immutable = configSetProperties.get(IMMUTABLE_CONFIGSET_ARG);
-    return immutable != null ? Boolean.parseBoolean(immutable.toString()) : false;
+    return immutable != null && Boolean.parseBoolean(immutable.toString());
   }
 
   public static String validateName(String s) {
@@ -234,6 +234,10 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   public SolrRequestHandler getSubHandler(String path) {
     if (subPaths.contains(path)) return this;
     if (path.startsWith("/params/")) return this;
+    List<String> p = StrUtils.splitSmart(path, '/', true);
+    if (p.size() > 1) {
+      if (subPaths.contains("/" + p.get(0))) return this;
+    }
     return null;
   }
 
@@ -508,23 +512,45 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       String componentName = componentType == null ? null : req.getParams().get("componentName");
       boolean showParams = req.getParams().getBool("expandParams", false);
       Map<String, Object> map = this.req.getCore().getSolrConfig().toMap(new LinkedHashMap<>());
-      if (componentType != null && !SolrRequestHandler.TYPE.equals(componentType)) return map;
-      Map reqHandlers = (Map) map.get(SolrRequestHandler.TYPE);
-      if (reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers = new LinkedHashMap<>());
-      List<PluginInfo> plugins = this.req.getCore().getImplicitHandlers();
-      for (PluginInfo plugin : plugins) {
-        if (SolrRequestHandler.TYPE.equals(plugin.type)) {
-          if (!reqHandlers.containsKey(plugin.name)) {
-            reqHandlers.put(plugin.name, plugin);
+      if (componentType != null && SolrRequestHandler.TYPE.equals(componentType)) {
+        Map reqHandlers = (Map) map.get(SolrRequestHandler.TYPE);
+        if (reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers = new LinkedHashMap<>());
+        List<PluginInfo> plugins = this.req.getCore().getImplicitHandlers();
+        for (PluginInfo plugin : plugins) {
+          if (SolrRequestHandler.TYPE.equals(plugin.type)) {
+            if (!reqHandlers.containsKey(plugin.name)) {
+              reqHandlers.put(plugin.name, plugin);
+            }
           }
         }
+        if (showParams) {
+          for (Object o : reqHandlers.entrySet()) {
+            Map.Entry e = (Map.Entry) o;
+            if (componentName == null || e.getKey().equals(componentName)) {
+              Map<String, Object> m = expandUseParams(req, e.getValue());
+              e.setValue(m);
+            }
+          }
+        }
+
       }
-      if (!showParams) return map;
-      for (Object o : reqHandlers.entrySet()) {
-        Map.Entry e = (Map.Entry) o;
-        if (componentName == null || e.getKey().equals(componentName)) {
-          Map<String, Object> m = expandUseParams(req, e.getValue());
-          e.setValue(m);
+
+      if (req.getParams().getBool("meta", false)) {
+        for (SolrCore.PkgListener pkgListener : req.getCore().getPackageListeners()) {
+          PluginInfo meta = pkgListener.pluginInfo();
+          if (meta.pathInConfig != null) {
+            Object obj = Utils.getObjectByPath(map, false, meta.pathInConfig);
+            if (obj instanceof Map) {
+              Map m = (Map) obj;
+              m.put("_packageinfo_", pkgListener.lib());
+            } else if(obj instanceof MapWriter){
+              MapWriter mw = (MapWriter) obj;
+              Utils.setObjectByPath(map, meta.pathInConfig, (MapWriter) ew -> {
+                mw.writeMap(ew);
+                ew.put("_packageinfo_", pkgListener.lib());
+              }, false);
+            }
+          }
         }
       }
 
