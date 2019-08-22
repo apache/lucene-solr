@@ -22,7 +22,10 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RuntimeLib;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,15 +42,41 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   public SolrCacheHolder(CacheConfig.CacheInfo cacheInfo) {
     this.info = cacheInfo;
     this.delegate = cacheInfo.cache;
-    if(info.pkg != null){
-      info.core.addPackageListener(info.pkg, lib -> reloadCache(lib));
+
+    if(info.pkg != null) {
+      info.core.addPackageListener(new SolrCore.PkgListener() {
+        @Override
+        public String packageName() {
+          return info.pkg;
+        }
+
+        @Override
+        public PluginInfo pluginInfo() {
+          return info.cfg.args;
+        }
+
+        @Override
+        public MapWriter lib() {
+          return info.runtimeLib;
+        }
+
+        @Override
+        public void changed(RuntimeLib lib) {
+          reloadCache(lib);
+        }
+      });
     }
   }
 
   private void reloadCache(RuntimeLib lib) {
-    if (lib.getZnodeVersion() > info.znodeVersion) {
+    int znodeVersion = info.runtimeLib == null ? -1 : info.runtimeLib.getZnodeVersion();
+    if (lib.getZnodeVersion() > znodeVersion) {
+      log.info("Cache {} being reloaded, package: {} loaded from: {} ", delegate.getClass().getSimpleName(), info.pkg, lib.getUrl());
       info = new CacheConfig.CacheInfo(info.cfg, info.core);
+      delegate.close();
       delegate = info.cache;
+      delegate.initializeMetrics(metrics);
+
     }
   }
 
@@ -153,10 +182,11 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
     return delegate.getCategory();
   }
 
+  private SolrMetrics metrics;
   @Override
   public void initializeMetrics(SolrMetrics info) {
+    this.metrics = info;
     delegate.initializeMetrics(info);
-
   }
 
 }

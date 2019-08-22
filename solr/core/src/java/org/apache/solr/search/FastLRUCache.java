@@ -25,10 +25,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.slf4j.Logger;
@@ -102,7 +104,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
     str = (String) args.get(INITIAL_SIZE_PARAM);
     initialSize = str == null ? maxSize : Integer.parseInt(str);
     str = (String) args.get(CLEANUP_THREAD_PARAM);
-    cleanupThread = str == null ? false : Boolean.parseBoolean(str);
+    cleanupThread = str != null && Boolean.parseBoolean(str);
 
     str = (String) args.get(SHOW_ITEMS_PARAM);
     showItems = str == null ? 0 : Integer.parseInt(str);
@@ -223,7 +225,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
 
   @Override
   public void close() {
-    if (metricsInfo != null) metricsInfo.unregister();
+    if (solrMetrics != null) solrMetrics.unregister();
     // add the stats to the cumulative stats object (the first in the statsList)
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
@@ -247,16 +249,16 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   }
 
 
-  SolrMetrics metricsInfo;
+  SolrMetrics solrMetrics;
 
   @Override
   public SolrMetrics getMetrics() {
-    return metricsInfo;
+    return solrMetrics;
   }
 
   @Override
   public void initializeMetrics(SolrMetrics info) {
-    metricsInfo = info.getChildInfo(this);
+    solrMetrics = info.getChildInfo(this);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         ConcurrentLRUCache.Stats stats = cache.getStats();
@@ -309,7 +311,8 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
         }
       }
     });
-    metricsInfo.metricManager.registerGauge(this, metricsInfo.registry, cacheMap, metricsInfo.tag, true, metricsInfo.scope, getCategory().toString());
+    String metricName = SolrMetricManager.makeName(ImmutableList.of(getCategory().toString()), solrMetrics.scope);
+    solrMetrics.gauge(this, cacheMap,true, metricName);
   }
 
 
@@ -320,7 +323,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return metricsInfo ==null ?null:metricsInfo.getRegistry();
+    return solrMetrics == null ? null : solrMetrics.getRegistry();
   }
 
   @Override
