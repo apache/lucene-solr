@@ -56,7 +56,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
@@ -80,6 +79,7 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -95,7 +95,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -240,11 +239,15 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public volatile boolean searchEnabled = true;
   public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
-  private List<Pair<String ,Consumer<RuntimeLib>>> packageListeners = new ArrayList<>();
+  private List<PkgListener> packageListeners = new ArrayList<>();
 
 
   public Set<String> getMetricNames() {
     return metricNames;
+  }
+
+  public List<PkgListener> getPackageListeners(){
+    return Collections.unmodifiableList(packageListeners);
   }
 
   public Date getStartTimeStamp() {
@@ -358,12 +361,23 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   void packageUpdated(RuntimeLib lib) {
-    for (Pair<String, Consumer<RuntimeLib>> pair : packageListeners) {
-      if(lib.equals(pair.first())) pair.second().accept(lib);
+    for (PkgListener listener : packageListeners) {
+      if(lib.getName().equals(listener.packageName())) listener.changed(lib);
     }
   }
-  public void addPackageListener(String  pkg, Consumer<RuntimeLib> r){
-    packageListeners.add(new Pair<>(pkg, r));
+  public void addPackageListener(PkgListener listener){
+    packageListeners.add(listener);
+  }
+
+  public interface PkgListener {
+
+    String packageName();
+
+    PluginInfo pluginInfo();
+
+    void changed(RuntimeLib lib);
+
+    MapWriter lib();
   }
 
 
@@ -851,7 +865,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       for (Constructor<?> con : cons) {
         Class<?>[] types = con.getParameterTypes();
         if (types.length == 2 && types[0] == SolrCore.class && types[1] == UpdateHandler.class) {
-          return UpdateHandler.class.cast(con.newInstance(this, updateHandler));
+          return (UpdateHandler) con.newInstance(this, updateHandler);
         }
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error Instantiating " + msg + ", " + className + " could not find proper constructor for " + UpdateHandler.class.getName());
@@ -2423,7 +2437,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
       if (!success) {
         newSearcherOtherErrorsCounter.inc();
-        ;
         synchronized (searcherLock) {
           onDeckSearchers--;
 
@@ -3126,8 +3139,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     try {
       Stat stat = zkClient.exists(zkPath, null, true);
       if (stat == null) {
-        if (currentVersion > -1) return true;
-        return false;
+        return currentVersion > -1;
       }
       if (stat.getVersion() > currentVersion) {
         log.debug("{} is stale will need an update from {} to {}", zkPath, currentVersion, stat.getVersion());
