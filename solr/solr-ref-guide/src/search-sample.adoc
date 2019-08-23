@@ -16,7 +16,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
+Data is the indispensable factor in statistical analysis. This section
+provides an overview of the key functions for retrieving data for
+visualization and statistical analysis: searching, sampling
+and aggregation.
 
 == Searching
 
@@ -36,7 +39,7 @@ for exploring the fields in the data and understanding how to start refining the
 
 image::images/math-expressions/search1.png[]
 
-==== Searching and Sorting
+=== Searching and Sorting
 
 Once the format of the records is known, parameters can be added to the *search* function to begin analyzing
 the data.
@@ -65,16 +68,62 @@ a text field. The example below shows an example of this scoring and ranking of 
 image::images/math-expressions/scoring.png[]
 
 
-
 == Sampling
 
+The `random` function returns a random sample from a distributed search result set.
+This allows for fast visualizations, statistical analysis and modeling of
+samples that can be applied to the larger result set.
 
+For the visualization examples below smaller random samples are used. But
+Solr's random sampling provides sub-second
+response times on sample sizes of over 200,000, which can be used to build
+reliable statistical models that describe large data sets (billions of
+documents) with sub-second performance.
 
+The examples below demonstrate univariate and bivariate scatter
+plots of random samples. Statistical modeling with random samples
+is covered in the Statistics, Probability, Linear Regression, Curve Fitting
+and Machine Learning sections of the user guide.
 
 === Univariate Scatter Plots
 
+In the example below the `random` function is used to draw 500 random samples
+from the *logs* collection. The query matches all log records and
+the *filesize_d* field is returned with each sample.
+
+The visualization below shows the *filesize_d* field plotted on both the x and y
+axis which produces a diagnal line with a slop of 1. By studying the scatter plot
+we can learn a number of things about the distribution of the *filesize_d*
+variable:
+
+* The sample set ranges from 34,070 to 46,456.
+* The highest density appears to be at about 40,000.
+* The sample seems to have a balanced number of observations above and below
+40,000. Based on this the *mean* and *mode* would appear to be around 40,000.
+* The number of observations tapers off to a small number of outliers on
+the and low end of the sample.
+
+This sample can be rerun multiple times to see if the samples
+produce similar plots.
+
+image::images/math-expressions/univariate.png[]
+
 === Bivariate Scatter Plots
 
+In the next example two fields are returned with each sample: *filesize_d* and *response_d*.
+By plotting filesize_d on the x axis and *response_d* on the y axis we can begin to study
+the relationship between the two variables.
+
+By studying the scatter plot we can learn the following:
+
+* As filesize_d rises response_d tends to rise.
+* This relationship appears to be linear, as a straight line put through the data could
+be used to model the relationship.
+* The points would cluster most densely
+* The variance of the data at each *filesize_d* point seems fairly consistent. This means
+a predictive model would have consistent error across the range of predictor values.
+
+image::images/math-expressions/bivariate.png[]
 
 
 == Aggregations
