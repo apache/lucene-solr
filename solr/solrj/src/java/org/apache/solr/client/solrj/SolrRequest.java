@@ -55,11 +55,11 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     DELETE
   };
 
-  public static final Set<String> SUPPORTED_METHODS = Set.copyOf(Arrays.<String>asList(
+  public static final Set<String> SUPPORTED_METHODS = Set.of(
       METHOD.GET.toString(),
       METHOD.POST.toString(),
       METHOD.PUT.toString(),
-      METHOD.DELETE.toString()));
+      METHOD.DELETE.toString());
 
   private METHOD method = METHOD.GET;
   private String path = null;

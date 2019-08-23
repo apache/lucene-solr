@@ -276,7 +276,7 @@ public interface Variable {
       this.metricsAttribute = readStr(meta.metricsKey());
       this.supportedComputedTypes = meta.computedValues()[0] == ComputedType.NULL ?
           emptySet() :
-          Set.copyOf(Arrays.asList(meta.computedValues()));
+          Set.of(meta.computedValues());
       this.wildCards = readSet(meta.wildCards());
 
     }
@@ -296,7 +296,7 @@ public interface Variable {
 
     Set<String> readSet(String[] vals) {
       if (NULL.equals(vals[0])) return emptySet();
-      return Set.copyOf(Arrays.asList(vals));
+      return Set.of(vals);
     }
 
     @Override

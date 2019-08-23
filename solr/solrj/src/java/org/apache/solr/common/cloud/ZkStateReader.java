@@ -271,7 +271,7 @@ public class ZkStateReader implements SolrCloseable {
 
   }
 
-  public static final Set<String> KNOWN_CLUSTER_PROPS = Set.copyOf(asList(
+  public static final Set<String> KNOWN_CLUSTER_PROPS = Set.of(
       LEGACY_CLOUD,
       URL_SCHEME,
       AUTO_ADD_REPLICAS,
@@ -280,7 +280,7 @@ public class ZkStateReader implements SolrCloseable {
       MAX_CORES_PER_NODE,
       SAMPLE_PERCENTAGE,
       SOLR_ENVIRONMENT,
-      CollectionAdminParams.DEFAULTS));
+      CollectionAdminParams.DEFAULTS);
 
   /**
    * Returns config set name for collection.
