@@ -4,64 +4,62 @@
     <modules>
       <module filepath="$PROJECT_DIR$/parent.iml" />
 
-      <module group="Lucene/Core" filepath="$PROJECT_DIR$/lucene/core/src/lucene-core.iml" />
-      <module group="Lucene/Core" filepath="$PROJECT_DIR$/lucene/core/src/test/lucene-core-tests.iml" />
-      <module group="Lucene/Core" filepath="$PROJECT_DIR$/lucene/backward-codecs/backward-codecs.iml" />
-      <module group="Lucene/Core" filepath="$PROJECT_DIR$/lucene/codecs/src/codecs.iml" />
-      <module group="Lucene/Core" filepath="$PROJECT_DIR$/lucene/codecs/src/test/codecs-tests.iml" />
+      <module group="DevTools" filepath="$PROJECT_DIR$/dev-tools/dev-tools.iml" />
+      <module group="DevTools" filepath="$PROJECT_DIR$/buildSrc/buildSrc.iml" />
+      
+      <module group="Lucene/Core" filepath="$PROJECT_DIR$/lucene/core/lucene-core.iml" />
+      <module group="Lucene/Core" filepath="$PROJECT_DIR$/lucene/backward-codecs/lucene-backward-codecs.iml" />
+      <module group="Lucene/Core" filepath="$PROJECT_DIR$/lucene/codecs/lucene-codecs.iml" />
       <module group="Lucene/Core" filepath="$PROJECT_DIR$/lucene/test-framework/lucene-test-framework.iml" />
 
-      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/common/analysis-common.iml" />
-      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/icu/icu.iml" />
-      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/nori/nori.iml" />
-      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/kuromoji/kuromoji.iml" />
-      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/morfologik/morfologik.iml" />
-      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/opennlp/opennlp.iml" />
-      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/phonetic/phonetic.iml" />
-      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/smartcn/smartcn.iml" />
-      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/stempel/stempel.iml" />
+      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/common/lucene-analyzers-common.iml" />
+      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/icu/lucene-analyzers-icu.iml" />
+      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/nori/lucene-analyzers-nori.iml" />
+      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/kuromoji/lucene-analyzers-kuromoji.iml" />
+      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/morfologik/lucene-analyzers-morfologik.iml" />
+      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/opennlp/lucene-analyzers-opennlp.iml" />
+      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/phonetic/lucene-analyzers-phonetic.iml" />
+      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/smartcn/lucene-analyzers-smartcn.iml" />
+      <module group="Lucene/Analysis" filepath="$PROJECT_DIR$/lucene/analysis/stempel/lucene-analyzers-stempel.iml" />
 
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/benchmark/src/benchmark.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/benchmark/conf/benchmark-conf.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/classification/classification.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/demo/demo.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/expressions/expressions.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/facet/facet.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/grouping/grouping.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/highlighter/highlighter.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/join/join.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/luke/luke.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/monitor/monitor.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/memory/memory.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/misc/misc.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/queries/queries.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/queryparser/queryparser.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/replicator/replicator.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/sandbox/sandbox.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/spatial/spatial.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/spatial-extras/spatial-extras.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/spatial3d/spatial3d.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/suggest/suggest.iml" />
-      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/tools/tools.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/benchmark/lucene-benchmark.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/classification/lucene-classification.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/demo/lucene-demo.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/expressions/lucene-expressions.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/facet/lucene-facet.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/grouping/lucene-grouping.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/highlighter/lucene-highlighter.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/join/lucene-join.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/luke/lucene-luke.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/monitor/lucene-monitor.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/memory/lucene-memory.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/misc/lucene-misc.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/queries/lucene-queries.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/queryparser/lucene-queryparser.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/replicator/lucene-replicator.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/sandbox/lucene-sandbox.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/spatial/lucene-spatial.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/spatial-extras/lucene-spatial-extras.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/spatial3d/lucene-spatial3d.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/suggest/lucene-suggest.iml" />
+      <module group="Lucene/Other" filepath="$PROJECT_DIR$/lucene/tools/lucene-tools.iml" />
 
-      <module group="Solr" filepath="$PROJECT_DIR$/solr/core/src/java/solr-core.iml" />
-      <module group="Solr" filepath="$PROJECT_DIR$/solr/core/src/solr-core-tests.iml" />
-      <module group="Solr" filepath="$PROJECT_DIR$/solr/server/server.iml" />
-      <module group="Solr" filepath="$PROJECT_DIR$/solr/solrj/src/java/solrj.iml" />
-      <module group="Solr" filepath="$PROJECT_DIR$/solr/solrj/src/solrj-tests.iml" />
+      <module group="Solr" filepath="$PROJECT_DIR$/solr/core/solr-core.iml" />
+      <module group="Solr" filepath="$PROJECT_DIR$/solr/server/solr-server.iml" />
+      <module group="Solr" filepath="$PROJECT_DIR$/solr/solrj/solr-solrj.iml"/>
       <module group="Solr" filepath="$PROJECT_DIR$/solr/test-framework/solr-test-framework.iml" />
 
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/analysis-extras/analysis-extras.iml" />
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/analytics/analytics.iml" />
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/clustering/clustering.iml" />
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/dataimporthandler-extras/dataimporthandler-extras.iml" />
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/dataimporthandler/dataimporthandler.iml" />
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/extraction/extraction.iml" />
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/langid/langid.iml" />
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/ltr/ltr.iml" />
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/prometheus-exporter/prometheus-exporter.iml" />
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/jaegertracer-configurator/jaegertracer-configurator.iml" />
-      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/velocity/velocity.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/analysis-extras/solr-contrib-analysis-extras.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/analytics/solr-contrib-analytics.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/clustering/solr-contrib-clustering.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/dataimporthandler-extras/solr-contrib-dataimporthandler-extras.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/dataimporthandler/solr-contrib-dataimporthandler.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/extraction/solr-contrib-extraction.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/langid/solr-contrib-langid.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/ltr/solr-contrib-ltr.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/prometheus-exporter/solr-contrib-prometheus-exporter.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/jaegertracer-configurator/solr-contrib-jaegertracer-configurator.iml" />
+      <module group="Solr/Contrib" filepath="$PROJECT_DIR$/solr/contrib/velocity/solr-contrib-velocity.iml" />
     </modules>
   </component>
 </project>
