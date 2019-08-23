@@ -54,6 +54,14 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     this.libs = libs;
   }
 
+  public int getZnodeVersion(){
+    int result = -1;
+    for (RuntimeLib lib : libs) {
+      if(lib.znodeVersion > result) result = lib.znodeVersion;
+    }
+    return result;
+  }
+
   synchronized void loadRemoteJars() {
     if (allJarsLoaded) return;
     int count = 0;
