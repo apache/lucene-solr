@@ -48,19 +48,23 @@ class NearestNeighbor {
     final byte[] maxPacked;
     final IndexTree index;
 
-    /** The closest possible distance of all points in this cell */
-    final double distanceMeters;
+    /**
+     * The closest distance from a point in this cell to the query point, computed as a sort key through
+     * {@link SloppyMath#haversinSortKey}. Note that this is an approximation to the closest distance,
+     * and there could be a point in the cell that is closer.
+     */
+    final double distanceSortKey;
 
-    public Cell(IndexTree index, int readerIndex, byte[] minPacked, byte[] maxPacked, double distanceMeters) {
+    public Cell(IndexTree index, int readerIndex, byte[] minPacked, byte[] maxPacked, double distanceSortKey) {
       this.index = index;
       this.readerIndex = readerIndex;
       this.minPacked = minPacked.clone();
       this.maxPacked = maxPacked.clone();
-      this.distanceMeters = distanceMeters;
+      this.distanceSortKey = distanceSortKey;
     }
 
     public int compareTo(Cell other) {
-      return Double.compare(distanceMeters, other.distanceMeters);
+      return Double.compare(distanceSortKey, other.distanceSortKey);
     }
 
     @Override
@@ -69,7 +73,7 @@ class NearestNeighbor {
       double minLon = decodeLongitude(minPacked, Integer.BYTES);
       double maxLat = decodeLatitude(maxPacked, 0);
       double maxLon = decodeLongitude(maxPacked, Integer.BYTES);
-      return "Cell(readerIndex=" + readerIndex + " nodeID=" + index.getNodeID() + " isLeaf=" + index.isLeafNode() + " lat=" + minLat + " TO " + maxLat + ", lon=" + minLon + " TO " + maxLon + "; distanceMeters=" + distanceMeters + ")";
+      return "Cell(readerIndex=" + readerIndex + " nodeID=" + index.getNodeID() + " isLeaf=" + index.isLeafNode() + " lat=" + minLat + " TO " + maxLat + ", lon=" + minLon + " TO " + maxLon + "; distanceSortKey=" + distanceSortKey + ")";
     }
   }
 
@@ -323,10 +327,10 @@ class NearestNeighbor {
       return 0.0;
     }
 
-    double d1 = SloppyMath.haversinMeters(pointLat, pointLon, minLat, minLon);
-    double d2 = SloppyMath.haversinMeters(pointLat, pointLon, minLat, maxLon);
-    double d3 = SloppyMath.haversinMeters(pointLat, pointLon, maxLat, maxLon);
-    double d4 = SloppyMath.haversinMeters(pointLat, pointLon, maxLat, minLon);
+    double d1 = SloppyMath.haversinSortKey(pointLat, pointLon, minLat, minLon);
+    double d2 = SloppyMath.haversinSortKey(pointLat, pointLon, minLat, maxLon);
+    double d3 = SloppyMath.haversinSortKey(pointLat, pointLon, maxLat, maxLon);
+    double d4 = SloppyMath.haversinSortKey(pointLat, pointLon, maxLat, minLon);
     return Math.min(Math.min(d1, d2), Math.min(d3, d4));
   }
 
