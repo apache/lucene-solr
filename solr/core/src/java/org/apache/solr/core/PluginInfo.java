@@ -51,13 +51,15 @@ public class PluginInfo implements MapSerializable {
   public final List<PluginInfo> children;
   private boolean isFromSolrConfig;
 
+  public List<String> pathInConfig;
+
   public PluginInfo(String type, Map<String, String> attrs, NamedList initArgs, List<PluginInfo> children) {
     this.type = type;
     this.name = attrs.get(NAME);
     this.className = attrs.get(CLASS_NAME);
     this.initArgs = initArgs;
     attributes = unmodifiableMap(attrs);
-    this.children = children == null ? Collections.<PluginInfo>emptyList() : unmodifiableList(children);
+    this.children = children == null ? Collections.emptyList() : unmodifiableList(children);
     isFromSolrConfig = false;
   }
 
@@ -97,7 +99,7 @@ public class PluginInfo implements MapSerializable {
     this.name = (String) m.get(NAME);
     this.className = (String) m.get(CLASS_NAME);
     attributes = unmodifiableMap(m);
-    this.children = Collections.<PluginInfo>emptyList();
+    this.children = Collections.emptyList();
     isFromSolrConfig = true;
   }
 
@@ -112,7 +114,7 @@ public class PluginInfo implements MapSerializable {
       PluginInfo pluginInfo = new PluginInfo(nd, null, false, false);
       if (pluginInfo.isEnabled()) children.add(pluginInfo);
     }
-    return children.isEmpty() ? Collections.<PluginInfo>emptyList() : unmodifiableList(children);
+    return children.isEmpty() ? Collections.emptyList() : unmodifiableList(children);
   }
 
   @Override
@@ -178,7 +180,7 @@ public class PluginInfo implements MapSerializable {
     return result;
   }
 
-  public static final PluginInfo EMPTY_INFO = new PluginInfo("", Collections.<String, String>emptyMap(), new NamedList(), Collections.<PluginInfo>emptyList());
+  public static final PluginInfo EMPTY_INFO = new PluginInfo("", Collections.emptyMap(), new NamedList(), Collections.emptyList());
 
   private static final HashSet<String> NL_TAGS = new HashSet<>
       (asList("lst", "arr",
@@ -199,6 +201,7 @@ public class PluginInfo implements MapSerializable {
     PluginInfo result = new PluginInfo(type, attributes,
         initArgs != null ? initArgs.clone() : null, children);
     result.isFromSolrConfig = isFromSolrConfig;
+    result.pathInConfig = pathInConfig;
     return result;
   }
 

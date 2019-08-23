@@ -25,10 +25,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.util.ConcurrentLFUCache;
 import org.slf4j.Logger;
@@ -114,14 +116,14 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     str = (String) args.get(AUTOWARM_COUNT_PARAM);
     autowarmCount = str == null ? 0 : Integer.parseInt(str);
     str = (String) args.get(CLEANUP_THREAD_PARAM);
-    cleanupThread = str == null ? false : Boolean.parseBoolean(str);
+    cleanupThread = str != null && Boolean.parseBoolean(str);
 
     str = (String) args.get(SHOW_ITEMS_PARAM);
     showItems = str == null ? 0 : Integer.parseInt(str);
 
     // Don't make this "efficient" by removing the test, default is true and omitting the param will make it false.
     str = (String) args.get(TIME_DECAY_PARAM);
-    timeDecay = (str == null) ? true : Boolean.parseBoolean(str);
+    timeDecay = (str == null) || Boolean.parseBoolean(str);
 
     description = generateDescription();
 
@@ -145,7 +147,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private String generateDescription() {
     String descr = "Concurrent LFU Cache(maxSize=" + maxSize + ", initialSize=" + initialSize +
         ", minSize=" + minSizeLimit + ", acceptableSize=" + acceptableSize + ", cleanupThread=" + cleanupThread +
-        ", timeDecay=" + Boolean.toString(timeDecay);
+        ", timeDecay=" + timeDecay;
     if (autowarmCount > 0) {
       descr += ", autowarmCount=" + autowarmCount + ", regenerator=" + regenerator;
     }
@@ -324,7 +326,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
       }
     });
-    solrMetrics.metricManager.registerGauge(this, solrMetrics.registry, cacheMap, solrMetrics.getTag(), true, solrMetrics.scope, getCategory().toString());
+    String metricName = SolrMetricManager.makeName(ImmutableList.of(getCategory().toString()), solrMetrics.scope);
+    solrMetrics.gauge(this, cacheMap, true, metricName);
   }
 
   // for unit tests only

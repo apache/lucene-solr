@@ -117,6 +117,8 @@ New Features
 * SOLR-13257: Support deterministic replica routing preferences for better cache usage (Michael Gibney
   via Christine Poerschke, Tomás Fernández Löbbe)
 
+* SOLR-13707: API to expose the currently used package name, details for each plugin (noble)
+
 Improvements
 ----------------------
 

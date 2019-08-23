@@ -102,6 +102,8 @@ Improvements
 
 * SOLR-13663: Introduce <SpanPositionRange> into XML Query Parser (Alessandro Benedetti via Mikhail Khludnev)
 
+* LUCENE-8952: Use a sort key instead of true distance in NearestNeighbor (Julie Tibshirani).
+
 Optimizations
 
 * LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip

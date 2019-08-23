@@ -63,7 +63,7 @@ public class SolrMetrics {
 
   private String createName(String metricName, String... metricpath) {
     ArrayList<String> l = new ArrayList<>();
-    if(metricpath != null ) {
+    if (metricpath != null) {
       Collections.addAll(l, metricpath);
     }
     l.add(scope);
@@ -76,7 +76,8 @@ public class SolrMetrics {
   }
 
   public void gauge(SolrInfoBean info, Gauge<?> gauge, boolean force, String metricName, String... metricpath) {
-    metricManager.registerGauge(info, getRegistry(), new SolrMetricManager.GaugeWrapper<>(gauge, tag), force, createName(metricName, metricpath));
+    String name = metricpath == null || metricpath.length == 0 ? metricName : createName(metricName, metricpath);
+    metricManager.registerGauge(info, getRegistry(), new SolrMetricManager.GaugeWrapper<>(gauge, tag), force, name);
   }
 
   public Timer timer(SolrInfoBean info, String metricName, String... metricpath) {
