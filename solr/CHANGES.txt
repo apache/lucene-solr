@@ -134,6 +134,9 @@ Improvements
 
 * SOLR-13702: Some components register twice their metric names (janhoy)
 
+* SOLR-11601: Improved error message when geodist(llpsf) is used with arguments referring to a LatLonPointSpatialField.
+  (Amrit Sarkar)
+
 Bug Fixes
 ----------------------
 
