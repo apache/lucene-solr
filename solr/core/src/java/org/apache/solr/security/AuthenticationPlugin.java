@@ -157,8 +157,6 @@ public abstract class AuthenticationPlugin implements SolrInfoBean, SolrMetricPr
     numMissingCredentials = this.metrics.counter(this,  "failMissingCredentials",getCategory().toString());
     requestTimes = this.metrics.timer(this,"requestTimes", getCategory().toString());
     totalTime = this.metrics.counter(this,"totalTime", getCategory().toString());
-    metricNames.addAll(Arrays.asList("errors", "requests", "authenticated", "passThrough",
-        "failWrongCredentials", "failMissingCredentials", "requestTimes", "totalTime"));
   }
 
   @Override

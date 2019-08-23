@@ -79,6 +79,8 @@ Improvements
 
 * SOLR-13677: All Metrics Gauges should be unregistered by the objects that registered them (noble)
 
+* SOLR-13702: Some components register twice their metric names (janhoy)
+
 Bug Fixes
 ----------------------
 
