@@ -24,12 +24,12 @@ import java.nio.file.Path;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -43,18 +43,26 @@ import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.keys.BigEndianBigInteger;
-import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
 import org.jose4j.lang.JoseException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Answers;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 @SuppressWarnings("unchecked")
+//@RunWith(MockitoJUnitRunner.class)
 public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static String testHeader;
   private static String slimHeader;
@@ -63,7 +71,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static RsaJsonWebKey rsaJsonWebKey;
   private HashMap<String, Object> testConfig;
   private HashMap<String, Object> minimalConfig;
-
 
   @BeforeClass
   public static void beforeAll() throws Exception {
@@ -193,7 +200,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
    * Using a mock {@link HttpsJwks} we validate that plugin calls refresh() and then passes validation
    */
   @Test
-  public void invalidSigRefreshJwk() throws JoseException {
+  public void invalidSigRefreshJwk() throws JoseException, IOException {
     RsaJsonWebKey rsaJsonWebKey2 = RsaJwkGenerator.generateJwk(2048);
     rsaJsonWebKey2.setKeyId("k2");
     HashMap<String, Object> testJwkWrong = new HashMap<>();
@@ -203,21 +210,22 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testJwkWrong.put("kid", rsaJsonWebKey2.getKeyId());
     testJwkWrong.put("alg", rsaJsonWebKey2.getAlgorithm());
     testJwkWrong.put("n", BigEndianBigInteger.toBase64Url(rsaJsonWebKey2.getRsaPublicKey().getModulus()));
+    JsonWebKey correctJwk = JsonWebKey.Factory.newJwk(testJwk);
     JsonWebKey wrongJwk = JsonWebKey.Factory.newJwk(testJwkWrong);
 
     // Configure our mock plugin with URL as jwk source
-    JsonWebKey correctJwk = JsonWebKey.Factory.newJwk(testJwk);
-    plugin = new MockJwksUrlPlugin(wrongJwk, correctJwk);
+    plugin = mock(JWTAuthPlugin.class, withSettings().defaultAnswer(Answers.CALLS_REAL_METHODS));
+    HttpsJwks correctHttpsJwks = mock(HttpsJwks.class, withSettings().defaultAnswer(Answers.CALLS_REAL_METHODS));
+    when(correctHttpsJwks.getJsonWebKeys()).thenReturn(Arrays.asList(correctJwk));
+    HttpsJwks wrongHttpsJwks = mock(HttpsJwks.class, withSettings().defaultAnswer(Answers.CALLS_REAL_METHODS));
+    when(wrongHttpsJwks.getJsonWebKeys()).thenReturn(Arrays.asList(wrongJwk));
+
     HashMap<String, Object> pluginConfigJwkUrl = new HashMap<>();
     pluginConfigJwkUrl.put("class", "org.apache.solr.security.JWTAuthPlugin");
     pluginConfigJwkUrl.put("jwkUrl", "dummy");
     plugin.init(pluginConfigJwkUrl);
 
-    // Validate that plugin will call refresh() on invalid signature, then the call succeeds
-    assertFalse(((MockJwksUrlPlugin)plugin).isRefreshCalled());
-    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
-    assertTrue(resp.isAuthenticated());
-    assertTrue(((MockJwksUrlPlugin)plugin).isRefreshCalled());
+    assertEquals(plugin.verificationKeyResolver.resolveKey());
   }
 
   @Test
@@ -443,50 +451,5 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertEquals("solr:admin", parsed.get("scope"));
     assertEquals("http://acmepaymentscorp/oauth/auz/authorize", parsed.get("authorizationEndpoint"));
     assertEquals("solr-cluster", parsed.get("client_id"));
-  }
-
-  /**
-   * Mock plugin that simulates a {@link HttpsJwks} with cached JWK that returns
-   * a different JWK after a call to refresh()
-   */
-  private class MockJwksUrlPlugin extends JWTAuthPlugin {
-    private final JsonWebKey wrongJwk;
-    private final JsonWebKey correctJwk;
-
-    boolean isRefreshCalled() {
-      return refreshCalled;
-    }
-
-    private boolean refreshCalled;
-
-    MockJwksUrlPlugin(JsonWebKey wrongJwk, JsonWebKey correctJwk) {
-      this.wrongJwk = wrongJwk;
-      this.correctJwk = correctJwk;
-    }
-
-    @Override
-    void setupJwkUrl(String url) {
-      MockHttpsJwks httpsJkws = new MockHttpsJwks(url);
-      verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
-    }
-
-    private class MockHttpsJwks extends HttpsJwks {
-      MockHttpsJwks(String url) {
-        super(url);
-      }
-
-      @Override
-      public List<JsonWebKey> getJsonWebKeys() {
-        return refreshCalled ? Collections.singletonList(correctJwk) : Collections.singletonList(wrongJwk);
-      }
-
-      @Override
-      public void refresh() {
-        if (refreshCalled) {
-          fail("Refresh called twice");
-        }
-        refreshCalled = true;
-      }
-    }
   }
 }

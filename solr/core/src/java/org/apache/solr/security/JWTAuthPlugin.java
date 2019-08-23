@@ -128,7 +128,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private String authorizationEndpoint;
   private String adminUiScope;
   private List<String> redirectUris;
-  private HttpsJwks httpsJkws;
+  private List<HttpsJwks> httpsJkwsList;
 
 
   /**
@@ -226,7 +226,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   @SuppressWarnings("unchecked")
   private void initJwk(Map<String, Object> pluginConfig) {
     this.pluginConfig = pluginConfig;
-    String confJwkUrl = (String) pluginConfig.get(PARAM_JWK_URL);
+    Object confJwkUrl = pluginConfig.get(PARAM_JWK_URL);
+    httpsJkwsList = null;
     Map<String, Object> confJwk = (Map<String, Object>) pluginConfig.get(PARAM_JWK);
     jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
 
@@ -241,16 +242,25 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     if (jwkConfigured == 0) {
       log.warn("Initialized JWTAuthPlugin without any JWK config. Requests with jwk header will fail.");
     }
+    httpsJkwsList = new ArrayList<>();
     if (oidcDiscoveryConfig != null) {
-      String jwkUrl = oidcDiscoveryConfig.getJwksUrl();
-      setupJwkUrl(jwkUrl);
+      HttpsJwks jwks = createHttpsJwk(oidcDiscoveryConfig.getJwksUrl());
+      httpsJkwsList.add(jwks);
+      verificationKeyResolver = new HttpsJwksVerificationKeyResolver(jwks);
     } else if (confJwkUrl != null) {
-      setupJwkUrl(confJwkUrl);
+      if (confJwkUrl instanceof List) {
+        httpsJkwsList.addAll(((List<String>)confJwkUrl).stream().map(this::createHttpsJwk).collect(Collectors.toList()));
+        verificationKeyResolver = new MultiHttpsJwksVerificationkeyResolver(httpsJkwsList);
+      } else if (confJwkUrl instanceof String) {
+        httpsJkwsList.add(createHttpsJwk((String)confJwkUrl));
+        verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkwsList.get(0));
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parameter " + PARAM_JWK_URL + " must be either list or String");
+      }
     } else if (confJwk != null) {
       try {
         JsonWebKeySet jwks = parseJwkSet(confJwk);
         verificationKeyResolver = new JwksVerificationKeyResolver(jwks.getJsonWebKeys());
-        httpsJkws = null;
       } catch (JoseException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JWTAuthPlugin configuration, " + PARAM_JWK + " parse error", e);
       }
@@ -259,7 +269,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     log.debug("JWK configured");
   }
 
-  void setupJwkUrl(String url) {
+  protected HttpsJwks createHttpsJwk(String url) {
     // The HttpsJwks retrieves and caches keys from a the given HTTPS JWKS endpoint.
     try {
       URL jwkUrl = new URL(url);
@@ -269,10 +279,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     } catch (MalformedURLException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be a valid URL");
     }
-    httpsJkws = new HttpsJwks(url);
+    HttpsJwks httpsJkws = new HttpsJwks(url);
     httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
     httpsJkws.setRefreshReprieveThreshold(5000);
-    verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
+    return httpsJkws;
   }
 
   @SuppressWarnings("unchecked")
@@ -319,10 +329,12 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
 
     JWTAuthenticationResponse authResponse = authenticate(header);
-    if (AuthCode.SIGNATURE_INVALID.equals(authResponse.getAuthCode()) && httpsJkws != null) {
+    if (AuthCode.SIGNATURE_INVALID.equals(authResponse.getAuthCode()) && httpsJkwsList != null) {
       log.warn("Signature validation failed. Refreshing JWKs from IdP before trying again: {}",
           authResponse.getJwtException() == null ? "" : authResponse.getJwtException().getMessage());
-      httpsJkws.refresh();
+      for (HttpsJwks httpsJwks : httpsJkwsList) {
+        httpsJwks.refresh();
+      }
       authResponse = authenticate(header);
     }
     String exceptionMessage = authResponse.getJwtException() != null ? authResponse.getJwtException().getMessage() : "";
