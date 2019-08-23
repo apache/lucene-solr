@@ -122,6 +122,7 @@ New Features
 
 * SOLR-13710: Persist package jars locally & expose them over http at /api/node/blob  (noble)
 
+* SOLR-13713: JWTAuthPlugin to support multiple JWKS endpoints (janhoy)
 
 Improvements
 ----------------------

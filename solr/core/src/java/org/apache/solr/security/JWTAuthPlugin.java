@@ -251,7 +251,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
         httpsJkwsList.add(createHttpsJwk((String)confJwkUrl));
         verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkwsList.get(0));
       } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parameter " + PARAM_JWK_URL + " must be either list or String");
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parameter " + PARAM_JWK_URL + " must be either List or String");
       }
     } else if (confJwk != null) {
       try {
@@ -274,10 +274,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     try {
       URL jwkUrl = new URL(url);
       if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be an HTTPS url");
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must use HTTPS");
       }
     } catch (MalformedURLException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be a valid URL");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Url " + url + " configured in " + PARAM_JWK_URL + " is not a valid URL");
     }
     HttpsJwks httpsJkws = new HttpsJwks(url);
     httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
