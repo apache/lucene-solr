@@ -73,7 +73,6 @@ import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.emptySortedSet;
-import static java.util.Collections.unmodifiableSet;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements SolrCloseable {
@@ -272,7 +271,7 @@ public class ZkStateReader implements SolrCloseable {
 
   }
 
-  public static final Set<String> KNOWN_CLUSTER_PROPS = unmodifiableSet(new HashSet<>(asList(
+  public static final Set<String> KNOWN_CLUSTER_PROPS = Set.copyOf(asList(
       LEGACY_CLOUD,
       URL_SCHEME,
       AUTO_ADD_REPLICAS,
@@ -281,7 +280,7 @@ public class ZkStateReader implements SolrCloseable {
       MAX_CORES_PER_NODE,
       SAMPLE_PERCENTAGE,
       SOLR_ENVIRONMENT,
-      CollectionAdminParams.DEFAULTS)));
+      CollectionAdminParams.DEFAULTS));
 
   /**
    * Returns config set name for collection.
