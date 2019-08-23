@@ -12,7 +12,9 @@ test-lib
 /build.properties
 /.idea
 lucene/**/*.iml
-parent.iml
+/_lucene-solr.iml
+/dev-tools/dev-tools.iml
+/buildSrc/buildSrc.iml
 *.ipr
 *.iws
 .project
