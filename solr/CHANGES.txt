@@ -122,6 +122,8 @@ Bug Fixes
 
 * SOLR-13704: Improve error message and change error code to 400 for client errors in ExpandComponent (Munendra S N)
 
+* SOLR-13699 - maxChars no longer working on CopyField with javabin (Chris Troullis via noble)
+
 Other Changes
 ----------------------
 
