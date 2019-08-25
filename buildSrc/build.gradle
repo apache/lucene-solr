@@ -47,7 +47,6 @@ configurations {
 
 dependencies {
   jflex 'de.jflex:jflex:1.7.0'
-  rat 'org.apache.rat:apache-rat:0.11'
   junit4 'com.carrotsearch.randomizedtesting:junit4-ant'
   javacc 'net.java.dev.javacc:javacc:5.0'
 }

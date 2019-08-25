@@ -35,9 +35,13 @@ import javax.inject.Inject
 
 class RatSources extends DefaultTask {
   
+  List<String> excludes = new ArrayList<>()
+  
   @Optional
   @Input
-  List<String> excludes = new ArrayList<>()
+  public List<String> getExcludes() {
+    return excludes;
+  }
   
   @TaskAction
   void rat() {
@@ -53,9 +57,9 @@ class RatSources extends DefaultTask {
           excludeString += ','
       excludeString += it
     }
-    
-    ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', classpath: project.configurations.rat.asPath)
-    
+
+    ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', classpath: project.rootProject.configurations.unifiedClasspath.asPath)
+
     ant.report(reportFile: logFile.getAbsolutePath(), addDefaultLicenseMatchers: 'true') {
       ant.fileset(dir: project.projectDir.getAbsolutePath(), includes: "*.xml", excludes: excludeString)
       
