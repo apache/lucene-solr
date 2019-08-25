@@ -23,8 +23,13 @@ dependencies {
   implementation project(':lucene:lucene-core')
   implementation project(':lucene:lucene-codecs')
   implementation project(':lucene:lucene-backward-codecs')
-  implementation project(':lucene:lucene-analyzers-common')
+  implementation project(':lucene:analysis:lucene-analyzers-common')
   implementation project(':lucene:lucene-queries')
   implementation project(':lucene:lucene-queryparser')
   implementation project(':lucene:lucene-misc')
+  
+  implementation ('org.apache.logging.log4j:log4j-api')
+  implementation ('org.apache.logging.log4j:log4j-core')
+  
+  testImplementation project(':lucene:lucene-test-framework')
 }
