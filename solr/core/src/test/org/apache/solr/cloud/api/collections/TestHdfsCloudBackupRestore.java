@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.lucene.util.QuickPatchThreadsFilter;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.commons.io.IOUtils;
