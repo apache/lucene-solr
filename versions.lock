@@ -267,7 +267,6 @@ org.xerial.snappy:snappy-java:1.0.5 (1 constraints: 4e09a79c)
 org.yaml:snakeyaml:1.23 (1 constraints: 6e17f627)
 ua.net.nlp:morfologik-ukrainian-search:3.9.0 (1 constraints: 0e051536)
 xerces:xercesImpl:2.9.1 (2 constraints: f613d869)
-xml-apis:xml-apis:1.3.04 (1 constraints: b008af8c)
 
 [Test dependencies]
 aopalliance:aopalliance:1.0 (1 constraints: 170a83ac)
