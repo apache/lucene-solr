@@ -1,4 +1,4 @@
-package org.apache.lucene.gradle
+package org.apache.lucene.gradle.deps
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -43,6 +43,8 @@ import org.gradle.api.tasks.WorkResult
 import java.nio.file.Files
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+
+import org.apache.lucene.gradle.dist.PartOfDist
 
 class JdepsReport extends DefaultTask {
   
