@@ -16,7 +16,7 @@
  */
 
 import org.apache.lucene.gradle.checks.CheckWorkingCopy
-import org.apache.lucene.gradle.checks.LuceneSolrForbiddenApisPlugin
+import org.apache.lucene.gradle.checks.ForbiddenApisPluginWrapper
 import org.apache.lucene.gradle.checks.RatSources
 import org.apache.lucene.gradle.checks.CheckSourcePatterns
 import org.apache.lucene.gradle.deps.MissingDeps
@@ -73,12 +73,15 @@ configure(luceneSolrProjects) {
 
   
   // we can't safely directly access another projects configuration, so we do this
-  configurations {
-    rat
-  }
   
-  dependencies {
-    rat project(':buildSrc')
+  if (!project.name.equals("buildSrc")) {
+    configurations {
+      rat
+    }
+    
+    dependencies {
+      rat project(':buildSrc')
+    }
   }
   
   task ratSources(type: RatSources) {
@@ -130,7 +133,7 @@ configure(luceneSolrSubProjects) {
       check.dependsOn checkSourcePatterns
     }
       
-    project.plugins.apply(LuceneSolrForbiddenApisPlugin)
+    project.plugins.apply(ForbiddenApisPluginWrapper)
     
     sourceCompatibility = "11"
     targetCompatibility = "11"

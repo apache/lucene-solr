@@ -51,15 +51,23 @@ class UnusedDeps extends DefaultTask {
   
   protected configuration = "runtimeClasspath"
   
-  @InputDirectory
   File inputDirectory
+
+  private List<String> jarExcludes = new ArrayList<>()
+
+  public UnusedDeps() {
+    
+  }
+  
+  @InputDirectory
+  public File getInputDirectory() {
+    return inputDirectory;
+  }
   
   @Input
   @Optional
-  List<String> jarExcludes = new ArrayList<>()
-  
-  public UnusedDeps() {
-    
+  public List<String> getJarExcludes() {
+    return jarExcludes;
   }
   
   @TaskAction

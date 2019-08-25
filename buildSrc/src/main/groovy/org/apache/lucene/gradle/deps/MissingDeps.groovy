@@ -48,9 +48,9 @@ class MissingDeps extends DefaultTask {
   protected static Pattern srcJar = Pattern.compile("(.*?)-sources.jar")
   protected static Pattern dotFilePattern = Pattern.compile("(.*?).jar.dot")
   
-  @InputDirectory
+
   File inputDirectory
-  
+
   private List<String> depExcludes = new ArrayList<>()
   private List<String> exportedDepExcludes = new ArrayList<>()
   private List<String> classExcludes = new ArrayList<>()
@@ -150,6 +150,11 @@ class MissingDeps extends DefaultTask {
     } else {
       throw new GradleException("Missing dependencies found! Add them or add an exclusion if they are actually not necessary.")
     }
+  }
+  
+  @InputDirectory
+  public File getInputDirectory() {
+    return inputDirectory;
   }
   
   @Input
