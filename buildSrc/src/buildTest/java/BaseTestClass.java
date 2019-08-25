@@ -19,7 +19,6 @@ import static org.junit.Assume.assumeTrue;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -121,10 +120,7 @@ public abstract class BaseTestClass extends Assert {
       throws Exception {
     try {
       pb.environment().putAll(env);
-      //pb.environment().put("user.dir", "/home/lucene");
       pb.environment().put("PATH", System.getenv().get("PATH") + System.getProperty("path.separator") + "/usr/local/bin" + System.getProperty("path.separator") + "/usr/bin");
-      System.out.println(System.getenv());
-     // pb.environment().put("UID", System.getenv().get("UID"));
     } catch (Exception e) {
       System.out.println("Error setting env variables: " + env);
       throw e;
@@ -150,8 +146,7 @@ public abstract class BaseTestClass extends Assert {
         sb.append(line);
       }
     }
-    
-    // System.out.println(builder.toString());
+
     int returnCode = p.waitFor();
     PbResult result = new PbResult();
     result.returnCode = returnCode;
