@@ -23,6 +23,5 @@ dependencies {
   
   implementation project(':lucene:lucene-core')
 
-  testImplementation project(':lucene:lucene-core')
   testImplementation project(':lucene:lucene-test-framework')
 }
