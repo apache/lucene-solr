@@ -15,8 +15,16 @@
  * limitations under the License.
  */
 
-import org.apache.lucene.gradle.CheckWorkingCopy
-import org.apache.lucene.gradle.LuceneSolrForbiddenApisPlugin
+import org.apache.lucene.gradle.checks.CheckWorkingCopy
+import org.apache.lucene.gradle.checks.LuceneSolrForbiddenApisPlugin
+import org.apache.lucene.gradle.checks.RatSources
+import org.apache.lucene.gradle.checks.CheckSourcePatterns
+import org.apache.lucene.gradle.deps.MissingDeps
+import org.apache.lucene.gradle.deps.UnusedDeps
+import org.apache.lucene.gradle.deps.ListDeps
+import org.apache.lucene.gradle.deps.JdepsReport
+import org.apache.lucene.gradle.TopHints
+import org.apache.lucene.gradle.PristineClean
 import org.gradle.api.Project
 import org.apache.commons.io.FilenameUtils
 import com.google.common.base.Strings
@@ -73,7 +81,7 @@ configure(luceneSolrProjects) {
     rat project(':buildSrc')
   }
   
-  task ratSources(type: org.apache.lucene.gradle.RatSources) {
+  task ratSources(type: RatSources) {
       group = 'Verification'
       description = "Checks source files for proper license headers."
       excludes = [
@@ -115,7 +123,7 @@ configure(luceneSolrSubProjects) {
     
   plugins.withType(JavaPlugin) {
 
-    task checkSourcePatterns(type: org.apache.lucene.gradle.CheckSourcePatterns) {
+    task checkSourcePatterns(type: CheckSourcePatterns) {
       group = 'Verification'
       description = "Checks source files for project violations."
       baseDir = projectDir
@@ -192,12 +200,12 @@ configure(rootProject) {
   tasks.create('checkWorkingCopy', CheckWorkingCopy, false)
   
   
-  task testTimes(type: org.apache.lucene.gradle.TopHints) {
+  task testTimes(type: TopHints) {
     group = 'Tests'
     description = "Show the slowest tests (averages)."
   }
   
-  task pristineClean(type: org.apache.lucene.gradle.PristineClean) {}
+  task pristineClean(type: PristineClean) {}
   
   ext.testsResults = [] // test result summaries
   
@@ -256,11 +264,11 @@ configure(allprojects) {
   
   plugins.withType(JavaPlugin) {
     
-    task jdepsReport(type: org.apache.lucene.gradle.JdepsReport) {
+    task jdepsReport(type: JdepsReport) {
       target = jdepsReportDir
     }
     
-    task listDependencies(type: org.apache.lucene.gradle.ListDeps) {
+    task listDependencies(type: ListDeps) {
       group = 'Help'
       description = "List sorted dependencies and counts for a module."
     }
@@ -268,7 +276,7 @@ configure(allprojects) {
     task unusedDependencies {
       group = 'Help'
       description = "Lists dependencies that may be unused for a module."
-      task unusedDeps(type: org.apache.lucene.gradle.UnusedDeps) {
+      task unusedDeps(type: UnusedDeps) {
         inputDirectory jdepsReportDir
       }
       unusedDeps.dependsOn jdepsReport
@@ -280,7 +288,7 @@ configure(allprojects) {
     task missingDependencies {
       group = 'Help'
       description = "Lists classes from this module with missing runtime dependencies (we ignore scanning some root deps (ie hadoop) and some violations (ie annotations)."
-      task missingDeps(type: org.apache.lucene.gradle.MissingDeps) {
+      task missingDeps(type: MissingDeps) {
         inputDirectory jdepsReportDir
       }
       missingDeps.dependsOn jdepsReport

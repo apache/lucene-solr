@@ -17,8 +17,9 @@
 
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
-apply plugin: org.apache.lucene.gradle.PartOfDist
+apply plugin: org.apache.lucene.gradle.dist.PartOfDist
 
+// we use a lot of transitive = false because we are pretty particular on what tika parser deps we distribute
 dependencies {
   
   implementation project(':lucene:lucene-core')
@@ -65,8 +66,9 @@ dependencies {
   implementation ('org.tallison:jmatio') { transitive = false }
   implementation ('com.epam:parso') { transitive = false }
   implementation ('org.brotli:dec') { transitive = false }
-  implementation ('com.ibm.icu:icu4j')
   implementation ('xerces:xercesImpl') { transitive = false }
+  
+  implementation ('com.ibm.icu:icu4j')
   implementation ('commons-io:commons-io')
   implementation ('commons-codec:commons-codec')
   implementation ('com.google.guava:guava')
