@@ -96,3 +96,7 @@ task buildTest(type: Test) {
   dependsOn project.rootProject.clean
 }
 
+compileJava.doLast {
+  // hack for eclipse issue
+  file("$buildDir/pluginUnderTestMetadata").mkdirs()
+}
