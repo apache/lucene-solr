@@ -33,6 +33,9 @@ import org.gradle.api.tasks.TaskAction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import java.util.stream.Stream
+import java.util.concurrent.atomic.AtomicInteger
+
 class CheckSourcePatterns extends DefaultTask {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -42,12 +45,9 @@ class CheckSourcePatterns extends DefaultTask {
   @TaskAction
   void check() {
     ant.lifecycleLogLevel = "INFO"
-    ant.fileScanner{
+    def scanner = ant.fileScanner{
       fileset(dir: baseDir) {
         exts.each{
-          //include(name: 'lucene/**/*.' + it)
-          //include(name: 'solr/**/*.' + it)
-          //include(name: 'dev-tools/**/*.' + it)
           include(name: '**/*.' + it)
         }
         // TODO: For now we don't scan txt files, so we
@@ -66,7 +66,14 @@ class CheckSourcePatterns extends DefaultTask {
         exclude(name: '**/CheckSourcePatterns.groovy') // ourselves :-)
         exclude(name: '**/src/test/org/apache/hadoop/**')
       }
-    }.each{ f ->
+    }
+    
+    List<File> files = new ArrayList<>()
+    scanner.each {files.add(it)}
+    
+    Stream.of(files.toArray())
+    .parallel()
+    .forEach({ f ->
       log.info ('Scanning file: ' + f)
       def text = f.getText('UTF-8')
       invalidPatterns.each{ pattern,name ->
@@ -110,7 +117,7 @@ class CheckSourcePatterns extends DefaultTask {
       if (f.name.endsWith('.adoc')) {
         checkForUnescapedSymbolSubstitutions(f, text)
       }
-    }
+    })
     
     if (found) {
       throw new GradleException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
@@ -160,12 +167,12 @@ class CheckSourcePatterns extends DefaultTask {
     (~$/import java\.lang\.\w+;/$) : 'java.lang import is unnecessary'
   ]
   
-  protected def found = 0
-  protected def violations = new TreeSet()
+  protected AtomicInteger found = new AtomicInteger()
+  protected def violations = Collections.synchronizedSet(new TreeSet())
   protected def reportViolation = { f, name ->
     log.error(name + ': ' + f.toString().substring(baseDir.length() + 1).replace(File.separatorChar, (char)'/'))
     violations.add(name)
-    found++
+    found.incrementAndGet()
   }
 
   protected def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$
