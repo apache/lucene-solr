@@ -32,9 +32,6 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Compression
 
 class PackageLuceneSolrDist extends DefaultTask {
-  @Input
-  @Optional
-  List<String> additionalIncludes = Collections.synchronizedList(new ArrayList<>())
 
   PackageLuceneSolrDist() {
     def distDir = 'dist'
@@ -74,12 +71,6 @@ class PackageLuceneSolrDist extends DefaultTask {
         standardIncludes.each {
           include it
         }
-        
-//        for(int i = 0; i < additionalIncludes.size(); i++) {
-//          println 'additional include ' + i
-//          include additionalIncludes.get(i)
-//        }
-        
 
         standardExcludes.each {
           exclude it
