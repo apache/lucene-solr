@@ -30,10 +30,9 @@ class JFlex extends DefaultTask {
   
   @Input
   String fileName
-  
-  @Optional
+
   @Input
-  boolean disableBufferExpansion
+  boolean disableBufferExpansion = false
   
   @OutputDirectory
   File target

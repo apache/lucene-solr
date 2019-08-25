@@ -21,7 +21,7 @@ import de.thetaphi.forbiddenapis.gradle.ForbiddenApisPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
-class LuceneSolrForbiddenApisPlugin implements Plugin<Project> {
+class ForbiddenApisPluginWrapper implements Plugin<Project> {
 
   @Override
   void apply(Project project) {
