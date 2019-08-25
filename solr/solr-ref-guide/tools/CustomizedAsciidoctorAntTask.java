@@ -22,7 +22,6 @@ import org.asciidoctor.ant.AsciidoctorAntTask;
  * in order to be able to wrap in a macro with defaults
  */
 public class CustomizedAsciidoctorAntTask extends AsciidoctorAntTask {
-  @SuppressWarnings("UnusedDeclaration")
   public void setSourceDocumentName(String sourceDocumentName) {
     if ("".equals(sourceDocumentName)) {
       sourceDocumentName = null;
