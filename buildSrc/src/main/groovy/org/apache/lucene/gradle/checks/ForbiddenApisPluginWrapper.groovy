@@ -18,6 +18,7 @@ package org.apache.lucene.gradle.checks
 
 import de.thetaphi.forbiddenapis.gradle.CheckForbiddenApis
 import de.thetaphi.forbiddenapis.gradle.ForbiddenApisPlugin
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -33,23 +34,40 @@ class ForbiddenApisPluginWrapper implements Plugin<Project> {
 
     project.tasks.withType(CheckForbiddenApis) { task ->
       task.failOnUnresolvableSignatures = false
-      task.bundledSignatures = ['jdk-unsafe', 'jdk-deprecated', 'jdk-non-portable', 'jdk-reflection']
-      task.signaturesURLs = [ getClass().getResource('/forbidden/base.txt') ]
-      
+      task.bundledSignatures = [
+        'jdk-unsafe',
+        'jdk-deprecated',
+        'jdk-non-portable',
+        'jdk-reflection'
+      ]
+      task.signaturesURLs = [
+        getClass().getResource('/forbidden/base.txt')
+      ]
+
       if (task.name.endsWith('Test') || project.name ==~ /.*?\btest-framework/) {
         task.signaturesURLs += getClass().getResource('/forbidden/tests.txt')
       } else {
         task.bundledSignatures += 'jdk-system-out'
       }
-      
+
       if (project.group ==~ /.*?\.lucene(?:\.\w+)?/) {
         task.signaturesURLs += getClass().getResource('/forbidden/lucene.txt')
       } else if (project.group ==~ /.*?\.solr(?:\.\w+)?/) {
         task.signaturesURLs += getClass().getResource((project.name == 'solr-solrj') ? '/forbidden/solrj.txt' : '/forbidden/solr.txt')
-        
+
+        try {
+
+          def commonsIOVersion = project.getVersion("commons-io", "commons-io", project.rootProject.configurations.unifiedClasspath)
+          task.bundledSignatures += [
+            'commons-io-unsafe-' + commonsIOVersion
+          ]
+        } catch (GradleException e) {
+          // we did not find it
+        }
+
+
         task.doFirst{
-          task.bundledSignatures += [ 'commons-io-unsafe-' + project.getVersion("commons-io:commons-io") ]
-          
+
           // we delay adding the servlet-api checks until we figured out that we have a servlet-api.jar on forbidden's classpath:
           if (task.classpath.filter { it.name ==~ /.*?\bservlet-api\b.*?\.jar/ }.empty == false) {
             task.signaturesURLs += getClass().getResource('/forbidden/servlet-api.txt')

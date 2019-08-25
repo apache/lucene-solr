@@ -27,7 +27,6 @@ import org.apache.lucene.gradle.TopHints
 import org.apache.lucene.gradle.PristineClean
 import org.gradle.api.Project
 import org.apache.commons.io.FilenameUtils
-import com.google.common.base.Strings
 
 plugins {
   id "com.palantir.consistent-versions" version "1.11.0"
@@ -48,12 +47,9 @@ plugins {
 
 buildDir = file("build")
 
-// define lucene-solr project lists that exclude buildSrc
-
-def excludeProjects = ['buildSrc', 'lucene', 'solr', 'lucene-analysis']
-
-def luceneSolrProjects = allprojects - excludeProjects;
-def luceneSolrSubProjects = subprojects - excludeProjects;
+// define lucene-solr project lists
+def luceneSolrProjects = allprojects
+def luceneSolrSubProjects = subprojects
 
 def rootProjectDir = project.rootProject.projectDir;
 
@@ -64,25 +60,12 @@ apply from: file("${rootProjectDir}/buildSrc/common/configure-ext.gradle")
 apply from: mfile(rootProjectDir, 'buildSrc/common/build-help.gradle')
 
 
-// *** lucene-solr all module config - configure all lucene-solr projects, including root project, excluding aggregate modules
+// *** lucene-solr all module config - configure all lucene-solr projects, including root project
 configure(luceneSolrProjects) {
   buildDir = file("build")
   
   // setup repositories
   apply from: mfile(rootProjectDir, 'buildSrc/common/configure-repositories.gradle')
-
-  
-  // we can't safely directly access another projects configuration, so we do this
-  
-  if (!project.name.equals("buildSrc")) {
-    configurations {
-      rat
-    }
-    
-    dependencies {
-      rat project(':buildSrc')
-    }
-  }
   
   task ratSources(type: RatSources) {
       group = 'Verification'
@@ -92,7 +75,9 @@ configure(luceneSolrProjects) {
         '**/*.txt,',
         '**/*.iml'
       ]
-      check.dependsOn ratSources
+      if (project.hasProperty('check')) {
+        check.dependsOn ratSources
+      }
   }
 }
 
