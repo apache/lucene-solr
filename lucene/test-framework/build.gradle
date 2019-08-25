@@ -23,7 +23,7 @@ archivesBaseName = 'lucene-test-framework'
 
 dependencies {
   
-  api project(':lucene:lucene-core')
+  implementation project(':lucene:lucene-core')
   implementation project(':lucene:lucene-codecs')
   
   api ("junit:junit")
