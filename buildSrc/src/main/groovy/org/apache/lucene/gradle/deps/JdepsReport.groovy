@@ -33,10 +33,13 @@ import org.gradle.api.artifacts.ModuleIdentifier
 import org.gradle.api.file.RelativePath
 import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
 import org.gradle.api.specs.Spec
+import org.gradle.api.tasks.Classpath
+import org.gradle.api.tasks.CompileClasspath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.WorkResult
@@ -53,12 +56,38 @@ class JdepsReport extends DefaultTask {
   protected File distDir
   protected File jdepsDir
   
-  @OutputDirectory
   File target
-  
-  @Optional
-  @Input
   boolean recursive = true
+
+  @OutputDirectory
+  public File getTarget() {
+    return target;
+  }
+
+  @Input
+  public boolean isRecursive() {
+    return recursive;
+  }
+  
+  @Classpath
+  @InputFiles
+  public Iterable<File> getClasspath() {
+    List<File> classpath = new ArrayList<>()
+
+    Configuration config = project.configurations[this.configuration]
+
+    List<Project> buildProjects = getBuildProjects(config)
+
+    buildProjects.each {subproject ->
+
+      if (subproject.getPlugins().hasPlugin(PartOfDist) && subproject.tasks.findByName('jar') && subproject.configurations.hasProperty(configuration)) {
+        classpath += subproject.jar.outputs.files
+        def files = getFiles(subproject)
+        classpath += files
+      }
+    }
+    return classpath
+  }
 
   public JdepsReport() {
     if (project.hasProperty('useConfiguration')) {
@@ -70,7 +99,6 @@ class JdepsReport extends DefaultTask {
     
     // make sure all the jars are built
     dependsOn project.rootProject.subprojects.collect { it.tasks.withType(Jar) }
-    outputs.upToDateWhen { false }
   }
   
   protected void makeDirs() {
@@ -93,19 +121,12 @@ class JdepsReport extends DefaultTask {
     // make sure ant task logging shows up by default
     ant.lifecycleLogLevel = "INFO"
     
+    Configuration config = project.configurations[this.configuration]
+    
+    List<Project> buildProjects = this.getBuildProjects(config)
+    
     WorkResult result = project.copy {
       into(distDir)
-      
-      Configuration config = project.configurations[this.configuration]
-      
-      List<Project> buildProjects = new ArrayList()
-      buildProjects.add(project)
-      config.getAllDependencies().forEach({ dep ->
-        if (dep instanceof DefaultProjectDependency) {
-          Project dProject = dep.getDependencyProject()
-          buildProjects.add(dProject)
-        }
-      })
       
       buildProjects.each {subproject ->
 
@@ -129,8 +150,7 @@ class JdepsReport extends DefaultTask {
     
     if (result.getDidWork()) {
       runJdeps(project.getTopLvlProject(project), project, project, distDir, jdepsDir)
-      
-      Configuration config = project.configurations[this.configuration]
+
       config.getAllDependencies().forEach({ dep ->
         if (dep instanceof DefaultProjectDependency) {
           Project dProject = dep.getDependencyProject()
@@ -158,9 +178,21 @@ class JdepsReport extends DefaultTask {
   }
   
   private static Collection getFiles(Project subproject) {
-    def files = subproject.configurations.runtimeClasspath.files
+    def files = subproject.configurations.runtimeClasspath.getFiles()
     
     return files
+  }
+  
+  private List<Project> getBuildProjects(Configuration config) {
+    List<Project> buildProjects = new ArrayList()
+    buildProjects.add(project)
+    config.getAllDependencies().forEach({ dep ->
+      if (dep instanceof DefaultProjectDependency) {
+        Project dProject = dep.getDependencyProject()
+        buildProjects.add(dProject)
+      }
+    })
+    return buildProjects
   }
 
 }
