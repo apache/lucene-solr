@@ -131,7 +131,7 @@ test {
     def testsJvms = project.ext.properties.tests_jvms
     maxParallelForks = Integer.parseInt(testsJvms)
   } else {
-    maxParallelForks = Runtime.runtime.availableProcessors() / 2
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
   }
   
   def testsFailFast = project.ext.properties.tests_failfast
