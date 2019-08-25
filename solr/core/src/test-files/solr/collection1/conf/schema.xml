@@ -651,6 +651,8 @@
   <!-- EnumType -->
   <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
 
+  <field name="max_chars" type="string" indexed="false" stored="true"/>
+
 
   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
        will be used if the name matches any of the patterns.
@@ -849,6 +851,8 @@
   <!-- dynamic destination -->
   <copyField source="*_dynamic" dest="dynamic_*"/>
   <copyField source="*_path" dest="*_ancestor"/>
+
+  <copyField source="title" dest="max_chars" maxChars="10"/>
 
   <!-- example of a custom similarity -->
   <similarity class="solr.CustomSimilarityFactory">
