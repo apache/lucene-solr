@@ -16,6 +16,9 @@ package org.apache.lucene.gradle
  * limitations under the License.
  */
 
+/**
+ * Holds test run results for a pretty print console report.
+ */
 class TestResultObj {
   
   private String summary

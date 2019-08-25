@@ -18,9 +18,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestEnforcers extends BaseTestClass {
+public class TestChecks extends BaseTestClass {
   
-  public TestEnforcers() {
+  public TestChecks() {
 
   }
   

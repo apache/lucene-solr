@@ -17,7 +17,7 @@
 
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
-apply plugin: org.apache.lucene.gradle.PartOfDist
+apply plugin: org.apache.lucene.gradle.dist.PartOfDist
 
 dependencies {
   implementation project(':solr:solr-core')
@@ -32,8 +32,9 @@ dependencies {
   implementation ('com.sun.mail:gimap')
   implementation ('commons-io:commons-io')
   
-  implementation ('org.apache.tika:tika-core')
-  implementation 'org.apache.tika:tika-parsers'
+  // transitive = false because we are pretty particular on what tika parser deps we distribute
+  implementation ('org.apache.tika:tika-core') { transitive = false }
+  implementation ('org.apache.tika:tika-parsers') { transitive = false }
   
   testImplementation project(path: ':solr:contrib:solr-contrib-dataimporthandler', configuration: 'testOutput')
   testImplementation project(':lucene:lucene-test-framework')
