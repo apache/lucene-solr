@@ -38,7 +38,7 @@ task getStartJar(type: Copy) {
   }
 }
 
-task packageDist(type: org.apache.lucene.gradle.PackageLuceneSolrDist) {
+task packageDist(type: org.apache.lucene.gradle.dist.PackageLuceneSolrDist) {
   group = 'Dist'
   description = 'Generates the Lucene and Solr distribution.'
   

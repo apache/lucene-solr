@@ -1,4 +1,4 @@
-package org.apache.lucene.gradle
+package org.apache.lucene.gradle.dist
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,8 +18,7 @@ package org.apache.lucene.gradle
 
 import javax.inject.Inject
 
-import org.apache.lucene.gradle.PartOfDist
-
+import org.apache.lucene.gradle.dist.PartOfDist
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration

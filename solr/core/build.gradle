@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
- import org.apache.lucene.gradle.UnusedDeps
+ import org.apache.lucene.gradle.deps.UnusedDeps
  
 apply plugin: 'java-library'
 apply plugin: 'maven-publish'
-apply plugin: org.apache.lucene.gradle.PartOfDist
+apply plugin: org.apache.lucene.gradle.dist.PartOfDist
 
 archivesBaseName = 'solr-core'
 

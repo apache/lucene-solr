@@ -28,7 +28,7 @@ tasks.create('checkLicenses', LicenseCheckTask, file('licenses'))
 
 tasks.create('jarChecksums', JarChecksum, file('.'), file('licenses'))
 
-task packageDist(type: org.apache.lucene.gradle.PackageLuceneSolrDist) {
+task packageDist(type: org.apache.lucene.gradle.dist.PackageLuceneSolrDist) {
   group = 'Dist'
   description = 'Generates the Lucene and Solr distribution.'
 }
