@@ -94,7 +94,7 @@ public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
           "/config/overlay",
           null,
           Arrays.asList("overlay", "runtimeLib", "urljar", "sha256"),
-          "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420", 120);
+          "e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc", 120);
 
       payload = "{\n" +
           "'create-requesthandler' : { 'name' : '/runtime', 'class': 'org.apache.solr.core.RuntimeLibReqHandler', 'runtimeLib' : true}" +

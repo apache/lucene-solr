@@ -19,14 +19,20 @@ package org.apache.solr.handler.admin;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.api.V2HttpCall.CompositeApi;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -39,10 +45,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.V2HttpCall;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.PathTrie;
 
 import static org.apache.solr.api.ApiBag.EMPTY_SPEC;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
@@ -122,18 +124,21 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = invoke(containerHandlers, null, "/collections/_introspect", GET, mockCC);
 
-    assertConditions(rsp.getValues().asMap(2), Utils.makeMap(
-        "/spec[0]/methods[0]", "DELETE",
-        "/spec[1]/methods[0]", "POST",
-        "/spec[2]/methods[0]", "GET"
+    Set<String> methodNames = new HashSet<>();
+    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]",null));
+    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]",null));
+    methodNames.add(rsp.getValues()._getStr("/spec[2]/methods[0]",null));
+    assertTrue(methodNames.contains("DELETE"));
+    assertTrue(methodNames.contains("POST"));
+    assertTrue(methodNames.contains("GET"));
 
-    ));
+    methodNames = new HashSet<>();
 
     rsp = invoke(coreHandlers, "/schema/_introspect", "/collections/hello/schema/_introspect", GET, mockCC);
-    assertConditions(rsp.getValues().asMap(2), Utils.makeMap(
-        "/spec[0]/methods[0]", "POST",
-        "/spec[0]/commands", NOT_NULL,
-        "/spec[1]/methods[0]", "GET"));
+    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]",null));
+    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]",null));
+    assertTrue(methodNames.contains("POST"));
+    assertTrue(methodNames.contains("GET"));
 
     rsp = invoke(coreHandlers, "/", "/collections/hello/_introspect", GET, mockCC);
     assertConditions(rsp.getValues().asMap(2), Utils.makeMap(

@@ -36,7 +36,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -63,6 +62,7 @@ public class BlobRepositoryMockingTest {
   boolean blobFetched = false;
   String blobKey = "";
   String url = null;
+  String sha256 = null;
   ByteBuffer filecontent = null;
   
   @BeforeClass
@@ -89,6 +89,14 @@ public class BlobRepositoryMockingTest {
         blobKey = key;
         blobFetched = true;
         return filecontent;
+      }
+
+      @Override
+      BlobContentRef getBlobIncRef(String key, Decoder decoder, String url, String sha256) {
+        if(!Objects.equals(sha256, BlobRepositoryMockingTest.this.sha256)) return null;
+        blobKey = key;
+        blobFetched = true;
+        return new BlobContentRef(new BlobContent(key, filecontent)) ;
       }
 
       @Override
@@ -130,21 +138,13 @@ public class BlobRepositoryMockingTest {
     when(mockContainer.isZooKeeperAware()).thenReturn(true);
     filecontent = TestDynamicLoading.getFileContent("runtimecode/runtimelibs_v2.jar.bin");
     url = "http://localhost:8080/myjar/location.jar";
+    sha256 = "79298d7d5c3e60d91154efe7d72f4536eac46698edfa22ab894b85492d562ed4";
     BlobRepository.BlobContentRef ref = repository.getBlobIncRef( "filefoo",null,url,
-        "bc5ce45ad281b6a08fb7e529b1eb475040076834816570902acb6ebdd809410e31006efdeaa7f78a6c35574f3504963f5f7e4d92247d0eb4db3fc9abdda5d417");
+        "79298d7d5c3e60d91154efe7d72f4536eac46698edfa22ab894b85492d562ed4");
     assertTrue("filefoo".equals(blobKey));
     assertTrue(blobFetched);
     assertNotNull(ref.blob);
     assertEquals(filecontent, ref.blob.get());
-    verify(mockContainer).isZooKeeperAware();
-    try {
-      repository.getBlobIncRef( "filefoo",null,url,
-          "WRONG-SHA256-KEY");
-      fail("expected exception");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains(" expected sha256 hash : WRONG-SHA256-KEY , actual :"));
-    }
-
     url = null;
     filecontent = null;
   }

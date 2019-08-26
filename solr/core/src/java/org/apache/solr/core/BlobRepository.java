@@ -468,7 +468,7 @@ public class BlobRepository {
   public static class BlobContentRef<T> {
     public final BlobContent<T> blob;
 
-    private BlobContentRef(BlobContent<T> blob) {
+    public BlobContentRef(BlobContent<T> blob) {
       this.blob = blob;
     }
   }
