@@ -37,6 +37,8 @@ RUN useradd -ms /bin/bash lucene
 # Define working directory.
 WORKDIR /home/lucene/project
 
+RUN mkdir -p /home/lucene/project
+
 RUN chown -R lucene:lucene /home/lucene
 
 USER lucene
