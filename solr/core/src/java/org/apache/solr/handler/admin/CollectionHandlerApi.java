@@ -95,9 +95,9 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     //The following APIs have only V2 implementations
     addApi(apiMapping, Meta.GET_NODES, CollectionHandlerApi::getNodes);
     addApi(apiMapping, Meta.SET_CLUSTER_PROPERTY_OBJ, CollectionHandlerApi::setClusterObj);
-    addApi(apiMapping, Meta.ADD_RUNTIME_LIB, wrap(CollectionHandlerApi::addUpdateRuntimeLib));
-    addApi(apiMapping, Meta.UPDATE_RUNTIME_LIB, wrap(CollectionHandlerApi::addUpdateRuntimeLib));
-    addApi(apiMapping, Meta.DELETE_RUNTIME_LIB, wrap(CollectionHandlerApi::deleteRuntimeLib));
+    addApi(apiMapping, Meta.ADD_PACKAGE, wrap(CollectionHandlerApi::addUpdatePackage));
+    addApi(apiMapping, Meta.UPDATE_PACKAGE, wrap(CollectionHandlerApi::addUpdatePackage));
+    addApi(apiMapping, Meta.DELETE_RUNTIME_LIB, wrap(CollectionHandlerApi::deletePackage));
     addApi(apiMapping, Meta.ADD_REQ_HANDLER, wrap(CollectionHandlerApi::addRequestHandler));
     addApi(apiMapping, Meta.DELETE_REQ_HANDLER, wrap(CollectionHandlerApi::deleteReqHandler));
 
@@ -117,9 +117,17 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       if (modified) {
         Stat stat = new Stat();
         Map<String, Object> clusterProperties = new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties(stat);
-        cc.getClusterPropertiesListener().onChange(clusterProperties);
+        try {
+          cc.getPackageManager().onChange(clusterProperties);
+        } catch (SolrException e) {
+          log.error("error executing command : " + info.op.jsonStr(), e);
+          throw e;
+        } catch (Exception e) {
+          log.error("error executing command : " + info.op.jsonStr(), e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "error executing command : ", e);
+        }
         log.info("current version of clusterprops.json is {} , trying to get every node to update ", stat.getVersion());
-        log.debug("The current clusterprops.json:  {}",clusterProperties );
+        log.debug("The current clusterprops.json:  {}", clusterProperties);
         ((CollectionHandlerApi) info.apiHandler).waitForStateSync(stat.getVersion(), cc);
 
       }
@@ -165,7 +173,8 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     clusterProperties.setClusterProperties(m);
     return true;
   }
-  private static boolean deleteRuntimeLib(ApiInfo params) throws Exception {
+
+  private static boolean deletePackage(ApiInfo params) throws Exception {
     if (!RuntimeLib.isEnabled()) {
       params.op.addError("node not started with enable.runtime.lib=true");
       return false;
@@ -173,9 +182,9 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     String name = params.op.getStr(CommandOperation.ROOT_OBJ);
     ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
     Map<String, Object> props = clusterProperties.getClusterProperties();
-    List<String> pathToLib = asList(RuntimeLib.TYPE, name);
+    List<String> pathToLib = asList(CommonParams.PACKAGE, name);
     Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
-    if(existing == null){
+    if (existing == null) {
       params.op.addError("No such runtimeLib : " + name);
       return false;
     }
@@ -185,7 +194,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     return true;
   }
 
-  private static boolean addUpdateRuntimeLib(ApiInfo params) throws Exception {
+  private static boolean addUpdatePackage(ApiInfo params) throws Exception {
     if (!RuntimeLib.isEnabled()) {
       params.op.addError("node not started with enable.runtime.lib=true");
       return false;
@@ -197,9 +206,9 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     String name = op.getStr("name");
     ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
     Map<String, Object> props = clusterProperties.getClusterProperties();
-    List<String> pathToLib = asList(RuntimeLib.TYPE, name);
+    List<String> pathToLib = asList(CommonParams.PACKAGE, name);
     Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
-    if (Meta.ADD_RUNTIME_LIB.commandName.equals(op.name)) {
+    if (Meta.ADD_PACKAGE.commandName.equals(op.name)) {
       if (existing != null) {
         op.addError(StrUtils.formatString("The jar with a name ''{0}'' already exists ", name));
         return false;
@@ -209,7 +218,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
         op.addError(StrUtils.formatString("The jar with a name ''{0}'' does not exist", name));
         return false;
       }
-      if(Objects.equals( existing.get(SHA512) , op.getDataMap().get(SHA512))){
+      if (Objects.equals(existing.get(SHA512), op.getDataMap().get(SHA512))) {
         op.addError("Trying to update a jar with the same sha512");
         return false;
       }
@@ -323,6 +332,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
   public static class PerNodeCallable extends SolrConfigHandler.PerReplicaCallable {
 
     static final List<String> path = Arrays.asList("metadata", CommonParams.VERSION);
+
     PerNodeCallable(String baseUrl, int expectedversion, int waitTime) {
       super(baseUrl, ConfigOverlay.ZNODEVER, expectedversion, waitTime);
     }

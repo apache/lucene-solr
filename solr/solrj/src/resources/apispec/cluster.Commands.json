@@ -170,17 +170,17 @@
         "name"
       ]
     },
-    "add-runtimelib": {
+    "add-package": {
       "documentation": "",
-      "description" : "Add a remote jar to the classpath",
+      "description" : "Add a package to the classpath",
       "#include": "cluster.Commands.runtimelib.properties"
     },
-    "update-runtimelib": {
+    "update-package": {
       "documentation": "",
       "description" : "Update the jar details",
       "#include": "cluster.Commands.runtimelib.properties"
     },
-    "delete-runtimelib": {
+    "delete-package": {
       "documentation": "",
       "description" : "delete a lib",
       "type": "string"
@@ -197,6 +197,10 @@
         "class": {
           "type": "string",
           "description": "The class name"
+        },
+        "package" : {
+          "type": "string",
+          "description": " The package from where the plugin can be loaded from"
         }
       },
       "required": ["name", "class"],

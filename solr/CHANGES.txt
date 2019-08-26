@@ -69,6 +69,8 @@ Other Changes
 
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
+* SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -112,6 +114,14 @@ New Features
 
 * SOLR-13682: command line option to export documents to a file (noble)
 
+* SOLR-13650: Solr now can define and add "packages" with plugins. Each plugin can choose to
+  load from one of those packages & updating packages can reload those plugins independently (noble)
+
+* SOLR-13257: Support deterministic replica routing preferences for better cache usage (Michael Gibney
+  via Christine Poerschke, Tomás Fernández Löbbe)
+
+* SOLR-13707: API to expose the currently used package name, details for each plugin (noble)
+
 Improvements
 ----------------------
 
@@ -121,6 +131,13 @@ Improvements
 * SOLR-13558, SOLR-13693: Allow dynamic resizing of SolrCache-s. (ab)
 
 * SOLR-6305: Ability to set the replication factor for index files created by HDFSDirectoryFactory (Boris Pasko via Kevin Risden)
+
+* SOLR-13677: All Metrics Gauges should be unregistered by the objects that registered them (noble)
+
+* SOLR-13702: Some components register twice their metric names (janhoy)
+
+* SOLR-11601: Improved error message when geodist(llpsf) is used with arguments referring to a LatLonPointSpatialField.
+  (Amrit Sarkar)
 
 Bug Fixes
 ----------------------
@@ -151,6 +168,16 @@ Bug Fixes
   (Krzysztof Watral, Amrit Sarkar, Tim, Tdspringsteen, shalin)
 
 * SOLR-13694: IndexSizeEstimator NullPointerException. (ab, hossman)
+
+* SOLR-13700: Fixed a race condition when initializing metrics for new security plugins on security.json change (hossman)
+
+* SOLR-13701: Fixed JWTAuthPlugin to update metrics prior to continuing w/other filters or returning error (hossman)
+
+* SOLR-6328: facet.missing=true should return missing count even when facet.limit=0 (hossman, Munendra S N)
+
+* SOLR-13704: Improve error message and change error code to 400 for client errors in ExpandComponent (Munendra S N)
+
+* SOLR-13699 - maxChars no longer working on CopyField with javabin (Chris Troullis via noble)
 
 Other Changes
 ----------------------

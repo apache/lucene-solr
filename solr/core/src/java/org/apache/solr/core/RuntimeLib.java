@@ -50,6 +50,7 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
   private String name, version, sig, sha512, url;
   private BlobRepository.BlobContentRef<ByteBuffer> jarContent;
   private boolean verified = false;
+  int znodeVersion = -1;
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
@@ -58,6 +59,12 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
     ew.putIfNotNull(version, version);
     ew.putIfNotNull(sha512, sha512);
     ew.putIfNotNull("sig", sig);
+    if (znodeVersion > -1) {
+      ew.put(ConfigOverlay.ZNODEVER, znodeVersion);
+    }
+  }
+  public int getZnodeVersion(){
+    return znodeVersion;
   }
 
   public RuntimeLib(CoreContainer coreContainer) {

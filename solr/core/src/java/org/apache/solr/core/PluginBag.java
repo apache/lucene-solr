@@ -33,7 +33,9 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
@@ -120,7 +122,7 @@ public class PluginBag<T> implements AutoCloseable {
                                           boolean isRuntimeLib) {
     T localInst = null;
     try {
-      localInst = (T) core.createInstance(pluginInfo.className, pluginMeta.clazz, pluginMeta.getCleanTag(), core, resourceLoader);
+      localInst = (T) SolrCore.createInstance(pluginInfo.className, pluginMeta.clazz, pluginMeta.getCleanTag(), core, resourceLoader);
     } catch (SolrException e) {
       if (isRuntimeLib && !(resourceLoader instanceof MemClassLoader)) {
         throw new SolrException(SolrException.ErrorCode.getErrorCode(e.code()),
@@ -195,10 +197,11 @@ public class PluginBag<T> implements AutoCloseable {
     PluginHolder<T> pluginHolder = new PluginHolder<>(null, plugin);
     pluginHolder.registerAPI = false;
     PluginHolder<T> old = put(name, pluginHolder);
+    if(old != null)  closeQuietly(old);
     return old == null ? null : old.get();
   }
 
-  PluginHolder<T> put(String name, PluginHolder<T> plugin) {
+  public PluginHolder<T> put(String name, PluginHolder<T> plugin) {
     Boolean registerApi = null;
     Boolean disableHandler = null;
     if (plugin.pluginInfo != null) {
@@ -336,15 +339,15 @@ public class PluginBag<T> implements AutoCloseable {
   }
 
   public PluginHolder<T> createPlugin(PluginInfo info) {
-    String runtimeType = info.getRuntimeLibType();
-    if ("global".equals(runtimeType)) {
-      log.debug(" {} : '{}'  created with runtimeLib=global ", meta.getCleanTag(), info.name);
-      PluginHolder<T> holder = new GlobalLoaderPluginHolder<T>(info, core, meta);
+    String pkg = info.attributes.get(CommonParams.PACKAGE);
+    if (pkg != null) {
+      log.debug(" {} : '{}'  created with package={} ", meta.getCleanTag(), info.name, pkg);
+      PluginHolder<T> holder = new PackagePluginHolder<T>(info, core, meta);
       return meta.clazz == UpdateRequestProcessorFactory.class ?
           (PluginHolder<T>) new UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder((PluginHolder<UpdateRequestProcessorFactory>) holder) :
           holder;
 
-    } else if ("core".equals(String.valueOf(runtimeType))) {
+    } else if (info.isRuntimePlugin()) {
       log.debug(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
       LazyPluginHolder<T> holder = new LazyPluginHolder<>(meta, info, core, RuntimeLib.isEnabled() ?
           core.getMemClassLoader() :
@@ -357,7 +360,7 @@ public class PluginBag<T> implements AutoCloseable {
       log.debug("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
       return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader(), false);
     } else {
-      T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader());
+      T inst = SolrCore.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader());
       initInstance(inst, info);
       return new PluginHolder<>(info, inst);
     }
@@ -477,58 +480,57 @@ public class PluginBag<T> implements AutoCloseable {
         loader.loadJars();
       }
       lazyInst = createInitInstance(pluginInfo,pluginMeta,core,resourceLoader, isRuntimeLib);
-     /* Class<T> clazz = (Class<T>) pluginMeta.clazz;
-      T localInst = null;
-      try {
-        localInst = core.createInstance(pluginInfo.className, clazz, pluginMeta.getCleanTag(), null, resourceLoader);
-      } catch (SolrException e) {
-        if (isRuntimeLib && !(resourceLoader instanceof MemClassLoader)) {
-          throw new SolrException(SolrException.ErrorCode.getErrorCode(e.code()),
-              e.getMessage() + ". runtime library loading is not enabled, start Solr with -Denable.runtime.lib=true",
-              e.getCause());
-        }
-        throw e;
-
-
-      }
-      initInstance(localInst, pluginInfo);
-      if (localInst instanceof SolrCoreAware) {
-        SolrResourceLoader.assertAwareCompatibility(SolrCoreAware.class, localInst);
-        ((SolrCoreAware) localInst).inform(core);
-      }
-      if (localInst instanceof ResourceLoaderAware) {
-        SolrResourceLoader.assertAwareCompatibility(ResourceLoaderAware.class, localInst);
-        try {
-          ((ResourceLoaderAware) localInst).inform(core.getResourceLoader());
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "error initializing component", e);
-        }
-      }
-      lazyInst = localInst;  // only assign the volatile until after the plugin is completely ready to use*/
       return true;
     }
 
 
   }
 
-  public class GlobalLoaderPluginHolder<T> extends PluginHolder<T> {
+  public class PackagePluginHolder<T> extends PluginHolder<T> {
     private final SolrCore core;
     private final SolrConfig.SolrPluginInfo pluginMeta;
-    private final LibListener libListener;
+    private final PackageManager packageManager;
+    private final String pkg;
+    private RuntimeLib runtimeLib;
 
-    public GlobalLoaderPluginHolder(PluginInfo info, SolrCore core, SolrConfig.SolrPluginInfo pluginMeta) {
+    public PackagePluginHolder(PluginInfo info, SolrCore core, SolrConfig.SolrPluginInfo pluginMeta) {
       super(info);
       this.core = core;
       this.pluginMeta = pluginMeta;
-      this.core.addGlobalClassLoaderListener(() -> reload());
-      this.libListener = core.getCoreContainer().getClusterPropertiesListener();
+      this.pkg = info.attributes.get(CommonParams.PACKAGE);
+      this.core.addPackageListener(new SolrCore.PkgListener() {
+        @Override
+        public String packageName() {
+          return pkg;
+        }
+
+        @Override
+        public PluginInfo pluginInfo() {
+          return info;
+        }
+
+        @Override
+        public MapWriter lib() {
+          return runtimeLib;
+        }
+
+        @Override
+        public void changed(RuntimeLib lib) {
+          int myVersion = runtimeLib == null? -1 : runtimeLib.znodeVersion;
+          if(lib.getZnodeVersion() > myVersion) reload();
+        }
+      });
+      this.packageManager = core.getCoreContainer().getPackageManager();
       reload();
     }
 
 
     private void reload() {
       if(inst == null) log.info("reloading plugin {} ", pluginInfo.name);
-      inst = createInitInstance(pluginInfo, pluginMeta, core, core.getCoreContainer().getClusterPropertiesListener().getResourceLoader(), true);
+      inst = createInitInstance(pluginInfo, pluginMeta,
+          core, packageManager.getResourceLoader(this.pkg), true);
+      this.runtimeLib = packageManager.getLib(pkg);
+
     }
 
 
