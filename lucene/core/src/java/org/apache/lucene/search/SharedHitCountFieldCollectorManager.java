@@ -17,7 +17,6 @@
 
 package org.apache.lucene.search;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,28 +25,50 @@ import java.util.concurrent.atomic.AtomicInteger;
  * model where all Collectors report their number of hits in a shared
  * state which allows an early termination across all threads
  */
-public class SharedHitCountFieldCollectorManager implements CollectorManager<TopFieldCollector.SharedHitCountFieldCollector, TopFieldDocs> {
+public class SharedHitCountFieldCollectorManager implements CollectorManager<TopFieldCollector, TopFieldDocs> {
+
+  /**
+   * Implementation of HitsThresholdChecker which allows global hit counting
+   */
+  private static class GlobalHitsThresholdChecker extends TopFieldCollector.HitsThresholdChecker {
+    private final int totalHitsThreshold;
+    private final AtomicInteger globalHitCount;
+
+    public GlobalHitsThresholdChecker(int totalHitsThreshold) {
+      this.totalHitsThreshold = totalHitsThreshold;
+      this.globalHitCount = new AtomicInteger();
+    }
+
+    @Override
+    public void incrementHitCount() {
+      globalHitCount.incrementAndGet();
+    }
+
+    @Override
+    public boolean getAsBoolean() {
+      return globalHitCount.getAcquire() > totalHitsThreshold;
+    }
+  }
 
   private final Sort sort;
   private final int numHits;
   private final int totalHitsThreshold;
-  private final AtomicInteger globalTotalHits;
+  private final TopFieldCollector.HitsThresholdChecker hitsThresholdChecker;
 
   public SharedHitCountFieldCollectorManager(Sort sort, int numHits, int totalHitsThreshold) {
     this.sort = sort;
     this.numHits = numHits;
     this.totalHitsThreshold = totalHitsThreshold;
-    this.globalTotalHits = new AtomicInteger();
+    this.hitsThresholdChecker = new GlobalHitsThresholdChecker(totalHitsThreshold);
   }
 
   @Override
-  public TopFieldCollector.SharedHitCountFieldCollector newCollector() {
-    return new TopFieldCollector.SharedHitCountFieldCollector(sort, FieldValueHitQueue.create(sort.fields, numHits),
-        numHits, totalHitsThreshold, globalTotalHits);
+  public TopFieldCollector newCollector() {
+    return TopFieldCollector.create(sort, numHits, null, totalHitsThreshold, hitsThresholdChecker);
   }
 
   @Override
-  public TopFieldDocs reduce(Collection<TopFieldCollector.SharedHitCountFieldCollector> collectors) throws IOException {
+  public TopFieldDocs reduce(Collection<TopFieldCollector> collectors) {
     final TopFieldDocs[] topDocs = new TopFieldDocs[collectors.size()];
     int i = 0;
     for (TopFieldCollector collector : collectors) {
