@@ -81,9 +81,8 @@ public abstract class BinaryDictionary implements Dictionary {
       this.resourcePath = resourcePath;
     }
     InputStream mapIS = null, dictIS = null, posIS = null;
-    int[] targetMapOffsets = null, targetMap = null;
-    ByteBuffer buffer = null;
-    boolean success = false;
+    int[] targetMapOffsets, targetMap;
+    ByteBuffer buffer;
     try {
       mapIS = getResource(TARGETMAP_FILENAME_SUFFIX);
       mapIS = new BufferedInputStream(mapIS);
@@ -132,13 +131,8 @@ public abstract class BinaryDictionary implements Dictionary {
       }
       dictIS.close(); dictIS = null;
       buffer = tmpBuffer.asReadOnlyBuffer();
-      success = true;
     } finally {
-      if (success) {
-        IOUtils.close(mapIS, posIS, dictIS);
-      } else {
-        IOUtils.closeWhileHandlingException(mapIS, posIS, dictIS);
-      }
+      IOUtils.closeWhileHandlingException(mapIS, posIS, dictIS);
     }
 
     this.targetMap = targetMap;
@@ -158,7 +152,7 @@ public abstract class BinaryDictionary implements Dictionary {
   }
   
   // util, reused by ConnectionCosts and CharacterDefinition
-  public static final InputStream getClassResource(Class<?> clazz, String suffix) throws IOException {
+  public static InputStream getClassResource(Class<?> clazz, String suffix) throws IOException {
     final InputStream is = clazz.getResourceAsStream(clazz.getSimpleName() + suffix);
     if (is == null) {
       throw new FileNotFoundException("Not in classpath: " + clazz.getName().replace('.', '/') + suffix);
@@ -236,7 +230,7 @@ public abstract class BinaryDictionary implements Dictionary {
     int offset = wordId + 6;
     boolean hasSinglePos = hasSinglePOS(wordId);
     if (hasSinglePos == false) {
-      offset ++; // skip rightPOS
+      offset++; // skip rightPOS
     }
     int length = buffer.get(offset++);
     if (length == 0) {
@@ -264,7 +258,7 @@ public abstract class BinaryDictionary implements Dictionary {
   private String readString(int offset) {
     int strOffset = offset;
     int len = buffer.get(strOffset++);
-    char text[] = new char[len];
+    char[] text = new char[len];
     for (int i = 0; i < len; i++) {
       text[i] = buffer.getChar(strOffset + (i<<1));
     }

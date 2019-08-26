@@ -157,17 +157,14 @@ public class GraphvizFormatter {
   }
   
   private String formatHeader() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("digraph viterbi {\n");
-    sb.append("  graph [ fontsize=30 labelloc=\"t\" label=\"\" splines=true overlap=false rankdir = \"LR\"];\n");
-    //sb.append("  // A2 paper size\n");
-    //sb.append("  size = \"34.4,16.5\";\n");
-    //sb.append("  // try to fill paper\n");
-    //sb.append("  ratio = fill;\n");
-    sb.append("  edge [ fontname=\"" + FONT_NAME + "\" fontcolor=\"red\" color=\"#606060\" ]\n");
-    sb.append("  node [ style=\"filled\" fillcolor=\"#e8e8f0\" shape=\"Mrecord\" fontname=\"" + FONT_NAME + "\" ]\n");
-    
-    return sb.toString();
+    return "digraph viterbi {\n" +
+        "  graph [ fontsize=30 labelloc=\"t\" label=\"\" splines=true overlap=false rankdir = \"LR\"];\n" +
+        //sb.append("  // A2 paper size\n");
+        //sb.append("  size = \"34.4,16.5\";\n");
+        //sb.append("  // try to fill paper\n");
+        //sb.append("  ratio = fill;\n");
+        "  edge [ fontname=\"" + FONT_NAME + "\" fontcolor=\"red\" color=\"#606060\" ]\n" +
+        "  node [ style=\"filled\" fillcolor=\"#e8e8f0\" shape=\"Mrecord\" fontname=\"" + FONT_NAME + "\" ]\n";
   }
   
   private String formatTrailer() {
