@@ -33,14 +33,21 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
 
   /**
    * Extension of ScoreDoc to also store the 
-   * {@link FieldComparator} slot.
+   * {@link FieldComparator} slot and optionally the {@link LeafFieldComparator}.
    */
   public static class Entry extends ScoreDoc {
     public int slot;
+    public Object values;
 
     public Entry(int slot, int doc) {
       super(doc, Float.NaN);
       this.slot = slot;
+      this.values = null;
+    }
+
+    public Entry(int slot, int doc, Object values) {
+      this(slot, doc);
+      this.values = values;
     }
     
     @Override
@@ -119,6 +126,83 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     }
     
   }
+
+  /**
+   * An implementation of {@link FieldValueHitQueue} which uses a single value for comparison
+   */
+  private static final class SingleValueComparisonFieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends FieldValueHitQueue<T> {
+
+    public SingleValueComparisonFieldValueHitQueue(SortField[] fields, int size) {
+      super(fields, size);
+    }
+
+    @Override
+    protected boolean lessThan(final Entry hitA, final Entry hitB) {
+
+      assert hitA != hitB;
+      assert hitA.slot != hitB.slot;
+
+      assert hitA.values != null;
+      assert hitB.values != null;
+
+      int numComparators = comparators.length;
+      for (int i = 0; i < numComparators; ++i) {
+        FieldComparator fieldComparator = comparators[i];
+        final int c = reverseMul[i] * fieldComparator.compareValues(hitA.values, hitB.values);
+        if (c != 0) {
+          // Short circuit
+          return c > 0;
+        }
+      }
+
+      // avoid random sort order that could lead to duplicates (bug #31241):
+      return hitA.doc > hitB.doc;
+    }
+
+  }
+
+  /**
+   * An implementation of {@link FieldValueHitQueue} which uses values to compare members
+   */
+  private static final class MultiValuesComparisonFieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends FieldValueHitQueue<T> {
+
+    public MultiValuesComparisonFieldValueHitQueue(SortField[] fields, int size) {
+      super(fields, size);
+    }
+
+    @Override
+    protected boolean lessThan(final Entry hitA, final Entry hitB) {
+
+      assert hitA != hitB;
+      assert hitA.slot != hitB.slot;
+
+      assert hitA.values != null;
+      assert hitB.values != null;
+
+      assert hitA.values instanceof Object[];
+      assert hitB.values instanceof Object[];
+
+      Object[] firstValuesArray = (Object[]) hitA.values;
+      Object[] secondValuesArray = (Object[]) hitB.values;
+
+      assert firstValuesArray.length == comparators.length;
+      assert secondValuesArray.length == comparators.length;
+
+      int numComparators = comparators.length;
+      for (int i = 0; i < numComparators; ++i) {
+        FieldComparator fieldComparator = comparators[i];
+        final int c = reverseMul[i] * fieldComparator.compareValues(firstValuesArray[i], secondValuesArray[i]);
+        if (c != 0) {
+          // Short circuit
+          return c > 0;
+        }
+      }
+
+      // avoid random sort order that could lead to duplicates (bug #31241):
+      return hitA.doc > hitB.doc;
+    }
+
+  }
   
   // prevent instantiation and extension.
   private FieldValueHitQueue(SortField[] fields, int size) {
@@ -163,6 +247,32 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
       return new OneComparatorFieldValueHitQueue<>(fields, size);
     } else {
       return new MultiComparatorsFieldValueHitQueue<>(fields, size);
+    }
+  }
+
+  /**
+   * Creates a hit queue sorted by the given list of fields and using feature values for comparisons between
+   * member entries
+   *
+   * <p><b>NOTE</b>: The instances returned by this method
+   * pre-allocate a full array of length <code>numHits</code>.
+   *
+   * @param fields
+   *          SortField array we are sorting by in priority order (highest
+   *          priority first); cannot be <code>null</code> or empty
+   * @param size
+   *          The number of hits to retain. Must be greater than zero.
+   */
+  public static <T extends FieldValueHitQueue.Entry> FieldValueHitQueue<T> createValuesComparingQueue(SortField[] fields, int size) {
+
+    if (fields.length == 0) {
+      throw new IllegalArgumentException("Sort must contain at least one field");
+    }
+
+    if (fields.length == 1) {
+      return new SingleValueComparisonFieldValueHitQueue<>(fields, size);
+    } else {
+      return new MultiValuesComparisonFieldValueHitQueue<>(fields, size);
     }
   }
   

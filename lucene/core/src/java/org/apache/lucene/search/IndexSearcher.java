@@ -726,6 +726,7 @@ public class IndexSearcher {
         }
       }
     }
+    collector.postProcess();
   }
 
   /** Expert: called to re-write queries into primitive queries.

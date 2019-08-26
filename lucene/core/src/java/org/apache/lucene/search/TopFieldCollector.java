@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -58,6 +59,22 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         this.reverseMul = 1;
         this.comparator = new MultiLeafFieldComparator(comparators, reverseMul);
       }
+    }
+
+    @Override
+    public void setScorer(Scorable scorer) throws IOException {
+      comparator.setScorer(scorer);
+      this.scorer = scorer;
+    }
+  }
+
+  public static abstract class EarlyTerminatingMultiComparatorLeafCollector extends MultiComparatorLeafCollector {
+    public final EarlyTerminatingFieldCollector earlyTerminatingFieldCollector;
+
+    EarlyTerminatingMultiComparatorLeafCollector(LeafFieldComparator[] comparators, int[] reverseMul,
+                                                 EarlyTerminatingFieldCollector collector) {
+      super(comparators, reverseMul);
+      this.earlyTerminatingFieldCollector = collector;
     }
 
     @Override
@@ -160,6 +177,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             // Copy hit into queue
             comparator.copy(slot, doc);
             add(slot, doc);
+
             if (queueFull) {
               comparator.setBottom(bottom.slot);
               updateMinCompetitiveScore(scorer);
@@ -279,7 +297,130 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   }
 
-  private static final ScoreDoc[] EMPTY_SCOREDOCS = new ScoreDoc[0];
+  /*
+   * Collects hits into a local queue until the requested number of hits are collected
+   * globally. Post that, a global calibration step is performed
+   */
+   public static class EarlyTerminatingFieldCollector extends TopFieldCollector {
+
+    final Sort sort;
+    final FieldValueHitQueue<Entry> queue;
+    final EarlyTerminatingFieldCollectorManager earlyTerminatingFieldCollectorManager;
+    private final AtomicInteger globalNumberOfHits;
+    private boolean addedSelfToGlobalQueue;
+
+    //TODO: Refactor this to make an interface only for field collector uses
+    public EarlyTerminatingFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits, int totalHitsThreshold,
+                                          EarlyTerminatingFieldCollectorManager collectorManager, AtomicInteger globalNumberOfHits) {
+      super(queue, numHits, totalHitsThreshold, sort.needsScores());
+      this.sort = sort;
+      this.queue = queue;
+      this.earlyTerminatingFieldCollectorManager = collectorManager;
+      this.globalNumberOfHits = globalNumberOfHits;
+    }
+
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      docBase = context.docBase;
+
+      final LeafFieldComparator[] comparators = queue.getComparators(context);
+      final int[] reverseMul = queue.getReverseMul();
+      final Sort indexSort = context.reader().getMetaData().getSort();
+      final boolean canEarlyTerminate = canEarlyTerminate(sort, indexSort);
+
+      return new EarlyTerminatingMultiComparatorLeafCollector(comparators, reverseMul, this) {
+
+        boolean collectedAllCompetitiveHits = false;
+
+        @Override
+        public void setScorer(Scorable scorer) throws IOException {
+          super.setScorer(scorer);
+          updateMinCompetitiveScore(scorer);
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+
+          if (globalNumberOfHits.incrementAndGet() > numHits) {
+            if (addedSelfToGlobalQueue == false) {
+              Entry returnedEntry = earlyTerminatingFieldCollectorManager.addCollectorToGlobalQueue(earlyTerminatingFieldCollector, docBase);
+
+              if (returnedEntry != null) {
+                filterCompetitiveHit(returnedEntry.doc, false, returnedEntry.values);
+
+                if (queue.size() > 0) {
+                  Entry entry = queue.pop();
+
+                  while (entry != null) {
+                    filterCompetitiveHit(entry.doc, false, entry.values);
+                    entry = queue.pop();
+                  }
+                }
+              }
+              addedSelfToGlobalQueue = true;
+            }
+
+            filterCompetitiveHit(doc, true, comparator.leafValue(doc));
+          } else {
+            // Startup transient: queue hasn't gathered numHits yet
+            int slot = totalHits;
+            ++totalHits;
+
+            comparator.copy(slot, doc);
+            add(slot, doc, comparator.leafValue(doc));
+          }
+        }
+
+        private void filterCompetitiveHit(int doc, boolean doEarlyTermination, Object value) throws IOException {
+          if (collectedAllCompetitiveHits || earlyTerminatingFieldCollectorManager.compareAndUpdateBottom(docBase, doc, value) <= 0) {
+            // since docs are visited in doc Id order, if compare is 0, it means
+            // this document is largest than anything else in the queue, and
+            // therefore not competitive.
+            if (canEarlyTerminate) {
+              if ((globalNumberOfHits.getAcquire() > totalHitsThreshold) && doEarlyTermination) {
+                totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
+                throw new CollectionTerminatedException();
+              } else {
+                collectedAllCompetitiveHits = true;
+              }
+            } else if (totalHitsRelation == Relation.EQUAL_TO) {
+              // we just reached totalHitsThreshold, we can start setting the min
+              // competitive score now
+              updateMinCompetitiveScore(scorer);
+            }
+            return;
+          }
+
+          updateMinCompetitiveScore(scorer);
+        }
+      };
+    }
+
+    @Override
+    public void postProcess() {
+      if (addedSelfToGlobalQueue == false) {
+        Entry returnedEntry = earlyTerminatingFieldCollectorManager.addCollectorToGlobalQueue(this, docBase);
+
+        if (returnedEntry != null) {
+          if (returnedEntry != null) {
+            earlyTerminatingFieldCollectorManager.compareAndUpdateBottom(docBase, returnedEntry.doc, returnedEntry.values);
+
+            if (queue.size() > 0) {
+              Entry entry = queue.pop();
+
+              while (entry != null) {
+                earlyTerminatingFieldCollectorManager.compareAndUpdateBottom(docBase, returnedEntry.doc, returnedEntry.values);
+                entry = queue.pop();
+              }
+            }
+          }
+        }
+        addedSelfToGlobalQueue = true;
+      }
+    }
+  }
+
+  public static final ScoreDoc[] EMPTY_SCOREDOCS = new ScoreDoc[0];
 
   final int numHits;
   final int totalHitsThreshold;
@@ -455,6 +596,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   final void add(int slot, int doc) {
     bottom = pq.add(new Entry(slot, docBase + doc));
+    queueFull = totalHits == numHits;
+  }
+
+  final void add(int slot, int doc, Object values) {
+    bottom = pq.add(new Entry(slot, docBase + doc, values));
     queueFull = totalHits == numHits;
   }
 

@@ -17,7 +17,6 @@
 package org.apache.lucene.search;
 
 
-
 import org.apache.lucene.util.PriorityQueue;
 
 /**
