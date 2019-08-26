@@ -52,6 +52,10 @@ dependencies {
 }
 
 sourceSets {
+  buildResources {
+    resources.srcDirs = ['common', 'ide', 'test-build-wdocker']
+    java.srcDirs = []
+  }
   buildTest {
     java {
       compileClasspath += main.output + test.output

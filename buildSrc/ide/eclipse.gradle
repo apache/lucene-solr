@@ -31,7 +31,7 @@ eclipse {
   
   classpath {
 
-    defaultOutputDir = file('eclipse-build')
+    defaultOutputDir = file('eclipse-build/default')
     
     downloadSources = true
     downloadJavadoc = true
@@ -43,12 +43,22 @@ eclipse {
     }
 
     file.whenMerged { classpath ->
+      Set<String> entries = new HashSet<>()
+
       
       classpath.entries.each { entry ->
-        
-        if ( entry.kind == 'src' && entry.hasProperty('output') ) {
+
+        if ( entry.kind == 'src' && entry.hasProperty('output')) {
           // use default Output for all source-folders
-          entry.output = null
+          // entry.output = null
+          entry.output = entry.output.replaceAll('bin/', 'eclipse-build/')
+        }
+        if ( entry.kind == 'src' && entry.hasProperty('path')) {
+
+          boolean exists = entries.add(entry.path)
+          if (!exists) {
+            classpath.entries -= entry
+          }
         }
       }
       
@@ -78,7 +88,7 @@ eclipse {
       }
       
       // Jetty mod files make eclipse sad
-      mkdir('.settings')
+      new File('.settings').mkdirs()
       file('.settings/org.eclipse.wst.validation.prefs').text = """
 eclipse.preferences.version=1
 override=true
