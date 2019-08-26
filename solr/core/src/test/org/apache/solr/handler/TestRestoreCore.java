@@ -139,8 +139,6 @@ public class TestRestoreCore extends SolrJettyTestBase {
       Thread.sleep(1000);
     }
 
-
-
     int numRestoreTests = nDocs > 0 ? TestUtil.nextInt(random(), 1, 5) : 1;
 
     for (int attempts=0; attempts<numRestoreTests; attempts++) {

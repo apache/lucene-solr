@@ -468,13 +468,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
     assertEquals("3.14,GBP", new CurrencyValue(314, "GBP").strValue());
 
     CurrencyValue currencyValue = new CurrencyValue(314, "XYZ");
-    try {
-      String string = currencyValue.strValue();
-      fail("Expected SolrException");
-    } catch (SolrException exception) {
-    } catch (Throwable throwable) {
-      fail("Expected SolrException");
-    }
+    expectThrows(SolrException.class,  currencyValue::strValue);
   }
 
   @Test

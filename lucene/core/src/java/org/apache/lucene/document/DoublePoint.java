@@ -44,7 +44,6 @@ import org.apache.lucene.util.NumericUtils;
  * @see PointValues
  */
 public final class DoublePoint extends Field {
-
   /**
    * Return the least double that compares greater than {@code d} consistently
    * with {@link Double#compare}. The only difference with
@@ -106,7 +105,13 @@ public final class DoublePoint extends Field {
     return decodeDimension(bytes.bytes, bytes.offset);
   }
 
-  private static BytesRef pack(double... point) {
+  /**
+   *  Pack a double point into a BytesRef
+   *
+   * @param point double[] value
+   * @throws IllegalArgumentException is the value is null or of zero length
+   */
+  public static BytesRef pack(double... point) {
     if (point == null) {
       throw new IllegalArgumentException("point must not be null");
     }

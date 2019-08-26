@@ -85,6 +85,19 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
 
   @Override
   public Scorer get(long leadCost) throws IOException {
+    Scorer scorer = getInternal(leadCost);
+    if (scoreMode == ScoreMode.TOP_SCORES &&
+          subs.get(Occur.SHOULD).isEmpty() && subs.get(Occur.MUST).isEmpty()) {
+      // no scoring clauses but scores are needed so we wrap the scorer in
+      // a constant score in order to allow early termination
+      return scorer.twoPhaseIterator() != null ?
+          new ConstantScoreScorer(weight, 0f, scoreMode, scorer.twoPhaseIterator()) :
+            new ConstantScoreScorer(weight, 0f, scoreMode, scorer.iterator());
+    }
+    return scorer;
+  }
+
+  private Scorer getInternal(long leadCost) throws IOException {
     // three cases: conjunction, disjunction, or mix
     leadCost = Math.min(leadCost, cost());
 

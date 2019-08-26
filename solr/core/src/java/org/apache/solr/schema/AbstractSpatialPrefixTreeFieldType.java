@@ -49,6 +49,8 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
 
+    args.putIfAbsent(SpatialPrefixTreeFactory.VERSION, schema.getDefaultLuceneMatchVersion().toString());
+
     // Convert the maxDistErr to degrees (based on distanceUnits) since Lucene spatial layer depends on degrees
     if(args.containsKey(SpatialPrefixTreeFactory.MAX_DIST_ERR)) {
       double maxDistErrOriginal = Double.parseDouble(args.get(SpatialPrefixTreeFactory.MAX_DIST_ERR));

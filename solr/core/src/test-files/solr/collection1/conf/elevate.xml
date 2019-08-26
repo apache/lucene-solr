@@ -51,4 +51,26 @@
   <doc id="7" />
  </query>
 
+ <query text="AA BB CC" match="subset">
+  <doc id="10"/>
+ </query>
+
+ <query text="BB CC" match="subset">
+  <doc id="10"/>
+  <doc id="12"/>
+ </query>
+
+ <query text="BB CC" match="subset">
+  <doc id="11"/>
+ </query>
+
+ <query text="BB CC" match="exact">
+  <doc id="13"/>
+ </query>
+
+ <query text="DD AA" match="subset">
+  <doc id="12"/>
+  <doc id="14"/>
+ </query>
+
 </elevate>

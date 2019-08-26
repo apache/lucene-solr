@@ -107,7 +107,7 @@ public class AbsoluteValueEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("abs(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void absNoValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("abs(a)");
     
@@ -116,7 +116,7 @@ public class AbsoluteValueEvaluatorTest extends SolrTestCase {
     assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void absNullValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("abs(a)");
     

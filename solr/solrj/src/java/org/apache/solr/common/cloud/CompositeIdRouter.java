@@ -79,15 +79,14 @@ public class CompositeIdRouter extends HashBasedRouter {
       // search across whole range
       return fullRange();
     }
-    String id = shardKey;
 
     if (shardKey.indexOf(SEPARATOR) < 0) {
       // shardKey is a simple id, so don't do a range
-      int hash = Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
+      int hash = Hash.murmurhash3_x86_32(shardKey, 0, shardKey.length(), 0);
       return new Range(hash, hash);
     }
 
-    return new KeyParser(id).getRange();
+    return new KeyParser(shardKey).getRange();
   }
 
   @Override

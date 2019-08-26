@@ -64,6 +64,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.metrics.SolrCoreMetricManager;
+import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -155,7 +156,6 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
-  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testTrigger() throws Exception {
     String collectionName = "testTrigger_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -228,7 +228,11 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         }
         Map<String, Object> params = (Map<String, Object>)op.getHints().get(Suggester.Hint.PARAMS);
         assertNotNull("params are null: " + op, params);
-        assertEquals("splitMethod: " + op, "link", params.get(CommonAdminParams.SPLIT_METHOD));
+        
+        // verify default split configs
+        assertEquals("splitMethod: " + op, SolrIndexSplitter.SplitMethod.LINK.toLower(),
+            params.get(CommonAdminParams.SPLIT_METHOD));
+        assertEquals("splitByPrefix: " + op, false, params.get(CommonAdminParams.SPLIT_BY_PREFIX));
       }
       assertTrue("shard1 should be split", shard1);
       assertTrue("shard2 should be split", shard2);
@@ -261,7 +265,6 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
-  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSplitIntegration() throws Exception {
     String collectionName = "testSplitIntegration_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -385,7 +388,6 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
-  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testMergeIntegration() throws Exception {
     String collectionName = "testMergeIntegration_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -500,8 +502,6 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
-  //@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 05-Jul-2018
-  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testMixedBounds() throws Exception {
     if (!realCluster) {
       log.info("This test doesn't work with a simulated cluster");
@@ -732,7 +732,6 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     req = AutoScalingRequest.create(SolrRequest.METHOD.POST, suspendTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-//    System.exit(-1);
 
     assertEquals(1, listenerEvents.size());
     events = listenerEvents.get("capturing4");
@@ -766,7 +765,6 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
   }
 
   @Test
-  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testMaxOps() throws Exception {
     String collectionName = "testMaxOps_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -908,9 +906,10 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     assertEquals("number of ops: " + ops, 3, ops.size());
   }
 
+  //test that split parameters can be overridden
   @Test
-  public void testSplitMethodConfig() throws Exception {
-    String collectionName = "testSplitMethod_collection";
+  public void testSplitConfig() throws Exception {
+    String collectionName = "testSplitConfig_collection";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
         "conf", 2, 2).setMaxShardsPerNode(2);
     create.process(solrClient);
@@ -919,7 +918,9 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     long waitForSeconds = 3 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(waitForSeconds);
-    props.put(CommonAdminParams.SPLIT_METHOD, "link");
+    props.put(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());
+    props.put(IndexSizeTrigger.SPLIT_BY_PREFIX, true);
+    
     try (IndexSizeTrigger trigger = new IndexSizeTrigger("index_size_trigger6")) {
       trigger.configure(loader, cloudManager, props);
       trigger.init();
@@ -977,12 +978,40 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
         }
         Map<String, Object> params = (Map<String, Object>)op.getHints().get(Suggester.Hint.PARAMS);
         assertNotNull("params are null: " + op, params);
-        assertEquals("splitMethod: " + op, "link", params.get(CommonAdminParams.SPLIT_METHOD));
+        
+        // verify overrides for split config
+        assertEquals("splitMethod: " + op, SolrIndexSplitter.SplitMethod.REWRITE.toLower(),
+            params.get(CommonAdminParams.SPLIT_METHOD));
+        assertEquals("splitByPrefix: " + op, true, params.get(CommonAdminParams.SPLIT_BY_PREFIX));
       }
       assertTrue("shard1 should be split", shard1);
       assertTrue("shard2 should be split", shard2);
     }
 
+  }
+  
+  //validates that trigger configuration will fail for invalid split configs
+  @Test
+  public void testInvalidSplitConfig() throws Exception {
+    long waitForSeconds = 3 + random().nextInt(5);
+    Map<String, Object> props = createTriggerProps(waitForSeconds);
+    props.put(IndexSizeTrigger.SPLIT_BY_PREFIX, "hello");
+
+    try (IndexSizeTrigger trigger = new IndexSizeTrigger("index_size_trigger7")) {
+      trigger.configure(loader, cloudManager, props);
+      fail("Trigger configuration should have failed with invalid property.");
+    } catch (TriggerValidationException e) {
+      assertTrue(e.getDetails().containsKey(IndexSizeTrigger.SPLIT_BY_PREFIX));
+    }
+
+    props.put(IndexSizeTrigger.SPLIT_BY_PREFIX, true);
+    props.put(CommonAdminParams.SPLIT_METHOD, "hello");
+    try (IndexSizeTrigger trigger = new IndexSizeTrigger("index_size_trigger8")) {
+      trigger.configure(loader, cloudManager, props);
+      fail("Trigger configuration should have failed with invalid property.");
+    } catch (TriggerValidationException e) {
+      assertTrue(e.getDetails().containsKey(IndexSizeTrigger.SPLIT_METHOD_PROP));
+    }
   }
 
 

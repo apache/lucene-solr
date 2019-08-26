@@ -104,6 +104,8 @@ public final class UserDictionary implements Dictionary {
     long ord = 0;
     
     for (String[] values : featureEntries) {
+      String surface = values[0].replaceAll("\\s", "");
+      String concatenatedSegment = values[1].replaceAll("\\s", "");
       String[] segmentation = values[1].replaceAll("  *", " ").split(" ");
       String[] readings = values[2].replaceAll("  *", " ").split(" ");
       String pos = values[3];
@@ -112,6 +114,12 @@ public final class UserDictionary implements Dictionary {
         throw new RuntimeException("Illegal user dictionary entry " + values[0] +
                                    " - the number of segmentations (" + segmentation.length + ")" +
                                    " does not the match number of readings (" + readings.length + ")");
+      }
+
+      if (!surface.equals(concatenatedSegment)) {
+        throw new RuntimeException("Illegal user dictionary entry " + values[0] +
+                                   " - the concatenated segmentation (" + concatenatedSegment + ")" +
+                                   " does not match the surface form (" + surface + ")");
       }
       
       int[] wordIdAndLength = new int[segmentation.length + 1]; // wordId offset, length, length....
