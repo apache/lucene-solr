@@ -51,35 +51,38 @@ gradle_args="--console=plain -x verifyLocks"
 # NOTE: we don't clean right now, as it would wipe out buildSrc/build on us for the host, but buildTest dependsOn clean
 
 # build without unit tests
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} build -x test"
+cmd="./gradlew ${gradle_args} build -x test"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test regenerate task
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} regenerate"
+cmd="./gradlew ${gradle_args} regenerate"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test forbiddenApis task
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} forbiddenApis"
+cmd="./gradlew ${gradle_args} forbiddenApis"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test eclipse tasks
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} cleanEclipse eclipse"
+cmd="./gradlew ${gradle_args} cleanEclipse"
+exec "${cmd}" "${exec_args}" || { exit 1; }
+
+cmd="./gradlew ${gradle_args} eclipse"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test unusedDependencies task
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} solr:solr-core:unusedDependencies"
+cmd="./gradlew ${gradle_args} solr:solr-core:unusedDependencies"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # try deeper structure
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} solr:contrib:solr-contrib-clustering:unusedDependencies"
+cmd="./gradlew ${gradle_args} solr:contrib:solr-contrib-clustering:unusedDependencies"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # test missingDependencies task
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} solr:solr-core:missingDependencies"
+cmd="./gradlew ${gradle_args} solr:solr-core:missingDependencies"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 # we should still be able to build now
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} build -x test -x verifyLocks"
+cmd="./gradlew ${gradle_args} build -x test -x verifyLocks"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 

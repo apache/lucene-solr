@@ -78,7 +78,11 @@ sourceSets {
   }
 }
 
-project.rootProject.ext.ratPath = { configurations.rat.asPath }
+task setupRatPath {
+  doFirst {
+    project.rootProject.ext.ratPath = configurations.rat.asPath
+  }
+}
 
 configurations {
   buildTestImplementation.extendsFrom testImplementation
@@ -105,4 +109,12 @@ task buildTest(type: Test) {
 clean.doLast {
   // hack for eclipse issue
   file("$buildDir/pluginUnderTestMetadata").mkdirs()
+}
+
+println 'root project is ' + project.rootProject.name
+if (project.rootProject != project) {
+  forbiddenApis {
+    println 'sigs '  + signatures
+    signatures -= ['java.io.File']
+  }
 }

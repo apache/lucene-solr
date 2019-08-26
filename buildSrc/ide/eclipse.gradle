@@ -88,7 +88,7 @@ eclipse {
       }
       
       // Jetty mod files make eclipse sad
-      new File('.settings').mkdirs()
+      file('.settings').mkdirs()
       file('.settings/org.eclipse.wst.validation.prefs').text = """
 eclipse.preferences.version=1
 override=true
