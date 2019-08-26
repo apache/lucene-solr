@@ -16,7 +16,7 @@
 
 script_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-. "test-build-wdocker/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
+. "build-wdocker-test/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
 
 skip_build_image=""
 
