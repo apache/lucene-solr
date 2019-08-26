@@ -58,7 +58,7 @@ class RatSources extends DefaultTask {
       excludeString += it
     }
 
-    ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', classpath: project.rootProject.configurations.unifiedClasspath.asPath)
+    ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', classpath: project.rootProject.ext.ratPath())
 
     ant.report(reportFile: logFile.getAbsolutePath(), addDefaultLicenseMatchers: 'true') {
       ant.fileset(dir: project.projectDir.getAbsolutePath(), includes: "*.xml", excludes: excludeString)
