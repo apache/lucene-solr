@@ -17,7 +17,7 @@
 command -v docker >/dev/null 2>&1 || { echo "docker must be installed to run this test"; exit 1; }
 
 # make any non 0 exit fail script
-. "test-build-wdocker/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
+. "build-wdocker-test/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
 
 OPTIND=1  # Reset in case getopts has been used previously in the shell.
 
