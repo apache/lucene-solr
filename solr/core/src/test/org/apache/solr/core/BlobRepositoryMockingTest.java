@@ -139,10 +139,10 @@ public class BlobRepositoryMockingTest {
     verify(mockContainer).isZooKeeperAware();
     try {
       repository.getBlobIncRef( "filefoo",null,url,
-          "WRONG-SHA512-KEY");
+          "WRONG-SHA256-KEY");
       fail("expected exception");
     } catch (Exception e) {
-      assertTrue(e.getMessage().contains(" expected sha512 hash : WRONG-SHA512-KEY , actual :"));
+      assertTrue(e.getMessage().contains(" expected sha256 hash : WRONG-SHA256-KEY , actual :"));
     }
 
     url = null;
