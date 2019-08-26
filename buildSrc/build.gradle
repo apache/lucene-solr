@@ -53,7 +53,7 @@ dependencies {
 
 sourceSets {
   buildResources {
-    resources.srcDirs = ['common', 'ide', 'test-build-wdocker']
+    resources.srcDirs = ['common', 'ide', 'build-wdocker-test']
     java.srcDirs = []
   }
   buildTest {
