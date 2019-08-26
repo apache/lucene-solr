@@ -49,7 +49,7 @@ public class TestChecks extends BaseTestClass {
   @Test
   public void testRatSources() throws Exception {
     System.out.println("Start test-rat-sources.sh test in Docker container (" + env + ") ...");
-    String[] cmd = new String[]{"bash", "test-build-wdocker/test-rat-sources.sh"};
+    String[] cmd = new String[]{"bash", "build-wdocker-test/test-rat-sources.sh"};
     PbResult result = runCmd(cmd, env, false, false, false);
     assertEquals("Testing test-rat-sources.sh failed", 0, result.returnCode);
   }
@@ -57,7 +57,7 @@ public class TestChecks extends BaseTestClass {
   @Test
   public void testCheckSources() throws Exception {
     System.out.println("Start test-check-sources.sh test in Docker container (" + env + ") ...");
-    String[] cmd = new String[]{"bash", "test-build-wdocker/test-check-sources.sh"};
+    String[] cmd = new String[]{"bash", "build-wdocker-test/test-check-sources.sh"};
     PbResult result = runCmd(cmd, env, false, false, false);
     assertEquals("Testing test-check-sources.sh failed", 0, result.returnCode);
   }

@@ -37,7 +37,7 @@ public class TestBuild extends BaseTestClass {
   @Test
   public void testBuild() throws Exception {
     System.out.println("Start test-build.sh test in Docker container (" + env + ") ...");
-    String[] cmd = new String[]{"bash", "test-build-wdocker/test-build.sh"};
+    String[] cmd = new String[]{"bash", "build-wdocker-test/test-build.sh"};
     PbResult result = runCmd(cmd, env, false, false, false);
     assertEquals("Testing test-build.sh failed", 0, result.returnCode);
   }

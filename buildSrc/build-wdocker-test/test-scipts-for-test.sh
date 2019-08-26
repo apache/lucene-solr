@@ -19,7 +19,7 @@
 script_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 # make any non 0 exit fail the script
-. "test-build-wdocker/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
+. "build-wdocker-test/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
 
 
 echo "won't fail"
