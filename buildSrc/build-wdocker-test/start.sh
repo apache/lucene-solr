@@ -69,7 +69,7 @@ exec() {
   echo "done"
 }
 
-cmd="cp -r /home/lucene/gradle /home/lucene/.gradle"
+cmd="cp -r /home/lucene/gradle/. /home/lucene/.gradle/"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 

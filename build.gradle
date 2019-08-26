@@ -62,10 +62,17 @@ apply from: mfile(rootProjectDir, 'buildSrc/common/build-help.gradle')
 
 // *** lucene-solr all module config - configure all lucene-solr projects, including root project
 configure(luceneSolrProjects) {
-  buildDir = file("build")
-  
-  // setup repositories
-  apply from: mfile(rootProjectDir, 'buildSrc/common/configure-repositories.gradle')
+    buildDir = file("build")
+    
+    // setup repositories
+    apply from: mfile(rootProjectDir, 'buildSrc/common/configure-repositories.gradle')
+    
+    println 'apply forbidden to ' + project.name
+    project.plugins.apply(ForbiddenApisPluginWrapper)
+}
+
+configure(luceneSolrProjects) {
+  project.evaluationDependsOn(':buildSrc')
   
   task ratSources(type: RatSources) {
       group = 'Verification'
@@ -78,6 +85,7 @@ configure(luceneSolrProjects) {
       if (project.hasProperty('check')) {
         check.dependsOn ratSources
       }
+      dependsOn rootProject.project(':buildSrc').tasks.setupRatPath
   }
 }
 
@@ -118,7 +126,7 @@ configure(luceneSolrSubProjects) {
       check.dependsOn checkSourcePatterns
     }
       
-    project.plugins.apply(ForbiddenApisPluginWrapper)
+
     
     sourceCompatibility = "11"
     targetCompatibility = "11"
@@ -244,6 +252,8 @@ configure(allprojects) {
       
       exclude group: 'org.apache.yetus', module: 'audience-annotations' // annotations jar brought in by zk
       exclude group: 'org.slf4j', module: 'slf4j-log4j12' // zk and perhaps others can bring in log4j12 binding
+      
+      exclude group: 'xml-apis', module: 'xml-apis:xml-apis' // this is brought in depending on env - ensure it's not
     }
     
     modules {
