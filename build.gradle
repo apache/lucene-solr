@@ -222,6 +222,10 @@ configure(allprojects) {
   // dependencies block that applies to all projects
   dependencies {
     configurations.all {
+      resolutionStrategy {
+        force 'org.codehaus.woodstox:stax2-api:3.1.4' // clustering has old simple-xml dep that requires < 4.X
+      }
+
       // stax-api classes are in Java 11
       exclude group: 'javax.xml.stream', module: 'stax-api'
       exclude group: 'stax', module: 'stax-api'
@@ -231,7 +235,7 @@ configure(allprojects) {
       exclude group: 'log4j', module: 'log4j'
       exclude group: 'commons-logging', module: 'commons-logging'
       
-      // exclude annotation jars that come with guave
+      // exclude annotation jars that come with guava
       exclude group: 'com.google.code.findbugs', module: 'jsr305'
       exclude group: 'org.checkerframework', module: 'checker-qual'
       exclude group: 'com.google.errorprone', module: 'error_prone_annotations'
