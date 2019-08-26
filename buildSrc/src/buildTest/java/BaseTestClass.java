@@ -48,7 +48,7 @@ public abstract class BaseTestClass extends Assert {
     System.out.println("Exit:" + exitVal);
     assumeTrue(exitVal == 0);
     
-    cmd = new String[]{"bash", "test-build-wdocker/start.sh"};
+    cmd = new String[]{"bash", "build-wdocker-test/start.sh"};
     exitVal = runCmd(cmd, env, false, false).returnCode;
     if (exitVal > 0) {
       fail("Failed starting docker containers!");
@@ -65,7 +65,7 @@ public abstract class BaseTestClass extends Assert {
   @AfterClass
   public static void tearDownAfterClass() throws Exception { 
     String[] cmd = new String[] {"bash",
-        "test-build-wdocker/stop.sh"};
+        "build-wdocker-test/stop.sh"};
     int exitVal = runCmd(cmd, env, false, false).returnCode;
     if (exitVal > 0) {
       fail("Failed stopping docker containers!");
