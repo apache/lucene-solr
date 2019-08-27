@@ -663,6 +663,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13650")
   public void testCacheLoadFromPackage() throws Exception {
     String COLLECTION_NAME = "globalCacheColl";
     Map<String, Object> jars = Utils.makeMap(
