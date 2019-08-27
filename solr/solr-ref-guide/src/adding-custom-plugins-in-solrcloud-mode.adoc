@@ -128,11 +128,11 @@ Step 1: Download a jar from github to the current directory
 ----
  curl -o runtimelibs.jar   -LO https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
 ----
-Step 2: Get the `sha512` hash of the jar
+Step 2: Get the `sha256` hash of the jar
 
 [source,bash]
 ----
- openssl dgst -sha512 runtimelibs.jar
+ openssl dgst -sha256 runtimelibs.jar
 ----
 
 Step 3 :  Start solr with runtime lib enabled
@@ -156,7 +156,7 @@ Step 5: Add the jar to your collection `gettingstarted`
  curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
     "add-package": { "name" : "my-pkg",
     "url":"http://localhost:8000/runtimelibs.jar" ,
-    "sha512" : "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"}
+    "sha256" : "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"}
     }'
 ----
 
@@ -198,7 +198,7 @@ output:
 Example:
 
 * Host the new jar to a new url. eg:  http://localhost:8000/runtimelibs_v2.jar
-* get the `sha512` hash of the new jar
+* get the `sha256` hash of the new jar
 * run the update-runtime lib command
 
 [source,bash]
@@ -206,7 +206,7 @@ Example:
  curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
     "update-package": { "name" : "my-pkg",
     "url":"http://localhost:8000/runtimelibs_v2.jar" ,
-    "sha512" : "<replace-the-new-sha512-digest-here>"}
+    "sha256" : "<replace-the-new-sha256-digest-here>"}
     }'
 ----
 NOTE: Always upload your jar to a new url as the Solr cluster is still referring to the old jar. If the existing jar is modified it can cause errors as the hash may not match

@@ -370,4 +370,14 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     assertQ(req(params), "*[count(//doc)=1]", "count(//lst[@name='highlighting']/*)=1");
   }
 
+  @Test
+  public void testErrorHandlingGeodist() throws Exception{
+    assertU(adoc("id", "1", "llp", "32.7693246, -79.9289094"));
+    assertQEx("wrong test exception message","sort param could not be parsed as a query, " +
+            "and is not a field that exists in the index: geodist(llp,47.36667,8.55)",
+        req(
+            "q", "*:*",
+            "sort", "geodist(llp,47.36667,8.55) asc"
+        ), SolrException.ErrorCode.BAD_REQUEST);
+  }
 }

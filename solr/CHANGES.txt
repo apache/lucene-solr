@@ -67,6 +67,7 @@ Other Changes
 
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
+* SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
 
 ==================  8.3.0 ==================
 
@@ -119,6 +120,9 @@ New Features
 
 * SOLR-13707: API to expose the currently used package name, details for each plugin (noble)
 
+* SOLR-13710: Persist package jars locally & expose them over http at /api/node/blob  (noble)
+
+
 Improvements
 ----------------------
 
@@ -132,6 +136,9 @@ Improvements
 * SOLR-13677: All Metrics Gauges should be unregistered by the objects that registered them (noble)
 
 * SOLR-13702: Some components register twice their metric names (janhoy)
+
+* SOLR-11601: Improved error message when geodist(llpsf) is used with arguments referring to a LatLonPointSpatialField.
+  (Amrit Sarkar)
 
 Bug Fixes
 ----------------------
@@ -170,6 +177,8 @@ Bug Fixes
 * SOLR-6328: facet.missing=true should return missing count even when facet.limit=0 (hossman, Munendra S N)
 
 * SOLR-13704: Improve error message and change error code to 400 for client errors in ExpandComponent (Munendra S N)
+
+* SOLR-13699 - maxChars no longer working on CopyField with javabin (Chris Troullis via noble)
 
 Other Changes
 ----------------------

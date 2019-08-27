@@ -31,8 +31,8 @@ public class TestKoreanReadingFormFilterFactory extends BaseTokenStreamTestCase 
   public void testReadings() throws IOException {
     KoreanTokenizerFactory tokenizerFactory = new KoreanTokenizerFactory(new HashMap<>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
-    TokenStream tokenStream = tokenizerFactory.create();
-    ((Tokenizer)tokenStream).setReader(new StringReader("丞相"));
+    Tokenizer tokenStream = tokenizerFactory.create();
+    tokenStream.setReader(new StringReader("丞相"));
     KoreanReadingFormFilterFactory filterFactory = new KoreanReadingFormFilterFactory(new HashMap<>());
     assertTokenStreamContents(filterFactory.create(tokenStream),
         new String[] { "승상" }
@@ -40,12 +40,12 @@ public class TestKoreanReadingFormFilterFactory extends BaseTokenStreamTestCase 
   }
   
   /** Test that bogus arguments result in exception */
-  public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new KoreanReadingFormFilterFactory(new HashMap<String,String>() {{
-        put("bogusArg", "bogusValue");
-      }});
-    });
+  public void testBogusArguments() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () ->
+        new KoreanReadingFormFilterFactory(new HashMap<>() {{
+          put("bogusArg", "bogusValue");
+        }})
+    );
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }
