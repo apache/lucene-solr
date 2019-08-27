@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PACKAGE;
 import static org.apache.solr.common.params.CommonParams.VERSION;
-import static org.apache.solr.core.RuntimeLib.SHA512;
+import static org.apache.solr.core.RuntimeLib.SHA256;
 
 public class PackageManager implements ClusterPropertiesListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -94,8 +94,8 @@ public class PackageManager implements ClusterPropertiesListener {
 
 
     public boolean isModified(Map map) {
-      return (!Objects.equals(lib.getSha512(), (map).get(SHA512)) ||
-          !Objects.equals(lib.getSig(), (map).get(SHA512)));
+      return (!Objects.equals(lib.getSha256(), (map).get(SHA256)) ||
+          !Objects.equals(lib.getSig(), (map).get(SHA256)));
     }
   }
 
@@ -167,7 +167,7 @@ public class PackageManager implements ClusterPropertiesListener {
       needsReload[0] = true;
     }
     if (needsReload[0]) {
-      createNewClassLoader(m, ver);
+      createNewClassLoaders(m, ver);
     }
     return needsReload[0];
   }
@@ -177,7 +177,7 @@ public class PackageManager implements ClusterPropertiesListener {
     return p == null ? coreContainer.getResourceLoader() : p.loader;
   }
 
-  void createNewClassLoader(Map m, int ver) {
+  void createNewClassLoaders(Map m, int ver) {
     boolean[] loadedAll = new boolean[1];
     loadedAll[0] = true;
     Map<String, Package> newPkgs = new LinkedHashMap<>();
