@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -83,7 +84,7 @@ import static org.apache.solr.common.cloud.ZkConfigManager.CONFIGS_ZKNODE;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   public static final int DEFAULT_TIMEOUT = 45; // this is an important timeout for test stability - can't be too short
 
   private static class Config {
@@ -106,7 +107,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private final int nodeCount;
     private final Path baseDir;
     private String solrxml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML;
-    private JettyConfig jettyConfig = buildJettyConfig("/solr");
+    private JettyConfig.Builder jettyConfigBuilder = JettyConfig.builder().setContext("/solr").withSSLConfig(sslConfig.buildServerSSLConfig());
     private Optional<String> securityJson = Optional.empty();
 
     private List<Config> configs = new ArrayList<>();
@@ -124,10 +125,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     /**
-     * Use a {@link JettyConfig} to configure the cluster's jetty servers
+     * Use a {@link JettyConfig.Builder} to configure the cluster's jetty servers
      */
-    public Builder withJettyConfig(JettyConfig jettyConfig) {
-      this.jettyConfig = jettyConfig;
+    public Builder withJettyConfig(Consumer<JettyConfig.Builder> fun) {
+      fun.accept(jettyConfigBuilder);
       return this;
     }
 
@@ -203,7 +204,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     public Builder withMetrics(boolean trackJettyMetrics) {
-      this.trackJettyMetrics = trackJettyMetrics; 
+      this.trackJettyMetrics = trackJettyMetrics;
       return this;
     }
     /**
@@ -219,6 +220,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster build() throws Exception {
+      JettyConfig jettyConfig = jettyConfigBuilder.build();
       MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig,
           null, securityJson, trackJettyMetrics);
       CloudSolrClient client = cluster.getSolrClient();
@@ -305,7 +307,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static void waitForState(String message, String collection, CollectionStatePredicate predicate) {
     waitForState(message, collection, predicate, DEFAULT_TIMEOUT, TimeUnit.SECONDS);
   }
-  
+
   /**
    * Wait for a particular collection state to appear in the cluster client's state reader
    *
@@ -340,8 +342,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
         return false;
       if (collectionState.getSlices().size() != expectedShards)
         return false;
-      if (compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState)) return true;
-      return false;
+      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
     };
   }
 
@@ -356,23 +357,22 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       log.info("active slice count: " + collectionState.getActiveSlices().size() + " expected:" + expectedShards);
       if (collectionState.getActiveSlices().size() != expectedShards)
         return false;
-      if (compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState)) return true;
-      return false;
+      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
     };
   }
-  
+
   public static LiveNodesPredicate containsLiveNode(String node) {
     return (oldNodes, newNodes) -> {
       return newNodes.contains(node);
     };
   }
-  
+
   public static LiveNodesPredicate missingLiveNode(String node) {
     return (oldNodes, newNodes) -> {
       return !newNodes.contains(node);
     };
   }
-  
+
   public static LiveNodesPredicate missingLiveNodes(List<String> nodes) {
     return (oldNodes, newNodes) -> {
       boolean success = true;
@@ -395,14 +395,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
         }
       }
     }
-    
-    log.info("active replica count: " + activeReplicas + " expected replica count: " + expectedReplicas);
-    
-    if (activeReplicas == expectedReplicas) {
-      return true;
-    }
 
-    return false;
+    log.info("active replica count: " + activeReplicas + " expected replica count: " + expectedReplicas);
+
+    return activeReplicas == expectedReplicas;
+
   }
 
   /**

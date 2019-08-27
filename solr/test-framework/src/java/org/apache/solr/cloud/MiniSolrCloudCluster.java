@@ -462,6 +462,7 @@ public class MiniSolrCloudCluster {
   public JettySolrRunner startJettySolrRunner(String name, String hostContext, JettyConfig config) throws Exception {
     Path runnerPath = createInstancePath(name);
     String context = getHostContextSuitableForServletContext(hostContext);
+
     JettyConfig newConfig = JettyConfig.builder(config).setContext(context).build();
     JettySolrRunner jetty = !trackJettyMetrics 
         ? new JettySolrRunner(runnerPath.toString(), newConfig)
@@ -555,7 +556,7 @@ public class MiniSolrCloudCluster {
       }
       
       for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
-        reader.waitForState(collection, 15, TimeUnit.SECONDS, (collectionState) -> collectionState == null ? true : false);
+        reader.waitForState(collection, 15, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
       }
      
     } 
@@ -783,11 +784,8 @@ public class MiniSolrCloudCluster {
           }
         }
       }
-      if (activeReplicas == expectedReplicas) {
-        return true;
-      }
-      
-      return false;
+      return activeReplicas == expectedReplicas;
+
     };
   }
 

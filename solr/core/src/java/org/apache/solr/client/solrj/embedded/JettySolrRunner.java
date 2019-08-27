@@ -59,6 +59,8 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.rewrite.handler.RewriteHandler;
+import org.eclipse.jetty.rewrite.handler.RewritePatternRule;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -171,20 +173,20 @@ public class JettySolrRunner {
     private void executeDelay() {
       int delayMs = 0;
       for (Delay delay: delays) {
-        this.log.info("Delaying "+delay.delayValue+", for reason: "+delay.reason);
+        log.info("Delaying "+delay.delayValue+", for reason: "+delay.reason);
         if (delay.counter.decrementAndGet() == 0) {
           delayMs += delay.delayValue;
         }
       }
 
       if (delayMs > 0) {
-        this.log.info("Pausing this socket connection for " + delayMs + "ms...");
+        log.info("Pausing this socket connection for " + delayMs + "ms...");
         try {
           Thread.sleep(delayMs);
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }
-        this.log.info("Waking up after the delay of " + delayMs + "ms...");
+        log.info("Waking up after the delay of " + delayMs + "ms...");
       }
     }
 
@@ -398,8 +400,15 @@ public class JettySolrRunner {
     root.addServlet(Servlet404.class, "/*");
     chain = root;
     }
-
-    chain = injectJettyHandlers(chain);
+    if(config.enableV2) {
+      RewriteHandler rwh = new RewriteHandler();
+      rwh.setRewriteRequestURI(true);
+      rwh.setRewritePathInfo(false);
+      rwh.setOriginalPathAttribute("requestedPath");
+      rwh.addRule(new RewritePatternRule("/api/*", "/solr/____v2"));
+      chain.insertHandler(rwh);
+      chain = injectJettyHandlers(chain);
+    }
 
     GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setHandler(chain);
@@ -549,7 +558,7 @@ public class JettySolrRunner {
     this.host = c.getHost();
   }
 
-  private void retryOnPortBindFailure(int portRetryTime, int port) throws Exception, InterruptedException {
+  private void retryOnPortBindFailure(int portRetryTime, int port) throws Exception {
     TimeOut timeout = new TimeOut(portRetryTime, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     int tryCnt = 1;
     while (true) {
