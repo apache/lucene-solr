@@ -67,6 +67,9 @@ New Features
 
 * SOLR-13707: API to expose the currently used package name, details for each plugin (noble)
 
+* SOLR-13710: Persist package jars locally & expose them over http at /api/node/blob  (noble)
+
+
 Improvements
 ----------------------
 
