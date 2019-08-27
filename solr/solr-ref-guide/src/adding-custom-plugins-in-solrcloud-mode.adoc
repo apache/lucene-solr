@@ -154,7 +154,7 @@ Step 5: Add the jar to your collection `gettingstarted`
 [source,bash]
 ----
  curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
-    "add-runtimelib": { "name" : "testjar",
+    "add-package": { "name" : "my-pkg",
     "url":"http://localhost:8000/runtimelibs.jar" ,
     "sha512" : "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"}
     }'
@@ -166,7 +166,7 @@ Step  6 : Create a new request handler '/test' for the collection 'gettingstarte
 ----
 curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
     "create-requesthandler": { "name" : "/test",
-    'class': 'org.apache.solr.core.RuntimeLibReqHandler', 'runtimeLib' : true}
+    "class": "org.apache.solr.core.RuntimeLibReqHandler", "package" : "my-pkg" }
     }'
 ----
 
@@ -204,7 +204,7 @@ Example:
 [source,bash]
 ----
  curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d '{
-    "update-runtimelib": { "name" : "testjar",
+    "update-package": { "name" : "my-pkg",
     "url":"http://localhost:8000/runtimelibs_v2.jar" ,
     "sha512" : "<replace-the-new-sha512-digest-here>"}
     }'

@@ -17,19 +17,21 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.util.ConcurrentLFUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +80,6 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private Boolean timeDecay = true;
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricRegistry registry;
 
   private int maxSize;
   private int minSizeLimit;
@@ -115,14 +116,14 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     str = (String) args.get(AUTOWARM_COUNT_PARAM);
     autowarmCount = str == null ? 0 : Integer.parseInt(str);
     str = (String) args.get(CLEANUP_THREAD_PARAM);
-    cleanupThread = str == null ? false : Boolean.parseBoolean(str);
+    cleanupThread = str != null && Boolean.parseBoolean(str);
 
     str = (String) args.get(SHOW_ITEMS_PARAM);
     showItems = str == null ? 0 : Integer.parseInt(str);
 
     // Don't make this "efficient" by removing the test, default is true and omitting the param will make it false.
     str = (String) args.get(TIME_DECAY_PARAM);
-    timeDecay = (str == null) ? true : Boolean.parseBoolean(str);
+    timeDecay = (str == null) || Boolean.parseBoolean(str);
 
     description = generateDescription();
 
@@ -146,7 +147,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private String generateDescription() {
     String descr = "Concurrent LFU Cache(maxSize=" + maxSize + ", initialSize=" + initialSize +
         ", minSize=" + minSizeLimit + ", acceptableSize=" + acceptableSize + ", cleanupThread=" + cleanupThread +
-        ", timeDecay=" + Boolean.toString(timeDecay);
+        ", timeDecay=" + timeDecay;
     if (autowarmCount > 0) {
       descr += ", autowarmCount=" + autowarmCount + ", regenerator=" + regenerator;
     }
@@ -226,6 +227,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
     cache.destroy();
+    if (solrMetrics != null) solrMetrics.unregister();
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -253,9 +255,17 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     return "0." + hundredths;
   }
 
+
+  private SolrMetrics solrMetrics;
+
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    registry = manager.registry(registryName);
+  public SolrMetrics getMetrics() {
+    return solrMetrics;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetrics info) {
+    solrMetrics = info.getChildInfo(this);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         ConcurrentLFUCache.Stats stats = cache.getStats();
@@ -316,7 +326,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
       }
     });
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    String metricName = SolrMetricManager.makeName(ImmutableList.of(getCategory().toString()), solrMetrics.scope);
+    solrMetrics.gauge(this, cacheMap, true, metricName);
   }
 
   // for unit tests only
@@ -331,7 +342,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return registry;
+    return solrMetrics == null ? null : solrMetrics.getRegistry();
+
   }
 
   @Override

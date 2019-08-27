@@ -257,7 +257,6 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       queuedTime = manager.timer(this, registryName, "queuedTime", getCategory().toString(), scope, className);
     }
     manager.registerGauge(this, registryName, () -> async, "async", true, "async", getCategory().toString(), scope, className);
-    metricNames.addAll(Arrays.asList("errors", "logged", "requestTimes", "totalTime", "queueCapacity", "queueSize", "async"));
   }
   
   @Override
