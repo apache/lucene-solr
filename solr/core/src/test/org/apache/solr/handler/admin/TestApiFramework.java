@@ -19,10 +19,8 @@ package org.apache.solr.handler.admin;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
@@ -124,21 +122,18 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = invoke(containerHandlers, null, "/collections/_introspect", GET, mockCC);
 
-    Set<String> methodNames = new HashSet<>();
-    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]",null));
-    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]",null));
-    methodNames.add(rsp.getValues()._getStr("/spec[2]/methods[0]",null));
-    assertTrue(methodNames.contains("DELETE"));
-    assertTrue(methodNames.contains("POST"));
-    assertTrue(methodNames.contains("GET"));
+    assertConditions(rsp.getValues().asMap(2), Utils.makeMap(
+        "/spec[0]/methods[0]", "DELETE",
+        "/spec[1]/methods[0]", "POST",
+        "/spec[2]/methods[0]", "GET"
 
-    methodNames = new HashSet<>();
+    ));
 
     rsp = invoke(coreHandlers, "/schema/_introspect", "/collections/hello/schema/_introspect", GET, mockCC);
-    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]",null));
-    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]",null));
-    assertTrue(methodNames.contains("POST"));
-    assertTrue(methodNames.contains("GET"));
+    assertConditions(rsp.getValues().asMap(2), Utils.makeMap(
+        "/spec[0]/methods[0]", "POST",
+        "/spec[0]/commands", NOT_NULL,
+        "/spec[1]/methods[0]", "GET"));
 
     rsp = invoke(coreHandlers, "/", "/collections/hello/_introspect", GET, mockCC);
     assertConditions(rsp.getValues().asMap(2), Utils.makeMap(
