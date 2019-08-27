@@ -71,3 +71,27 @@ openssl dgst -sha512 cache.jar.bin
 openssl dgst -sha512 cache_v2.jar.bin
 
 aa3f42fb640636dd8126beca36ac389486d0fcb1c3a2e2c387d043d57637535ce8db3b17983853322f78bb8f447ed75fe7b405675debe652ed826ee95e8ce328
+
+=============sha256============================
+
+openssl dgst -sha256 runtimelibs.jar.bin
+
+e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc
+
+openssl dgst -sha512 runtimelibs_v2.jar.bin
+
+79298d7d5c3e60d91154efe7d72f4536eac46698edfa22ab894b85492d562ed4
+
+openssl dgst -sha256 runtimelibs_v3.jar.bin
+
+20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3
+
+openssl dgst -sha256 cache.jar.bin
+
+380c2a61759f01b4d5d2570496c3d2737e3cc6968347faa94d93e906e03e077f
+
+openssl dgst -sha256 cache_v2.jar.bin
+
+22551e42e6fd9646a641ebc1380472ec66fba62f35febad46c8165376b41161d
+
+
