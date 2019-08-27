@@ -75,7 +75,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     promptHeader = Collections.unmodifiableMap(Collections.singletonMap("WWW-Authenticate", "Basic realm=\"" + realm + "\""));
     credentials = new LinkedHashMap<>();
     Map<String,String> users = (Map<String,String>) pluginConfig.get("credentials");
-    if (users == null) {
+    if (users == null || users.isEmpty()) {
       throw new IllegalStateException("No users configured yet. At least one user must be configured in security.json");
     }
     for (Map.Entry<String, String> e : users.entrySet()) {

@@ -32,11 +32,11 @@ import static java.util.Collections.singletonMap;
 public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
   public void testAuthenticate(){
     Sha256AuthenticationProvider zkAuthenticationProvider = new Sha256AuthenticationProvider();
-    zkAuthenticationProvider.init(Collections.emptyMap());
+    zkAuthenticationProvider.init(createConfigMap("ignore", "me"));
 
-    String pwd = "My#$Password";
-    String user = "noble";
-    Map latestConf = new LinkedHashMap<>();
+    String pwd = "Friendly";
+    String user = "marcus";
+    Map latestConf = createConfigMap(user, pwd);
     Map<String, Object> params = singletonMap(user, pwd);
     Map<String, Object> result = zkAuthenticationProvider.edit(latestConf,
         Collections.singletonList(new CommandOperation("set-user",params )));
@@ -53,7 +53,7 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
     try (BasicAuthPlugin basicAuthPlugin = new BasicAuthPlugin()) {
       basicAuthPlugin.init(createConfigMap("ignore", "me"));
 
-      Map latestConf = new LinkedHashMap<>();
+      Map latestConf = createConfigMap("solr", "SolrRocks");
 
       CommandOperation blockUnknown = new CommandOperation("set-property", singletonMap("blockUnknown", true));
       basicAuthPlugin.edit(latestConf, Collections.singletonList(blockUnknown));
@@ -86,8 +86,7 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
 
   public void testBasicAuthDeleteFinalUser() throws IOException {
     try (BasicAuthPlugin basicAuthPlugin = new BasicAuthPlugin()) {
-      Map<String, Object> config =
-          createConfigMap("solr", "IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c=");
+      Map<String, Object> config = createConfigMap("solr", "IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c=");
       basicAuthPlugin.init(config);
       assertTrue(basicAuthPlugin.authenticate("solr", "SolrRocks"));
 
