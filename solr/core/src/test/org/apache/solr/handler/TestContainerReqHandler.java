@@ -663,7 +663,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13650")
+//  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13650")
   public void testCacheLoadFromPackage() throws Exception {
     String COLLECTION_NAME = "globalCacheColl";
     Map<String, Object> jars = Utils.makeMap(
@@ -684,7 +684,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
         .configure();
     try {
       String payload = "{add-package:{name : 'cache_pkg', url: 'http://localhost:" + port + "/jar1.jar', " +
-          "sha256 : '380c2a61759f01b4d5d2570496c3d2737e3cc6968347faa94d93e906e03e077f'}}";
+          "sha256 : '32e8b5b2a95ea306538b52017f0954aa1b0f8a8b2d0acbc498fd0e66a223f7bd'}}";
 
       new V2Request.Builder("/cluster")
           .withPayload(payload)
@@ -729,15 +729,15 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           .setWaitSearcher(true);
       cluster.getSolrClient().request(req, COLLECTION_NAME);
 
-      SolrQuery solrQuery = new SolrQuery("q", "*:*", "collection", COLLECTION_NAME);
+      SolrQuery solrQuery = new SolrQuery("q", "id:1", "collection", COLLECTION_NAME);
       assertResponseValues(10,
           cluster.getSolrClient(),
           new QueryRequest(solrQuery),
-          Utils.makeMap("response[0]/id", "1"));
+          Utils.makeMap("/response[0]/my_synthetic_fld_s", "version_1"));
 
 
       payload = "{update-package:{name : 'cache_pkg', url: 'http://localhost:" + port + "/jar2.jar', " +
-          "sha256 : '22551e42e6fd9646a641ebc1380472ec66fba62f35febad46c8165376b41161d'}}";
+          "sha256 : '0f670f6dcc2b00f9a448a7ebd457d4ff985ab702c85cdb3608dcae9889e8d702'}}";
       new V2Request.Builder("/cluster")
           .withPayload(payload)
           .withMethod(SolrRequest.METHOD.POST)
