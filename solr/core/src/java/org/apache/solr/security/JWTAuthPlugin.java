@@ -243,11 +243,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       log.warn("Initialized JWTAuthPlugin without any JWK config. Requests with jwk header will fail.");
     }
     httpsJkwsList = new ArrayList<>();
-    if (oidcDiscoveryConfig != null) {
-      HttpsJwks jwks = createHttpsJwk(oidcDiscoveryConfig.getJwksUrl());
-      httpsJkwsList.add(jwks);
-      verificationKeyResolver = new HttpsJwksVerificationKeyResolver(jwks);
-    } else if (confJwkUrl != null) {
+    if (confJwkUrl != null) {
       if (confJwkUrl instanceof List) {
         httpsJkwsList.addAll(((List<String>)confJwkUrl).stream().map(this::createHttpsJwk).collect(Collectors.toList()));
         verificationKeyResolver = new MultiHttpsJwksVerificationkeyResolver(httpsJkwsList);
@@ -264,6 +260,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       } catch (JoseException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JWTAuthPlugin configuration, " + PARAM_JWK + " parse error", e);
       }
+    } else if (oidcDiscoveryConfig != null) {
+      HttpsJwks jwks = createHttpsJwk(oidcDiscoveryConfig.getJwksUrl());
+      httpsJkwsList.add(jwks);
+      verificationKeyResolver = new HttpsJwksVerificationKeyResolver(jwks);
     }
     initConsumer();
     log.debug("JWK configured");

@@ -43,8 +43,8 @@ import org.slf4j.LoggerFactory;
  * This implementation simply collects all keys from all endpoints into a single list and
  * the rest of the implementation is equivalent to that of HttpsJwksVerificationKeyResolver.
  *
- * No attempt is made to keep track of which key came from which JWKs endpoint, and on failure
- * all JWKs endpoints are refreshed before a single retry.
+ * No attempt is made to keep track of which key came from which JWKs endpoint, and if a
+ * key is not found in any cache, all JWKs endpoints are refreshed before a single retry.
  */
 public class MultiHttpsJwksVerificationkeyResolver implements VerificationKeyResolver {
   private static final Logger log = LoggerFactory.getLogger(MultiHttpsJwksVerificationkeyResolver.class);
@@ -79,7 +79,6 @@ public class MultiHttpsJwksVerificationkeyResolver implements VerificationKeyRes
 
         jsonWebKeys.clear();
         for (HttpsJwks hjwks : httpsJkwsList) {
-          hjwks.refresh();
           jsonWebKeys.addAll(hjwks.getJsonWebKeys());
         }
         theChosenOne = select(jws, jsonWebKeys);
@@ -103,7 +102,7 @@ public class MultiHttpsJwksVerificationkeyResolver implements VerificationKeyRes
   }
 
   // TODO: This method is copy/pasted from HttpsJwksVerificationKeyResolver since it was private. Else we couldhave
-  // extended HttpsJwksVerificationKeyResolver instead of duplicating here
+  // TODO: extended HttpsJwksVerificationKeyResolver instead of duplicating here
 
   private JsonWebKey select(JsonWebSignature jws, List<JsonWebKey> jsonWebKeys) throws JoseException
   {

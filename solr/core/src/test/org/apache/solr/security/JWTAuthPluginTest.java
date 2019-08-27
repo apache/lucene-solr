@@ -43,14 +43,20 @@ import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.keys.BigEndianBigInteger;
+import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
 import org.jose4j.lang.JoseException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Answers;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.MockitoRule;
 
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
@@ -62,7 +68,6 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 @SuppressWarnings("unchecked")
-//@RunWith(MockitoJUnitRunner.class)
 public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static String testHeader;
   private static String slimHeader;
@@ -71,6 +76,16 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static RsaJsonWebKey rsaJsonWebKey;
   private HashMap<String, Object> testConfig;
   private HashMap<String, Object> minimalConfig;
+
+  @Rule
+  public MockitoRule mockitoRule = MockitoJUnit.rule();
+
+  @Mock
+  private HttpsJwks correctHttpsJwks;
+  @Mock
+  private HttpsJwks wrongHttpsJwks;
+  @Mock
+  private JWTAuthPlugin mockPlugin;
 
   @BeforeClass
   public static void beforeAll() throws Exception {
@@ -96,7 +111,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     slimHeader = "Bearer" + " " + slimJwt;
   }
 
-  static JwtClaims generateClaims() {
+  protected static JwtClaims generateClaims() {
     JwtClaims claims = new JwtClaims();
     claims.setIssuer("IDServer");  // who creates the token and signs it
     claims.setAudience("Solr"); // to whom the token is intended to be sent
@@ -119,10 +134,12 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
+
     // Create an auth plugin
     plugin = new JWTAuthPlugin();
 
     // Create a JWK config for security.json
+
     testJwk = new HashMap<>();
     testJwk.put("kty", rsaJsonWebKey.getKeyType());
     testJwk.put("e", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getPublicExponent()));
@@ -192,6 +209,18 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     authConf.put("jwkUrl", "https://127.0.0.1:9999/foo.jwk");
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
+    assertEquals("org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver",
+        plugin.verificationKeyResolver.getClass().getName());
+  }
+
+  @Test
+  public void initWithJwkUrlArray() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwkUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
+    plugin = new JWTAuthPlugin();
+    plugin.init(authConf);
+    assertEquals("org.apache.solr.security.MultiHttpsJwksVerificationkeyResolver",
+        plugin.verificationKeyResolver.getClass().getName());
   }
 
   /**
@@ -214,18 +243,24 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     JsonWebKey wrongJwk = JsonWebKey.Factory.newJwk(testJwkWrong);
 
     // Configure our mock plugin with URL as jwk source
-    plugin = mock(JWTAuthPlugin.class, withSettings().defaultAnswer(Answers.CALLS_REAL_METHODS));
-    HttpsJwks correctHttpsJwks = mock(HttpsJwks.class, withSettings().defaultAnswer(Answers.CALLS_REAL_METHODS));
-    when(correctHttpsJwks.getJsonWebKeys()).thenReturn(Arrays.asList(correctJwk));
-    HttpsJwks wrongHttpsJwks = mock(HttpsJwks.class, withSettings().defaultAnswer(Answers.CALLS_REAL_METHODS));
-    when(wrongHttpsJwks.getJsonWebKeys()).thenReturn(Arrays.asList(wrongJwk));
+    //plugin = mock(JWTAuthPlugin.class, withSettings().defaultAnswer(Answers.CALLS_REAL_METHODS));
+
+
+    when(correctHttpsJwks
+        .getJsonWebKeys())
+        .thenReturn(Arrays.asList(correctJwk));
+    when(wrongHttpsJwks
+        .getJsonWebKeys())
+        .thenReturn(Arrays.asList(wrongJwk));
 
     HashMap<String, Object> pluginConfigJwkUrl = new HashMap<>();
     pluginConfigJwkUrl.put("class", "org.apache.solr.security.JWTAuthPlugin");
-    pluginConfigJwkUrl.put("jwkUrl", "dummy");
+    pluginConfigJwkUrl.put("jwkUrl", "https://example.com/");
     plugin.init(pluginConfigJwkUrl);
 
-    assertEquals(plugin.verificationKeyResolver.resolveKey());
+    assertTrue(plugin.verificationKeyResolver instanceof HttpsJwksVerificationKeyResolver);
+    // NOCOMMIT: Add real tests
+    //assertEquals(plugin.verificationKeyResolver.resolveKey());
   }
 
   @Test
