@@ -69,8 +69,6 @@ Other Changes
 
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
 
-* SOLR-13542: Code cleanup - Avoid using stream filter count where possible
-
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -141,6 +139,8 @@ Improvements
 
 * SOLR-11601: Improved error message when geodist(llpsf) is used with arguments referring to a LatLonPointSpatialField.
   (Amrit Sarkar)
+
+* SOLR-13542: Code cleanup - Avoid using stream filter count where possible (Koen De Groote via Tomás Fernández Löbbe)
 
 Bug Fixes
 ----------------------
