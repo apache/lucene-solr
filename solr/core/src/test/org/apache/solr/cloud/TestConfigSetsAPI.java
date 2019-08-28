@@ -62,12 +62,15 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -363,9 +366,9 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     protectConfigsHandler();
     uploadConfigSetWithAssertions("with-script-processor", trustedSuffix, "solr", "SolrRocks");
     // try to create a collection with the uploaded configset
-    CollectionAdminResponse resp = createCollection("newcollection2", "with-script-processor" + trustedSuffix,
-    1, 1, solrCluster.getSolrClient());
-    scriptRequest("newcollection2");
+    CollectionAdminResponse resp = createCollection("newcollection3", "with-script-processor" + trustedSuffix,
+    1, 1, solrCluster.getSolrClient(), "solr", "SolrRocks");
+    scriptRequest("newcollection3", "solr", "SolrRocks");
 
   }
 
@@ -509,17 +512,46 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     }
   }
   
-  public void scriptRequest(String collection) throws SolrServerException, IOException {
+  public void scriptRequest(String collection, String username, String password) throws SolrServerException, IOException {
     SolrClient client = solrCluster.getSolrClient();
     SolrInputDocument doc = sdoc("id", "4055", "subject", "Solr");
-    client.add(collection, doc);
-    client.commit(collection);
 
-    assertEquals("42", client.query(collection, params("q", "*:*")).getResults().get(0).get("script_added_i"));
+    // We must use the UpdateRequest instead of client.add(collection, doc) because we must provide auth credentials
+    //    with the request
+    UpdateRequest addRequest = new UpdateRequest();
+    addRequest.add(doc);
+    addRequest.setCommitWithin(-1);
+    if (username != null) {
+      addRequest.setBasicAuthCredentials(username, password);
+    }
+    addRequest.process(client, collection);
+
+    // We must use the UpdateRequest instead of client.commit(collection) because we must provide auth credentials
+    //    with the request
+    AbstractUpdateRequest commitRequest = new UpdateRequest()
+        .setAction(UpdateRequest.ACTION.COMMIT, true, true);
+    if (username != null) {
+      commitRequest.setBasicAuthCredentials(username, password);
+    }
+    commitRequest.process(client, collection);
+
+    // We must use the UpdateRequest instead of client.query(params) because we must provide auth credentials
+    //    with the request
+    QueryRequest queryRequest = new QueryRequest(params("q", "*:*"));
+    if (username != null) {
+      queryRequest.setBasicAuthCredentials(username, password);
+    }
+    SolrDocumentList docList = queryRequest.process(client, collection).getResults();
+
+    assertEquals("42", docList.get(0).get("script_added_i"));
+  }
+
+  public void scriptRequest(String collection) throws SolrServerException, IOException {
+    scriptRequest(collection, null, null);
   }
 
   protected CollectionAdminResponse createCollection(String collectionName, String confSetName, int numShards,
-      int replicationFactor, SolrClient client)  throws SolrServerException, IOException {
+      int replicationFactor, SolrClient client, String username, String password)  throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
     params.set("collection.configName", confSetName);
@@ -528,10 +560,18 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     params.set("replicationFactor", replicationFactor);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
+    if (username != null) {
+      request.setBasicAuthCredentials(username, password);
+    }
 
     CollectionAdminResponse res = new CollectionAdminResponse();
     res.setResponse(client.request(request));
     return res;
+  }
+
+  protected CollectionAdminResponse createCollection(String collectionName, String confSetName, int numShards,
+                                       int replicationFactor, SolrClient client)  throws SolrServerException, IOException {
+    return createCollection(collectionName, confSetName, numShards, replicationFactor, client, null, null);
   }
   
   public static Map postDataAndGetResponse(CloudSolrClient cloudClient,

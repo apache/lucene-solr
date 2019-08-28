@@ -57,6 +57,8 @@ Upgrade Notes
 
 * SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
 
+* SOLR-13649: BasicAuth property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need to revert to the previous default behavior, you need to explicitly set 'blockUnknown':'false' in the security.json. (janhoy, marcussorealheis) 
+
 * SOLR-11266: default Content-Type override for JSONResponseWriter from _default configSet is removed. Example has been
   provided in sample_techproducts_configs to override content-type. (Ishan Chattopadhyaya, Munendra S N, Gus Heck)
 

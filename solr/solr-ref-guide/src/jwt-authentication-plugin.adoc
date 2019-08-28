@@ -28,12 +28,13 @@ The simplest possible `security.json` for registering the plugin without configu
 ----
 {
   "authentication": {
-    "class":"solr.JWTAuthPlugin"
+    "class":"solr.JWTAuthPlugin",
+    "blockUnknown":"false"
   }
 }
 ----
 
-The plugin will NOT block anonymous traffic in this mode, since the default for `blockUnknown` is false. It is then possible to start configuring the plugin using REST API calls, which is described below.
+The plugin will block anonymous traffic in this mode if the `blockUnknown` property is not set to false as it is above, since the default for `blockUnknown` is true. When the `blockUnknown` parameter is set to `false`, it is possible to start configuring the plugin using REST API calls, which is described below.
 
 == Configuration Parameters
 
@@ -41,7 +42,7 @@ The plugin will NOT block anonymous traffic in this mode, since the default for 
 [%header,format=csv,separator=;]
 |===
 Key                  ; Description                                             ; Default
-blockUnknown         ; Set to `true` in order to block requests from users without a token  ; `false`
+blockUnknown         ; Set to `true` in order to block requests from users without a token  ; `true`
 wellKnownUrl         ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; (no default)
 clientId             ; Client identifier for use with OpenID Connect           ; (no default value) Required to authenticate with Admin UI
 realm                ; Name of the authentication realm to echo back in HTTP 401 responses. Will also be displayed in Admin UI login page ; 'solr-jwt'

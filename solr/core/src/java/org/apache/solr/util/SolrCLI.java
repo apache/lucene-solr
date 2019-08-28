@@ -4414,7 +4414,7 @@ public class SolrCLI implements CLIO {
             password = new String(console.readPassword("Enter password: "));
           }
 
-          boolean blockUnknown = Boolean.valueOf(cli.getOptionValue("blockUnknown", "false"));
+          boolean blockUnknown = Boolean.valueOf(cli.getOptionValue("blockUnknown", "true"));
 
           String securityJson = "{" +
               "\n  \"authentication\":{" +

@@ -26,6 +26,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.logging.LoggerInfo;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.BasicAuthPlugin;
@@ -55,19 +56,19 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
       basicAuth.init((Map<String, Object>) securityCfg.getData().get("authentication"));
       assertTrue(basicAuth.authenticate("tom", "TomIsUberCool"));
 
-
       command = "{\n" +
           "'set-user': {'harry':'HarryIsCool'},\n" +
-          "'delete-user': ['tom','harry']\n" +
+          "'delete-user': ['tom']\n" +
           "}";
       o = new ContentStreamBase.ByteArrayStream(command.getBytes(StandardCharsets.UTF_8), "");
       req.setContentStreams(Collections.singletonList(o));
       handler.handleRequestBody(req, new SolrQueryResponse());
       securityCfg = handler.m.get("/security.json");
+
       assertEquals(3, securityCfg.getVersion());
       Map result = (Map) securityCfg.getData().get("authentication");
       result = (Map) result.get("credentials");
-      assertTrue(result.isEmpty());
+      assertEquals(1,result.size());
     }
 
 
@@ -194,7 +195,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
       sp.getData().put("authorization", makeMap("class", "solr."+RuleBasedAuthorizationPlugin.class.getSimpleName()));
       m.put("/security.json", sp);
 
-      basicAuthPlugin.init(new HashMap<>());
+      basicAuthPlugin.init(Collections.singletonMap("credentials", Collections.singletonMap("ignore", "me")));
 
       rulesBasedAuthorizationPlugin.init(new HashMap<>());
     }
