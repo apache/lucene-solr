@@ -275,7 +275,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
   private static String AUTH_SECTION = ",\n" +
       "  \"authentication\":{\n" +
-      "    \"blockUnknown\":\"true\",\n" +
+      "    \"blockUnknown\":\"false\",\n" +
       "    \"class\":\"solr.BasicAuthPlugin\",\n" +
       "    \"credentials\":{\"solr\":\"orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw=\"}},\n" +
       "  \"authorization\":{\n" +
