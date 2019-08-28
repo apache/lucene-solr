@@ -261,25 +261,27 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
           }
           
           // if (random().nextBoolean()) params.set("facet.mincount", "1");  // uncomment to test that validation fails
-          if (params.getInt("facet.limit", 100)!=0) { // it bypasses all processing, and we can go to empty validation
+          if (!(params.getInt("facet.limit", 100) == 0 &&
+              !params.getBool("facet.missing", false))) {
+            // it bypasses all processing, and we can go to empty validation
             if (exists && params.getInt("facet.mincount", 0)>1) {
               assertQEx("no mincount on facet.exists",
                   rand.nextBoolean() ? "facet.exists":"facet.mincount",
                   req(params), ErrorCode.BAD_REQUEST);
               continue;
             }
-            // facet.exists can't be combined with non-enum nor with enum requested for tries, because it will be flipped to FC/FCS 
+            // facet.exists can't be combined with non-enum nor with enum requested for tries, because it will be flipped to FC/FCS
             final boolean notEnum = method != null && !method.equals("enum");
             final boolean trieField = trieFields.matcher(ftype.fname).matches();
             if ((notEnum || trieField) && exists) {
-              assertQEx("facet.exists only when enum or ommitted", 
+              assertQEx("facet.exists only when enum or ommitted",
                   "facet.exists", req(params), ErrorCode.BAD_REQUEST);
               continue;
             }
             if (exists && sf.getType().isPointField()) {
               // PointFields don't yet support "enum" method or the "facet.exists" parameter
-              assertQEx("Expecting failure, since ", 
-                  "facet.exists=true is requested, but facet.method=enum can't be used with " + sf.getName(), 
+              assertQEx("Expecting failure, since ",
+                  "facet.exists=true is requested, but facet.method=enum can't be used with " + sf.getName(),
                   req(params), ErrorCode.BAD_REQUEST);
               continue;
             }
@@ -370,10 +372,9 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       int fromIndex = offset > stratified.size() ?  stratified.size() : offset;
       stratified = stratified.subList(fromIndex, 
                end > stratified.size() ?  stratified.size() : end);
-      
-      if (params.getInt("facet.limit", 100)>0) { /// limit=0 omits even miss count
-        stratified.addAll(stratas.get(null));
-      }
+
+      stratified.addAll(stratas.get(null));
+
       facetSortedByIndex.clear();
       facetSortedByIndex.addAll(stratified);
     });

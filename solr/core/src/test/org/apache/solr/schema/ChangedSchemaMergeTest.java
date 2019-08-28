@@ -22,12 +22,9 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
-
-import org.apache.lucene.search.similarities.Similarity;
-
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -106,13 +103,9 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     SchemaSimilarityFactory broken = new SchemaSimilarityFactory();
     broken.init(new ModifiableSolrParams());
     // NO INFORM
-    try {
-      Similarity bogus = broken.getSimilarity();
-      fail("SchemaSimilarityFactory should have thrown IllegalStateException b/c inform not used");
-    } catch (IllegalStateException expected) {
-      assertTrue("GOT: " + expected.getMessage(),
-                 expected.getMessage().contains("SolrCoreAware.inform"));
-    }
+    IllegalStateException e = expectThrows(IllegalStateException.class, broken::getSimilarity);
+    assertTrue("GOT: " + e.getMessage(),
+        e.getMessage().contains("SolrCoreAware.inform"));
   }
   
   @Test

@@ -49,6 +49,13 @@ def invalidPatterns = [
   (~$/import java\.lang\.\w+;/$) : 'java.lang import is unnecessary'
 ]
 
+// Python and others merrily use var declarations, this is a problem _only_ in Java at least for 8x where we're forbidding var declarations
+def invalidJavaOnlyPatterns = [
+  (~$/\n\s*var\s+.*=.*<>.*/$) : 'Diamond operators should not be used with var',
+  (~$/\n\s*var\s+/$) : 'var is not allowed in until we stop development on the 8x code line'
+]
+
+
 def baseDir = properties['basedir'];
 def baseDirLen = baseDir.length() + 1;
 
@@ -198,6 +205,11 @@ ant.fileScanner{
         && f.name.equals("TestXmlQParser.java") == false) {
       if (extendsLuceneTestCasePattern.matcher(text).find()) {
         reportViolation(f, "Solr test cases should extend SolrTestCase rather than LuceneTestCase");
+      }
+    }
+    invalidJavaOnlyPatterns.each { pattern,name ->
+      if (pattern.matcher(text).find()) {
+        reportViolation(f, name);
       }
     }
   }

@@ -747,12 +747,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     TermAutomatonQuery q = new TermAutomatonQuery("field");
     int initState = q.createState();
     q.setAccept(initState, true);
-    try {
-      q.finish();
-      fail("did not hit exc");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    expectThrows(IllegalStateException.class, q::finish);
   }
 
   public void testRewriteNoMatch() throws Exception {

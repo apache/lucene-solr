@@ -47,7 +47,7 @@ Next you need to enable the request handler and search component. Add the follow
 <searchComponent name="analytics" class="org.apache.solr.handler.component.AnalyticsComponent" />
 
 <requestHandler name="/select" class="solr.SearchHandler">
-    <arr name="last_components">
+    <arr name="last-components">
         <str>analytics</str>
     </arr>
 </requestHandler>
@@ -68,7 +68,7 @@ For example, this curl command encodes and POSTs a simple analytics request to t
 
 [source,bash]
 ----
-curl --data-urlencode 'analytics={
+curl --data-binary 'analytics={
    "expressions" : {
       "revenue" : "sum(mult(price,quantity))"
       }

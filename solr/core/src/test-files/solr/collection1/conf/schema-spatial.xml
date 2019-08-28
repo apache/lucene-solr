@@ -72,9 +72,13 @@
              numberType="pdouble" distanceUnits="degrees" storeSubFields="false"/>
 
   <fieldType name="llp" class="solr.LatLonPointSpatialField" distanceUnits="degrees" multiValued="true" />
-
+  <fieldType name="oslocation" class="solr.SpatialRecursivePrefixTreeFieldType" geo="false" maxDistErr="0.000009"
+             worldBounds="ENVELOPE(0,700000,1300000,0)" distErrPct="0.15"/>
+  <fieldType name="oslocationold" class="solr.SpatialRecursivePrefixTreeFieldType" geo="false" maxDistErr="0.000009"
+             worldBounds="ENVELOPE(0,700000,1300000,0)" distErrPct="0.15" version="8.2.0"/>
   <field name="id" type="string" required="true"/>
-
+  <field name="oslocation" type="oslocation" />
+  <field name="oslocationold" type="oslocationold" />
   <field name="srpt_geohash" type="srpt_geohash" multiValued="true"/>
   <field name="srpt_quad" type="srpt_quad" multiValued="true"/>
   <field name="srpt_packedquad" type="srpt_packedquad" multiValued="true"/>

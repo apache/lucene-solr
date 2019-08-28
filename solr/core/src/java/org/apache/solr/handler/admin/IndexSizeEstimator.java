@@ -504,14 +504,16 @@ public class IndexSizeEstimator {
         CodecReader codecReader = (CodecReader)leafReader;
         StoredFieldsReader storedFieldsReader = codecReader.getFieldsReader();
         // this instance may be faster for a full sequential pass
-        storedFieldsReader = storedFieldsReader.getMergeInstance();
+        StoredFieldsReader mergeInstance = storedFieldsReader.getMergeInstance();
         for (int docId = 0; docId < leafReader.maxDoc(); docId += samplingStep) {
           if (liveDocs != null && !liveDocs.get(docId)) {
             continue;
           }
-          storedFieldsReader.visitDocument(docId, visitor);
+          mergeInstance.visitDocument(docId, visitor);
         }
-        storedFieldsReader.close();
+        if (mergeInstance != storedFieldsReader) {
+          mergeInstance.close();
+        }
       } else {
         for (int docId = 0; docId < leafReader.maxDoc(); docId += samplingStep) {
           if (liveDocs != null && !liveDocs.get(docId)) {

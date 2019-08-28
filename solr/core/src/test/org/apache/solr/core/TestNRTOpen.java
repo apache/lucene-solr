@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -33,10 +32,6 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // use a filesystem, because we need to create an index, then "start up solr"
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
-    // and dont delete it initially
-    System.setProperty("solr.test.leavedatadir", "true");
     // set these so that merges won't break the test
     System.setProperty("solr.tests.maxBufferedDocs", "100000");
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
@@ -44,19 +39,14 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     // add a doc
     assertU(adoc("foo", "bar"));
     assertU(commit());
-    File myDir = initCoreDataDir;
-    deleteCore();
-    // boot up again over the same index
-    initCoreDataDir = myDir;
-    initCore("solrconfig-basic.xml", "schema-minimal.xml");
-    // startup
+    // reload the core again over the same index
+    h.reload();
     assertNRT(1);
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
     // ensure we clean up after ourselves, this will fire before superclass...
-    System.clearProperty("solr.test.leavedatadir");
     System.clearProperty("solr.directoryFactory");
     System.clearProperty("solr.tests.maxBufferedDocs");
     systemClearPropertySolrTestsMergePolicyFactory();

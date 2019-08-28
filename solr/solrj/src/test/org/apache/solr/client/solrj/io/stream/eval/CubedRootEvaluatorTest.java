@@ -76,7 +76,7 @@ public class CubedRootEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("cbrt(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void noValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("cbrt(a)");
     
@@ -84,7 +84,7 @@ public class CubedRootEvaluatorTest extends SolrTestCase {
     Object result = evaluator.evaluate(new Tuple(values));
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void nullValue() throws Exception{
     test(null);
   }

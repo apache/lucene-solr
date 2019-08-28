@@ -46,12 +46,12 @@ public class DocCountFunction extends AbstractLongValue implements ReductionFunc
     }
     throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function accepts at most 1 paramater, " + params.length + " given.");
   });
-  
+
   public DocCountFunction() {
     this.collector = new TotalCountCollector();
     this.exprStr = AnalyticsValueStream.createExpressionString(name);
   }
-  
+
   public DocCountFunction(AnalyticsValueStream param) {
     this.collector = new ExpressionCountCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);

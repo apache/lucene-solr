@@ -169,18 +169,8 @@ public class TestQueryParser extends QueryParserTestBase {
   // doesn't work for some reason.
   @SuppressWarnings("rawtype")
   public void testProtectedCtors() throws Exception {
-    try {
-      QueryParser.class.getConstructor(CharStream.class);
-      fail("please switch public QueryParser(CharStream) to be protected");
-    } catch (NoSuchMethodException nsme) {
-      // expected
-    }
-    try {
-      QueryParser.class.getConstructor(QueryParserTokenManager.class);
-      fail("please switch public QueryParser(QueryParserTokenManager) to be protected");
-    } catch (NoSuchMethodException nsme) {
-      // expected
-    }
+    expectThrows(NoSuchMethodException.class, () -> QueryParser.class.getConstructor(CharStream.class));
+    expectThrows(NoSuchMethodException.class, () -> QueryParser.class.getConstructor(QueryParserTokenManager.class));
   }
   
   public void testFuzzySlopeExtendability() throws ParseException {

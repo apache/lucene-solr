@@ -30,8 +30,8 @@ import org.apache.solr.common.SolrException.ErrorCode;
  * <li>If one numeric Value or ValueStream is passed in, a {@link DoubleValue} or {@link DoubleValueStream}
  * representing the natural logarithm is returned.
  * <li>If two numeric Values are passed in, a {@link DoubleValue} representing the logarithm of the first with the second as the base is returned.
- * <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream} representing the logarithm of 
- * the Value with each of the values of the ValueStream for a document as the base is returned. 
+ * <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream} representing the logarithm of
+ * the Value with each of the values of the ValueStream for a document as the base is returned.
  * (Or the other way, since the Value and ValueStream can be used in either order)
  * </ul>
  */

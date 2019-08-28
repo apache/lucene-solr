@@ -35,13 +35,13 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
   public static final int DATE = 25;
   public static final int STRING = 26;
   public static final int NUM_LOOPS = 100;
-  
+
   //INT
-  static ArrayList<ArrayList<Integer>> intLongTestStart; 
-  static ArrayList<ArrayList<Integer>> intFloatTestStart; 
-  static ArrayList<ArrayList<Integer>> intDoubleTestStart; 
-  static ArrayList<ArrayList<Integer>> intStringTestStart; 
-  
+  static ArrayList<ArrayList<Integer>> intLongTestStart;
+  static ArrayList<ArrayList<Integer>> intFloatTestStart;
+  static ArrayList<ArrayList<Integer>> intDoubleTestStart;
+  static ArrayList<ArrayList<Integer>> intStringTestStart;
+
   @Before
   public void beforeTest() throws Exception {
 
@@ -52,7 +52,7 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
     intStringTestStart = new ArrayList<>();
 
     UpdateRequest req = new UpdateRequest();
-    
+
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
       long l = j%LONG;
@@ -60,7 +60,7 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
       double d = j%DOUBLE;
       int dt = j%DATE;
       int s = j%STRING;
-      
+
       List<String> fields = new ArrayList<>();
       fields.add("id"); fields.add("1000"+j);
       fields.add("int_id"); fields.add("" + i);
@@ -70,7 +70,7 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
       fields.add("date_dtd"); fields.add((1800+dt) + "-12-31T23:59:59.999Z");
       fields.add("string_sd"); fields.add("abc" + s);
       req.add(fields.toArray(new String[0]));
-      
+
       //Long
       if (j-LONG<0) {
         ArrayList<Integer> list1 = new ArrayList<>();
@@ -107,9 +107,9 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
 
     req.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
-  
+
   @Test
-  public void limitTest() throws Exception { 
+  public void limitTest() throws Exception {
     String[] params = new String[] {
         "o.lr.s.mean", "mean(int_id)",
         "o.lr.s.median", "median(int_id)",
@@ -132,7 +132,7 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
         "o.lr.ff.string_sd.sd", "desc",
         "o.lr.ff.string_sd.limit", "1"
     };
-    
+
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
 
@@ -145,9 +145,9 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
     Collection<Integer> string = getValueList(response, "lr", "fieldFacets", "string_sd", "percentile_20", false);
     assertEquals(responseStr, string.size(),1);
   }
-  
+
   @Test
-  public void offsetTest() throws Exception { 
+  public void offsetTest() throws Exception {
     String[] params = new String[] {
         "o.offAll.s.mean", "mean(int_id)",
         "o.offAll.ff", "long_ld",
@@ -176,36 +176,36 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
         "o.off2.ff.long_ld.limit", "3",
         "o.off2.ff.long_ld.offset", "4"
     };
-    
+
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
 
     Collection<Double> lon;
-   
+
     List<Double> all = new ArrayList<>();
     lon = getValueList(response, "off0", "fieldFacets", "long_ld", "mean", false);
     assertEquals(responseStr, lon.size(),2);
     assertArrayEquals(new Double[]{ 1.5,  2.0 }, lon.toArray(new Double[0]));
     all.addAll(lon);
-    
+
     lon = getValueList(response, "off1", "fieldFacets", "long_ld", "mean", false);
     assertEquals(responseStr, lon.size(),2);
     assertArrayEquals(new Double[]{ 3.0,  4.0 }, lon.toArray(new Double[0]));
     all.addAll(lon);
-    
+
     lon = getValueList(response, "off2", "fieldFacets", "long_ld", "mean", false);
     assertEquals(responseStr, lon.size(),3);
     assertArrayEquals(new Double[]{ 5.0,  5.75, 6.0 }, lon.toArray(new Double[0]));
     all.addAll(lon);
-    
+
     lon = getValueList(response, "offAll", "fieldFacets", "long_ld", "mean", false);
     assertEquals(responseStr, lon.size(),7);
     assertArrayEquals(all.toArray(new Double[0]), lon.toArray(new Double[0]));
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
-  public void sortTest() throws Exception { 
+  public void sortTest() throws Exception {
     String[] params = new String[] {
         "o.sr.s.mean", "mean(int_id)",
         "o.sr.s.median", "median(int_id)",
@@ -224,25 +224,25 @@ public class LegacyFieldFacetExtrasCloudTest extends LegacyAbstractAnalyticsFace
         "o.sr.ff.string_sd.ss", "percentile_20",
         "o.sr.ff.string_sd.sd", "desc"
     };
-    
+
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
-    
+
     Collection<Double> lon = getValueList(response, "sr", "fieldFacets", "long_ld", "mean", false);
     ArrayList<Double> longTest = calculateFacetedNumberStat(intLongTestStart, "mean");
     Collections.sort(longTest);
     assertEquals(responseStr, longTest,lon);
-    
+
     Collection<Double> flo = getValueList(response, "sr", "fieldFacets", "float_fd", "median", false);
     ArrayList<Double> floatTest = calculateFacetedNumberStat(intFloatTestStart, "median");
     Collections.sort(floatTest,Collections.reverseOrder());
     assertEquals(responseStr, floatTest,flo);
-    
+
     Collection<Long> doub = getValueList(response, "sr", "fieldFacets", "double_dd", "count", false);
     ArrayList<Long> doubleTest = (ArrayList<Long>)calculateFacetedStat(intDoubleTestStart, "count");
     Collections.sort(doubleTest);
     assertEquals(responseStr, doubleTest,doub);
-    
+
     Collection<Integer> string = getValueList(response, "sr", "fieldFacets", "string_sd", "percentile_20", false);
     ArrayList<Integer> stringTest = (ArrayList<Integer>)calculateFacetedStat(intStringTestStart, "perc_20");
     Collections.sort(stringTest,Collections.reverseOrder());

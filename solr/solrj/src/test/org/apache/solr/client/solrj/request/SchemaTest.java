@@ -329,12 +329,7 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.UpdateResponse deleteFieldResponse = deleteFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(deleteFieldResponse);
 
-    try {
-      fieldSchemaRequest.process(getSolrClient());
-      fail(String.format(Locale.ROOT, "after removal, the field %s shouldn't be anymore available over Schema API", fieldName));
-    } catch (SolrException e) {
-      //success
-    }
+    expectThrows(SolrException.class, () -> fieldSchemaRequest.process(getSolrClient()));
   }
 
   @Test
@@ -454,13 +449,7 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.UpdateResponse deleteDynamicFieldResponse = deleteFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(deleteDynamicFieldResponse);
 
-    try {
-      dynamicFieldSchemaRequest.process(getSolrClient());
-      fail(String.format(Locale.ROOT, "after removal, the dynamic field %s shouldn't be anymore available over Schema API",
-          dynamicFieldName));
-    } catch (SolrException e) {
-      //success
-    }
+    expectThrows(SolrException.class, () -> dynamicFieldSchemaRequest.process(getSolrClient()));
   }
 
   @Test

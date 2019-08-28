@@ -10,14 +10,35 @@ API Changes
 * LUCENE-8909: IndexWriter#getFieldNames() method is used to get fields present in index. After LUCENE-8316, this
   method is no longer required. Hence, deprecate IndexWriter#getFieldNames() method. (Adrien Grand, Munendra S N)
 
+* LUCENE-8755: SpatialPrefixTreeFactory now consumes the "version" parsed with Lucene's Version class.  The quad
+  and packed quad prefix trees are sensitive to this.  It's recommended to pass the version like you
+  should do likewise for analysis components for tokenized text, or else changes to the encoding in future versions
+  may be incompatible with older indexes.  (Chongchen Chen, David Smiley)
+
+New Features
+
+* LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)
+
+* LUCENE-8764: Add "export all terms" feature to Luke. (Leonardo Menezes via Tomoko Uchida)
+
+* LUCENE-8747: Composite Matches from multiple subqueries now allow access to
+  their submatches, and a new NamedMatches API allows marking of subqueries
+  and a simple way to find which subqueries have matched on a given document
+  (Alan Woodward, Jim Ferenczi)
+
+* LUCENE-8769: Introduce Range Query For Multiple Connected Ranges (Atri Sharma)
+
 Improvements
 
 * LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
 
 * LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
 
-* LUCENE-8914: move the logic for discarding inner modes to the IntersectVisitor so we take advantage
-  of the change introduced in LUCENE-7862. (Ignacio Vera)
+* LUCENE-8914: move the logic for discarding inner modes in FloatPointNearestNeighbor to the IntersectVisitor
+  so we take advantage of the change introduced in LUCENE-7862. (Ignacio Vera)
+
+* LUCENE-8955: move the logic for discarding inner modes in LatLonPoint NearestNeighbor to the IntersectVisitor
+  so we take advantage of the change introduced in LUCENE-7862. (Ignacio Vera)
 
 * LUCENE-8918: PhraseQuery throws exceptions at construction time if it is passed
   null arguments. (Alan Woodward)
@@ -25,14 +46,37 @@ Improvements
 * LUCENE-8916: GraphTokenStreamFiniteStrings preserves all Token attributes
   through its finite strings TokenStreams (Alan Woodward)
 
+* LUCENE-8933: Check kuromoji user dictionary beforehand to avoid unexpected runtime exceptions. (Tomoko Uchida
+
+* LUCENE-8906: Expose Lucene50PostingsFormat.IntBlockTermState as public so that other postings formats can re-use it.
+  (Bruno Roustant)
+
+* SOLR-13663: Introduce <SpanPositionRange> into XML Query Parser (Alessandro Benedetti via Mikhail Khludnev)
+
+* LUCENE-8952: Use a sort key instead of true distance in NearestNeighbor (Julie Tibshirani).
+
 Optimizations
 
 * LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
   non-competitive hits. (Adrien Grand)
 
+* LUCENE-8935: BooleanQuery with no scoring clause can now early terminate the query when
+the total hits is not requested.
+
+* LUCENE-8941: Matches on wildcard queries will defer building their full
+  disjunction until a MatchesIterator is pulled (Alan Woodward)
+
+* LUCENE-8755: spatial-extras quad and packed quad prefix trees now index points faster.
+  (Chongchen Chen, David Smiley)
+
+Bug Fixes
+
+* LUCENE-8755: spatial-extras quad and packed quad prefix trees could throw a
+  NullPointerException for certain cell edge coordinates (Chongchen Chen, David Smiley)
+
 Other
 
-* LUCENE-8778 LUCENE-8911: Define analyzer SPI names as static final fields and document the names in Javadocs.
+* LUCENE-8778 LUCENE-8911 LUCENE-8957: Define analyzer SPI names as static final fields and document the names in Javadocs.
   (Tomoko Uchida, Uwe Schindler)
 
 ======================= Lucene 8.2.0 =======================

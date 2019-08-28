@@ -66,7 +66,7 @@ import org.apache.solr.schema.TrieLongField;
 
 /**
  * A factory to parse and create expressions, and capture information about those expressions along the way.
- * 
+ *
  * <p>
  * In order to use, first call {@link #startRequest()} and create all ungrouped expressions,
  * then call {@link #createReductionManager} to get the ungrouped reduction manager.
@@ -95,40 +95,40 @@ public class ExpressionFactory {
   private HashMap<String, VariableFunctionInfo> systemVariableFunctions;
   private HashMap<String, VariableFunctionInfo> variableFunctions;
   private HashSet<String> variableFunctionNameHistory;
-  
+
   private HashMap<String, CreatorFunction> expressionCreators;
   private final ConstantFunction constantCreator;
-  
+
   private LinkedHashMap<String, ReductionFunction> reductionFunctions;
   private LinkedHashMap<String, ReductionDataCollector<?>> collectors;
   private LinkedHashMap<String, AnalyticsField> fields;
   private HashMap<String, AnalyticsValueStream> expressions;
-  
+
   private IndexSchema schema;
-  
+
   private Map<String, ReductionDataCollector<?>> groupedCollectors;
   private Map<String, AnalyticsField> groupedFields;
   private boolean isGrouped;
 
   public ExpressionFactory(IndexSchema schema) {
     this.schema = schema;
-    
+
     expressionCreators = new HashMap<>();
     systemVariableFunctions = new HashMap<>();
-    
+
     constantCreator = ConstantValue.creatorFunction;
     addSystemFunctions();
   }
-  
+
   /**
    * Get the index schema used by this factory.
-   * 
+   *
    * @return the index schema
    */
   public IndexSchema getSchema() {
     return schema;
   }
-  
+
   /**
    * Prepare the factory to start building the request.
    */
@@ -141,10 +141,10 @@ public class ExpressionFactory {
     variableFunctions = new HashMap<>();
     variableFunctions.putAll(systemVariableFunctions);
     variableFunctionNameHistory = new HashSet<>();
-    
+
     isGrouped = false;
   }
-  
+
   /**
    * Prepare the factory to start building the next grouping.
    * <br>
@@ -153,14 +153,14 @@ public class ExpressionFactory {
   public void startGrouping() {
     groupedCollectors = new HashMap<>();
     groupedFields = new HashMap<>();
-    
+
     isGrouped = true;
   }
 
   /**
    * Add a system function to the expression factory.
    * This will be treated as a native function and not a variable function.
-   * 
+   *
    * @param functionName the unique name for the function
    * @param functionCreator the creator function to generate an expression
    * @return this factory, to easily chain function adds
@@ -176,7 +176,7 @@ public class ExpressionFactory {
 
   /**
    * Add a variable function that will be treated like a system function.
-   * 
+   *
    * @param functionName the function's name
    * @param functionParams the comma separated and ordered parameters of the function (e.g. {@code "a,b"} )
    * @param returnSignature the return signature of the variable function (e.g. {@code div(sum(a,b),count(b))} )
@@ -184,7 +184,7 @@ public class ExpressionFactory {
    * @throws SolrException if the name of the function is not unique or the syntax of either signature is incorrect
    */
   public ExpressionFactory addSystemVariableFunction(final String functionName, final String functionParams, final String returnSignature) throws SolrException {
-    return addVariableFunction(functionName, 
+    return addVariableFunction(functionName,
                                Arrays.stream(functionParams.split(",")).map(param -> param.trim()).toArray(size -> new String[size]),
                                returnSignature,
                                systemVariableFunctions);
@@ -192,7 +192,7 @@ public class ExpressionFactory {
 
   /**
    * Add a variable function that was defined in an analytics request.
-   * 
+   *
    * @param functionSignature the function signature of the variable function (e.g. {@code func(a,b)} )
    * @param returnSignature the return signature of the variable function (e.g. {@code div(sum(a,b),count(b))} )
    * @return this factory, to easily chain function adds
@@ -201,10 +201,10 @@ public class ExpressionFactory {
   public ExpressionFactory addUserDefinedVariableFunction(final String functionSignature, final String returnSignature) throws SolrException {
     return addVariableFunction(functionSignature, returnSignature, variableFunctions);
   }
-  
+
   /**
-   * Add a variable function to the given map of variable functions. 
-   * 
+   * Add a variable function to the given map of variable functions.
+   *
    * @param functionSignature the function signature of the variable function (e.g. {@code func(a,b)} )
    * @param returnSignature the return signature of the variable function (e.g. {@code div(sum(a,b),count(b))} )
    * @param variableFunctions the map of variable functions to add the new function to
@@ -217,10 +217,10 @@ public class ExpressionFactory {
     addVariableFunction(getFunctionName(functionSignature), getParams(functionSignature, null, null), returnSignature, variableFunctions);
     return this;
   }
-  
+
   /**
-   * Add a variable function to the given map of variable functions. 
-   * 
+   * Add a variable function to the given map of variable functions.
+   *
    * @param functionName the function's name
    * @param functionParams the parameters of the function (this is ordered)
    * @param returnSignature the return signature of the variable function (e.g. {@code div(sum(a,b),count(b))} )
@@ -245,7 +245,7 @@ public class ExpressionFactory {
   /**
    * Create a reduction manager to manage the collection of all expressions that have been created since
    * {@link #startRequest()} was called.
-   * 
+   *
    * @param isCloudCollection whether the request is a distributed request
    * @return a reduction manager
    */
@@ -262,7 +262,7 @@ public class ExpressionFactory {
   /**
    * Create a reduction manager to manage the collection of all expressions that have been created since
    * {@link #startGrouping()} was called.
-   * 
+   *
    * @param isCloudCollection whether the request is a distributed request
    * @return a reduction manager
    */
@@ -275,10 +275,10 @@ public class ExpressionFactory {
       return new ReductionCollectionManager(collectorsArr, groupedFields.values());
     }
   }
-  
+
   /**
    * Parse and build an expression from the given expression string.
-   * 
+   *
    * @param expressionStr string that represents the desired expression
    * @return the object representation of the expression
    * @throws SolrException if an error occurs while constructing the expression
@@ -289,7 +289,7 @@ public class ExpressionFactory {
 
   /**
    * Create an expression from the given expression string, with the given variable function information.
-   * 
+   *
    * @param expressionStr string that represents the desired expression
    * @param varFuncParams the current set of variable function parameters and their values. If this expression is not a variable function
    * return signature, the map should be empty.
@@ -304,7 +304,7 @@ public class ExpressionFactory {
                                                 String varFuncVarParamName, String[] varFuncVarParamValues) throws SolrException {
     AnalyticsValueStream expression;
     expressionStr = expressionStr.trim();
-    
+
     boolean isField = false;
     try {
       // Try to make a constant value
@@ -363,10 +363,10 @@ public class ExpressionFactory {
     }
     return expression;
   }
-  
+
   /**
    * Create a function expression from the given expression string, with the given variable function information.
-   * 
+   *
    * @param expressionStr string that represents the desired expression
    * @param varFuncParams the current set of variable function parameters and their values. If this expression is not a variable function
    * return signature, the map should be empty.
@@ -384,9 +384,9 @@ public class ExpressionFactory {
 
     final String[] params = getParams(expressionStr, varFuncVarParamName, varFuncVarParamValues);
     AnalyticsValueStream[] paramStreams = new AnalyticsValueStream[params.length];
-    
+
     boolean allParamsConstant = true;
-    
+
     for (int i = 0; i < params.length; i++) {
       // First check if the parameter is a variable function variable otherwise create the expression
       if (varFuncParams.containsKey(params[i])) {
@@ -394,22 +394,22 @@ public class ExpressionFactory {
       } else {
         paramStreams[i] = createExpression(params[i], varFuncParams, varFuncVarParamName, varFuncVarParamValues);
       }
-      
+
       // Then update whether all of the params are constant
       allParamsConstant &= paramStreams[i].getExpressionType().equals(ExpressionType.CONST);
     }
-    
+
     // Check to see if the function name is a variable function name, if so apply the variables to the return signature
     if (variableFunctions.containsKey(name)) {
       if (variableFunctionNameHistory.contains(name)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,"The following variable function is self referencing : " + name); 
+        throw new SolrException(ErrorCode.BAD_REQUEST,"The following variable function is self referencing : " + name);
       }
       variableFunctionNameHistory.add(name);
       VariableFunctionInfo newVarFunc = variableFunctions.get(name);
       Map<String, AnalyticsValueStream> newVarFuncParams = new HashMap<>();
-      
+
       boolean varLenEnd = false;
-      
+
       if (paramStreams.length < newVarFunc.params.length) {
         throw new SolrException(ErrorCode.BAD_REQUEST,"The variable function '" + name + "' requires at least " + newVarFunc.params.length + " parameters."
             + " Only " + paramStreams.length + " arguments given in the following invocation : " + expressionStr);
@@ -449,10 +449,10 @@ public class ExpressionFactory {
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST,"The following function does not exist: " + name);
     }
-    
+
     // If the all params are constant, then try to convert the expression to a constant value.
     expression = expression.convertToConstant();
-    
+
     return expression;
   }
 
@@ -460,7 +460,7 @@ public class ExpressionFactory {
    * Create an {@link AnalyticsField} out of the given {@link SchemaField}.
    * <p>
    * Currently only fields with doc-values enabled are supported.
-   * 
+   *
    * @param field the field to convert for analytics
    * @return an analytics representation of the field
    * @throws SolrException if the field is not supported by the analytics framework
@@ -556,9 +556,9 @@ public class ExpressionFactory {
 
   /**
    * Get the name of the top function used in the given expression.
-   * 
+   *
    * @param expression the expression to find the function name of
-   * @return the name of the function 
+   * @return the name of the function
    * @throws SolrException if the expression has incorrect syntax
    */
   private static String getFunctionName(String expression) throws SolrException {
@@ -569,10 +569,10 @@ public class ExpressionFactory {
     String name = m.group(1);
     return name;
   }
-  
+
   /**
    * Get the params of a function.
-   * 
+   *
    * @param function the function to parse
    * @return an array of param strings
    * @throws SolrException if the function has incorrect syntax
@@ -597,7 +597,7 @@ public class ExpressionFactory {
    * <li> {@code func('This is " the \\ escaping \' example')} will be treated as {@code func(This is " the \ escaping ' example)}
    * </ul>
    * In string constants the \ character is used to escape quotes, so it can never be used alone. in order to write a \ you must write \\
-   * 
+   *
    * @param expression the function expression to parse
    * @param varLengthParamName the name of the variable length parameter that is used in the expression, pass null if none is used.
    * @param varLengthParamValues the values of the variable length parameter that are used in the expression, pass null if none are used.
@@ -610,16 +610,16 @@ public class ExpressionFactory {
       return new String[0];
     }
     String paramsStr = m.group(1);
-    
+
     ArrayList<String> paramsList = new ArrayList<String>();
     StringBuilder param = new StringBuilder();
-    
+
     // Variables to help while filling out the values of for-each lambda functions.
     boolean inForEach = false;
     int forEachStart = -1;
     int forEachIter = -1;
     int forEachLevel = -1;
-    
+
     // The current level of nested parenthesis, 0 means the iteration is in no nested parentheses
     int parenCount = 0;
     // If the iteration is currently in a single-quote string constant
@@ -630,13 +630,13 @@ public class ExpressionFactory {
     boolean quoteOn = false;
     // Is the next character escaped.
     boolean escaped = false;
-    
+
     char[] chars = paramsStr.toCharArray();
-    
+
     // Iterate through every character, building the params one at a time
     for (int i = 0; i < chars.length; ++i) {
       char c = chars[i];
-      
+
       if (c == ' ' && !quoteOn) {
         // Ignore white space that is not in string constants
         continue;
@@ -655,12 +655,12 @@ public class ExpressionFactory {
         } else {
           paramsList.add(paramStr);
         }
-        
+
         param.setLength(0);
         continue;
       } else if (c == ',' && !quoteOn && inForEach) {
         // separate the for each parameters, so they can be replaced with the result of the for each
-        if (param.charAt(param.length()-1) == variableForEachParam && 
+        if (param.charAt(param.length()-1) == variableForEachParam &&
             (param.charAt(param.length()-2) == '(' || param.charAt(param.length()-2) == ',')) {
           param.setLength(param.length()-1);
           param.append(varLengthParamValues[forEachIter++]);
@@ -699,7 +699,7 @@ public class ExpressionFactory {
           throw new SolrException(ErrorCode.BAD_REQUEST,"The following expression has extra end parens: " + param.toString());
         }
         if (inForEach) {
-          if (param.charAt(param.length()-1) == variableForEachParam && 
+          if (param.charAt(param.length()-1) == variableForEachParam &&
               (param.charAt(param.length()-2) == '(' || param.charAt(param.length()-2) == ',')) {
             param.setLength(param.length()-1);
             param.append(varLengthParamValues[forEachIter++]);
@@ -774,7 +774,7 @@ public class ExpressionFactory {
     }
     return paramsList.toArray(new String[paramsList.size()]);
   }
-  
+
   /**
    * Add the natively supported functionality.
    */
@@ -811,7 +811,7 @@ public class ExpressionFactory {
     expressionCreators.put(StringCastFunction.name, StringCastFunction.creatorFunction);
     expressionCreators.put(SubtractFunction.name, SubtractFunction.creatorFunction);
     expressionCreators.put(TopFunction.name, TopFunction.creatorFunction);
-    
+
     // Reduction Functions
     expressionCreators.put(CountFunction.name, CountFunction.creatorFunction);
     expressionCreators.put(DocCountFunction.name, DocCountFunction.creatorFunction);
@@ -824,7 +824,7 @@ public class ExpressionFactory {
     expressionCreators.put(PercentileFunction.name, PercentileFunction.creatorFunction);
     expressionCreators.put(SumFunction.name, SumFunction.creatorFunction);
     expressionCreators.put(UniqueFunction.name, UniqueFunction.creatorFunction);
-    
+
     // Variables
     addSystemVariableFunction(WeightedMeanVariableFunction.name, WeightedMeanVariableFunction.params, WeightedMeanVariableFunction.function);
     addSystemVariableFunction(SumOfSquaresVariableFunction.name, SumOfSquaresVariableFunction.params, SumOfSquaresVariableFunction.function);

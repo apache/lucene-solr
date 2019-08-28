@@ -36,18 +36,10 @@ public class TestTestInjection extends SolrTestCase {
   
   public void testBasics() {
     TestInjection.failReplicaRequests = "true:100";
-    
-    try {
-      TestInjection.injectFailReplicaRequests();
-      fail("should fail 100%");
-    } catch (Throwable e) {
-      assertFalse("Should not fail based on bad syntax",
-          e.getMessage().toLowerCase(Locale.ENGLISH).contains("bad syntax"));
 
-      // good
-      
-      // assertTrue("Should fail with * based error: " + e.getClass().getName(), (e instanceof *));
-    }
+    Exception e = expectThrows(Exception.class, TestInjection::injectFailReplicaRequests);
+    assertFalse("Should not fail based on bad syntax",
+        e.getMessage().toLowerCase(Locale.ENGLISH).contains("bad syntax"));
     
     TestInjection.failReplicaRequests = "true:00";
     for (int i = 0; i < 100; i++) {
@@ -78,19 +70,13 @@ public class TestTestInjection extends SolrTestCase {
 
   public void testBadSyntax(String syntax) {
     TestInjection.failReplicaRequests = syntax;
-    
-    try {
-      TestInjection.injectFailReplicaRequests();
-      fail("should fail 100%");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().toLowerCase(Locale.ENGLISH).contains("bad syntax"));
-      // good
-    }
+    Exception e = expectThrows(Exception.class, TestInjection::injectFailReplicaRequests);
+    assertTrue(e.getMessage().toLowerCase(Locale.ENGLISH).contains("bad syntax"));
   }
   
   public void testGoodSyntax(String syntax) {
     TestInjection.failReplicaRequests = syntax;
-    
+
     try {
       TestInjection.injectFailReplicaRequests();
     } catch (Exception e) {

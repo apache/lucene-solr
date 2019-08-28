@@ -71,13 +71,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         .withPayload(payload)
         .build();
     v2Request.setResponseParser(responseParser);
-    try {
-      v2Request.process(cluster.getSolrClient());
-      fail("expected an exception with error code: "+expectedCode);
-    } catch (HttpSolrClient.RemoteExecutionException e) {
-      assertEquals(expectedCode, e.code());
-
-    }
+    HttpSolrClient.RemoteSolrException ex =  expectThrows(HttpSolrClient.RemoteSolrException.class,
+        () -> v2Request.process(cluster.getSolrClient()));
+    assertEquals(expectedCode, ex.code());
   }
 
   @Test

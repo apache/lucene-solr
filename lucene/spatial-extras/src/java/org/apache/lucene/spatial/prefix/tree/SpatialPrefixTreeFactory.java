@@ -16,8 +16,10 @@
  */
 package org.apache.lucene.spatial.prefix.tree;
 
+import java.text.ParseException;
 import java.util.Map;
 
+import org.apache.lucene.util.Version;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 
@@ -33,14 +35,17 @@ public abstract class SpatialPrefixTreeFactory {
   public static final String PREFIX_TREE = "prefixTree";
   public static final String MAX_LEVELS = "maxLevels";
   public static final String MAX_DIST_ERR = "maxDistErr";
+  public static final String VERSION = "version";
 
   protected Map<String, String> args;
   protected SpatialContext ctx;
   protected Integer maxLevels;
+  private Version version;
 
   /**
-   * The factory  is looked up via "prefixTree" in args, expecting "geohash" or "quad".
+   * The factory is looked up via "prefixTree" in args, expecting "geohash" or "quad".
    * If it's neither of these, then "geohash" is chosen for a geo context, otherwise "quad" is chosen.
+   * The "version" arg, if present, is parsed with {@link Version} and the prefix tree might be sensitive to it.
    */
   public static SpatialPrefixTree makeSPT(Map<String,String> args, ClassLoader classLoader, SpatialContext ctx) {
     //TODO refactor to use Java SPI like how Lucene already does for codecs/postingsFormats, etc
@@ -64,14 +69,24 @@ public abstract class SpatialPrefixTreeFactory {
         throw new RuntimeException(e);
       }
     }
-    instance.init(args,ctx);
+    instance.init(args, ctx);
     return instance.newSPT();
   }
 
   protected void init(Map<String, String> args, SpatialContext ctx) {
     this.args = args;
     this.ctx = ctx;
+    initVersion();
     initMaxLevels();
+  }
+
+  protected void initVersion() {
+    String versionStr = args.get(VERSION);
+    try {
+      setVersion(versionStr == null ? Version.LATEST : Version.parseLeniently(versionStr));
+    } catch (ParseException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   protected void initMaxLevels() {
@@ -92,6 +107,20 @@ public abstract class SpatialPrefixTreeFactory {
       degrees = Double.parseDouble(maxDetailDistStr);
     }
     maxLevels = getLevelForDistance(degrees);
+  }
+
+  /**
+   * Set the version of Lucene this tree should mimic the behavior for for analysis.
+   */
+  public void setVersion(Version v) {
+    version = v;
+  }
+
+  /**
+   * Return the version of Lucene this tree will mimic the behavior of for analysis.
+   */
+  public Version getVersion() {
+    return version;
   }
 
   /** Calls {@link SpatialPrefixTree#getLevelForDistance(double)}. */

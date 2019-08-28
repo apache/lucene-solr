@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io;
 import org.apache.solr.client.solrj.io.eval.*;
 import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
-import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
@@ -107,7 +106,6 @@ public class Lang {
 
             // tuple manipulation operations
         .withFunctionName("replace", ReplaceOperation.class)
-        .withFunctionName("concat", ConcatOperation.class)
 
             // stream reduction operations
         .withFunctionName("group", GroupOperation.class)
@@ -292,6 +290,16 @@ public class Lang {
         .withFunctionName("isNull", IsNullEvaluator.class)
         .withFunctionName("matches", MatchesEvaluator.class)
         .withFunctionName("projectToBorder", ProjectToBorderEvaluator.class)
+        .withFunctionName("parseCSV", CsvStream.class)
+        .withFunctionName("parseTSV", TsvStream.class)
+        .withFunctionName("double", DoubleEvaluator.class)
+        .withFunctionName("long", LongEvaluator.class)
+        .withFunctionName("dateTime", DateEvaluator.class)
+        .withFunctionName("concat", ConcatEvaluator.class)
+        .withFunctionName("lower", LowerEvaluator.class)
+        .withFunctionName("upper", UpperEvaluator.class)
+        .withFunctionName("split", SplitEvaluator.class)
+        .withFunctionName("trim", TrimEvaluator.class)
 
         // Boolean Stream Evaluators
 

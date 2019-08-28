@@ -61,6 +61,13 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testQuadTreeRobustness() {
+    assertU(adoc("id", "0", "oslocation", "244502.06 639062.07"));
+    // old (pre 8.3.0) still works
+    assertU(adoc("id", "0", "oslocationold", "244502.06 639062.07"));
+  }
+
+  @Test
   public void testBBox() throws Exception {
     String fieldName = random().nextBoolean() ? "bbox" : "bboxD_dynamic";
     assertU(adoc("id", "0"));//nothing
@@ -362,4 +369,14 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     assertQ(req(params), "*[count(//doc)=1]", "count(//lst[@name='highlighting']/*)=1");
   }
 
+  @Test
+  public void testErrorHandlingGeodist() throws Exception{
+    assertU(adoc("id", "1", "llp", "32.7693246, -79.9289094"));
+    assertQEx("wrong test exception message","sort param could not be parsed as a query, " +
+            "and is not a field that exists in the index: geodist(llp,47.36667,8.55)",
+        req(
+            "q", "*:*",
+            "sort", "geodist(llp,47.36667,8.55) asc"
+        ), SolrException.ErrorCode.BAD_REQUEST);
+  }
 }

@@ -31,24 +31,24 @@ import org.apache.solr.common.SolrException.ErrorCode;
  * <ul>
  * <li>If a single {@link BooleanValueStream} is passed in, a {@link BooleanValue} representing the logical operation
  * on all of the values for each document is returned.
- * <li>If a {@link BooleanValueStream} and a {@link BooleanValue} are passed in, a {@link BooleanValue} representing the logical operation on 
+ * <li>If a {@link BooleanValueStream} and a {@link BooleanValue} are passed in, a {@link BooleanValue} representing the logical operation on
  * the {@link BooleanValue} and each of the values of the {@link BooleanValueStream} for a document is returned.
  * (Or the other way, since the Value and ValueStream can be used in either order)
  * <li>If multiple {@link BooleanValue}s are passed in, a {@link BooleanValue} representing the logical operation on all values is returned.
  * </ul>
  */
 public class LogicFunction {
-  
+
   private static BooleanValueStream createBitwiseFunction(String name, TwoBoolInBoolOutLambda comp, AnalyticsValueStream... params) {
     if (params.length == 0) {
       throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires parameters.");
-    } 
+    }
     else if (params.length == 1) {
       if (params[0] instanceof BooleanValueStream) {
         return LambdaFunction.createBooleanLambdaFunction(name, comp, (BooleanValueStream)params[0]);
       }
       throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires boolean parameters. Incorrect param: "+params[0].getExpressionStr());
-    } 
+    }
     else if (params.length == 2) {
       AnalyticsValueStream param1 = params[0];
       AnalyticsValueStream param2 = params[1];
@@ -67,7 +67,7 @@ public class LogicFunction {
     }
     return LambdaFunction.createBooleanLambdaFunction(name, comp, castedParams);
   };
-  
+
   /**
    * A mapping function for the logical operation AND.
    */
