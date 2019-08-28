@@ -180,6 +180,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
     /**
      * Upload a collection config before tests start
+     *
      * @param configName the config name
      * @param configPath the path to the config files
      */
@@ -195,7 +196,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
     /**
      * Set a cluster property
-     * @param propertyName the property name
+     *
+     * @param propertyName  the property name
      * @param propertyValue the property value
      */
     public Builder withProperty(String propertyName, String propertyValue) {
@@ -207,8 +209,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       this.trackJettyMetrics = trackJettyMetrics;
       return this;
     }
+
     /**
      * Configure and run the {@link MiniSolrCloudCluster}
+     *
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster configure() throws Exception {
@@ -217,6 +221,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
     /**
      * Configure, run and return the {@link MiniSolrCloudCluster}
+     *
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster build() throws Exception {
@@ -225,11 +230,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
           null, securityJson, trackJettyMetrics);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
-        ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
-        if(config.extraConfig!= null){
+        ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(config.path, config.name);
+        if (config.extraConfig != null) {
           for (Map.Entry<String, byte[]> e : config.extraConfig.entrySet()) {
-            ((ZkClientClusterStateProvider)client.getClusterStateProvider()).getZkStateReader().getZkClient()
-                .create(CONFIGS_ZKNODE + "/" + config.name+ "/"+ e.getKey(), e.getValue(), CreateMode.PERSISTENT, true);
+            ((ZkClientClusterStateProvider) client.getClusterStateProvider()).getZkStateReader().getZkClient()
+                .create(CONFIGS_ZKNODE + "/" + config.name + "/" + e.getKey(), e.getValue(), CreateMode.PERSISTENT, true);
 
           }
 
@@ -246,12 +251,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     public Builder withDefaultClusterProperty(String key, String value) {
-      HashMap<String,Object> defaults = (HashMap<String, Object>) this.clusterProperties.get(CollectionAdminParams.DEFAULTS);
+      HashMap<String, Object> defaults = (HashMap<String, Object>) this.clusterProperties.get(CollectionAdminParams.DEFAULTS);
       if (defaults == null) {
         defaults = new HashMap<>();
         this.clusterProperties.put(CollectionAdminParams.DEFAULTS, defaults);
       }
-      HashMap<String,Object> cluster = (HashMap<String, Object>) defaults.get(CollectionAdminParams.CLUSTER);
+      HashMap<String, Object> cluster = (HashMap<String, Object>) defaults.get(CollectionAdminParams.CLUSTER);
       if (cluster == null) {
         cluster = new HashMap<>();
         defaults.put(CollectionAdminParams.CLUSTER, cluster);
@@ -261,7 +266,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
   }
 
-  /** The cluster */
+  /**
+   * The cluster
+   */
   protected static volatile MiniSolrCloudCluster cluster;
 
   protected static SolrZkClient zkClient() {
@@ -273,7 +280,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /**
    * Call this to configure a cluster of n nodes.
-   *
+   * <p>
    * NB you must call {@link Builder#configure()} to start the cluster
    *
    * @param nodeCount the number of nodes
@@ -310,12 +317,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /**
    * Wait for a particular collection state to appear in the cluster client's state reader
-   *
+   * <p>
    * This is a convenience method using the {@link #DEFAULT_TIMEOUT}
    *
-   * @param message     a message to report on failure
-   * @param collection  the collection to watch
-   * @param predicate   a predicate to match against the collection state
+   * @param message    a message to report on failure
+   * @param collection the collection to watch
+   * @param predicate  a predicate to match against the collection state
    */
   protected static void waitForState(String message, String collection, CollectionStatePredicate predicate, int timeout, TimeUnit timeUnit) {
     log.info("waitForState ({}): {}", collection, message);
@@ -442,7 +449,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /**
    * Get the {@link CoreStatus} data for a {@link Replica}
-   *
+   * <p>
    * This assumes that the replica is hosted on a live node.
    */
   protected static CoreStatus getCoreStatus(Replica replica) throws IOException, SolrServerException {
@@ -473,6 +480,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   /**
    * Ensure that the given number of solr instances are running. If less instances are found then new instances are
    * started. If extra instances are found then they are stopped.
+   *
    * @param nodeCount the number of Solr instances that should be running at the end of this method
    * @throws Exception on error
    */
@@ -481,7 +489,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
     List<JettySolrRunner> copyOfJettys = new ArrayList<>(jettys);
     int numJetties = copyOfJettys.size();
-    for (int i = nodeCount; i < numJetties; i++)  {
+    for (int i = nodeCount; i < numJetties; i++) {
       cluster.stopJettySolrRunner(copyOfJettys.get(i));
     }
     for (int i = copyOfJettys.size(); i < nodeCount; i++) {
