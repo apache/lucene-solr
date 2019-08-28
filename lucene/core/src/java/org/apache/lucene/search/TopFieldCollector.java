@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BooleanSupplier;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -44,36 +43,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   // the queue with sentinel value that guaranteed to
   // always compare lower than a real hit; this would
   // save having to check queueFull on each insert
-
-  /**
-   * Defines an interface for allowing hits to be tracked and checking if total hits
-   * threshold has been reached
-   */
-  public static abstract class HitsThresholdChecker implements BooleanSupplier {
-    public abstract void incrementHitCount();
-  }
-
-  /**
-   * Default implementation of HitsThresholdChecker to be used for single threaded execution
-   */
-  private static class LocalHitsThresholdChecker extends HitsThresholdChecker {
-    private final int totalHitsThreshold;
-    private int hitCount;
-
-    public LocalHitsThresholdChecker(int totalHitsThreshold) {
-      this.totalHitsThreshold = totalHitsThreshold;
-    }
-
-    @Override
-    public void incrementHitCount() {
-      ++hitCount;
-    }
-
-    @Override
-    public boolean getAsBoolean() {
-      return hitCount > totalHitsThreshold;
-    }
-  }
 
   private static abstract class MultiComparatorLeafCollector implements LeafCollector {
 

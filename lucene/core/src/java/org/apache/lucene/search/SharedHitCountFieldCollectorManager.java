@@ -18,7 +18,6 @@
 package org.apache.lucene.search;
 
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Early terminating collector manager based on a global scoreboard
@@ -26,34 +25,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * state which allows an early termination across all threads
  */
 public class SharedHitCountFieldCollectorManager implements CollectorManager<TopFieldCollector, TopFieldDocs> {
-
-  /**
-   * Implementation of HitsThresholdChecker which allows global hit counting
-   */
-  private static class GlobalHitsThresholdChecker extends TopFieldCollector.HitsThresholdChecker {
-    private final int totalHitsThreshold;
-    private final AtomicInteger globalHitCount;
-
-    public GlobalHitsThresholdChecker(int totalHitsThreshold) {
-      this.totalHitsThreshold = totalHitsThreshold;
-      this.globalHitCount = new AtomicInteger();
-    }
-
-    @Override
-    public void incrementHitCount() {
-      globalHitCount.incrementAndGet();
-    }
-
-    @Override
-    public boolean getAsBoolean() {
-      return globalHitCount.getAcquire() > totalHitsThreshold;
-    }
-  }
-
   private final Sort sort;
   private final int numHits;
   private final int totalHitsThreshold;
-  private final TopFieldCollector.HitsThresholdChecker hitsThresholdChecker;
+  private final HitsThresholdChecker hitsThresholdChecker;
 
   public SharedHitCountFieldCollectorManager(Sort sort, int numHits, int totalHitsThreshold) {
     this.sort = sort;
