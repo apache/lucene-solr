@@ -16,16 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
@@ -43,6 +33,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
@@ -172,20 +173,20 @@ public class JettySolrRunner {
     private void executeDelay() {
       int delayMs = 0;
       for (Delay delay: delays) {
-        log.info("Delaying "+delay.delayValue+", for reason: "+delay.reason);
+        this.log.info("Delaying "+delay.delayValue+", for reason: "+delay.reason);
         if (delay.counter.decrementAndGet() == 0) {
           delayMs += delay.delayValue;
         }
       }
 
       if (delayMs > 0) {
-        log.info("Pausing this socket connection for " + delayMs + "ms...");
+        this.log.info("Pausing this socket connection for " + delayMs + "ms...");
         try {
           Thread.sleep(delayMs);
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }
-        log.info("Waking up after the delay of " + delayMs + "ms...");
+        this.log.info("Waking up after the delay of " + delayMs + "ms...");
       }
     }
 
@@ -399,6 +400,7 @@ public class JettySolrRunner {
     root.addServlet(Servlet404.class, "/*");
     chain = root;
     }
+
     chain = injectJettyHandlers(chain);
 
     if(config.enableV2) {
@@ -558,7 +560,7 @@ public class JettySolrRunner {
     this.host = c.getHost();
   }
 
-  private void retryOnPortBindFailure(int portRetryTime, int port) throws Exception {
+  private void retryOnPortBindFailure(int portRetryTime, int port) throws Exception, InterruptedException {
     TimeOut timeout = new TimeOut(portRetryTime, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     int tryCnt = 1;
     while (true) {
