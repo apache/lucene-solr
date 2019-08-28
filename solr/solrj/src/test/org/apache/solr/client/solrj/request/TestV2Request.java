@@ -25,9 +25,11 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
@@ -42,8 +44,20 @@ public class TestV2Request extends SolrCloudTestCase {
   @Before
   public void setupCluster() throws Exception {
     configureCluster(4)
+        .withJettyConfig(jettyCfg -> jettyCfg.enableV2(true))
         .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
         .configure();
+  }
+
+  public void testApiPathAvailability() throws Exception {
+    System.clearProperty("solr.v2RealPath");
+
+    V2Response rsp = new V2Request.Builder("/cluster/nodes")
+        .withMethod(SolrRequest.METHOD.GET).build()
+        .process(cluster.getSolrClient());
+    System.setProperty("solr.v2RealPath", "true");
+
+    System.out.println(rsp.jsonStr());
   }
   
   @After

@@ -407,8 +407,8 @@ public class JettySolrRunner {
       rwh.setOriginalPathAttribute("requestedPath");
       rwh.addRule(new RewritePatternRule("/api/*", "/solr/____v2"));
       chain.insertHandler(rwh);
-      chain = injectJettyHandlers(chain);
     }
+    chain = injectJettyHandlers(chain);
 
     GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setHandler(chain);
