@@ -24,14 +24,13 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.logging.LoggerInfo;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
-import org.apache.solr.common.util.CommandOperation;
 
 import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.handler.admin.SecurityConfHandler.SecurityConfig;
@@ -64,7 +63,6 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
       req.setContentStreams(Collections.singletonList(o));
       handler.handleRequestBody(req, new SolrQueryResponse());
       securityCfg = handler.m.get("/security.json");
-
       assertEquals(3, securityCfg.getVersion());
       Map result = (Map) securityCfg.getData().get("authentication");
       result = (Map) result.get("credentials");
