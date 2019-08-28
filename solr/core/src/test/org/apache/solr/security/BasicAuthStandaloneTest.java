@@ -96,7 +96,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       String baseUrl = buildUrl(jetty.getLocalPort(), "/solr"); 
       httpSolrClient = getHttpSolrClient(baseUrl);
       
-      verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20,"solr", "SolrRocks");
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
 
       // Write security.json locally. Should cause security to be initialized
       securityConfHandler.persistConf(new SecurityConfHandler.SecurityConfig()
