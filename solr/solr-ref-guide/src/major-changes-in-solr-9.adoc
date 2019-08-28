@@ -21,26 +21,26 @@ Solr 9.0 is a major new release of Solr.
 
 This page highlights the biggest changes, including new features you may want to be aware of, and changes in default behavior and deprecated features that have been removed.
 
-== Solr  Upgrade Planning
+== Solr 9 Upgrade Planning
 
 Before staring an upgrade to Solr 9, please take the time to review all information about changes from the version you are currently on up to Solr 9.
 
 You should also consider all changes that have been made to Solr in any version you have not upgraded to already. For example, if you are currently using Solr 8.1, you should review changes made in all subsequent 8.x releases in addition to changes for 9.0.
 
-A thorough review of the list in <<Major Changes in Earlier 8.x Versions>>, below, as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 9.
+A thorough review of the list in Major Changes in Earlier 8.x Versions as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 9.
 
-=== Upgrade Prerequisites
+=== Upgrade Prerequisites in Solr 9
 
 === Rolling Upgrades with Solr 9
 
-=== Reindexing After Upgrades
+=== Reindexing After Upgrades in Solr 9
 
-== New Features & Enhancements
+== New Features & Enhancements in Solr 9
 
-== Configuration and Default Parameter Changes
+== Configuration and Default Parameter Changes in Solr 9
 
-=== Schema Changes in 9.0
+=== Schema Changes in 9
 
-=== Authentication & Security Changes in 9.0
+=== Authentication & Security Changes in Solr 9
 
-* BasicAuthPlugin and JWTAuthPlugin property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need the pre-9.0 default behavior, you need to explicitly set 'blockUnknown':'false' in security.json.
+* BasicAuthPlugin property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need the pre-9.0 default behavior, you need to explicitly set 'blockUnknown':'false' in security.json.
