@@ -128,7 +128,7 @@ Bug Fixes
 
 Other
 
-* LUCENE-8778 LUCENE-8911: Define analyzer SPI names as static final fields and document the names in Javadocs.
+* LUCENE-8778 LUCENE-8911 LUCENE-8957: Define analyzer SPI names as static final fields and document the names in Javadocs.
   (Tomoko Uchida, Uwe Schindler)
 
 ======================= Lucene 8.2.0 =======================
