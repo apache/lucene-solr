@@ -43,4 +43,4 @@ A thorough review of the list in <<Major Changes in Earlier 8.x Versions>>, belo
 
 === Authentication & Security Changes in 9.0
 
-* BasicAuth property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need to revert to the previous default behavior, you need to explicitly set 'blockUnknown':'false' in the security.json.
+* BasicAuthPlugin and JWTAuthPlugin property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need the pre-9.0 default behavior, you need to explicitly set 'blockUnknown':'false' in security.json.

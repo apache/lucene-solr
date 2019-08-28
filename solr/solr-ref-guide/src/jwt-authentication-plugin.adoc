@@ -34,7 +34,7 @@ The simplest possible `security.json` for registering the plugin without configu
 }
 ----
 
-The plugin will block anonymous traffic in this mode if the `blockUnknown` property is not set to false as it is above, since the default for `blockUnknown` is true. When the `blockUnknown` parameter is set to `false`, it is possible to start configuring the plugin using REST API calls, which is described below.
+The plugin will by default require a valid JWT token for all traffic. If the `blockUnknown` property is set to false as in the above example, it is possible to start configuring the plugin using REST API calls, which is further described below.
 
 == Configuration Parameters
 
@@ -42,7 +42,7 @@ The plugin will block anonymous traffic in this mode if the `blockUnknown` prope
 [%header,format=csv,separator=;]
 |===
 Key                  ; Description                                             ; Default
-blockUnknown         ; Set to `true` in order to block requests from users without a token  ; `true`
+blockUnknown         ; Set to `false` to if you need to perform configuration through REST API or if you use an Authorization Plugin and only want certain paths protected. By default all requests will require a token  ; `true`
 wellKnownUrl         ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; (no default)
 clientId             ; Client identifier for use with OpenID Connect           ; (no default value) Required to authenticate with Admin UI
 realm                ; Name of the authentication realm to echo back in HTTP 401 responses. Will also be displayed in Admin UI login page ; 'solr-jwt'
@@ -71,7 +71,6 @@ To start enforcing authentication for all users, requiring a valid JWT in the `A
 {
   "authentication": {
     "class": "solr.JWTAuthPlugin",
-    "blockUnknown": true,
     "jwkUrl": "https://my.key.server/jwk.json"
   }
 }
@@ -85,7 +84,6 @@ The next example shows configuring using https://openid.net/specs/openid-connect
 {
   "authentication": {
     "class": "solr.JWTAuthPlugin",
-    "blockUnknown": true,
     "wellKnownUrl": "https://idp.example.com/.well-known/openid-configuration",
     "clientId": "xyz",
     "redirectUri": "https://my.solr.server:8983/solr/"
@@ -124,7 +122,7 @@ Let's look at a more complex configuration, this time with a static embedded JWK
 Let's comment on this config:
 
 <1> Plugin class
-<2> Make sure to block anyone without a valid token
+<2> Make sure to block anyone without a valid token (this is also the default)
 <3> Here we pass the JWK inline instead of referring to a URL with `jwkUrl`
 <4> Set the client id registered with Identity Provider
 <5> The issuer claim must match "https://example.com/idp"

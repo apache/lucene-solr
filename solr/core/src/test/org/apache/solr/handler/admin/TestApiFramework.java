@@ -19,14 +19,20 @@ package org.apache.solr.handler.admin;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.api.V2HttpCall.CompositeApi;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -39,10 +45,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.V2HttpCall;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.PathTrie;
 
 import static org.apache.solr.api.ApiBag.EMPTY_SPEC;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
@@ -71,7 +73,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     Map<String, String> parts = new HashMap<>();
     String fullPath = "/collections/hello/shards";
     Api api = V2HttpCall.getApiInfo(containerHandlers, fullPath, "POST",
-       fullPath, parts);
+        fullPath, parts);
     assertNotNull(api);
     assertConditions(api.getSpec(), Utils.makeMap(
         "/methods[0]", "POST",
@@ -81,7 +83,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     parts = new HashMap<>();
     api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello/shards", "POST",
-      null, parts);
+        null, parts);
     assertConditions(api.getSpec(), Utils.makeMap(
         "/methods[0]", "POST",
         "/commands/split", NOT_NULL,
@@ -102,7 +104,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     parts = new HashMap<>();
     api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello", "POST",
-       null, parts);
+        null, parts);
     assertConditions(api.getSpec(), Utils.makeMap(
         "/methods[0]", "POST",
         "/commands/add-replica-property", NOT_NULL,
@@ -111,7 +113,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     assertEquals("hello", parts.get("collection"));
 
     api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello/shards/shard1/replica1", "DELETE",
-       null, parts);
+        null, parts);
     assertConditions(api.getSpec(), Utils.makeMap(
         "/methods[0]", "DELETE",
         "/url/params/onlyIfDown/type", "boolean"
@@ -122,18 +124,21 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = invoke(containerHandlers, null, "/collections/_introspect", GET, mockCC);
 
-    assertConditions(rsp.getValues().asMap(2), Utils.makeMap(
-        "/spec[0]/methods[0]", "DELETE",
-        "/spec[1]/methods[0]", "POST",
-        "/spec[2]/methods[0]", "GET"
+    Set<String> methodNames = new HashSet<>();
+    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
+    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
+    methodNames.add(rsp.getValues()._getStr("/spec[2]/methods[0]", null));
+    assertTrue(methodNames.contains("DELETE"));
+    assertTrue(methodNames.contains("POST"));
+    assertTrue(methodNames.contains("GET"));
 
-    ));
+    methodNames = new HashSet<>();
 
     rsp = invoke(coreHandlers, "/schema/_introspect", "/collections/hello/schema/_introspect", GET, mockCC);
-    assertConditions(rsp.getValues().asMap(2), Utils.makeMap(
-        "/spec[0]/methods[0]", "POST",
-        "/spec[0]/commands", NOT_NULL,
-        "/spec[1]/methods[0]", "GET"));
+    methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
+    methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
+    assertTrue(methodNames.contains("POST"));
+    assertTrue(methodNames.contains("GET"));
 
     rsp = invoke(coreHandlers, "/", "/collections/hello/_introspect", GET, mockCC);
     assertConditions(rsp.getValues().asMap(2), Utils.makeMap(
@@ -146,16 +151,17 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     ));
 
   }
-  public void testTrailingTemplatePaths(){
-    PathTrie<Api> registry =  new PathTrie<>();
+
+  public void testTrailingTemplatePaths() {
+    PathTrie<Api> registry = new PathTrie<>();
     Api api = new Api(EMPTY_SPEC) {
       @Override
       public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
 
       }
     };
-    Api intropsect = new ApiBag.IntrospectApi(api,false);
-    ApiBag.registerIntrospect(Collections.emptyMap(),registry,"/c/.system/blob/{name}",intropsect);
+    Api intropsect = new ApiBag.IntrospectApi(api, false);
+    ApiBag.registerIntrospect(Collections.emptyMap(), registry, "/c/.system/blob/{name}", intropsect);
     ApiBag.registerIntrospect(Collections.emptyMap(), registry, "/c/.system/{x}/{name}", intropsect);
     assertEquals(intropsect, registry.lookup("/c/.system/blob/random_string/_introspect", new HashMap<>()));
     assertEquals(intropsect, registry.lookup("/c/.system/blob/_introspect", new HashMap<>()));
@@ -163,6 +169,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     assertEquals(intropsect, registry.lookup("/c/.system/v1/_introspect", new HashMap<>()));
     assertEquals(intropsect, registry.lookup("/c/.system/v1/v2/_introspect", new HashMap<>()));
   }
+
   private SolrQueryResponse invoke(PluginBag<SolrRequestHandler> reqHandlers, String path,
                                    String fullPath, SolrRequest.METHOD method,
                                    CoreContainer mockCC) {
@@ -184,14 +191,14 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     }
 
     SolrQueryResponse rsp = new SolrQueryResponse();
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(null, new MapSolrParams(new HashMap<>())){
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest(null, new MapSolrParams(new HashMap<>())) {
       @Override
       public List<CommandOperation> getCommands(boolean validateInput) {
         return Collections.emptyList();
       }
     };
 
-    api.call(req,rsp);
+    api.call(req, rsp);
     return rsp;
 
   }
@@ -201,12 +208,12 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     for (Object o : conditions.entrySet()) {
       Map.Entry e = (Map.Entry) o;
       String path = (String) e.getKey();
-      List<String> parts = StrUtils.splitSmart(path, path.charAt(0) == '/' ?  '/':' ', true);
+      List<String> parts = StrUtils.splitSmart(path, path.charAt(0) == '/' ? '/' : ' ', true);
       Object val = Utils.getObjectByPath(root, false, parts);
       if (e.getValue() instanceof ValidatingJsonMap.PredicateWithErrMsg) {
         ValidatingJsonMap.PredicateWithErrMsg value = (ValidatingJsonMap.PredicateWithErrMsg) e.getValue();
         String err = value.test(val);
-        if(err != null){
+        if (err != null) {
           assertEquals(err + " for " + e.getKey() + " in :" + Utils.toJSONString(root), e.getValue(), val);
         }
 
