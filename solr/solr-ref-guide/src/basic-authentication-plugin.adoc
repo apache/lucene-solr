@@ -60,7 +60,7 @@ There are several things defined in this file:
 
 Save your settings to a file called `security.json` locally. If you are using Solr in standalone mode, you should put this file in `$SOLR_HOME`.
 
-If `blockUnknown` does not appear in the `security.json` file, it will default to `true`. This has the effect of requiring authentication for HTTP access to Solr. In some cases, you may not want authentication after enabling the plugin; for example, if you want to have `security.json` in place but aren't ready to enable authentication. However, you will want to ensure that `blockUnknown` is set to `true` or omitted entirely in order for authentication to be truly enabled in your system.
+If `blockUnknown` does not appear in the `security.json` file, it will default to `true`. This has the effect of requiring authentication for HTTP access to Solr. In some cases, you may not want authentication after enabling the plugin; for example, if you want to have `security.json` in place but aren't ready to enable authentication. However, you will want to ensure that `blockUnknown` is set to `true` or omitted entirely in order for authentication to be enforced for all requests to your system.
 
 If `realm` is not defined, it will default to `solr`.
 
