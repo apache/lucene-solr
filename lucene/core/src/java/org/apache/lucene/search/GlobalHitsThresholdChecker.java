@@ -27,6 +27,11 @@ public class GlobalHitsThresholdChecker extends HitsThresholdChecker {
   private final AtomicInteger globalHitCount;
 
   public GlobalHitsThresholdChecker(int totalHitsThreshold) {
+
+    if (totalHitsThreshold < 0) {
+      throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
+    }
+
     this.totalHitsThreshold = totalHitsThreshold;
     this.globalHitCount = new AtomicInteger();
   }
@@ -44,5 +49,10 @@ public class GlobalHitsThresholdChecker extends HitsThresholdChecker {
   @Override
   public ScoreMode scoreMode() {
     return totalHitsThreshold == Integer.MAX_VALUE ? ScoreMode.COMPLETE : ScoreMode.TOP_SCORES;
+  }
+
+  @Override
+  public int getHitsThreshold() {
+    return totalHitsThreshold;
   }
 }

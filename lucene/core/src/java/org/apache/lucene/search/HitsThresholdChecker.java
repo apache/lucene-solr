@@ -26,4 +26,5 @@ import java.util.function.BooleanSupplier;
 public abstract class HitsThresholdChecker implements BooleanSupplier {
   public abstract void incrementHitCount();
   public abstract ScoreMode scoreMode();
+  public abstract int getHitsThreshold();
 }

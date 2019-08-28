@@ -25,6 +25,11 @@ public class LocalHitsThresholdChecker extends HitsThresholdChecker {
   private int hitCount;
 
   public LocalHitsThresholdChecker(int totalHitsThreshold) {
+
+    if (totalHitsThreshold < 0) {
+      throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
+    }
+
     this.totalHitsThreshold = totalHitsThreshold;
   }
 
@@ -41,5 +46,10 @@ public class LocalHitsThresholdChecker extends HitsThresholdChecker {
   @Override
   public ScoreMode scoreMode() {
     return totalHitsThreshold == Integer.MAX_VALUE ? ScoreMode.COMPLETE : ScoreMode.TOP_SCORES;
+  }
+
+  @Override
+  public int getHitsThreshold() {
+    return totalHitsThreshold;
   }
 }

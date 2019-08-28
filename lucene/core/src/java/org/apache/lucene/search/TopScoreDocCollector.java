@@ -48,8 +48,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   private static class SimpleTopScoreDocCollector extends TopScoreDocCollector {
 
-    SimpleTopScoreDocCollector(int numHits, int totalHitsThreshold) {
-      super(numHits, totalHitsThreshold);
+    SimpleTopScoreDocCollector(int numHits, HitsThresholdChecker hitsThresholdChecker) {
+      super(numHits, hitsThresholdChecker);
     }
 
     @Override
@@ -99,8 +99,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     private final ScoreDoc after;
     private int collectedHits;
 
-    PagingTopScoreDocCollector(int numHits, ScoreDoc after, int totalHitsThreshold) {
-      super(numHits, totalHitsThreshold);
+    PagingTopScoreDocCollector(int numHits, ScoreDoc after, HitsThresholdChecker hitsThresholdChecker) {
+      super(numHits, hitsThresholdChecker);
       this.after = after;
       this.collectedHits = 0;
     }
@@ -194,6 +194,10 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * objects.
    */
   public static TopScoreDocCollector create(int numHits, ScoreDoc after, int totalHitsThreshold) {
+    return create(numHits, after, totalHitsThreshold, new LocalHitsThresholdChecker(totalHitsThreshold));
+  }
+
+  public static TopScoreDocCollector create(int numHits, ScoreDoc after, int totalHitsThreshold, HitsThresholdChecker hitsThresholdChecker) {
 
     if (numHits <= 0) {
       throw new IllegalArgumentException("numHits must be > 0; please use TotalHitCountCollector if you just need the total hit count");
@@ -203,10 +207,14 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
     }
 
+    if (hitsThresholdChecker == null) {
+      throw new IllegalArgumentException("hitsThresholdChecker must be non null");
+    }
+
     if (after == null) {
-      return new SimpleTopScoreDocCollector(numHits, totalHitsThreshold);
+      return new SimpleTopScoreDocCollector(numHits, hitsThresholdChecker);
     } else {
-      return new PagingTopScoreDocCollector(numHits, after, totalHitsThreshold);
+      return new PagingTopScoreDocCollector(numHits, after, hitsThresholdChecker);
     }
   }
 
@@ -214,7 +222,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
   final HitsThresholdChecker hitsThresholdChecker;
 
   // prevents instantiation
-  TopScoreDocCollector(int numHits, int totalHitsThreshold, HitsThresholdChecker hitsThresholdChecker) {
+  TopScoreDocCollector(int numHits, HitsThresholdChecker hitsThresholdChecker) {
     super(new HitQueue(numHits, true));
     assert hitsThresholdChecker != null;
 
@@ -222,11 +230,6 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     // that at this point top() is already initialized.
     pqTop = pq.top();
     this.hitsThresholdChecker = hitsThresholdChecker;
-  }
-
-  // Same as above but uses a local hits checker for hits threshold checks
-  TopScoreDocCollector(int numHits, int totalHitsThreshold) {
-    this(numHits, totalHitsThreshold, new LocalHitsThresholdChecker(totalHitsThreshold));
   }
 
   @Override
