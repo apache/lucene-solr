@@ -27,7 +27,8 @@ idea {
                 copy {
                     from file("${rootProjectDir}/dev-tools/idea/.idea")
                     into file("${rootProjectDir}/.idea")
-                    exclude { details -> details.file.name == "libraries"}
+                    exclude { details -> details.file.name == "libraries" }
+                    exclude { details -> details.file.name == "workspace.xml" }
                 }
                 copy {
                     from file("${rootProjectDir}/dev-tools/idea/parent.iml")
