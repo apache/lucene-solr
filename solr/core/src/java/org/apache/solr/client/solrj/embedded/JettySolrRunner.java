@@ -16,6 +16,16 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
@@ -33,17 +43,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
@@ -400,16 +399,17 @@ public class JettySolrRunner {
     root.addServlet(Servlet404.class, "/*");
     chain = root;
     }
+    chain = injectJettyHandlers(chain);
+
     if(config.enableV2) {
       RewriteHandler rwh = new RewriteHandler();
+      rwh.setHandler(chain);
       rwh.setRewriteRequestURI(true);
       rwh.setRewritePathInfo(false);
       rwh.setOriginalPathAttribute("requestedPath");
       rwh.addRule(new RewritePatternRule("/api/*", "/solr/____v2"));
-      chain.insertHandler(rwh);
+      chain = rwh;
     }
-    chain = injectJettyHandlers(chain);
-
     GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setHandler(chain);
 
