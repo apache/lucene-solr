@@ -559,7 +559,7 @@ If prompt is preferred, pass *true* as a parameter to request the script to prom
 Either `-credentials` or `-prompt` *must* be specified.
 
 `-blockUnknown`::
-When *true*, blocks all unauthenticated users from accessing Solr. This defaults to *true*, which means unauthenticated users will not be able to access Solr.
+When *true*, blocks all unauthenticated users from accessing Solr. When *false*,unauthenticated users will still be able to access Solr, but only for operations not explicitly requiring a user role in the Authorization plugin configuration.
 
 `-updateIncludeFileOnly`::
 When *true*, only the settings in `bin/solr.in.sh` or `bin\solr.in.cmd` will be updated, and `security.json` will not be created.
