@@ -88,8 +88,11 @@ Improvements
 
 * LUCENE-8894: Add APIs to find SPI names for Tokenizer/CharFilter/TokenFilter factory classes. (Tomoko Uchida)
 
-* LUCENE-8914: move the logic for discarding inner modes to the IntersectVisitor so we take advantage
-  of the change introduced in LUCENE-7862. (Ignacio Vera)
+* LUCENE-8914: move the logic for discarding inner modes in FloatPointNearestNeighbor to the IntersectVisitor
+  so we take advantage of the change introduced in LUCENE-7862. (Ignacio Vera)
+
+* LUCENE-8955: move the logic for discarding inner modes in LatLonPoint NearestNeighbor to the IntersectVisitor
+  so we take advantage of the change introduced in LUCENE-7862. (Ignacio Vera)
 
 * LUCENE-8918: PhraseQuery throws exceptions at construction time if it is passed
   null arguments. (Alan Woodward)
@@ -125,7 +128,7 @@ Bug Fixes
 
 Other
 
-* LUCENE-8778 LUCENE-8911: Define analyzer SPI names as static final fields and document the names in Javadocs.
+* LUCENE-8778 LUCENE-8911 LUCENE-8957: Define analyzer SPI names as static final fields and document the names in Javadocs.
   (Tomoko Uchida, Uwe Schindler)
 
 ======================= Lucene 8.2.0 =======================

@@ -16,17 +16,15 @@
  */
 package org.apache.solr.handler.component;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
+
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.request.SolrQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Allows better caching by establishing deterministic evenly-distributed replica routing preferences according to
@@ -35,15 +33,13 @@ import org.slf4j.LoggerFactory;
  */
 class AffinityReplicaListTransformer implements ReplicaListTransformer {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private final int routingDividend;
 
-  public AffinityReplicaListTransformer(String hashVal) {
+  private AffinityReplicaListTransformer(String hashVal) {
     this.routingDividend = Math.abs(Hash.lookup3ycs(hashVal, 0, hashVal.length(), 0));
   }
 
-  public AffinityReplicaListTransformer(int routingDividend) {
+  private AffinityReplicaListTransformer(int routingDividend) {
     this.routingDividend = routingDividend;
   }
 
@@ -107,12 +103,5 @@ class AffinityReplicaListTransformer implements ReplicaListTransformer {
 
   }
 
-  private static final Comparator<SortableChoice> SORTABLE_CHOICE_COMPARATOR = new Comparator<SortableChoice>() {
-
-    @Override
-    public int compare(SortableChoice o1, SortableChoice o2) {
-      return o1.sortableCoreLabel.compareTo(o2.sortableCoreLabel);
-    }
-  };
-
+  private static final Comparator<SortableChoice> SORTABLE_CHOICE_COMPARATOR = Comparator.comparing(o -> o.sortableCoreLabel);
 }

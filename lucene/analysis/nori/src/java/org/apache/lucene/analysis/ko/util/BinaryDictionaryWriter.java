@@ -117,8 +117,8 @@ abstract class BinaryDictionaryWriter {
     boolean hasSinglePOS = (leftPOS == rightPOS);
     if (posType != POS.Type.MORPHEME && expression.length() > 0) {
       String[] exprTokens = expression.split("\\+");
-      for (int i = 0; i < exprTokens.length; i++) {
-        String[] tokenSplit = exprTokens[i].split("/");
+      for (String exprToken : exprTokens) {
+        String[] tokenSplit = exprToken.split("/");
         assert tokenSplit.length == 3;
         String surfaceForm = tokenSplit[0].trim();
         if (surfaceForm.isEmpty() == false) {

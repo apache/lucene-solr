@@ -57,7 +57,9 @@ Upgrade Notes
 
 * SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
 
-* SOLR-13649: BasicAuth property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need to revert to the previous default behavior, you need to explicitly set 'blockUnknown':'false' in the security.json. (janhoy, marcussorealheis) 
+* SOLR-13649: Property 'blockUnknown' of BasicAuthPlugin and JWTAuthPlugin now defaults to 'true'. This change is backward
+  incompatible. To achieve the previous default behavior, explicitly set 'blockUnknown':'false' in security.json
+  (marcussorealheis, janhoy, shalin)
 
 * SOLR-11266: default Content-Type override for JSONResponseWriter from _default configSet is removed. Example has been
   provided in sample_techproducts_configs to override content-type. (Ishan Chattopadhyaya, Munendra S N, Gus Heck)
@@ -122,6 +124,9 @@ New Features
 
 * SOLR-13707: API to expose the currently used package name, details for each plugin (noble)
 
+* SOLR-13710: Persist package jars locally & expose them over http at /api/node/blob  (noble)
+
+
 Improvements
 ----------------------
 
@@ -138,6 +143,8 @@ Improvements
 
 * SOLR-11601: Improved error message when geodist(llpsf) is used with arguments referring to a LatLonPointSpatialField.
   (Amrit Sarkar)
+
+* SOLR-13542: Code cleanup - Avoid using stream filter count where possible (Koen De Groote via Tomás Fernández Löbbe)
 
 Bug Fixes
 ----------------------

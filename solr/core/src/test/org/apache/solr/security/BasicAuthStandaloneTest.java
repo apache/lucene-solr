@@ -102,14 +102,14 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       securityConfHandler.persistConf(new SecurityConfHandler.SecurityConfig()
           .setData(Utils.fromJSONString(STD_CONF.replaceAll("'", "\""))));
       securityConfHandler.securityConfEdited();
-      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20, "solr", "SolrRocks") ;
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
       String command = "{\n" +
           "'set-user': {'harry':'HarryIsCool'}\n" +
           "}";
 
       doHttpPost(cl, baseUrl + authcPrefix, command, null, null, 401);
-      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20, "solr", "SolrRocks");
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
 
       command = "{\n" +
           "'set-user': {'harry':'HarryIsUberCool'}\n" +
@@ -117,14 +117,14 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
 
       doHttpPost(cl, baseUrl + authcPrefix, command, "solr", "SolrRocks");
-      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/credentials/harry", NOT_NULL_PREDICATE, 20, "solr", "SolrRocks");
+      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/credentials/harry", NOT_NULL_PREDICATE, 20);
 
       // Read file from SOLR_HOME and verify that it contains our new user
       assertTrue(new String(Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()), 
           Charset.forName("UTF-8")).contains("harry"));
 
       // Edit authorization
-      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[1]/role", null, 20, "solr", "SolrRocks");
+      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[1]/role", null, 20);
       doHttpPost(cl, baseUrl + authzPrefix, "{'set-permission': {'name': 'update', 'role':'updaterole'}}", "solr", "SolrRocks");
       command = "{\n" +
           "'set-permission': {'name': 'read', 'role':'solr'}\n" +
@@ -135,7 +135,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
         fail("Should return a 401 response");
       } catch (Exception e) {
         // Test that the second doPost request to /security/authorization went through
-        verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20, "solr", "SolrRocks");
+        verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20);
       }
     } finally {
       if (cl != null) {
