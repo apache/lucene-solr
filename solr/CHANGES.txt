@@ -141,6 +141,8 @@ Improvements
 * SOLR-11601: Improved error message when geodist(llpsf) is used with arguments referring to a LatLonPointSpatialField.
   (Amrit Sarkar)
 
+* SOLR-13542: Code cleanup - Avoid using stream filter count where possible (Koen De Groote via Tomás Fernández Löbbe)
+
 Bug Fixes
 ----------------------
 
