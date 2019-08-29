@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -106,7 +107,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private final int nodeCount;
     private final Path baseDir;
     private String solrxml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML;
-    private JettyConfig jettyConfig = buildJettyConfig("/solr");
+    private JettyConfig.Builder jettyConfigBuilder = JettyConfig.builder().setContext("/solr").withSSLConfig(sslConfig.buildServerSSLConfig());
     private Optional<String> securityJson = Optional.empty();
 
     private List<Config> configs = new ArrayList<>();
@@ -126,10 +127,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     /**
-     * Use a {@link JettyConfig} to configure the cluster's jetty servers
+     * Use a JettyConfig.Builder to configure the cluster's jetty servers
      */
-    public Builder withJettyConfig(JettyConfig jettyConfig) {
-      this.jettyConfig = jettyConfig;
+    public Builder withJettyConfig(Consumer<JettyConfig.Builder> fun) {
+      fun.accept(jettyConfigBuilder);
       return this;
     }
 
@@ -226,6 +227,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster build() throws Exception {
+      JettyConfig jettyConfig = jettyConfigBuilder.build();
       MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig,
           null, securityJson, trackJettyMetrics);
       CloudSolrClient client = cluster.getSolrClient();
