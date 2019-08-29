@@ -1033,12 +1033,17 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
       // If request is async wait for the core admin to complete before returning
       if (asyncId != null) {
-        waitForAsyncCallsToComplete(results);
+        waitForAsyncCallsToComplete(results, true, msgOnError);
         shardAsyncIdByNode.clear();
       }
     }
 
     private void waitForAsyncCallsToComplete(NamedList<Object> results) {
+      waitForAsyncCallsToComplete(results, false, null);
+    }
+
+    private void waitForAsyncCallsToComplete(NamedList<Object> results, boolean abortOnFailure, String msgOnError) {
+      boolean failed = false;
       for (Map.Entry<String,String> nodeToAsync:shardAsyncIdByNode) {
         final String node = nodeToAsync.getKey();
         final String shardAsyncId = nodeToAsync.getValue();
@@ -1050,9 +1055,13 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         if ("failed".equalsIgnoreCase(((String)reqResult.get("STATUS")))) {
           log.error("Error from shard {}: {}", node,  reqResult);
           addFailure(results, node, reqResult);
+          failed = true; 
         } else {
           addSuccess(results, node, reqResult);
         }
+      }
+      if (failed && abortOnFailure && msgOnError != null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError);
       }
     }
 

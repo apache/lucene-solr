@@ -129,6 +129,8 @@ Bug Fixes
 
 * SOLR-13699 - maxChars no longer working on CopyField with javabin (Chris Troullis via noble)
 
+* SOLR-13718: SPLITSHARD (async) with failures in underlying sub-operations can result in data loss (Ishan Chattopadhyaya)
+
 Other Changes
 ----------------------
 
