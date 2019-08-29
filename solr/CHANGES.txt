@@ -146,6 +146,9 @@ Improvements
 
 * SOLR-13542: Code cleanup - Avoid using stream filter count where possible (Koen De Groote via Tomás Fernández Löbbe)
 
+* SOLR-13720: BlockJoinParentQParser.getCachedFilter()made public for accessing from QParser plugins
+  (Stanislav Livotov via Mikhail Khludnev) 
+
 Bug Fixes
 ----------------------
 
