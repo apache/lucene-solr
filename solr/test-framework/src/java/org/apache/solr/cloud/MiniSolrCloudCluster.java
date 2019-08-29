@@ -786,7 +786,7 @@ public class MiniSolrCloudCluster {
       if (activeReplicas == expectedReplicas) {
         return true;
       }
-      
+
       return false;
     };
   }
