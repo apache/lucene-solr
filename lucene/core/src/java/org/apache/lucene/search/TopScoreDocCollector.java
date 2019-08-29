@@ -194,17 +194,13 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * objects.
    */
   public static TopScoreDocCollector create(int numHits, ScoreDoc after, int totalHitsThreshold) {
-    return create(numHits, after, totalHitsThreshold, new LocalHitsThresholdChecker(totalHitsThreshold));
+    return create(numHits, after, new LocalHitsThresholdChecker(totalHitsThreshold));
   }
 
-  public static TopScoreDocCollector create(int numHits, ScoreDoc after, int totalHitsThreshold, HitsThresholdChecker hitsThresholdChecker) {
+  public static TopScoreDocCollector create(int numHits, ScoreDoc after, HitsThresholdChecker hitsThresholdChecker) {
 
     if (numHits <= 0) {
       throw new IllegalArgumentException("numHits must be > 0; please use TotalHitCountCollector if you just need the total hit count");
-    }
-
-    if (totalHitsThreshold < 0) {
-      throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
     }
 
     if (hitsThresholdChecker == null) {

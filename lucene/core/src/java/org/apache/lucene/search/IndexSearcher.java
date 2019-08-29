@@ -469,7 +469,7 @@ public class IndexSearcher {
 
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(cappedNumHits, after, TOTAL_HITS_THRESHOLD);
+        return TopScoreDocCollector.create(cappedNumHits, after, new GlobalHitsThresholdChecker(TOTAL_HITS_THRESHOLD));
       }
 
       @Override
@@ -598,7 +598,7 @@ public class IndexSearcher {
       @Override
       public TopFieldCollector newCollector() throws IOException {
         // TODO: don't pay the price for accurate hit counts by default
-        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, TOTAL_HITS_THRESHOLD);
+        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, new GlobalHitsThresholdChecker(TOTAL_HITS_THRESHOLD));
       }
 
       @Override
