@@ -15,31 +15,33 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.response;
-import java.util.List;
-import junit.framework.Assert;
 
-import org.apache.solr.SolrJettyTestBase;
+import java.util.List;
+
+import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
+import org.apache.solr.common.SolrInputDocument;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import junit.framework.Assert;
+
 /**
  * Test for TermComponent's response in Solrj
  */
-public class TermsResponseTest extends SolrJettyTestBase {
-
+public class TermsResponseTest extends EmbeddedSolrServerTestBase {
+  
   @BeforeClass
-  public static void beforeTest() throws Exception {
+  public static void beforeClass() throws Exception {
     initCore();
   }
-  
+
   @Before
   @Override
-  public void setUp() throws Exception{
+  public void setUp() throws Exception {
     super.setUp();
     clearIndex();
     assertU(commit());
@@ -62,7 +64,7 @@ public class TermsResponseTest extends SolrJettyTestBase {
     query.setTermsPrefix("s");
     query.addTermsField("terms_s");
     query.setTermsMinCount(1);
-    
+
     QueryRequest request = new QueryRequest(query);
     List<Term> terms = request.process(getSolrClient()).getTermsResponse().getTerms("terms_s");
 
