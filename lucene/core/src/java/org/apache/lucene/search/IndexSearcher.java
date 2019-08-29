@@ -473,9 +473,9 @@ public class IndexSearcher {
 
         if (hitsThresholdChecker == null) {
           if (executor == null || leafSlices.length <= 1) {
-            hitsThresholdChecker = new LocalHitsThresholdChecker(TOTAL_HITS_THRESHOLD);
+            hitsThresholdChecker = HitCountThresholdCheckerFactory.create(TOTAL_HITS_THRESHOLD);
           } else {
-            hitsThresholdChecker = new GlobalHitsThresholdChecker(TOTAL_HITS_THRESHOLD);
+            hitsThresholdChecker = HitCountThresholdCheckerFactory.createShared(TOTAL_HITS_THRESHOLD);
           }
         }
 
@@ -612,9 +612,9 @@ public class IndexSearcher {
 
         if (hitsThresholdChecker == null) {
           if (executor == null || leafSlices.length <= 1) {
-            hitsThresholdChecker = new LocalHitsThresholdChecker(TOTAL_HITS_THRESHOLD);
+            hitsThresholdChecker = HitCountThresholdCheckerFactory.create(TOTAL_HITS_THRESHOLD);
           } else {
-            hitsThresholdChecker = new GlobalHitsThresholdChecker(TOTAL_HITS_THRESHOLD);
+            hitsThresholdChecker = HitCountThresholdCheckerFactory.createShared(TOTAL_HITS_THRESHOLD);
           }
         }
 

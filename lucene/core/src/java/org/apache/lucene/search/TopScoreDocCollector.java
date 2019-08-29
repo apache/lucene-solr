@@ -194,7 +194,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * objects.
    */
   public static TopScoreDocCollector create(int numHits, ScoreDoc after, int totalHitsThreshold) {
-    return create(numHits, after, new LocalHitsThresholdChecker(totalHitsThreshold));
+    return create(numHits, after, HitCountThresholdCheckerFactory.create(totalHitsThreshold));
   }
 
   public static TopScoreDocCollector create(int numHits, ScoreDoc after, HitsThresholdChecker hitsThresholdChecker) {
