@@ -125,7 +125,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     /**
-     * Use a {@link JettyConfig.Builder} to configure the cluster's jetty servers
+     * Use a JettyConfig.Builder to configure the cluster's jetty servers
      */
     public Builder withJettyConfig(Consumer<JettyConfig.Builder> fun) {
       fun.accept(jettyConfigBuilder);
