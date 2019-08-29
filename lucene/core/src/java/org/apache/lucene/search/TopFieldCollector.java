@@ -388,7 +388,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
     }
 
-    return create(sort, numHits, after, HitCountThresholdCheckerFactory.create(totalHitsThreshold));
+    return create(sort, numHits, after, HitsThresholdChecker.create(totalHitsThreshold));
   }
 
   /**

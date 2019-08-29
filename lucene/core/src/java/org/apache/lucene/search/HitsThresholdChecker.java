@@ -17,13 +17,102 @@
 
 package org.apache.lucene.search;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 /**
- * Defines an interface for allowing hits to be tracked and checking if total hits
- * threshold has been reached
+ * Used for defining custom algorithms to allow searches to early terminate
  */
 abstract class HitsThresholdChecker implements BooleanSupplier {
+  /**
+   * Implementation of HitsThresholdChecker which allows global hit counting
+   */
+  private static class GlobalHitsThresholdChecker extends HitsThresholdChecker {
+    private final int totalHitsThreshold;
+    private final AtomicInteger globalHitCount;
+
+    public GlobalHitsThresholdChecker(int totalHitsThreshold) {
+
+      if (totalHitsThreshold < 0) {
+        throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
+      }
+
+      this.totalHitsThreshold = totalHitsThreshold;
+      this.globalHitCount = new AtomicInteger();
+    }
+
+    @Override
+    public void incrementHitCount() {
+      globalHitCount.incrementAndGet();
+    }
+
+    @Override
+    public boolean getAsBoolean() {
+      return globalHitCount.getAcquire() > totalHitsThreshold;
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return totalHitsThreshold == Integer.MAX_VALUE ? ScoreMode.COMPLETE : ScoreMode.TOP_SCORES;
+    }
+
+    @Override
+    public int getHitsThreshold() {
+      return totalHitsThreshold;
+    }
+  }
+
+  /**
+   * Default implementation of HitsThresholdChecker to be used for single threaded execution
+   */
+  private static class LocalHitsThresholdChecker extends HitsThresholdChecker {
+    private final int totalHitsThreshold;
+    private int hitCount;
+
+    public LocalHitsThresholdChecker(int totalHitsThreshold) {
+
+      if (totalHitsThreshold < 0) {
+        throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
+      }
+
+      this.totalHitsThreshold = totalHitsThreshold;
+    }
+
+    @Override
+    public void incrementHitCount() {
+      ++hitCount;
+    }
+
+    @Override
+    public boolean getAsBoolean() {
+      return hitCount > totalHitsThreshold;
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return totalHitsThreshold == Integer.MAX_VALUE ? ScoreMode.COMPLETE : ScoreMode.TOP_SCORES;
+    }
+
+    @Override
+    public int getHitsThreshold() {
+      return totalHitsThreshold;
+    }
+  }
+
+  /*
+   * Returns a threshold checker that is useful for single threaded searches
+   */
+  public static HitsThresholdChecker create(final int totalHitsThreshold) {
+    return new LocalHitsThresholdChecker(totalHitsThreshold);
+  }
+
+  /*
+   * Returns a threshold checker that is based on a shared counter
+   */
+  public static HitsThresholdChecker createShared(final int totalHitsThreshold) {
+    return new GlobalHitsThresholdChecker(totalHitsThreshold);
+  }
+
   public abstract void incrementHitCount();
   public abstract ScoreMode scoreMode();
   public abstract int getHitsThreshold();
