@@ -804,9 +804,13 @@ public class JettySolrRunner {
   /**
    * A main class that starts jetty+solr This is useful for debugging
    */
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
+    try {
     JettySolrRunner jetty = new JettySolrRunner(".", "/solr", 8983);
     jetty.start();
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
   }
 
   /**
