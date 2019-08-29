@@ -45,6 +45,8 @@ import org.slf4j.LoggerFactory;
  *
  * No attempt is made to keep track of which key came from which JWKs endpoint, and if a
  * key is not found in any cache, all JWKs endpoints are refreshed before a single retry.
+ *
+ * NOTE: This class can subclass HttpsJwksVerificationKeyResolver once a new version of jose4j is available
  */
 public class MultiHttpsJwksVerificationkeyResolver implements VerificationKeyResolver {
   private static final Logger log = LoggerFactory.getLogger(MultiHttpsJwksVerificationkeyResolver.class);
@@ -79,6 +81,7 @@ public class MultiHttpsJwksVerificationkeyResolver implements VerificationKeyRes
 
         jsonWebKeys.clear();
         for (HttpsJwks hjwks : httpsJkwsList) {
+          hjwks.refresh();
           jsonWebKeys.addAll(hjwks.getJsonWebKeys());
         }
         theChosenOne = select(jws, jsonWebKeys);
@@ -100,9 +103,6 @@ public class MultiHttpsJwksVerificationkeyResolver implements VerificationKeyRes
 
     return theChosenOne.getKey();
   }
-
-  // TODO: This method is copy/pasted from HttpsJwksVerificationKeyResolver since it was private. Else we couldhave
-  // TODO: extended HttpsJwksVerificationKeyResolver instead of duplicating here
 
   private JsonWebKey select(JsonWebSignature jws, List<JsonWebKey> jsonWebKeys) throws JoseException
   {
