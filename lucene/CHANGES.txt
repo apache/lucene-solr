@@ -47,6 +47,9 @@ Improvements
 
 * LUCENE-8939: Introduce Shared Count Based Early Termination Across Multiple Slices
   (Atri Sharma)
+
+* LUCENE-8958: Shared Count Early Termination for Relevance Sorted Indices (Atri Sharma)
+
 * LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
   (Adrien Gallou via Tomoko Uchida)
 
