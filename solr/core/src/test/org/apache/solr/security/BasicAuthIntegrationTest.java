@@ -356,7 +356,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     // before returning...
     final Set<Map.Entry<String,Object>> initialPlugins
       = getAuthPluginsInUseForCluster(url).entrySet();
-    
+
     HttpPost httpPost;
     HttpResponse r;
     httpPost = new HttpPost(url);
@@ -394,6 +394,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
   //this could be generated everytime. But , then we will not know if there is any regression
   protected static final String STD_CONF = "{\n" +
       "  'authentication':{\n" +
+      "    'blockUnknown':'false',\n" +
       "    'class':'solr.BasicAuthPlugin',\n" +
       "    'credentials':{'solr':'orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw='}},\n" +
       "  'authorization':{\n" +

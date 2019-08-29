@@ -1,0 +1,46 @@
+= Major Changes in Solr 9
+:page-tocclass: right
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr 9.0 is a major new release of Solr.
+
+This page highlights the biggest changes, including new features you may want to be aware of, and changes in default behavior and deprecated features that have been removed.
+
+== Solr 9 Upgrade Planning
+
+Before staring an upgrade to Solr 9, please take the time to review all information about changes from the version you are currently on up to Solr 9.
+
+You should also consider all changes that have been made to Solr in any version you have not upgraded to already. For example, if you are currently using Solr 8.1, you should review changes made in all subsequent 8.x releases in addition to changes for 9.0.
+
+A thorough review of the list in Major Changes in Earlier 8.x Versions as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 9.
+
+=== Upgrade Prerequisites in Solr 9
+
+=== Rolling Upgrades with Solr 9
+
+=== Reindexing After Upgrades in Solr 9
+
+== New Features & Enhancements in Solr 9
+
+== Configuration and Default Parameter Changes in Solr 9
+
+=== Schema Changes in 9
+
+=== Authentication & Security Changes in Solr 9
+
+* BasicAuthPlugin property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need the pre-9.0 default behavior, you need to explicitly set 'blockUnknown':'false' in security.json.
