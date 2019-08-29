@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
@@ -282,8 +283,9 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
 
-      ocmh.processResponses(results, shardHandler, true, "SPLITSHARD failed to create subshard leaders", asyncId, requestMap);
-
+      String msgOnError = "SPLITSHARD failed to create subshard leaders";
+      ocmh.processResponses(results, shardHandler, true, msgOnError, asyncId, requestMap);
+      handleFailureOnAsyncRequest(results, msgOnError);
       t.stop();
       t = timings.sub("waitForSubSliceLeadersAlive");
       for (String subShardName : subShardNames) {
@@ -302,8 +304,9 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.sendShardRequest(nodeName, p, shardHandler, asyncId, requestMap);
       }
 
-      ocmh.processResponses(results, shardHandler, true, "SPLITSHARD timed out waiting for subshard leaders to come up",
-          asyncId, requestMap);
+      msgOnError = "SPLITSHARD timed out waiting for subshard leaders to come up";
+      ocmh.processResponses(results, shardHandler, true, msgOnError, asyncId, requestMap);
+      handleFailureOnAsyncRequest(results, msgOnError);
       t.stop();
 
       log.debug("Successfully created all sub-shards for collection " + collectionName + " parent shard: " + slice
@@ -326,8 +329,10 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       ocmh.sendShardRequest(parentShardLeader.getNodeName(), params, shardHandler, asyncId, requestMap);
 
-      ocmh.processResponses(results, shardHandler, true, "SPLITSHARD failed to invoke SPLIT core admin command", asyncId,
+      msgOnError = "SPLITSHARD failed to invoke SPLIT core admin command";
+      ocmh.processResponses(results, shardHandler, true, msgOnError, asyncId,
           requestMap);
+      handleFailureOnAsyncRequest(results, msgOnError);
       t.stop();
 
       log.debug("Index on shard: {} split into {} successfully", nodeName, subShardNames.size());
@@ -346,8 +351,9 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.sendShardRequest(nodeName, params, shardHandler, asyncId, requestMap);
       }
 
-      ocmh.processResponses(results, shardHandler, true, "SPLITSHARD failed while asking sub shard leaders" +
-          " to apply buffered updates", asyncId, requestMap);
+      msgOnError = "SPLITSHARD failed while asking sub shard leaders to apply buffered updates";
+      ocmh.processResponses(results, shardHandler, true, msgOnError, asyncId, requestMap);
+      handleFailureOnAsyncRequest(results, msgOnError);
       t.stop();
 
       log.debug("Successfully applied buffered updates on : " + subShardNames);
@@ -502,7 +508,9 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       assert TestInjection.injectSplitFailureAfterReplicaCreation();
 
-      ocmh.processResponses(results, shardHandler, true, "SPLITSHARD failed to create subshard replicas", asyncId, requestMap);
+      msgOnError = "SPLITSHARD failed to create subshard replicas";
+      ocmh.processResponses(results, shardHandler, true, msgOnError, asyncId, requestMap);
+      handleFailureOnAsyncRequest(results, msgOnError);
       t.stop();
 
       log.info("Successfully created all replica shards for all sub-slices " + subSlices);
@@ -528,6 +536,17 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         cleanupAfterFailure(zkStateReader, collectionName, parentSlice.getName(), subSlices, offlineSlices);
         unlockForSplit(ocmh.cloudManager, collectionName, parentSlice.getName());
       }
+    }
+  }
+
+  /**
+   * In case of async requests, the ShardRequestTracker's processResponses() does not
+   * abort on failure (as it should). Handling this here temporarily for now.
+   */
+  private void handleFailureOnAsyncRequest(NamedList results, String msgOnError) {
+    Object splitResultFailure = results.get("failure");
+    if (splitResultFailure != null) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError);
     }
   }
 

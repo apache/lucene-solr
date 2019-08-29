@@ -775,7 +775,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
     //If request is async wait for the core admin to complete before returning
     if (asyncId != null) {
-      waitForAsyncCallsToComplete(requestMap, results, true, msgOnError);
+      waitForAsyncCallsToComplete(requestMap, results);
       requestMap.clear();
     }
   }
@@ -914,13 +914,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   public final static boolean INCLUDE_TOP_LEVEL_RESPONSE = true;
   @SuppressWarnings("unchecked")
   private void waitForAsyncCallsToComplete(Map<String, String> requestMap, NamedList results) {
-    waitForAsyncCallsToComplete(requestMap, results, false, null);
-  }
-
-  @SuppressWarnings("unchecked")
-  private void waitForAsyncCallsToComplete(Map<String, String> requestMap, NamedList<Object> results,
-      boolean abortOnFailure, String msgOnError) {
-    boolean failed = false;
     for (String k:requestMap.keySet()) {
       log.debug("I am Waiting for :{}/{}", k, requestMap.get(k));
       NamedList reqResult = waitForCoreAdminAsyncCallToComplete(k, requestMap.get(k));
@@ -930,13 +923,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       if ("failed".equalsIgnoreCase(((String)reqResult.get("STATUS")))) {
         log.error("Error from shard {}: {}", k,  reqResult);
         addFailure(results, k, reqResult);
-        failed = true;
       } else {
         addSuccess(results, k, reqResult);
       }
-    }
-    if (failed && abortOnFailure && msgOnError != null) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError);
     }
   }
 
