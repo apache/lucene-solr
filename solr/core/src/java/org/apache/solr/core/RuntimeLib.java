@@ -44,20 +44,27 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWriter {
   public static final String TYPE = "runtimeLib";
-  public static final String SHA512 = "sha512";
+  public static final String SHA256 = "sha256";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
-  private String name, version, sig, sha512, url;
+  private String name, version, sig, sha256, url;
   private BlobRepository.BlobContentRef<ByteBuffer> jarContent;
   private boolean verified = false;
+  int znodeVersion = -1;
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ew.putIfNotNull(NAME, name);
     ew.putIfNotNull("url", url);
     ew.putIfNotNull(version, version);
-    ew.putIfNotNull(sha512, sha512);
+    ew.putIfNotNull("sha256", sha256);
     ew.putIfNotNull("sig", sig);
+    if (znodeVersion > -1) {
+      ew.put(ConfigOverlay.ZNODEVER, znodeVersion);
+    }
+  }
+  public int getZnodeVersion(){
+    return znodeVersion;
   }
 
   public RuntimeLib(CoreContainer coreContainer) {
@@ -94,19 +101,19 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
       }
       version = String.valueOf(v);
     } else {
-      sha512 = info.attributes.get(SHA512);
-      if (sha512 == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "runtimeLib with url must have a 'sha512' attribute");
+      sha256 = info.attributes.get(SHA256);
+      if (sha256 == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "runtimeLib with url must have a 'sha256' attribute");
       }
       ByteBuffer buf = coreContainer.getBlobRepository().fetchFromUrl(name, url);
 
-      String digest = BlobRepository.sha512Digest(buf);
-      if (!sha512.equals(digest)) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, StrUtils.formatString(BlobRepository.INVALID_JAR_MSG, url, sha512, digest));
+      String digest = BlobRepository.sha256Digest(buf);
+      if (!sha256.equals(digest)) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, StrUtils.formatString(BlobRepository.INVALID_JAR_MSG, url, sha256, digest));
       }
       verifyJarSignature(buf);
 
-      log.debug("dynamic library verified {}, sha512: {}", url, sha512);
+      log.debug("dynamic library verified {}, sha256: {}", url, sha256);
 
     }
 
@@ -123,7 +130,7 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
 
       jarContent = url == null ?
           coreContainer.getBlobRepository().getBlobIncRef(name + "/" + version) :
-          coreContainer.getBlobRepository().getBlobIncRef(name, null, url, sha512);
+          coreContainer.getBlobRepository().getBlobIncRef(name, null, url, sha256);
 
     }
   }
@@ -141,8 +148,8 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
 
   }
 
-  public String getSha512() {
-    return sha512;
+  public String getSha256() {
+    return sha256;
   }
 
   public ByteBuffer getFileContent(String entryName) throws IOException {

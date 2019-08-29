@@ -34,7 +34,7 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
 
   @Override
   protected Query createQuery(Query parentListQuery, Query query, String scoreMode) {
-    return new ToChildBlockJoinQuery(query, getFilter(parentListQuery).filter);
+    return new ToChildBlockJoinQuery(query, getFilter(parentListQuery).getFilter());
   }
 
   @Override

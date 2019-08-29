@@ -91,25 +91,23 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     }
 
     // sanity check limit=0 w/ mincount=0 & missing=true
-    //
-    // SOLR-6328: doesn't work for single node, so can't work for distrib either (yet)
-    //
-    // PivotFacetField's init of needRefinementAtThisLevel as needing potential change
-    // 
-    // rsp = query( "q", "*:*",
-    //              "rows", "0",
-    //              "facet","true",
-    //              "f.company_t.facet.limit", "10",
-    //              "facet.pivot","special_s,bogus_s,company_t",
-    //              "facet.missing", "true",
-    //              FacetParams.FACET_LIMIT, "0",
-    //              FacetParams.FACET_PIVOT_MINCOUNT,"0"); 
-    // pivots = rsp.getFacetPivot().get("special_s,bogus_s,company_t");
-    // assertEquals(1, pivots.size()); // only the missing
-    // assertPivot("special_s", null, docNumber - 5, pivots.get(0)); // 5 docs w/special_s
-    // assertEquals(pivots.toString(), 1, pivots.get(0).getPivot());
-    // assertPivot("bogus_s", null, docNumber, pivots.get(0).getPivot().get(0));
-    // // TODO: some asserts on company results
+    rsp = query( "q", "*:*",
+                  "rows", "0",
+                  "facet","true",
+                  "f.company_t.facet.limit", "10",
+                  "facet.pivot","special_s,bogus_s,company_t",
+                  "facet.missing", "true",
+                  FacetParams.FACET_LIMIT, "0",
+                  FacetParams.FACET_PIVOT_MINCOUNT,"0");
+    pivots = rsp.getFacetPivot().get("special_s,bogus_s,company_t");
+    assertEquals(1, pivots.size()); // only the missing
+    assertPivot("special_s", null, docNumber - 5, pivots.get(0)); // 5 docs w/special_s
+    assertEquals(pivots.toString(), 1, pivots.get(0).getPivot().size());
+    assertPivot("bogus_s", null, docNumber - 5 , pivots.get(0).getPivot().get(0)); // 5 docs w/special_s
+    PivotField bogus = pivots.get(0).getPivot().get(0);
+    assertEquals(bogus.toString(), 11, bogus.getPivot().size());
+    // last value would always be missing docs
+    assertPivot("company_t", null, 2, bogus.getPivot().get(10)); // 2 docs w/company_t
 
     // basic check w/ default sort, limit, & mincount==0
     rsp = query( "q", "*:*",

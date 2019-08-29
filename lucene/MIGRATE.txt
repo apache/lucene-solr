@@ -1,5 +1,17 @@
 # Apache Lucene Migration Guide
 
+## Kuromoji user dictionary now forbids illegal segmentation (LUCENE-8933) ##
+
+User dictionary now strictly validates if the (concatenated) segment is the same as the surface form. This change avoids
+unexpected runtime exceptions or behaviours.
+For example, these entries are not allowed at all and an exception is thrown when loading the dictionary file.
+
+# concatenated "日本経済新聞" does not match the surface form "日経新聞"
+日経新聞,日本 経済 新聞,ニホン ケイザイ シンブン,カスタム名詞
+
+# concatenated "日経新聞" does not match the surface form "日本経済新聞"
+日本経済新聞,日経 新聞,ニッケイ シンブン,カスタム名詞
+
 ## Analysis factories now have customizable symbolic names (LUCENE-8778) ##
 
 The SPI names for concrete subclasses of TokenizerFactory, TokenFilterFactory, and CharfilterFactory are no longer

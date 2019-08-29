@@ -16,7 +16,12 @@
  */
 package org.apache.solr.util;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,15 +49,9 @@ public class FileUtils {
   }
 
   public static void copyFile(File src , File destination) throws IOException {
-    FileChannel in = null;
-    FileChannel out = null;
-    try {
-      in = new FileInputStream(src).getChannel();
-      out = new FileOutputStream(destination).getChannel();
+    try (FileChannel in = new FileInputStream(src).getChannel();
+         FileChannel out = new FileOutputStream(destination).getChannel()) {
       in.transferTo(0, in.size(), out);
-    } finally {
-      try { if (in != null) in.close(); } catch (IOException e) {}
-      try { if (out != null) out.close(); } catch (IOException e) {}
     }
   }
 
@@ -71,16 +70,9 @@ public class FileUtils {
     IOException exc = null;
     while(!success && retryCount < 5) {
       retryCount++;
-      RandomAccessFile file = null;
-      try {
-        try {
-          file = new RandomAccessFile(fullFile, "rw");
-          file.getFD().sync();
-          success = true;
-        } finally {
-          if (file != null)
-            file.close();
-        }
+      try (RandomAccessFile file = new RandomAccessFile(fullFile, "rw")) {
+        file.getFD().sync();
+        success = true;
       } catch (IOException ioe) {
         if (exc == null)
           exc = ioe;

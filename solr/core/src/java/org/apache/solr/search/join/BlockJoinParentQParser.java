@@ -84,7 +84,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
     return getCachedFilter(req, parentList);
   }
 
-  static BitDocIdSetFilterWrapper getCachedFilter(final SolrQueryRequest request, Query parentList) {
+  public static BitDocIdSetFilterWrapper getCachedFilter(final SolrQueryRequest request, Query parentList) {
     SolrCache parentCache = request.getSearcher().getCache(CACHE_NAME);
     // lazily retrieve from solr cache
     Filter filter = null;
@@ -122,9 +122,9 @@ public class BlockJoinParentQParser extends FiltersQParser {
   }
 
   // We need this wrapper since BitDocIdSetFilter does not extend Filter
-  static class BitDocIdSetFilterWrapper extends Filter {
+  public static class BitDocIdSetFilterWrapper extends Filter {
 
-    final BitSetProducer filter;
+    private final BitSetProducer filter;
 
     BitDocIdSetFilterWrapper(BitSetProducer filter) {
       this.filter = filter;
@@ -139,6 +139,10 @@ public class BlockJoinParentQParser extends FiltersQParser {
       return BitsFilteredDocIdSet.wrap(new BitDocIdSet(set), acceptDocs);
     }
 
+    public BitSetProducer getFilter() {
+      return filter;
+    }
+
     @Override
     public String toString(String field) {
       return getClass().getSimpleName() + "(" + filter + ")";
@@ -147,14 +151,13 @@ public class BlockJoinParentQParser extends FiltersQParser {
     @Override
     public boolean equals(Object other) {
       return sameClassAs(other) &&
-             Objects.equals(filter, getClass().cast(other).filter);
+             Objects.equals(filter, getClass().cast(other).getFilter());
     }
 
     @Override
     public int hashCode() {
       return classHash() + filter.hashCode();
     }
-
   }
 
 }

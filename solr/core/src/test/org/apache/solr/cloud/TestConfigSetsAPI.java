@@ -383,6 +383,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     String securityJson = "{\n" +
         "  'authentication':{\n" +
         "    'class':'solr.BasicAuthPlugin',\n" +
+        "    'blockUnknown': false,\n" +
         "    'credentials':{'solr':'orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw='}},\n" +
         "  'authorization':{\n" +
         "    'class':'solr.RuleBasedAuthorizationPlugin',\n" +

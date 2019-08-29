@@ -515,7 +515,7 @@ This filter factory normalizes text according to one of five Unicode Normalizati
 
 *Arguments:*
 
-`name`:: The name of the normalization form. Valid options are `nfc`, `nfd`, `nfkc`, `nfkd`, or `nfkc_cf` (the default). Required.
+`form`:: The name of the normalization form. Valid options are `nfc`, `nfd`, `nfkc`, `nfkd`, or `nfkc_cf` (the default). Required.
 
 `mode`:: The mode of Unicode character composition and decomposition. Valid options are: `compose` (the default) or `decompose`. Required.
 
@@ -527,7 +527,7 @@ This filter factory normalizes text according to one of five Unicode Normalizati
 ----
 <analyzer>
   <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.ICUNormalizer2FilterFactory" name="nfkc_cf" mode="compose"/>
+  <filter class="solr.ICUNormalizer2FilterFactory" form="nfkc_cf" mode="compose"/>
 </analyzer>
 ----
 
@@ -537,7 +537,7 @@ This filter factory normalizes text according to one of five Unicode Normalizati
 ----
 <analyzer>
   <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.ICUNormalizer2FilterFactory" name="nfkc_cf" mode="compose" filter="[^åäöÅÄÖ]"/>
+  <filter class="solr.ICUNormalizer2FilterFactory" form="nfkc_cf" mode="compose" filter="[^åäöÅÄÖ]"/>
 </analyzer>
 ----
 
