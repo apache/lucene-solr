@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Implementation of HitsThresholdChecker which allows global hit counting
  */
-public class GlobalHitsThresholdChecker extends HitsThresholdChecker {
+class GlobalHitsThresholdChecker extends HitsThresholdChecker {
   private final int totalHitsThreshold;
   private final AtomicInteger globalHitCount;
 

@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 /**
  * Default implementation of HitsThresholdChecker to be used for single threaded execution
  */
-public class LocalHitsThresholdChecker extends HitsThresholdChecker {
+class LocalHitsThresholdChecker extends HitsThresholdChecker {
   private final int totalHitsThreshold;
   private int hitCount;
 

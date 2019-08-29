@@ -23,7 +23,7 @@ import java.util.function.BooleanSupplier;
  * Defines an interface for allowing hits to be tracked and checking if total hits
  * threshold has been reached
  */
-public abstract class HitsThresholdChecker implements BooleanSupplier {
+abstract class HitsThresholdChecker implements BooleanSupplier {
   public abstract void incrementHitCount();
   public abstract ScoreMode scoreMode();
   public abstract int getHitsThreshold();
