@@ -95,6 +95,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   private static final String UTF_8 = StandardCharsets.UTF_8.name();
   private static final String DEFAULT_PATH = "/select";
+  private static final String HOST_ADDRESS_REGEX = "^(https?://[^/]+\\.com:\\d{1,5})(/solr)(.*)$";
   private static final long serialVersionUID = -946812319974801896L;
   
   /**
@@ -330,6 +331,10 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     }
     return queryModParams;
   }
+  
+  private String changeV2RequestEndpoint() {
+    return baseUrl.replaceAll(HOST_ADDRESS_REGEX, "$1/api$3");
+  }
 
   protected HttpRequestBase createMethod(SolrRequest request, String collection) throws IOException, SolrServerException {
     if (request instanceof V2RequestSupport) {
@@ -365,7 +370,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
     if (request instanceof V2Request) {
       if (System.getProperty("solr.v2RealPath") == null || ((V2Request) request).isForceV2()) {
-        basePath = baseUrl.replace("/solr", "/api");
+        basePath = changeV2RequestEndpoint();
       } else {
         basePath = baseUrl + "/____v2";
       }
@@ -937,6 +942,10 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
     public HttpSolrClient build() {
       if (baseSolrUrl == null) {
         throw new IllegalArgumentException("Cannot create HttpSolrClient without a valid baseSolrUrl!");
+      }
+      
+      if (!baseSolrUrl.matches(HOST_ADDRESS_REGEX)) {
+        throw new IllegalArgumentException("Cannot create HttpSolrClient with malformed baseSolrUrl: " + baseSolrUrl);
       }
 
       if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) == null) {
