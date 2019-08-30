@@ -1,59 +1,61 @@
 package org.apache.solr.store.blob.provider;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+
 import org.apache.solr.common.SolrException;
+import org.apache.solr.store.blob.client.BlobException;
 import org.apache.solr.store.blob.client.BlobStorageClientBuilder;
+import org.apache.solr.store.blob.client.BlobstoreProviderType;
 import org.apache.solr.store.blob.client.CoreStorageClient;
-import org.apache.solr.store.blob.util.BlobStoreBootstrapper;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.amazonaws.SdkClientException;
 
 /**
- * Class that provides access to the shared storage client (blob client) and handles
- * initiation of such client. This class serves as the provider for all blob store
- * communication channels.
- * 
- * TODO - later stories should do the provisioning (setting up of auth, etc) for the 
- * client libraries via this class. 
+ * Class that provides access to the shared storage client (blob client) and
+ * handles initiation of such client. This class serves as the provider for all
+ * blob store communication channels.
  */
-public class BlobStorageProvider {  
-  /** 
-   * The only blob that has a constant name for a core is the metadata. Basically the Blob store's equivalent for a core
-   * of the highest segments_N file for a Solr server. 
-   */
-  public static final String CORE_METADATA_BLOB_FILENAME = "core.metadata";
-  
+public class BlobStorageProvider {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private CoreStorageClient storageClient;
-  
-  public CoreStorageClient getDefaultClient() {
-    String localBlobDir = BlobStoreBootstrapper.getLocalBlobDir();
-    String blobBucketName = BlobStoreBootstrapper.getBlobBucketName();
-    String blobstoreEndpoint = BlobStoreBootstrapper.getBlobstoreEndpoint();
-    String blobstoreAccessKey = BlobStoreBootstrapper.getBlobstoreAccessKey();
-    String blobstoreSecretKey = BlobStoreBootstrapper.getBlobstoreSecretKey();
-    String blobStorageProvider = BlobStoreBootstrapper.getBlobStorageProvider();
-    return getClient(localBlobDir, blobBucketName, blobstoreEndpoint, 
-        blobstoreAccessKey, blobstoreSecretKey, blobStorageProvider);
-  }
-  
-  public CoreStorageClient getClient(String localBlobDir, String blobBucketName, String blobStoreEndpoint,
-      String blobStoreAccessKey, String blobStoreSecretKey, String blobStorageProvider) {
+
+  public CoreStorageClient getClient() {
     if (storageClient != null) {
       return storageClient;
     }
-    
+
+    return getClient(BlobstoreProviderType.getConfiguredProvider());
+  }
+
+  private synchronized CoreStorageClient getClient(BlobstoreProviderType blobStorageProviderType) {
+    if (storageClient != null) {
+      return storageClient;
+    }
+
     try {
-      BlobStorageClientBuilder clientBuilder = new BlobStorageClientBuilder(localBlobDir,
-          blobStorageProvider, blobBucketName, blobStoreEndpoint, blobStoreAccessKey, blobStoreSecretKey
-          );
+      log.info("CoreStorageClient: building CoreStorageClient for the first time. blobStorageProvider="
+          + blobStorageProviderType.name());
+      BlobStorageClientBuilder clientBuilder = new BlobStorageClientBuilder(blobStorageProviderType);
       CoreStorageClient client = clientBuilder.build();
-      // if we can't connect to the blob store for any reason, we'll throw an exception here
+
+      // if we can't connect to the blob store for any reason, we'll throw an
+      // exception here
       boolean bucketExists = client.doesBucketExist();
       if (!bucketExists) {
-        throw new Exception(
-                String.format("The bucket %s does not exist! The CoreStorageClient will not connect to endpoint %s!",
-             blobBucketName, blobStoreEndpoint));
+        throw new BlobException(
+            String.format("The bucket %s does not exist! The CoreStorageClient will not connect to endpoint %s!",
+                client.getBucketName(), client.getEndpoint()));
       }
       storageClient = client;
       return client;
-    } catch (Exception ex) {
+
+    } catch (IllegalArgumentException | IOException | BlobException | SdkClientException ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not initiate new CoreStorageClient", ex);
     }
   }

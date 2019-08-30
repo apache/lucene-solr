@@ -42,7 +42,7 @@ public class CorePusher {
    */
   public void pushCoreToBlob(PushPullData pushPullData) throws Exception {
     BlobStorageProvider blobProvider = coreContainer.getSharedStoreManager().getBlobStorageProvider(); 
-    CoreStorageClient blobClient = blobProvider.getDefaultClient(); // TODO, use a real client
+    CoreStorageClient blobClient = blobProvider.getClient();
     BlobDeleteManager deleteManager = coreContainer.getSharedStoreManager().getBlobDeleteManager(); // TODO, use a real client
         
     BlobCoreMetadata blobCoreMetadata = null;

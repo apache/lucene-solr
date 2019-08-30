@@ -20,10 +20,11 @@ import java.util.stream.Collectors;
 public class LocalStorageClient implements CoreStorageClient {
   
   /** The directory on the local file system where blobs will be stored. */
-  private final String blobStoreRootDir;
+  public static final String BLOB_STORE_LOCAL_FS_ROOT_DIR_PROPERTY = "blob.local.dir";
+  
+  private final String blobStoreRootDir = System.getProperty(BLOB_STORE_LOCAL_FS_ROOT_DIR_PROPERTY, "/tmp/BlobStoreLocal/");
 
-  public LocalStorageClient(String blobStoreRootDir) throws Exception {
-    this.blobStoreRootDir = blobStoreRootDir;
+  public LocalStorageClient() throws IOException {
     File rootDir = new File(blobStoreRootDir);
     rootDir.mkdirs(); // Might create the directory... or not
     if (!rootDir.isDirectory()) {

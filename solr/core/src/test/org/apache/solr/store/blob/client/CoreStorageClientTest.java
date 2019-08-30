@@ -45,7 +45,8 @@ public class CoreStorageClientTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setupTestClass() throws Exception {
     sharedStoreRootPath = createTempDir("tempDir");
-    blobClient = new LocalStorageClient(sharedStoreRootPath.resolve("LocalBlobStore/").toString());
+    System.setProperty(LocalStorageClient.BLOB_STORE_LOCAL_FS_ROOT_DIR_PROPERTY, sharedStoreRootPath.resolve("LocalBlobStore/").toString());
+    blobClient = new LocalStorageClient();
   }
 
   @After

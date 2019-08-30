@@ -79,7 +79,7 @@ public class SharedStoreManager {
     if (blobDeleteManager != null) {
       return blobDeleteManager;
     }
-    blobDeleteManager = new BlobDeleteManager(getBlobStorageProvider().getDefaultClient());
+    blobDeleteManager = new BlobDeleteManager(getBlobStorageProvider().getClient());
     return blobDeleteManager;
   }
   

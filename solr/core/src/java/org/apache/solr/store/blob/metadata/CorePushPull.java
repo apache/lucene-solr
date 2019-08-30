@@ -29,7 +29,6 @@ import org.apache.solr.store.blob.client.ToFromJson;
 import org.apache.solr.store.blob.metadata.ServerSideMetadata.CoreFileData;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil.SharedMetadataResolutionResult;
 import org.apache.solr.store.blob.process.BlobDeleteManager;
-import org.apache.solr.store.blob.provider.BlobStorageProvider;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,8 +174,7 @@ public class CorePushPull {
               String json = converter.toJson(blobMetadata);
               int bcmSize = json.getBytes().length;
               
-              String blobCoreMetadataName = BlobStorageProvider.CORE_METADATA_BLOB_FILENAME + "." +
-                  pushPullData.getLastReadMetadataSuffix();
+              String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(pushPullData.getLastReadMetadataSuffix());
               String coreMetadataPath = blobMetadata.getSharedBlobName() + "/" + blobCoreMetadataName;
               BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, System.currentTimeMillis());
               bcmBuilder.addFileToDelete(bftd);

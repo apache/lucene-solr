@@ -228,7 +228,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
     try {
       // Do the sequence of actions required to pull a core from the Blob store.
       BlobStorageProvider blobProvider = coreContainer.getSharedStoreManager().getBlobStorageProvider(); 
-      CoreStorageClient blobClient = blobProvider.getDefaultClient(); // TODO, use a real client
+      CoreStorageClient blobClient = blobProvider.getClient();
 
       // Get blob metadata
       String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(pullCoreInfo.getLastReadMetadataSuffix());

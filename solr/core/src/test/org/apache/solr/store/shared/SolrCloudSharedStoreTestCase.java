@@ -81,19 +81,14 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
    * The sharedStoreRootPath should already exist when passed to this method
    */
   protected static CoreStorageClient setupLocalBlobStoreClient(Path sharedStoreRootPath, String blobDirectoryName) throws Exception {
-    return new LocalStorageClient(sharedStoreRootPath.resolve(blobDirectoryName).toString());
+    System.setProperty(LocalStorageClient.BLOB_STORE_LOCAL_FS_ROOT_DIR_PROPERTY, sharedStoreRootPath.resolve(blobDirectoryName).toString());
+    return new LocalStorageClient();
   }
   
   protected static BlobStorageProvider getBlobStorageProviderTestInstance(CoreStorageClient client) {
     BlobStorageProvider providerTestHarness = new BlobStorageProvider() {
       @Override
-      public CoreStorageClient getDefaultClient() {
-        return client;
-      }
-      
-      @Override
-      public CoreStorageClient getClient(String localBlobDir, String blobBucketName, String blobStoreEndpoint,
-          String blobStoreAccessKey, String blobStoreSecretKey, String blobStorageProvider) {
+      public CoreStorageClient getClient() {
         return client;
       }
     };

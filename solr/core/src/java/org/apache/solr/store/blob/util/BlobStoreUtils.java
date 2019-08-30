@@ -21,7 +21,6 @@ import org.apache.solr.store.blob.metadata.ServerSideMetadata;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil.SharedMetadataResolutionResult;
 import org.apache.solr.store.blob.process.BlobDeleteManager;
-import org.apache.solr.store.blob.provider.BlobStorageProvider;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,9 +32,15 @@ public class BlobStoreUtils {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
+  
+  /** 
+   * The only blob that has a constant name for a core is the metadata. Basically the Blob store's equivalent for a core
+   * of the highest segments_N file for a Solr server. 
+   */
+  public static final String CORE_METADATA_BLOB_FILENAME = "core.metadata";
+  
   public static String buildBlobStoreMetadataName(String suffix) {
-    return BlobStorageProvider.CORE_METADATA_BLOB_FILENAME + "." + suffix;
+    return CORE_METADATA_BLOB_FILENAME + "." + suffix;
   }
 
   /**
@@ -57,7 +62,7 @@ public class BlobStoreUtils {
     ZkController zkController = coreContainer.getZkController();
     SharedShardMetadataController sharedMetadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
     DocCollection collection = zkController.getClusterState().getCollection(collectionName);
-    CoreStorageClient blobClient = coreContainer.getSharedStoreManager().getBlobStorageProvider().getDefaultClient();
+    CoreStorageClient blobClient = coreContainer.getSharedStoreManager().getBlobStorageProvider().getClient();
     log.info("sync intialized for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
     
     Slice shard = collection.getSlicesMap().get(shardName);
