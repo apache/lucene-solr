@@ -67,7 +67,6 @@ a text field. The example below shows an example of this scoring and ranking of 
 
 image::images/math-expressions/scoring.png[]
 
-
 == Sampling
 
 The `random` function returns a random sample from a distributed search result set.
@@ -125,13 +124,56 @@ a predictive model would have consistent error across the range of predictor val
 
 image::images/math-expressions/bivariate.png[]
 
-
 == Aggregations
+
+Aggregations are a powerful statistical tool for summarizing large data sets and
+surfacing patterns, trends and correlations within the data. Aggregations are also a powerful
+tool for visualization and provide data sets for further statisitcal analyis.
 
 === facet
 
+The `facet` function performs single and multi-dimension
+aggregations that behave in a similar manner to SQL group by aggregations.
+Under the cover the `facet` function pushes down the aggregation to Solr's
+JSON facet api for fast distributed execution.
+
+The example below performs a single dimension aggregation.
+
+image::images/math-expressions/facettab1.png[]
+
+image::images/math-expressions/facetviz1.png[]
+
+The example below performas multi-dimension aggretation.
+
+image::images/math-expressions/facettab2.png[]
+
+image::images/math-expressions/facetviz2.png[]
+
 === facet2D
+
+The `facet2D` function specicializes in creating matrices that can be used
+for visualization and machine learning operations.
+
+The example below performs visualizes the output of a `facet2D` as a heatmap.
+
+image::images/math-expressions/facet2D.png[]
+
 
 === timeseries
 
+The `timeseries` function performs fast distributed
+
+image::images/math-expressions/timeseries1.png[]
+
 === significantTerms
+
+image::images/math-expressions/significantTermsCompare.png[]
+
+image::images/math-expressions/significantTerms2.png[]
+
+image::images/math-expressions/sterms.png[]
+
+=== nodes
+
+image::images/math-expressions/nodestab.png[]
+
