@@ -32,6 +32,9 @@ public class JettyConfig {
 
   public final String context;
 
+  public final boolean enableV2;
+
+
   public final boolean stopAtShutdown;
   
   public final Long waitForLoadingCoresToFinishMs;
@@ -46,7 +49,7 @@ public class JettyConfig {
 
   private JettyConfig(boolean onlyHttp1, int port, int portRetryTime , String context, boolean stopAtShutdown,
                       Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
-                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig) {
+                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, boolean enableV2) {
     this.onlyHttp1 = onlyHttp1;
     this.port = port;
     this.context = context;
@@ -56,6 +59,7 @@ public class JettyConfig {
     this.extraFilters = extraFilters;
     this.sslConfig = sslConfig;
     this.portRetryTime = portRetryTime;
+    this.enableV2 = enableV2;
   }
 
   public static Builder builder() {
@@ -78,6 +82,7 @@ public class JettyConfig {
     boolean onlyHttp1 = false;
     int port = 0;
     String context = "/solr";
+    boolean enableV2 = true;
     boolean stopAtShutdown = true;
     Long waitForLoadingCoresToFinishMs = 300000L;
     Map<ServletHolder, String> extraServlets = new TreeMap<>();
@@ -87,6 +92,10 @@ public class JettyConfig {
 
     public Builder useOnlyHttp1(boolean useOnlyHttp1) {
       this.onlyHttp1 = useOnlyHttp1;
+      return this;
+    }
+    public Builder enableV2(boolean flag){
+      this.enableV2 = flag;
       return this;
     }
 
@@ -144,7 +153,8 @@ public class JettyConfig {
 
 
     public JettyConfig build() {
-      return new JettyConfig(onlyHttp1, port, portRetryTime, context, stopAtShutdown, waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig);
+      return new JettyConfig(onlyHttp1, port, portRetryTime, context, stopAtShutdown,
+          waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig, enableV2);
     }
 
   }

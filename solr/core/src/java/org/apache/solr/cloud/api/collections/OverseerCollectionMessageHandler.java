@@ -1033,7 +1033,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
       // If request is async wait for the core admin to complete before returning
       if (asyncId != null) {
-        waitForAsyncCallsToComplete(results);
+        waitForAsyncCallsToComplete(results); // TODO: Shouldn't we abort with msgOnError exception when failure?
         shardAsyncIdByNode.clear();
       }
     }

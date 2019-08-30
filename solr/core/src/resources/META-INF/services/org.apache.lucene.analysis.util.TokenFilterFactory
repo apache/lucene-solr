@@ -13,6 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+org.apache.solr.analysis.ReversedWildcardFilterFactory
 org.apache.solr.rest.schema.analysis.ManagedStopFilterFactory
 org.apache.solr.rest.schema.analysis.ManagedSynonymFilterFactory
 org.apache.solr.rest.schema.analysis.ManagedSynonymGraphFilterFactory

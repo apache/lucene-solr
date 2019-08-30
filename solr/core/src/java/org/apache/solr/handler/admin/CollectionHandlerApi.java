@@ -17,7 +17,9 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,6 +31,7 @@ import java.util.Objects;
 
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.Meta;
@@ -60,7 +63,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.StrUtils.formatString;
-import static org.apache.solr.core.RuntimeLib.SHA512;
+import static org.apache.solr.core.RuntimeLib.SHA256;
 
 public class CollectionHandlerApi extends BaseHandlerApiSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -95,9 +98,9 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     //The following APIs have only V2 implementations
     addApi(apiMapping, Meta.GET_NODES, CollectionHandlerApi::getNodes);
     addApi(apiMapping, Meta.SET_CLUSTER_PROPERTY_OBJ, CollectionHandlerApi::setClusterObj);
-    addApi(apiMapping, Meta.ADD_RUNTIME_LIB, wrap(CollectionHandlerApi::addUpdateRuntimeLib));
-    addApi(apiMapping, Meta.UPDATE_RUNTIME_LIB, wrap(CollectionHandlerApi::addUpdateRuntimeLib));
-    addApi(apiMapping, Meta.DELETE_RUNTIME_LIB, wrap(CollectionHandlerApi::deleteRuntimeLib));
+    addApi(apiMapping, Meta.ADD_PACKAGE, wrap(CollectionHandlerApi::addUpdatePackage));
+    addApi(apiMapping, Meta.UPDATE_PACKAGE, wrap(CollectionHandlerApi::addUpdatePackage));
+    addApi(apiMapping, Meta.DELETE_RUNTIME_LIB, wrap(CollectionHandlerApi::deletePackage));
     addApi(apiMapping, Meta.ADD_REQ_HANDLER, wrap(CollectionHandlerApi::addRequestHandler));
     addApi(apiMapping, Meta.DELETE_REQ_HANDLER, wrap(CollectionHandlerApi::deleteReqHandler));
 
@@ -117,9 +120,17 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       if (modified) {
         Stat stat = new Stat();
         Map<String, Object> clusterProperties = new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties(stat);
-        cc.getClusterPropertiesListener().onChange(clusterProperties);
+        try {
+          cc.getPackageManager().onChange(clusterProperties);
+        } catch (SolrException e) {
+          log.error("error executing command : " + info.op.jsonStr(), e);
+          throw e;
+        } catch (Exception e) {
+          log.error("error executing command : " + info.op.jsonStr(), e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "error executing command : ", e);
+        }
         log.info("current version of clusterprops.json is {} , trying to get every node to update ", stat.getVersion());
-        log.debug("The current clusterprops.json:  {}",clusterProperties );
+        log.debug("The current clusterprops.json:  {}", clusterProperties);
         ((CollectionHandlerApi) info.apiHandler).waitForStateSync(stat.getVersion(), cc);
 
       }
@@ -165,7 +176,8 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     clusterProperties.setClusterProperties(m);
     return true;
   }
-  private static boolean deleteRuntimeLib(ApiInfo params) throws Exception {
+
+  private static boolean deletePackage(ApiInfo params) throws Exception {
     if (!RuntimeLib.isEnabled()) {
       params.op.addError("node not started with enable.runtime.lib=true");
       return false;
@@ -173,9 +185,9 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     String name = params.op.getStr(CommandOperation.ROOT_OBJ);
     ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
     Map<String, Object> props = clusterProperties.getClusterProperties();
-    List<String> pathToLib = asList(RuntimeLib.TYPE, name);
+    List<String> pathToLib = asList(CommonParams.PACKAGE, name);
     Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
-    if(existing == null){
+    if (existing == null) {
       params.op.addError("No such runtimeLib : " + name);
       return false;
     }
@@ -185,7 +197,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     return true;
   }
 
-  private static boolean addUpdateRuntimeLib(ApiInfo params) throws Exception {
+  private static boolean addUpdatePackage(ApiInfo params) throws Exception {
     if (!RuntimeLib.isEnabled()) {
       params.op.addError("node not started with enable.runtime.lib=true");
       return false;
@@ -197,9 +209,9 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     String name = op.getStr("name");
     ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
     Map<String, Object> props = clusterProperties.getClusterProperties();
-    List<String> pathToLib = asList(RuntimeLib.TYPE, name);
+    List<String> pathToLib = asList(CommonParams.PACKAGE, name);
     Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
-    if (Meta.ADD_RUNTIME_LIB.commandName.equals(op.name)) {
+    if (Meta.ADD_PACKAGE.commandName.equals(op.name)) {
       if (existing != null) {
         op.addError(StrUtils.formatString("The jar with a name ''{0}'' already exists ", name));
         return false;
@@ -209,8 +221,8 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
         op.addError(StrUtils.formatString("The jar with a name ''{0}'' does not exist", name));
         return false;
       }
-      if(Objects.equals( existing.get(SHA512) , op.getDataMap().get(SHA512))){
-        op.addError("Trying to update a jar with the same sha512");
+      if (Objects.equals(existing.get(SHA256), op.getDataMap().get(SHA256))) {
+        op.addError("Trying to update a jar with the same sha256");
         return false;
       }
     }
@@ -323,6 +335,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
   public static class PerNodeCallable extends SolrConfigHandler.PerReplicaCallable {
 
     static final List<String> path = Arrays.asList("metadata", CommonParams.VERSION);
+
     PerNodeCallable(String baseUrl, int expectedversion, int waitTime) {
       super(baseUrl, ConfigOverlay.ZNODEVER, expectedversion, waitTime);
     }
@@ -352,6 +365,12 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       this.rsp = rsp;
       this.apiHandler = apiHandler;
       this.op = op;
+    }
+  }
+
+  public static void postBlob(String baseUrl, ByteBuffer buf) throws IOException {
+    try(HttpSolrClient client = new HttpSolrClient.Builder(baseUrl+"/____v2/node/blob" ).build()){
+
     }
   }
 

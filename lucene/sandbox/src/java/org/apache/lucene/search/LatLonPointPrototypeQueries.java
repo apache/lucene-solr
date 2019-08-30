@@ -27,6 +27,7 @@ import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.bkd.BKDReader;
 
 /**
@@ -104,7 +105,8 @@ public class LatLonPointPrototypeQueries {
     ScoreDoc[] scoreDocs = new ScoreDoc[hits.length];
     for(int i=0;i<hits.length;i++) {
       NearestNeighbor.NearestHit hit = hits[i];
-      scoreDocs[i] = new FieldDoc(hit.docID, 0.0f, new Object[] {Double.valueOf(hit.distanceMeters)});
+      double hitDistance = SloppyMath.haversinMeters(hit.distanceSortKey);
+      scoreDocs[i] = new FieldDoc(hit.docID, 0.0f, new Object[] {Double.valueOf(hitDistance)});
     }
     return new TopFieldDocs(new TotalHits(totalHits, TotalHits.Relation.EQUAL_TO), scoreDocs, null);
   }
