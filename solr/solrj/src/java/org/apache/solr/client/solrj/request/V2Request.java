@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.V2Response;
@@ -119,6 +120,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     private boolean useBinary = false;
 
     private boolean forceV2EndPoint = false;
+    private ResponseParser parser;
 
     /**
      * Create a Builder object based on the provided resource.
@@ -170,6 +172,11 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
     public Builder useBinary(boolean flag) {
       this.useBinary = flag;
+      return this;
+    }
+
+    public Builder withResponseParser(ResponseParser parser){
+      this.parser = parser;
       return this;
     }
 

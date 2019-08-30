@@ -242,7 +242,8 @@ public class CollectionApiMapping {
     ),
     GET_NODES(CLUSTER_NODES, GET, null),
     FORCE_LEADER(PER_COLLECTION_PER_SHARD_COMMANDS, POST, CollectionAction.FORCELEADER, "force-leader", null),
-    BALANCE_SHARD_UNIQUE(PER_COLLECTION, POST, BALANCESHARDUNIQUE,"balance-shard-unique" , null)
+    BALANCE_SHARD_UNIQUE(PER_COLLECTION, POST, BALANCESHARDUNIQUE,"balance-shard-unique" , null),
+    POST_BLOB(EndPoint.CLUSTER_BLOB, POST, null)
     ;
 
     public final String commandName;
@@ -362,6 +363,7 @@ public class CollectionApiMapping {
 
   public enum EndPoint implements V2EndPoint {
     CLUSTER("cluster"),
+    CLUSTER_BLOB("cluster.blob"),
     CLUSTER_ALIASES("cluster.aliases"),
     CLUSTER_CMD("cluster.Commands"),
     CLUSTER_NODES("cluster.nodes"),

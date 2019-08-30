@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
@@ -53,6 +52,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
@@ -670,12 +672,8 @@ public class Utils {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
-    try {
-      final String path = URLDecoder.decode(nodeName.substring(1 + _offset), "UTF-8");
-      return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
-    }
+    final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
+    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
   }
 
   private static class MapWriterJSONWriter extends JSONWriter {
@@ -720,6 +718,28 @@ public class Utils {
       logger.error(e.getMessage(), e);
     }
     return def;
+  }
+
+  public interface InputStreamConsumer {
+
+    void accept(InputStream is) throws IOException;
+
+  }
+
+
+  public static int executeGET(HttpClient client, String url, InputStreamConsumer consumer) throws IOException {
+    HttpGet httpGet = new HttpGet(url);
+    HttpResponse rsp = client.execute(httpGet);
+    int statusCode = rsp.getStatusLine().getStatusCode();
+    if(statusCode != 200) return statusCode;
+    HttpEntity entity = rsp.getEntity();
+    try{
+      InputStream is = entity.getContent();
+      if(consumer != null) consumer.accept(is);
+    } finally {
+      Utils.consumeFully(entity);
+    }
+    return statusCode;
   }
 
 }

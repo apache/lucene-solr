@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -43,8 +44,10 @@ import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.BlobRepository;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
@@ -55,6 +58,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,6 +101,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     }
     //The following APIs have only V2 implementations
     addApi(apiMapping, Meta.GET_NODES, CollectionHandlerApi::getNodes);
+    addApi(apiMapping, Meta.POST_BLOB, CollectionHandlerApi::postBlob);
     addApi(apiMapping, Meta.SET_CLUSTER_PROPERTY_OBJ, CollectionHandlerApi::setClusterObj);
     addApi(apiMapping, Meta.ADD_PACKAGE, wrap(CollectionHandlerApi::addUpdatePackage));
     addApi(apiMapping, Meta.UPDATE_PACKAGE, wrap(CollectionHandlerApi::addUpdatePackage));
@@ -111,6 +116,45 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     }
 
     return apiMapping.values();
+  }
+
+  private static boolean postBlob(ApiInfo info) {
+    Iterable<ContentStream> streams = info.req.getContentStreams();
+    if (streams == null) throw new SolrException(ErrorCode.BAD_REQUEST, "no payload");
+    ContentStream stream = streams.iterator().next();
+    try {
+      ByteBuffer buf = SimplePostTool.inputStreamToByteArray(stream.getStream());
+      String sha256 = BlobRepository.sha256Digest(buf);
+      CoreContainer coreContainer = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
+      coreContainer.getBlobRepository().putBlob(buf, sha256);
+      Set<String> nodes = coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
+
+      int i = 0;
+      for (String node : nodes) {
+        String baseUrl = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
+        String url = baseUrl.replace("/solr", "/api") + "/node/blob?sha256=" + sha256 + "&fromNode=";
+        if (i <= 4) {
+          // the first 5 nodes will be asked to fetch from this node
+          url = coreContainer.getNodeConfig().getNodeName();
+        } else {
+          // trying to avoid the thundering herd problem when there are a very large no:of nodes
+          // others should try to fetch it from any node where it is available
+          url += "*";
+        }
+        try {
+          Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
+        } catch (IOException e) {
+          //ignore the exception
+          // some nodes may be down or not responding
+        }
+        i++;
+      }
+
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, e);
+    }
+
+    return false;
   }
 
   static Command wrap(Command cmd) {
@@ -308,10 +352,12 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
         CommandOperation op = null;
         if (metaInfo.method == SolrRequest.METHOD.POST) {
-          List<CommandOperation> commands = req.getCommands(true);
-          if (commands == null || commands.size() != 1)
-            throw new SolrException(ErrorCode.BAD_REQUEST, "should have exactly one command");
-          op = commands.get(0);
+          if (metaInfo.commandName != null) {
+            List<CommandOperation> commands = req.getCommands(true);
+            if (commands == null || commands.size() != 1)
+              throw new SolrException(ErrorCode.BAD_REQUEST, "should have exactly one command");
+            op = commands.get(0);
+          }
         }
 
         fun.call(new ApiInfo(req, rsp, apiHandler, op));
@@ -369,7 +415,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
   }
 
   public static void postBlob(String baseUrl, ByteBuffer buf) throws IOException {
-    try(HttpSolrClient client = new HttpSolrClient.Builder(baseUrl+"/____v2/node/blob" ).build()){
+    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl + "/____v2/node/blob").build()) {
 
     }
   }

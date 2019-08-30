@@ -21,8 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.util.Arrays;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +44,6 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -53,7 +51,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
@@ -64,6 +61,7 @@ import org.apache.solr.core.MemClassLoader;
 import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.server.Server;
@@ -73,10 +71,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
 import static org.apache.solr.cloud.TestCryptoKeys.readFile;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
+import static org.apache.solr.core.BlobRepository.sha256Digest;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 import static org.apache.solr.core.TestDynamicLoadingUrl.runHttpServer;
 
@@ -149,7 +149,9 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
     Pair<Server, Integer> server = runHttpServer(jars);
     int port = server.second();
-    MiniSolrCloudCluster cluster = configureCluster(4).configure();
+    MiniSolrCloudCluster cluster = configureCluster(4)
+        .withJettyConfig(jetty -> jetty.enableV2(true))
+        .configure();
     try {
       String payload = null;
       try {
@@ -203,7 +205,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
 
       assertEquals("org.apache.solr.core.RuntimeLibReqHandler",
-          getObjectByPath(map, true, Arrays.asList("requestHandler", "bar", "class")));
+          getObjectByPath(map, true, asList("requestHandler", "bar", "class")));
 
 
       payload = "{update-package:{name : 'global', url: 'http://localhost:" + port + "/jar3.jar', " +
@@ -243,13 +245,31 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           (Predicate<Object>) o -> o instanceof List && ((List) o).isEmpty()));
 
 
-      URL baseUrl = cluster.getRandomJetty(random()).getBaseUrl();
-      try(HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()){
-        SimpleSolrResponse rsp = new GenericSolrRequest(SolrRequest.METHOD.GET, "/____v2/node/blob", new ModifiableSolrParams()).process(client);
-        List l = (List) rsp.nl.get("blob");
-        assertTrue(l.contains("e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc"));
-        assertTrue(l.contains("20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3"));
+      String  baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+      try(HttpSolrClient client = new HttpSolrClient.Builder(baseUrl).build()){
+        V2Response rsp = new V2Request.Builder("/node/blob")
+            .withMethod(SolrRequest.METHOD.GET)
+            .forceV2(true)
+            .build()
+            .process(client);
+        assertNotNull(rsp._get(asList("blob", "e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc"), null));
+        assertNotNull(rsp._get(asList ("blob", "20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3"), null));
+        Utils.executeGET(client.getHttpClient(), baseUrl.replace("/solr", "/api")+"/node/blob/e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc",
+            is -> {
+              ByteBuffer buf = SimplePostTool.inputStreamToByteArray(is);
+              assertEquals("e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc", sha256Digest(buf));
+            });
+        Utils.executeGET(client.getHttpClient(), baseUrl.replace("/solr", "/api") + "/node/blob/20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3",
+            is -> {
+              ByteBuffer buf = SimplePostTool.inputStreamToByteArray(is);
+              assertEquals("20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3", sha256Digest(buf));
+            });
+
       }
+
+
+
+
     } finally {
       cluster.shutdown();
       server.first().stop();
@@ -317,7 +337,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
 
       assertEquals("org.apache.solr.core.RuntimeLibReqHandler",
-          getObjectByPath(map, true, Arrays.asList("requestHandler", "bar", "class")));
+          getObjectByPath(map, true, asList("requestHandler", "bar", "class")));
 
       payload = "{update-package:{name : 'global', url: 'http://localhost:" + port + "/jar3.jar', " +
           "sig : 'YxFr6SpYrDwG85miDfRWHTjU9UltjtIWQZEhcV55C2rczRUVowCYBxmsDv5mAM8j0CTv854xpI1DtBT86wpoTdbF95LQuP9FJId4TS1j8bZ9cxHP5Cqyz1uBHFfUUNUrnpzTHQkVTp02O9NAjh3c2W41bL4U7j6jQ32+4CW2M+x00TDG0y0H75rQDR8zbLt31oWCz+sBOdZ3rGKJgAvdoGm/wVCTmsabZN+xoz4JaDeBXF16O9Uk9SSq4G0dz5YXFuLxHK7ciB5t0+q6pXlF/tdlDqF76Abze0R3d2/0MhXBzyNp3UxJmj6DiprgysfB0TbQtJG0XGfdSmx0VChvcA==' ," +
@@ -394,7 +414,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
 
       assertEquals("org.apache.solr.core.RuntimeLibReqHandler",
-          getObjectByPath(map, true, Arrays.asList("requestHandler", "bar", "class")));
+          getObjectByPath(map, true, asList("requestHandler", "bar", "class")));
 
       payload = "{update-package:{name : 'global', url: 'http://localhost:" + port + "/jar3.jar', " +
           "sig : 'a400n4T7FT+2gM0SC6+MfSOExjud8MkhTSFylhvwNjtWwUgKdPFn434Wv7Qc4QEqDVLhQoL3WqYtQmLPti0G4Q==' ," +
@@ -436,7 +456,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       Map<String, Object> map = assertVersionInSync(zkClient, cluster.getSolrClient());
 
       assertEquals("org.apache.solr.handler.DumpRequestHandler",
-          getObjectByPath(map, true, Arrays.asList("requestHandler", "foo", "class")));
+          getObjectByPath(map, true, asList("requestHandler", "foo", "class")));
 
       assertVersionInSync(zkClient, cluster.getSolrClient());
       V2Response rsp = new V2Request.Builder("/node/ext/foo")
@@ -450,7 +470,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
 
-      assertNull(getObjectByPath(map, true, Arrays.asList("requestHandler", "foo")));
+      assertNull(getObjectByPath(map, true, asList("requestHandler", "foo")));
     } finally {
       cluster.shutdown();
     }
