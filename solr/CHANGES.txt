@@ -126,6 +126,7 @@ New Features
 
 * SOLR-13710: Persist package jars locally & expose them over http at /api/node/blob  (noble)
 
+* SOLR-13122: Ability to query aliases in Solr Admin UI (janhoy)
 
 Improvements
 ----------------------
@@ -147,7 +148,7 @@ Improvements
 * SOLR-13542: Code cleanup - Avoid using stream filter count where possible (Koen De Groote via Tomás Fernández Löbbe)
 
 * SOLR-13720: BlockJoinParentQParser.getCachedFilter()made public for accessing from QParser plugins
-  (Stanislav Livotov via Mikhail Khludnev) 
+  (Stanislav Livotov via Mikhail Khludnev)
 
 Bug Fixes
 ----------------------
