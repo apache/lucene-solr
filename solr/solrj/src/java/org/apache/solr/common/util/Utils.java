@@ -27,6 +27,7 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
@@ -720,26 +721,63 @@ public class Utils {
     return def;
   }
 
-  public interface InputStreamConsumer {
+  public interface InputStreamConsumer<T> {
 
-    void accept(InputStream is) throws IOException;
+    T accept(InputStream is) throws IOException;
+
+  }
+  public static final InputStreamConsumer<?> JAVABINCONSUMER = is -> new JavaBinCodec().unmarshal(is);
+  public static final InputStreamConsumer<?> JSONCONSUMER = is -> Utils.fromJSON(is);
+  public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize){
+    return is -> {
+      try (BinaryRequestWriter.BAOS bos = new BinaryRequestWriter.BAOS()) {
+        long sz = 0;
+        int next = is.read();
+        while (next > -1) {
+          if (++sz > maxSize) throw new BufferOverflowException();
+          bos.write(next);
+          next = is.read();
+        }
+        bos.flush();
+        return ByteBuffer.wrap( bos.getbuf(), 0, bos.size());
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    };
 
   }
 
 
-  public static int executeGET(HttpClient client, String url, InputStreamConsumer consumer) throws IOException {
+
+
+  public static <T> T executeGET(HttpClient client, String url, InputStreamConsumer<T> consumer) throws SolrException {
+    T result = null;
     HttpGet httpGet = new HttpGet(url);
-    HttpResponse rsp = client.execute(httpGet);
+    HttpResponse rsp = null;
+    try {
+      rsp = client.execute(httpGet);
+    } catch (IOException e) {
+      log.error("Error in request to url : "+ url, e);
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "error sending request");
+    }
     int statusCode = rsp.getStatusLine().getStatusCode();
-    if(statusCode != 200) return statusCode;
+    if(statusCode != 200) {
+      log.error("Failed a request to : "+ url);
+      throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), "Unknown error");
+    }
     HttpEntity entity = rsp.getEntity();
     try{
       InputStream is = entity.getContent();
-      if(consumer != null) consumer.accept(is);
+      if(consumer != null) {
+
+        result = consumer.accept(is);
+      }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
     } finally {
       Utils.consumeFully(entity);
     }
-    return statusCode;
+    return result;
   }
 
 }

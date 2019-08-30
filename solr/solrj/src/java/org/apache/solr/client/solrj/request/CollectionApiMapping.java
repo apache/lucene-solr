@@ -243,7 +243,12 @@ public class CollectionApiMapping {
     GET_NODES(CLUSTER_NODES, GET, null),
     FORCE_LEADER(PER_COLLECTION_PER_SHARD_COMMANDS, POST, CollectionAction.FORCELEADER, "force-leader", null),
     BALANCE_SHARD_UNIQUE(PER_COLLECTION, POST, BALANCESHARDUNIQUE,"balance-shard-unique" , null),
-    POST_BLOB(EndPoint.CLUSTER_BLOB, POST, null)
+    POST_BLOB(EndPoint.CLUSTER_BLOB, POST, null){
+      @Override
+      public boolean isRaw() {
+        return true;
+      }
+    }
     ;
 
     public final String commandName;
@@ -473,6 +478,12 @@ public class CollectionApiMapping {
   }
   public interface CommandMeta {
     String getName();
+
+    /** If true, do not do anything with the payload. The command implementation will do everything
+     */
+    default boolean isRaw(){
+      return false;
+    }
 
     /**
      * the http method supported by this command

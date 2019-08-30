@@ -28,11 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.Meta;
@@ -127,23 +125,25 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       String sha256 = BlobRepository.sha256Digest(buf);
       CoreContainer coreContainer = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
       coreContainer.getBlobRepository().putBlob(buf, sha256);
-      Set<String> nodes = coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
-
+      List<String> nodes = coreContainer.getBlobRepository().shuffledNodes();
       int i = 0;
       for (String node : nodes) {
         String baseUrl = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
         String url = baseUrl.replace("/solr", "/api") + "/node/blob?sha256=" + sha256 + "&fromNode=";
-        if (i <= 4) {
-          // the first 5 nodes will be asked to fetch from this node
-          url = coreContainer.getNodeConfig().getNodeName();
+        if (i < 10 ) {
+          // the first 10 nodes will be asked to fetch from this node
+          url += coreContainer.getZkController().getNodeName();
         } else {
           // trying to avoid the thundering herd problem when there are a very large no:of nodes
           // others should try to fetch it from any node where it is available
           url += "*";
         }
         try {
+          //fire and forget
           Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
-        } catch (IOException e) {
+        } catch (Exception e) {
+          log.info( "Node: " +node+
+              " failed to respond for blob notification",e );
           //ignore the exception
           // some nodes may be down or not responding
         }
@@ -414,10 +414,5 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     }
   }
 
-  public static void postBlob(String baseUrl, ByteBuffer buf) throws IOException {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl + "/____v2/node/blob").build()) {
-
-    }
-  }
 
 }

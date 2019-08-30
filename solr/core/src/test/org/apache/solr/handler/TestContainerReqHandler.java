@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableMap;
@@ -34,8 +35,8 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -48,6 +49,7 @@ import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.MapSolrParams;
@@ -61,7 +63,6 @@ import org.apache.solr.core.MemClassLoader;
 import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.LogLevel;
-import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.server.Server;
@@ -75,7 +76,9 @@ import static java.util.Arrays.asList;
 import static org.apache.solr.cloud.TestCryptoKeys.readFile;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
+import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
+import static org.apache.solr.common.util.Utils.newBytesConsumer;
 import static org.apache.solr.core.BlobRepository.sha256Digest;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 import static org.apache.solr.core.TestDynamicLoadingUrl.runHttpServer;
@@ -92,15 +95,21 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   }
 
-  static SolrResponse assertResponseValues(int repeats, SolrClient client, SolrRequest req, Map vals) throws Exception {
-    SolrResponse rsp = null;
+  static NavigableObject assertResponseValues(int repeats, SolrClient client, SolrRequest req, Map vals) throws Exception {
+    Callable<NavigableObject> callable = () -> req.process(client);
+
+    return assertResponseValues(repeats, callable,vals);
+  }
+
+  static NavigableObject assertResponseValues(int repeats,  Callable<NavigableObject> callable,Map vals) throws Exception {
+    NavigableObject rsp = null;
 
     for (int i = 0; i < repeats; i++) {
       if (i > 0) {
         Thread.sleep(100);
       }
       try {
-        rsp = req.process(client);
+        rsp = callable.call();
       } catch (Exception e) {
         if (i >= repeats - 1) throw e;
         continue;
@@ -245,29 +254,27 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           (Predicate<Object>) o -> o instanceof List && ((List) o).isEmpty()));
 
 
-      String  baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-      try(HttpSolrClient client = new HttpSolrClient.Builder(baseUrl).build()){
+      String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+      try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl).build()) {
         V2Response rsp = new V2Request.Builder("/node/blob")
             .withMethod(SolrRequest.METHOD.GET)
             .forceV2(true)
             .build()
             .process(client);
         assertNotNull(rsp._get(asList("blob", "e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc"), null));
-        assertNotNull(rsp._get(asList ("blob", "20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3"), null));
-        Utils.executeGET(client.getHttpClient(), baseUrl.replace("/solr", "/api")+"/node/blob/e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc",
-            is -> {
-              ByteBuffer buf = SimplePostTool.inputStreamToByteArray(is);
-              assertEquals("e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc", sha256Digest(buf));
-            });
-        Utils.executeGET(client.getHttpClient(), baseUrl.replace("/solr", "/api") + "/node/blob/20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3",
-            is -> {
-              ByteBuffer buf = SimplePostTool.inputStreamToByteArray(is);
-              assertEquals("20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3", sha256Digest(buf));
-            });
+        assertNotNull(rsp._get(asList("blob", "20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3"), null));
+
+        ByteBuffer buf = Utils.executeGET(client.getHttpClient(),
+            baseUrl.replace("/solr", "/api") + "/node/blob/e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc",
+            newBytesConsumer(Integer.MAX_VALUE));
+        assertEquals("e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc", sha256Digest(buf));
+
+
+        buf = Utils.executeGET(client.getHttpClient(), baseUrl.replace("/solr", "/api") + "/node/blob/20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3",
+            newBytesConsumer(Integer.MAX_VALUE));
+        assertEquals("20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3", sha256Digest(buf));
 
       }
-
-
 
 
     } finally {
@@ -525,7 +532,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       SolrParams params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "meta","true"));
+          "meta", "true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
@@ -537,7 +544,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "meta","true"));
+          "meta", "true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
@@ -549,7 +556,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "meta","true"));
+          "meta", "true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
@@ -622,7 +629,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "meta","true"));
+          "meta", "true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
@@ -634,7 +641,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "meta","true"));
+          "meta", "true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
@@ -646,7 +653,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "meta","true"));
+          "meta", "true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
@@ -655,7 +662,6 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
               ":config:requestHandler:/runtime:_packageinfo_:url", url,
               ":config:requestHandler:/runtime:_packageinfo_:sha256", sha256
           ));
-
 
 
       try {
@@ -683,7 +689,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   }
 
-//  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13650")
+  //  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13650")
   public void testCacheLoadFromPackage() throws Exception {
     String COLLECTION_NAME = "globalCacheColl";
     Map<String, Object> jars = Utils.makeMap(
@@ -731,7 +737,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "meta","true"));
+          "meta", "true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
@@ -769,7 +775,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
       params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
           WT, JAVABIN,
-          "meta","true"));
+          "meta", "true"));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
@@ -786,7 +792,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
 
       solrQuery = new SolrQuery("q", "id:2", "collection", COLLECTION_NAME);
-      SolrResponse result = assertResponseValues(10,
+      NavigableObject result = assertResponseValues(10,
           cluster.getSolrClient(),
           new QueryRequest(solrQuery),
           Utils.makeMap("response[0]/my_synthetic_fld_s", "version_2"));
@@ -796,6 +802,41 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       cluster.shutdown();
       server.first().stop();
     }
+  }
+
+  public void testBlobManagement() throws Exception {
+    System.setProperty("enable.runtime.lib", "true");
+    MiniSolrCloudCluster cluster = configureCluster(4)
+        .withJettyConfig(jetty -> jetty.enableV2(true))
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
+    try {
+      ByteBuffer jar1 = getFileContent("runtimecode/runtimelibs.jar.bin");
+      new V2Request.Builder("/cluster/blob")
+          .withMethod(SolrRequest.METHOD.POST)
+          .withPayload(jar1)
+          .forceV2(true)
+          .withMimeType("application/octet-stream")
+          .build()
+          .process(cluster.getSolrClient());
+
+      Map expected = Utils.makeMap("/blob/e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc", (Predicate<?>) o -> o != null);
+      for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+        String url =  jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api") + "/node/blob?wt=javabin";
+        assertResponseValues(10, () -> {
+          try(HttpSolrClient solrClient = (HttpSolrClient) jettySolrRunner.newClient()) {
+            return (NavigableObject) Utils.executeGET(solrClient.getHttpClient(),url , JAVABINCONSUMER);
+          }
+        }, expected);
+
+      }
+
+
+    } finally {
+      cluster.shutdown();
+    }
+
+
   }
 
 }

@@ -79,6 +79,10 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
         SolrRequest.METHOD method = SolrRequest.METHOD.valueOf(req.getHttpMethod());
         List<ApiCommand> commands = commandsMapping.get(method).get(op);
         try {
+          if(commands!=null &&  commands.size() == 1 && commands.get(0).meta().isRaw()){
+            commands.get(0).invoke(req,rsp, apiHandler);
+            return;
+          }
           if (method == POST) {
             List<CommandOperation> cmds = req.getCommands(true);
             if (cmds.size() > 1)

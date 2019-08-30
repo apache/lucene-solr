@@ -56,7 +56,6 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -126,7 +125,6 @@ public class BlobRepository {
           return MapWriter.EMPTY;
         }
       }
-
     }
     return ew -> dir.listFiles((f, name) -> {
       if (sha256 == null || name.equals(sha256)) {
@@ -153,17 +151,14 @@ public class BlobRepository {
     coreContainer.getUpdateShardHandler().getUpdateExecutor().submit(() -> {
       String fromUrl = url.replace("/solr", "/api") + "/node/blob/" + sha256;
       try {
-        Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), fromUrl, is -> {
-          ByteBuffer b = SimplePostTool.inputStreamToByteArray(is);
-          String actualSha256 = sha256Digest(b);
-          if (sha256.equals(actualSha256)) {
-            putBlob(b, sha256);
-            result[0] = b;
-          } else {
-            log.error("expected sha256 : {} actual sha256: {} from blob downloaded from {} ", sha256, actualSha256, fromNode);
-          }
-
-        });
+        HttpClient httpClient = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
+        result[0] = Utils.executeGET(httpClient, fromUrl, Utils.newBytesConsumer((int) MAX_JAR_SIZE));
+        String actualSha256 = sha256Digest(result[0]);
+        if (sha256.equals(actualSha256)) {
+          putBlob(result[0], sha256);
+        } else {
+          log.error("expected sha256 : {} actual sha256: {} from blob downloaded from {} ", sha256, actualSha256, fromNode);
+        }
       } catch (IOException e) {
         log.error("Unable to fetch jar: {} from node: {}", sha256, fromNode);
       }
@@ -269,9 +264,7 @@ public class BlobRepository {
 
   private ByteBuffer fetchFromOtherNodes(String sha256) {
     ByteBuffer[] result = new ByteBuffer[1];
-    Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
-    ArrayList<String> l = new ArrayList(liveNodes);
-    Collections.shuffle(l, RANDOM);
+    ArrayList<String> l = shuffledNodes();
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add(SHA256, sha256);
     ZkStateReader stateReader = coreContainer.getZkController().getZkStateReader();
@@ -280,14 +273,13 @@ public class BlobRepository {
         String baseurl = stateReader.getBaseUrlForNodeName(liveNode);
         String url = baseurl.replace("/solr", "/api");
         String reqUrl = url + "/node/blob?wt=javabin&omitHeader=true&sha256=" + sha256;
-        boolean[] nodeHasBlob = new boolean[]{false};
-        Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), reqUrl, is -> {
-          Object nl = new JavaBinCodec().unmarshal(is);
-          if (Utils.getObjectByPath(nl, false, Arrays.asList("blob", sha256)) != null) {
-            nodeHasBlob[0] = true;
-          }
-        });
-        if (nodeHasBlob[0]) {
+        boolean nodeHasBlob = false;
+        Object nl = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), reqUrl, Utils.JAVABINCONSUMER);
+        if (Utils.getObjectByPath(nl, false, Arrays.asList("blob", sha256)) != null) {
+          nodeHasBlob = true;
+        }
+
+        if (nodeHasBlob) {
           result[0] = fetchBlobFromNodeAndPersist(sha256, liveNode);
           if (result[0] != null) break;
         }
@@ -297,6 +289,16 @@ public class BlobRepository {
     }
 
     return result[0];
+  }
+
+  /** get a list of nodes randomly shuffled
+   * * @lucene.internal
+   */
+  public ArrayList<String> shuffledNodes() {
+    Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
+    ArrayList<String> l = new ArrayList(liveNodes);
+    Collections.shuffle(l, RANDOM);
+    return l;
   }
 
   private ByteBuffer getAndValidate(String key, String url, String sha256) throws IOException {
