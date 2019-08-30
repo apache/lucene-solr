@@ -73,8 +73,6 @@ public class QuadPrefixTree extends LegacyPrefixTree {
 
   final double[] levelW;
   final double[] levelH;
-  final int[]    levelS; // side
-  final int[]    levelN; // number
 
   protected boolean robust = true; // for backward compatibility, use the old method if user specified old version.
 
@@ -88,8 +86,6 @@ public class QuadPrefixTree extends LegacyPrefixTree {
 
     levelW = new double[maxLevels + 1];
     levelH = new double[maxLevels + 1];
-    levelS = new int[maxLevels + 1];
-    levelN = new int[maxLevels + 1];
 
     gridW = xmax - xmin;
     gridH = ymax - ymin;
@@ -97,14 +93,10 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     this.ymid = ymin + gridH/2.0;
     levelW[0] = gridW/2.0;
     levelH[0] = gridH/2.0;
-    levelS[0] = 2;
-    levelN[0] = 4;
 
     for (int i = 1; i < levelW.length; i++) {
       levelW[i] = levelW[i - 1] / 2.0;
       levelH[i] = levelH[i - 1] / 2.0;
-      levelS[i] = levelS[i - 1] * 2;
-      levelN[i] = levelN[i - 1] * 4;
     }
   }
 
@@ -129,8 +121,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     nf.setMinimumIntegerDigits(3);
 
     for (int i = 0; i < maxLevels; i++) {
-      out.println(i + "]\t" + nf.format(levelW[i]) + "\t" + nf.format(levelH[i]) + "\t" +
-          levelS[i] + "\t" + (levelS[i] * levelS[i]));
+      out.println(i + "]\t" + nf.format(levelW[i]) + "\t" + nf.format(levelH[i]));
     }
   }
 
