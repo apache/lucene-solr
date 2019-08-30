@@ -29,12 +29,12 @@ The *search* function can be used to search a Solr Cloud collection and return a
 result set.
 
 Below is an example of the most basic *search* function called from the Zeppelin-Solr interpreter.
-Zeppelin-Solr sends the *seach(testapp)* call to the /stream handler and displays the results
+Zeppelin-Solr sends the *seach(logs)* call to the /stream handler and displays the results
 in *table* format.
 
 
-In the example the search function passed only the name of the collection being search. This returns
-a result set of 10 records showing all fields in and unspecified order. This simple function is useful
+In the example the search function is passed only the name of the collection being searched. This returns
+a result set of 10 records showing all fields in an unspecified order. This simple function is useful
 for exploring the fields in the data and understanding how to start refining the search criteria.
 
 image::images/math-expressions/search1.png[]
