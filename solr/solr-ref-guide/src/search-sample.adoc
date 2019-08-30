@@ -39,7 +39,7 @@ for exploring the fields in the data and understanding how to start refining the
 
 image::images/math-expressions/search1.png[]
 
-=== Searching and Sorting
+=== Sorting
 
 Once the format of the records is known, parameters can be added to the *search* function to begin analyzing
 the data.
@@ -137,15 +137,24 @@ aggregations that behave in a similar manner to SQL group by aggregations.
 Under the cover the `facet` function pushes down the aggregation to Solr's
 JSON facet api for fast distributed execution.
 
-The example below performs a single dimension aggregation.
+The example below performs a single dimension aggregation from the nyc311 (NYC complaints) collection.
+The aggregation returns the top five
+*complaint types* by *count* for records with a status of *Pending*. The results is displayed
+in with Zeppelin-Solr in a table.
 
 image::images/math-expressions/facettab1.png[]
 
+The example below shows the table visualized using a pie chart.
+
 image::images/math-expressions/facetviz1.png[]
 
-The example below performas multi-dimension aggretation.
+The example below shows the table visualized using a pie chart. Notice that *buckets* parameter now
+contains two dimensions: borough_s and complaint_type_s. The result of this is the top 20
+combinations of borough and complaint type by count.
 
 image::images/math-expressions/facettab2.png[]
+
+The example below shows the multi-dimension aggregation visualized as a grouped bar chart.
 
 image::images/math-expressions/facetviz2.png[]
 
