@@ -17,7 +17,7 @@
 
 package org.apache.lucene.search;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -29,7 +29,7 @@ abstract class HitsThresholdChecker implements BooleanSupplier {
    */
   private static class GlobalHitsThresholdChecker extends HitsThresholdChecker {
     private final int totalHitsThreshold;
-    private final AtomicInteger globalHitCount;
+    private final LongAdder globalHitCount;
 
     public GlobalHitsThresholdChecker(int totalHitsThreshold) {
 
@@ -38,17 +38,17 @@ abstract class HitsThresholdChecker implements BooleanSupplier {
       }
 
       this.totalHitsThreshold = totalHitsThreshold;
-      this.globalHitCount = new AtomicInteger();
+      this.globalHitCount = new LongAdder();
     }
 
     @Override
     public void incrementHitCount() {
-      globalHitCount.incrementAndGet();
+      globalHitCount.increment();
     }
 
     @Override
     public boolean getAsBoolean() {
-      return globalHitCount.getAcquire() > totalHitsThreshold;
+      return globalHitCount.intValue() > totalHitsThreshold;
     }
 
     @Override
