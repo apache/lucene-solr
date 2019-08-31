@@ -64,7 +64,7 @@ Upgrade Notes
 * SOLR-11266: default Content-Type override for JSONResponseWriter from _default configSet is removed. Example has been
   provided in sample_techproducts_configs to override content-type. (Ishan Chattopadhyaya, Munendra S N, Gus Heck)
 
-* SOLR-13593 SOLR-13690: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
+* SOLR-13593 SOLR-13690 SOLR-13691: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
 
 Other Changes
 ----------------------
