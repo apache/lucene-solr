@@ -18,6 +18,8 @@
 
 Schemaless Mode is a set of Solr features that, when used together, allow users to rapidly construct an effective schema by simply indexing sample data, without having to manually edit the schema.
 
+CAUTION: You are *strongly* urged to disable schemaless mode for production systems. Schemaless mode makes assumptions when deciding the type and use of a field the first time that field is encountered in a document. These assumptions are likely sub-optimal in many cases.
+
 These Solr features, all controlled via `solrconfig.xml`, are:
 
 . Managed schema: Schema modifications are made at runtime through Solr APIs, which requires the use of a `schemaFactory` that supports these changes. See the section <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>> for more details.
