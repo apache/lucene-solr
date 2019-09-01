@@ -66,8 +66,7 @@ configure(luceneSolrProjects) {
     
     // setup repositories
     apply from: mfile(rootProjectDir, 'buildSrc/common/configure-repositories.gradle')
-    
-    println 'apply forbidden to ' + project.name
+
     project.plugins.apply(ForbiddenApisPluginWrapper)
 }
 
@@ -82,10 +81,10 @@ configure(luceneSolrProjects) {
         '**/*.txt,',
         '**/*.iml'
       ]
+      // TODO: even if we don't have a check task, we want to run RAT - on our root files for example
       if (project.hasProperty('check')) {
         check.dependsOn ratSources
       }
-      dependsOn rootProject.project(':buildSrc').tasks.setupRatPath
   }
 }
 
@@ -125,9 +124,7 @@ configure(luceneSolrSubProjects) {
       baseDir = projectDir
       check.dependsOn checkSourcePatterns
     }
-      
 
-    
     sourceCompatibility = "11"
     targetCompatibility = "11"
     

@@ -34,13 +34,13 @@ RUN export JAVA_HOME
 
 RUN useradd -ms /bin/bash lucene
 
+# Define working directory.
+WORKDIR /home/lucene
+
 RUN mkdir -p /home/lucene/.gradle
 RUN mkdir -p /home/lucene/project
 
-# Define working directory.
-WORKDIR /home/lucene/project
-
-#RUN chown -R lucene:lucene /home/lucene
+RUN chown -R lucene:lucene /home/lucene
 
 USER lucene
 

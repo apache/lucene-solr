@@ -27,13 +27,17 @@ import org.gradle.api.tasks.TaskAction
 class TopHints extends DefaultTask {
   
   
+  public TopHints() {
+    dependsOn project.rootProject.project(':buildSrc').tasks.setupAntPaths
+  }
+  
   @TaskAction
   void execute() {
     def listMax = 10
 
     ant.taskdef(classname: 'com.carrotsearch.ant.tasks.junit4.balancers.TopHints',
     name: 'topHints',
-    classpath: project.project(":buildSrc").configurations.junit4.asPath)
+    classpath: project.rootProject.ext.junit4Path)
     
     
     println "Showing ${listMax} slowest tests according to local stats. (change with -Dmax=...)."

@@ -60,7 +60,9 @@ fi
 
 echo "Starting the container ..."
 
-docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project:cached -v ~/.gradle/caches/modules-2:/home/lucene/gradle/caches/modules-2 -v ~/.gradle/wrapper:/home/lucene/gradle/wrapper -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
+# -v ~/.gradle/wrapper:/home/lucene/gradle/wrapper
+
+docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project:cached -v ~/.gradle/caches/modules-2:/home/lucene/gradle/caches/modules-2 -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
 
 
 exec() {
@@ -69,7 +71,7 @@ exec() {
   echo "done"
 }
 
-cmd="cp -r /home/lucene/gradle/. /home/lucene/.gradle/"
+cmd="cp -r /home/lucene/gradle/. /home/lucene/.gradle/;find /home/lucene/.gradle -name '*.lck' -type f -exec rm {} \;"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
 
