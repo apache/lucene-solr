@@ -60,18 +60,5 @@ fi
 
 echo "Starting the container ..."
 
-# -v ~/.gradle/wrapper:/home/lucene/gradle/wrapper
-
-docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project:cached -v ~/.gradle/caches/modules-2:/home/lucene/gradle/caches/modules-2 -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
-
-
-exec() {
-  echo "exec: $1"
-  docker exec --user ${UID} $2 -t ${CONTAINER_NAME} bash -c "$1"
-  echo "done"
-}
-
-cmd="cp -r /home/lucene/gradle/. /home/lucene/.gradle/;find /home/lucene/.gradle -name '*.lck' -type f -exec rm {} \;"
-exec "${cmd}" "${exec_args}" || { exit 1; }
-
+docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project:cached -v ~/.gradle/caches/modules-2:/home/lucene/.gradle/caches/modules-2:cached -v ~/.gradle/wrapper:/home/lucene/.gradle/wrapper:cached -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
 
