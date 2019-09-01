@@ -37,6 +37,10 @@ class JFlex extends DefaultTask {
   @OutputDirectory
   File target
   
+  public JFlex() {
+    dependsOn project.rootProject.project(':buildSrc').tasks.setupAntPaths
+  }
+  
   @TaskAction
   void jflex() {
     def skeleton
@@ -48,7 +52,7 @@ class JFlex extends DefaultTask {
     
     ant.taskdef(classname: 'jflex.anttask.JFlexTask',
     name: 'jflex',
-    classpath: project.project(":buildSrc").configurations.jflex.asPath)
+    classpath: project.rootProject.ext.jflexPath)
     
     ant.jflex(file: inputDir.getAbsolutePath() + File.separator + fileName + ".jflex", outdir: target.getAbsolutePath(), nobak: 'on', skeleton: skeleton)
     
