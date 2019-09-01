@@ -60,5 +60,8 @@ fi
 
 echo "Starting the container ..."
 
-docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project:cached -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
+# we don't currently use :cached or :delegated for osx perf, or copy or map in .gradle for caching becuase of issues getting things to work on linux and osx - ideally we use linux because osx will likely be very slow
+# this will also likley download a lot on first run
+
+docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
 
