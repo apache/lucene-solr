@@ -78,9 +78,12 @@ sourceSets {
   }
 }
 
-task setupRatPath {
+task setupAntPaths {
   doFirst {
     project.rootProject.ext.ratPath = configurations.rat.asPath
+    project.rootProject.ext.javaccPath = configurations.javacc.asPath
+    project.rootProject.ext.jflexPath = configurations.jflex.asPath
+    project.rootProject.ext.junit4Path = configurations.junit4.asPath
   }
 }
 
@@ -111,10 +114,8 @@ clean.doLast {
   file("$buildDir/pluginUnderTestMetadata").mkdirs()
 }
 
-println 'root project is ' + project.rootProject.name
 if (project.rootProject != project) {
   forbiddenApis {
-    println 'sigs '  + signatures
     signatures -= ['java.io.File']
   }
 }

@@ -31,6 +31,10 @@ class JavaCC extends DefaultTask {
   @OutputDirectory
   File target
   
+  public JavaCC() {
+    dependsOn project.rootProject.project(':buildSrc').tasks.setupAntPaths
+  }
+  
   @TaskAction
   void javacc() {
     
@@ -58,7 +62,7 @@ class JavaCC extends DefaultTask {
     
     ant.taskdef(classname: 'org.apache.tools.ant.taskdefs.optional.javacc.JavaCC',
     name: 'javacc',
-    classpath: project.project(':buildSrc').configurations.javacc.asPath)
+    classpath: project.rootProject.ext.javaccPath)
 
     project.mkdir(target)
     
