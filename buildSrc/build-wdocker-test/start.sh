@@ -60,5 +60,5 @@ fi
 
 echo "Starting the container ..."
 
-docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project:cached -v ~/.gradle/caches/modules-2:/home/lucene/.gradle/caches/modules-2:cached -v ~/.gradle/wrapper:/home/lucene/.gradle/wrapper:cached -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
+docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project:cached -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
 
