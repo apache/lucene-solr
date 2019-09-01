@@ -39,6 +39,8 @@ WORKDIR /home/lucene
 
 RUN chown -R lucene:lucene /home/lucene
 
+RUN chmod -R 755 /home/lucene
+
 USER lucene
 
 ENV PATH $PATH:/usr/local/icu4c-64_2-Ubuntu18.04-x64/icu/usr/local/bin
