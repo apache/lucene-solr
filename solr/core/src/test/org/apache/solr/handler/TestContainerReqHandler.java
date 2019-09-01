@@ -292,7 +292,9 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
     Pair<Server, Integer> server = runHttpServer(jars);
     int port = server.second();
-    MiniSolrCloudCluster cluster = configureCluster(4).configure();
+    MiniSolrCloudCluster cluster = configureCluster(4)
+        .withJettyConfig(jetty -> jetty.enableV2(true))
+        .configure();
 
     try {
 
@@ -383,7 +385,9 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
     Pair<Server, Integer> server = runHttpServer(jars);
     int port = server.second();
-    MiniSolrCloudCluster cluster = configureCluster(4).configure();
+    MiniSolrCloudCluster cluster = configureCluster(4)
+        .withJettyConfig(jetty -> jetty.enableV2(true))
+        .configure();
 
     try {
 
@@ -452,7 +456,9 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
 
   @Test
   public void testSetClusterReqHandler() throws Exception {
-    MiniSolrCloudCluster cluster = configureCluster(4).configure();
+    MiniSolrCloudCluster cluster = configureCluster(4)
+        .withJettyConfig(jetty -> jetty.enableV2(true))
+        .configure();
     try {
       SolrZkClient zkClient = cluster.getZkClient();
       new V2Request.Builder("/cluster")
@@ -495,6 +501,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
     int port = server.second();
     System.setProperty("enable.runtime.lib", "true");
     MiniSolrCloudCluster cluster = configureCluster(4)
+        .withJettyConfig(jetty -> jetty.enableV2(true))
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     try {
@@ -705,6 +712,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
         "          \"size\":\"512\",\n" +
         "          \"initialSize\":\"512\" , \"package\":\"cache_pkg\"}}}}";
     MiniSolrCloudCluster cluster = configureCluster(4)
+        .withJettyConfig(jetty -> jetty.enableV2(true))
         .addConfig("conf", configset("cloud-minimal"),
             Collections.singletonMap(ConfigOverlay.RESOURCE_NAME, overlay.getBytes(UTF_8)))
         .configure();

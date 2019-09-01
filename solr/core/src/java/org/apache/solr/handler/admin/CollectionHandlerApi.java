@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.http.client.HttpClient;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
@@ -303,7 +304,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
 
     ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
     for (String nodeName : zkStateReader.getClusterState().getLiveNodes()) {
-      PerNodeCallable e = new PerNodeCallable(zkStateReader.getBaseUrlForNodeName(nodeName), expectedVersion, waitTimeSecs);
+      PerNodeCallable e = new PerNodeCallable(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), zkStateReader.getBaseUrlForNodeName(nodeName), expectedVersion, waitTimeSecs);
       concurrentTasks.add(e);
     }
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
@@ -379,11 +380,15 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
   }
 
   public static class PerNodeCallable extends SolrConfigHandler.PerReplicaCallable {
+    private final HttpClient httpClient;
+    final String v2Url ;
 
     static final List<String> path = Arrays.asList("metadata", CommonParams.VERSION);
 
-    PerNodeCallable(String baseUrl, int expectedversion, int waitTime) {
+    PerNodeCallable(HttpClient httpClient, String baseUrl, int expectedversion, int waitTime) {
       super(baseUrl, ConfigOverlay.ZNODEVER, expectedversion, waitTime);
+      this.httpClient = httpClient;
+      v2Url = baseUrl.replace("/solr","/api") +"/node/ext?wt=javabin&omitHeader=true";
     }
 
     @Override
@@ -395,9 +400,38 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       return false;
     }
 
-    public String getPath() {
-      return "/____v2/node/ext";
+
+    @Override
+    public Boolean call() throws Exception {
+      final RTimer timer = new RTimer();
+      int attempts = 0;
+
+        // eventually, this loop will get killed by the ExecutorService's timeout
+        while (true) {
+          try {
+            long timeElapsed = (long) timer.getTime() / 1000;
+            if (timeElapsed >= maxWait) {
+              return false;
+            }
+            log.debug("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
+            Thread.sleep(100);
+            MapWriter resp = (MapWriter) Utils.executeGET(httpClient, v2Url, Utils.JAVABINCONSUMER);
+            if (verifyResponse(resp, attempts)){
+
+              break;
+            }
+            attempts++;
+          } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+              break; // stop looping
+            } else {
+              log.warn("Failed to execute " + v2Url + " due to: " + e);
+            }
+          }
+        }
+      return true;
     }
+
   }
 
   static class ApiInfo {

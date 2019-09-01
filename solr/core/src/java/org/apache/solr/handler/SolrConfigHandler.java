@@ -307,7 +307,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     String prop;
     protected int expectedZkVersion;
     protected Number remoteVersion = null;
-    int maxWait;
+    protected int maxWait;
 
     public PerReplicaCallable(String coreUrl, String prop, int expectedZkVersion, int maxWait) {
       super(METHOD.GET, "/config/" + ZNODEVER);
