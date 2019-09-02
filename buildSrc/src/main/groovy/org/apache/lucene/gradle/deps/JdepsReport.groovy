@@ -94,7 +94,7 @@ class JdepsReport extends DefaultTask {
       configuration = project.useConfiguration
     }
     doFirst {
-      println "Writing output files to ${target}"
+      logger.info("Writing output files to ${target}")
     }
     
     // make sure all the jars are built
