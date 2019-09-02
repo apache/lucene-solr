@@ -32,8 +32,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
- * {@inheritDoc}
- * <p>
  * Extends {@link SearchGroupsResultTransformer} and overrides the <code>serializeOneSearchGroup</code>,
  * <code>deserializeOneSearchGroup</code> and <code>getSortValues</code> methods because additional data
  * (top doc id and top doc score) needs to be transformed for each group.
