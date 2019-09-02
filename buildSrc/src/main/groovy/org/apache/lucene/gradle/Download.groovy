@@ -39,7 +39,7 @@ class Download extends DefaultTask {
   String sourceUrl
   
   @Input 
-  boolean overwrite = false;
+  boolean overwrite = false
   
   @OutputFile
   File target

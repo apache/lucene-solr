@@ -60,6 +60,10 @@ class MissingDeps extends DefaultTask {
   
   protected configuration = "runtimeClasspath"
   
+  class NotFoundResult {
+    StringBuilder sb = new StringBuilder()
+  }
+  
   @TaskAction
   void execute() {
     
@@ -79,25 +83,28 @@ class MissingDeps extends DefaultTask {
     
     File dotFile = project.mfile(inputDirectory, 'jdepsDir/' + topLvlProject.name +  "/" + "${project.name}-${project.version}/${project.name}-${project.version}.jar.dot")
     
-    println ''
-    println 'Possibly missing deps (if the dot file is listed with no violations, it has violations that were excluded):'
-    println ''
+    StringBuilder sb = new StringBuilder()
+    
+    sb.append '\n'
+    sb.append 'Possibly missing deps (if the dot file is listed with no violations, it has violations that were excluded):\n'
+    sb.append '\n'
+    
+    List<NotFoundResult> notFoundResults = new ArrayList<>()
     
     boolean nothingFound = true
     project.fileTree(project.mfile(inputDirectory, 'jdepsDir')) {
-      
-      println 'depExcludes ' + depExcludes
-      println 'foundInClassExcludes ' + foundInClassExcludes
-      println 'classExcludes ' + classExcludes
+
       for (String ex : depExcludes) {
         exclude ex
       }
       include "**/*.dot"
       exclude "**/summary.dot"
     }.each {
+      NotFoundResult nfr = new NotFoundResult()
+      
       if (it.text.contains("(not found)")) {
-        println ''
-        println it.getParentFile().name + '/' + it.name + ':'
+        nfr.sb.append '\n'
+        nfr.sb.append it.getParentFile().name + '/' + it.name + ':'
         
         String ourArtifactNameAndVersion = ''
         Matcher dotFileNameMatcher = dotFilePattern.matcher(it.name)
@@ -136,7 +143,8 @@ class MissingDeps extends DefaultTask {
             }
             if (!excluded) {
               nothingFound = false
-              println line
+              nfr.sb.append line + '\n'
+              notFoundResults.add(nfr)
             }
             
           }
@@ -145,16 +153,21 @@ class MissingDeps extends DefaultTask {
     }
     
     if (nothingFound) {
-      println ''
-      println 'No potential missing deps found!'
+      sb.append '\n'
+      sb.append 'No potential missing deps found!\n'
+      //logger.quiet(sb.toString())
     } else {
+      logger.error(sb.toString())
+      for (NotFoundResult nfr : notFoundResults) {
+        logger.error nfr.asBoolean().toString()
+      }
       throw new GradleException("Missing dependencies found! Add them or add an exclusion if they are actually not necessary.")
     }
   }
   
   @InputDirectory
   public File getInputDirectory() {
-    return inputDirectory;
+    return inputDirectory
   }
   
   @Input
@@ -176,7 +189,7 @@ class MissingDeps extends DefaultTask {
     for (String pattern : arg0) {
       foundInClassExcludes.add(pattern)
     }
-    return this;
+    return this
   }
   
   public MissingDeps foundInClassExclude(String... arg0) {
@@ -204,9 +217,9 @@ class MissingDeps extends DefaultTask {
       }
     }
     for (String pattern : arg0) {
-      classExcludes.add(pattern);
+      classExcludes.add(pattern)
     }
-    return this;
+    return this
   }
   
   @Input
@@ -230,9 +243,9 @@ class MissingDeps extends DefaultTask {
       }
     }
     for (String pattern : arg0) {
-      depExcludes.add(pattern);
+      depExcludes.add(pattern)
     }
-    return this;
+    return this
   }
   
   protected Project getTopLvlProject(Project proj) {
