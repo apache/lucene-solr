@@ -40,12 +40,12 @@ import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.CHILDDOC;
 import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
 
 /**
  * Provides methods for marshalling an UpdateRequest to a NamedList which can be serialized in the javabin format and
  * vice versa.
- *
  *
  * @see org.apache.solr.common.util.JavaBinCodec
  * @since solr 1.4
@@ -67,7 +67,6 @@ public class JavaBinUpdateRequestCodec {
    *
    * @param updateRequest the UpdateRequest to be written out
    * @param os            the OutputStream to which the request is to be written
-   *
    * @throws IOException in case of an exception during marshalling or writing to the stream
    */
   public void marshal(UpdateRequest updateRequest, OutputStream os) throws IOException {
@@ -78,11 +77,11 @@ public class JavaBinUpdateRequestCodec {
     }
     Iterator<SolrInputDocument> docIter = null;
 
-    if(updateRequest.getDocIterator() != null){
+    if (updateRequest.getDocIterator() != null) {
       docIter = updateRequest.getDocIterator();
     }
-    
-    Map<SolrInputDocument,Map<String,Object>> docMap = updateRequest.getDocumentsMap();
+
+    Map<SolrInputDocument, Map<String, Object>> docMap = updateRequest.getDocumentsMap();
 
     nl.add("params", params);// 0: params
     if (updateRequest.getDeleteByIdMap() != null) {
@@ -125,7 +124,7 @@ public class JavaBinUpdateRequestCodec {
     try (JavaBinCodec codec = new StreamingCodec(namedList, updateRequest, handler)) {
       codec.unmarshal(is);
     }
-    
+
     // NOTE: if the update request contains only delete commands the params
     // must be loaded now
     if(updateRequest.getParams()==null) {
@@ -145,11 +144,11 @@ public class JavaBinUpdateRequestCodec {
     } else {
       docMap = (List<Entry<SolrInputDocument, Map<Object, Object>>>) docsMapObj;
     }
-    
+
 
     // we don't add any docs, because they were already processed
     // deletes are handled later, and must be passed back on the UpdateRequest
-    
+
     if (delById != null) {
       for (String s : delById) {
         updateRequest.deleteById(s);
@@ -167,7 +166,7 @@ public class JavaBinUpdateRequestCodec {
         } else {
           updateRequest.deleteById(entry.getKey());
         }
-  
+
       }
     }
     if (delByQ != null) {
@@ -175,7 +174,7 @@ public class JavaBinUpdateRequestCodec {
         updateRequest.deleteByQuery(s);
       }
     }
-    
+
     return updateRequest;
   }
 
@@ -219,8 +218,17 @@ public class JavaBinUpdateRequestCodec {
     }
 
     @Override
+    public Object unmarshal(InputStream is) throws IOException {
+      try {
+        return super.unmarshal(is);
+      } finally {
+        if (namedList[0] == null) namedList[0] = new NamedList();
+      }
+    }
+
+    @Override
     protected SolrInputDocument createSolrInputDocument(int sz) {
-      return new MaskCharSequenceSolrInputDoc(new LinkedHashMap(sz));
+      return new MaskCharSequenceSolrInputDoc(sz == -1 ? new LinkedHashMap<>() : new LinkedHashMap(sz));
     }
 
     @Override
@@ -282,7 +290,12 @@ public class JavaBinUpdateRequestCodec {
 
 
     private List readOuterMostDocIterator(DataInputInputStream fis) throws IOException {
-      NamedList params = (NamedList) namedList[0].get("params");
+      NamedList namedList = this.namedList[0];
+      NamedList params = null;
+      if(namedList != null) {
+        params = (NamedList) namedList.get("params");
+      }
+      if(params == null) params = new NamedList();
       updateRequest.setParams(new ModifiableSolrParams(params.toSolrParams()));
       if (handler == null) return super.readIterator(fis);
       Integer commitWithin = null;
@@ -313,6 +326,8 @@ public class JavaBinUpdateRequestCodec {
               commitWithin = (Integer) p.get(UpdateRequest.COMMIT_WITHIN);
               overwrite = (Boolean) p.get(UpdateRequest.OVERWRITE);
             }
+          } else if (o instanceof Map) {
+            sdoc = convertMapToSolrInputDoc((Map) o);
           } else {
             sdoc = (SolrInputDocument) o;
           }
@@ -331,6 +346,32 @@ public class JavaBinUpdateRequestCodec {
         super.readStringAsCharSeq = false;
 
       }
+    }
+
+    @Override
+    protected Map newMap(int size) {
+      return new NamedList<>().asShallowMap(true);
+    }
+
+    private SolrInputDocument convertMapToSolrInputDoc(Map m) {
+      SolrInputDocument result = createSolrInputDocument(m.size());
+      m.forEach((k, v) -> {
+        if(CHILDDOC.equals(k.toString())){
+          if (v instanceof List) {
+            List list = (List) v;
+            for (Object o : list) {
+              if (o instanceof Map) {
+                result.addChildDocument(convertMapToSolrInputDoc((Map) o));
+              }
+            }
+          } else if(v instanceof Map){
+            result.addChildDocument(convertMapToSolrInputDoc((Map) v));
+          }
+        } else {
+          result.addField(k.toString(), v);
+        }
+      });
+      return result;
     }
 
   }

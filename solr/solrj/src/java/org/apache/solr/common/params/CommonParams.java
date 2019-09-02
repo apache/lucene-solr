@@ -231,7 +231,7 @@ public interface CommonParams {
       }
       return null;
     }
-  };
+  }
 
   /** which parameters to log (if not supplied all parameters will be logged) **/
   String LOG_PARAMS_LIST = "logParamsList";
@@ -294,6 +294,8 @@ public interface CommonParams {
   String JAVABIN_MIME = "application/javabin";
 
   String PACKAGE = "package";
+
+  String CHILDDOC = "_childDocuments_";
 
 }
 

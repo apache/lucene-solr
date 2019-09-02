@@ -417,6 +417,9 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   public Map<String,T> asShallowMap() {
+    return asShallowMap(false);
+  }
+  public Map<String,T> asShallowMap(boolean allowDps) {
     return new Map<String, T>() {
       @Override
       public int size() {
@@ -444,6 +447,9 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
       @Override
       public T put(String  key, T value) {
+        if(allowDps){
+          NamedList.this.add(key, value);
+        }
         int idx = NamedList.this.indexOf(key, 0);
         if (idx == -1) {
           NamedList.this.add(key, value);

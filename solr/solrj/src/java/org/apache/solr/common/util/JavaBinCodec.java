@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import org.apache.solr.common.ConditionalMapWriter;
+import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.IteratorWriter.ItemWriter;
@@ -531,7 +531,7 @@ public class JavaBinCodec implements PushWriter {
   //use this to ignore the writable interface because , child docs will ignore the fl flag
   // is it a good design?
   private boolean ignoreWritable =false;
-  private ConditionalMapWriter.EntryWriterWrapper cew;
+  private MapWriter.EntryWriter cew;
 
   public void writeSolrDocument(SolrDocument doc) throws IOException {
     List<SolrDocument> children = doc.getChildDocuments();
@@ -546,7 +546,7 @@ public class JavaBinCodec implements PushWriter {
     int sz = fieldsCount + (children==null ? 0 : children.size());
     writeTag(SOLRDOC);
     writeTag(ORDERED_MAP, sz);
-    if (cew == null) cew = new ConditionalMapWriter.EntryWriterWrapper(ew, (k, o) -> toWrite(k.toString()));
+    if (cew == null) cew = new ConditionalKeyMapWriter.EntryWriterWrapper(ew, (k) -> toWrite(k.toString()));
     doc.writeMap(cew);
     if (children != null) {
       try {
