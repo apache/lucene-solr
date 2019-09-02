@@ -18,30 +18,86 @@
 
 
 Monte Carlo simulations are commonly used to model the behavior of
-stochastic (random) systems. This section of the overview of Math Expressions
-Monte Carlo simulations.
+stochastic (random) systems. This section of the user guide covers
+the basics of performing Monte Carlo simulations with Math Expressions.
 
 == A Random Walk
 
-The stochastic system that will be studied is daily stock returns calculated
-as the closing price minus the opening price. These daily moves are often
-described as a "random walk" because they cannot be predicted.
+The stochastic system that will be studied below is daily stock returns
+calculated as the opening price plus the closing price. These daily moves
+are often described as a "random walk" because they cannot be predicted.
 
-The first step in understanding the random walk is to visualize it. The example
-below shows the variable *change_d* which is the daily change in stock price for
-1000 days of the *cvx* stock ticker (Chevron).
+The first step in understanding a random walk is to visualize daily stock returns.
+The example below shows the variable *change_d* which is the daily
+change in stock price for 1000 days of the *cvx* stock ticker (Chevron).
 
 image::images/math-expressions/randomwalk1.png[]
 
+Notice that the time series of daily price changes randomly jumps above and
+below zero. Some days the stock is up, some days its down, but the there
+does not seem to be a noticeable pattern that could be used to predict
+its movement. This is the first hint that the stock price is a random walk.
+
 === Auto Correlation
+
+Autocorrelation measures the degree to which a signal is correlated with itself.
+ Autocorrelation is used to determine
+if a vector contains a signal or is purely random. Its useful to plot the
+autocorrelation of the *change_d* vector
+to confirm that it is indeed random.
+
+In the example below the `conv` (convolution) function is used to autocorrelate
+the *change_d* vector.
+Notice that the `conv` function is simply "convolving" the *change_d* vector
+with a reversed copy of itself.
+This is the technique for performing autocorrelation using convolution.
+The Signal Processing section
+of the user guide covers both convolution and autocorrelation in detail.
+In this section we'll just discuss the plot.
+
+The plot shows the intensity of correlation that is calculated as the *change_d* vector is slid across
+itself by the `conv` function.
+Notice in the plot there is long period of low intensity correlation that appears
+to be random. Then in the center a peak of high intensity correlation where the vectors
+are directly lined up.
+This is followed by another long period of low intensity correlation.
+
+This is the autocorrelation plot of pure noise. The daily stock changes appear
+to be a random.
 
 image::images/math-expressions/randomwalk2.png[]
 
 === Modeling the Distribution
 
+The daily chane in stock prices cannot be predicted, but it can be modeled with a probability distribution.
+To model the time series we'll start by visualizing the distribution of the *change_d* vector. In the example
+below the `change_d` vector is plotted using the `empiricalDistribution` function to create an 11 bin
+histogram of the data. Notice that the distribution appears to be normally distributed. Daily stock price
+changes do tend to be normally distributed although *cvx* was chosen specifically
+for this example because of this characteristic.
+
 image::images/math-expressions/randomwalk3.png[]
 
+
+=== Fitting the Distribution
+
+The `ks` Test can be used to determine if the distribution of a vector of data fits a
+reference distribution.
+In the example below the `ks` test is performed with a *normal distribution* with the *mean*
+and *standard deviation* of the *change_d* vector as the reference distribution. The `ks` test is
+checking the reference distribution against the *change_d* vector itself to see if it
+fits a normal distribution.
+
+Notice in the example below the `ks` test reports a p-value of .16278. A p-value of .05 or less is typically
+used to invalidate the null hypothesis of the test which is that the vector could have been
+drawn from the reference distribution.
+
 image::images/math-expressions/randomwalk4.png[]
+
+
+The `ks` test, which tends to be fairly sensitive, confirms the visualization which appeared normal. The
+reference distribution from the *ks* test will therefor be used in the Monte Carlo simulations below.
+
 
 === Monte Carlo
 
@@ -52,6 +108,9 @@ image::images/math-expressions/randomwalk5.1.png[]
 image::images/math-expressions/randomwalk6.png[]
 
 == Multivariate Normal Distribution
+
+[0.12294442137237226, 0.13106056985285258],
+[0.13106056985285258, 0.7409729840230235]
 
 image::images/math-expressions/corrsim1.png[]
 
