@@ -154,7 +154,7 @@ In the example below the random walk is achieved by adding a random sample to th
 variable *v* on each Monte Carlo iteration. The variable `v` is maintained between
 iterations so each iteration uses the previous value of `v`. The `double` function
 is the final function run which simply retuns the value of `v` as a double on each run.
-The example interates 1000 times to create the random walk with 100 steps.
+The example interates 1000 times to create the random walk with 1000 steps.
 
 image::images/math-expressions/randomwalk6.png[]
 
