@@ -59,8 +59,8 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
       bc.accept(k, o);
     };
     _fields.forEach(wrapper);
-    if(_childDocuments!= null){
-      ew.put(CommonParams.CHILDDOC , _childDocuments);
+    if (_childDocuments != null) {
+      ew.put(CommonParams.CHILDDOC, _childDocuments);
     }
   }
 
