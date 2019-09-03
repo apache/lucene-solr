@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.security.JWTAuthPlugin.HttpsJwksFactory;
+import org.apache.solr.security.JWTAuthPlugin.IssuerConfig;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
@@ -82,8 +83,10 @@ public class JWTVerificationkeyResolverTest {
       return keysToReturnFromSecondJwk;
     });
     when(httpsJwksFactory.createList(anyList())).thenReturn(asList(firstJwkList, secondJwkList));
-    resolver = new JWTVerificationkeyResolver(new JWTAuthPlugin.IssuerConfig("foo", asList("url1", "url2")),
-        httpsJwksFactory);
+
+    IssuerConfig issuerConfig = new IssuerConfig("foo", asList("url1", "url2"));
+    issuerConfig.setHttpsJwksFactory(httpsJwksFactory);
+    resolver = new JWTVerificationkeyResolver(issuerConfig);
   }
 
   @Test

@@ -51,7 +51,6 @@ import org.slf4j.LoggerFactory;
  */
 public class JWTVerificationkeyResolver implements VerificationKeyResolver {
   private static final Logger log = LoggerFactory.getLogger(JWTVerificationkeyResolver.class);
-  private final List<HttpsJwks> httpsJwksList;
 
   private VerificationJwkSelector verificationJwkSelector = new VerificationJwkSelector();
 
@@ -60,11 +59,10 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
   /**
    * Resolves key from a list of JWKs URLs stored in IssuerConfig
    * @param issuerConfig Configuration object for the issuer
-   * @param httpsJwksFactory Factory used to create HttpsJwks objects from URLs
    */
-  public JWTVerificationkeyResolver(IssuerConfig issuerConfig, HttpsJwksFactory httpsJwksFactory) {
+  public JWTVerificationkeyResolver(IssuerConfig issuerConfig) {
     this.issuerConfig = issuerConfig;
-    this.httpsJwksList = httpsJwksFactory.createList(issuerConfig.getJwksUrl());
+    assert(issuerConfig.usesHttpsJwk());
   }
 
   @Override
@@ -75,17 +73,17 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
 
     try {
       // Add all keys into a master list
-      for (HttpsJwks hjwks : httpsJwksList) {
+      for (HttpsJwks hjwks : issuerConfig.getHttpsJwks()) {
         jsonWebKeys.addAll(hjwks.getJsonWebKeys());
       }
 
       theChosenOne = verificationJwkSelector.select(jws, jsonWebKeys);
       if (theChosenOne == null) {
         log.debug("Refreshing JWKs from all {} locations, as no suitable verification key for JWS w/ header {} was found in {}",
-            httpsJwksList.size(), jws.getHeaders().getFullHeaderAsJsonString(), jsonWebKeys);
+            issuerConfig.getHttpsJwks().size(), jws.getHeaders().getFullHeaderAsJsonString(), jsonWebKeys);
 
         jsonWebKeys.clear();
-        for (HttpsJwks hjwks : httpsJwksList) {
+        for (HttpsJwks hjwks : issuerConfig.getHttpsJwks()) {
           hjwks.refresh();
           jsonWebKeys.addAll(hjwks.getJsonWebKeys());
         }
