@@ -192,6 +192,8 @@ Bug Fixes
 
 * SOLR-13718: SPLITSHARD (async) with failures in underlying sub-operations can result in data loss (Ishan Chattopadhyaya)
 
+* SOLR-13709: Fixed distributed grouping when multiple 'fl' params are specified (hossman, Christine Poerschke)
+
 Other Changes
 ----------------------
 
