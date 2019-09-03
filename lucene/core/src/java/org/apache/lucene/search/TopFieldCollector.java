@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -135,7 +136,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
               // this document is largest than anything else in the queue, and
               // therefore not competitive.
               if (canEarlyTerminate) {
-                if (hitsThresholdChecker.getAsBoolean()) {
+                if (hitsThresholdChecker.isThresholdReached()) {
                   totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
                   throw new CollectionTerminatedException();
                 } else {
@@ -230,7 +231,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
               // this document is largest than anything else in the queue, and
               // therefore not competitive.
               if (canEarlyTerminate) {
-                if (hitsThresholdChecker.getAsBoolean()) {
+                if (hitsThresholdChecker.isThresholdReached()) {
                   totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
                   throw new CollectionTerminatedException();
                 } else {
@@ -325,7 +326,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
-    if (canSetMinScore && hitsThresholdChecker.getAsBoolean() && queueFull) {
+    if (canSetMinScore && hitsThresholdChecker.isThresholdReached() && queueFull) {
       assert bottom != null && firstComparator != null;
       float minScore = firstComparator.value(bottom.slot);
       scorer.setMinCompetitiveScore(minScore);
@@ -394,7 +395,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   /**
    * Same as above with an additional parameter to allow passing in the threshold checker
    */
-  public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
+  static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
                                          HitsThresholdChecker hitsThresholdChecker) {
 
     if (sort.fields.length == 0) {
@@ -424,6 +425,31 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
       return new PagingFieldCollector(sort, queue, after, numHits, hitsThresholdChecker);
     }
+  }
+
+  /**
+   * Create a CollectorManager which uses a shared hit counter to maintain number of hits
+   */
+  public static CollectorManager<TopFieldCollector, TopFieldDocs> createSharedManager(Sort sort, int numHits, FieldDoc after,
+                                                                                 int totalHitsThreshold) {
+    return new CollectorManager<>() {
+
+      private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(totalHitsThreshold);
+      @Override
+      public TopFieldCollector newCollector() throws IOException {
+        return create(sort, numHits, after, hitsThresholdChecker);
+      }
+
+      @Override
+      public TopFieldDocs reduce(Collection<TopFieldCollector> collectors) throws IOException {
+        final TopFieldDocs[] topDocs = new TopFieldDocs[collectors.size()];
+        int i = 0;
+        for (TopFieldCollector collector : collectors) {
+          topDocs[i++] = collector.topDocs();
+        }
+        return TopDocs.merge(sort, 0, numHits, topDocs);
+      }
+    };
   }
 
   /**

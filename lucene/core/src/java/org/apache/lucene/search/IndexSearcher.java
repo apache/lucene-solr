@@ -467,18 +467,10 @@ public class IndexSearcher {
 
     final CollectorManager<TopScoreDocCollector, TopDocs> manager = new CollectorManager<TopScoreDocCollector, TopDocs>() {
 
-      private HitsThresholdChecker hitsThresholdChecker;
+      private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
+          HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-
-        if (hitsThresholdChecker == null) {
-          if (executor == null || leafSlices.length <= 1) {
-            hitsThresholdChecker = HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD);
-          } else {
-            hitsThresholdChecker = HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
-          }
-        }
-
         return TopScoreDocCollector.create(cappedNumHits, after, hitsThresholdChecker);
       }
 
@@ -605,19 +597,11 @@ public class IndexSearcher {
 
     final CollectorManager<TopFieldCollector, TopFieldDocs> manager = new CollectorManager<TopFieldCollector, TopFieldDocs>() {
 
-      private HitsThresholdChecker hitsThresholdChecker;
+      private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
+          HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
 
       @Override
       public TopFieldCollector newCollector() throws IOException {
-
-        if (hitsThresholdChecker == null) {
-          if (executor == null || leafSlices.length <= 1) {
-            hitsThresholdChecker = HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD);
-          } else {
-            hitsThresholdChecker = HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
-          }
-        }
-
         // TODO: don't pay the price for accurate hit counts by default
         return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, hitsThresholdChecker);
       }

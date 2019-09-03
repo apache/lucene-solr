@@ -17,19 +17,18 @@
 
 package org.apache.lucene.search;
 
-import java.util.concurrent.atomic.LongAdder;
-import java.util.function.BooleanSupplier;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Used for defining custom algorithms to allow searches to early terminate
  */
-abstract class HitsThresholdChecker implements BooleanSupplier {
+abstract class HitsThresholdChecker {
   /**
    * Implementation of HitsThresholdChecker which allows global hit counting
    */
   private static class GlobalHitsThresholdChecker extends HitsThresholdChecker {
     private final int totalHitsThreshold;
-    private final LongAdder globalHitCount;
+    private final AtomicLong globalHitCount;
 
     public GlobalHitsThresholdChecker(int totalHitsThreshold) {
 
@@ -38,17 +37,17 @@ abstract class HitsThresholdChecker implements BooleanSupplier {
       }
 
       this.totalHitsThreshold = totalHitsThreshold;
-      this.globalHitCount = new LongAdder();
+      this.globalHitCount = new AtomicLong();
     }
 
     @Override
     public void incrementHitCount() {
-      globalHitCount.increment();
+      globalHitCount.incrementAndGet();
     }
 
     @Override
-    public boolean getAsBoolean() {
-      return globalHitCount.intValue() > totalHitsThreshold;
+    public boolean isThresholdReached(){
+      return globalHitCount.getAcquire() > totalHitsThreshold;
     }
 
     @Override
@@ -84,7 +83,7 @@ abstract class HitsThresholdChecker implements BooleanSupplier {
     }
 
     @Override
-    public boolean getAsBoolean() {
+    public boolean isThresholdReached() {
       return hitCount > totalHitsThreshold;
     }
 
@@ -116,4 +115,5 @@ abstract class HitsThresholdChecker implements BooleanSupplier {
   public abstract void incrementHitCount();
   public abstract ScoreMode scoreMode();
   public abstract int getHitsThreshold();
+  public abstract boolean isThresholdReached();
 }
