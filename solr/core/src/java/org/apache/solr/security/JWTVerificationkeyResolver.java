@@ -20,8 +20,9 @@ import java.io.IOException;
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import org.apache.solr.security.JWTAuthPlugin.HttpsJwksFactory;
+import org.apache.solr.security.JWTAuthPlugin.IssuerConfig;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.VerificationJwkSelector;
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * Such setups typically have support for multiple signing backends, each serving its own JWKs
  * endpoint for its keys.
  *
- * This implementation simply collects all keys from all endpoints into a single list and
+ * This implementation collects all keys from all endpoints into a single list and
  * the rest of the implementation is equivalent to that of HttpsJwksVerificationKeyResolver.
  *
  * No attempt is made to keep track of which key came from which JWKs endpoint, and if a
@@ -48,19 +49,22 @@ import org.slf4j.LoggerFactory;
  *
  * NOTE: This class can subclass HttpsJwksVerificationKeyResolver once a new version of jose4j is available
  */
-public class MultiHttpsJwksVerificationkeyResolver implements VerificationKeyResolver {
-  private static final Logger log = LoggerFactory.getLogger(MultiHttpsJwksVerificationkeyResolver.class);
-  private final List<String> locations;
+public class JWTVerificationkeyResolver implements VerificationKeyResolver {
+  private static final Logger log = LoggerFactory.getLogger(JWTVerificationkeyResolver.class);
+  private final List<HttpsJwks> httpsJwksList;
 
   private VerificationJwkSelector verificationJwkSelector = new VerificationJwkSelector();
 
-  private boolean disambiguateWithVerifySignature;
+  private IssuerConfig issuerConfig;
 
-  private List<HttpsJwks> httpsJkwsList;
-
-  public MultiHttpsJwksVerificationkeyResolver(List<HttpsJwks> httpsJkwsList) {
-    this.httpsJkwsList = httpsJkwsList;
-    this.locations = httpsJkwsList.stream().map(HttpsJwks::getLocation).collect(Collectors.toList());
+  /**
+   * Resolves key from a list of JWKs URLs stored in IssuerConfig
+   * @param issuerConfig Configuration object for the issuer
+   * @param httpsJwksFactory Factory used to create HttpsJwks objects from URLs
+   */
+  public JWTVerificationkeyResolver(IssuerConfig issuerConfig, HttpsJwksFactory httpsJwksFactory) {
+    this.issuerConfig = issuerConfig;
+    this.httpsJwksList = httpsJwksFactory.createList(issuerConfig.getJwksUrl());
   }
 
   @Override
@@ -68,60 +72,44 @@ public class MultiHttpsJwksVerificationkeyResolver implements VerificationKeyRes
     JsonWebKey theChosenOne;
     List<JsonWebKey> jsonWebKeys = new ArrayList<>();
 
+
     try {
       // Add all keys into a master list
-      for (HttpsJwks hjwks : httpsJkwsList) {
+      for (HttpsJwks hjwks : httpsJwksList) {
         jsonWebKeys.addAll(hjwks.getJsonWebKeys());
       }
 
-      theChosenOne = select(jws, jsonWebKeys);
+      theChosenOne = verificationJwkSelector.select(jws, jsonWebKeys);
       if (theChosenOne == null) {
         log.debug("Refreshing JWKs from all {} locations, as no suitable verification key for JWS w/ header {} was found in {}",
-            httpsJkwsList.size(), jws.getHeaders().getFullHeaderAsJsonString(), jsonWebKeys);
+            httpsJwksList.size(), jws.getHeaders().getFullHeaderAsJsonString(), jsonWebKeys);
 
         jsonWebKeys.clear();
-        for (HttpsJwks hjwks : httpsJkwsList) {
+        for (HttpsJwks hjwks : httpsJwksList) {
           hjwks.refresh();
           jsonWebKeys.addAll(hjwks.getJsonWebKeys());
         }
-        theChosenOne = select(jws, jsonWebKeys);
+        theChosenOne = verificationJwkSelector.select(jws, jsonWebKeys);
       }
     } catch (JoseException | IOException e) {
       StringBuilder sb = new StringBuilder();
       sb.append("Unable to find a suitable verification key for JWS w/ header ").append(jws.getHeaders().getFullHeaderAsJsonString());
       sb.append(" due to an unexpected exception (").append(e).append(") while obtaining or using keys from JWKS endpoints at ");
-      sb.append(locations);
+      sb.append(issuerConfig.getJwksUrl());
       throw new UnresolvableKeyException(sb.toString(), e);
     }
 
     if (theChosenOne == null) {
       StringBuilder sb = new StringBuilder();
       sb.append("Unable to find a suitable verification key for JWS w/ header ").append(jws.getHeaders().getFullHeaderAsJsonString());
-      sb.append(" from JWKs ").append(jsonWebKeys).append(" obtained from ").append(locations);
+      sb.append(" from JWKs ").append(jsonWebKeys).append(" obtained from ").append(issuerConfig.getJwksUrl());
       throw new UnresolvableKeyException(sb.toString());
     }
 
     return theChosenOne.getKey();
   }
 
-  private JsonWebKey select(JsonWebSignature jws, List<JsonWebKey> jsonWebKeys) throws JoseException
-  {
-    if (disambiguateWithVerifySignature)
-    {
-      return verificationJwkSelector.selectWithVerifySignatureDisambiguate(jws, jsonWebKeys);
-    }
-    else
-    {
-      return verificationJwkSelector.select(jws, jsonWebKeys);
-    }
-  }
-
-  /**
-   * Indicates whether or not to use signature verification to try and disambiguate when the normal key selection based on the JWS headers results in more than one key. Default is false.
-   * @param disambiguateWithVerifySignature boolean indicating whether or not to use signature verification to disambiguate
-   */
-  public void setDisambiguateWithVerifySignature(boolean disambiguateWithVerifySignature)
-  {
-    this.disambiguateWithVerifySignature = disambiguateWithVerifySignature;
+  IssuerConfig getIssuerConfig() {
+    return issuerConfig;
   }
 }

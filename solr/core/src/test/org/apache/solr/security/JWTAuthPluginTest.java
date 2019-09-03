@@ -29,43 +29,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.keys.BigEndianBigInteger;
-import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
-import org.jose4j.lang.JoseException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Answers;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.junit.MockitoRule;
 
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 @SuppressWarnings("unchecked")
 public class JWTAuthPluginTest extends SolrTestCaseJ4 {
@@ -79,13 +64,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Rule
   public MockitoRule mockitoRule = MockitoJUnit.rule();
-
-  @Mock
-  private HttpsJwks correctHttpsJwks;
-  @Mock
-  private HttpsJwks wrongHttpsJwks;
-  @Mock
-  private JWTAuthPlugin mockPlugin;
 
   @BeforeClass
   public static void beforeAll() throws Exception {
@@ -209,8 +187,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     authConf.put("jwkUrl", "https://127.0.0.1:9999/foo.jwk");
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
-    assertEquals("org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver",
-        plugin.verificationKeyResolver.getClass().getName());
+    JWTVerificationkeyResolver resolver = (JWTVerificationkeyResolver) plugin.verificationKeyResolver;
+    assertEquals(1, resolver.getIssuerConfig().getJwksUrl().size());
   }
 
   @Test
@@ -219,48 +197,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     authConf.put("jwkUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
-    assertEquals("org.apache.solr.security.MultiHttpsJwksVerificationkeyResolver",
-        plugin.verificationKeyResolver.getClass().getName());
-  }
-
-  /**
-   * Simulate a rotate of JWK key in IdP.
-   * Validating of JWK signature will fail since we still use old cached JWK set.
-   * Using a mock {@link HttpsJwks} we validate that plugin calls refresh() and then passes validation
-   */
-  @Test
-  public void invalidSigRefreshJwk() throws JoseException, IOException {
-    RsaJsonWebKey rsaJsonWebKey2 = RsaJwkGenerator.generateJwk(2048);
-    rsaJsonWebKey2.setKeyId("k2");
-    HashMap<String, Object> testJwkWrong = new HashMap<>();
-    testJwkWrong.put("kty", rsaJsonWebKey2.getKeyType());
-    testJwkWrong.put("e", BigEndianBigInteger.toBase64Url(rsaJsonWebKey2.getRsaPublicKey().getPublicExponent()));
-    testJwkWrong.put("use", rsaJsonWebKey2.getUse());
-    testJwkWrong.put("kid", rsaJsonWebKey2.getKeyId());
-    testJwkWrong.put("alg", rsaJsonWebKey2.getAlgorithm());
-    testJwkWrong.put("n", BigEndianBigInteger.toBase64Url(rsaJsonWebKey2.getRsaPublicKey().getModulus()));
-    JsonWebKey correctJwk = JsonWebKey.Factory.newJwk(testJwk);
-    JsonWebKey wrongJwk = JsonWebKey.Factory.newJwk(testJwkWrong);
-
-    // Configure our mock plugin with URL as jwk source
-    //plugin = mock(JWTAuthPlugin.class, withSettings().defaultAnswer(Answers.CALLS_REAL_METHODS));
-
-
-    when(correctHttpsJwks
-        .getJsonWebKeys())
-        .thenReturn(Arrays.asList(correctJwk));
-    when(wrongHttpsJwks
-        .getJsonWebKeys())
-        .thenReturn(Arrays.asList(wrongJwk));
-
-    HashMap<String, Object> pluginConfigJwkUrl = new HashMap<>();
-    pluginConfigJwkUrl.put("class", "org.apache.solr.security.JWTAuthPlugin");
-    pluginConfigJwkUrl.put("jwkUrl", "https://example.com/");
-    plugin.init(pluginConfigJwkUrl);
-
-    assertTrue(plugin.verificationKeyResolver instanceof HttpsJwksVerificationKeyResolver);
-    // NOCOMMIT: Add real tests
-    //assertEquals(plugin.verificationKeyResolver.resolveKey());
+    JWTVerificationkeyResolver resolver = (JWTVerificationkeyResolver) plugin.verificationKeyResolver;
+    assertEquals(2, resolver.getIssuerConfig().getJwksUrl().size());
   }
 
   @Test
