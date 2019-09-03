@@ -24,12 +24,14 @@ the basics of performing Monte Carlo simulations with Math Expressions.
 == A Random Walk
 
 The stochastic system that will be studied below is daily stock returns
-calculated as the opening price plus the closing price. These daily moves
-are often described as a "random walk" because they cannot be predicted.
+calculated as the closing price minus the opening price. The daily movement
+of stock prices is often described as a "random walk" because it cannot
+be predicted.
 
-The first step in understanding a random walk is to visualize daily stock returns.
-The example below shows the variable *change_d* which is the daily
-change in stock price for 1000 days of the *cvx* stock ticker (Chevron).
+The first step in understanding a random walk is to visualize
+daily stock returns. The example plots the variable *change_d*
+which is the daily change in stock price for 1000 days of the *cvx*
+stock ticker (Chevron).
 
 image::images/math-expressions/randomwalk1.png[]
 
