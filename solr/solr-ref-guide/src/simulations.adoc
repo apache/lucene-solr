@@ -35,18 +35,19 @@ stock ticker (Chevron).
 
 image::images/math-expressions/randomwalk1.png[]
 
-Notice that the time series of daily price changes randomly jumps above and
+Notice that the time series of daily price changes randomly moves above and
 below zero. Some days the stock is up, some days its down, but the there
-does not seem to be a noticeable pattern that could be used to predict
+does not seem to be a noticeable pattern that can be used to predict
 its movement. This is the first hint that the stock price is a random walk.
 
 === Auto Correlation
 
 Autocorrelation measures the degree to which a signal is correlated with itself.
- Autocorrelation is used to determine
-if a vector contains a signal or is purely random. Its useful to plot the
-autocorrelation of the *change_d* vector
-to confirm that it is indeed random.
+ Autocorrelation can be used to determine
+if a vector contains a signal or if there is dependency between values in a time series. If there is no
+signal and no dependency between values in the time series then the time series is random.
+
+Its useful to plot the autocorrelation of the *change_d* vector to confirm that it is indeed random.
 
 In the example below the `conv` (convolution) function is used to autocorrelate
 the *change_d* vector.
