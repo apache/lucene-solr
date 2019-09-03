@@ -111,7 +111,7 @@ public class SkipSecondStepSearchGroupShardResponseProcessor extends SearchGroup
 
       final GroupingSpecification groupingSpecification = rb.getGroupingSpec();
 
-      final TopGroups<BytesRef> topMergedGroups = new TopGroups<BytesRef>(
+      final TopGroups<BytesRef> topMergedGroups = new TopGroups<>(
           groupingSpecification.getGroupSortSpec().getSort().getSort(),
           groupingSpecification.getWithinGroupSortSpec().getSort().getSort(),
           0, /*Set totalHitCount to 0 as we can't computed it as is */
