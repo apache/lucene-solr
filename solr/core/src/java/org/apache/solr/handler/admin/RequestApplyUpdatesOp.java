@@ -19,12 +19,14 @@ package org.apache.solr.handler.admin;
 
 import java.util.concurrent.Future;
 
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.store.blob.process.CoreUpdateTracker;
 import org.apache.solr.update.UpdateLog;
 
 class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
@@ -46,6 +48,7 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
         CoreAdminOperation.log().info("No buffered updates available. core=" + cname);
         it.rsp.add("core", cname);
         it.rsp.add("status", "EMPTY_BUFFER");
+        pushToSharedStore(core);
         return;
       }
       UpdateLog.RecoveryInfo report = future.get();
@@ -53,6 +56,9 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
         SolrException.log(CoreAdminOperation.log(), "Replay failed");
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Replay failed");
       }
+
+      pushToSharedStore(core);  // we want to do this before setting ACTIVE
+      // TODO: why is replica only set to ACTIVE if there were buffered updates?
       coreContainer.getZkController().publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
       it.rsp.add("core", cname);
       it.rsp.add("status", "BUFFER_APPLIED");
@@ -66,6 +72,22 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not apply buffered updates", e);
     } finally {
       if (it.req != null) it.req.close();
+    }
+  }
+
+
+  private void pushToSharedStore(SolrCore core) {
+    // Push the index to blob storage before we set our state to ACTIVE
+    CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
+    if (cloudDesc.getReplicaType().equals(Replica.Type.SHARED)) {
+      CoreContainer cc = core.getCoreContainer();
+      CoreUpdateTracker sharedCoreTracker = new CoreUpdateTracker(cc);
+
+      sharedCoreTracker.persistShardIndexToSharedStore(
+          cc.getZkController().zkStateReader.getClusterState(),
+          cloudDesc.getCollectionName(),
+          cloudDesc.getShardId(),
+          core.getName());
     }
   }
 }

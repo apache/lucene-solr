@@ -456,6 +456,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           .assignTlogReplicas(numTlog.get())
           .assignPullReplicas(numPull.get())
           .assignSharedReplicas(numShared.get())
+          .setSharedIndex(collection.getSharedIndex())
           .onNodes(new ArrayList<>(clusterState.getLiveNodes()))
           .build();
       Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
