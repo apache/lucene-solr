@@ -447,7 +447,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
       @Override
       public T put(String  key, T value) {
-        if(allowDps){
+        if (allowDps) {
           NamedList.this.add(key, value);
           return null;
         }
@@ -457,7 +457,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
         } else {
           NamedList.this.setVal(idx, value);
         }
-        return  null;
+        return null;
       }
 
       @Override
