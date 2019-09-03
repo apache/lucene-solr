@@ -333,13 +333,13 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "positionIncrementGap":"100",
      "analyzer" : {
         "charFilters":[{
-           "class":"solr.PatternReplaceCharFilterFactory",
+           "name":"patternReplace",
            "replacement":"$1$1",
            "pattern":"([a-zA-Z])\\\\1+" }],
         "tokenizer":{
-           "class":"solr.WhitespaceTokenizerFactory" },
+           "name":"whitespace" },
         "filters":[{
-           "class":"solr.WordDelimiterFilterFactory",
+           "name":"wordDelimiter",
            "preserveOriginal":"0" }]}}
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
@@ -361,11 +361,11 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "class":"solr.TextField",
      "indexAnalyzer":{
         "tokenizer":{
-           "class":"solr.PathHierarchyTokenizerFactory",
+           "name":"pathHierarchy",
            "delimiter":"/" }},
      "queryAnalyzer":{
         "tokenizer":{
-           "class":"solr.KeywordTokenizerFactory" }}}
+           "name":"keyword" }}}
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
 ====
@@ -383,11 +383,11 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "class":"solr.TextField",
      "indexAnalyzer":{
         "tokenizer":{
-           "class":"solr.PathHierarchyTokenizerFactory",
+           "name":"pathHierarchy",
            "delimiter":"/" }},
      "queryAnalyzer":{
         "tokenizer":{
-           "class":"solr.KeywordTokenizerFactory" }}}
+           "name":"keyword" }}}
 }' http://localhost:8983/api/cores/gettingstarted/schema
 ----
 ====
@@ -446,7 +446,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "positionIncrementGap":"100",
      "analyzer":{
         "tokenizer":{
-           "class":"solr.StandardTokenizerFactory" }}}
+           "name":"standard" }}}
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
 ====
@@ -463,7 +463,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "positionIncrementGap":"100",
      "analyzer":{
         "tokenizer":{
-           "class":"solr.StandardTokenizerFactory" }}}
+           "name":"standard" }}}
 }' http://localhost:8983/api/cores/gettingstarted/schema
 ----
 ====
@@ -565,13 +565,13 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "positionIncrementGap":"100",
      "analyzer":{
         "charFilters":[{
-           "class":"solr.PatternReplaceCharFilterFactory",
+           "name":"patternReplace",
            "replacement":"$1$1",
            "pattern":"([a-zA-Z])\\\\1+" }],
         "tokenizer":{
-           "class":"solr.WhitespaceTokenizerFactory" },
+           "name":"whitespace" },
         "filters":[{
-           "class":"solr.WordDelimiterFilterFactory",
+           "name":"wordDelimiter",
            "preserveOriginal":"0" }]}},
    "add-field" : {
       "name":"sell_by",

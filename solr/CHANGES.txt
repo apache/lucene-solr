@@ -57,10 +57,14 @@ Upgrade Notes
 
 * SOLR-13596: Deprecated GroupingSpecification methods are removed. (Munendra S N)
 
+* SOLR-13649: Property 'blockUnknown' of BasicAuthPlugin and JWTAuthPlugin now defaults to 'true'. This change is backward
+  incompatible. To achieve the previous default behavior, explicitly set 'blockUnknown':'false' in security.json
+  (marcussorealheis, janhoy, shalin)
+
 * SOLR-11266: default Content-Type override for JSONResponseWriter from _default configSet is removed. Example has been
   provided in sample_techproducts_configs to override content-type. (Ishan Chattopadhyaya, Munendra S N, Gus Heck)
 
-* SOLR-13593: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
+* SOLR-13593 SOLR-13690 SOLR-13691: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
 
 Other Changes
 ----------------------
@@ -122,6 +126,8 @@ New Features
 
 * SOLR-13710: Persist package jars locally & expose them over http at /api/node/blob  (noble)
 
+* SOLR-13122: Ability to query aliases in Solr Admin UI (janhoy)
+
 * SOLR-13713: JWTAuthPlugin to support multiple JWKS endpoints (janhoy)
 
 Improvements
@@ -142,6 +148,9 @@ Improvements
   (Amrit Sarkar)
 
 * SOLR-13542: Code cleanup - Avoid using stream filter count where possible (Koen De Groote via Tomás Fernández Löbbe)
+
+* SOLR-13720: BlockJoinParentQParser.getCachedFilter()made public for accessing from QParser plugins
+  (Stanislav Livotov via Mikhail Khludnev)
 
 Bug Fixes
 ----------------------
@@ -182,6 +191,8 @@ Bug Fixes
 * SOLR-13704: Improve error message and change error code to 400 for client errors in ExpandComponent (Munendra S N)
 
 * SOLR-13699 - maxChars no longer working on CopyField with javabin (Chris Troullis via noble)
+
+* SOLR-13718: SPLITSHARD (async) with failures in underlying sub-operations can result in data loss (Ishan Chattopadhyaya)
 
 Other Changes
 ----------------------
