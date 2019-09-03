@@ -449,6 +449,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       public T put(String  key, T value) {
         if(allowDps){
           NamedList.this.add(key, value);
+          return null;
         }
         int idx = NamedList.this.indexOf(key, 0);
         if (idx == -1) {

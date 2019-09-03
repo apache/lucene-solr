@@ -218,15 +218,6 @@ public class JavaBinUpdateRequestCodec {
     }
 
     @Override
-    public Object unmarshal(InputStream is) throws IOException {
-      try {
-        return super.unmarshal(is);
-      } finally {
-        if (namedList[0] == null) namedList[0] = new NamedList();
-      }
-    }
-
-    @Override
     protected SolrInputDocument createSolrInputDocument(int sz) {
       return new MaskCharSequenceSolrInputDoc(sz == -1 ? new LinkedHashMap<>() : new LinkedHashMap(sz));
     }
@@ -290,11 +281,9 @@ public class JavaBinUpdateRequestCodec {
 
 
     private List readOuterMostDocIterator(DataInputInputStream fis) throws IOException {
+      if (this.namedList[0] == null) this.namedList[0] = new NamedList();
       NamedList namedList = this.namedList[0];
-      NamedList params = null;
-      if(namedList != null) {
-        params = (NamedList) namedList.get("params");
-      }
+      NamedList params = (NamedList) namedList.get("params");
       if(params == null) params = new NamedList();
       updateRequest.setParams(new ModifiableSolrParams(params.toSolrParams()));
       if (handler == null) return super.readIterator(fis);
@@ -346,11 +335,6 @@ public class JavaBinUpdateRequestCodec {
         super.readStringAsCharSeq = false;
 
       }
-    }
-
-    @Override
-    protected Map newMap(int size) {
-      return new NamedList<>().asShallowMap(true);
     }
 
     private SolrInputDocument convertMapToSolrInputDoc(Map m) {

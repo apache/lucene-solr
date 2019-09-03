@@ -156,6 +156,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
 
   }
 
+  //this format accepts a 1:1 mapping of the json format and javabin format
   public void testStreamableInputDocFormat() throws IOException {
     Map m = Utils.makeMap("id","1","desc" ,"The desc 1");
     m.put(CHILDDOC, (MapWriter) ew -> {
