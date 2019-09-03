@@ -182,12 +182,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
 
     List<SolrInputDocument>  l2 = new ArrayList();
 
-    new JavaBinUpdateRequestCodec().unmarshal(new ByteArrayInputStream(baos.toByteArray()), new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
-      @Override
-      public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean override) {
-        l2.add(document);
-      }
-    });
+    new JavaBinUpdateRequestCodec().unmarshal(new ByteArrayInputStream(baos.toByteArray()), (document, req, commitWithin, override) -> l2.add(document));
 
    assertEquals(l2.get(0).getChildDocuments().size(), 1);
 

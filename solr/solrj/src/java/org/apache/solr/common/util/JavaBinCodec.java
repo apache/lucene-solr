@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.EnumFieldValue;
@@ -49,6 +50,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
 import org.noggit.CharArr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -649,13 +651,14 @@ public class JavaBinCodec implements PushWriter {
   protected SolrInputDocument createSolrInputDocument(int sz) {
     return new SolrInputDocument(new LinkedHashMap<>(sz));
   }
+  static final Predicate<CharSequence> IGNORECHILDDOCS = it -> !CommonParams.CHILDDOC.equals(it.toString());
 
   public void writeSolrInputDocument(SolrInputDocument sdoc) throws IOException {
     List<SolrInputDocument> children = sdoc.getChildDocuments();
     int sz = sdoc.size() + (children==null ? 0 : children.size());
     writeTag(SOLRINPUTDOC, sz);
     writeFloat(1f); // document boost
-    sdoc.writeMap(ew);
+    sdoc.writeMap(new ConditionalKeyMapWriter.EntryWriterWrapper(ew,IGNORECHILDDOCS));
     if (children != null) {
       for (SolrInputDocument child : children) {
         writeSolrInputDocument(child);
