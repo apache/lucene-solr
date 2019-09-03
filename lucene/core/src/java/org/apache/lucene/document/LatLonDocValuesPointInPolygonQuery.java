@@ -59,7 +59,7 @@ public class LatLonDocValuesPointInPolygonQuery extends Query {
       }
     }
     this.field = field;
-    this.polygons =polygons;
+    this.polygons = polygons;
   }
 
   @Override

@@ -82,6 +82,8 @@ New Features
 
 * LUCENE-8769: Introduce Range Query For Multiple Connected Ranges (Atri Sharma)
 
+* LUCENE-8960: Introduce LatLonDocValuesPointInPolygonQuery for LatLonDocValuesField (Ignacio Vera)
+
 Improvements
 
 * LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
