@@ -20,6 +20,7 @@ package org.apache.solr.security;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.security.JWTAuthPlugin.HttpsJwksFactory;
 import org.apache.solr.security.JWTAuthPlugin.IssuerConfig;
 import org.jose4j.jwk.HttpsJwks;
@@ -31,10 +32,11 @@ import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import static java.util.Arrays.asList;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -44,9 +46,11 @@ import static org.mockito.Mockito.when;
 /**
  * Tests the multi jwks resolver that can fetch keys from multiple JWKs
  */
-@RunWith(MockitoJUnitRunner.class)
-public class JWTVerificationkeyResolverTest {
+public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
   private JWTVerificationkeyResolver resolver;
+
+  @Rule
+  public MockitoRule mockitoRule = MockitoJUnit.rule();
 
   @Mock
   private HttpsJwks firstJwkList;
@@ -65,6 +69,7 @@ public class JWTVerificationkeyResolverTest {
 
   @Before
   public void setUp() throws Exception {
+    super.setUp();
     k1 = new KeyHolder("k1");
     k2 = new KeyHolder("k2");
     k3 = new KeyHolder("k3");
@@ -87,6 +92,8 @@ public class JWTVerificationkeyResolverTest {
     IssuerConfig issuerConfig = new IssuerConfig("foo", asList("url1", "url2"));
     issuerConfig.setHttpsJwksFactory(httpsJwksFactory);
     resolver = new JWTVerificationkeyResolver(issuerConfig);
+
+    assumeWorkingMockito();
   }
 
   @Test

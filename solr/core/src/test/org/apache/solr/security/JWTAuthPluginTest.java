@@ -43,10 +43,7 @@ import org.jose4j.keys.BigEndianBigInteger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
@@ -61,9 +58,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static RsaJsonWebKey rsaJsonWebKey;
   private HashMap<String, Object> testConfig;
   private HashMap<String, Object> minimalConfig;
-
-  @Rule
-  public MockitoRule mockitoRule = MockitoJUnit.rule();
 
   @BeforeClass
   public static void beforeAll() throws Exception {

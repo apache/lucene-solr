@@ -17,11 +17,11 @@
 package org.apache.solr.security;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.solr.security.JWTAuthPlugin.HttpsJwksFactory;
 import org.apache.solr.security.JWTAuthPlugin.IssuerConfig;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * NOTE: This class can subclass HttpsJwksVerificationKeyResolver once a new version of jose4j is available
  */
 public class JWTVerificationkeyResolver implements VerificationKeyResolver {
-  private static final Logger log = LoggerFactory.getLogger(JWTVerificationkeyResolver.class);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private VerificationJwkSelector verificationJwkSelector = new VerificationJwkSelector();
 
