@@ -23,15 +23,14 @@ the basics of performing Monte Carlo simulations with Math Expressions.
 
 == A Random Walk
 
-The stochastic system that will be studied below is daily stock returns
+The stochastic system that will be explored is the movement of daily stock returns
 calculated as the closing price minus the opening price. The daily movement
-of stock prices is often described as a "random walk" because it cannot
-be predicted.
+of stock prices is often described as a "random walk". But what does that really mean?
 
 A useful first step in understanding stock prices as a random walk is to visualize
-daily stock returns as a time series. The example below plots the variable *change_d*
-which is the daily change in stock price for 1000 days of the *cvx*
-stock ticker (Chevron).
+daily stock returns as a time series. The example below uses the `search` function
+to return 1000 days of daily stock returns for the ticker *cvx* (Chevron). The *change_d*
+field, which is the change in price for the day, is then plotted as a time series.
 
 image::images/math-expressions/randomwalk1.png[]
 
@@ -49,7 +48,9 @@ signal and no dependency between values in the time series then the time series 
 
 Its useful to plot the autocorrelation of the *change_d* vector to confirm that it is indeed random.
 
-In the example below the `conv` (convolution) function is used to autocorrelate
+In the example below the search results are set to a variable and then the *change_d* field
+is vectorized and stored in variable *b*. Then the
+ `conv` (convolution) function is used to autocorrelate
 the *change_d* vector.
 Notice that the `conv` function is simply "convolving" the *change_d* vector
 with a reversed copy of itself.
@@ -72,9 +73,9 @@ image::images/math-expressions/randomwalk2.png[]
 
 === Visualizing the Distribution
 
-The daily chane in stock prices cannot be predicted, but it can be modeled with a probability distribution.
+The random daily changes in stock prices cannot be predicted, but they can be modeled with a probability distribution.
 To model the time series we'll start by visualizing the distribution of the *change_d* vector. In the example
-below the `change_d` vector is plotted using the `empiricalDistribution` function to create an 11 bin
+below the *change_d* vector is plotted using the `empiricalDistribution` function to create an 11 bin
 histogram of the data. Notice that the distribution appears to be normally distributed. Daily stock price
 changes do tend to be normally distributed although *cvx* was chosen specifically
 for this example because of this characteristic.
@@ -98,9 +99,9 @@ drawn from the reference distribution.
 image::images/math-expressions/randomwalk4.png[]
 
 
-The `ks` test, which tends to be fairly sensitive, confirms the visualization which appeared normal. The
-reference distribution from the *ks* test will therefor be used to represent the daily stock returns
-in the Monte Carlo simulations below.
+The `ks` test, which tends to be fairly sensitive, has confirmed the visualization which appeared to be normal. Because of this the
+normal distribution with the *mean* and *standard deviation* of the *change_d* vector will be used to represent the daily stock returns
+for Chevron in the Monte Carlo simulations below.
 
 === Monte Carlo
 
@@ -116,19 +117,19 @@ distributions on each run. The `sample` function is used to draw the samples.
 The simulation's result array can then be treated as an empirical distribution to understand
 the probabilities of the simulation results.
 
-The example below uses the monteCarlo function to simulate the total return
+The example below uses the `monteCarlo` function to simulate the total return
 of 100 days of stock returns.
 
-In the example a normalDistribution is created from the *mean* and *standard deviation*
+In the example a `normalDistribution` is created from the *mean* and *standard deviation*
 of the *change_d* vector. The `monteCarlo` function then draws 100 samples from the
 normal distribution to represent 100 days of stock returns and sets
-the vector of samples
-to the variable *d*.
+the vector of samples to the variable *d*.
 
 The `add` function then calculates the total return
-from the 100 day sample. The output of the final `add` function is collected by the
+from the 100 day sample. The output of the `add` function is collected by the
 `monteCarlo` function. This is repeated
-50000 times, with each run drawing a different set of samples from the normal distribution.
+50000 times, with each run drawing a different set of samples from
+the normal distribution.
 
 The result of the simulation is set to variable *s*, which contains
 the total returns from the 50000 runs.
