@@ -105,14 +105,24 @@ public class Rectangle2D {
     return bboxContainsPoint(x, y, this.minX, this.maxX, this.minY, this.maxY);
   }
 
-  /** compare this to a provided rangle bounding box **/
+  /** compare this to a provided range bounding box **/
   public Relation relateRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
-                                  int maxXOffset, int maxYOffset, byte[] maxTriangle,
-                                  boolean intersect) {
+                                  int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     Relation eastRelation = compareBBoxToRangeBBox(this.bbox,
-        minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle, intersect);
+        minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
     if (this.crossesDateline() && eastRelation == Relation.CELL_OUTSIDE_QUERY) {
-      return compareBBoxToRangeBBox(this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle, intersect);
+      return compareBBoxToRangeBBox(this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    }
+    return eastRelation;
+  }
+
+  /** intersects this to a provided range bounding box **/
+  public Relation intersectRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
+                                  int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    Relation eastRelation = intersectBBoxWithRangeBBox(this.bbox,
+        minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    if (this.crossesDateline() && eastRelation == Relation.CELL_OUTSIDE_QUERY) {
+      return intersectBBoxWithRangeBBox(this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
     }
     return eastRelation;
   }
@@ -169,56 +179,74 @@ public class Rectangle2D {
 
   /**
    * static utility method to compare a bbox with a range of triangles (just the bbox of the triangle collection)
-   *
-   * If the intersect parameter is set to true the method also checks if the same edge of both minimum bounding
-   * box and maximum bounding box is withing bbox.
    **/
   private static Relation compareBBoxToRangeBBox(final byte[] bbox,
                                                  int minXOffset, int minYOffset, byte[] minTriangle,
-                                                 int maxXOffset, int maxYOffset, byte[] maxTriangle,
-                                                 boolean intersect) {
+                                                 int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     // check bounding box (DISJOINT)
-    if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
-        Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
-        Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
-        Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0) {
+    if (disjoint(bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle)) {
       return Relation.CELL_OUTSIDE_QUERY;
     }
 
-    if (intersect) {
-      if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-          Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 ) {
-        if (Arrays.compareUnsigned(maxTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-            Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
-          return Relation.CELL_INSIDE_QUERY;
-        }
-        if (Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-            Arrays.compareUnsigned(maxTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
-          return Relation.CELL_INSIDE_QUERY;
-        }
-      }
+    if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
+        Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
+        Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 &&
+        Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+      return Relation.CELL_INSIDE_QUERY;
+    }
 
-      if (Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-          Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0 ) {
-        if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-            Arrays.compareUnsigned(minTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) >= 0) {
-          return Relation.CELL_INSIDE_QUERY;
-        }
-        if (Arrays.compareUnsigned(minTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-            Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0) {
-          return Relation.CELL_INSIDE_QUERY;
-        }
-      }
-    } else {
-      if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-          Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-          Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 &&
+    return Relation.CELL_CROSSES_QUERY;
+  }
+
+  /**
+   * static utility method to compare a bbox with a range of triangles (just the bbox of the triangle collection)
+   * for intersection
+   **/
+  private static Relation intersectBBoxWithRangeBBox(final byte[] bbox,
+                                                     int minXOffset, int minYOffset, byte[] minTriangle,
+                                                     int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    // check bounding box (DISJOINT)
+    if (disjoint(bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle)) {
+      return Relation.CELL_OUTSIDE_QUERY;
+    }
+
+    if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
+        Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 ) {
+      if (Arrays.compareUnsigned(maxTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
           Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+        return Relation.CELL_INSIDE_QUERY;
+      }
+      if (Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
+          Arrays.compareUnsigned(maxTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+        return Relation.CELL_INSIDE_QUERY;
+      }
+    }
+
+    if (Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
+        Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0 ) {
+      if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
+          Arrays.compareUnsigned(minTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) >= 0) {
+        return Relation.CELL_INSIDE_QUERY;
+      }
+      if (Arrays.compareUnsigned(minTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
+          Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0) {
         return Relation.CELL_INSIDE_QUERY;
       }
     }
 
     return Relation.CELL_CROSSES_QUERY;
+  }
+
+  /**
+   * static utility method to check a bbox is disjoint with a range of triangles
+   **/
+  private static boolean disjoint(final byte[] bbox,
+                               int minXOffset, int minYOffset, byte[] minTriangle,
+                               int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+      return Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
+          Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
+          Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
+          Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0;
   }
 
   /**
