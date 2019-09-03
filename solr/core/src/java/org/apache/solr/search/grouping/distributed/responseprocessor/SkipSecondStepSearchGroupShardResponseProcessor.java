@@ -83,8 +83,6 @@ public class SkipSecondStepSearchGroupShardResponseProcessor extends SearchGroup
      */
     @Override
     public void addSearchGroupToShards(ResponseBuilder rb, String groupField, Collection<SearchGroup<BytesRef>> mergedTopGroups) {
-      super.addSearchGroupToShards(rb, groupField, mergedTopGroups);
-
       final GroupDocs<BytesRef>[] groups = new GroupDocs[mergedTopGroups.size()];
 
       // This is the max score found in any document on any group
