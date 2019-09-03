@@ -28,15 +28,15 @@ calculated as the closing price minus the opening price. The daily movement
 of stock prices is often described as a "random walk" because it cannot
 be predicted.
 
-The first step in understanding a random walk is to visualize
-daily stock returns. The example plots the variable *change_d*
+A useful first step in understanding stock prices as a random walk is to visualize
+daily stock returns as a time series. The example below plots the variable *change_d*
 which is the daily change in stock price for 1000 days of the *cvx*
 stock ticker (Chevron).
 
 image::images/math-expressions/randomwalk1.png[]
 
-Notice that the time series of daily price changes randomly moves above and
-below zero. Some days the stock is up, some days its down, but the there
+Notice that the time series of daily price changes moves randomly above and
+below zero. Some days the stock is up, some days its down, but there
 does not seem to be a noticeable pattern that can be used to predict
 its movement. This is the first hint that the stock price is a random walk.
 
@@ -99,7 +99,8 @@ image::images/math-expressions/randomwalk4.png[]
 
 
 The `ks` test, which tends to be fairly sensitive, confirms the visualization which appeared normal. The
-reference distribution from the *ks* test will therefor be used in the Monte Carlo simulations below.
+reference distribution from the *ks* test will therefor be used to represent the daily stock returns
+in the Monte Carlo simulations below.
 
 === Monte Carlo
 
@@ -115,7 +116,7 @@ distributions on each run. The `sample` function is used to draw the samples.
 The simulation's result array can then be treated as an empirical distribution to understand
 the probabilities of the simulation results.
 
-The example below uses the monteCarlo function to simulate the combined return
+The example below uses the monteCarlo function to simulate the total return
 of 100 days of stock returns.
 
 In the example a normalDistribution is created from the *mean* and *standard deviation*
@@ -157,24 +158,116 @@ In the example below the random walk is achieved by adding a random sample to th
 variable *v* on each Monte Carlo iteration. The variable `v` is maintained between
 iterations so each iteration uses the previous value of `v`. The `double` function
 is the final function run which simply retuns the value of `v` as a double on each run.
-The example interates 1000 times to create the random walk with 1000 steps.
+The example iterates 1000 times to create a random walk with 1000 steps.
 
 image::images/math-expressions/randomwalk6.png[]
 
 == Multivariate Normal Distribution
 
-[0.12294442137237226, 0.13106056985285258],
-[0.13106056985285258, 0.7409729840230235]
+The `multiVariateNormalDistribution` function can be used to model and simulate
+two or more normally distributed variables. It also incorporates the
+*correlation* between variables into the model which allows for the study of
+how correlation effects the possible outcomes.
+
+In the examples below a simulation of the total daily returns of two
+stocks is explored. The "cvx" ticker (*Chevron*) from the previous examples is used
+along with the "all" ticker (*Allstate*). The "all" ticker" ,
+
+=== Correlation and Covariance
+
+The multivariate simulations show the effect of correlation on possible
+outcomes. Before getting started with actual simulations its useful
+to first understand the correlation and covariance between
+the Allstate and Chevron stock returns.
+
+The example below runs two searches to retrieve the daily stock returns
+for all Allstate and Chevron. The *change_d* vectors from both returns
+are read into variables (*all* and *cvx)) and Pearson's correlation is
+calculated for the two vectors with the `corr` function.
 
 image::images/math-expressions/corrsim1.png[]
 
-image::images/math-expressions/mnorm.png[]
-
-image::images/math-expressions/mnorm1.png[]
+Covariance is an unscaled measure of correlation. Covariance is the measure
+used by the multivariate simulations so its useful to also compute the
+covariance for the two stock returns. The example below computes
+the covariance.
 
 image::images/math-expressions/corrsim2.png[]
 
+=== Covariance Matrix
+
+A covariance matrix is actually whats needed by the
+`multiVariateNormalDistribution` as it contains both the variance of the
+two stock returns and the covariance between the two
+vectors. The `cov` function will compute the covariance matrix for the
+the columns of a matrix.
+
+The example below demonstrates how
+to compute the covariance matrix by adding the `all` and `cvx` vectors
+as rows to a matrix. The matrix is then transposed with the `transpose`
+function so that the `all` vector
+is the first column and the `cvx` vector is the second column.
+
+The `cov` function then computes the covariance matrix for the
+columns of the matrix and returns the result.
+
+image::images/math-expressions/corrsim3.png[]
+
+The covariance matrix is a square matrix which contains the
+variance of each vector and the covariance between the
+vectors as follows:
+
+[source,text]
+----
+          all                 cvx
+all [0.12294442137237226, 0.13106056985285258],
+cvx [0.13106056985285258, 0.7409729840230235]
+----
+
+=== Simulation
+
+The example below demonstrates a Monte Carlo simulation with two stock tickers using the
+`multiVariateNormalDistribution`.
+
+In the example, result sets with the *change_d* field for both stock tickers, *all* (Allstate) and *cvx*
+(Chevron),
+are retrieved and read into vectors.
+
+A matrix is then created from the two vectors and is transposed so
+the matrix contains two columns, one with the *all* vector and one with the *cvx* vector.
+
+Then the `multiVariateNormalDistribution` is created with two parameters. The first parameter
+is an array of *mean* values. In this case the means for the *all* vector and the *cvx* vector. The
+second parameter is the covariance matrix which was created from the 2 column matrix of the two vectors.
+
+The `monteCarlo` function then performs the simulation by drawing 100 samples from the `multiVariateNormalDistribution` on
+each iteration. Each sample set is a matrix with 100 rows and 2 columns containing stock return samples
+from the *all* and *cvx* distributions. The distributions of the columns will match the normal
+distributions used to create the `multiVariateNormalDistribution`. The covariance of the sample columns
+will match the covariance matrix.
+
+On each iteration the `grandSum` function is used to sum all the values of the sample matrix to get the total
+stock returns for both stocks.
+
+The output of the simulation is a vector which can be treated as an empirical distribution in exactly the
+same manner as the single stock ticker simulation. In this example it is plotted as a 50 bin histogram which
+visualizes the probability of the different total returns from 100 days of stock returns
+for the tickers *all* and *cvx*
+
+
+image::images/math-expressions/mnorm.png[]
+
+=== Studying the Effect Correlation
+
+The covariance matrix can be changed to study the effect on the simulation. The example
+below demonstrates this by providing a hard coded covariance matrix with a higher covariance
+value for the two vectors. This results is a simulated outcome distribution with a higher standard deviation
+or larger spread from the mean. This measures the degree that higher correlation produces higher volatility
+in the random walk.
+
 image::images/math-expressions/mnorm2.png[]
+
+
 
 
 

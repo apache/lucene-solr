@@ -21,7 +21,7 @@
 == A Visual Guide
 
 
-image::images/math-expressions/curve-fitting.png[]
+image::images/math-expressions/regression-plot.png[]
 
 == Table of Contents
 
@@ -49,8 +49,6 @@ image::images/math-expressions/curve-fitting.png[]
 
 *<<probability-distributions.adoc#probability-distributions,Probability>>*: Real, discrete and empirical probability distributions.
 
-*<<simulations.adoc#simulations,Simulations and Sampling Distributions>>*:  Monte Carlo simulations and the Sampling Distribution of the Mean.
-
 *<<regression.adoc#regression,Linear Regression>>*: Simple and multivariate linear regression.
 
 *<<numerical-analysis.adoc#numerical-analysis,Interpolation, Derivatives and Integrals>>*: Numerical analysis math expressions.
@@ -60,6 +58,8 @@ image::images/math-expressions/curve-fitting.png[]
 *<<curve-fitting.adoc#curve-fitting,Curve Fitting>>*: Polynomial, Harmonic and Gaussian curve fitting.
 
 *<<time-series.adoc#time-series,Time Series>>*: Time series aggregation, visualization, smoothing, differencing, anomaly detection and forecasting.
+
+*<<simulations.adoc#simulations,Simulations>>*: Monte Carlo simulations and random walks
 
 *<<machine-learning.adoc#machine-learning,Machine Learning>>*: Functions used in machine learning.
 
