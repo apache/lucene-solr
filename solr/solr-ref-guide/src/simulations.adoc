@@ -142,6 +142,8 @@ to return the probability of a return between the range of 0 and 40 from the
 
 image::images/math-expressions/randomwalk5.1.png[]
 
+=== Random Walk
+
 The `monteCarlo` function can also be used to visualize a random walk from the
 `normalDistribution` representing the daily stock returns. A random walk is a time
 series where each step is calculated by adding a random sample to the previous
