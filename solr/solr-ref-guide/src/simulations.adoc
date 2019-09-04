@@ -42,7 +42,7 @@ below zero. Some days the stock is up, some days its down, but there
 does not seem to be a noticeable pattern or any dependency between steps. This is a hint
 that this is a *random time series*.
 
-=== Auto Correlation
+=== Autocorrelation
 
 Autocorrelation measures the degree to which a signal is correlated with itself.
  Autocorrelation can be used to determine
@@ -114,7 +114,7 @@ Now that we have fit a distribution to the daily stock return data we can use th
 The `monteCarlo` function runs a specified number of times. On each run it sets
 a series of variables and runs one final function which returns a single numeric value. The
 monteCarlo function collects the results of each run in a vector and returns it.
-The final function run typically has one or more variables that are drawn from probability
+The final function typically has one or more variables that are drawn from probability
 distributions on each run. The `sample` function is used to draw the samples.
 
 The simulation's result array can then be treated as an empirical distribution to understand
