@@ -293,6 +293,10 @@ public class SolrMetricManager {
     }
   }
 
+  /**
+   * An implementation of {@link MetricFilter} that selects metrics
+   * that match any filter in a list of filters.
+   */
   public static class OrFilter implements MetricFilter {
     List<MetricFilter> filters = new ArrayList<>();
 
@@ -323,6 +327,10 @@ public class SolrMetricManager {
     }
   }
 
+  /**
+   * An implementation of {@link MetricFilter} that selects metrics
+   * that match all filters in a list of filters.
+   */
   public static class AndFilter implements MetricFilter {
     List<MetricFilter> filters = new ArrayList<>();
 
