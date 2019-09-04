@@ -236,7 +236,7 @@ all [0.12294442137237226, 0.13106056985285258],
 cvx [0.13106056985285258, 0.7409729840230235]
 ----
 
-=== Simulation
+=== Multivariate Simulation
 
 The example below demonstrates a Monte Carlo simulation with two stock tickers using the
 `multiVariateNormalDistribution`.
