@@ -39,7 +39,7 @@ public interface BlockEncoder {
    * @return The encoded block bytes.
    * @throws IOException If an encoding error occurs.
    */
-  WritableBytes encode(DataInput blockBytes, int length) throws IOException;
+  WritableBytes encode(DataInput blockBytes, long length) throws IOException;
 
   /**
    * Writable byte buffer.

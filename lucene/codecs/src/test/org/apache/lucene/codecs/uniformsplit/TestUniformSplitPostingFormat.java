@@ -24,11 +24,13 @@ import org.junit.After;
 import org.junit.Before;
 
 /**
- *  Tests {@link UniformSplitPostingsFormat} with block encoding using ROT13 cypher.
+ * Tests {@link UniformSplitPostingsFormat} with block encoding using ROT13 cypher.
  */
 public class TestUniformSplitPostingFormat extends BasePostingsFormatTestCase {
 
   private final Codec codec = TestUtil.alwaysPostingsFormat(new UniformSplitRot13PostingsFormat());
+
+  private boolean shouldCheckDecoderWasCalled = true;
 
   @Override
   protected Codec getCodec() {
@@ -37,14 +39,21 @@ public class TestUniformSplitPostingFormat extends BasePostingsFormatTestCase {
 
   @Before
   public void initialize() {
-    UniformSplitRot13PostingsFormat.blockEncodingCalled = false;
+    UniformSplitRot13PostingsFormat.resetEncodingFlags();
   }
 
   @After
   public void checkEncodingCalled() {
-    assertTrue(UniformSplitRot13PostingsFormat.blockEncodingCalled);
-    // We do not check that the decoding has been called because some tests
-    // break the flow with mocked exceptions. Anyway, if encoding is called
-    // then the appropriate decoding must be run otherwise tests don't pass.
+    assertTrue(UniformSplitRot13PostingsFormat.blocksEncoded);
+    assertTrue(UniformSplitRot13PostingsFormat.dictionaryEncoded);
+    if (shouldCheckDecoderWasCalled) {
+      assertTrue(UniformSplitRot13PostingsFormat.decoderCalled);
+    }
+  }
+
+  @Override
+  public void testRandomExceptions() throws Exception {
+    shouldCheckDecoderWasCalled = false;
+    super.testRandomExceptions();
   }
 }

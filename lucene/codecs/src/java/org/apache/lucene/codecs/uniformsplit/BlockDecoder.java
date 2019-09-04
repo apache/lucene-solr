@@ -40,8 +40,9 @@ public interface BlockDecoder {
    * @return The decoded block bytes.
    * @throws IOException If a decoding error occurs.
    */
-  //TODO this method could return a new interface ReadableBytes which
+  // TODO: this method could return a new interface ReadableBytes which
   // would provide the size and create PositionableDataInput (get/set position)
   // implemented by ByteArrayDataInput and ByteBuffersDataInput.
-  BytesRef decode(DataInput blockBytes, int length) throws IOException;
+  // Big length could be supported (> Integer.MAX_VALUE).
+  BytesRef decode(DataInput blockBytes, long length) throws IOException;
 }

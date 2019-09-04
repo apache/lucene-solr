@@ -279,13 +279,9 @@ public class UniformSplitTermsWriter extends FieldsConsumer {
     if (fieldMetadata.getNumTerms() > 0) {
       fieldMetadata.setLastTerm(lastTerm);
       fieldMetadata.write(fieldsOutput);
-
-      // Write the ImmutableDictionary index into disk.
-      dictionaryBuilder.build().write(dictionaryOutput);
-
+      writeDictionary(dictionaryBuilder);
       return 1;
     }
-
     return 0;
   }
 
@@ -303,6 +299,13 @@ public class UniformSplitTermsWriter extends FieldsConsumer {
     }
     fieldMetadata.updateStats(state);
     return state;
+  }
+
+  /**
+   * Writes the dictionary index (FST) to disk.
+   */
+  protected void writeDictionary(IndexDictionary.Builder dictionaryBuilder) throws IOException {
+    dictionaryBuilder.build().write(dictionaryOutput, blockEncoder);
   }
 
   @Override

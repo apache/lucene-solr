@@ -20,6 +20,8 @@ package org.apache.lucene.codecs.uniformsplit;
 import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Test utility for simple ROT13 cipher (https://en.wikipedia.org/wiki/ROT13).
@@ -37,13 +39,34 @@ public class Rot13CypherTestUtil {
     return encodedBytes;
   }
 
-  public static byte[] decode(DataInput bytesInput, int length) throws IOException {
+  public static byte[] decode(DataInput bytesInput, long length) throws IOException {
     length -= ENCODING_OFFSET;
     bytesInput.skipBytes(ENCODING_OFFSET);
-    byte[] decodedBytes = new byte[length];
+    byte[] decodedBytes = new byte[Math.toIntExact(length)];
     for (int i = 0; i < length; i++) {
       decodedBytes[i] = (byte)(bytesInput.readByte() - ENCODING_ROTATION);
     }
     return decodedBytes;
+  }
+
+  public static BlockEncoder getBlockEncoder() {
+    return (blockBytes, length) -> {
+      byte[] encodedBytes = Rot13CypherTestUtil.encode(blockBytes, Math.toIntExact(length));
+      return new BlockEncoder.WritableBytes() {
+        @Override
+        public long size() {
+          return encodedBytes.length;
+        }
+
+        @Override
+        public void writeTo(DataOutput dataOutput) throws IOException {
+          dataOutput.writeBytes(encodedBytes, 0, encodedBytes.length);
+        }
+      };
+    };
+  }
+
+  public static BlockDecoder getBlockDecoder() {
+    return (blockBytes, length) -> new BytesRef(Rot13CypherTestUtil.decode(blockBytes, length));
   }
 }

@@ -205,9 +205,9 @@ public class BlockWriter {
       blockOutput.writeVInt(Math.toIntExact(blockWriteBuffer.size()));
       blockWriteBuffer.copyTo(blockOutput);
     } else {
-      BlockEncoder.WritableBytes writableBytes = blockEncoder.encode(blockWriteBuffer.toDataInput(), Math.toIntExact(blockWriteBuffer.size()));
-      blockOutput.writeVInt(Math.toIntExact(writableBytes.size()));
-      writableBytes.writeTo(blockOutput);
+      BlockEncoder.WritableBytes encodedBytes = blockEncoder.encode(blockWriteBuffer.toDataInput(), blockWriteBuffer.size());
+      blockOutput.writeVInt(Math.toIntExact(encodedBytes.size()));
+      encodedBytes.writeTo(blockOutput);
     }
 
     blockLinesWriteBuffer.reset();

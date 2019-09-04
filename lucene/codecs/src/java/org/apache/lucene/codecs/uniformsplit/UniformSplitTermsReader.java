@@ -105,7 +105,7 @@ public class UniformSplitTermsReader extends FieldsProducer {
        this.blockInput = blockInput;
        this.dictionaryInput = dictionaryInput;
 
-       fillFieldMap(postingsReader, blockDecoder, dictionaryInput, blockInput, fieldMetadataCollection);
+       fillFieldMap(postingsReader, blockDecoder, dictionaryInput, blockInput, fieldMetadataCollection, state.fieldInfos);
 
        List<String> fieldNames = new ArrayList<>(fieldToTermsMap.keySet());
        Collections.sort(fieldNames);
@@ -121,7 +121,7 @@ public class UniformSplitTermsReader extends FieldsProducer {
 
   protected void fillFieldMap(PostingsReaderBase postingsReader, BlockDecoder blockDecoder,
                     IndexInput dictionaryInput, IndexInput blockInput,
-                    Collection<FieldMetadata> fieldMetadataCollection) throws IOException {
+                    Collection<FieldMetadata> fieldMetadataCollection, FieldInfos fieldInfos) throws IOException {
     for (FieldMetadata fieldMetadata : fieldMetadataCollection) {
       fieldToTermsMap.put(fieldMetadata.getFieldInfo().name,
           new UniformSplitTerms(dictionaryInput, blockInput, fieldMetadata, postingsReader, blockDecoder));

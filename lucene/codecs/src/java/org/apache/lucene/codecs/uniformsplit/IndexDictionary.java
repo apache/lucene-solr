@@ -43,9 +43,11 @@ import org.apache.lucene.util.BytesRef;
 public interface IndexDictionary extends Accountable {
 
   /**
-   * Writes this dictionary to the given {@link DataOutput}.
+   * Writes this dictionary to the provided output.
+   * @param blockEncoder The {@link BlockEncoder} for specific encoding of this index dictionary;
+   *                    or null if none.
    */
-  void write(DataOutput out) throws IOException;
+  void write(DataOutput output, BlockEncoder blockEncoder) throws IOException;
 
   /**
    * Creates a new {@link IndexDictionary.Browser}.

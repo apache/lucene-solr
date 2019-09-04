@@ -37,11 +37,24 @@ import org.apache.lucene.util.IOUtils;
  */
 public class UniformSplitRot13PostingsFormat extends PostingsFormat {
 
-  static volatile boolean blockEncodingCalled;
+  public static volatile boolean encoderCalled;
+  public static volatile boolean decoderCalled;
+  public static volatile boolean blocksEncoded;
+  public static volatile boolean dictionaryEncoded;
 
-  @SuppressWarnings("WeakerAccess")
   public UniformSplitRot13PostingsFormat() {
-    super("UniformSplitRot13");
+    this("UniformSplitRot13");
+  }
+
+  protected UniformSplitRot13PostingsFormat(String name) {
+    super(name);
+  }
+
+  public static void resetEncodingFlags() {
+    encoderCalled = false;
+    decoderCalled = false;
+    blocksEncoded = false;
+    dictionaryEncoded = false;
   }
 
   @Override
@@ -59,6 +72,53 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
     }
   }
 
+  protected FieldsConsumer createFieldsConsumer(SegmentWriteState segmentWriteState, PostingsWriterBase postingsWriter) throws IOException {
+    return new UniformSplitTermsWriter(postingsWriter, segmentWriteState,
+        UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES,
+        UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
+        getBlockEncoder()
+    ) {
+      @Override
+      protected void writeDictionary(IndexDictionary.Builder dictionaryBuilder) throws IOException {
+        recordBlockEncodingCall();
+        super.writeDictionary(dictionaryBuilder);
+        recordDictionaryEncodingCall();
+      }
+    };
+  }
+
+  protected void recordBlockEncodingCall() {
+    if (encoderCalled) {
+      blocksEncoded = true;
+      encoderCalled = false;
+    }
+  }
+
+  protected void recordDictionaryEncodingCall() {
+    if (encoderCalled) {
+      dictionaryEncoded = true;
+      encoderCalled = false;
+    }
+  }
+
+  protected BlockEncoder getBlockEncoder() {
+    return (blockBytes, length) -> {
+      byte[] encodedBytes = Rot13CypherTestUtil.encode(blockBytes, Math.toIntExact(length));
+      return new BlockEncoder.WritableBytes() {
+        @Override
+        public long size() {
+          return encodedBytes.length;
+        }
+
+        @Override
+        public void writeTo(DataOutput dataOutput) throws IOException {
+          encoderCalled = true;
+          dataOutput.writeBytes(encodedBytes, 0, encodedBytes.length);
+        }
+      };
+    };
+  }
+
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState segmentReadState) throws IOException {
     PostingsReaderBase postingsReader = new Lucene50PostingsReader(segmentReadState);
@@ -74,34 +134,14 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
     }
   }
 
-  private FieldsConsumer createFieldsConsumer(SegmentWriteState segmentWriteState, PostingsWriterBase postingsWriter) throws IOException {
-    return new UniformSplitTermsWriter(postingsWriter, segmentWriteState,
-        UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES,
-        UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
-        (blockBytes, length) -> {
-          byte[] encodedBytes = Rot13CypherTestUtil.encode(blockBytes, length);
-          return new BlockEncoder.WritableBytes() {
-            @Override
-            public long size() {
-              return encodedBytes.length;
-            }
-
-            @Override
-            public void writeTo(DataOutput dataOutput) throws IOException {
-              blockEncodingCalled = true;
-              dataOutput.writeBytes(encodedBytes, 0, encodedBytes.length);
-            }
-          };
-        }
-    );
+  protected FieldsProducer createFieldsProducer(SegmentReadState segmentReadState, PostingsReaderBase postingsReader) throws IOException {
+    return new UniformSplitTermsReader(postingsReader, segmentReadState, getBlockDecoder());
   }
 
-  private FieldsProducer createFieldsProducer(SegmentReadState segmentReadState, PostingsReaderBase postingsReader) throws IOException {
-    return new UniformSplitTermsReader(postingsReader, segmentReadState,
-        (blockBytes, length) -> {
-          byte[] decodedBytes = Rot13CypherTestUtil.decode(blockBytes, length);
-          return new BytesRef(decodedBytes);
-        }
-    );
+  protected BlockDecoder getBlockDecoder() {
+    return (blockBytes, length) -> {
+      decoderCalled = true;
+      return new BytesRef(Rot13CypherTestUtil.decode(blockBytes, length));
+    };
   }
 }

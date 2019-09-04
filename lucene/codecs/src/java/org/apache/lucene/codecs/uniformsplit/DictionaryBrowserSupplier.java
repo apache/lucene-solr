@@ -38,15 +38,17 @@ import org.apache.lucene.util.Accountable;
 public class DictionaryBrowserSupplier implements Supplier<IndexDictionary.Browser>, Accountable {
 
   protected final IndexInput dictionaryInput;
+  protected final BlockDecoder blockDecoder;
 
   /**
    * Lazy loaded immutable index dictionary (trie hold in RAM).
    */
   protected IndexDictionary dictionary;
 
-  public DictionaryBrowserSupplier(IndexInput dictionaryInput, long startFilePointer) throws IOException {
+  public DictionaryBrowserSupplier(IndexInput dictionaryInput, long startFilePointer, BlockDecoder blockDecoder) throws IOException {
     this.dictionaryInput = dictionaryInput.clone();
     this.dictionaryInput.seek(startFilePointer);
+    this.blockDecoder = blockDecoder;
   }
 
   /**
@@ -62,7 +64,7 @@ public class DictionaryBrowserSupplier implements Supplier<IndexDictionary.Brows
       synchronized (this) {
         try {
           if (dictionary == null) {
-            dictionary = FSTDictionary.read(dictionaryInput);
+            dictionary = FSTDictionary.read(dictionaryInput, blockDecoder);
           }
         } catch (IOException e) {
           throw new IllegalStateException(e);

@@ -55,7 +55,7 @@ public class UniformSplitTerms extends Terms implements Accountable {
   protected UniformSplitTerms(IndexInput dictionaryInput, IndexInput blockInput, FieldMetadata fieldMetadata,
                     PostingsReaderBase postingsReader, BlockDecoder blockDecoder) throws IOException {
     this(blockInput, fieldMetadata, postingsReader, blockDecoder,
-        new DictionaryBrowserSupplier(dictionaryInput, fieldMetadata.getDictionaryStartFP()));
+        new DictionaryBrowserSupplier(dictionaryInput, fieldMetadata.getDictionaryStartFP(), blockDecoder));
   }
 
   /**

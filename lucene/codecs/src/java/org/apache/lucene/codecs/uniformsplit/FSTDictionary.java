@@ -19,6 +19,8 @@ package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
@@ -66,13 +68,33 @@ public class FSTDictionary implements IndexDictionary {
   }
 
   @Override
-  public void write(DataOutput out) throws IOException {
-    dictionary.save(out);
+  public void write(DataOutput output, BlockEncoder blockEncoder) throws IOException {
+    if (blockEncoder == null) {
+      dictionary.save(output);
+    } else {
+      ByteBuffersDataOutput bytesDataOutput = ByteBuffersDataOutput.newResettableInstance();
+      dictionary.save(bytesDataOutput);
+      BlockEncoder.WritableBytes encodedBytes = blockEncoder.encode(bytesDataOutput.toDataInput(), bytesDataOutput.size());
+      output.writeVLong(encodedBytes.size());
+      encodedBytes.writeTo(output);
+    }
   }
 
-  protected static FSTDictionary read(DataInput input) throws IOException {
+  /**
+   * Reads a {@link FSTDictionary} from the provided input.
+   * @param blockDecoder The {@link BlockDecoder} to use for specific decoding; or null if none.
+   */
+  protected static FSTDictionary read(DataInput input, BlockDecoder blockDecoder) throws IOException {
+    DataInput fstDataInput;
+    if (blockDecoder == null) {
+      fstDataInput = input;
+    } else {
+      long numBytes = input.readVLong();
+      BytesRef decodedBytes = blockDecoder.decode(input, numBytes);
+      fstDataInput = new ByteArrayDataInput(decodedBytes.bytes, 0, decodedBytes.length);
+    }
     PositiveIntOutputs fstOutputs = PositiveIntOutputs.getSingleton();
-    FST<Long> dictionary = new FST<>(input, fstOutputs);
+    FST<Long> dictionary = new FST<>(fstDataInput, fstOutputs);
     return new FSTDictionary(dictionary);
   }
 

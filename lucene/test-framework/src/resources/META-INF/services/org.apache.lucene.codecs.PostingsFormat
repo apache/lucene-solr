@@ -21,3 +21,4 @@ org.apache.lucene.codecs.blockterms.LuceneVarGapDocFreqInterval
 org.apache.lucene.codecs.bloom.TestBloomFilteredLucenePostings
 org.apache.lucene.codecs.asserting.AssertingPostingsFormat
 org.apache.lucene.codecs.uniformsplit.UniformSplitRot13PostingsFormat
+org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitRot13PostingsFormat
