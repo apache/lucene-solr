@@ -95,6 +95,8 @@ public abstract class MergePolicy {
     
     private volatile boolean aborted;
 
+    private volatile boolean paused;
+
     /**
      * This field is for sanity-check purposes only. Only the same thread that invoked
      * {@link OneMerge#mergeInit()} is permitted to be calling 
@@ -139,7 +141,7 @@ public abstract class MergePolicy {
      * @param condition The pause condition that should return false if immediate return from this
      *      method is needed. Other threads can wake up any sleeping thread by calling 
      *      {@link #wakeup}, but it'd fall to sleep for the remainder of the requested time if this
-     *      condition 
+     *      condition
      */
     public void pauseNanos(long pauseNanos, PauseReason reason, BooleanSupplier condition) throws InterruptedException {
       if (Thread.currentThread() != owner) {
@@ -153,12 +155,18 @@ public abstract class MergePolicy {
       pauseLock.lock();
       try {
         while (pauseNanos > 0 && !aborted && condition.getAsBoolean()) {
+          paused = true;
           pauseNanos = pausing.awaitNanos(pauseNanos);
         }
       } finally {
+        paused = false;
         pauseLock.unlock();
         timeUpdate.addAndGet(System.nanoTime() - start);
       }
+    }
+
+    public boolean isPaused() {
+      return paused;
     }
 
     /**
@@ -362,6 +370,10 @@ public abstract class MergePolicy {
     public OneMergeProgress getMergeProgress() {
       return mergeProgress;
     }
+
+    public boolean isExternal() {
+      return isExternal;
+    }
   }
 
   /**
@@ -497,20 +509,18 @@ public abstract class MergePolicy {
    * {@link IndexWriter#forceMerge} method is called. This call is always
    * synchronized on the {@link IndexWriter} instance so only one thread at a
    * time will call this method.
-   *  @param segmentInfos
-   *          the total set of segments in the index
-   * @param maxSegmentCount
-   *          requested maximum number of segments in the index (currently this
-   *          is always 1)
-   * @param segmentsToMerge
- *          contains the specific SegmentInfo instances that must be merged
- *          away. This may be a subset of all
- *          SegmentInfos.  If the value is True for a
- *          given SegmentInfo, that means this segment was
- *          an original segment present in the
- *          to-be-merged index; else, it was a segment
- *          produced by a cascaded merge.
-   * @param mergeContext the IndexWriter to find the merges on
+   *
+   * @param segmentInfos    the total set of segments in the index
+   * @param maxSegmentCount requested maximum number of segments in the index (currently this
+   *                        is always 1)
+   * @param segmentsToMerge contains the specific SegmentInfo instances that must be merged
+   *                        away. This may be a subset of all
+   *                        SegmentInfos.  If the value is True for a
+   *                        given SegmentInfo, that means this segment was
+   *                        an original segment present in the
+   *                        to-be-merged index; else, it was a segment
+   *                        produced by a cascaded merge.
+   * @param mergeContext    the IndexWriter to find the merges on
    */
   public abstract MergeSpecification findForcedMerges(
       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext)
