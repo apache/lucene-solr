@@ -38,7 +38,7 @@ comprehensive documentation, visit:
 
 ## Building Lucene/Solr
 
-(You do not need to do this if you downloaded a pre-built package.)
+(You do not need to do this if you downloaded a pre-built package, and you can skip to [Running Solr](#running-solr).)
 
 Lucene and Solr are built using [Apache Ant](http://ant.apache.org/).  To build
 Lucene and Solr, run:
@@ -61,18 +61,18 @@ following command from the `solr/` directory:
 ## Running Solr
 
 After [building Solr](#building-lucene-solr), the server can be started using
-the `bin/solr` control scripts.  Solr can be run in either standalone or
-distributed (SolrCloud mode).
-
-To run Solr in standalone mode, run the following command from the `solr/`
-directory:
-
-`bin/solr start`
+the `bin/solr` control scripts.  Solr can be run in either
+distributed (SolrCloud) mode or standalone mode.
 
 To run Solr in SolrCloud mode, run the following command from the `solr/`
 directory:
 
 `bin/solr start -c`
+
+To run Solr in standalone mode, run the following command from the `solr/`
+directory:
+
+`bin/solr start`
 
 The `bin/solr` control script allows heavy modification of the started Solr.
 Common options are described in some detail in solr/README.txt.  For an
