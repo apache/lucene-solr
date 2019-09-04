@@ -182,8 +182,8 @@ two or more normally distributed variables. It also incorporates the
 how correlation effects the possible outcomes.
 
 In the examples below a simulation of the total daily returns of two
-stocks is explored. The "cvx" ticker (*Chevron*) from the previous examples is used
-along with the "all" ticker (*Allstate*). The "all" ticker" ,
+stocks is explored. The *cvx* ticker (*Chevron*) from the previous examples is used
+along with the *all* ticker (*Allstate*).
 
 === Correlation and Covariance
 
