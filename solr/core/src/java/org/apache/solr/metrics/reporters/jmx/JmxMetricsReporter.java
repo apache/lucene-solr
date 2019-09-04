@@ -73,6 +73,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
     return new Builder(registry);
   }
 
+  /**
+   * Builder for the {@link JmxMetricsReporter} class.
+   */
   public static class Builder {
     private final MetricRegistry registry;
     private MBeanServer mBeanServer;
