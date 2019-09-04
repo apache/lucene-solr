@@ -23,21 +23,24 @@ the basics of performing Monte Carlo simulations with Math Expressions.
 
 == A Random Walk
 
-The stochastic system that will be explored is the movement of daily stock returns
-calculated as the closing price minus the opening price. The daily movement
-of stock prices is often described as a "random walk". But what does that really mean?
+The daily movement of stock prices is often described as a "random walk".
+But what does that really mean, and how is this different than a random time series?
+The examples below will use Monte Carlo simulations to explore both "random walks"
+and random time series.
 
-A useful first step in understanding stock prices as a random walk is to visualize
-daily stock returns as a time series. The example below uses the `search` function
-to return 1000 days of daily stock returns for the ticker *cvx* (Chevron). The *change_d*
-field, which is the change in price for the day, is then plotted as a time series.
+A useful first step in understanding the difference is to visualize
+daily stock returns, calculated as closing price minus opening price, as a time series.
+
+The example below uses the `search` function to return 1000 days of daily stock
+returns for the ticker *cvx* (Chevron). The *change_d* field, which is the
+change in price for the day, is then plotted as a time series.
 
 image::images/math-expressions/randomwalk1.png[]
 
 Notice that the time series of daily price changes moves randomly above and
 below zero. Some days the stock is up, some days its down, but there
-does not seem to be a noticeable pattern that can be used to predict
-its movement. This is the first hint that the stock price is a random walk.
+does not seem to be a noticeable pattern or any dependency between steps. This is a hint
+that this is a *random time series*.
 
 === Auto Correlation
 
@@ -67,7 +70,7 @@ are directly lined up.
 This is followed by another long period of low intensity correlation.
 
 This is the autocorrelation plot of pure noise. The daily stock changes appear
-to be a random.
+to be a random time series.
 
 image::images/math-expressions/randomwalk2.png[]
 
@@ -111,13 +114,13 @@ Now that we have fit a distribution to the daily stock return data we can use th
 The `monteCarlo` function runs a specified number of times. On each run it sets
 a series of variables and runs one final function which returns a single numeric value. The
 monteCarlo function collects the results of each run in a vector and returns it.
-The final function being run usually has one or more variables that are drawn from probability
+The final function run typically has one or more variables that are drawn from probability
 distributions on each run. The `sample` function is used to draw the samples.
 
 The simulation's result array can then be treated as an empirical distribution to understand
 the probabilities of the simulation results.
 
-The example below uses the `monteCarlo` function to simulate the total return
+The example below uses the `monteCarlo` function to simulate a distribution for the total return
 of 100 days of stock returns.
 
 In the example a `normalDistribution` is created from the *mean* and *standard deviation*
@@ -140,28 +143,36 @@ returns from 100 days of stock returns for ticker *cvx*.
 
 image::images/math-expressions/randomwalk5.png[]
 
-The `probability` function can then be used to calculate probability of a non-negative
-return from 100 days of stock returns. The example below uses the `probability` function
-to return the probability of a return between the range of 0 and 40 from the
- `empiricalDistribution` of the simulation.
+The `probability` and `cumulativeProbability` functions can then used to
+learn more about the `empiricalDistribution`.
+For example the `probability` function can be used to
+calculate the probability of a non-negative return from 100 days of stock returns.
+
+The example below uses the `probability` function to return the probability of a
+return between the range of 0 and 40 from the `empiricalDistribution`
+of the simulation.
 
 image::images/math-expressions/randomwalk5.1.png[]
 
 === Random Walk
 
-The `monteCarlo` function can also be used to visualize a random walk from the
-`normalDistribution` representing the daily stock returns. A random walk is a time
-series where each step is calculated by adding a random sample to the previous
+The `monteCarlo` function can also be used to model a random walk of
+daily stock prices from the `normalDistribution` of daily stock returns.
+A random walk is a time series where each step is calculated by adding a random sample to the previous
 step. This creates a time series where each value is dependant on the previous value,
 which simulates the autocorrelation of stock prices.
 
 In the example below the random walk is achieved by adding a random sample to the
 variable *v* on each Monte Carlo iteration. The variable `v` is maintained between
 iterations so each iteration uses the previous value of `v`. The `double` function
-is the final function run which simply retuns the value of `v` as a double on each run.
-The example iterates 1000 times to create a random walk with 1000 steps.
+is the final function run each iteration, which simply returns the value of `v` as a
+double. The example iterates 1000 times to create a random walk with 1000 steps.
 
 image::images/math-expressions/randomwalk6.png[]
+
+Notice the autocorrelation in the daily stock prices caused by the dependency
+between steps produces a very different plot then the
+random daily change in stock price.
 
 == Multivariate Normal Distribution
 
