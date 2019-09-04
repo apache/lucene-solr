@@ -269,7 +269,7 @@ for the tickers *all* and *cvx*
 
 image::images/math-expressions/mnorm.png[]
 
-=== Studying the Effect Correlation
+=== The Effect of Correlation
 
 The covariance matrix can be changed to study the effect on the simulation. The example
 below demonstrates this by providing a hard coded covariance matrix with a higher covariance
