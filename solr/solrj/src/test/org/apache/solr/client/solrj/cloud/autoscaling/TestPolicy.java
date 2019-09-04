@@ -1080,36 +1080,24 @@ public class TestPolicy extends SolrTestCaseJ4 {
     }
     config = new AutoScalingConfig(policies);
     policy = config.getPolicy();
-    session = policy.createSession(provider);
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
-
-    operation = suggester.getSuggestion();
-    assertNotNull(operation);
-    assertEquals("node2", operation.getParams().get("targetNode"));
-    assertEquals("r3", operation.getParams().get("replica"));
-
-    session = suggester.getSession();
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
-    operation = suggester.getSuggestion();
-    assertNotNull(operation);
-    assertEquals("node2", operation.getParams().get("targetNode"));
-    assertEquals("r5", operation.getParams().get("replica"));
-
-    session = suggester.getSession();
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
-    operation = suggester.getSuggestion();
-    assertNotNull(operation);
-    assertEquals("node2", operation.getParams().get("targetNode"));
-    assertEquals("r1", operation.getParams().get("replica"));
-
-    session = suggester.getSession();
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
-    operation = suggester.getSuggestion();
-    assertNull(operation);
+    session = null;
+    for (String expectedReplica : new String[] { "r3", "r5", "r1", null }) {
+      if (session == null) {
+        session = policy.createSession(provider);
+      } else {
+        session = suggester.getSession();
+      }
+      suggester = session.getSuggester(MOVEREPLICA)
+          .hint(Hint.SRC_NODE, "node1");
+      operation = suggester.getSuggestion();
+      if (expectedReplica == null) {
+        assertNull(operation);
+      } else {
+        assertNotNull(operation);
+        assertEquals("node2", operation.getParams().get("targetNode"));
+        assertEquals(expectedReplica, operation.getParams().get("replica"));
+      }
+    }
 
     // now lets change the policy such that a node can have 2 shard2 replicas
     policies = (Map) Utils.fromJSONString("{" +
@@ -1139,30 +1127,23 @@ public class TestPolicy extends SolrTestCaseJ4 {
     }
     config = new AutoScalingConfig(policies);
     policy = config.getPolicy();
-    session = policy.createSession(provider);
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
 
-    operation = suggester.getSuggestion();
-    assertNotNull(operation);
-    assertEquals("node2", operation.getParams().get("targetNode"));
-    assertEquals("r3", operation.getParams().get("replica"));
-
-    session = suggester.getSession();
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
-    operation = suggester.getSuggestion();
-    assertNotNull(operation);
-    assertEquals("node2", operation.getParams().get("targetNode"));
-    assertEquals("r5", operation.getParams().get("replica"));
-
-    session = suggester.getSession();
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
-    operation = suggester.getSuggestion();
-    assertNotNull(operation);
-    assertEquals("node3", operation.getParams().get("targetNode"));
-    assertEquals("r1", operation.getParams().get("replica"));
+    session = null;
+    final String[] expectedReplica = new String[] { "r3", "r5", "r1" };
+    final String[] expectedTargetNode = new String[] { "node2", "node2", "node3" };
+    for (int ii = 0; ii < expectedReplica.length; ++ii) {
+      if (session == null) {
+        session = policy.createSession(provider);
+      } else {
+        session = suggester.getSession();
+      }
+      suggester = session.getSuggester(MOVEREPLICA)
+          .hint(Hint.SRC_NODE, "node1");
+      operation = suggester.getSuggestion();
+      assertNotNull(operation);
+      assertEquals(expectedTargetNode[ii], operation.getParams().get("targetNode"));
+      assertEquals(expectedReplica[ii], operation.getParams().get("replica"));
+    }
   }
 
   private static SolrCloudManager cloudManagerWithData(String data) {
