@@ -292,7 +292,6 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
       final String fileName = files[i];
 
       if (fileName.startsWith(IndexFileNames.SEGMENTS) &&
-          !fileName.equals(IndexFileNames.OLD_SEGMENTS_GEN) &&
           SegmentInfos.generationFromSegmentsFileName(fileName) < currentGen) {
 
         SegmentInfos sis = null;
