@@ -182,8 +182,8 @@ two or more normally distributed variables. It also incorporates the
 how correlation effects the possible outcomes.
 
 In the examples below a simulation of the total daily returns of two
-stocks is explored. The *cvx* ticker (*Chevron*) from the previous examples is used
-along with the *all* ticker (*Allstate*).
+stocks is explored. The *all* ticker (*Allstate*) is used along with the
+*cvx* ticker (*Chevron*) from the previous examples.
 
 === Correlation and Covariance
 
@@ -194,7 +194,7 @@ the Allstate and Chevron stock returns.
 
 The example below runs two searches to retrieve the daily stock returns
 for all Allstate and Chevron. The *change_d* vectors from both returns
-are read into variables (*all* and *cvx)) and Pearson's correlation is
+are read into variables (*all* and *cvx*) and Pearson's correlation is
 calculated for the two vectors with the `corr` function.
 
 image::images/math-expressions/corrsim1.png[]
