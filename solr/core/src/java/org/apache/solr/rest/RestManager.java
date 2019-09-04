@@ -16,6 +16,8 @@
  */
 package org.apache.solr.rest;
 
+import static org.apache.solr.common.util.Utils.fromJSONString;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -25,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -50,8 +53,6 @@ import org.restlet.routing.Router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.util.Utils.fromJSONString;
-
 /**
  * Supports runtime mapping of REST API endpoints to ManagedResource 
  * implementations; endpoints can be registered at either the /schema
@@ -76,7 +77,7 @@ public class RestManager {
   private static class ManagedResourceRegistration {
     String resourceId;
     Class<? extends ManagedResource> implClass;
-    List<ManagedResourceObserver> observers = new ArrayList<>();
+    Set<ManagedResourceObserver> observers = new LinkedHashSet<>();
 
     private ManagedResourceRegistration(String resourceId,
                                         Class<? extends ManagedResource> implClass, 
@@ -229,7 +230,7 @@ public class RestManager {
       }
       
       // there may be a RestManager, in which case, we want to add this new ManagedResource immediately
-      if (initializedRestManager != null) {
+      if (initializedRestManager != null && initializedRestManager.getManagedResourceOrNull(resourceId) == null) {
         initializedRestManager.addRegisteredResource(registered.get(resourceId));
       }
     }    
