@@ -210,7 +210,7 @@ image::images/math-expressions/corrsim2.png[]
 
 A covariance matrix is actually whats needed by the
 `multiVariateNormalDistribution` as it contains both the variance of the
-two stock returns and the covariance between the two
+two stock return vectors and the covariance between the two
 vectors. The `cov` function will compute the covariance matrix for the
 the columns of a matrix.
 
