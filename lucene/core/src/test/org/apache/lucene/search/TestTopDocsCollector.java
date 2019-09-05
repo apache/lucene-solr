@@ -164,14 +164,6 @@ public class TestTopDocsCollector extends LuceneTestCase {
     });
 
     assertEquals("Expected value of starting position is between 0 and 5, got -1", exception.getMessage());
-    
-    // start > pq.size()
-    exception = expectThrows(IllegalArgumentException.class, () -> {
-      tdc.topDocs(numResults + 1);
-    });
-
-    assertEquals("Expected value of starting position is between 0 and 5, got 6", exception.getMessage());
-
 
     // start == pq.size()
     assertEquals(0, tdc.topDocs(numResults).scoreDocs.length);
@@ -227,12 +219,6 @@ public class TestTopDocsCollector extends LuceneTestCase {
     final TopDocsCollector<ScoreDoc> tdc = doSearch(15);
 
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tdc.topDocs(20);
-    });
-
-    assertEquals("Expected value of starting position is between 0 and 15, got 20", expected.getMessage());
-
-    expected = expectThrows(IllegalArgumentException.class, () -> {
       tdc.topDocs(-1);
     });
 
