@@ -223,6 +223,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     return new CollectorManager<>() {
 
       private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(totalHitsThreshold);
+
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
         return TopScoreDocCollector.create(numHits, after, hitsThresholdChecker);

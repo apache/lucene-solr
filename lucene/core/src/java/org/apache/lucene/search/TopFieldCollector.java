@@ -435,6 +435,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     return new CollectorManager<>() {
 
       private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(totalHitsThreshold);
+
       @Override
       public TopFieldCollector newCollector() throws IOException {
         return create(sort, numHits, after, hitsThresholdChecker);
