@@ -137,9 +137,9 @@ public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector 
     int size = topDocsSize();
 
 
-    if (start < 0) {
+    if (start < 0 || start > howMany) {
       throw new IllegalArgumentException("Expected value of starting position is between 0 and " + size +
-          ", got " + start);
+          ", got " + howMany);
     }
 
     if (start >= size) {
@@ -147,8 +147,7 @@ public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector 
     }
 
     if (howMany <= 0) {
-      throw new IllegalArgumentException("Number of hits requested must be greater than 0 but value was "
-      + howMany);
+      throw new IllegalArgumentException("Number of hits requested must be greater than 0 but value was " + howMany);
     }
 
     // We know that start < pqsize, so just fix howMany. 
