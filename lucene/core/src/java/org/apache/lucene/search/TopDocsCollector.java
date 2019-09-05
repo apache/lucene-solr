@@ -139,7 +139,7 @@ public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector 
 
     if (start < 0 || start > howMany) {
       throw new IllegalArgumentException("Expected value of starting position is between 0 and " + size +
-          ", got " + howMany);
+          ", got " + start);
     }
 
     if (start >= size) {
