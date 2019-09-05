@@ -57,10 +57,12 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
     int cY = scratchTriangle[4];
     int cX = scratchTriangle[5];
 
-    if (queryRelation == QueryRelation.WITHIN) {
-      return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+    switch (queryRelation) {
+      case INTERSECTS: return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+      case WITHIN: return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+      case DISJOINT: return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY) == false;
+      default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
-    return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
   }
 
   @Override
