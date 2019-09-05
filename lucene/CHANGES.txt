@@ -30,9 +30,6 @@ API Changes
 * LUCENE-8909: The deprecated IndexWriter#getFieldNames() method has been removed.
   (Adrien Grand, Munendra S N)
 
-* LUCENE-8942: Remove redundant parameters and improve visibility strictness in
-  LRUQueryCache (Atri Sharma)
-
 * LUCENE-8948: Change "name" argument in ICU factories to "form". Here, "form" is
   named after "Unicode Normalization Form". (Tomoko Uchida)
 
@@ -97,6 +94,9 @@ Improvements
 
 * LUCENE-8906: Expose Lucene50PostingsFormat.IntBlockTermState as public so that other postings formats can re-use it.
   (Bruno Roustant)
+
+* LUCENE-8942: Remove redundant parameters and improve visibility strictness in
+  LRUQueryCache (Atri Sharma)
 
 * SOLR-13663: Introduce <SpanPositionRange> into XML Query Parser (Alessandro Benedetti via Mikhail Khludnev)
 
