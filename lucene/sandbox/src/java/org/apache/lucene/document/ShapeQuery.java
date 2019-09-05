@@ -134,17 +134,7 @@ abstract class ShapeQuery extends Query {
         Relation rel = relateRangeToQuery(values.getMinPackedValue(), values.getMaxPackedValue(), queryRelation);
         if (rel == Relation.CELL_OUTSIDE_QUERY) {
           // no documents match the query
-          return new ScorerSupplier() {
-            @Override
-            public Scorer get(long leadCost) {
-              return new ConstantScoreScorer(weight, score(), scoreMode, DocIdSetIterator.empty());
-            }
-
-            @Override
-            public long cost() {
-              return 0;
-            }
-          };
+          return null;
         }
         else if (values.getDocCount() == reader.maxDoc() && rel == Relation.CELL_INSIDE_QUERY) {
           // all documents match the query
@@ -372,7 +362,8 @@ abstract class ShapeQuery extends Query {
   /** create a visitor that clears documents that do NOT match the polygon query; used with INTERSECTS */
   private static IntersectVisitor getInverseIntersectVisitor(final ShapeQuery query, final FixedBitSet result, final int[] cost) {
     return new IntersectVisitor() {
-      int[] scratchTriangle = new int[6];
+      final int[] scratchTriangle = new int[6];
+
       @Override
       public void visit(int docID) {
         result.clear(docID);
@@ -408,6 +399,7 @@ abstract class ShapeQuery extends Query {
   private static IntersectVisitor getDisjointVisitor(final ShapeQuery query, final FixedBitSet intersect, final FixedBitSet disjoint) {
     return new IntersectVisitor() {
       final int[] scratchTriangle = new int[6];
+
       private boolean isDisjoint;
       @Override
       public void visit(int docID) {
@@ -458,7 +450,8 @@ abstract class ShapeQuery extends Query {
   /** create a visitor that clears documents that intersects with the polygon query using a dense bitset; used with DISJOINT. */
   private static IntersectVisitor getInverseDisjointVisitor(final ShapeQuery query, final FixedBitSet result) {
     return new IntersectVisitor() {
-      int[] scratchTriangle = new int[6];
+      final int[] scratchTriangle = new int[6];
+
       @Override
       public void visit(int docID) {
         result.clear(docID);
@@ -493,6 +486,7 @@ abstract class ShapeQuery extends Query {
   private static IntersectVisitor getWithinVisitor(final ShapeQuery query, final FixedBitSet within, final FixedBitSet notWithin) {
     return new IntersectVisitor() {
       final int[] scratchTriangle = new int[6];
+
       private boolean isWithin;
 
       @Override
@@ -544,7 +538,8 @@ abstract class ShapeQuery extends Query {
   /** create a visitor that clears documents that do not match the polygon query using a dense bitset; used with WITHIN */
   private static IntersectVisitor getInverseWithinVisitor(final ShapeQuery query, final FixedBitSet result) {
     return new IntersectVisitor() {
-      int[] scratchTriangle = new int[6];
+      final int[] scratchTriangle = new int[6];
+
       @Override
       public void visit(int docID) {
         result.clear(docID);
