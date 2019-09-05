@@ -45,6 +45,11 @@ Improvements
   docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
   indices (Atri Sharma, Adrien Grand, Simon Willnauer)
 
+* LUCENE-8939: Introduce shared count based early termination across multiple slices
+  (Atri Sharma)
+
+* LUCENE-8958: Shared count early termination for relevance sorted indices (Atri Sharma)
+
 * LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
   (Adrien Gallou via Tomoko Uchida)
 
@@ -105,6 +110,9 @@ Improvements
 * LUCENE-8906: Expose Lucene50PostingsFormat.IntBlockTermState as public so that other postings formats can re-use it.
   (Bruno Roustant)
 
+* LUCENE-8942: Remove redundant parameters and improve visibility strictness in
+  LRUQueryCache (Atri Sharma)
+
 * SOLR-13663: Introduce <SpanPositionRange> into XML Query Parser (Alessandro Benedetti via Mikhail Khludnev)
 
 * LUCENE-8952: Use a sort key instead of true distance in NearestNeighbor (Julie Tibshirani).
@@ -122,6 +130,9 @@ the total hits is not requested.
 
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees now index points faster.
   (Chongchen Chen, David Smiley)
+
+* LUCENE-8956: QueryRescorer now only sorts the first topN hits instead of all
+  initial hits. (Paul Sanwald via Adrien Grand)
 
 Bug Fixes
 

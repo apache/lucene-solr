@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
@@ -477,6 +479,12 @@ public class Http2SolrClient extends SolrClient {
       }
     }
   }
+  
+  private String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
+    URL oldURL = new URL(basePath);
+    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
+    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
+  }
 
   private Request createRequest(SolrRequest solrRequest, String collection) throws IOException, SolrServerException {
     if (solrRequest.getBasePath() == null && serverBaseUrl == null)
@@ -514,7 +522,7 @@ public class Http2SolrClient extends SolrClient {
 
     if (solrRequest instanceof V2Request) {
       if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = serverBaseUrl.replace("/solr", "/api");
+        basePath = changeV2RequestEndpoint(basePath);
       } else {
         basePath = serverBaseUrl + "/____v2";
       }
