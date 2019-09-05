@@ -34,7 +34,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.security.JWTAuthPlugin.IssuerConfig;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
@@ -212,7 +211,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     List<Map<String, Object>> keys = new ArrayList<>();
     keys.add(testJwk);
     testJwks.put("keys", keys);
-    JWTAuthPlugin.IssuerConfig.parseJwkSet(testJwks);
+    JWTIssuerConfig.parseJwkSet(testJwks);
   }
 
   @Test
@@ -222,7 +221,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     issuerConfigMap.put("iss", "myIss");
     issuerConfigMap.put("jwkUrl", "https://host/jwk");
 
-    IssuerConfig issuerConfig = new IssuerConfig(issuerConfigMap);
+    JWTIssuerConfig issuerConfig = new JWTIssuerConfig(issuerConfigMap);
     assertEquals("myIss", issuerConfig.getIss());
     assertEquals("myName", issuerConfig.getName());
     assertEquals(1, issuerConfig.getJwksUrls().size());
@@ -232,9 +231,9 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   @Test
   public void initWithTwoIssuers() {
     HashMap<String, Object> authConf = new HashMap<>();
-    IssuerConfig iss1 = new IssuerConfig("iss1").setIss("1").setAud("aud1")
+    JWTIssuerConfig iss1 = new JWTIssuerConfig("iss1").setIss("1").setAud("aud1")
         .setJwksUrl("https://127.0.0.1:9999/foo.jwk");
-    IssuerConfig iss2 = new IssuerConfig("iss2").setIss("2").setAud("aud2")
+    JWTIssuerConfig iss2 = new JWTIssuerConfig("iss2").setIss("2").setAud("aud2")
         .setJwksUrl(Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
     authConf.put("issuers", Arrays.asList(iss1.asConfig(), iss2.asConfig()));
     plugin = new JWTAuthPlugin();

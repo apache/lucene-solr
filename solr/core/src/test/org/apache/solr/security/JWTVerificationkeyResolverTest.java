@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.security.JWTAuthPlugin.HttpsJwksFactory;
-import org.apache.solr.security.JWTAuthPlugin.IssuerConfig;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
@@ -90,7 +89,7 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     });
     when(httpsJwksFactory.createList(anyList())).thenReturn(asList(firstJwkList, secondJwkList));
 
-    IssuerConfig issuerConfig = new IssuerConfig("primary").setIss("foo").setJwksUrl(asList("url1", "url2"));
+    JWTIssuerConfig issuerConfig = new JWTIssuerConfig("primary").setIss("foo").setJwksUrl(asList("url1", "url2"));
     issuerConfig.setHttpsJwksFactory(httpsJwksFactory);
     resolver = new JWTVerificationkeyResolver(Arrays.asList(issuerConfig), true);
 

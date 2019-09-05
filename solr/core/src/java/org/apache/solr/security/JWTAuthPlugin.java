@@ -63,8 +63,6 @@ import org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode
 import org.eclipse.jetty.client.api.Request;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.consumer.InvalidJwtException;
@@ -81,10 +79,6 @@ import org.slf4j.LoggerFactory;
 public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider, ConfigEditablePlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_BLOCK_UNKNOWN = "blockUnknown";
-  private static final String PARAM_JWK_URL = "jwkUrl";
-  private static final String PARAM_JWK = "jwk";
-  private static final String PARAM_ISSUER = "iss";
-  private static final String PARAM_AUDIENCE = "aud";
   private static final String PARAM_REQUIRE_SUBJECT = "requireSub";
   private static final String PARAM_REQUIRE_ISSUER = "requireIss";
   private static final String PARAM_PRINCIPAL_CLAIM = "principalClaim";
@@ -95,22 +89,27 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private static final String PARAM_SCOPE = "scope";
   private static final String PARAM_ADMINUI_SCOPE = "adminUiScope";
   private static final String PARAM_REDIRECT_URIS = "redirectUris";
-  private static final String PARAM_CLIENT_ID = "clientId";
-  private static final String PARAM_WELL_KNOWN_URL = "wellKnownUrl";
-  private static final String PARAM_AUTHORIZATION_ENDPOINT = "authorizationEndpoint";
   private static final String PARAM_ISSUERS = "issuers";
-  private static final String PARAM_ISS_NAME = "name";
+
+  static final String PARAM_ISS_NAME = "name";
+  static final String PARAM_JWK_URL = "jwkUrl";
+  static final String PARAM_JWK = "jwk";
+  static final String PARAM_ISSUER = "iss";
+  static final String PARAM_AUDIENCE = "aud";
+  static final String PARAM_WELL_KNOWN_URL = "wellKnownUrl";
+  static final String PARAM_AUTHORIZATION_ENDPOINT = "authorizationEndpoint";
+  static final String PARAM_CLIENT_ID = "clientId";
 
   private static final String AUTH_REALM = "solr-jwt";
   private static final String CLAIM_SCOPE = "scope";
   private static final long RETRY_INIT_DELAY_SECONDS = 30;
   private static final long DEFAULT_REFRESH_REPRIEVE_THRESHOLD = 5000;
+  static final String PRIMARY_ISSUER = "PRIMARY";
 
   private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN, PARAM_JWK_URL, PARAM_JWK, PARAM_ISSUER,
       PARAM_AUDIENCE, PARAM_REQUIRE_SUBJECT, PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
       PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_CLIENT_ID, PARAM_WELL_KNOWN_URL, PARAM_ISS_NAME,
       PARAM_AUTHORIZATION_ENDPOINT, PARAM_ADMINUI_SCOPE, PARAM_REDIRECT_URIS, PARAM_REQUIRE_ISSUER, PARAM_ISSUERS);
-  private static final String PRIMARY_ISSUER = "PRIMARY";
 
   private JwtConsumer jwtConsumer;
   private boolean requireExpirationTime;
@@ -123,7 +122,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private Instant lastInitTime = Instant.now();
   private String adminUiScope;
   private List<String> redirectUris;
-  private List<IssuerConfig> issuerConfigs;
+  private List<JWTIssuerConfig> issuerConfigs;
   private boolean requireIssuer;
   private JWTVerificationkeyResolver verificationKeyResolver;
 
@@ -188,15 +187,13 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
 
     long jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
-    IssuerConfig.setHttpsJwksFactory(new HttpsJwksFactory(jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD));
+    JWTIssuerConfig.setHttpsJwksFactory(new HttpsJwksFactory(jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD));
 
     issuerConfigs = new ArrayList<>();
 
     // Try to parse an issuer from top level config, and add first (primary issuer)
-    Optional<IssuerConfig> topLevelIssuer = parseIssuerFromTopLevelConfig(pluginConfig);
-    topLevelIssuer.ifPresent(ic -> {
-      issuerConfigs.add(ic);
-    });
+    Optional<JWTIssuerConfig> topLevelIssuer = parseIssuerFromTopLevelConfig(pluginConfig);
+    topLevelIssuer.ifPresent(ic -> issuerConfigs.add(ic));
 
     // Add issuers from 'issuers' key
     issuerConfigs.addAll(parseIssuers(pluginConfig));
@@ -208,9 +205,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   }
 
   @SuppressWarnings("unchecked")
-  private Optional<IssuerConfig> parseIssuerFromTopLevelConfig(Map<String, Object> pluginConfig) {
+  private Optional<JWTIssuerConfig> parseIssuerFromTopLevelConfig(Map<String, Object> pluginConfig) {
     try {
-      IssuerConfig primary = new IssuerConfig(PRIMARY_ISSUER)
+      JWTIssuerConfig primary = new JWTIssuerConfig(PRIMARY_ISSUER)
           .setIss((String) pluginConfig.get(PARAM_ISSUER))
           .setAud((String) pluginConfig.get(PARAM_AUDIENCE))
           .setJwksUrl(pluginConfig.get(PARAM_JWK_URL))
@@ -218,7 +215,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
           .setClientId((String) pluginConfig.get(PARAM_CLIENT_ID))
           .setWellKnownUrl((String) pluginConfig.get(PARAM_WELL_KNOWN_URL));
       if (pluginConfig.get(PARAM_JWK) != null) {
-        primary.setJwks(IssuerConfig.parseJwkSet((Map<String, Object>) pluginConfig.get(PARAM_JWK)));
+        primary.setJwks(JWTIssuerConfig.parseJwkSet((Map<String, Object>) pluginConfig.get(PARAM_JWK)));
       }
       if (primary.isValid()) {
         log.debug("Found issuer in top level config");
@@ -233,7 +230,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
   }
 
-  IssuerConfig getPrimaryIssuer() {
+  JWTIssuerConfig getPrimaryIssuer() {
     if (issuerConfigs.size() == 0) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No issuers configured");
     }
@@ -243,16 +240,16 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   /**
    * Initialize optional additional issuers configured in 'issuers' condfig map
    * @param pluginConfig the main config object
-   * @return a list of parsed {@link IssuerConfig} objects
+   * @return a list of parsed {@link JWTIssuerConfig} objects
    */
   @SuppressWarnings("unchecked")
-  List<IssuerConfig> parseIssuers(Map<String, Object> pluginConfig) {
-    List<IssuerConfig> configs = new ArrayList<>();
+  List<JWTIssuerConfig> parseIssuers(Map<String, Object> pluginConfig) {
+    List<JWTIssuerConfig> configs = new ArrayList<>();
     try {
       List<Map<String, Object>> issuers = (List<Map<String, Object>>) pluginConfig.get(PARAM_ISSUERS);
       if (issuers != null) {
         issuers.forEach(issuerConf -> {
-          IssuerConfig ic = new IssuerConfig(issuerConf);
+          JWTIssuerConfig ic = new JWTIssuerConfig(issuerConf);
           ic.init();
           configs.add(ic);
           log.debug("Found issuer with name {} and issuerId {}", ic.getName(), ic.getIss());
@@ -297,7 +294,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     if (AuthCode.SIGNATURE_INVALID.equals(authResponse.getAuthCode())) {
       String issuer = jwtConsumer.processToClaims(header).getIssuer();
       if (issuer != null) {
-        Optional<IssuerConfig> issuerConfig = issuerConfigs.stream().filter(ic -> issuer.equals(ic.getIss())).findFirst();
+        Optional<JWTIssuerConfig> issuerConfig = issuerConfigs.stream().filter(ic -> issuer.equals(ic.getIss())).findFirst();
         if (issuerConfig.isPresent() && issuerConfig.get().usesHttpsJwk()) {
           log.warn("Signature validation failed for issuer {}. Refreshing JWKs from IdP before trying again: {}",
               issuer, authResponse.getJwtException() == null ? "" : authResponse.getJwtException().getMessage());
@@ -470,11 +467,11 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private void initConsumer() {
     JwtConsumerBuilder jwtConsumerBuilder = new JwtConsumerBuilder()
         .setAllowedClockSkewInSeconds(30); // allow some leeway in validating time based claims to account for clock skew
-    String[] issuers = issuerConfigs.stream().map(IssuerConfig::getIss).filter(Objects::nonNull).toArray(String[]::new);
+    String[] issuers = issuerConfigs.stream().map(JWTIssuerConfig::getIss).filter(Objects::nonNull).toArray(String[]::new);
     if (issuers.length > 0) {
       jwtConsumerBuilder.setExpectedIssuers(requireIssuer, issuers); // whom the JWT needs to have been issued by
     }
-    String[] audiences = issuerConfigs.stream().map(IssuerConfig::getAud).filter(Objects::nonNull).toArray(String[]::new);
+    String[] audiences = issuerConfigs.stream().map(JWTIssuerConfig::getAud).filter(Objects::nonNull).toArray(String[]::new);
     if (audiences.length > 0) {
       jwtConsumerBuilder.setExpectedAudience(audiences); // to whom the JWT is intended for
     } else {
@@ -544,7 +541,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   }
 
   protected String generateAuthDataHeader() {
-    IssuerConfig primaryIssuer = getPrimaryIssuer();
+    JWTIssuerConfig primaryIssuer = getPrimaryIssuer();
     Map<String,Object> data = new HashMap<>();
     data.put(PARAM_AUTHORIZATION_ENDPOINT, primaryIssuer.getAuthorizationEndpoint());
     data.put("client_id", primaryIssuer.getClientId());
@@ -697,281 +694,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
   }
 
-  /**
-   * Holds information about an IdP (issuer), such as issuer ID, JWK url(s), keys etc
-   */
-  public static class IssuerConfig {
-    private static HttpsJwksFactory httpsJwksFactory = new HttpsJwksFactory(3600, DEFAULT_REFRESH_REPRIEVE_THRESHOLD);
-    private String iss;
-    private String aud;
-    private JsonWebKeySet jsonWebKeySet;
-    private String name;
-    private Map<String, Object> configMap = null;
-    private List<String> jwksUrl;
-    private List<HttpsJwks> httpsJwks;
-    private String wellKnownUrl;
-    private WellKnownDiscoveryConfig wellKnownDiscoveryConfig;
-    private String clientId;
-    private String authorizationEndpoint;
-
-    /**
-     * Create config for further configuration with setters.
-     * Once all values are set, call {@link #init(Map)} before further use
-     *
-     * @param name a unique name for this issuer
-     */
-    public IssuerConfig(String name) {
-      this.name = name;
-    }
-
-    /**
-     * Initialize issuer config from a generic configuration map
-     *
-     * @param configMap map of configuration keys anv values
-     */
-    public IssuerConfig(Map<String, Object> configMap) {
-      this.configMap = configMap;
-      parseConfigMap(configMap);
-    }
-
-    public void init() {
-      if (!isValid()) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Configuration is not valid");
-      }
-      if (wellKnownUrl != null) {
-        wellKnownDiscoveryConfig = fetchWellKnown(wellKnownUrl);
-        if (iss == null) {
-          iss = wellKnownDiscoveryConfig.getIssuer();
-        }
-        if (jwksUrl == null) {
-          jwksUrl = Collections.singletonList(wellKnownDiscoveryConfig.getJwksUrl());
-        }
-        if (authorizationEndpoint == null) {
-          authorizationEndpoint = wellKnownDiscoveryConfig.getAuthorizationEndpoint();
-        }
-      }
-      if (iss == null && !PRIMARY_ISSUER.equals(name) && !usesHttpsJwk()) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing required config 'iss' for issuer " + getName());
-      }
-    }
-
-    /**
-     * Parses configuration for one IssuerConfig
-     */
-    @SuppressWarnings("unchecked")
-    void parseConfigMap(Map<String, Object> configMap) {
-      HashMap<String, Object> conf = new HashMap<>(configMap); // Clone
-      setName((String) conf.get(PARAM_ISS_NAME));
-      setWellKnownUrl((String) conf.get(PARAM_WELL_KNOWN_URL));
-      setIss((String) conf.get(PARAM_ISSUER));
-      setClientId((String) conf.get(PARAM_CLIENT_ID));
-      setAud((String) conf.get(PARAM_AUDIENCE));
-      setJwksUrl(conf.get(PARAM_JWK_URL));
-      setJwks(conf.get(PARAM_JWK));
-
-      conf.remove(PARAM_WELL_KNOWN_URL);
-      conf.remove(PARAM_ISSUER);
-      conf.remove(PARAM_ISS_NAME);
-      conf.remove(PARAM_CLIENT_ID);
-      conf.remove(PARAM_AUDIENCE);
-      conf.remove(PARAM_JWK_URL);
-      conf.remove(PARAM_JWK);
-
-      if (!conf.isEmpty()) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration key " + conf.keySet() + " for issuer " + name);
-      }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void setJwks(Object jwksObject) {
-      try {
-        if (jwksObject != null) {
-          jsonWebKeySet = parseJwkSet((Map<String, Object>) jwksObject);
-        }
-      } catch (JoseException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed parsing parameter 'jwk' for issuer " + getName(), e);
-      }
-    }
-
-    @SuppressWarnings("unchecked")
-    public static JsonWebKeySet parseJwkSet(Map<String, Object> jwkObj) throws JoseException {
-      JsonWebKeySet webKeySet = new JsonWebKeySet();
-      if (jwkObj.containsKey("keys")) {
-        List<Object> jwkList = (List<Object>) jwkObj.get("keys");
-        for (Object jwkO : jwkList) {
-          webKeySet.addJsonWebKey(JsonWebKey.Factory.newJwk((Map<String, Object>) jwkO));
-        }
-      } else {
-        webKeySet = new JsonWebKeySet(JsonWebKey.Factory.newJwk(jwkObj));
-      }
-      return webKeySet;
-    }
-
-    private WellKnownDiscoveryConfig fetchWellKnown(String wellKnownUrl) {
-      return WellKnownDiscoveryConfig.parse(wellKnownUrl);
-    }
-
-    public String getIss() {
-      return iss;
-    }
-
-    public IssuerConfig setIss(String iss) {
-      this.iss = iss;
-      return this;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public IssuerConfig setName(String name) {
-      this.name = name;
-      return this;
-    }
-
-    public String getWellKnownUrl() {
-      return wellKnownUrl;
-    }
-
-    public IssuerConfig setWellKnownUrl(String wellKnownUrl) {
-      this.wellKnownUrl = wellKnownUrl;
-      return this;
-    }
-
-    public List<String> getJwksUrls() {
-      return jwksUrl;
-    }
-
-    public IssuerConfig setJwksUrl(List<String> jwksUrl) {
-      this.jwksUrl = jwksUrl;
-      return this;
-    }
-
-    @SuppressWarnings("unchecked")
-    public IssuerConfig setJwksUrl(Object jwksUrlListOrString) {
-      if (jwksUrlListOrString instanceof String)
-        this.jwksUrl = Collections.singletonList((String) jwksUrlListOrString);
-      else if (jwksUrlListOrString instanceof List)
-        this.jwksUrl = (List<String>) jwksUrlListOrString;
-      else if (jwksUrlListOrString != null)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parameter " + PARAM_JWK_URL + " must be either List or String");
-      return this;
-    }
-
-    public List<HttpsJwks> getHttpsJwks() {
-      if (httpsJwks == null) {
-        httpsJwks = httpsJwksFactory.createList(getJwksUrls());
-      }
-      return httpsJwks;
-    }
-
-    public IssuerConfig setHttpsJwks(List<HttpsJwks> httpsJwks) {
-      this.httpsJwks = httpsJwks;
-      return this;
-    }
-
-    /**
-     * Set the factory to use when creating HttpsJwks objects
-     * @param httpsJwksFactory factory with custom settings
-     */
-    public static void setHttpsJwksFactory(HttpsJwksFactory httpsJwksFactory) {
-      IssuerConfig.httpsJwksFactory = httpsJwksFactory;
-    }
-
-    public JsonWebKeySet getJsonWebKeySet() {
-      return jsonWebKeySet;
-    }
-
-    /**
-     * Check if the issuer is backed by HttpsJwk url(s)
-     * @return true if keys are fetched over https
-     */
-    public boolean usesHttpsJwk() {
-      return getJwksUrls() != null && !getJwksUrls().isEmpty();
-    }
-
-    public Map<String, Object> getConfigMap() {
-      return configMap;
-    }
-
-    public WellKnownDiscoveryConfig getWellKnownDiscoveryConfig() {
-      return wellKnownDiscoveryConfig;
-    }
-
-    public String getAud() {
-      return aud;
-    }
-
-    public IssuerConfig setAud(String aud) {
-      this.aud = aud;
-      return this;
-    }
-
-    public IssuerConfig setJwks(JsonWebKeySet jsonWebKeySet) {
-      this.jsonWebKeySet = jsonWebKeySet;
-      return this;
-    }
-
-    public String getClientId() {
-      return clientId;
-    }
-
-    public IssuerConfig setClientId(String clientId) {
-      this.clientId = clientId;
-      return this;
-    }
-
-    public String getAuthorizationEndpoint() {
-      return authorizationEndpoint;
-    }
-
-    public IssuerConfig setAuthorizationEndpoint(String authorizationEndpoint) {
-      this.authorizationEndpoint = authorizationEndpoint;
-      return this;
-    }
-
-    public Map<String,Object> asConfig() {
-      HashMap<String,Object> config = new HashMap<>();
-      putIfNotNull(config, PARAM_ISS_NAME, name);
-      putIfNotNull(config, PARAM_ISSUER, iss);
-      putIfNotNull(config, PARAM_AUDIENCE, aud);
-      putIfNotNull(config, PARAM_JWK_URL, jwksUrl);
-      putIfNotNull(config, PARAM_WELL_KNOWN_URL, wellKnownUrl);
-      putIfNotNull(config, PARAM_CLIENT_ID, clientId);
-      putIfNotNull(config, PARAM_AUTHORIZATION_ENDPOINT, authorizationEndpoint);
-      if (jsonWebKeySet != null) {
-        putIfNotNull(config, PARAM_JWK, jsonWebKeySet.getJsonWebKeys());
-      }
-      return config;
-    }
-
-    private void putIfNotNull(HashMap<String, Object> config, String paramName, Object value) {
-      if (value != null) {
-        config.put(paramName, value);
-      }
-    }
-
-    /**
-     * Validates that this config has a name and either jwksUrl, wellkKownUrl or jwk
-     * @return true if a configuration is found and is valid, otherwise false
-     * @throws SolrException if configuration is present but wrong
-     */
-    public boolean isValid() {
-      int jwkConfigured = wellKnownUrl != null ? 1 : 0;
-      jwkConfigured += jwksUrl != null ? 2 : 0;
-      jwkConfigured += jsonWebKeySet != null ? 2 : 0;
-      if (jwkConfigured > 3) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuthPlugin needs to configure exactly one of " +
-            PARAM_WELL_KNOWN_URL + ", " + PARAM_JWK_URL + " and " + PARAM_JWK);
-      }
-      if (jwkConfigured > 0 && name == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Parameter 'name' is required for issuer configurations");
-      }
-      return jwkConfigured > 0;
-    }
-  }
-
   public static class HttpsJwksFactory {
     private final long jwkCacheDuration;
     private final long refreshReprieveThreshold;
@@ -1029,11 +751,11 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     return verificationKeyResolver;
   }
 
-  public List<IssuerConfig> getIssuerConfigs() {
+  public List<JWTIssuerConfig> getIssuerConfigs() {
     return issuerConfigs;
   }
 
-  public Optional<IssuerConfig> getIssuerConfigByName(String name) {
+  public Optional<JWTIssuerConfig> getIssuerConfigByName(String name) {
     return issuerConfigs.stream().filter(ic -> name.equals(ic.getName())).findAny();
   }
 }

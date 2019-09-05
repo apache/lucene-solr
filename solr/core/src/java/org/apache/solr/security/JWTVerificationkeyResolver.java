@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.security.JWTAuthPlugin.IssuerConfig;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.VerificationJwkSelector;
@@ -44,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Resolves jws signature verification keys from a set of {@link IssuerConfig} objects, which
+ * Resolves jws signature verification keys from a set of {@link JWTIssuerConfig} objects, which
  * may represent any valid configuration in Solr's security.json, i.e. static list of JWKs
  * or keys retrieved from HTTPs JWK endpoints.
  *
@@ -59,7 +58,7 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
 
   private VerificationJwkSelector verificationJwkSelector = new VerificationJwkSelector();
 
-  private Map<String, IssuerConfig> issuerConfigs = new HashMap<>();
+  private Map<String, JWTIssuerConfig> issuerConfigs = new HashMap<>();
   private final boolean requireIssuer;
 
   /**
@@ -67,7 +66,7 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
    * @param issuerConfigs Collection of configuration objects for the issuer(s)
    * @param requireIssuer if true, will require 'iss' claim on jws
    */
-  public JWTVerificationkeyResolver(Collection<IssuerConfig> issuerConfigs, boolean requireIssuer) {
+  public JWTVerificationkeyResolver(Collection<JWTIssuerConfig> issuerConfigs, boolean requireIssuer) {
     this.requireIssuer = requireIssuer;
     issuerConfigs.forEach(ic -> {
       this.issuerConfigs.put(ic.getIss(), ic);
@@ -82,7 +81,7 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
     String keysSource = "N/A";
     try {
       String tokenIssuer = JwtClaims.parse(jws.getUnverifiedPayload()).getIssuer();
-      IssuerConfig issuerConfig;
+      JWTIssuerConfig issuerConfig;
       if (tokenIssuer == null) {
         if (requireIssuer) {
           throw new UnresolvableKeyException("Token does not contain required issuer claim");
@@ -148,7 +147,7 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
     return theChosenOne.getKey();
   }
 
-  Set<IssuerConfig> getIssuerConfigs() {
+  Set<JWTIssuerConfig> getIssuerConfigs() {
     return new HashSet<>(issuerConfigs.values());
   }
 }
