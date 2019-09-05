@@ -136,16 +136,16 @@ public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector 
     // pq.size() or totalHits.
     int size = topDocsSize();
 
-    if (howMany <= 0) {
+    if (howMany < 0) {
       throw new IllegalArgumentException("Number of hits requested must be greater than 0 but value was " + howMany);
     }
 
-    if (start < 0 || start > howMany) {
+    if (start < 0) {
       throw new IllegalArgumentException("Expected value of starting position is between 0 and " + size +
           ", got " + start);
     }
 
-    if (start >= size) {
+    if (start >= size || howMany == 0) {
       return newTopDocs(null, start);
     }
 

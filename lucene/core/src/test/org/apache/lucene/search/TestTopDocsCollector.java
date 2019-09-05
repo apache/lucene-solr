@@ -182,13 +182,6 @@ public class TestTopDocsCollector extends LuceneTestCase {
     });
 
     assertEquals("Number of hits requested must be greater than 0 but value was -1", exception.getMessage());
-    
-    // howMany == 0
-    exception = expectThrows(IllegalArgumentException.class, () -> {
-      tdc.topDocs(0, 0);
-    });
-
-    assertEquals("Number of hits requested must be greater than 0 but value was 0", exception.getMessage());
   }
   
   public void testZeroResults() throws Exception {
