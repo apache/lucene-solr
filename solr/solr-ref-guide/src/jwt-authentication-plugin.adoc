@@ -43,23 +43,35 @@ The plugin will by default require a valid JWT token for all traffic. If the `bl
 |===
 Key                  ; Description                                             ; Default
 blockUnknown         ; Set to `false` to if you need to perform configuration through REST API or if you use an Authorization Plugin and only want certain paths protected. By default all requests will require a token  ; `true`
-wellKnownUrl         ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; (no default)
-clientId             ; Client identifier for use with OpenID Connect           ; (no default value) Required to authenticate with Admin UI
 realm                ; Name of the authentication realm to echo back in HTTP 401 responses. Will also be displayed in Admin UI login page ; 'solr-jwt'
 scope                ; Whitespace separated list of valid scopes. If configured, the JWT access token MUST contain a `scope` claim with at least one of the listed scopes. Example: `solr:read solr:admin` ;
-jwkUrl               ; A URL to a https://tools.ietf.org/html/rfc7517#section-5[JWKs] endpoint. Must use https protocol. Optionally an array of URLs in which case all public keys from all URLs will be consulted when validating signatures. ; Auto configured if `wellKnownUrl` is provided
-jwk                  ; As an alternative to `jwkUrl` you may provide a JSON object here containing the public key(s) of the issuer.  ;
-iss                  ; Validates that the `iss` (issuer) claim equals this string        ; Auto configured if `wellKnownUrl` is provided
-aud                  ; Validates that the `aud` (audience) claim equals this string      ; If `clientId` is configured, require `aud` to match it
-requireSub           ; Makes `sub` (subject) claim mandatory                         ; `true`
-requireExp           ; Makes `exp` (expiry time) claim mandatory                     ; `true`
+requireIss           ; Fails requests that lacks an `iss` (issuer) claim                          ; `true`
+requireExp           ; Fails requests that lacks an `exp` (expiry time) claim                     ; `true`
 algWhitelist         ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; Default is to allow all algorithms
 jwkCacheDur          ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
 principalClaim       ; What claim id to pull principal from                    ; `sub`
 claimsMatch          ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ; (none)
 adminUiScope         ; Define what scope is requested when logging in from Admin UI ; If not defined, the first scope from `scope` parameter is used
-authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided
 redirectUris         ; Valid location(s) for redirect after external authentication. Takes a string or array of strings. Must be the base URL of Solr, e.g., https://solr1.example.com:8983/solr/ and must match the list of redirect URIs registered with the Identity Provider beforehand. ; Defaults to empty list, i.e., any node is assumed to be a valid redirect target.
+issuers              ; List of issuers (Identity providers) to  support. See below sub chapter for configuration syntax ; (none)
+|===
+
+=== Issuer configuration
+
+This plugin supports one or more token issuers (IdPs). Issuers are configured as a list of JSON objects under the `issuers` configuration key. The first issuer in the list is the "Primary Issuer", which is the one used for logging in to the Admin UI.
+
+TIP: For backwards compatibility, all the configuration keys for the primary issuer may be configured as top-level keys.
+
+[%header,format=csv,separator=;]
+|===
+Key                  ; Description                                             ; Default
+wellKnownUrl         ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; (no default)
+clientId             ; Client identifier for use with OpenID Connect. Required to authenticate with Admin UI. Needed for primary issuer only ; (no default value)
+jwkUrl               ; A URL to a https://tools.ietf.org/html/rfc7517#section-5[JWKs] endpoint. Must use https protocol. Optionally an array of URLs in which case all public keys from all URLs will be consulted when validating signatures. ; Auto configured if `wellKnownUrl` is provided
+jwk                  ; As an alternative to `jwkUrl` you may provide a static JSON object containing the public key(s) of the issuer.  ;
+iss                  ; Validates that the `iss` (issuer) claim equals this string        ; Auto configured if `wellKnownUrl` is provided
+aud                  ; Validates that the `aud` (audience) claim equals this string      ; Uses `clientId` is configured
+authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided
 |===
 
 == More Configuration Examples

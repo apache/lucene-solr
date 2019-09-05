@@ -34,6 +34,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.security.JWTAuthPlugin.IssuerConfig;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
@@ -43,7 +44,10 @@ import org.jose4j.keys.BigEndianBigInteger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
@@ -58,6 +62,9 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static RsaJsonWebKey rsaJsonWebKey;
   private HashMap<String, Object> testConfig;
   private HashMap<String, Object> minimalConfig;
+
+  @Rule
+  public MockitoRule mockitoRule = MockitoJUnit.rule();
 
   @BeforeClass
   public static void beforeAll() throws Exception {
@@ -74,7 +81,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
     String testJwt = jws.getCompactSerialization();
     testHeader = "Bearer" + " " + testJwt;
-    
+
     claims.unsetClaim("iss");
     claims.unsetClaim("aud");
     claims.unsetClaim("exp");
@@ -179,32 +186,88 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void initWithJwkUrl() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwkUrl", "https://127.0.0.1:9999/foo.jwk");
+    authConf.put("iss", "myProvider");
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
-    JWTVerificationkeyResolver resolver = (JWTVerificationkeyResolver) plugin.verificationKeyResolver;
-    assertEquals(1, resolver.getIssuerConfig().getJwksUrl().size());
+    assertEquals(1, plugin.getIssuerConfigs().size());
+    assertEquals(1, plugin.getIssuerConfigs().get(0).getJwksUrls().size());
   }
 
   @Test
   public void initWithJwkUrlArray() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwkUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
+    authConf.put("iss", "myIssuer");
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
-    JWTVerificationkeyResolver resolver = (JWTVerificationkeyResolver) plugin.verificationKeyResolver;
-    assertEquals(2, resolver.getIssuerConfig().getJwksUrl().size());
+    assertEquals(1, plugin.getIssuerConfigs().size());
+    assertEquals(2, plugin.getIssuerConfigs().get(0).getJwksUrls().size());
   }
 
   @Test
   public void parseJwkSet() throws Exception {
-    plugin.parseJwkSet(testJwk);
+//   NOCOMMIT JWTAuthPlugin.IssuerConfig.parseJwkSet(testJwk);
 
     HashMap<String, Object> testJwks = new HashMap<>();
     List<Map<String, Object>> keys = new ArrayList<>();
     keys.add(testJwk);
     testJwks.put("keys", keys);
-    plugin.parseJwkSet(testJwks);
+    JWTAuthPlugin.IssuerConfig.parseJwkSet(testJwks);
   }
+
+  @Test
+  public void parseIssuerConfigExplicit() throws Exception {
+    HashMap<String, Object> issuerConfigMap = new HashMap<>();
+    issuerConfigMap.put("name", "myName");
+    issuerConfigMap.put("iss", "myIss");
+    issuerConfigMap.put("jwkUrl", "https://host/jwk");
+
+    IssuerConfig issuerConfig = new IssuerConfig(issuerConfigMap);
+    assertEquals("myIss", issuerConfig.getIss());
+    assertEquals("myName", issuerConfig.getName());
+    assertEquals(1, issuerConfig.getJwksUrls().size());
+    assertEquals("https://host/jwk", issuerConfig.getJwksUrls().get(0));
+  }
+
+  @Test
+  public void initWithTwoIssuers() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    IssuerConfig iss1 = new IssuerConfig("iss1").setIss("1").setAud("aud1")
+        .setJwksUrl("https://127.0.0.1:9999/foo.jwk");
+    IssuerConfig iss2 = new IssuerConfig("iss2").setIss("2").setAud("aud2")
+        .setJwksUrl(Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
+    authConf.put("issuers", Arrays.asList(iss1.asConfig(), iss2.asConfig()));
+    plugin = new JWTAuthPlugin();
+    plugin.init(authConf);
+    assertEquals(2, plugin.getIssuerConfigs().size());
+    assertTrue(plugin.getIssuerConfigs().get(0).usesHttpsJwk());
+    assertTrue(plugin.getIssuerConfigs().get(1).usesHttpsJwk());
+    assertEquals(2, plugin.getIssuerConfigs().get(1).getJwksUrls().size());
+  }
+
+/*
+  NOCOMMIT
+  @Mock
+  private JWTAuthPlugin.WellKnownDiscoveryConfig mockWellKnown;
+
+  @Test
+  public void parseIssuerConfigWellKnown() throws Exception {
+    HashMap<String, Object> issuerConfigMap = new HashMap<>();
+    issuerConfigMap.put("wellKnownUrl", "https://url");
+
+    when(mockWellKnown.
+
+    IssuerConfig issuerConfig = IssuerConfig.parse("myName", issuerConfigMap);
+    assertEquals("myName", issuerConfig.getName());
+    assertEquals("myIss", issuerConfig.getIss());
+    assertEquals(1, issuerConfig.getJwksUrls().size());
+    assertEquals("https://host/jwk", issuerConfig.getJwksUrls().get(0));
+  }
+
+  // More tests with 'issuers' config
+
+  // Test new methods
+*/
 
   @Test
   public void authenticateOk() {
@@ -283,20 +346,21 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void missingIssAudExp() {
+    testConfig.put("requireIss", "false");
     testConfig.put("requireExp", "false");
-    testConfig.put("requireSub", "false");
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(slimHeader);
-    assertTrue(resp.isAuthenticated());
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
 
-    // Missing exp header
+    // Missing exp claim
     testConfig.put("requireExp", true);
     plugin.init(testConfig);
     resp = plugin.authenticate(slimHeader);
     assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    testConfig.put("requireExp", false);
 
-    // Missing sub header
-    testConfig.put("requireSub", true);
+    // Missing issuer claim
+    testConfig.put("requireIss", true);
     plugin.init(testConfig);
     resp = plugin.authenticate(slimHeader);
     assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
@@ -316,7 +380,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("scope", "solr:read solr:admin");
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
-    assertTrue(resp.isAuthenticated());
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
 
     Principal principal = resp.getPrincipal();
     assertTrue(principal instanceof VerifiedUserRoles);

@@ -17,6 +17,7 @@
 
 package org.apache.solr.security;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -89,9 +90,9 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     });
     when(httpsJwksFactory.createList(anyList())).thenReturn(asList(firstJwkList, secondJwkList));
 
-    IssuerConfig issuerConfig = new IssuerConfig("foo", asList("url1", "url2"));
+    IssuerConfig issuerConfig = new IssuerConfig("primary").setIss("foo").setJwksUrl(asList("url1", "url2"));
     issuerConfig.setHttpsJwksFactory(httpsJwksFactory);
-    resolver = new JWTVerificationkeyResolver(issuerConfig);
+    resolver = new JWTVerificationkeyResolver(Arrays.asList(issuerConfig), true);
 
     assumeWorkingMockito();
   }
