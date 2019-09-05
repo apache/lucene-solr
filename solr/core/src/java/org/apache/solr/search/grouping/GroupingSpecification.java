@@ -81,6 +81,11 @@ public class GroupingSpecification {
               GroupParams.GROUP_OFFSET + " is "+offset + ")");
     }
 
+    if (includeGroupCount) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND + " does not support " + GroupParams.GROUP_TOTAL_COUNT + " == true");
+    }
+
     final SortField[] withinGroupSortFields = withinGroupSortSpec.getSort().getSort();
     final SortField[] groupSortFields = groupSortSpec.getSort().getSort();
 
