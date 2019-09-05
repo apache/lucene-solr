@@ -173,16 +173,16 @@
     "add-package": {
       "documentation": "",
       "description" : "Add a package to the classpath",
-      "#include": "cluster.Commands.runtimelib.properties"
+      "#include": "cluster.Commands.package.properties"
     },
     "update-package": {
       "documentation": "",
       "description" : "Update the jar details",
-      "#include": "cluster.Commands.runtimelib.properties"
+      "#include": "cluster.Commands.package.properties"
     },
     "delete-package": {
       "documentation": "",
-      "description" : "delete a lib",
+      "description" : "delete a package",
       "type": "string"
     },
     "add-requesthandler": {

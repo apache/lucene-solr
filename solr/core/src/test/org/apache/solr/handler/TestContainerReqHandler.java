@@ -209,8 +209,11 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           .withPayload(payload)
           .withMethod(SolrRequest.METHOD.POST)
           .build().process(cluster.getSolrClient());
+      Map<String, Object> clusterProperties = new ClusterProperties(cluster.getZkClient()).getClusterProperties();
       assertEquals(getObjectByPath(Utils.fromJSONString(payload), true, "update-package/sha256"),
-          getObjectByPath(new ClusterProperties(cluster.getZkClient()).getClusterProperties(), true, "package/global/sha256"));
+          getObjectByPath(clusterProperties, true, "package/global/sha256"));
+      assertEquals("e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc",
+          getObjectByPath(clusterProperties, true, "package/global/old_sha256"));
 
 
       request = new V2Request.Builder("/node/ext/bar")

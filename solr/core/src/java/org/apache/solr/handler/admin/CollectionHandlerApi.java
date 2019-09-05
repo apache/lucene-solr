@@ -271,23 +271,28 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     Map<String, Object> props = clusterProperties.getClusterProperties();
     List<String> pathToLib = asList(CommonParams.PACKAGE, name);
     Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
+    Map<String, Object> dataMap = Utils.getDeepCopy(op.getDataMap(), 3) ;
     if (Meta.ADD_PACKAGE.commandName.equals(op.name)) {
       if (existing != null) {
         op.addError(StrUtils.formatString("The jar with a name ''{0}'' already exists ", name));
         return false;
       }
-    } else {
+    } else {// this is an update command
       if (existing == null) {
         op.addError(StrUtils.formatString("The jar with a name ''{0}'' does not exist", name));
         return false;
       }
-      if (Objects.equals(existing.get(SHA256), op.getDataMap().get(SHA256))) {
+      if (Objects.equals(existing.get(SHA256), dataMap.get(SHA256))) {
         op.addError("Trying to update a jar with the same sha256");
         return false;
       }
+      String oldSha256 = (String) Utils.getObjectByPath(existing, true, SHA256);
+      if(oldSha256 != null){
+        dataMap.put("old_sha256", oldSha256);
+      }
     }
     try {
-      lib.init(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()));
+      lib.init(new PluginInfo(SolrRequestHandler.TYPE, dataMap));
     } catch (SolrException e) {
       log.error("Error loading runtimelib ", e);
       op.addError(e.getMessage());
@@ -295,7 +300,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     }
 
     Map delta = new LinkedHashMap();
-    Utils.setObjectByPath(delta, pathToLib, op.getDataMap(), true);
+    Utils.setObjectByPath(delta, pathToLib, dataMap, true);
     clusterProperties.setClusterProperties(delta);
     return true;
 
