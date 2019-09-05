@@ -103,122 +103,17 @@ abstract class ShapeQuery extends Query {
   }
 
   @Override
-  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
 
     return new ConstantScoreWeight(this, boost) {
 
-      /** create a visitor that adds documents that match the query using a sparse bitset. (Used by INTERSECT) */
-      protected IntersectVisitor getSparseIntersectVisitor(DocIdSetBuilder result) {
-        return new IntersectVisitor() {
-          final int[] scratchTriangle = new int[6];
-          DocIdSetBuilder.BulkAdder adder;
-
-          @Override
-          public void grow(int count) {
-            adder = result.grow(count);
-          }
-
-          @Override
-          public void visit(int docID) throws IOException {
-            adder.add(docID);
-          }
-
-          @Override
-          public void visit(int docID, byte[] t) throws IOException {
-            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS)) {
-              visit(docID);
-            }
-          }
-
-          @Override
-          public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
-            if (queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS)) {
-              int docID;
-              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                visit(docID);
-              }
-            }
-          }
-
-          @Override
-          public Relation compare(byte[] minTriangle, byte[] maxTriangle) {
-            return relateRangeToQuery(minTriangle, maxTriangle, ShapeField.QueryRelation.INTERSECTS);
-          }
-        };
-      }
-
-      /** create a visitor that adds documents that match the query using a dense bitset. (Used by WITHIN, DISJOINT) */
-      protected IntersectVisitor getDenseIntersectVisitor(FixedBitSet intersect, FixedBitSet disjoint, ShapeField.QueryRelation queryRelation) {
-        return new IntersectVisitor() {
-          final int[] scratchTriangle = new int[6];
-          @Override
-          public void visit(int docID) throws IOException {
-            if (queryRelation == ShapeField.QueryRelation.DISJOINT) {
-              // if DISJOINT query set the doc in the disjoint bitset
-              disjoint.set(docID);
-            } else {
-              // for INTERSECT, and WITHIN queries we set the intersect bitset
-              intersect.set(docID);
-            }
-          }
-
-          @Override
-          public void visit(int docID, byte[] t) throws IOException {
-            if (queryMatches(t, scratchTriangle, queryRelation)) {
-              intersect.set(docID);
-            } else {
-              disjoint.set(docID);
-            }
-          }
-
-          @Override
-          public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
-            boolean queryMatches = queryMatches(t, scratchTriangle, queryRelation);
-            int docID;
-            while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-              if (queryMatches) {
-                intersect.set(docID);
-              } else {
-                disjoint.set(docID);
-              }
-            }
-          }
-
-          @Override
-          public Relation compare(byte[] minTriangle, byte[] maxTriangle) {
-            return relateRangeToQuery(minTriangle, maxTriangle, queryRelation);
-          }
-        };
-      }
-
-      /** get a scorer supplier for INTERSECT queries */
-      protected ScorerSupplier getIntersectScorerSupplier(LeafReader reader, PointValues values, Weight weight, ScoreMode scoreMode) throws IOException {
-        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
-        IntersectVisitor visitor = getSparseIntersectVisitor(result);
-        return new RelationScorerSupplier(values, visitor, null, queryRelation) {
-          @Override
-          public Scorer get(long leadCost) throws IOException {
-            return getIntersectsScorer(ShapeQuery.this, reader, weight, result, score(), scoreMode);
-          }
-        };
-      }
-
-      /** get a scorer supplier for all other queries (DISJOINT, WITHIN) */
-      protected ScorerSupplier getScorerSupplier(LeafReader reader, PointValues values, Weight weight, ScoreMode scoreMode) throws IOException {
-        if (queryRelation == ShapeField.QueryRelation.INTERSECTS) {
-          return getIntersectScorerSupplier(reader, values, weight, scoreMode);
+      @Override
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        ScorerSupplier scorerSupplier = scorerSupplier(context);
+        if (scorerSupplier == null) {
+          return null;
         }
-        //For within and disjoint we need two passes to remove false positives in case of multi-shapes.
-        FixedBitSet within = new FixedBitSet(reader.maxDoc());
-        FixedBitSet disjoint = new FixedBitSet(reader.maxDoc());
-        IntersectVisitor withinVisitor = getDenseIntersectVisitor(within, disjoint, ShapeField.QueryRelation.WITHIN);
-        IntersectVisitor disjointVisitor = getDenseIntersectVisitor(within, disjoint, ShapeField.QueryRelation.DISJOINT);
-        return new RelationScorerSupplier(values, withinVisitor, disjointVisitor, queryRelation) {
-          @Override
-          public Scorer get(long leadCost) throws IOException {
-            return getScorer(ShapeQuery.this, weight, within, disjoint, score(), scoreMode);
-          }
-        };
+        return scorerSupplier.get(Long.MAX_VALUE);
       }
 
       @Override
@@ -235,17 +130,27 @@ abstract class ShapeQuery extends Query {
           return null;
         }
 
-        boolean allDocsMatch = true;
-        if (values.getDocCount() != reader.maxDoc() ||
-            relateRangeToQuery(values.getMinPackedValue(), values.getMaxPackedValue(), queryRelation) != Relation.CELL_INSIDE_QUERY) {
-          allDocsMatch = false;
-        }
-
         final Weight weight = this;
-        if (allDocsMatch) {
+        Relation rel = relateRangeToQuery(values.getMinPackedValue(), values.getMaxPackedValue(), queryRelation);
+        if (rel == Relation.CELL_OUTSIDE_QUERY) {
+          // no documents math the query
           return new ScorerSupplier() {
             @Override
-            public Scorer get(long leadCost) throws IOException {
+            public Scorer get(long leadCost) {
+              return new ConstantScoreScorer(weight, score(), scoreMode, DocIdSetIterator.empty());
+            }
+
+            @Override
+            public long cost() {
+              return 0;
+            }
+          };
+        }
+        if (values.getDocCount() == reader.maxDoc() && rel == Relation.CELL_INSIDE_QUERY) {
+          // all document math the query
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(long leadCost) {
               return new ConstantScoreScorer(weight, score(), scoreMode, DocIdSetIterator.all(reader.maxDoc()));
             }
 
@@ -254,18 +159,13 @@ abstract class ShapeQuery extends Query {
               return reader.maxDoc();
             }
           };
-        } else {
-          return getScorerSupplier(reader, values, weight, scoreMode);
         }
-      }
-
-      @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
-        ScorerSupplier scorerSupplier = scorerSupplier(context);
-        if (scorerSupplier == null) {
-          return null;
-        }
-        return scorerSupplier.get(Long.MAX_VALUE);
+        return new RelationScorerSupplier(values, ShapeQuery.this) {
+          @Override
+          public Scorer get(long leadCost) throws IOException {
+            return getScorer(reader, weight, score(), scoreMode);
+          }
+        };
       }
 
       @Override
@@ -314,57 +214,26 @@ abstract class ShapeQuery extends Query {
 
   /** utility class for implementing constant score logic specific to INTERSECT, WITHIN, and DISJOINT */
   private static abstract class RelationScorerSupplier extends ScorerSupplier {
-    PointValues values;
-    IntersectVisitor visitor;
-    IntersectVisitor disjointVisitor;//it can be null
-    ShapeField.QueryRelation queryRelation;
-    long cost = -1;
+    final private PointValues values;
+    final private ShapeQuery query;
+    private long cost = -1;
 
-    RelationScorerSupplier(PointValues values, IntersectVisitor visitor, IntersectVisitor disjointVisitor, QueryRelation queryRelation) {
+    RelationScorerSupplier(final PointValues values, final ShapeQuery query) {
       this.values = values;
-      this.visitor = visitor;
-      this.disjointVisitor = disjointVisitor;
-      this.queryRelation = queryRelation;
+      this.query = query;
     }
 
-    /** create a visitor that clears documents that do NOT match the polygon query; used with INTERSECTS */
-    private IntersectVisitor getInverseIntersectVisitor(ShapeQuery query, FixedBitSet result, int[] cost) {
-      return new IntersectVisitor() {
-        int[] scratchTriangle = new int[6];
-        @Override
-        public void visit(int docID) {
-          result.clear(docID);
-          cost[0]--;
-        }
+    protected Scorer getScorer(LeafReader reader, Weight weight, final float boost, ScoreMode scoreMode) throws IOException {
+      switch (query.getQueryRelation()) {
+        case INTERSECTS: return getIntersectsScorer(reader, weight, boost, scoreMode);
+        case WITHIN: return getWithinScorer(reader, weight, boost, scoreMode);
+        case DISJOINT: return getDisjointScorer(reader, weight, boost, scoreMode);
+        default: throw new IllegalArgumentException("Unsupported query type :[" + query.getQueryRelation() + "]");
+      }
 
-        @Override
-        public void visit(int docID, byte[] packedTriangle) {
-          if (query.queryMatches(packedTriangle, scratchTriangle, QueryRelation.INTERSECTS) == false) {
-            visit(docID);
-          }
-        }
-
-        @Override
-        public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
-          if (query.queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS) == false) {
-            int docID;
-            while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-              visit(docID);
-            }
-          }
-        }
-
-
-        @Override
-        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-          return transposeRelation(query.relateRangeToQuery(minPackedValue, maxPackedValue, QueryRelation.INTERSECTS));
-        }
-      };
     }
 
-    /** returns a Scorer for INTERSECT queries that uses a sparse bitset */
-    protected Scorer getIntersectsScorer(ShapeQuery query, LeafReader reader, Weight weight,
-                                         DocIdSetBuilder docIdSetBuilder, final float boost, ScoreMode scoreMode) throws IOException {
+    private Scorer getIntersectsScorer(LeafReader reader, Weight weight, final float boost, ScoreMode scoreMode) throws IOException {
       if (values.getDocCount() == reader.maxDoc()
           && values.getDocCount() == values.size()
           && cost() > reader.maxDoc() / 2) {
@@ -378,44 +247,328 @@ abstract class ShapeQuery extends Query {
         final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
         return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
       }
-
+      DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(reader.maxDoc(), values, query.getField());
+      IntersectVisitor visitor = getIntersectVisitor(query, docIdSetBuilder);
       values.intersect(visitor);
       DocIdSetIterator iterator = docIdSetBuilder.build().iterator();
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
 
-    /** returns a Scorer for all other (non INTERSECT) queries */
-    protected Scorer getScorer(ShapeQuery query, Weight weight,
-                               FixedBitSet intersect, FixedBitSet disjoint, final float boost, ScoreMode scoreMode) throws IOException {
-      values.intersect(visitor);
-      if (disjointVisitor != null) {
-        values.intersect(disjointVisitor);
-      }
-      DocIdSetIterator iterator;
-      if (query.queryRelation == ShapeField.QueryRelation.DISJOINT) {
-        disjoint.andNot(intersect);
-        iterator = new BitSetIterator(disjoint, cost());
-      } else if (query.queryRelation == ShapeField.QueryRelation.WITHIN) {
-        intersect.andNot(disjoint);
-        iterator = new BitSetIterator(intersect, cost());
+    private Scorer getDisjointScorer(LeafReader reader, Weight weight, final float boost, ScoreMode scoreMode) throws IOException {
+      if (values.getDocCount() == reader.maxDoc()) {
+        // we need to visit all docs in the normal visitor so if
+        // we have all documents in this segment then use the
+        // inverse visitor
+        final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+        result.set(0, reader.maxDoc());
+        values.intersect(getInverseDisjointVisitor(query, result));
+        final DocIdSetIterator iterator = new BitSetIterator(result, cost());
+        return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
       } else {
-        iterator = new BitSetIterator(intersect, cost());
+        FixedBitSet intersects = new FixedBitSet(reader.maxDoc());
+        FixedBitSet disjoint = new FixedBitSet(reader.maxDoc());
+        IntersectVisitor visitor = getDisjointVisitor(query, intersects, disjoint);
+        values.intersect(visitor);
+        disjoint.andNot(intersects);
+        DocIdSetIterator iterator = new BitSetIterator(disjoint, cost());
+        return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
       }
-      return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
+    }
+
+    private Scorer getWithinScorer(LeafReader reader, Weight weight, final float boost, ScoreMode scoreMode) throws IOException {
+      if (values.getDocCount() == reader.maxDoc()) {
+        // we need to visit all docs in the normal visitor so if
+        // we have all documents in this segment then use the
+        // inverse visitor
+        final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+        result.set(0, reader.maxDoc());
+        values.intersect(getInverseWithinVisitor(query, result));
+        final DocIdSetIterator iterator = new BitSetIterator(result, cost());
+        return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
+      } else {
+        FixedBitSet within = new FixedBitSet(reader.maxDoc());
+        FixedBitSet notWithin = new FixedBitSet(reader.maxDoc());
+        IntersectVisitor visitor = getWithinVisitor(query, within, notWithin);
+        values.intersect(visitor);
+        within.andNot(notWithin);
+        DocIdSetIterator iterator = new BitSetIterator(within, cost());
+        return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
+      }
     }
 
     @Override
     public long cost() {
       if (cost == -1) {
         // Computing the cost may be expensive, so only do it if necessary
-        if (queryRelation == ShapeField.QueryRelation.DISJOINT) {
-          cost = values.estimatePointCount(disjointVisitor);
-        } else {
-          cost = values.estimatePointCount(visitor);
-        }
+        cost = values.estimatePointCount(getEstimateVisitor(query, query.getQueryRelation()));
         assert cost >= 0;
       }
       return cost;
     }
+  }
+
+  /** create a visitor for calculating point count estimates for the provided relation */
+  private static IntersectVisitor getEstimateVisitor(final ShapeQuery query, final QueryRelation relation) {
+    return new IntersectVisitor() {
+      @Override
+      public void visit(int docID) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void visit(int docID, byte[] t) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public Relation compare(byte[] minTriangle, byte[] maxTriangle) {
+        return query.relateRangeToQuery(minTriangle, maxTriangle, relation);
+      }
+    };
+  }
+
+  /** create a visitor that adds documents that match the query using a sparse bitset. (Used by INTERSECT) */
+  private static IntersectVisitor getIntersectVisitor(final ShapeQuery query, final DocIdSetBuilder result) {
+    return new IntersectVisitor() {
+      final int[] scratchTriangle = new int[6];
+      DocIdSetBuilder.BulkAdder adder;
+
+      @Override
+      public void grow(int count) {
+        adder = result.grow(count);
+      }
+
+      @Override
+      public void visit(int docID) {
+        adder.add(docID);
+      }
+
+      @Override
+      public void visit(int docID, byte[] t) {
+        if (query.queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS)) {
+          visit(docID);
+        }
+      }
+
+      @Override
+      public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+        if (query.queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS)) {
+          int docID;
+          while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            visit(docID);
+          }
+        }
+      }
+
+      @Override
+      public Relation compare(byte[] minTriangle, byte[] maxTriangle) {
+        return query.relateRangeToQuery(minTriangle, maxTriangle, ShapeField.QueryRelation.INTERSECTS);
+      }
+    };
+  }
+
+  /** create a visitor that clears documents that do NOT match the polygon query; used with INTERSECTS */
+  private static IntersectVisitor getInverseIntersectVisitor(final ShapeQuery query, final FixedBitSet result, final int[] cost) {
+    return new IntersectVisitor() {
+      int[] scratchTriangle = new int[6];
+      @Override
+      public void visit(int docID) {
+        result.clear(docID);
+        cost[0]--;
+      }
+
+      @Override
+      public void visit(int docID, byte[] packedTriangle) {
+        if (query.queryMatches(packedTriangle, scratchTriangle, QueryRelation.INTERSECTS) == false) {
+          visit(docID);
+        }
+      }
+
+      @Override
+      public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+        if (query.queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS) == false) {
+          int docID;
+          while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            visit(docID);
+          }
+        }
+      }
+
+      @Override
+      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+        return transposeRelation(query.relateRangeToQuery(minPackedValue, maxPackedValue, QueryRelation.INTERSECTS));
+      }
+    };
+  }
+
+  /** create a visitor that adds documents that match the query using two dense bitset. (Used by  DISJOINT). Note that
+   * we need to visit all documents on the tree to remove false positives coming from multi-shapes */
+  private static IntersectVisitor getDisjointVisitor(final ShapeQuery query, final FixedBitSet intersect, final FixedBitSet disjoint) {
+    return new IntersectVisitor() {
+      final int[] scratchTriangle = new int[6];
+      private boolean isDisjoint;
+      @Override
+      public void visit(int docID) {
+        if (isDisjoint) {
+          disjoint.set(docID);
+        } else {
+          intersect.set(docID);
+        }
+      }
+
+      @Override
+      public void visit(int docID, byte[] t) {
+        if (query.queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS) == false) {
+          disjoint.set(docID);
+        } else {
+          intersect.set(docID);
+        }
+      }
+
+      @Override
+      public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+        boolean queryMatches = query.queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS);
+        int docID;
+        while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          if (queryMatches == false) {
+            disjoint.set(docID);
+          } else {
+            intersect.set(docID);
+          }
+        }
+      }
+
+      @Override
+      public Relation compare(byte[] minTriangle, byte[] maxTriangle) {
+        Relation rel = query.relateRangeToQuery(minTriangle, maxTriangle, QueryRelation.INTERSECTS);
+        if (rel == Relation.CELL_OUTSIDE_QUERY) {
+          isDisjoint = true;
+          return Relation.CELL_INSIDE_QUERY;
+        } else if (rel == Relation.CELL_INSIDE_QUERY) {
+          isDisjoint = false;
+          return Relation.CELL_INSIDE_QUERY;
+        }
+        return rel;
+      }
+    };
+  }
+
+  /** create a visitor that clears documents that intersects with the polygon query using a dense bitset; used with DISJOINT. */
+  private static IntersectVisitor getInverseDisjointVisitor(final ShapeQuery query, final FixedBitSet result) {
+    return new IntersectVisitor() {
+      int[] scratchTriangle = new int[6];
+      @Override
+      public void visit(int docID) {
+        result.clear(docID);
+      }
+
+      @Override
+      public void visit(int docID, byte[] packedTriangle) {
+        if (query.queryMatches(packedTriangle, scratchTriangle, QueryRelation.INTERSECTS)) {
+          visit(docID);
+        }
+      }
+
+      @Override
+      public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+        if (query.queryMatches(t, scratchTriangle, QueryRelation.INTERSECTS)) {
+          int docID;
+          while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            visit(docID);
+          }
+        }
+      }
+
+      @Override
+      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+        return query.relateRangeToQuery(minPackedValue, maxPackedValue, QueryRelation.INTERSECTS);
+      }
+    };
+  }
+
+  /** create a visitor that adds documents that match the query using two dense bitset. (Used by WITHIN). Note that
+   * we need to visit all documents on the tree to remove false positives coming from multi-shapes  */
+  private static IntersectVisitor getWithinVisitor(final ShapeQuery query, final FixedBitSet within, final FixedBitSet notWithin) {
+    return new IntersectVisitor() {
+      final int[] scratchTriangle = new int[6];
+      private boolean isWithin;
+
+      @Override
+      public void visit(int docID) {
+        if (isWithin) {
+          within.set(docID);
+        } else {
+          notWithin.set(docID);
+        }
+      }
+
+      @Override
+      public void visit(int docID, byte[] t) {
+        if (query.queryMatches(t, scratchTriangle, QueryRelation.WITHIN)) {
+          within.set(docID);
+        } else {
+          notWithin.set(docID);
+        }
+      }
+
+      @Override
+      public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+        boolean queryMatches = query.queryMatches(t, scratchTriangle, QueryRelation.WITHIN);
+        int docID;
+        while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          if (queryMatches) {
+            within.set(docID);
+          } else {
+            notWithin.set(docID);
+          }
+        }
+      }
+
+      @Override
+      public Relation compare(byte[] minTriangle, byte[] maxTriangle) {
+        Relation rel = query.relateRangeToQuery(minTriangle, maxTriangle, QueryRelation.WITHIN);
+        if (rel == Relation.CELL_INSIDE_QUERY) {
+          isWithin = true;
+          return Relation.CELL_INSIDE_QUERY;
+        } else if (rel == Relation.CELL_OUTSIDE_QUERY) {
+          isWithin = false;
+          return Relation.CELL_INSIDE_QUERY;
+        }
+        return rel;
+      }
+    };
+  }
+
+  /** create a visitor that clears documents that do not match the polygon query using a dense bitset; used with WITHIN */
+  private static IntersectVisitor getInverseWithinVisitor(final ShapeQuery query, final FixedBitSet result) {
+    return new IntersectVisitor() {
+      int[] scratchTriangle = new int[6];
+      @Override
+      public void visit(int docID) {
+        result.clear(docID);
+      }
+
+      @Override
+      public void visit(int docID, byte[] packedTriangle) {
+        if (query.queryMatches(packedTriangle, scratchTriangle, QueryRelation.WITHIN) == false) {
+          visit(docID);
+        }
+      }
+
+      @Override
+      public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+        if (query.queryMatches(t, scratchTriangle, QueryRelation.WITHIN) == false) {
+          int docID;
+          while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            visit(docID);
+          }
+        }
+      }
+
+      @Override
+      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+        return transposeRelation(query.relateRangeToQuery(minPackedValue, maxPackedValue, QueryRelation.WITHIN));
+      }
+    };
   }
 }
