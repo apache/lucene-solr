@@ -15,6 +15,9 @@ API Changes
   should do likewise for analysis components for tokenized text, or else changes to the encoding in future versions
   may be incompatible with older indexes.  (Chongchen Chen, David Smiley)
 
+* LUCENE-8956: QueryRescorer now only sorts the first topN hits instead of all
+  initial hits. (Paul Sanwald via Adrien Grand)
+
 New Features
 
 * LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)
