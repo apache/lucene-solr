@@ -259,6 +259,8 @@ abstract class ShapeQuery extends Query {
         // Remove false positives
         values.intersect(getInverseDenseVisitor(query, result));
       }
+      // TODO: we are calling cost() here which might be expensive and it does return an estimate of the number of points
+      // but not an estimate of the number of docs. Maybe we can just give a fix cost of numDocs on the tree???
       final DocIdSetIterator iterator = new BitSetIterator(result, cost());
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
