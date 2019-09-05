@@ -118,21 +118,24 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
   }
 
   private static boolean postBlob(ApiInfo info) {
+    CoreContainer coreContainer = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
     Iterable<ContentStream> streams = info.req.getContentStreams();
     if (streams == null) throw new SolrException(ErrorCode.BAD_REQUEST, "no payload");
+    String sha256 = null;
     ContentStream stream = streams.iterator().next();
     try {
       ByteBuffer buf = SimplePostTool.inputStreamToByteArray(stream.getStream());
-      String sha256 = BlobRepository.sha256Digest(buf);
-      CoreContainer coreContainer = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
-      coreContainer.getBlobRepository().putBlob(buf, sha256);
+      sha256 = BlobRepository.sha256Digest(buf);
+      coreContainer.getBlobRepository().persistToFile(buf, sha256);
+      coreContainer.getBlobRepository().putTmpBlob(buf, sha256);
       List<String> nodes = coreContainer.getBlobRepository().shuffledNodes();
       int i = 0;
       for (String node : nodes) {
         String baseUrl = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
         String url = baseUrl.replace("/solr", "/api") + "/node/blob?sha256=" + sha256 + "&fromNode=";
-        if (i < 10 ) {
-          // the first 10 nodes will be asked to fetch from this node
+        if (i < 25) {
+          // the first 25 nodes will be asked to fetch from this node
+          //it's there in  the memory now , so , it must be served fast
           url += coreContainer.getZkController().getNodeName();
         } else {
           // trying to avoid the thundering herd problem when there are a very large no:of nodes
@@ -143,16 +146,19 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
           //fire and forget
           Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
         } catch (Exception e) {
-          log.info( "Node: " +node+
-              " failed to respond for blob notification",e );
+          log.info("Node: " + node +
+              " failed to respond for blob notification", e);
           //ignore the exception
           // some nodes may be down or not responding
         }
         i++;
       }
+      info.rsp.add(SHA256, sha256);
 
     } catch (IOException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
+    } finally {
+      if (sha256 != null) coreContainer.getBlobRepository().removeTmpBlob(sha256);
     }
 
     return false;
@@ -161,7 +167,16 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
   static Command wrap(Command cmd) {
     return info -> {
       CoreContainer cc = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
-      boolean modified = cmd.call(info);
+      boolean modified = false;
+      try {
+        modified = cmd.call(info);
+      } catch (SolrException e) {
+        log.error("error executing command : " + info.op.jsonStr(), e);
+        throw e;
+      } catch (Exception e) {
+        log.error("error executing command : " + info.op.jsonStr(), e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "error executing command : ", e);
+      }
       if (modified) {
         Stat stat = new Stat();
         Map<String, Object> clusterProperties = new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties(stat);
@@ -381,14 +396,14 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
 
   public static class PerNodeCallable extends SolrConfigHandler.PerReplicaCallable {
     private final HttpClient httpClient;
-    final String v2Url ;
+    final String v2Url;
 
     static final List<String> path = Arrays.asList("metadata", CommonParams.VERSION);
 
     PerNodeCallable(HttpClient httpClient, String baseUrl, int expectedversion, int waitTime) {
       super(baseUrl, ConfigOverlay.ZNODEVER, expectedversion, waitTime);
       this.httpClient = httpClient;
-      v2Url = baseUrl.replace("/solr","/api") +"/node/ext?wt=javabin&omitHeader=true";
+      v2Url = baseUrl.replace("/solr", "/api") + "/node/ext?wt=javabin&omitHeader=true";
     }
 
     @Override
@@ -406,29 +421,29 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       final RTimer timer = new RTimer();
       int attempts = 0;
 
-        // eventually, this loop will get killed by the ExecutorService's timeout
-        while (true) {
-          try {
-            long timeElapsed = (long) timer.getTime() / 1000;
-            if (timeElapsed >= maxWait) {
-              return false;
-            }
-            log.debug("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
-            Thread.sleep(100);
-            MapWriter resp = (MapWriter) Utils.executeGET(httpClient, v2Url, Utils.JAVABINCONSUMER);
-            if (verifyResponse(resp, attempts)){
+      // eventually, this loop will get killed by the ExecutorService's timeout
+      while (true) {
+        try {
+          long timeElapsed = (long) timer.getTime() / 1000;
+          if (timeElapsed >= maxWait) {
+            return false;
+          }
+          log.debug("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
+          Thread.sleep(100);
+          MapWriter resp = (MapWriter) Utils.executeGET(httpClient, v2Url, Utils.JAVABINCONSUMER);
+          if (verifyResponse(resp, attempts)) {
 
-              break;
-            }
-            attempts++;
-          } catch (Exception e) {
-            if (e instanceof InterruptedException) {
-              break; // stop looping
-            } else {
-              log.warn("Failed to execute " + v2Url + " due to: " + e);
-            }
+            break;
+          }
+          attempts++;
+        } catch (Exception e) {
+          if (e instanceof InterruptedException) {
+            break; // stop looping
+          } else {
+            log.warn("Failed to execute " + v2Url + " due to: " + e);
           }
         }
+      }
       return true;
     }
 

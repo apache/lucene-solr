@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -96,8 +97,21 @@ public class BlobRepository {
     }
   }
 
+
+
+  public ByteBuffer getBlob(String sha256) throws IOException {
+    ByteBuffer result = tmpBlobs.get(sha256);
+    if (result != null) return result;
+    result = getFromLocalFs(sha256);
+    if (result == null) {
+      result = fetchFromOtherNodes(sha256);
+    }
+    return result;
+  }
+
   private final CoreContainer coreContainer;
   private Map<String, BlobContent> blobs = createMap();
+  private Map<String, ByteBuffer> tmpBlobs = new ConcurrentHashMap<>();
 
   // for unit tests to override
   ConcurrentHashMap<String, BlobContent> createMap() {
@@ -155,8 +169,9 @@ public class BlobRepository {
         result[0] = Utils.executeGET(httpClient, fromUrl, Utils.newBytesConsumer((int) MAX_JAR_SIZE));
         String actualSha256 = sha256Digest(result[0]);
         if (sha256.equals(actualSha256)) {
-          putBlob(result[0], sha256);
+          persistToFile(result[0], sha256);
         } else {
+          result[0] = null;
           log.error("expected sha256 : {} actual sha256: {} from blob downloaded from {} ", sha256, actualSha256, fromNode);
         }
       } catch (IOException e) {
@@ -248,15 +263,12 @@ public class BlobRepository {
     return aBlob;
   }
 
-  static String INVALID_JAR_MSG = "Invalid jar from {0} , expected sha256 hash : {1} , actual : {2}";
+  static String INVALID_JAR_MSG = "Invalid jar from  , expected sha256 hash : {0} , actual : {1}";
 
   private ByteBuffer fetchBlobAndVerify(String key, String url, String sha256) throws IOException {
     ByteBuffer byteBuffer = null;
     if (sha256 != null) {
       byteBuffer = getFromLocalFs(sha256);
-      if (byteBuffer == null) {
-        byteBuffer = fetchFromOtherNodes(sha256);
-      }
     }
     if (byteBuffer == null) byteBuffer = getAndValidate(key, url, sha256);
     return byteBuffer;
@@ -291,7 +303,8 @@ public class BlobRepository {
     return result[0];
   }
 
-  /** get a list of nodes randomly shuffled
+  /**
+   * get a list of nodes randomly shuffled
    * * @lucene.internal
    */
   public ArrayList<String> shuffledNodes() {
@@ -305,7 +318,7 @@ public class BlobRepository {
     ByteBuffer byteBuffer = fetchFromUrl(key, url);
     String computedDigest = sha256Digest(byteBuffer);
     if (!computedDigest.equals(sha256)) {
-      throw new SolrException(SERVER_ERROR, StrUtils.formatString(INVALID_JAR_MSG, url, sha256, computedDigest));
+      throw new SolrException(SERVER_ERROR, StrUtils.formatString(INVALID_JAR_MSG, sha256, computedDigest));
     }
     File file = new File(getBlobsPath().toFile(), sha256);
     try (FileOutputStream fos = new FileOutputStream(file)) {
@@ -315,12 +328,19 @@ public class BlobRepository {
     return byteBuffer;
   }
 
-  public void putBlob(ByteBuffer b, String sha256) throws IOException {
-    blobs.putIfAbsent(sha256, new BlobContent(sha256, b));
+  /**
+   * internal API
+   */
+  public void persistToFile(ByteBuffer b, String sha256) throws IOException {
+    String actual = sha256Digest(b);
+    if(!Objects.equals(actual, sha256)){
+      throw new SolrException(SERVER_ERROR, "invalid sha256 for blob actual: "+ actual+" expected : "+ sha256);
+    }
     File file = new File(getBlobsPath().toFile(), sha256);
     try (FileOutputStream fos = new FileOutputStream(file)) {
       fos.write(b.array(), 0, b.limit());
     }
+    log.info("persisted a blob {} ", sha256);
     IOUtils.fsync(file.toPath(), false);
   }
 
@@ -441,6 +461,14 @@ public class BlobRepository {
 
   BlobRead blobRead = new BlobRead();
 
+  public void putTmpBlob(ByteBuffer buf, String sha256) {
+    tmpBlobs.put(sha256, buf);
+  }
+
+  public void removeTmpBlob(String sha256) {
+    tmpBlobs.remove(sha256);
+  }
+
 
   class BlobRead extends RequestHandlerBase implements PermissionNameProvider {
 
@@ -469,16 +497,7 @@ public class BlobRepository {
             rsp.add("blob", fileList(req.getParams()));
           } else {
             try {
-              ByteBuffer buf = null;
-              BlobContent val = blobs.get(sha256);
-              if (val != null) {//check memory first
-                if (val.get() instanceof ByteBuffer) {
-                  buf = (ByteBuffer) val.get();
-                }
-              }
-              if (buf == null) {
-                buf = getFromLocalFs(sha256);//then check filesystem
-              }
+              ByteBuffer buf = getBlob(sha256);
               if (buf == null) {
                 throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such blob");
               } else {

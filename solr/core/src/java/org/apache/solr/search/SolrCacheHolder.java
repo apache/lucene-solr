@@ -71,7 +71,7 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   private void reloadCache(RuntimeLib lib) {
     int znodeVersion = info.runtimeLib == null ? -1 : info.runtimeLib.getZnodeVersion();
     if (lib.getZnodeVersion() > znodeVersion) {
-      log.info("Cache {} being reloaded, package: {} loaded from: {} ", delegate.getClass().getSimpleName(), info.pkg, lib.getUrl());
+      log.info("Cache {} being reloaded, package: {} loaded from: {} ", delegate.getClass().getSimpleName(), info.pkg, lib.getSha256());
       info = new CacheConfig.CacheInfo(info.cfg, info.core);
       delegate.close();
       delegate = info.cache;

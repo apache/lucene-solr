@@ -47,15 +47,15 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
   public static final String SHA256 = "sha256";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
-  private String name, version, sig, sha256, url;
-  private BlobRepository.BlobContentRef<ByteBuffer> jarContent;
+  private String name, version, sig, sha256;
+  private BlobRepository.BlobContentRef<ByteBuffer> blobContentRef;
+  private ByteBuffer buffer;
   private boolean verified = false;
   int znodeVersion = -1;
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ew.putIfNotNull(NAME, name);
-    ew.putIfNotNull("url", url);
     ew.putIfNotNull(version, version);
     ew.putIfNotNull("sha256", sha256);
     ew.putIfNotNull("sig", sig);
@@ -92,45 +92,55 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
   @Override
   public void init(PluginInfo info) {
     name = info.attributes.get(NAME);
-    url = info.attributes.get("url");
+    sha256 = info.attributes.get(SHA256);
     sig = info.attributes.get("sig");
-    if (url == null) {
+
+    if (sha256 == null) {
       Object v = info.attributes.get("version");
       if (name == null || v == null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "runtimeLib must have name and version");
       }
       version = String.valueOf(v);
     } else {
-      sha256 = info.attributes.get(SHA256);
-      if (sha256 == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "runtimeLib with url must have a 'sha256' attribute");
+      try {
+        buffer = coreContainer.getBlobRepository().getBlob(sha256);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
-      ByteBuffer buf = coreContainer.getBlobRepository().fetchFromUrl(name, url);
+      if(buffer == null){
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No such blob : "+ sha256);
+      }
 
-      String digest = BlobRepository.sha256Digest(buf);
+      String digest = BlobRepository.sha256Digest(buffer);
       if (!sha256.equals(digest)) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, StrUtils.formatString(BlobRepository.INVALID_JAR_MSG, url, sha256, digest));
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, StrUtils.formatString(BlobRepository.INVALID_JAR_MSG,  sha256, digest));
       }
-      verifyJarSignature(buf);
+      verifyJarSignature(buffer);
 
-      log.debug("dynamic library verified {}, sha256: {}", url, sha256);
+      log.debug("dynamic library verified , sha256: {}",  sha256);
 
     }
 
   }
 
-  public String getUrl() {
-    return url;
-  }
+
 
   void loadJar() {
-    if (jarContent != null) return;
+    if (buffer != null) return;
     synchronized (this) {
-      if (jarContent != null) return;
-
-      jarContent = url == null ?
-          coreContainer.getBlobRepository().getBlobIncRef(name + "/" + version) :
-          coreContainer.getBlobRepository().getBlobIncRef(name, null, url, sha256);
+      if (buffer != null) return;
+      if(sha256 == null){
+        //legacy type
+        blobContentRef = coreContainer.getBlobRepository().getBlobIncRef(name + "/" + version);
+        buffer = blobContentRef.blob.get();
+      } else {
+        //loaded from blob repo
+        try {
+          buffer = coreContainer.getBlobRepository().getBlob(sha256);
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      }
 
     }
   }
@@ -153,14 +163,13 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
   }
 
   public ByteBuffer getFileContent(String entryName) throws IOException {
-    if (jarContent == null)
+    if (buffer == null)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jar not available: " + name);
-    return getFileContent(jarContent.blob, entryName);
+    return getFileContent(buffer, entryName);
 
   }
 
-  public ByteBuffer getFileContent(BlobRepository.BlobContent<ByteBuffer> blobContent, String entryName) throws IOException {
-    ByteBuffer buff = blobContent.get();
+  public ByteBuffer getFileContent(ByteBuffer buff, String entryName) throws IOException {
     ByteArrayInputStream zipContents = new ByteArrayInputStream(buff.array(), buff.arrayOffset(), buff.limit());
     ZipInputStream zis = new ZipInputStream(zipContents);
     try {
@@ -185,19 +194,19 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
 
   @Override
   public void close() throws Exception {
-    if (jarContent != null) coreContainer.getBlobRepository().decrementBlobRefCount(jarContent);
+    if (blobContentRef != null) coreContainer.getBlobRepository().decrementBlobRefCount(blobContentRef);
   }
 
   public void verify() throws Exception {
     if (verified) return;
-    if (jarContent == null) {
+    if (buffer == null) {
       log.error("Calling verify before loading the jar");
       return;
     }
 
     if (!coreContainer.isZooKeeperAware())
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Signing jar is possible only in cloud");
-    verifyJarSignature(jarContent.blob.get());
+    verifyJarSignature(buffer);
   }
 
   void verifyJarSignature(ByteBuffer buf) {

@@ -762,7 +762,11 @@ public class Utils {
     }
     int statusCode = rsp.getStatusLine().getStatusCode();
     if(statusCode != 200) {
-      log.error("Failed a request to : "+ url);
+      try {
+        log.error("Failed a request to : {} ,  status :{}  body {}",url, rsp.getStatusLine(),  EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8));
+      } catch (IOException e) {
+        log.error("could not print error", e);
+      }
       throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), "Unknown error");
     }
     HttpEntity entity = rsp.getEntity();

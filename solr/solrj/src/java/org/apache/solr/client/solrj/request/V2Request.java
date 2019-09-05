@@ -49,6 +49,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   private String mimeType;
   private boolean forceV2 = false;
   private boolean isPerCollectionRequest = false;
+  private ResponseParser parser;
 
   private V2Request(METHOD m, String resource, boolean useBinary) {
     super(m, resource);
@@ -124,6 +125,12 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     ew.put("path", getPath());
     ew.putIfNotNull("params", solrParams);
     ew.putIfNotNull("command", payload);
+  }
+
+  @Override
+  public ResponseParser getResponseParser() {
+    if(parser != null) return parser;
+    return super.getResponseParser();
   }
 
   public static class Builder {
@@ -207,6 +214,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
       v2Request.payload = payload;
       v2Request.forceV2 = forceV2EndPoint;
       v2Request.mimeType = mimeType;
+      v2Request.parser = parser;
       return v2Request;
     }
   }

@@ -196,7 +196,7 @@ public class PackageManager implements ClusterPropertiesListener {
         lib.znodeVersion = ver;
         try {
           lib.init(new PluginInfo(RuntimeLib.TYPE, map));
-          if (lib.getUrl() == null) {
+          if (lib.getSha256() == null) {
             log.error("Unable to initialize runtimeLib : " + Utils.toJSONString(v));
             loadedAll[0] = false;
           }
@@ -215,7 +215,7 @@ public class PackageManager implements ClusterPropertiesListener {
 
     if (loadedAll[0]) {
       log.info("Libraries changed. New memclassloader created with jars {}",
-          newPkgs.values().stream().map(it -> it.lib.getUrl()).collect(Collectors.toList()));
+          newPkgs.values().stream().map(it -> it.lib.getSha256()).collect(Collectors.toList()));
       this.pkgs = newPkgs;
 
     }
