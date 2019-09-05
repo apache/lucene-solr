@@ -115,9 +115,9 @@ Setting this parameter to a number greater than 0 enables caching for result gro
 Testing has shown that group caching only improves search time with Boolean, wildcard, and fuzzy queries. For simple queries like term or "match all" queries, group caching degrades performance.
 
 `group.skip.second.step`::
-This parameter can be set to `true` if only one document per group needs to be retrieved. Result Grouping executes two searches; if enabled this option will disable the second search improving the performance. By default the value is set to `false`. It can be set to `true` of if `group.limit` is 1, and `group.sort` fields list is a prefix of `sort` fields list (e.g., if `sort=id asc,name desc` and `group.sort=id asc` is fine, but  `sort=id asc,name desc` and `group.sort=name desc` is not). Also it cannot be used together with <<other-parsers.adoc#re-ranking-query-parser,Re-ranking Query Parser>>.
+This parameter can be set to `true` if only one document per group needs to be retrieved. Result Grouping executes two searches; if enabled this option will disable the second search improving the performance. By default the value is set to `false`. It can be set to `true` if `group.limit` is 1, and `group.sort` fields list is absent or is a prefix of `sort` fields list (e.g., if `sort=price asc,name desc` and `group.sort=price asc` is fine, but `sort=price asc,name desc` and `group.sort=name desc` is not). Also it cannot be used together with <<other-parsers.adoc#re-ranking-query-parser,Re-ranking Query Parser>>.
 +
-More details on `group.skip.second.step` in https://youtu.be/eMuepJpjUjI?t=1591.
+More details on `group.skip.second.step` in https://www.youtube.com/watch?v=eMuepJpjUjI&t=1591[Learning to Rank: From Theory to Production].
 
 Any number of group commands (e.g., `group.field`, `group.func`, `group.query`, etc.) may be specified in a single request.
 
