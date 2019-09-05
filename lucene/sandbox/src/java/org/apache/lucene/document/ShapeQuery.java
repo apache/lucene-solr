@@ -133,7 +133,7 @@ abstract class ShapeQuery extends Query {
         final Weight weight = this;
         Relation rel = relateRangeToQuery(values.getMinPackedValue(), values.getMaxPackedValue(), queryRelation);
         if (rel == Relation.CELL_OUTSIDE_QUERY) {
-          // no documents math the query
+          // no documents match the query
           return new ScorerSupplier() {
             @Override
             public Scorer get(long leadCost) {
@@ -146,8 +146,8 @@ abstract class ShapeQuery extends Query {
             }
           };
         }
-        if (values.getDocCount() == reader.maxDoc() && rel == Relation.CELL_INSIDE_QUERY) {
-          // all document math the query
+        else if (values.getDocCount() == reader.maxDoc() && rel == Relation.CELL_INSIDE_QUERY) {
+          // all documents match the query
           return new ScorerSupplier() {
             @Override
             public Scorer get(long leadCost) {
@@ -159,13 +159,15 @@ abstract class ShapeQuery extends Query {
               return reader.maxDoc();
             }
           };
+        } else {
+          // walk the tree to get matching documents
+          return new RelationScorerSupplier(values, ShapeQuery.this) {
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+              return getScorer(reader, weight, score(), scoreMode);
+            }
+          };
         }
-        return new RelationScorerSupplier(values, ShapeQuery.this) {
-          @Override
-          public Scorer get(long leadCost) throws IOException {
-            return getScorer(reader, weight, score(), scoreMode);
-          }
-        };
       }
 
       @Override
@@ -256,7 +258,7 @@ abstract class ShapeQuery extends Query {
 
     private Scorer getDisjointScorer(LeafReader reader, Weight weight, final float boost, ScoreMode scoreMode) throws IOException {
       if (values.getDocCount() == reader.maxDoc()) {
-        // we need to visit all docs in the normal visitor so if
+        // We need to visit all docs in the normal visitor so if
         // we have all documents in this segment then use the
         // inverse visitor
         final FixedBitSet result = new FixedBitSet(reader.maxDoc());
@@ -277,7 +279,7 @@ abstract class ShapeQuery extends Query {
 
     private Scorer getWithinScorer(LeafReader reader, Weight weight, final float boost, ScoreMode scoreMode) throws IOException {
       if (values.getDocCount() == reader.maxDoc()) {
-        // we need to visit all docs in the normal visitor so if
+        // We need to visit all docs in the normal visitor so if
         // we have all documents in this segment then use the
         // inverse visitor
         final FixedBitSet result = new FixedBitSet(reader.maxDoc());
