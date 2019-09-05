@@ -53,6 +53,9 @@ Improvements
 * LUCENE-8906: Expose Lucene50PostingsFormat.IntBlockTermState as public so that other postings formats can re-use it.
   (Bruno Roustant)
 
+* LUCENE-8942: Remove redundant parameters and improve visibility strictness in
+  LRUQueryCache (Atri Sharma)
+
 * SOLR-13663: Introduce <SpanPositionRange> into XML Query Parser (Alessandro Benedetti via Mikhail Khludnev)
 
 * LUCENE-8952: Use a sort key instead of true distance in NearestNeighbor (Julie Tibshirani).
