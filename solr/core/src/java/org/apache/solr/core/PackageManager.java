@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,6 +46,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +92,10 @@ public class PackageManager implements ClusterPropertiesListener {
 
     public String getName() {
       return name;
+    }
+
+    public InputStream getBytes() {
+      return new ByteBufferInputStream(lib.buffer);
     }
 
 

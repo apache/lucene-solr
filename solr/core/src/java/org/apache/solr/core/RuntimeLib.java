@@ -49,7 +49,7 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
   private final CoreContainer coreContainer;
   private String name, version, sig, sha256;
   private BlobRepository.BlobContentRef<ByteBuffer> blobContentRef;
-  private ByteBuffer buffer;
+  ByteBuffer buffer;
   private boolean verified = false;
   int znodeVersion = -1;
 
@@ -210,7 +210,7 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
   }
 
   void verifyJarSignature(ByteBuffer buf) {
-    Map<String, byte[]> keys = CloudUtil.getTrustedKeys(coreContainer.getZkController().getZkClient(), "exe");
+    Map<String, byte[]> keys = getPublicKeys();
     if (keys.isEmpty()) {
       if (sig == null) {
         verified = true;
@@ -232,5 +232,9 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
       if (e instanceof SolrException) throw (SolrException) e;
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error verifying key ", e);
     }
+  }
+
+  protected Map<String, byte[]> getPublicKeys() {
+    return CloudUtil.getTrustedKeys(coreContainer.getZkController().getZkClient(), "exe");
   }
 }

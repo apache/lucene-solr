@@ -292,7 +292,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       }
     }
     try {
-      lib.init(new PluginInfo(SolrRequestHandler.TYPE, dataMap));
+      lib.init(new PluginInfo(RuntimeLib.TYPE, dataMap));
     } catch (SolrException e) {
       log.error("Error loading runtimelib ", e);
       op.addError(e.getMessage());
