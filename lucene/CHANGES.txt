@@ -35,6 +35,9 @@ API Changes
 
 * LUCENE-8933: Validate JapaneseTokenizer user dictionary entry. (Tomoko Uchida)
 
+* LUCENE-8905: Better defence against malformed arguments in TopDocsCollector
+  (Atri Sharma)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
