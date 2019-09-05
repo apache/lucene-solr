@@ -426,32 +426,69 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     
     //Debug
     simpleQuery("q", "*:*", "rows", 10, "fl", "id," + i1, "group", "true", "group.field", i1, "debug", "true");
+
+    doTestGroupSkipSecondStepAlt();
     doTestGroupSkipSecondStep();
   }
 
   /*
     SOLR-11831, test skipping the second grouping step if the query only retrieves on document per group
    */
+  private void doTestGroupSkipSecondStepAlt() throws Exception {
+
+    // group.skip.second.step (absent/false/true) have an equivalent
+    // outcome only because the query matches nothing
+    variantQuery(
+        params(
+            "q", "1234doesnotmatchanything1234",
+            "fl",  "id," + i1,
+            "group", "true",
+            "group.field", i1),
+        params(),
+        params("group.skip.second.step", "false"),
+        params("group.skip.second.step", "true")
+        );
+
+    // when the query matches something numFound needs to be ignored because
+    // the number of documents per group will not be computed i.e. numFound=1
+    // will always be returned
+    // TODO: can we test for numFound=1 somehow?
+    assertFalse(handle.containsKey("numFound"));
+    handle.put("numFound", SKIP);
+    try {
+      variantQuery(
+          params(
+              "q", "{!func}id_i1",
+              "rows", "3",
+              "fl",  "id," + i1,
+              "group", "true",
+              "group.field", i1,
+              "group.skip.second.step", "true"),
+          params(),
+          params("group.limit", "1")
+          );
+    } finally {
+      handle.remove("numFound");
+    }
+  }
+
   private void doTestGroupSkipSecondStep() throws Exception {
     ignoreException(GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND); // don't print stack trace for exception raised by group.skip.second.step
     // Ignore numFound if group.skip.second.step is enabled because the number of documents per group will not be computed (will default to 1)
     handle.put("numFound", SKIP);
-    query("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true, "group.limit", 1,  "fl",  "id," + i1, "group", "true",
-        "group.field", i1);
     query("q", "kings", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1);
-    query("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
-        "group.field", i1);
-    query("q", "1234doesnotmatchanything1234", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1);
 
     ignoreException("Illegal grouping specification");
-    // ngroups will return the corrent results, the problem is that numFound for each group might be wrong in case of multishard setting - but there is no way to
-    // enable/disable it.
-    //assertSimpleQueryThrows("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.ngroups", true);
+    assertSimpleQueryThrows("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.ngroups", true);
     assertSimpleQueryThrows("q", "{!func}id", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 5);
     assertSimpleQueryThrows("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 0);
+
+//  query("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 1, "sort", i1+" desc");
+//  query("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 1, "sort", i1+" desc", "group.sort", i1+" desc");
+
     // group sorted in a different way should fail
-    assertSimpleQueryThrows("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 0, "sort", i1+" desc");
-    assertSimpleQueryThrows("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 0, "group.sort", i1+" desc");
+    assertSimpleQueryThrows("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 1, "group.sort", i1+" desc");
+
     query("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
         "group.field", i1, "sort", tlong+" desc,"+i1+" asc", "group.sort", tlong+" desc");
 
