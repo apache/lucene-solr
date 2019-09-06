@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +41,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
+import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -131,6 +133,20 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
+  public void infoRequestValidateXSolrAuthHeaders() throws IOException {
+    Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
+    assertEquals("401", headers.get("code"));
+    assertEquals("HTTP/1.1 401 Require authentication", headers.get(null));
+    assertEquals("Bearer realm=\"my-solr-jwt\"", headers.get("WWW-Authenticate"));
+    String authData = new String(Base64.base64ToByteArray(headers.get("X-Solr-AuthData")));
+    assertEquals("{\n" +
+        "  \"scope\":\"solr:admin\",\n" +
+        "  \"redirect_uris\":[],\n" +
+        "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n" +
+        "  \"client_id\":\"solr-cluster\"}", authData);
+  }
+
+  @Test
   public void testMetrics() throws Exception {
     boolean isUseV2Api = random().nextBoolean();
     String authcPrefix = "/admin/authentication";
@@ -213,6 +229,20 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     int code = createConn.getResponseCode();
     createConn.disconnect();
     return new Pair<>(result, code);
+  }
+
+  private Map<String,String> getHeaders(String url, String token) throws IOException {
+    URL createUrl = new URL(url);
+    HttpURLConnection conn = (HttpURLConnection) createUrl.openConnection();
+    if (token != null)
+      conn.setRequestProperty("Authorization", "Bearer " + token);
+    conn.connect();
+    int code = conn.getResponseCode();
+    Map<String, String> result = new HashMap<>();
+    conn.getHeaderFields().forEach((k,v) -> result.put(k, v.get(0)));
+    result.put("code", String.valueOf(code));
+    conn.disconnect();
+    return result;
   }
 
   private Pair<String, Integer> post(String url, String json, String token) throws IOException {

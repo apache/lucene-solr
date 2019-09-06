@@ -22,13 +22,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.time.Instant;
@@ -90,6 +85,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private static final String PARAM_ADMINUI_SCOPE = "adminUiScope";
   private static final String PARAM_REDIRECT_URIS = "redirectUris";
   private static final String PARAM_ISSUERS = "issuers";
+  private static final String PARAM_REALM = "realm";
 
   static final String PARAM_ISS_NAME = "name";
   static final String PARAM_JWK_URL = "jwkUrl";
@@ -100,7 +96,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   static final String PARAM_AUTHORIZATION_ENDPOINT = "authorizationEndpoint";
   static final String PARAM_CLIENT_ID = "clientId";
 
-  private static final String AUTH_REALM = "solr-jwt";
+  private static final String DEFAULT_AUTH_REALM = "solr-jwt";
   private static final String CLAIM_SCOPE = "scope";
   private static final long RETRY_INIT_DELAY_SECONDS = 30;
   private static final long DEFAULT_REFRESH_REPRIEVE_THRESHOLD = 5000;
@@ -108,7 +104,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
 
   private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN, PARAM_JWK_URL, PARAM_JWK, PARAM_ISSUER,
       PARAM_AUDIENCE, PARAM_REQUIRE_SUBJECT, PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
-      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_CLIENT_ID, PARAM_WELL_KNOWN_URL, PARAM_ISS_NAME,
+      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_CLIENT_ID, PARAM_WELL_KNOWN_URL, PARAM_REALM,
       PARAM_AUTHORIZATION_ENDPOINT, PARAM_ADMINUI_SCOPE, PARAM_REDIRECT_URIS, PARAM_REQUIRE_ISSUER, PARAM_ISSUERS);
 
   private JwtConsumer jwtConsumer;
@@ -125,6 +121,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private List<JWTIssuerConfig> issuerConfigs;
   private boolean requireIssuer;
   private JWTVerificationkeyResolver verificationKeyResolver;
+  String realm;
 
   /**
    * Initialize plugin
@@ -151,32 +148,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
           PARAM_REQUIRE_SUBJECT);
     }
     principalClaim = (String) pluginConfig.getOrDefault(PARAM_PRINCIPAL_CLAIM, "sub");
-    Object redirectUrisObj = pluginConfig.get(PARAM_REDIRECT_URIS);
-    redirectUris = Collections.emptyList();
-    if (redirectUrisObj != null) {
-      if (redirectUrisObj instanceof String) {
-        redirectUris = Collections.singletonList((String) redirectUrisObj);
-      } else if (redirectUrisObj instanceof List) {
-        redirectUris = (List<String>) redirectUrisObj;
-      }
-    }
     algWhitelist = (List<String>) pluginConfig.get(PARAM_ALG_WHITELIST);
-
-    String requiredScopesStr = (String) pluginConfig.get(PARAM_SCOPE);
-    if (!StringUtils.isEmpty(requiredScopesStr)) {
-      requiredScopes = Arrays.asList(requiredScopesStr.split("\\s+"));
-    }
-
-    adminUiScope = (String) pluginConfig.get(PARAM_ADMINUI_SCOPE);
-    if (adminUiScope == null && requiredScopes.size() > 0) {
-      adminUiScope = requiredScopes.get(0);
-      log.warn("No adminUiScope given, using first scope in 'scope' list as required scope for accessing Admin UI");
-    }
-
-    if (adminUiScope == null) {
-      adminUiScope = "solr";
-      log.warn("Warning: No adminUiScope provided, fallback to 'solr' as required scope. If this is not correct, the Admin UI login may not work");
-    }
+    realm = (String) pluginConfig.getOrDefault(PARAM_REALM, DEFAULT_AUTH_REALM);
 
     Map<String, String> claimsMatch = (Map<String, String>) pluginConfig.get(PARAM_CLAIMS_MATCH);
     claimsMatchCompiled = new HashMap<>();
@@ -186,8 +159,13 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       }
     }
 
+    String requiredScopesStr = (String) pluginConfig.get(PARAM_SCOPE);
+    if (!StringUtils.isEmpty(requiredScopesStr)) {
+      requiredScopes = Arrays.asList(requiredScopesStr.split("\\s+"));
+    }
+
     long jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
-    JWTIssuerConfig.setHttpsJwksFactory(new HttpsJwksFactory(jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD));
+    JWTIssuerConfig.setHttpsJwksFactory(new JWTIssuerConfig.HttpsJwksFactory(jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD));
 
     issuerConfigs = new ArrayList<>();
 
@@ -198,6 +176,29 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     // Add issuers from 'issuers' key
     issuerConfigs.addAll(parseIssuers(pluginConfig));
     verificationKeyResolver = new JWTVerificationkeyResolver(issuerConfigs, requireIssuer);
+
+    if (issuerConfigs.size() > 0 && getPrimaryIssuer().getAuthorizationEndpoint() != null) {
+      adminUiScope = (String) pluginConfig.get(PARAM_ADMINUI_SCOPE);
+      if (adminUiScope == null && requiredScopes.size() > 0) {
+        adminUiScope = requiredScopes.get(0);
+        log.warn("No adminUiScope given, using first scope in 'scope' list as required scope for accessing Admin UI");
+      }
+
+      if (adminUiScope == null) {
+        adminUiScope = "solr";
+        log.info("No adminUiScope provided, fallback to 'solr' as required scope for Admin UI login may not work");
+      }
+
+      Object redirectUrisObj = pluginConfig.get(PARAM_REDIRECT_URIS);
+      redirectUris = Collections.emptyList();
+      if (redirectUrisObj != null) {
+        if (redirectUrisObj instanceof String) {
+          redirectUris = Collections.singletonList((String) redirectUrisObj);
+        } else if (redirectUrisObj instanceof List) {
+          redirectUris = (List<String>) redirectUrisObj;
+        }
+      }
+    }
 
     initConsumer();
 
@@ -215,7 +216,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
           .setClientId((String) pluginConfig.get(PARAM_CLIENT_ID))
           .setWellKnownUrl((String) pluginConfig.get(PARAM_WELL_KNOWN_URL));
       if (pluginConfig.get(PARAM_JWK) != null) {
-        primary.setJwks(JWTIssuerConfig.parseJwkSet((Map<String, Object>) pluginConfig.get(PARAM_JWK)));
+        primary.setJsonWebKeySet(JWTIssuerConfig.parseJwkSet((Map<String, Object>) pluginConfig.get(PARAM_JWK)));
       }
       if (primary.isValid()) {
         log.debug("Found issuer in top level config");
@@ -529,7 +530,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
 
   private void authenticationFailure(HttpServletResponse response, String message, int httpCode, BearerWwwAuthErrorCode responseError) throws IOException {
     List<String> wwwAuthParams = new ArrayList<>();
-    wwwAuthParams.add("Bearer realm=\"" + AUTH_REALM + "\"");
+    wwwAuthParams.add("Bearer realm=\"" + realm + "\"");
     if (responseError != null) {
       wwwAuthParams.add("error=\"" + responseError + "\"");
       wwwAuthParams.add("error_description=\"" + message + "\"");
@@ -628,101 +629,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
   }
 
-  /**
-   * Config object for a OpenId Connect well-known config
-   * Typically exposed through /.well-known/openid-configuration endpoint 
-   */
-  public static class WellKnownDiscoveryConfig {
-    private Map<String, Object> securityConf;
-  
-    WellKnownDiscoveryConfig(Map<String, Object> securityConf) {
-      this.securityConf = securityConf;
-    }
-  
-    public static WellKnownDiscoveryConfig parse(String urlString) {
-      try {
-        URL url = new URL(urlString);
-        if (!Arrays.asList("https", "file").contains(url.getProtocol())) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Well-known config URL must be HTTPS or file");
-        }
-        return parse(url.openStream());
-      } catch (MalformedURLException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config URL " + urlString + " is malformed", e);
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config could not be read from url " + urlString, e);
-      }
-    }
-  
-    public static WellKnownDiscoveryConfig parse(String json, Charset charset) {
-      return parse(new ByteArrayInputStream(json.getBytes(charset)));
-    }
-  
-    @SuppressWarnings("unchecked")
-    public static WellKnownDiscoveryConfig parse(InputStream configStream) {
-      return new WellKnownDiscoveryConfig((Map<String, Object>) Utils.fromJSON(configStream));
-    }
-  
-    
-    public String getJwksUrl() {
-      return (String) securityConf.get("jwks_uri");
-    }
-  
-    public String getIssuer() {
-      return (String) securityConf.get("issuer");
-    }
-  
-    public String getAuthorizationEndpoint() {
-      return (String) securityConf.get("authorization_endpoint");
-    }
-    
-    public String getUserInfoEndpoint() {
-      return (String) securityConf.get("userinfo_endpoint");
-    }
-
-    public String getTokenEndpoint() {
-      return (String) securityConf.get("token_endpoint");
-    }
-
-    @SuppressWarnings("unchecked")
-    public List<String> getScopesSupported() {
-      return (List<String>) securityConf.get("scopes_supported");
-    }
-
-    @SuppressWarnings("unchecked")
-    public List<String> getResponseTypesSupported() {
-      return (List<String>) securityConf.get("response_types_supported");
-    }
-  }
-
-  public static class HttpsJwksFactory {
-    private final long jwkCacheDuration;
-    private final long refreshReprieveThreshold;
-
-    public HttpsJwksFactory(long jwkCacheDuration, long refreshReprieveThreshold) {
-      this.jwkCacheDuration = jwkCacheDuration;
-      this.refreshReprieveThreshold = refreshReprieveThreshold;
-    }
-
-    public HttpsJwks create(String url) {
-      try {
-        URL jwkUrl = new URL(url);
-        if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must use HTTPS");
-        }
-      } catch (MalformedURLException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Url " + url + " configured in " + PARAM_JWK_URL + " is not a valid URL");
-      }
-      HttpsJwks httpsJkws = new HttpsJwks(url);
-      httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
-      httpsJkws.setRefreshReprieveThreshold(refreshReprieveThreshold);
-      return httpsJkws;
-    }
-
-    public List<HttpsJwks> createList(List<String> jwkUrls) {
-      return jwkUrls.stream().map(this::create).collect(Collectors.toList());
-    }
-  }
-
   @Override
   protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
     if (httpContext instanceof HttpClientContext) {
@@ -747,15 +653,16 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     return false;
   }
 
-  public JWTVerificationkeyResolver getVerificationKeyResolver() {
-    return verificationKeyResolver;
-  }
-
   public List<JWTIssuerConfig> getIssuerConfigs() {
     return issuerConfigs;
   }
 
-  public Optional<JWTIssuerConfig> getIssuerConfigByName(String name) {
-    return issuerConfigs.stream().filter(ic -> name.equals(ic.getName())).findAny();
+  /**
+   * Lookup issuer config by its name
+   * @param name name property of config
+   * @return issuer config object or null if not found
+   */
+  public JWTIssuerConfig getIssuerConfigByName(String name) {
+    return issuerConfigs.stream().filter(ic -> name.equals(ic.getName())).findAny().orElse(null);
   }
 }

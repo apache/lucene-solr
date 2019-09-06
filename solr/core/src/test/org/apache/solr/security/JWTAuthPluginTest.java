@@ -16,20 +16,18 @@
  */
 package org.apache.solr.security;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
@@ -40,13 +38,11 @@ import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.keys.BigEndianBigInteger;
+import org.jose4j.lang.JoseException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
 import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
@@ -57,20 +53,33 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static String testHeader;
   private static String slimHeader;
   private JWTAuthPlugin plugin;
-  private HashMap<String, Object> testJwk;
   private static RsaJsonWebKey rsaJsonWebKey;
   private HashMap<String, Object> testConfig;
   private HashMap<String, Object> minimalConfig;
 
-  @Rule
-  public MockitoRule mockitoRule = MockitoJUnit.rule();
+  // Shared with other tests
+  static HashMap<String, Object> testJwk;
+
+  static {
+    // Generate an RSA key pair, which will be used for signing and verification of the JWT, wrapped in a JWK
+    try {
+      rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
+      rsaJsonWebKey.setKeyId("k1");
+
+      testJwk = new HashMap<>();
+      testJwk.put("kty", rsaJsonWebKey.getKeyType());
+      testJwk.put("e", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getPublicExponent()));
+      testJwk.put("use", rsaJsonWebKey.getUse());
+      testJwk.put("kid", rsaJsonWebKey.getKeyId());
+      testJwk.put("alg", rsaJsonWebKey.getAlgorithm());
+      testJwk.put("n", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getModulus()));
+    } catch (JoseException e) {
+      fail("Failed static initialization: " + e.getMessage());
+    }
+  }
 
   @BeforeClass
   public static void beforeAll() throws Exception {
-    // Generate an RSA key pair, which will be used for signing and verification of the JWT, wrapped in a JWK
-    rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
-    rsaJsonWebKey.setKeyId("k1");
-
     JwtClaims claims = generateClaims();
     JsonWebSignature jws = new JsonWebSignature();
     jws.setPayload(claims.toJson());
@@ -115,16 +124,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
     // Create an auth plugin
     plugin = new JWTAuthPlugin();
-
-    // Create a JWK config for security.json
-
-    testJwk = new HashMap<>();
-    testJwk.put("kty", rsaJsonWebKey.getKeyType());
-    testJwk.put("e", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getPublicExponent()));
-    testJwk.put("use", rsaJsonWebKey.getUse());
-    testJwk.put("kid", rsaJsonWebKey.getKeyId());
-    testJwk.put("alg", rsaJsonWebKey.getAlgorithm());
-    testJwk.put("n", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getModulus()));
 
     testConfig = new HashMap<>();
     testConfig.put("class", "org.apache.solr.security.JWTAuthPlugin");
@@ -202,71 +201,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertEquals(1, plugin.getIssuerConfigs().size());
     assertEquals(2, plugin.getIssuerConfigs().get(0).getJwksUrls().size());
   }
-
-  @Test
-  public void parseJwkSet() throws Exception {
-//   NOCOMMIT JWTAuthPlugin.IssuerConfig.parseJwkSet(testJwk);
-
-    HashMap<String, Object> testJwks = new HashMap<>();
-    List<Map<String, Object>> keys = new ArrayList<>();
-    keys.add(testJwk);
-    testJwks.put("keys", keys);
-    JWTIssuerConfig.parseJwkSet(testJwks);
-  }
-
-  @Test
-  public void parseIssuerConfigExplicit() throws Exception {
-    HashMap<String, Object> issuerConfigMap = new HashMap<>();
-    issuerConfigMap.put("name", "myName");
-    issuerConfigMap.put("iss", "myIss");
-    issuerConfigMap.put("jwkUrl", "https://host/jwk");
-
-    JWTIssuerConfig issuerConfig = new JWTIssuerConfig(issuerConfigMap);
-    assertEquals("myIss", issuerConfig.getIss());
-    assertEquals("myName", issuerConfig.getName());
-    assertEquals(1, issuerConfig.getJwksUrls().size());
-    assertEquals("https://host/jwk", issuerConfig.getJwksUrls().get(0));
-  }
-
-  @Test
-  public void initWithTwoIssuers() {
-    HashMap<String, Object> authConf = new HashMap<>();
-    JWTIssuerConfig iss1 = new JWTIssuerConfig("iss1").setIss("1").setAud("aud1")
-        .setJwksUrl("https://127.0.0.1:9999/foo.jwk");
-    JWTIssuerConfig iss2 = new JWTIssuerConfig("iss2").setIss("2").setAud("aud2")
-        .setJwksUrl(Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
-    authConf.put("issuers", Arrays.asList(iss1.asConfig(), iss2.asConfig()));
-    plugin = new JWTAuthPlugin();
-    plugin.init(authConf);
-    assertEquals(2, plugin.getIssuerConfigs().size());
-    assertTrue(plugin.getIssuerConfigs().get(0).usesHttpsJwk());
-    assertTrue(plugin.getIssuerConfigs().get(1).usesHttpsJwk());
-    assertEquals(2, plugin.getIssuerConfigs().get(1).getJwksUrls().size());
-  }
-
-/*
-  NOCOMMIT
-  @Mock
-  private JWTAuthPlugin.WellKnownDiscoveryConfig mockWellKnown;
-
-  @Test
-  public void parseIssuerConfigWellKnown() throws Exception {
-    HashMap<String, Object> issuerConfigMap = new HashMap<>();
-    issuerConfigMap.put("wellKnownUrl", "https://url");
-
-    when(mockWellKnown.
-
-    IssuerConfig issuerConfig = IssuerConfig.parse("myName", issuerConfigMap);
-    assertEquals("myName", issuerConfig.getName());
-    assertEquals("myIss", issuerConfig.getIss());
-    assertEquals(1, issuerConfig.getJwksUrls().size());
-    assertEquals("https://host/jwk", issuerConfig.getJwksUrls().get(0));
-  }
-
-  // More tests with 'issuers' config
-
-  // Test new methods
-*/
 
   @Test
   public void authenticateOk() {
@@ -416,14 +350,14 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void minimalConfigPassThrough() {
-    testConfig.put("blockUnknown", false);
+    minimalConfig.put("blockUnknown", false);
     plugin.init(minimalConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(null);
     assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PASS_THROUGH, resp.getAuthCode());
   }
   
   @Test
-  public void wellKnownConfig() {
+  public void wellKnownConfigNoHeaderPassThrough() {
     String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
@@ -432,41 +366,29 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PASS_THROUGH, resp.getAuthCode());
   }
 
+  @Test
+  public void defaultRealm() {
+    String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
+    testConfig.put("wellKnownUrl", wellKnownUrl);
+    testConfig.remove("jwk");
+    plugin.init(testConfig);
+    assertEquals("solr-jwt", plugin.realm);
+  }
+
+  @Test
+  public void configureRealm() {
+    String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
+    testConfig.put("wellKnownUrl", wellKnownUrl);
+    testConfig.remove("jwk");
+    testConfig.put("realm", "myRealm");
+    plugin.init(testConfig);
+    assertEquals("myRealm", plugin.realm);
+  }
+
   @Test(expected = SolrException.class)
-  public void onlyOneJwkConfig() {
+  public void bothJwksUrlAndJwkFails() {
     testConfig.put("jwkUrl", "http://127.0.0.1:45678/myJwk");
     plugin.init(testConfig);
-  }
-
-  @Test(expected = SolrException.class)
-  public void wellKnownConfigNotHttps() {
-    testConfig.put("wellKnownUrl", "http://127.0.0.1:45678/.well-known/config");
-    plugin.init(testConfig);
-  }
-
-  @Test(expected = SolrException.class)
-  public void wellKnownConfigNotReachable() {
-    testConfig.put("wellKnownUrl", "https://127.0.0.1:45678/.well-known/config");
-    plugin.init(testConfig);
-  }
-  
-  @Test
-  public void wellKnownConfigFromInputstream() throws IOException {
-    Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
-    JWTAuthPlugin.WellKnownDiscoveryConfig config = JWTAuthPlugin.WellKnownDiscoveryConfig.parse(Files.newInputStream(configJson));
-    assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());
-  }
-
-  @Test
-  public void wellKnownConfigFromString() throws IOException {
-    Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
-    String configString = StringUtils.join(Files.readAllLines(configJson), "\n");
-    JWTAuthPlugin.WellKnownDiscoveryConfig config = JWTAuthPlugin.WellKnownDiscoveryConfig.parse(configString, StandardCharsets.UTF_8);
-    assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());
-    assertEquals("http://acmepaymentscorp", config.getIssuer());
-    assertEquals("http://acmepaymentscorp/oauth/auz/authorize", config.getAuthorizationEndpoint());
-    assertEquals(Arrays.asList("READ", "WRITE", "DELETE", "openid", "scope", "profile", "email", "address", "phone"), config.getScopesSupported());
-    assertEquals(Arrays.asList("code", "code id_token", "code token", "code id_token token", "token", "id_token", "id_token token"), config.getResponseTypesSupported());
   }
 
   @Test
@@ -481,5 +403,45 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertEquals("solr:admin", parsed.get("scope"));
     assertEquals("http://acmepaymentscorp/oauth/auz/authorize", parsed.get("authorizationEndpoint"));
     assertEquals("solr-cluster", parsed.get("client_id"));
+  }
+
+  @Test
+  public void initWithTwoIssuers() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    JWTIssuerConfig iss1 = new JWTIssuerConfig("iss1").setIss("1").setAud("aud1")
+        .setJwksUrl("https://127.0.0.1:9999/foo.jwk");
+    JWTIssuerConfig iss2 = new JWTIssuerConfig("iss2").setIss("2").setAud("aud2")
+        .setJwksUrl(Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
+    authConf.put("issuers", Arrays.asList(iss1.asConfig(), iss2.asConfig()));
+    plugin = new JWTAuthPlugin();
+    plugin.init(authConf);
+    assertEquals(2, plugin.getIssuerConfigs().size());
+    assertTrue(plugin.getIssuerConfigs().get(0).usesHttpsJwk());
+    assertTrue(plugin.getIssuerConfigs().get(1).usesHttpsJwk());
+    JWTIssuerConfig issuer1 = plugin.getIssuerConfigByName("iss1");
+    JWTIssuerConfig issuer2 = plugin.getIssuerConfigByName("iss2");
+    assertNotNull(issuer1);
+    assertNotNull(issuer2);
+    assertEquals(2, issuer2.getJwksUrls().size());
+    assertEquals("iss1", plugin.getPrimaryIssuer().getName());
+    assertEquals("aud1", issuer1.getAud());
+  }
+
+  @Test
+  public void initWithToplevelAndIssuersCombined() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    JWTIssuerConfig iss1 = new JWTIssuerConfig("iss1").setIss("1").setAud("aud1")
+        .setJwksUrl("https://127.0.0.1:9999/foo.jwk");
+    authConf.put("issuers", Collections.singletonList(iss1.asConfig()));
+    authConf.put("aud", "aud2");
+    authConf.put("jwkUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
+
+    plugin = new JWTAuthPlugin();
+    plugin.init(authConf);
+    assertEquals(2, plugin.getIssuerConfigs().size());
+    assertEquals("PRIMARY", plugin.getPrimaryIssuer().getName());
+    assertEquals("aud2", plugin.getPrimaryIssuer().getAud());
+    // Top-level (name=PRIMARY) issuer config does not need "iss" for back compat
+    assertNull(plugin.getPrimaryIssuer().getIss());
   }
 }

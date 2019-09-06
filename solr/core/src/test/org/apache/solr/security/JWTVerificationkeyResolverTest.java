@@ -22,7 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.security.JWTAuthPlugin.HttpsJwksFactory;
+import org.apache.solr.security.JWTIssuerConfig.HttpsJwksFactory;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
