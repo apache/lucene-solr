@@ -166,7 +166,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
 
     // Try to parse an issuer from top level config, and add first (primary issuer)
     Optional<JWTIssuerConfig> topLevelIssuer = parseIssuerFromTopLevelConfig(pluginConfig);
-    topLevelIssuer.ifPresent(ic -> issuerConfigs.add(ic));
+    topLevelIssuer.ifPresent(ic -> {
+      issuerConfigs.add(ic);
+      log.warn("JWTAuthPlugin issuer is configured using top-level configuration keys. Please consider using the 'issusers' array instead.");
+    });
 
     // Add issuers from 'issuers' key
     issuerConfigs.addAll(parseIssuers(pluginConfig));
