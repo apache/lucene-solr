@@ -12,6 +12,14 @@
     "sig": {
       "type": "string",
       "description": "the signature of the jar"
+    },
+    "repository": {
+      "type": "string",
+      "description": "the signature of the jar"
+    },
+    "version": {
+      "type": "string",
+      "description": "the signature of the jar"
     }
   },
   "required" : ["name","sha256"]
