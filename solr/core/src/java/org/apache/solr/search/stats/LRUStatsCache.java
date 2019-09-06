@@ -24,7 +24,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.solr.core.PluginInfo;
