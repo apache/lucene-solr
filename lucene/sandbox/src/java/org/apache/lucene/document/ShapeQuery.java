@@ -26,6 +26,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -39,6 +40,8 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.bkd.BKDWriter;
+import org.apache.lucene.util.bkd.PointValue;
 
 /**
  * Base query class for all spatial geometries: {@link LatLonShape} and {@link XYShape}.
@@ -248,20 +251,35 @@ abstract class ShapeQuery extends Query {
     /** Scorer used for WITHIN and DISJOINT **/
     private Scorer getDenseScorer(LeafReader reader, Weight weight, final float boost, ScoreMode scoreMode) throws IOException {
       final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+      final long[] cost;
       if (values.getDocCount() == reader.maxDoc()) {
-        // In this case we can spare one visit to the tree
+        // First we check if we have any hits so we are fast in the adversarial case where
+        // the shape does not match any documents
+        if (hasAnyHits(query, values) == false) {
+          // no hits so we can return
+          return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
+        }
+        cost = new long[]{values.size()};
+        // In this case we can spare one visit to the tree, all documents
+        // are potential matches
         result.set(0, reader.maxDoc());
         // Remove false positives
-        values.intersect(getInverseDenseVisitor(query, result));
+        values.intersect(getInverseDenseVisitor(query, result, cost));
       } else {
-        // Get potential disjoint documents
-        values.intersect(getDenseVisitor(query, result));
-        // Remove false positives
-        values.intersect(getInverseDenseVisitor(query, result));
+        cost = new long[]{0};
+        // Get potential  documents.
+        final FixedBitSet excluded = new FixedBitSet(reader.maxDoc());
+        values.intersect(getDenseVisitor(query, result, excluded, cost));
+        if (cost[0] == 0) {
+          // no hits so we can return
+          return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
+        }
+        result.andNot(excluded);
+        // Remove false positives, we only care in nodes that are fully contain
+        // in the query.
+        values.intersect(getShallowInverseDenseVisitor(query, result));
       }
-      // TODO: we are calling cost() here which might be expensive and it does return an estimate of the number of points
-      // but not an estimate of the number of docs. Maybe we can just give a fix cost of numDocs on the tree???
-      final DocIdSetIterator iterator = new BitSetIterator(result, cost());
+      final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
 
@@ -372,28 +390,34 @@ abstract class ShapeQuery extends Query {
   }
 
   /** create a visitor that adds documents that match the query using a dense bitset; used with WITHIN & DISJOINT */
-  private static IntersectVisitor getDenseVisitor(final ShapeQuery query, final FixedBitSet result) {
+  private static IntersectVisitor getDenseVisitor(final ShapeQuery query, final FixedBitSet result, final FixedBitSet excluded, final long[] cost) {
     return new IntersectVisitor() {
       final int[] scratchTriangle = new int[6];
 
       @Override
       public void visit(int docID) {
         result.set(docID);
+        cost[0]++;
       }
 
       @Override
       public void visit(int docID, byte[] t) {
         if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
-          result.set(docID);
+          visit(docID);
+        } else {
+          excluded.set(docID);
         }
       }
 
       @Override
       public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
-        if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
-          int docID;
-          while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            result.set(docID);
+        boolean matches = query.queryMatches(t, scratchTriangle, query.getQueryRelation());
+        int docID;
+        while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          if (matches) {
+            visit(docID);
+          } else {
+            excluded.set(docID);
           }
         }
       }
@@ -406,13 +430,14 @@ abstract class ShapeQuery extends Query {
   }
 
   /** create a visitor that clears documents that do not match the polygon query using a dense bitset; used with WITHIN & DISJOINT */
-  private static IntersectVisitor getInverseDenseVisitor(final ShapeQuery query, final FixedBitSet result) {
+  private static IntersectVisitor getInverseDenseVisitor(final ShapeQuery query, final FixedBitSet result, final long[] cost) {
     return new IntersectVisitor() {
       final int[] scratchTriangle = new int[6];
 
       @Override
       public void visit(int docID) {
         result.clear(docID);
+        cost[0]--;
       }
 
       @Override
@@ -437,5 +462,72 @@ abstract class ShapeQuery extends Query {
         return transposeRelation(query.relateRangeToQuery(minPackedValue, maxPackedValue, query.getQueryRelation()));
       }
     };
+  }
+
+  /** create a visitor that clears documents that do not match the polygon query using a dense bitset; used with WITHIN & DISJOINT.
+   * This visitor only takes into account inner nodes */
+  private static IntersectVisitor getShallowInverseDenseVisitor(final ShapeQuery query, final FixedBitSet result) {
+    return new IntersectVisitor() {
+
+      @Override
+      public void visit(int docID) {
+        result.clear(docID);
+      }
+
+      @Override
+      public void visit(int docID, byte[] packedTriangle) {
+        //NO-OP
+      }
+
+      @Override
+      public void visit(DocIdSetIterator iterator, byte[] t) {
+        //NO-OP
+      }
+
+      @Override
+      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+        return transposeRelation(query.relateRangeToQuery(minPackedValue, maxPackedValue, query.getQueryRelation()));
+      }
+    };
+  }
+
+  /** Check if we have any hits by creating a visitor that terminates as soon as there is a hit */
+  private static boolean hasAnyHits(final ShapeQuery query, final PointValues values) throws IOException {
+    try {
+      values.intersect(new IntersectVisitor() {
+        final int[] scratchTriangle = new int[6];
+
+        @Override
+        public void visit(int docID) {
+          throw new CollectionTerminatedException();
+        }
+
+        @Override
+        public void visit(int docID, byte[] t) {
+          if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
+            throw new CollectionTerminatedException();
+          }
+        }
+
+        @Override
+        public void visit(DocIdSetIterator iterator, byte[] t) {
+          if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
+            throw new CollectionTerminatedException();
+          }
+        }
+
+        @Override
+        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+          Relation rel = query.relateRangeToQuery(minPackedValue, maxPackedValue, query.getQueryRelation());
+          if (rel == Relation.CELL_INSIDE_QUERY) {
+            throw new CollectionTerminatedException();
+          }
+          return rel;
+        }
+      });
+    } catch (CollectionTerminatedException e) {
+      return true;
+    }
+    return false;
   }
 }
