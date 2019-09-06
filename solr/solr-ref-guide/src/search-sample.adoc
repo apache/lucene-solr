@@ -34,7 +34,7 @@ in *table* format.
 
 
 In the example the search function is passed only the name of the collection being searched. This returns
-a result set of 10 records showing all fields in an unspecified order. This simple function is useful
+a result set of 10 records with all fields. This simple function is useful
 for exploring the fields in the data and understanding how to start refining the search criteria.
 
 image::images/math-expressions/search1.png[]
@@ -52,30 +52,30 @@ fields.
 image::images/math-expressions/search-sort.png[]
 
 
-Once we have a the data loaded into the table we can switch to a scatter plot and plot the filesize_d column
-on the *x axis* and the response_d column on the *y axis*.
+Once the data is loaded into the table we can switch to a scatter plot and plot the *filesize_d* column
+on the *x axis* and the *response_d* column on the *y axis*.
 
 image::images/math-expressions/search-sort-plot.png[]
 
 This allows us to quickly visualize the relationship between two variables
-selected from the a a specific slice of the index.
+selected from a very specific slice of the index.
 
 === Scoring
 
 The `search` function will score and rank documents when a query is performed on
-a text field. The example below shows an example of this scoring and ranking of results.
+a text field. The example below shows an example of the scoring and ranking of results.
 
 image::images/math-expressions/scoring.png[]
 
 == Sampling
 
 The `random` function returns a random sample from a distributed search result set.
-This allows for fast visualizations, statistical analysis and modeling of
-samples that can be applied to the larger result set.
+This allows for fast visualization, statistical analysis and modeling of
+samples that can be used to infer information about the larger result set.
 
-For the visualization examples below smaller random samples are used. But
+The visualization examples below use small random samples, but
 Solr's random sampling provides sub-second
-response times on sample sizes of over 200,000, which can be used to build
+response times on sample sizes of over 200,000. These larger samples can be used to build
 reliable statistical models that describe large data sets (billions of
 documents) with sub-second performance.
 
@@ -90,8 +90,8 @@ In the example below the `random` function is used to draw 500 random samples
 from the *logs* collection. The query matches all log records and
 the *filesize_d* field is returned with each sample.
 
-The visualization below shows the *filesize_d* field plotted on both the x and y
-axis which produces a diagnal line with a slop of 1. By studying the scatter plot
+The visualization below shows the *filesize_d* field plotted on both the *x* and *y*
+axis which produces a diagonal line with a slope of 1. By studying the scatter plot
 we can learn a number of things about the distribution of the *filesize_d*
 variable:
 
@@ -100,7 +100,7 @@ variable:
 * The sample seems to have a balanced number of observations above and below
 40,000. Based on this the *mean* and *mode* would appear to be around 40,000.
 * The number of observations tapers off to a small number of outliers on
-the and low end of the sample.
+the and low and high end of the sample.
 
 This sample can be rerun multiple times to see if the samples
 produce similar plots.
@@ -110,7 +110,7 @@ image::images/math-expressions/univariate.png[]
 === Bivariate Scatter Plots
 
 In the next example two fields are returned with each sample: *filesize_d* and *response_d*.
-By plotting filesize_d on the x axis and *response_d* on the y axis we can begin to study
+By plotting *filesize_d* on the *x* axis and *response_d* on the y axis we can begin to study
 the relationship between the two variables.
 
 By studying the scatter plot we can learn the following:
@@ -118,7 +118,8 @@ By studying the scatter plot we can learn the following:
 * As filesize_d rises response_d tends to rise.
 * This relationship appears to be linear, as a straight line put through the data could
 be used to model the relationship.
-* The points would cluster most densely
+* The points appear to cluster more densely along a straight line through the middle
+and become less dense as they move away from the line.
 * The variance of the data at each *filesize_d* point seems fairly consistent. This means
 a predictive model would have consistent error across the range of predictor values.
 
@@ -128,19 +129,20 @@ image::images/math-expressions/bivariate.png[]
 
 Aggregations are a powerful statistical tool for summarizing large data sets and
 surfacing patterns, trends and correlations within the data. Aggregations are also a powerful
-tool for visualization and provide data sets for further statisitcal analyis.
+tool for visualization and provide data sets for further statistical analysis. The sections
+below discuss some of the main aggregation functions in Streaming Expressions.
 
 === facet
 
 The `facet` function performs single and multi-dimension
 aggregations that behave in a similar manner to SQL group by aggregations.
-Under the cover the `facet` function pushes down the aggregation to Solr's
+Under the covers the `facet` function pushes down the aggregations to Solr's
 JSON facet api for fast distributed execution.
 
-The example below performs a single dimension aggregation from the nyc311 (NYC complaints) collection.
-The aggregation returns the top five
+The example below performs a single dimension aggregation from the
+nyc311 (NYC complaints) collection. The aggregation returns the top five
 *complaint types* by *count* for records with a status of *Pending*. The results is displayed
-in with Zeppelin-Solr in a table.
+with Zeppelin-Solr in a table.
 
 image::images/math-expressions/facettab1.png[]
 
@@ -148,9 +150,9 @@ The example below shows the table visualized using a pie chart.
 
 image::images/math-expressions/facetviz1.png[]
 
-The example below demonstrates a multi-dimension aggregation. Notice that
+The next example demonstrates a multi-dimension aggregation. Notice that
 the *buckets* parameter now
-contains two dimensions: *borough_s* and *complaint_type_s*. The result of this is the top 20
+contains two dimensions: *borough_s* and *complaint_type_s*. This returns the top 20
 combinations of borough and complaint type by count.
 
 image::images/math-expressions/facettab2.png[]
@@ -162,7 +164,7 @@ image::images/math-expressions/facetviz2.png[]
 === facet2D
 
 The `facet2D` function performs two dimensional aggregations that can be
-visualized as heat maps or pivoted to matrices and operated on by machine learning functions.
+visualized as heat maps or pivoted into matrices and operated on by machine learning functions.
 
 `facet2D` has different syntax and behavior then a two dimensional `facet` function which
 does not control the number of unique facets of each dimension. The `facet2D` function
@@ -182,10 +184,10 @@ The `timeseries` function performs fast, distributed time
 series aggregation leveraging Solr's builtin faceting and date math capabilities.
 
 The example below performs a monthly time series aggregation over a collection of
-daily stock price data.  In this example the average monthly closing price is calculated for the stock
-ticker *amzn* between a specific date range.
+daily stock price data.  In this example the average monthly closing price is
+calculated for the stock ticker *amzn* between a specific date range.
 
-The output of the `timeseries` function is then visualized with line chart.
+The output of the `timeseries` function is then visualized with a line chart.
 
 image::images/math-expressions/timeseries1.png[]
 
@@ -203,67 +205,71 @@ The background count is how many documents the term appears in in the entire cor
 The foreground and background counts are global for the collection.
 
 The `significantTerms` function can often provide insights that cannot be gleaned from
-other types of aggregations. The example below illustrates difference between
+other types of aggregations. The example below illustrates the difference between
  the `facet` function and the `significantTerms` function.
 
 In the first example the `facet` function aggregates the top 5 complaint types
-in Brooklyn. These are the five most common complaint types in Brooklyn, but
+in Brooklyn. This returns the five most common complaint types in Brooklyn, but
 its not clear that these terms appear more frequently in Brooklyn then
 then the other boroughs.
 
 image::images/math-expressions/significantTermsCompare.png[]
 
 In the next example the `significantTerms` function returns the top 5 significant terms
-in the complaint_type_s field for the borough of Brooklyn. The highest scoring term,
-Elder Abuse, has foreground count of 285 and background count of 298. This means
+in the *complaint_type_s* field for the borough of Brooklyn. The highest scoring term,
+Elder Abuse, has a foreground count of 285 and background count of 298. This means
 that there were 298 Elder Abuse complaints in the entire data set, and 285 of them
 were in Brooklyn. This shows that Elder Abuse complaints have a much higher occurrence
 rate in Brooklyn than the other boroughs.
 
 image::images/math-expressions/significantTerms2.png[]
 
-The final example shows a visualization of the `significantTerms` result over a text field
-containing movie reviews. The shows the significant terms that appear movie reviews that
-have the phrase "sci-fi".
+The final example shows a visualization of the `significantTerms` from a
+text field containing movie reviews. The result shows the
+significant terms that appear in movie reviews that have the phrase "sci-fi".
 
 The results are visualized using a bubble chart with the *foreground* count on
-the x axis and the *background* count on the y axis. Each term is shown in a bubble
-sized by the score.
+plotted on the *x* axis and the *background* count on the *y* axis. Each term is
+shown in a bubble sized by the *score*.
 
 image::images/math-expressions/sterms.png[]
 
 === nodes
 
-The `nodes` function performs aggregations of nodes during a breadth first search of a graph. The `nodes` function
-covered in detail in the link:graph-traversal.adoc[Graph Traversal] documentation. In this example the focus will
-be on finding correlated nodes in a time series graph using the `nodes` expressions.
+The `nodes` function performs aggregations of nodes during a breadth first search of a graph.
+The `nodes` function is covered in detail in the link:graph-traversal.adoc[Graph Traversal]
+documentation. In this example the focus will be on finding correlated nodes in a time series
+graph using the `nodes` expressions.
 
-The example below finds stocker tickers whose daily movements tend to be correlated with ticker
-*jpm* (JP Morgan).
+The example below finds stock tickers whose daily movements tend to be correlated with the
+ticker *jpm* (JP Morgan).
 
-The inner `search` expression finds records between a specifc date range where the ticker symbol is
-*jpm* and the change_d (daily change in stock price) is greater then .25. This search returns all fields
-in the index including the *yearMonthDay_s* which is the string representation of the year, month and day
+The inner `search` expression finds records between a specific date range
+where the ticker symbol is *jpm* and the change_d field (daily change in stock price)
+is greater then .25. This search returns all fields in the index including
+the *yearMonthDay_s* which is the string representation of the year, month and day
 of the matching records.
 
 The `nodes` function wraps the `search` function and operates over its results. The `walk` parameter maps
 a field from the search results to a field in the index. In this case the *yearMonthDay_s* is mapped back
-to the *yearMonthDay_s* field in the same index. This will find records that yearMonthDay_s field returned
-by the initial search, but will return results for all tickers on those days. A filter query is applied
-to the search to limit result set to rows that have a change_d greater the .25. This will find
-all records on the matching day, that have a daily change greate then .25.
+to the *yearMonthDay_s* field in the same index. This will find records that have same
+yearMonthDay_s field value returned
+by the initial search, and will return records for all tickers on those days.
+A filter query is applied to the search to filter the search to rows that have a *change_d*
+greater the .25. This will find all records on the matching days, that have a
+daily change greater then .25.
 
-The *gather* parameter tells the nodes expression to gather the *ticker_s* symbols during the breadth first
-search. The `count(*)` parameter tells counts the occurrences of the tickers. This will count the number
-of times each ticker appears in the breadth first search.
+The *gather* parameter tells the nodes expression to gather the *ticker_s* symbols during the
+breadth first search. The `count(*)` parameter counts the occurrences of the tickers.
+This will count the number of times each ticker appears in the breadth first search.
 
-Finally the `top` function selects the top 5 occurring tickers by count and returns them.
+Finally the `top` function selects the top 5 tickers by count and returns them.
 
 The result below shows the tickers in the *nodes* field and the counts for each node. Notice
-*jpm* is first, which shows how many days *jpm* had a change greater then .25, which was 84 in this
-time period. The next set of tickers, mtb, slvb, gs and pnc the tickers with highest number of days
-with a change greater then .25 over the same time period.
-
+*jpm* is first, which shows how many days *jpm* had a change greater then .25 in this time
+period. The next set of tickers (*mtb*, *slvb*, *gs* and *pnc*) are the tickers with highest
+number of days with a change greater then .25 on the same days that *jpm* had a change greater
+then .25.
 
 image::images/math-expressions/nodestab.png[]
 
