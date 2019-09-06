@@ -275,10 +275,12 @@ abstract class ShapeQuery extends Query {
           return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
         }
         result.andNot(excluded);
-        // Remove false positives, we only care in nodes that are fully contain
-        // in the query.
+        // Remove false positives, we only care about the inner nodes as intersecting
+        // leaf nodes have been already taken into account. Unfortunately this
+        // process still reads the leaf nodes.
         values.intersect(getShallowInverseDenseVisitor(query, result));
       }
+      assert cost[0] > 0;
       final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
