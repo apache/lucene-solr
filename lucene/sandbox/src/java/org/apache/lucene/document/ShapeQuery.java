@@ -40,8 +40,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.bkd.BKDWriter;
-import org.apache.lucene.util.bkd.PointValue;
 
 /**
  * Base query class for all spatial geometries: {@link LatLonShape} and {@link XYShape}.
