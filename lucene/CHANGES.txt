@@ -33,6 +33,10 @@ New Features
 
 * LUCENE-8960: Introduce LatLonDocValuesPointInPolygonQuery for LatLonDocValuesField (Ignacio Vera)
 
+* LUCENE-8753: New UniformSplitPostingsFormat (name "UniformSplit") primarily benefiting in simplicity and
+  extensibility.  New STUniformSplitPostingsFormat (name "SharedTermsUniformSplit") that shares a single internal
+  term dictionary across fields.  (Bruno Roustant, Juan Rodriguez, David Smiley)
+
 Improvements
 
 * LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)
