@@ -104,6 +104,8 @@ import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
+import org.apache.solr.store.blob.metadata.BlobCoreSyncer;
+import org.apache.solr.store.blob.process.CorePullTracker;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TimeOut;
@@ -283,26 +285,49 @@ public class HttpSolrCall {
 
         boolean isPreferLeader = (path.endsWith("/update") || path.contains("/update/"));
 
+        DocCollection collection = getCollection(collectionName);
         core = getCoreByCollection(collectionName, isPreferLeader); // find a local replica/core for the collection
         if (core != null) {
           if (idx > 0) {
             path = path.substring(idx);
           }
+
         } else {
-          // if we couldn't find it locally, look on other nodes
+          // check pull from blob
           if (idx > 0) {
-            extractRemotePath(collectionName, origCorename);
-            if (action == REMOTEQUERY) {
-              path = path.substring(idx);
-              return;
+            // if the core belongs to a replica of a shared collection and if core is not 
+            // present locally but ZK expects replica on this node, enqueue pull
+            Replica replica = null;
+            if (collection != null && collection.getSharedIndex()) {
+              replica = getReplicaFromCurrentNode(collectionName);
+              if (replica != null) {
+                String coreName = replica.getCoreName();
+                String shardName = getShardName(collectionName, coreName);
+                BlobCoreSyncer.pull(coreName, shardName, collectionName, cores, true, false);
+                core = cores.getCore(coreName);
+                if (!retry) {
+                  action = RETRY;
+                  return;
+                }
+              }
+            } 
+            
+            if (replica == null) {
+              // if we couldn't find it locally, look on other nodes
+              extractRemotePath(collectionName, origCorename);
+              if (action == REMOTEQUERY) {
+                path = path.substring(idx);
+                return;
+              }
             }
           }
           //core is not available locally or remotely
           autoCreateSystemColl(collectionName);
           if (action != null) return;
-        }
+        } 
       }
     }
+    
 
     // With a valid core...
     if (core != null) {
@@ -321,6 +346,17 @@ public class HttpSolrCall {
         // if not a /select, create the request
         if (solrReq == null) {
           solrReq = parser.parse(core, path, req);
+        }
+        
+        if (cores.isZooKeeperAware()) {
+          // collectionlist should be assigned in the solr cloud code above
+          String collectionName = collectionsList.isEmpty() ? null : collectionsList.get(0); // route to 1st
+          DocCollection collection = getCollection(collectionName);
+          // TODO: limit the number of pulls we do
+          if (collection != null && collection.getSharedIndex()) {
+            CorePullTracker corePullTracker = cores.getSharedStoreManager().getCorePullTracker();
+            corePullTracker.enqueueForPullIfNecessary(path, core, collectionName, cores);
+          }
         }
 
         invalidStates = checkStateVersionsAreValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
@@ -898,6 +934,21 @@ public class HttpSolrCall {
     }
     return result;
   }
+  
+  protected DocCollection getCollection(String collectionName) {
+    ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
+
+    ClusterState clusterState = zkStateReader.getClusterState();
+    return clusterState.getCollectionOrNull(collectionName, true);
+  }
+  
+  protected String getShardName(String collectionName, String coreName) {
+    ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
+
+    ClusterState clusterState = zkStateReader.getClusterState();
+    DocCollection collection = clusterState.getCollectionOrNull(collectionName, true);
+    return collection.getShardId(cores.getZkController().getNodeName(), coreName);
+  }
 
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
@@ -918,6 +969,32 @@ public class HttpSolrCall {
 
     List<Replica> replicas = collection.getReplicas(cores.getZkController().getNodeName());
     return randomlyGetSolrCore(liveNodes, replicas);
+  }
+  
+  private Replica getReplicaFromCurrentNode(String collectionName) {
+    ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
+
+    ClusterState clusterState = zkStateReader.getClusterState();
+    DocCollection collection = clusterState.getCollectionOrNull(collectionName, true);
+    
+    if (collection == null) {
+      return null;
+    }
+    
+    Set<String> liveNodes = clusterState.getLiveNodes();
+    List<Replica> replicas = collection.getReplicas(cores.getZkController().getNodeName());
+    
+    if (replicas != null) {
+      RandomIterator<Replica> it = new RandomIterator<>(random, replicas);
+      while (it.hasNext()) {
+        Replica replica = it.next();
+        if (liveNodes.contains(replica.getNodeName())) {
+          return replica;
+        }
+      }
+    }
+    
+    return null;
   }
 
   private SolrCore randomlyGetSolrCore(Set<String> liveNodes, List<Replica> replicas) {

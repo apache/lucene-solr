@@ -107,6 +107,8 @@ public class ZkStateReader implements SolrCloseable {
   public static final String MAX_AT_ONCE_PROP = "maxAtOnce";
   public static final String MAX_WAIT_SECONDS_PROP = "maxWaitSeconds";
   public static final String STATE_TIMESTAMP_PROP = "stateTimestamp";
+  /* The name of shard index, used by multiple replicas, on a shared (blob) store when using shared store-based collections */
+  public static final String SHARED_SHARD_NAME = "sharedShardName";
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
   public static final String ALIASES = "/aliases.json";
@@ -125,10 +127,12 @@ public class ZkStateReader implements SolrCloseable {
   public static final String REPLICATION_FACTOR = "replicationFactor";
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
   public static final String AUTO_ADD_REPLICAS = "autoAddReplicas";
+  public static final String SHARED_INDEX = "sharedIndex"; // When true, means single _shard_ reference copy on shared (Blob) storage. SHARED_STORAGE_PROP means _replica_ specific hdfs mount.
   public static final String MAX_CORES_PER_NODE = "maxCoresPerNode";
   public static final String PULL_REPLICAS = "pullReplicas";
   public static final String NRT_REPLICAS = "nrtReplicas";
   public static final String TLOG_REPLICAS = "tlogReplicas";
+  public static final String SHARED_REPLICAS = "sharedReplicas";
   public static final String READ_ONLY = "readOnly";
 
   public static final String ROLES = "/roles.json";

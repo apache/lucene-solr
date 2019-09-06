@@ -434,6 +434,10 @@ public class TestPolicyCloud extends SolrCloudTestCase {
           assertTrue("PULL replica should be in " + pullNodeName, replica.getNodeName().equals(pullNodeName));
           break;
         }
+        case SHARED: {
+          fail("SHARED replica should not be created");
+          break;
+        }
       }
 
     };

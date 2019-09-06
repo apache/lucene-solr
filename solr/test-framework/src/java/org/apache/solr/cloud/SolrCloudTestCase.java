@@ -55,6 +55,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -507,6 +508,20 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
     cluster.waitForAllNodes(timeoutSeconds);
+  }
+  
+  /**
+   * Gets core container by node name. From here, core can be accessed to make updates, etc.
+   * @param nodeName String
+   * @return CoreContainer for that Solr node
+   */
+  public static CoreContainer getCoreContainer(String nodeName) {
+    for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
+      if (solrRunner.getNodeName().equals(nodeName)) {
+        return solrRunner.getCoreContainer();
+      }
+    }
+    return null;
   }
 
 }

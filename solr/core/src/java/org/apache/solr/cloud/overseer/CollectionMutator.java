@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARED_REPLICAS;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class CollectionMutator {
@@ -58,6 +59,14 @@ public class CollectionMutator {
     String shardId = message.getStr(ZkStateReader.SHARD_ID_PROP);
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
+    
+    String sharedShardName = message.getStr(ZkStateReader.SHARED_SHARD_NAME);
+    if (collection.getSharedIndex() && sharedShardName == null) {
+      log.error("Programmer Error: Unable to create Shard: " + shardId + " because createShard is missing "
+          + "a sharedShardName param for collection: " + collectionName);
+      return ZkStateWriter.NO_OP;
+    }
+    
     if (slice == null) {
       Map<String, Replica> replicas = Collections.EMPTY_MAP;
       Map<String, Object> sliceProps = new HashMap<>();
@@ -77,6 +86,10 @@ public class CollectionMutator {
       if (shardParentNode != null)  {
         sliceProps.put("shard_parent_node", shardParentNode);
       }
+      if (sharedShardName != null) {
+        sliceProps.put(ZkStateReader.SHARED_SHARD_NAME, sharedShardName);
+      }
+      
       collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps));
       return new ZkWriteCommand(collectionName, collection);
     } else {
@@ -107,6 +120,8 @@ public class CollectionMutator {
     Map<String, Object> m = coll.shallowCopy();
     boolean hasAnyOps = false;
     for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
+      // Because of how REPLICATION_FACTOR is coupled with NRT_REPLICAS below (SOLR-11676), it is not supported to change
+      // that value in collections backed by shared storage (Replica.Type.SHARED) as this will add NRT replicas which doesn't make sense.
       if (message.containsKey(prop)) {
         hasAnyOps = true;
         if (message.get(prop) == null)  {
@@ -115,7 +130,8 @@ public class CollectionMutator {
           m.put(prop, message.get(prop));
         }
         if (prop == REPLICATION_FACTOR) { //SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
-          m.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
+          // When Collection is shared storage backed, replication factor impacts shared replicas, not nrt.
+          m.put(coll.getSharedIndex() ? SHARED_REPLICAS : NRT_REPLICAS, message.get(REPLICATION_FACTOR));
         }
       }
     }

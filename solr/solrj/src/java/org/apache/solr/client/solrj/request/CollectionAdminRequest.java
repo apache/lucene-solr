@@ -441,9 +441,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Integer nrtReplicas;
     protected Integer pullReplicas;
     protected Integer tlogReplicas;
+    protected Integer sharedReplicas;
 
     protected Properties properties;
     protected Boolean autoAddReplicas;
+    protected Boolean sharedIndex; // true means Collection is shared storage based (replica type SHARED). null or false implies NRT/TLOG/PULL replicas.
     protected String alias;
     protected Integer stateFormat;
     protected String[] rule , snitch;
@@ -479,10 +481,28 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setRouterField(String routerField) { this.routerField = routerField; return this; }
     public Create setMaxShardsPerNode(Integer numShards) { this.maxShardsPerNode = numShards; return this; }
     public Create setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
+
+    /**
+     * By default collections are created to be non backed by shared storage (i.e. non blob based). SolrCloud then manages
+     * multiple replicas, replication and leader election to guarantee data persistence in presence of failures.<p>
+     * Call this method with <code>true</code> to make the collection being created backed by shared storage.<p>
+     *
+     * In such a case, <code>numNrtReplicas</code> (a.k.a. <code>numReplicas</code> in <code>createCollection...</code> calls)
+     * as well as TLOG and PULL replicas should be null/0, and number of {@link org.apache.solr.common.cloud.Replica.Type#SHARED}
+     * set by calling {@link #setSharedReplicas(Integer)} should be non zero.
+     *
+     * @param sharedIndex pass <code>true</code> here to make the collection backed by shared storage
+     */
+    public Create setSharedIndex(boolean sharedIndex) { this.sharedIndex = sharedIndex; return this; }
     public Create setNrtReplicas(Integer nrtReplicas) { this.nrtReplicas = nrtReplicas; return this;}
     public Create setTlogReplicas(Integer tlogReplicas) { this.tlogReplicas = tlogReplicas; return this;}
     public Create setPullReplicas(Integer pullReplicas) { this.pullReplicas = pullReplicas; return this;}
 
+    /**
+     * Need to call this method to set a non null non zero number of {@link org.apache.solr.common.cloud.Replica.Type#SHARED}
+     * replicas for collections for which {@link #setSharedIndex} was called with <code>true</code>.
+     */
+    public Create setSharedReplicas(Integer sharedReplicas) { this.sharedReplicas = sharedReplicas; return this;}
     public Create setReplicationFactor(Integer repl) { this.nrtReplicas = repl; return this; }
     public Create setStateFormat(Integer stateFormat) { this.stateFormat = stateFormat; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
@@ -503,6 +523,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Integer getReplicationFactor() { return getNumNrtReplicas(); }
     public Integer getNumNrtReplicas() { return nrtReplicas; }
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
+    public Boolean getSharedIndex() { return sharedIndex; }
     public Integer getNumTlogReplicas() {return tlogReplicas;}
     public Integer getNumPullReplicas() {return pullReplicas;}
 
@@ -551,6 +572,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
 
+      boolean isSharedIndex = Boolean.TRUE.equals(sharedIndex);
+
       if (configName != null)
         params.set("collection.configName", configName);
       if (createNodeSet != null)
@@ -569,10 +592,22 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         params.set("router.field", routerField);
       }
       if (nrtReplicas != null) {
+        if (isSharedIndex && nrtReplicas != 0) {
+          throw new RuntimeException("Illegal to have NRT replicas for collection backed by shared storage");
+        }
         params.set( ZkStateReader.NRT_REPLICAS, nrtReplicas);
+      }
+      if (sharedReplicas != null) {
+        if (!isSharedIndex && sharedReplicas != 0) {
+          throw new RuntimeException("Illegal to have SHARED replicas for collection not backed by shared storage");
+        }
+        params.set(ZkStateReader.SHARED_REPLICAS, sharedReplicas);
       }
       if (autoAddReplicas != null) {
         params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);
+      }
+      if (sharedIndex != null) {
+        params.set(ZkStateReader.SHARED_INDEX, sharedIndex);
       }
       if (properties != null) {
         addProperties(params, properties);
@@ -581,9 +616,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         params.set(DocCollection.STATE_FORMAT, stateFormat);
       }
       if (pullReplicas != null) {
+        if (isSharedIndex && pullReplicas != 0) {
+          throw new RuntimeException("Illegal to have PULL replicas for collection backed by shared storage");
+        }
         params.set(ZkStateReader.PULL_REPLICAS, pullReplicas);
       }
       if (tlogReplicas != null) {
+        if (isSharedIndex && tlogReplicas != 0) {
+          throw new RuntimeException("Illegal to have TLOG replicas for collection backed by shared storage");
+        }
         params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
       }
       if (rule != null) params.set(DocCollection.RULE, rule);
@@ -1093,6 +1134,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Integer tlogReplicas;
     protected Integer pullReplicas;
     protected Boolean autoAddReplicas;
+    protected Boolean sharedIndex;
     protected Optional<String> createNodeSet = Optional.empty();
     protected Optional<Boolean> createNodeSetShuffle = Optional.empty();
     protected Properties properties;
@@ -1158,6 +1200,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
     public Restore setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
 
+    public Boolean getSharedIndex() { return sharedIndex; }
+    public Restore setSharedIndex(boolean sharedIndex) { this.sharedIndex = sharedIndex; return this; }
+
     public Properties getProperties() {
       return properties;
     }
@@ -1193,6 +1238,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (autoAddReplicas != null) {
         params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);
+      }
+      if (sharedIndex != null) {
+        params.set(ZkStateReader.SHARED_INDEX, sharedIndex);
       }
       if (properties != null) {
         addProperties(params, properties);
@@ -1305,6 +1353,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     protected String nodeSet;
     protected Properties properties;
+    
+    protected Boolean sharedIndex;
+    protected Integer sharedReplicas;
 
     public CreateShard setNodeSet(String nodeSet) {
       this.nodeSet = nodeSet;
@@ -1323,6 +1374,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       this.properties = properties;
       return this;
     }
+    
+    public CreateShard setSharedIndex(boolean sharedIndex) { 
+      this.sharedIndex = sharedIndex; 
+      return this; 
+    }
+    
+    public CreateShard setSharedReplicas(Integer sharedReplicas) { 
+      this.sharedReplicas = sharedReplicas;
+      return this;
+    }
 
     private CreateShard(String collection, String shard) {
       super(CollectionAction.CREATESHARD, collection, SolrIdentifierValidator.validateShardName(shard));
@@ -1337,6 +1398,17 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (properties != null) {
         addProperties(params, properties);
       }
+      
+      boolean isSharedIndex = Boolean.TRUE.equals(sharedIndex);
+      
+      if (isSharedIndex) {
+        params.set(ZkStateReader.SHARED_INDEX, isSharedIndex);
+      }
+      
+      if (sharedReplicas != null) {
+        params.set(ZkStateReader.SHARED_REPLICAS, sharedReplicas);
+      }
+      
       return params;
     }
 

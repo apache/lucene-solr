@@ -147,8 +147,30 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       ZkStateReader.NRT_REPLICAS, "1",
       ZkStateReader.TLOG_REPLICAS, "0",
       ZkStateReader.PULL_REPLICAS, "0",
+      ZkStateReader.SHARED_REPLICAS, "0",
       ZkStateReader.MAX_SHARDS_PER_NODE, "1",
       ZkStateReader.AUTO_ADD_REPLICAS, "false",
+      ZkStateReader.SHARED_INDEX, "false",
+      DocCollection.RULE, null,
+      POLICY, null,
+      SNITCH, null,
+      WITH_COLLECTION, null,
+      COLOCATED_WITH, null));
+
+  /**
+   * Default values for a collection based on shared storage ({@link DocCollection#getSharedIndex()} returns <code>true</code>,
+   * replicas are {@link Replica.Type#SHARED}).
+   */
+  public static final Map<String, Object> SHARED_INDEX_COLLECTION_PROPS_AND_DEFAULTS = Collections.unmodifiableMap(makeMap(
+      ROUTER, DocRouter.DEFAULT_NAME,
+      ZkStateReader.REPLICATION_FACTOR, "1",
+      ZkStateReader.NRT_REPLICAS, "0",
+      ZkStateReader.TLOG_REPLICAS, "0",
+      ZkStateReader.PULL_REPLICAS, "0",
+      ZkStateReader.SHARED_REPLICAS, "1",
+      ZkStateReader.MAX_SHARDS_PER_NODE, "1",
+      ZkStateReader.AUTO_ADD_REPLICAS, "false",
+      ZkStateReader.SHARED_INDEX, "true",
       DocCollection.RULE, null,
       POLICY, null,
       SNITCH, null,

@@ -67,6 +67,9 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 
 /**
+ * <b>Reindex is NOT working with Shared storage based collections (having replicas of type {@link Replica.Type#SHARED}).<br>
+ * If/once we make it work, delete this comment.</b>
+ *
  * Reindex a collection, usually in order to change the index schema.
  * <p>WARNING: Reindexing is potentially a lossy operation - some indexed data that is not available as
  * stored fields may be irretrievably lost, so users should use this command with caution, evaluating

@@ -160,6 +160,7 @@ public class SliceMutator {
     log.info("Update shard state invoked for collection: " + collectionName + " with message: " + message);
 
     DocCollection collection = clusterState.getCollection(collectionName);
+    
     Map<String, Slice> slicesCopy = new LinkedHashMap<>(collection.getSlicesMap());
     for (String key : message.keySet()) {
       if (ZkStateReader.COLLECTION_PROP.equals(key)) continue;

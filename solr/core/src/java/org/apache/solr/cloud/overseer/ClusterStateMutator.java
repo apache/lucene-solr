@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -65,6 +66,8 @@ public class ClusterStateMutator {
     DocRouter router = DocRouter.getDocRouter(routerName);
 
     Object messageShardsObj = message.get("shards");
+    
+    boolean isSharedIndex = message.getBool(ZkStateReader.SHARED_INDEX, false);
 
     Map<String, Slice> slices;
     if (messageShardsObj instanceof Map) { // we are being explicitly told the slice data (e.g. coll restore)
@@ -81,13 +84,18 @@ public class ClusterStateMutator {
         getShardNames(numShards, shardNames);
       }
       List<DocRouter.Range> ranges = router.partitionRange(shardNames.size(), router.fullRange());//maybe null
-
+      
       slices = new LinkedHashMap<>();
       for (int i = 0; i < shardNames.size(); i++) {
         String sliceName = shardNames.get(i);
 
         Map<String, Object> sliceProps = new LinkedHashMap<>(1);
         sliceProps.put(Slice.RANGE, ranges == null ? null : ranges.get(i));
+        
+        if (isSharedIndex) {
+          String sharedShardName = Assign.buildSharedShardName(cName, sliceName);
+          sliceProps.put(ZkStateReader.SHARED_SHARD_NAME, sharedShardName);
+        }
 
         slices.put(sliceName, new Slice(sliceName, null, sliceProps));
       }
@@ -95,13 +103,16 @@ public class ClusterStateMutator {
 
     Map<String, Object> collectionProps = new HashMap<>();
 
-    for (Map.Entry<String, Object> e : OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.entrySet()) {
+    Map<String, Object> collectionDefaults = isSharedIndex
+        ? OverseerCollectionMessageHandler.SHARED_INDEX_COLLECTION_PROPS_AND_DEFAULTS
+        : OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS;
+    for (Map.Entry<String, Object> e : collectionDefaults.entrySet()) {
       Object val = message.get(e.getKey());
       if (val == null) {
-        val = OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.get(e.getKey());
+        val = collectionDefaults.get(e.getKey());
       }
       if (val != null) collectionProps.put(e.getKey(), val);
-    }
+    } 
     collectionProps.put(DocCollection.DOC_ROUTER, routerSpec);
 
     if (message.getStr("fromApi") == null) {

@@ -17,6 +17,9 @@
 
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -58,6 +61,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.store.blob.process.CoreUpdateTracker;
+import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -71,7 +76,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import com.google.common.annotations.VisibleForTesting;
 
 public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
@@ -82,6 +87,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private Set<String> skippedCoreNodeNames;
   private final String collection;
   private boolean readOnlyCollection = false;
+  private CoreUpdateTracker sharedCoreTracker;
 
   // should we clone the document before sending it to replicas?
   // this is set to true in the constructor if the next processors in the chain
@@ -89,13 +95,19 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private final boolean cloneRequiredOnLeader;
 
   //used for keeping track of replicas that have processed an add/update from the leader
-  private RollupRequestReplicationTracker rollupReplicationTracker = null;
-  private LeaderRequestReplicationTracker leaderReplicationTracker = null;
+  private RollupRequestReplicationTracker rollupReplicationTracker;
+  private LeaderRequestReplicationTracker leaderReplicationTracker;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
                                       SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    this(req,rsp,next, new CoreUpdateTracker(req.getCore().getCoreContainer()));
+  }
+  
+  @VisibleForTesting
+  protected DistributedZkUpdateProcessor(SolrQueryRequest req,
+      SolrQueryResponse rsp, UpdateRequestProcessor next, CoreUpdateTracker sharedCoreTracker) {
     super(req, rsp, next);
     CoreContainer cc = req.getCore().getCoreContainer();
     cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
@@ -108,6 +120,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // check readOnly property in coll state
       readOnlyCollection = coll.isReadOnly();
     }
+    this.sharedCoreTracker = sharedCoreTracker;
   }
 
   private boolean isReadOnly() {
@@ -158,11 +171,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
     isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
 
-    nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT), true);
+    nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT, Replica.Type.SHARED), true);
     if (nodes == null) {
       // This could happen if there are only pull replicas
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + " or " + Replica.Type.NRT);
+          "Unable to distribute commit operation. No replicas available of types " + Replica.Type.TLOG + ", " + Replica.Type.NRT
+            + " or " + Replica.Type.SHARED);
     }
 
     nodes.removeIf((node) -> node.getNodeProps().getNodeName().equals(zkController.getNodeName())
@@ -173,10 +187,20 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         log.warn("Commit not supported on replicas of type " + Replica.Type.PULL);
       } else if (replicaType == Replica.Type.NRT) {
         doLocalCommit(cmd);
+      } else if (replicaType == Replica.Type.SHARED) {
+        // If a replica is Replica.Type.SHARED then all are for the shard. These do not forward, data flows though shared storage.
+        // We really want to know if this happens, as it most likely means something went wrong elsewhere.
+        String message = "Unexpected indexing forwarding from leader to replicas for type " + Replica.Type.SHARED
+            + " collection " + collection + " leader " + leaderReplica.getCoreUrl() + " on " + leaderReplica.getNodeName();
+        log.error(message); // Remove if exception below ends up being logged.
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
       }
     } else {
       // zk
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
+      if (replicaType.equals(Replica.Type.SHARED)) {
+        readFromSharedStoreIfNecessary();
+      }
 
       List<SolrCmdDistributor.Node> useNodes = null;
       if (req.getParams().get(COMMIT_END_POINT) == null) {
@@ -195,6 +219,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
 
         params.set(COMMIT_END_POINT, "replicas");
+        
 
         useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderReplica);
 
@@ -227,6 +252,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // check if client has requested minimum replication factor information. will set replicationTracker to null if
     // we aren't the leader or subShardLeader
     checkReplicationTracker(cmd);
+    // Update the local cores if needed.
+    if (replicaType.equals(Replica.Type.SHARED)) {
+      readFromSharedStoreIfNecessary();
+    }
 
     super.processAdd(cmd);
   }
@@ -292,6 +321,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
     if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
+    }
+    // Update the local cores if needed.
+    if (replicaType.equals(Replica.Type.SHARED)) {
+      readFromSharedStoreIfNecessary();
     }
 
     super.processDelete(cmd);
@@ -464,7 +497,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         String myShardId = cloudDesc.getShardId();
         Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
             collection, myShardId);
-        // DBQ forwarded to NRT and TLOG replicas
+        // DBQ forwarded to NRT and TLOG replicas. Nothing (ever) forwarded to Replica.Type.SHARED.
         List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
             .getReplicaProps(collection, myShardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
         if (replicaProps != null) {
@@ -519,6 +552,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // TODO: what if we are no longer the leader?
 
       forwardToLeader = false;
+      // We never forward to Replica.Type.SHARED. They pull updates (including deletes) from shared storage.
       List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
           .getReplicaProps(collection, shardId, leaderReplica.getName(), null, Replica.State.DOWN, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
       if (replicaProps != null) {
@@ -654,6 +688,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         String leaderCoreNodeName = leaderReplica.getName();
         List<Replica> replicas = clusterState.getCollection(collection)
             .getSlice(shardId)
+            // Reminder: not forwarding to Replica.Type.SHARED
             .getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
         replicas.removeIf((replica) -> replica.getName().equals(leaderCoreNodeName));
         if (replicas.isEmpty()) {
@@ -808,6 +843,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     String leaderCoreNodeName = leaderReplica.getName();
     List<Replica> replicas = clusterState.getCollection(collection)
         .getSlice(shardId)
+        // In purpose we DO NOT forward to Replica.Type.SHARED. These get their data from shared storage.
         .getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
     replicas.removeIf((replica) -> replica.getName().equals(leaderCoreNodeName));
     if (replicas.isEmpty()) {
@@ -1018,6 +1054,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
+   
     super.processMergeIndexes(cmd);
   }
 
@@ -1035,6 +1072,31 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     doFinish();
   }
+  
+  private void writeToShareStore() throws SolrException {
+    log.info("Attempting to initiate index update write to shared store for collection=" + cloudDesc.getCollectionName() + 
+        " and shard=" + cloudDesc.getShardId() + " using core=" + req.getCore().getName());
+    
+    sharedCoreTracker.persistShardIndexToSharedStore(zkController.zkStateReader.getClusterState(), 
+        cloudDesc.getCollectionName(), 
+        cloudDesc.getShardId(), 
+        req.getCore().getName());
+  }
+  
+  private void readFromSharedStoreIfNecessary() throws SolrException {
+    String coreName = req.getCore().getName();
+    String shardName = cloudDesc.getShardId();
+    String collectionName = cloudDesc.getCollectionName();
+    assertEquals(replicaType, Replica.Type.SHARED);
+    // Peers and subShardLeaders should only forward the update request to leader replica,
+    // hence not need to sync with the blob store at this point.
+    if (!isLeader || isSubShardLeader) {
+      return;
+    }
+    BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName,coreName,shardName,req.getCore().getCoreContainer());
+  }
+  
+  
 
   // TODO: optionally fail if n replicas are not reached...
   private void doFinish() {
@@ -1046,10 +1108,34 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       }
       zkController.getShardTerms(collection, cloudDesc.getShardId()).ensureHighestTermsAreNotZero();
     }
+    
+    /**
+     *  Track the updated core for push to Blob store. 
+     *  
+     *  Only, the leader node pushes the updates to blob store but the leader can be change mid update, 
+     *  so we don't stop peers from pushing updates to the blob store.
+     *  
+     *  We also need to check for isLeader here because a peer can also receive commit message if the request was directly send to the peer.     
+     */
+    if ( updateCommand != null &&
+        updateCommand.getClass() == CommitUpdateCommand.class && 
+        isLeader && replicaType.equals(Replica.Type.SHARED)
+        && !((CommitUpdateCommand) updateCommand).softCommit) {
+      /*
+       * TODO SPLITSHARD triggers soft commits.  
+       * We don't persist on softCommit because there is nothing to so we should ignore those kinds of commits.
+       * Configuring behavior based on soft/hard commit seems like we're getting into an abstraction deeper then
+       * what the DUP is concerned about so we may want to consider moving this code somewhere more appropriate
+       * in the future (deeper in the stack) 
+       */
+      writeToShareStore();
+    }
+    
     // TODO: if not a forward and replication req is not specified, we could
     // send in a background thread
 
     cmdDistrib.finish();
+    
     List<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
     // TODO - we may need to tell about more than one error...
 

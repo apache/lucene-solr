@@ -99,7 +99,16 @@ public class Replica extends ZkNodeProps {
      * replicas can’t become shard leaders (i.e., if there are only pull replicas in the collection at some point, updates will fail
      * same as if there is no leaders, queries continue to work), so they don’t even participate in elections.
      */
-    PULL;
+    PULL,
+    /**
+     * Indexes locally and pushes segments to Shared (Blob) storage, or gets segments from Shared Storage to serve queries or index.
+     * Replicas of type {@link Type#SHARED} for a Collection are exclusive of any other replica type for the collection.
+     * Any {@link Type#SHARED} replica can become a leader. A shard leader will update itself from the shared storage.<p>
+     * {@link Type#SHARED} replicas are created by defining a collection as <code>sharedIndex</code> by calling
+     * {@link org.apache.solr.client.solrj.request.CollectionAdminRequest.Create#setSharedIndex(boolean)} and passing
+     * <code>true</code> upon collection creation.
+     */
+    SHARED;
 
     public static Type get(String name){
       return name == null ? Type.NRT : Type.valueOf(name);
