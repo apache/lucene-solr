@@ -69,7 +69,15 @@ public class JWTIssuerConfigTest {
   @Test
   public void parseConfigMap() {
     // Do a round-trip from map -> object -> map -> json
-    assertEquals(testIssuerJson, JSONUtil.toJSON(new JWTIssuerConfig(testIssuerConfigMap).asConfig()));
+    JWTIssuerConfig issuerConfig = new JWTIssuerConfig(testIssuerConfigMap);
+    issuerConfig.isValid();
+    assertEquals(testIssuerJson, JSONUtil.toJSON(issuerConfig.asConfig()));
+  }
+
+  @Test(expected = SolrException.class)
+  public void parseConfigMapNoName() {
+    testIssuerConfigMap.remove("name"); // Will fail validation
+    new JWTIssuerConfig(testIssuerConfigMap).isValid();
   }
 
   @Test
