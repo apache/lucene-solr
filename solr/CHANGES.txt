@@ -150,6 +150,9 @@ Improvements
 * SOLR-13720: BlockJoinParentQParser.getCachedFilter()made public for accessing from QParser plugins
   (Stanislav Livotov via Mikhail Khludnev)
 
+* SOLR-13728: If a partial update (aka atomic update) is attempted on a document that has child docs, then ensure
+  the schema supports it (_root_ stored/docValues) by throwing an exception. (David Smiley)
+
 Bug Fixes
 ----------------------
 
