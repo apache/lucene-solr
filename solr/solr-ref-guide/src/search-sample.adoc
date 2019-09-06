@@ -234,5 +234,36 @@ image::images/math-expressions/sterms.png[]
 
 === nodes
 
+The `nodes` function performs aggregations of nodes during a breadth first search of a graph. The `nodes` function
+covered in detail in the link:graph-traversal.adoc[Graph Traversal] documentation. In this example the focus will
+be on finding correlated nodes in a time series graph using the `nodes` expressions.
+
+The example below finds stocker tickers whose daily movements tend to be correlated with ticker
+*jpm* (JP Morgan).
+
+The inner `search` expression finds records between a specifc date range where the ticker symbol is
+*jpm* and the change_d (daily change in stock price) is greater then .25. This search returns all fields
+in the index including the *yearMonthDay_s* which is the string representation of the year, month and day
+of the matching records.
+
+The `nodes` function wraps the `search` function and operates over its results. The `walk` parameter maps
+a field from the search results to a field in the index. In this case the *yearMonthDay_s* is mapped back
+to the *yearMonthDay_s* field in the same index. This will find records that yearMonthDay_s field returned
+by the initial search, but will return results for all tickers on those days. A filter query is applied
+to the search to limit result set to rows that have a change_d greater the .25. This will find
+all records on the matching day, that have a daily change greate then .25.
+
+The *gather* parameter tells the nodes expression to gather the *ticker_s* symbols during the breadth first
+search. The `count(*)` parameter tells counts the occurrences of the tickers. This will count the number
+of times each ticker appears in the breadth first search.
+
+Finally the `top` function selects the top 5 occurring tickers by count and returns them.
+
+The result below shows the tickers in the *nodes* field and the counts for each node. Notice
+*jpm* is first, which shows how many days *jpm* had a change greater then .25, which was 84 in this
+time period. The next set of tickers, mtb, slvb, gs and pnc the tickers with highest number of days
+with a change greater then .25 over the same time period.
+
+
 image::images/math-expressions/nodestab.png[]
 
