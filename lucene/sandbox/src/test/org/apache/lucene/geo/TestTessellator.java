@@ -584,17 +584,17 @@ public class TestTessellator extends LuceneTestCase {
 
   private void checkTriangleEdgesFromPolygon(Polygon p, Tessellator.Triangle t) {
     // first edge
-    assertEquals(t.fromPolygon(0), edgeFromPolygon(p, t.getX(0), t.getY(0), t.getX(1), t.getY(1)));
+    assertEquals(t.isEdgefromPolygon(0), isEdgeFromPolygon(p, t.getX(0), t.getY(0), t.getX(1), t.getY(1)));
     // second edge
-    assertEquals(t.fromPolygon(1), edgeFromPolygon(p, t.getX(1), t.getY(1), t.getX(2), t.getY(2)));
+    assertEquals(t.isEdgefromPolygon(1), isEdgeFromPolygon(p, t.getX(1), t.getY(1), t.getX(2), t.getY(2)));
     // third edge
-    assertEquals(t.fromPolygon(2), edgeFromPolygon(p, t.getX(2), t.getY(2), t.getX(0), t.getY(0)));
+    assertEquals(t.isEdgefromPolygon(2), isEdgeFromPolygon(p, t.getX(2), t.getY(2), t.getX(0), t.getY(0)));
   }
 
-  private boolean edgeFromPolygon(Polygon p, double aLon, double aLat, double bLon, double bLat) {
+  private boolean isEdgeFromPolygon(Polygon p, double aLon, double aLat, double bLon, double bLat) {
     for (int i = 0; i < p.getPolyLats().length - 1; i++) {
-      if (pointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), aLon, aLat) &&
-          pointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), bLon, bLat)) {
+      if (isPointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), aLon, aLat) &&
+          isPointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), bLon, bLat)) {
         return true;
       }
       if (p.getPolyLon(i) != p.getPolyLon(i + 1) || p.getPolyLat(i) != p.getPolyLat(i + 1)) {
@@ -604,8 +604,8 @@ public class TestTessellator extends LuceneTestCase {
         int j = 0;
         int index = getIndex(length, j + offset);
         while (j < length  && area(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), p.getPolyLon(index), p.getPolyLat(index)) == 0) {
-          if (pointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(index), p.getPolyLat(index), aLon, aLat) &&
-              pointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(index), p.getPolyLat(index), bLon, bLat)) {
+          if (isPointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(index), p.getPolyLat(index), aLon, aLat) &&
+              isPointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(index), p.getPolyLat(index), bLon, bLat)) {
             return true;
           }
           index = getIndex(length, ++j + offset);
@@ -614,7 +614,7 @@ public class TestTessellator extends LuceneTestCase {
     }
     if (p.getHoles() != null && p.getHoles().length > 0) {
       for (Polygon hole : p.getHoles()) {
-        if (edgeFromPolygon(hole, aLon, aLat, bLon, bLat)) {
+        if (isEdgeFromPolygon(hole, aLon, aLat, bLon, bLat)) {
           return true;
         }
       }
@@ -635,7 +635,7 @@ public class TestTessellator extends LuceneTestCase {
     return (bY - aY) * (cX - bX) - (bX - aX) * (cY - bY);
   }
 
-  private  boolean pointInLine(final double aX, final double aY, final double bX, final double bY, double lon, double lat) {
+  private  boolean isPointInLine(final double aX, final double aY, final double bX, final double bY, double lon, double lat) {
     double dxc = lon - aX;
     double dyc = lat - aY;
 

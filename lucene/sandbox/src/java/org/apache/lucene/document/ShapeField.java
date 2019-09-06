@@ -68,9 +68,9 @@ public final class ShapeField {
 
     Triangle(String name, Tessellator.Triangle t) {
       super(name, TYPE);
-      setTriangleValue(t.getEncodedX(0), t.getEncodedY(0), t.fromPolygon(0),
-                       t.getEncodedX(1), t.getEncodedY(1), t.fromPolygon(1),
-                       t.getEncodedX(2), t.getEncodedY(2), t.fromPolygon(2));
+      setTriangleValue(t.getEncodedX(0), t.getEncodedY(0), t.isEdgefromPolygon(0),
+                       t.getEncodedX(1), t.getEncodedY(1), t.isEdgefromPolygon(1),
+                       t.getEncodedX(2), t.getEncodedY(2), t.isEdgefromPolygon(2));
     }
 
     /** sets the vertices of the triangle as integer encoded values */
