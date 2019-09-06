@@ -237,8 +237,8 @@ abstract class ShapeQuery extends Query {
         // by computing the set of documents that do NOT match the query
         final FixedBitSet result = new FixedBitSet(reader.maxDoc());
         result.set(0, reader.maxDoc());
-        final int[] cost = new int[]{reader.maxDoc()};
-        values.intersect(getInverseSparseVisitor(query, result, cost));
+        final long[] cost = new long[]{reader.maxDoc()};
+        values.intersect(getInverseDenseVisitor(query, result, cost));
         final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
         return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
       }
@@ -352,41 +352,6 @@ abstract class ShapeQuery extends Query {
       @Override
       public Relation compare(byte[] minTriangle, byte[] maxTriangle) {
         return query.relateRangeToQuery(minTriangle, maxTriangle, query.getQueryRelation());
-      }
-    };
-  }
-
-  /** create a visitor that clears documents that do NOT match the polygon query; used with INTERSECTS */
-  private static IntersectVisitor getInverseSparseVisitor(final ShapeQuery query, final FixedBitSet result, final int[] cost) {
-    return new IntersectVisitor() {
-      final int[] scratchTriangle = new int[6];
-
-      @Override
-      public void visit(int docID) {
-        result.clear(docID);
-        cost[0]--;
-      }
-
-      @Override
-      public void visit(int docID, byte[] packedTriangle) {
-        if (query.queryMatches(packedTriangle, scratchTriangle, query.getQueryRelation()) == false) {
-          visit(docID);
-        }
-      }
-
-      @Override
-      public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
-        if (query.queryMatches(t, scratchTriangle, query.getQueryRelation()) == false) {
-          int docID;
-          while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            visit(docID);
-          }
-        }
-      }
-
-      @Override
-      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-        return transposeRelation(query.relateRangeToQuery(minPackedValue, maxPackedValue, query.getQueryRelation()));
       }
     };
   }
