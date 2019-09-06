@@ -197,6 +197,9 @@ Bug Fixes
 
 * SOLR-13717: Fixed distributed grouping when multiple 'fl' params are specified (hossman, Christine Poerschke)
 
+* SOLR-13240: Fixed UTILIZENODE action resulting in IllegalArgumentException.
+  (Hendrik Haddorp, Richard Goodman, Tim Owen, shalin, noble, Christine Poerschke)
+
 Other Changes
 ----------------------
 
