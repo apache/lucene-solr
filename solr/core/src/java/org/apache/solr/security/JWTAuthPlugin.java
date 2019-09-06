@@ -87,25 +87,20 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private static final String PARAM_ISSUERS = "issuers";
   private static final String PARAM_REALM = "realm";
 
-  static final String PARAM_ISS_NAME = "name";
-  static final String PARAM_JWK_URL = "jwkUrl";
-  static final String PARAM_JWK = "jwk";
-  static final String PARAM_ISSUER = "iss";
-  static final String PARAM_AUDIENCE = "aud";
-  static final String PARAM_WELL_KNOWN_URL = "wellKnownUrl";
-  static final String PARAM_AUTHORIZATION_ENDPOINT = "authorizationEndpoint";
-  static final String PARAM_CLIENT_ID = "clientId";
-
   private static final String DEFAULT_AUTH_REALM = "solr-jwt";
   private static final String CLAIM_SCOPE = "scope";
   private static final long RETRY_INIT_DELAY_SECONDS = 30;
   private static final long DEFAULT_REFRESH_REPRIEVE_THRESHOLD = 5000;
   static final String PRIMARY_ISSUER = "PRIMARY";
 
-  private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN, PARAM_JWK_URL, PARAM_JWK, PARAM_ISSUER,
-      PARAM_AUDIENCE, PARAM_REQUIRE_SUBJECT, PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
-      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_CLIENT_ID, PARAM_WELL_KNOWN_URL, PARAM_REALM,
-      PARAM_AUTHORIZATION_ENDPOINT, PARAM_ADMINUI_SCOPE, PARAM_REDIRECT_URIS, PARAM_REQUIRE_ISSUER, PARAM_ISSUERS);
+  private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN,
+      PARAM_REQUIRE_SUBJECT, PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
+      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_REALM,
+      PARAM_ADMINUI_SCOPE, PARAM_REDIRECT_URIS, PARAM_REQUIRE_ISSUER, PARAM_ISSUERS,
+      // These keys are supported for now to enable PRIMARY issuer config through top-level keys
+      JWTIssuerConfig.PARAM_JWK_URL, JWTIssuerConfig.PARAM_JWK, JWTIssuerConfig.PARAM_ISSUER,
+      JWTIssuerConfig.PARAM_CLIENT_ID, JWTIssuerConfig.PARAM_WELL_KNOWN_URL, JWTIssuerConfig.PARAM_AUDIENCE,
+      JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT);
 
   private JwtConsumer jwtConsumer;
   private boolean requireExpirationTime;
@@ -209,14 +204,14 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private Optional<JWTIssuerConfig> parseIssuerFromTopLevelConfig(Map<String, Object> pluginConfig) {
     try {
       JWTIssuerConfig primary = new JWTIssuerConfig(PRIMARY_ISSUER)
-          .setIss((String) pluginConfig.get(PARAM_ISSUER))
-          .setAud((String) pluginConfig.get(PARAM_AUDIENCE))
-          .setJwksUrl(pluginConfig.get(PARAM_JWK_URL))
-          .setAuthorizationEndpoint((String) pluginConfig.get(PARAM_AUTHORIZATION_ENDPOINT))
-          .setClientId((String) pluginConfig.get(PARAM_CLIENT_ID))
-          .setWellKnownUrl((String) pluginConfig.get(PARAM_WELL_KNOWN_URL));
-      if (pluginConfig.get(PARAM_JWK) != null) {
-        primary.setJsonWebKeySet(JWTIssuerConfig.parseJwkSet((Map<String, Object>) pluginConfig.get(PARAM_JWK)));
+          .setIss((String) pluginConfig.get(JWTIssuerConfig.PARAM_ISSUER))
+          .setAud((String) pluginConfig.get(JWTIssuerConfig.PARAM_AUDIENCE))
+          .setJwksUrl(pluginConfig.get(JWTIssuerConfig.PARAM_JWK_URL))
+          .setAuthorizationEndpoint((String) pluginConfig.get(JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT))
+          .setClientId((String) pluginConfig.get(JWTIssuerConfig.PARAM_CLIENT_ID))
+          .setWellKnownUrl((String) pluginConfig.get(JWTIssuerConfig.PARAM_WELL_KNOWN_URL));
+      if (pluginConfig.get(JWTIssuerConfig.PARAM_JWK) != null) {
+        primary.setJsonWebKeySet(JWTIssuerConfig.parseJwkSet((Map<String, Object>) pluginConfig.get(JWTIssuerConfig.PARAM_JWK)));
       }
       if (primary.isValid()) {
         log.debug("Found issuer in top level config");
@@ -544,7 +539,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   protected String generateAuthDataHeader() {
     JWTIssuerConfig primaryIssuer = getPrimaryIssuer();
     Map<String,Object> data = new HashMap<>();
-    data.put(PARAM_AUTHORIZATION_ENDPOINT, primaryIssuer.getAuthorizationEndpoint());
+    data.put(JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT, primaryIssuer.getAuthorizationEndpoint());
     data.put("client_id", primaryIssuer.getClientId());
     data.put("scope", adminUiScope);
     data.put("redirect_uris", redirectUris);

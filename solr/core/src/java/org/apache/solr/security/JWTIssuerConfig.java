@@ -37,12 +37,19 @@ import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.lang.JoseException;
 
-import static org.apache.solr.security.JWTAuthPlugin.*;
-
 /**
  * Holds information about an IdP (issuer), such as issuer ID, JWK url(s), keys etc
  */
 public class JWTIssuerConfig {
+  static final String PARAM_ISS_NAME = "name";
+  static final String PARAM_JWK_URL = "jwkUrl";
+  static final String PARAM_JWK = "jwk";
+  static final String PARAM_ISSUER = "iss";
+  static final String PARAM_AUDIENCE = "aud";
+  static final String PARAM_WELL_KNOWN_URL = "wellKnownUrl";
+  static final String PARAM_AUTHORIZATION_ENDPOINT = "authorizationEndpoint";
+  static final String PARAM_CLIENT_ID = "clientId";
+
   private static HttpsJwksFactory httpsJwksFactory =
       new HttpsJwksFactory(3600, 5000);
   private String iss;

@@ -66,6 +66,8 @@ Upgrade Notes
 
 * SOLR-13593 SOLR-13690 SOLR-13691: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
 
+* SOLR-13734: JWTAuthPlugin configuration option `requireSub` is no longer needed and will cause an error if used (janhoy)
+
 Other Changes
 ----------------------
 
@@ -129,6 +131,9 @@ New Features
 * SOLR-13122: Ability to query aliases in Solr Admin UI (janhoy)
 
 * SOLR-13713: JWTAuthPlugin to support multiple JWKS endpoints (janhoy)
+
+* SOLR-13734: JWTAuthPlugin now supports multiple IdP issuers through configuring a new 'issuers' configuration key.
+  Access tokens issued and signed by any of the configured issuers will be validated (janhoy)
 
 Improvements
 ----------------------
