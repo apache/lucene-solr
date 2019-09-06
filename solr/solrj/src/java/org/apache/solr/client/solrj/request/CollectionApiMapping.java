@@ -46,7 +46,6 @@ import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_CMD;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_CMD_STATUS;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_CMD_STATUS_DELETE;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_NODES;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTIONS;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTIONS_COMMANDS;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTION_STATE;
@@ -203,26 +202,6 @@ public class CollectionApiMapping {
         POST,
         CLUSTERPROP,
         "set-property",null),
-    SET_CLUSTER_PROPERTY_OBJ(CLUSTER_CMD,
-        POST,
-        null,
-        "set-obj-property", null),
-
-    ADD_PACKAGE(CLUSTER_CMD,
-        POST,null,
-        "add-package",null ),
-    UPDATE_PACKAGE(CLUSTER_CMD,
-        POST,null,
-        "update-package",null ),
-    DELETE_RUNTIME_LIB(CLUSTER_CMD,
-        POST,null,
-        "delete-package",null ),
-    ADD_REQ_HANDLER(CLUSTER_CMD,
-        POST,null,
-        "add-requesthandler",null ),
-    DELETE_REQ_HANDLER(CLUSTER_CMD,
-        POST,null,
-        "delete-requesthandler",null ),
 
     UTILIZE_NODE(CLUSTER_CMD,
         POST,
@@ -240,16 +219,8 @@ public class CollectionApiMapping {
         "restore-collection",
         null
     ),
-    GET_NODES(CLUSTER_NODES, GET, null),
     FORCE_LEADER(PER_COLLECTION_PER_SHARD_COMMANDS, POST, CollectionAction.FORCELEADER, "force-leader", null),
-    BALANCE_SHARD_UNIQUE(PER_COLLECTION, POST, BALANCESHARDUNIQUE,"balance-shard-unique" , null),
-    POST_BLOB(EndPoint.CLUSTER_BLOB, POST, null){
-      @Override
-      public boolean isRaw() {
-        return true;
-      }
-    }
-    ;
+    BALANCE_SHARD_UNIQUE(PER_COLLECTION, POST, BALANCESHARDUNIQUE,"balance-shard-unique" , null);
 
     public final String commandName;
     public final EndPoint endPoint;
@@ -478,13 +449,6 @@ public class CollectionApiMapping {
   }
   public interface CommandMeta {
     String getName();
-
-    /** If true, do not do anything with the payload. The command implementation will do everything
-     */
-    default boolean isRaw(){
-      return false;
-    }
-
     /**
      * the http method supported by this command
      */

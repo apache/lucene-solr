@@ -79,7 +79,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
         SolrRequest.METHOD method = SolrRequest.METHOD.valueOf(req.getHttpMethod());
         List<ApiCommand> commands = commandsMapping.get(method).get(op);
         try {
-          if(commands!=null &&  commands.size() == 1 && commands.get(0).meta().isRaw()){
+          if(commands!=null &&  commands.size() == 1 && commands.get(0).isRaw()){
             commands.get(0).invoke(req,rsp, apiHandler);
             return;
           }
@@ -222,6 +222,14 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
   public interface ApiCommand  {
     CommandMeta meta();
+
+
+    /** If true, do not do anything with the payload. The command implementation will do everything
+     */
+
+    default boolean isRaw(){
+      return false;
+    }
 
     void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception;
   }

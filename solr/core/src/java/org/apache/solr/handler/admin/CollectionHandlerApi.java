@@ -17,69 +17,38 @@
 
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumMap;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
-import org.apache.http.client.HttpClient;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.Meta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.BlobRepository;
-import org.apache.solr.core.ConfigOverlay;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.RuntimeLib;
-import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.admin.CollectionsHandler.CollectionOperation;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.RTimer;
-import org.apache.solr.util.SimplePostTool;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static org.apache.solr.common.util.CommandOperation.captureErrors;
-import static org.apache.solr.common.util.StrUtils.formatString;
-import static org.apache.solr.core.RuntimeLib.SHA256;
 
 public class CollectionHandlerApi extends BaseHandlerApiSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final CollectionsHandler handler;
-  static Collection<ApiCommand> apiCommands = createCollMapping();
+  static Collection<ApiCommand> apiCommands = createApiMapping();
 
   public CollectionHandlerApi(CollectionsHandler handler) {
     this.handler = handler;
   }
 
-  private static Collection<ApiCommand> createCollMapping() {
-    Map<Meta, ApiCommand> apiMapping = new EnumMap<>(Meta.class);
+  private static Collection<ApiCommand> createApiMapping() {
+
+    //there
+    Map<CommandMeta, ApiCommand> apiMapping = new HashMap<>();
 
     for (Meta meta : Meta.values()) {
       for (CollectionOperation op : CollectionOperation.values()) {
@@ -99,14 +68,19 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       }
     }
     //The following APIs have only V2 implementations
-    addApi(apiMapping, Meta.GET_NODES, CollectionHandlerApi::getNodes);
-    addApi(apiMapping, Meta.POST_BLOB, CollectionHandlerApi::postBlob);
-    addApi(apiMapping, Meta.SET_CLUSTER_PROPERTY_OBJ, CollectionHandlerApi::setClusterObj);
-    addApi(apiMapping, Meta.ADD_PACKAGE, wrap(CollectionHandlerApi::addUpdatePackage));
-    addApi(apiMapping, Meta.UPDATE_PACKAGE, wrap(CollectionHandlerApi::addUpdatePackage));
-    addApi(apiMapping, Meta.DELETE_RUNTIME_LIB, wrap(CollectionHandlerApi::deletePackage));
-    addApi(apiMapping, Meta.ADD_REQ_HANDLER, wrap(CollectionHandlerApi::addRequestHandler));
-    addApi(apiMapping, Meta.DELETE_REQ_HANDLER, wrap(CollectionHandlerApi::deleteReqHandler));
+
+    for (ClusterAPI.Commands api : ClusterAPI.Commands.values()) {
+      apiMapping.put(api.meta(), api );
+    }
+
+//    addApi(apiMapping, Meta.GET_NODES, CollectionHandlerApi::getNodes);
+//    addApi(apiMapping, Meta.POST_BLOB, CollectionHandlerApi::postBlob);
+//    addApi(apiMapping, Meta.SET_CLUSTER_PROPERTY_OBJ, CollectionHandlerApi::setClusterObj);
+//    addApi(apiMapping, Meta.ADD_PACKAGE, wrap(CollectionHandlerApi::addUpdatePackage));
+//    addApi(apiMapping, Meta.UPDATE_PACKAGE, wrap(CollectionHandlerApi::addUpdatePackage));
+//    addApi(apiMapping, Meta.DELETE_RUNTIME_LIB, wrap(CollectionHandlerApi::deletePackage));
+//    addApi(apiMapping, Meta.ADD_REQ_HANDLER, wrap(CollectionHandlerApi::addRequestHandler));
+//    addApi(apiMapping, Meta.DELETE_REQ_HANDLER, wrap(CollectionHandlerApi::deleteReqHandler));
 
     for (Meta meta : Meta.values()) {
       if (apiMapping.get(meta) == null) {
@@ -117,54 +91,9 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     return apiMapping.values();
   }
 
-  private static boolean postBlob(ApiInfo info) {
-    CoreContainer coreContainer = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
-    Iterable<ContentStream> streams = info.req.getContentStreams();
-    if (streams == null) throw new SolrException(ErrorCode.BAD_REQUEST, "no payload");
-    String sha256 = null;
-    ContentStream stream = streams.iterator().next();
-    try {
-      ByteBuffer buf = SimplePostTool.inputStreamToByteArray(stream.getStream());
-      sha256 = BlobRepository.sha256Digest(buf);
-      coreContainer.getBlobRepository().persistToFile(buf, sha256);
-      coreContainer.getBlobRepository().putTmpBlob(buf, sha256);
-      List<String> nodes = coreContainer.getBlobRepository().shuffledNodes();
-      int i = 0;
-      for (String node : nodes) {
-        String baseUrl = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
-        String url = baseUrl.replace("/solr", "/api") + "/node/blob?sha256=" + sha256 + "&fromNode=";
-        if (i < 25) {
-          // the first 25 nodes will be asked to fetch from this node
-          //it's there in  the memory now , so , it must be served fast
-          url += coreContainer.getZkController().getNodeName();
-        } else {
-          // trying to avoid the thundering herd problem when there are a very large no:of nodes
-          // others should try to fetch it from any node where it is available
-          url += "*";
-        }
-        try {
-          //fire and forget
-          Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
-        } catch (Exception e) {
-          log.info("Node: " + node +
-              " failed to respond for blob notification", e);
-          //ignore the exception
-          // some nodes may be down or not responding
-        }
-        i++;
-      }
-      info.rsp.add(SHA256, sha256);
 
-    } catch (IOException e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, e);
-    } finally {
-      if (sha256 != null) coreContainer.getBlobRepository().removeTmpBlob(sha256);
-    }
 
-    return false;
-  }
-
-  static Command wrap(Command cmd) {
+ /* static Command wrap(Command cmd) {
     return info -> {
       CoreContainer cc = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
       boolean modified = false;
@@ -178,20 +107,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
         throw new SolrException(ErrorCode.SERVER_ERROR, "error executing command : ", e);
       }
       if (modified) {
-        Stat stat = new Stat();
-        Map<String, Object> clusterProperties = new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties(stat);
-        try {
-          cc.getPackageManager().onChange(clusterProperties);
-        } catch (SolrException e) {
-          log.error("error executing command : " + info.op.jsonStr(), e);
-          throw e;
-        } catch (Exception e) {
-          log.error("error executing command : " + info.op.jsonStr(), e);
-          throw new SolrException(ErrorCode.SERVER_ERROR, "error executing command : ", e);
-        }
-        log.info("current version of clusterprops.json is {} , trying to get every node to update ", stat.getVersion());
-        log.debug("The current clusterprops.json:  {}", clusterProperties);
-        ((CollectionHandlerApi) info.apiHandler).waitForStateSync(stat.getVersion(), cc);
+        syncClusterProps(info, cc);
 
       }
       if (info.op != null && info.op.hasError()) {
@@ -200,194 +116,9 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       return modified;
 
     };
-  }
-
-  private static boolean getNodes(ApiInfo params) {
-    params.rsp.add("nodes", ((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getClusterState().getLiveNodes());
-    return false;
-  }
-
-  private static boolean deleteReqHandler(ApiInfo params) throws Exception {
-    String name = params.op.getStr("");
-    ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
-    Map<String, Object> map = clusterProperties.getClusterProperties();
-    if (Utils.getObjectByPath(map, false, asList(SolrRequestHandler.TYPE, name)) == null) {
-      params.op.addError("NO such requestHandler with name :");
-      return false;
-    }
-    Map m = new LinkedHashMap();
-    Utils.setObjectByPath(m, asList(SolrRequestHandler.TYPE, name), null, true);
-    clusterProperties.setClusterProperties(m);
-    return true;
-  }
-
-  private static boolean addRequestHandler(ApiInfo params) throws Exception {
-    Map data = params.op.getDataMap();
-    String name = (String) data.get("name");
-    CoreContainer coreContainer = ((CollectionHandlerApi) params.apiHandler).handler.coreContainer;
-    ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
-    Map<String, Object> map = clusterProperties.getClusterProperties();
-    if (Utils.getObjectByPath(map, false, asList(SolrRequestHandler.TYPE, name)) != null) {
-      params.op.addError("A requestHandler already exists with the said name");
-      return false;
-    }
-    Map m = new LinkedHashMap();
-    Utils.setObjectByPath(m, asList(SolrRequestHandler.TYPE, name), data, true);
-    clusterProperties.setClusterProperties(m);
-    return true;
-  }
-
-  private static boolean deletePackage(ApiInfo params) throws Exception {
-    if (!RuntimeLib.isEnabled()) {
-      params.op.addError("node not started with enable.runtime.lib=true");
-      return false;
-    }
-    String name = params.op.getStr(CommandOperation.ROOT_OBJ);
-    ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
-    Map<String, Object> props = clusterProperties.getClusterProperties();
-    List<String> pathToLib = asList(CommonParams.PACKAGE, name);
-    Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
-    if (existing == null) {
-      params.op.addError("No such runtimeLib : " + name);
-      return false;
-    }
-    Map delta = new LinkedHashMap();
-    Utils.setObjectByPath(delta, pathToLib, null, true);
-    clusterProperties.setClusterProperties(delta);
-    return true;
-  }
-
-  private static boolean addUpdatePackage(ApiInfo params) throws Exception {
-    if (!RuntimeLib.isEnabled()) {
-      params.op.addError("node not started with enable.runtime.lib=true");
-      return false;
-    }
-
-    CollectionHandlerApi handler = (CollectionHandlerApi) params.apiHandler;
-    RuntimeLib lib = new RuntimeLib(handler.handler.coreContainer);
-    CommandOperation op = params.op;
-    String name = op.getStr("name");
-    ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
-    Map<String, Object> props = clusterProperties.getClusterProperties();
-    List<String> pathToLib = asList(CommonParams.PACKAGE, name);
-    Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
-    Map<String, Object> dataMap = Utils.getDeepCopy(op.getDataMap(), 3) ;
-    if (Meta.ADD_PACKAGE.commandName.equals(op.name)) {
-      if (existing != null) {
-        op.addError(StrUtils.formatString("The jar with a name ''{0}'' already exists ", name));
-        return false;
-      }
-    } else {// this is an update command
-      if (existing == null) {
-        op.addError(StrUtils.formatString("The jar with a name ''{0}'' does not exist", name));
-        return false;
-      }
-      if (Objects.equals(existing.get(SHA256), dataMap.get(SHA256))) {
-        op.addError("Trying to update a jar with the same sha256");
-        return false;
-      }
-      String oldSha256 = (String) Utils.getObjectByPath(existing, true, SHA256);
-      if(oldSha256 != null){
-        dataMap.put("old_sha256", oldSha256);
-      }
-    }
-    try {
-      lib.init(new PluginInfo(RuntimeLib.TYPE, dataMap));
-    } catch (SolrException e) {
-      log.error("Error loading runtimelib ", e);
-      op.addError(e.getMessage());
-      return false;
-    }
-
-    Map delta = new LinkedHashMap();
-    Utils.setObjectByPath(delta, pathToLib, dataMap, true);
-    clusterProperties.setClusterProperties(delta);
-    return true;
-
-  }
-
-  private static boolean setClusterObj(ApiInfo params) {
-    ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
-    try {
-      clusterProperties.setClusterProperties(params.op.getDataMap());
-    } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error in API", e);
-    }
-    return false;
-  }
-
-  private void waitForStateSync(int expectedVersion, CoreContainer coreContainer) {
-    final RTimer timer = new RTimer();
-    int waitTimeSecs = 30;
-    // get a list of active replica cores to query for the schema zk version (skipping this core of course)
-    List<PerNodeCallable> concurrentTasks = new ArrayList<>();
-
-    ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
-    for (String nodeName : zkStateReader.getClusterState().getLiveNodes()) {
-      PerNodeCallable e = new PerNodeCallable(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), zkStateReader.getBaseUrlForNodeName(nodeName), expectedVersion, waitTimeSecs);
-      concurrentTasks.add(e);
-    }
-    if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
-
-    log.info("Waiting up to {} secs for {} nodes to update clusterprops to be of version {} ",
-        waitTimeSecs, concurrentTasks.size(), expectedVersion);
-    SolrConfigHandler.execInparallel(concurrentTasks, parallelExecutor -> {
-      try {
-        List<String> failedList = SolrConfigHandler.executeAll(expectedVersion, waitTimeSecs, concurrentTasks, parallelExecutor);
-
-        // if any tasks haven't completed within the specified timeout, it's an error
-        if (failedList != null)
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-              formatString("{0} out of {1} the property {2} to be of version {3} within {4} seconds! Failed cores: {5}",
-                  failedList.size(), concurrentTasks.size() + 1, expectedVersion, 30, failedList));
-      } catch (InterruptedException e) {
-        log.warn(formatString(
-            "Request was interrupted . trying to set the clusterprops to version {0} to propagate to {1} nodes ",
-            expectedVersion, concurrentTasks.size()));
-        Thread.currentThread().interrupt();
-
-      }
-    });
-
-    log.info("Took {}ms to update the clusterprops to be of version {}  on {} nodes",
-        timer.getTime(), expectedVersion, concurrentTasks.size());
-
-  }
-
-  interface Command {
+  }*/
 
 
-    boolean call(ApiInfo info) throws Exception;
-
-  }
-
-  private static void addApi(Map<Meta, ApiCommand> mapping, Meta metaInfo, Command fun) {
-    mapping.put(metaInfo, new ApiCommand() {
-
-      @Override
-      public CommandMeta meta() {
-        return metaInfo;
-      }
-
-      @Override
-      public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
-        CommandOperation op = null;
-        if (metaInfo.method == SolrRequest.METHOD.POST) {
-          if (metaInfo.commandName != null) {
-            List<CommandOperation> commands = req.getCommands(true);
-            if (commands == null || commands.size() != 1)
-              throw new SolrException(ErrorCode.BAD_REQUEST, "should have exactly one command");
-            op = commands.get(0);
-          }
-        }
-
-        fun.call(new ApiInfo(req, rsp, apiHandler, op));
-        if (op != null && op.hasError()) {
-          throw new ApiBag.ExceptionWithErrObject(ErrorCode.BAD_REQUEST, "error processing commands", captureErrors(singletonList(op)));
-        }
-      }
-    });
-  }
 
   @Override
   protected List<V2EndPoint> getEndPoints() {
@@ -397,75 +128,6 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
   @Override
   protected Collection<ApiCommand> getCommands() {
     return apiCommands;
-  }
-
-  public static class PerNodeCallable extends SolrConfigHandler.PerReplicaCallable {
-    private final HttpClient httpClient;
-    final String v2Url;
-
-    static final List<String> path = Arrays.asList("metadata", CommonParams.VERSION);
-
-    PerNodeCallable(HttpClient httpClient, String baseUrl, int expectedversion, int waitTime) {
-      super(baseUrl, ConfigOverlay.ZNODEVER, expectedversion, waitTime);
-      this.httpClient = httpClient;
-      v2Url = baseUrl.replace("/solr", "/api") + "/node/ext?wt=javabin&omitHeader=true";
-    }
-
-    @Override
-    protected boolean verifyResponse(MapWriter mw, int attempts) {
-      remoteVersion = (Number) mw._get(path, -1);
-      if (remoteVersion.intValue() >= expectedZkVersion) return true;
-      log.info(formatString("Could not get expectedVersion {0} from {1} , remote val= {2}   after {3} attempts", expectedZkVersion, coreUrl, remoteVersion, attempts));
-
-      return false;
-    }
-
-
-    @Override
-    public Boolean call() throws Exception {
-      final RTimer timer = new RTimer();
-      int attempts = 0;
-
-      // eventually, this loop will get killed by the ExecutorService's timeout
-      while (true) {
-        try {
-          long timeElapsed = (long) timer.getTime() / 1000;
-          if (timeElapsed >= maxWait) {
-            return false;
-          }
-          log.debug("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
-          Thread.sleep(100);
-          MapWriter resp = (MapWriter) Utils.executeGET(httpClient, v2Url, Utils.JAVABINCONSUMER);
-          if (verifyResponse(resp, attempts)) {
-
-            break;
-          }
-          attempts++;
-        } catch (Exception e) {
-          if (e instanceof InterruptedException) {
-            break; // stop looping
-          } else {
-            log.warn("Failed to execute " + v2Url + " due to: " + e);
-          }
-        }
-      }
-      return true;
-    }
-
-  }
-
-  static class ApiInfo {
-    final SolrQueryRequest req;
-    final SolrQueryResponse rsp;
-    final BaseHandlerApiSupport apiHandler;
-    final CommandOperation op;
-
-    ApiInfo(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler, CommandOperation op) {
-      this.req = req;
-      this.rsp = rsp;
-      this.apiHandler = apiHandler;
-      this.op = op;
-    }
   }
 
 

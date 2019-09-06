@@ -15,11 +15,11 @@
     },
     "repository": {
       "type": "string",
-      "description": "the signature of the jar"
+      "description": "the repository name"
     },
     "version": {
       "type": "string",
-      "description": "the signature of the jar"
+      "description": "version of he package"
     }
   },
   "required" : ["name","sha256"]
