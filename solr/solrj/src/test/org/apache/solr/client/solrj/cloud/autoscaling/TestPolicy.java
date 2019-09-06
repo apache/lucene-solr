@@ -1081,7 +1081,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
     config = new AutoScalingConfig(policies);
     policy = config.getPolicy();
     session = null;
-    for (String expectedReplica : new String[] { "r3", "r5", "r1", null }) {
+    for (String expectedReplica : new String[] { "r1", "r3", "r5", null }) {
       if (session == null) {
         session = policy.createSession(provider);
       } else {
@@ -1129,8 +1129,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
     policy = config.getPolicy();
 
     session = null;
-    final String[] expectedReplica = new String[] { "r3", "r5", "r1" };
-    final String[] expectedTargetNode = new String[] { "node2", "node2", "node3" };
+    final String[] expectedReplica = new String[] { "r1", "r3", "r5" };
+    final String[] expectedTargetNode = new String[] { "node3", "node3", "node2" };
     for (int ii = 0; ii < expectedReplica.length; ++ii) {
       if (session == null) {
         session = policy.createSession(provider);
@@ -2249,7 +2249,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals("/c/mycoll1", l.get(0)._get( "operation/path",null));
     assertNotNull(l.get(0)._get("operation/command/move-replica", null));
     assertEquals("10.0.0.6:7574_solr", l.get(0)._get( "operation/command/move-replica/targetNode",null));
-    assertEquals("core_node2", l.get(0)._get("operation/command/move-replica/replica", null));
+    /*
+     * one of the two cores on 10.0.0.6:8983_solr should move to 10.0.0.6:7574_solr and
+     * (everything else being equal) core_node1 is chosen ahead of core_node2 based on its name
+     */
+    assertEquals("core_node1", l.get(0)._get("operation/command/move-replica/replica", null));
   }
 
 
