@@ -39,7 +39,7 @@ for exploring the fields in the data and understanding how to start refining the
 
 image::images/math-expressions/search1.png[]
 
-=== Sorting
+=== Searching and Sorting
 
 Once the format of the records is known, parameters can be added to the *search* function to begin analyzing
 the data.
@@ -148,8 +148,9 @@ The example below shows the table visualized using a pie chart.
 
 image::images/math-expressions/facetviz1.png[]
 
-The example below shows the table visualized using a pie chart. Notice that *buckets* parameter now
-contains two dimensions: borough_s and complaint_type_s. The result of this is the top 20
+The example below demonstrates a multi-dimension aggregation. Notice that
+the *buckets* parameter now
+contains two dimensions: *borough_s* and *complaint_type_s*. The result of this is the top 20
 combinations of borough and complaint type by count.
 
 image::images/math-expressions/facettab2.png[]
@@ -160,25 +161,74 @@ image::images/math-expressions/facetviz2.png[]
 
 === facet2D
 
-The `facet2D` function specicializes in creating matrices that can be used
-for visualization and machine learning operations.
+The `facet2D` function performs two dimensional aggregations that can be
+visualized as heat maps or pivoted to matrices and operated on by machine learning functions.
 
-The example below performs visualizes the output of a `facet2D` as a heatmap.
+`facet2D` has different syntax and behavior then a two dimensional `facet` function which
+does not control the number of unique facets of each dimension. The `facet2D` function
+has the *dimensions* parameter which controls the number of unique facets
+for the *x* and *y* dimensions.
+
+The example below visualizes the output of the `facet2D` function. In the example `facet2D`
+returns the top 5 boroughs and the top 5 complaint types for each borough. The output is
+then visualized as a heatmap.
 
 image::images/math-expressions/facet2D.png[]
 
 
 === timeseries
 
-The `timeseries` function performs fast distributed
+The `timeseries` function performs fast, distributed time
+series aggregation leveraging Solr's builtin faceting and date math capabilities.
+
+The example below performs a monthly time series aggregation over a collection of
+daily stock price data.  In this example the average monthly closing price is calculated for the stock
+ticker *amzn* between a specific date range.
+
+The output of the `timeseries` function is then visualized with line chart.
 
 image::images/math-expressions/timeseries1.png[]
 
 === significantTerms
 
+The `significantTerms` function queries a collection,
+but instead of returning documents, it returns significant terms found in
+documents in the result set. The `significantTerms` function scores terms
+based on how frequently they appear in the result set and how rarely
+they appear in the entire corpus. The `significantTerms` function emits a
+tuple for each term which contains the term, the score,
+the foreground count and the background count. The foreground count is
+how many documents the term appears in in the result set.
+The background count is how many documents the term appears in in the entire corpus.
+The foreground and background counts are global for the collection.
+
+The `significantTerms` function can often provide insights that cannot be gleaned from
+other types of aggregations. The example below illustrates difference between
+ the `facet` function and the `significantTerms` function.
+
+In the first example the `facet` function aggregates the top 5 complaint types
+in Brooklyn. These are the five most common complaint types in Brooklyn, but
+its not clear that these terms appear more frequently in Brooklyn then
+then the other boroughs.
+
 image::images/math-expressions/significantTermsCompare.png[]
 
+In the next example the `significantTerms` function returns the top 5 significant terms
+in the complaint_type_s field for the borough of Brooklyn. The highest scoring term,
+Elder Abuse, has foreground count of 285 and background count of 298. This means
+that there were 298 Elder Abuse complaints in the entire data set, and 285 of them
+were in Brooklyn. This shows that Elder Abuse complaints have a much higher occurrence
+rate in Brooklyn than the other boroughs.
+
 image::images/math-expressions/significantTerms2.png[]
+
+The final example shows a visualization of the `significantTerms` result over a text field
+containing movie reviews. The shows the significant terms that appear movie reviews that
+have the phrase "sci-fi".
+
+The results are visualized using a bubble chart with the *foreground* count on
+the x axis and the *background* count on the y axis. Each term is shown in a bubble
+sized by the score.
 
 image::images/math-expressions/sterms.png[]
 
