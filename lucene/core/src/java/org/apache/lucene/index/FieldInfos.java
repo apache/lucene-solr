@@ -18,16 +18,14 @@ package org.apache.lucene.index;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -422,10 +420,6 @@ public class FieldInfos implements Iterable<FieldInfo> {
         // only return true if the field has the same dvType as the requested one
         return dvType == docValuesType.get(fieldName);
       }
-    }
-    
-    synchronized Set<String> getFieldNames() {
-      return Collections.unmodifiableSet(new HashSet<>(nameToNumber.keySet()));
     }
 
     synchronized void clear() {

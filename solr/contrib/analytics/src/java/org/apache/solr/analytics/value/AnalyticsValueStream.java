@@ -34,40 +34,40 @@ import org.apache.solr.common.SolrException.ErrorCode;
 public interface AnalyticsValueStream {
   /**
    * Get the name of function or value.
-   * 
+   *
    * @return the name of function/value
    */
   String getName();
   /**
-   * Get the expression string of the analytics value stream. Must be unique to the expression. 
-   * If passed to {@link ExpressionFactory#createExpression(String)}, the exact same expression should be created. 
-   * 
+   * Get the expression string of the analytics value stream. Must be unique to the expression.
+   * If passed to {@link ExpressionFactory#createExpression(String)}, the exact same expression should be created.
+   *
    * @return the name of function/value
    */
   String getExpressionStr();
   /**
    * Stream the object representations of all current values, if any exist.
-   * 
+   *
    * @param cons The consumer to accept the values
    */
   void streamObjects(Consumer<Object> cons);
-  
+
   /**
    * Converts this value to a {@link ConstantValue} if it's expression type is {@link ExpressionType#CONST}.
-   * 
+   *
    * If the value is reduced then no conversion will occur and the value itself will be returned.
-   * 
+   *
    * @return a constant representation of this value
    */
   AnalyticsValueStream convertToConstant();
-  
+
   public static abstract class AbstractAnalyticsValueStream implements AnalyticsValueStream {
     @Override
     public AnalyticsValueStream convertToConstant() {
       return this;
     }
   }
-  
+
   /**
    * The types of expressions.
    */
@@ -80,7 +80,7 @@ public interface AnalyticsValueStream {
 
     private final boolean unreduced;
     private final boolean reduced;
-    
+
     ExpressionType(boolean unreduced, boolean reduced) {
       this.unreduced = unreduced;
       this.reduced = reduced;
@@ -96,19 +96,19 @@ public interface AnalyticsValueStream {
 
   /**
    * Get the type of the expression that this class represents.
-   * 
+   *
    * @return the expression type
    */
   ExpressionType getExpressionType();
-  
+
   /**
    * Helper to create an expression string for a function.
-   * 
+   *
    * @param funcName the name of the function
    * @param params the parameters of the function
    * @return a valid expression string for the function.
    */
-  static String createExpressionString(String funcName, 
+  static String createExpressionString(String funcName,
                                        AnalyticsValueStream... params) {
     return String.format(Locale.ROOT, "%s(%s)",
                          funcName,
@@ -119,9 +119,9 @@ public interface AnalyticsValueStream {
 
   /**
    * Determine whether the expression is a unreduced mapping expression, a reduced mapping expression, or a constant.
-   * 
+   *
    * @param exprString the string representing the expression, used when creating exceptions
-   * @param params the parameters 
+   * @param params the parameters
    * @return the expression type
    * @throws SolrException if the params are incompatable types,
    * for example if reduced and unreduced params are both included
@@ -143,7 +143,7 @@ public interface AnalyticsValueStream {
       return ExpressionType.REDUCED_MAPPING;
     }
     else {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The following expression contains incorrect parameters. " + 
+      throw new SolrException(ErrorCode.BAD_REQUEST,"The following expression contains incorrect parameters. " +
                             "(ReductionFunctions cannot be in the paramters of other ReductionFunctions): " + exprString);
     }
   }

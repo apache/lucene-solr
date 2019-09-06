@@ -490,22 +490,20 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         "*[count(//lst[@name='airport_s1']/int)=1]",
         "//lst[@name='airport_s1']/int[@name='ams'][.='2']"
     );
-    
-    try {
+
+    SolrException e = expectThrows(SolrException.class, () -> {
       h.query(
-           req(
-               "q", "*:*",
-               "fq", "id_i1:[2000 TO 2004]",
-               "group.facet", "true",
-               "facet", "true",
-               "facet.field", "airport_s1",
-               "facet.prefix", "a"
-           )
+          req(
+              "q", "*:*",
+              "fq", "id_i1:[2000 TO 2004]",
+              "group.facet", "true",
+              "facet", "true",
+              "facet.field", "airport_s1",
+              "facet.prefix", "a"
+          )
       );
-      fail("Exception should have been thrown");
-    } catch (SolrException e) {
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    }
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
   }
 
   @Test
@@ -597,6 +595,75 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         );
       }
     }
+  }
+
+  @Test
+  public void testFacetMissing() {
+    SolrParams commonParams = params("q", "foo_s:A", "rows", "0", "facet", "true", "facet.missing", "true");
+
+    // with facet.limit!=0 and facet.missing=true
+    assertQ(
+        req(commonParams, "facet.field", "trait_s", "facet.limit", "1"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='trait_s']",
+        "*[count(//lst[@name='trait_s']/int)=2]",
+        "//lst[@name='trait_s']/int[@name='Obnoxious'][.='2']",
+        "//lst[@name='trait_s']/int[.='1']"
+    );
+
+    // with facet.limit=0 and facet.missing=true
+    assertQ(
+        req(commonParams, "facet.field", "trait_s", "facet.limit", "0"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='trait_s']",
+        "*[count(//lst[@name='trait_s']/int)=1]",
+        "//lst[@name='trait_s']/int[.='1']"
+    );
+
+    // facet.method=enum
+    assertQ(
+        req(commonParams, "facet.field", "trait_s", "facet.limit", "0", "facet.method", "enum"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='trait_s']",
+        "*[count(//lst[@name='trait_s']/int)=1]",
+        "//lst[@name='trait_s']/int[.='1']"
+    );
+
+    assertQ(
+        req(commonParams, "facet.field", "trait_s", "facet.limit", "0", "facet.mincount", "1",
+            "facet.method", "uif"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='trait_s']",
+        "*[count(//lst[@name='trait_s']/int)=1]",
+        "//lst[@name='trait_s']/int[.='1']"
+    );
+
+    // facet.method=fcs
+    assertQ(
+        req(commonParams, "facet.field", "trait_s", "facet.limit", "0", "facet.method", "fcs"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='trait_s']",
+        "*[count(//lst[@name='trait_s']/int)=1]",
+        "//lst[@name='trait_s']/int[.='1']"
+    );
+
+    // facet.missing=true on numeric field
+    assertQ(
+        req(commonParams, "facet.field", "range_facet_f", "facet.limit", "1", "facet.mincount", "1"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='range_facet_f']",
+        "*[count(//lst[@name='range_facet_f']/int)=2]",
+        "//lst[@name='range_facet_f']/int[.='0']"
+    );
+
+    // facet.limit=0
+    assertQ(
+        req(commonParams, "facet.field", "range_facet_f", "facet.limit", "0", "facet.mincount", "1"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='range_facet_f']",
+        "*[count(//lst[@name='range_facet_f']/int)=1]",
+        "//lst[@name='range_facet_f']/int[.='0']"
+    );
   }
 
   @Test
@@ -2276,11 +2343,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         ,"group","true"
         ,"group.field",g
         ,"group.facet","true"
+        ,"facet.missing","true"
     );
 
     assertQ("test facet.exclude for grouped facets",
         groupReq
-        ,"*[count(//lst[@name='facet_fields']/lst/int)=10]"
+        ,"*[count(//lst[@name='facet_fields']/lst/int)=11]"
         ,pre+"/int[1][@name='CCC'][.='3']"
         ,pre+"/int[2][@name='CCC"+termSuffix+"'][.='3']"
         ,pre+"/int[3][@name='BBB'][.='2']"
@@ -2291,6 +2359,17 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         ,pre+"/int[8][@name='BB"+termSuffix+"'][.='1']"
         ,pre+"/int[9][@name='CC'][.='1']"
         ,pre+"/int[10][@name='CC"+termSuffix+"'][.='1']"
+        ,pre+"/int[11][.='1']"
+    );
+
+    ModifiableSolrParams modifiableSolrParams = new ModifiableSolrParams(groupReq.getParams());
+    modifiableSolrParams.set("facet.limit", "0");
+    groupReq.setParams(modifiableSolrParams);
+
+    assertQ("test facet.exclude for grouped facets with facet.limit=0, facet.missing=true",
+        groupReq
+        ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
+        ,pre+"/int[.='1']"
     );
   }
 
@@ -3302,6 +3381,39 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         ,"//lst[@name='facet_ranges']/lst[@name='" + field + "']/int[@name='before'][.='1']"
     );
     
+  }
+
+  public void testGroupFacetErrors() {
+    ModifiableSolrParams params = params("q", "*:*", "group", "true", "group.query", "myfield_s:*",
+        "facet", "true", "group.facet", "true");
+
+    // with facet.field
+    SolrException ex = expectThrows(SolrException.class, () -> {
+      h.query(req(params, "facet.field", "myfield_s"));
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
+
+    // with facet.query
+    ex = expectThrows(SolrException.class, () -> {
+      h.query(req(params, "facet.query", "myfield_s:*"));
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
+
+    // with facet.range
+    ex = expectThrows(SolrException.class, () -> h.query(req(params, "facet.range", "range_facet_l",
+        "facet.range.start", "43", "facet.range.end", "450", "facet.range.gap", "10"))
+    );
+    assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
+
+    // with facet.interval
+    ex = expectThrows(SolrException.class, () -> h.query(req(params, "facet.interval", "range_facet_l",
+        "f.range_facet_l.facet.interval.set", "(43,60]"))
+    );
+    assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Interval Faceting can't be used with group.facet"));
   }
   
   public void testRangeFacetingBadRequest() {

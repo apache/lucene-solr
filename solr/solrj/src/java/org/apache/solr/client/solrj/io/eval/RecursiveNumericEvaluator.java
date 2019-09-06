@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,12 +47,20 @@ public abstract class RecursiveNumericEvaluator extends RecursiveEvaluator {
     }
     else if(value instanceof BigDecimal){
       return value;
+    } else if(value instanceof String) {
+      return new BigDecimal((String)value);
     }
     else if(value instanceof Number){
       return new BigDecimal(value.toString());
     }
     else if(value instanceof Collection){
-      return ((Collection<?>)value).stream().map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
+      if(value instanceof List) {
+        if(((List)value).get(0) instanceof Number) {
+          return  value;
+        }
+      }
+
+      return ((Collection<?>) value).stream().map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
     }
     else if(value.getClass().isArray()){
       Stream<?> stream = Stream.empty();

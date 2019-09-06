@@ -17,9 +17,13 @@
 package org.apache.solr.cloud.rule;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -32,6 +36,9 @@ import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -63,10 +70,17 @@ public class RulesTest extends SolrCloudTestCase {
   @After
   public void removeCollections() throws Exception {
     cluster.deleteAllCollections();
+    // clear any cluster policy test methods may have set
+    cluster.getSolrClient().getZkStateReader().getZkClient().setData(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH,
+        "{}".getBytes(StandardCharsets.UTF_8), true);
   }
 
   @Test
   public void doIntegrationTest() throws Exception {
+    assertEquals("Sanity Check: someone changed the cluster; " +
+                 "test logic requires specific number of jetty nodes",
+                 5, cluster.getJettySolrRunners().size());
+    
     final long minGB = (random().nextBoolean() ? 1 : 0);
     assumeTrue("doIntegrationTest needs minGB="+minGB+" usable disk space",
         ImplicitSnitch.getUsableSpaceInGB(Paths.get("/")) > minGB);
@@ -76,7 +90,9 @@ public class RulesTest extends SolrCloudTestCase {
         .setRule("cores:<4", "node:*,replica:<2", "freedisk:>"+minGB)
         .setSnitch("class:ImplicitSnitch")
         .process(cluster.getSolrClient());
-
+    
+    cluster.waitForActiveCollection(rulesColl, 1, 2);
+    
     DocCollection rulesCollection = getCollectionState(rulesColl);
 
     List list = (List) rulesCollection.get("rule");
@@ -91,6 +107,53 @@ public class RulesTest extends SolrCloudTestCase {
     CollectionAdminRequest.createShard(rulesColl, "shard2").process(cluster.getSolrClient());
     CollectionAdminRequest.addReplicaToShard(rulesColl, "shard2").process(cluster.getSolrClient());
 
+    waitForState("Should have found shard1 w/2active replicas + shard2 w/1active replica",
+                 rulesColl, (liveNodes, collection) -> {
+                   // short circut if collection is deleted
+                   // or we don't yet have the correct number of slices
+                   if (null == collection || 2 != collection.getSlices().size()) {
+                     return false;
+                   }
+                   final Set<String> replicaNodes = new HashSet<>();
+                   for (Slice slice : collection.getSlices()) {
+                     // short circut if our slice isn't active
+                     if (Slice.State.ACTIVE != slice.getState()) {
+                       return false;
+                     }
+                     if (slice.getName().equals("shard1")) {
+                       // for shard1, we should have 2 fully live replicas
+                       final List<Replica> liveReplicas = slice.getReplicas
+                         ((r) -> r.isActive(liveNodes));
+                       if (2 != liveReplicas.size()) {
+                         return false;
+                       }
+                       replicaNodes.addAll(liveReplicas.stream().map
+                                           (Replica::getNodeName).collect(Collectors.toList()));
+                     } else if (slice.getName().equals("shard2")) {
+                       // for shard2, we should have 3 fully live replicas
+                       final List<Replica> liveReplicas = slice.getReplicas
+                         ((r) -> r.isActive(liveNodes));
+                       if (3 != liveReplicas.size()) {
+                         return false;
+                       }
+                       replicaNodes.addAll(liveReplicas.stream().map
+                                           (Replica::getNodeName).collect(Collectors.toList()));
+                     } else {
+                       // WTF?
+                       return false;
+                     }
+                   }
+                   // now sanity check that the rules were *obeyed* and
+                   // each replica is on a unique node
+                   return 5 == replicaNodes.size();
+                 });
+
+    // adding an additional replica should fail since our rule says at most one replica
+    // per node, and we know every node already has one replica
+    expectedException.expect(HttpSolrClient.RemoteSolrException.class);
+    expectedException.expectMessage(containsString("current number of eligible live nodes 0"));
+    CollectionAdminRequest.addReplicaToShard(rulesColl, "shard2").process(cluster.getSolrClient());
+    
   }
 
   @Test
@@ -114,18 +177,37 @@ public class RulesTest extends SolrCloudTestCase {
         .setRule("port:" + port)
         .setSnitch("class:ImplicitSnitch")
         .process(cluster.getSolrClient());
-
-    // now we assert that the replica placement rule is used instead of the cluster policy
-    DocCollection rulesCollection = getCollectionState(rulesColl);
-    List list = (List) rulesCollection.get("rule");
-    assertEquals(1, list.size());
-    assertEquals(port, ((Map) list.get(0)).get("port"));
-    list = (List) rulesCollection.get("snitch");
-    assertEquals(1, list.size());
-    assertEquals ( "ImplicitSnitch", ((Map)list.get(0)).get("class"));
-
-    boolean allOnExpectedPort = rulesCollection.getReplicas().stream().allMatch(replica -> replica.getNodeName().contains(port));
-    assertTrue("Not all replicas were found to be on port: " + port + ". Collection state is: " + rulesCollection, allOnExpectedPort);
+    
+    waitForState("Collection should have followed port rule w/ImplicitSnitch, not cluster policy",
+                 rulesColl, (liveNodes, rulesCollection) -> {
+                   // first sanity check that the collection exists & the rules/snitch are listed
+                   if (null == rulesCollection) {
+                     return false;
+                   } else {
+                     List list = (List) rulesCollection.get("rule");
+                     if (null == list || 1 != list.size()) {
+                       return false;
+                     }
+                     if (! port.equals(((Map) list.get(0)).get("port"))) {
+                       return false;
+                     }
+                     list = (List) rulesCollection.get("snitch");
+                     if (null == list || 1 != list.size()) {
+                       return false;
+                     }
+                     if (! "ImplicitSnitch".equals(((Map)list.get(0)).get("class"))) {
+                       return false;
+                     }
+                   }
+                   if (2 != rulesCollection.getReplicas().size()) {
+                     return false;
+                   }
+                   // now sanity check that the rules were *obeyed*
+                   // (and the contradictory policy was ignored)
+                   return rulesCollection.getReplicas().stream().allMatch
+                     (replica -> (replica.getNodeName().contains(port) &&
+                                  replica.isActive(liveNodes)));
+                 });
   }
 
   @Test
@@ -140,15 +222,35 @@ public class RulesTest extends SolrCloudTestCase {
         .setSnitch("class:ImplicitSnitch")
         .process(cluster.getSolrClient());
 
-    DocCollection rulesCollection = getCollectionState(rulesColl);
-
-    List list = (List) rulesCollection.get("rule");
-    assertEquals(1, list.size());
-    assertEquals(port, ((Map) list.get(0)).get("port"));
-    list = (List) rulesCollection.get("snitch");
-    assertEquals(1, list.size());
-    assertEquals ( "ImplicitSnitch", ((Map)list.get(0)).get("class"));
-
+    waitForState("Collection should have followed port rule w/ImplicitSnitch, not cluster policy",
+                 rulesColl, (liveNodes, rulesCollection) -> {
+                   // first sanity check that the collection exists & the rules/snitch are listed
+                   if (null == rulesCollection) {
+                     return false;
+                   } else {
+                     List list = (List) rulesCollection.get("rule");
+                     if (null == list || 1 != list.size()) {
+                       return false;
+                     }
+                     if (! port.equals(((Map) list.get(0)).get("port"))) {
+                       return false;
+                     }
+                     list = (List) rulesCollection.get("snitch");
+                     if (null == list || 1 != list.size()) {
+                       return false;
+                     }
+                     if (! "ImplicitSnitch".equals(((Map)list.get(0)).get("class"))) {
+                       return false;
+                     }
+                   }
+                   if (2 != rulesCollection.getReplicas().size()) {
+                     return false;
+                   }
+                   // now sanity check that the rules were *obeyed*
+                   return rulesCollection.getReplicas().stream().allMatch
+                     (replica -> (replica.getNodeName().contains(port) &&
+                                  replica.isActive(liveNodes)));
+                 });
   }
 
   @Test
@@ -166,6 +268,8 @@ public class RulesTest extends SolrCloudTestCase {
         .setRule("ip_2:" + ip_2, "ip_1:" + ip_1)
         .setSnitch("class:ImplicitSnitch")
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(rulesColl, 1, 2);
 
     DocCollection rulesCollection = getCollectionState(rulesColl);
     List<Map> list = (List<Map>) rulesCollection.get("rule");
@@ -232,6 +336,8 @@ public class RulesTest extends SolrCloudTestCase {
         .setRule("cores:<4", "node:*,replica:1", "freedisk:>" + minGB1)
         .setSnitch("class:ImplicitSnitch")
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(rulesColl, 1, 2);
 
 
     // TODO: Make a MODIFYCOLLECTION SolrJ class
@@ -244,17 +350,36 @@ public class RulesTest extends SolrCloudTestCase {
     p.add("autoAddReplicas", "true");
     cluster.getSolrClient().request(new GenericSolrRequest(POST, COLLECTIONS_HANDLER_PATH, p));
 
-    DocCollection rulesCollection = getCollectionState(rulesColl);
-    log.info("version_of_coll {}  ", rulesCollection.getZNodeVersion());
-    List list = (List) rulesCollection.get("rule");
-    assertEquals(3, list.size());
-    assertEquals("<5", ((Map) list.get(0)).get("cores"));
-    assertEquals("1", ((Map) list.get(1)).get("replica"));
-    assertEquals(">"+minGB2, ((Map) list.get(2)).get("freedisk"));
-    assertEquals("true", String.valueOf(rulesCollection.getProperties().get("autoAddReplicas")));
-    list = (List) rulesCollection.get("snitch");
-    assertEquals(1, list.size());
-    assertEquals("ImplicitSnitch", ((Map) list.get(0)).get("class"));
-
+    waitForState("Should have found updated rules in DocCollection",
+                 rulesColl, (liveNodes, rulesCollection) -> {
+                   if (null == rulesCollection) {
+                     return false;
+                   } 
+                   List list = (List) rulesCollection.get("rule");
+                   if (null == list || 3 != list.size()) {
+                     return false;
+                   }
+                   if (! "<5".equals(((Map) list.get(0)).get("cores"))) {
+                     return false;
+                   }
+                   if (! "1".equals(((Map) list.get(1)).get("replica"))) {
+                     return false;
+                   }
+                   if (! (">"+minGB2).equals(((Map) list.get(2)).get("freedisk"))) {
+                     return false;
+                   }
+                   if (! "true".equals(String.valueOf(rulesCollection.getProperties().get("autoAddReplicas")))) {
+                     return false;
+                   }
+                   list = (List) rulesCollection.get("snitch");
+                   if (null == list || 1 != list.size()) {
+                     return false;
+                   }
+                   if (! "ImplicitSnitch".equals(((Map) list.get(0)).get("class"))) {
+                     return false;
+                   }
+                   return true;
+                 });
+    
   }
 }

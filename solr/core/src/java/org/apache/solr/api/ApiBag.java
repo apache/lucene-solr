@@ -230,22 +230,28 @@ public class ApiBag {
   }
 
   public static class ReqHandlerToApi extends Api implements PermissionNameProvider {
-    SolrRequestHandler rh;
+     PluginBag.PluginHolder<SolrRequestHandler> rh;
 
     public ReqHandlerToApi(SolrRequestHandler rh, SpecProvider spec) {
+      super(spec);
+      this.rh = new PluginBag.PluginHolder(new PluginInfo(SolrRequestHandler.TYPE, Collections.emptyMap()),rh );
+    }
+
+    public ReqHandlerToApi(PluginBag.PluginHolder<SolrRequestHandler> rh, SpecProvider spec) {
       super(spec);
       this.rh = rh;
     }
 
     @Override
     public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-      rh.handleRequest(req, rsp);
+      rh.get().handleRequest(req, rsp);
     }
 
     @Override
     public Name getPermissionName(AuthorizationContext ctx) {
-      if (rh instanceof PermissionNameProvider) {
-        return ((PermissionNameProvider) rh).getPermissionName(ctx);
+      SolrRequestHandler handler = rh.get();
+      if (handler instanceof PermissionNameProvider) {
+        return ((PermissionNameProvider) handler).getPermissionName(ctx);
       }
       return null;
     }
@@ -339,21 +345,21 @@ public class ApiBag {
   }
 
   public static class LazyLoadedApi extends Api {
-
-    private final PluginBag.PluginHolder<SolrRequestHandler> holder;
     private Api delegate;
 
     protected LazyLoadedApi(SpecProvider specProvider, PluginBag.PluginHolder<SolrRequestHandler> lazyPluginHolder) {
       super(specProvider);
-      this.holder = lazyPluginHolder;
+      delegate =  new ReqHandlerToApi(lazyPluginHolder, spec);
     }
 
     @Override
     public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-      if (!holder.isLoaded()) {
-        delegate = new ReqHandlerToApi(holder.get(), ApiBag.EMPTY_SPEC);
-      }
       delegate.call(req, rsp);
+    }
+
+    @Override
+    public ValidatingJsonMap getSpec() {
+      return super.getSpec();
     }
   }
 

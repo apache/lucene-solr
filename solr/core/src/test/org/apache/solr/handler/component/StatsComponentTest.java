@@ -279,9 +279,6 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             );
   }
 
-  
-
-
   public void doTestMVFieldStatisticsResult(String f) throws Exception {
     assertU(adoc("id", "1", f, "-10", f, "-100", "active_s", "true"));
     assertU(adoc("id", "2", f, "-20", f, "200", "active_s", "true"));
@@ -1085,8 +1082,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     for (String param : new String[] { 
         "foo_i", "{!func}field(\"foo_i\")", "{!lucene}_val_:\"field(foo_i)\""
       }) {
-      SolrQueryRequest req = req(common);
-      try {
+      try (SolrQueryRequest req = req(common)){
         ResponseBuilder rb = new ResponseBuilder(req, new SolrQueryResponse(), components);
         
         StatsField sf = new StatsField(rb, param);
@@ -1096,8 +1092,6 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
         assertEquals("field name of: " + param,
                      "foo_i", sf.getSchemaField().getName());
-      } finally {
-        req.close();
       }
     }
 
@@ -1105,8 +1099,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     for (String param : new String[] { 
         "{!lucene}foo_t:cow", "{!func}query($nested)", "{!field f=foo_t}cow", 
       }) {
-      SolrQueryRequest req = req(common);
-      try {
+      try (SolrQueryRequest req = req(common)) {
         ResponseBuilder rb = new ResponseBuilder(req, new SolrQueryResponse(), components);
         
         StatsField sf = new StatsField(rb, param);
@@ -1119,8 +1112,6 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         assertEquals("query of :" + param,
                      new TermQuery(new Term("foo_t","cow")),
                      qvs.getQuery());
-      } finally {
-        req.close();
       }
     }
   }
@@ -1682,7 +1673,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertNull(HllOptions.parseHllOptions(params(), field_l));
     assertNull(HllOptions.parseHllOptions(params("cardinality","false"), field_l));
 
-    // sanity check, future proof againts the HLL library changing stuff on us
+    // sanity check, future proof against the HLL library changing stuff on us
     assertEquals("HLL Changed definition min for log2m, " + 
                  "need to note in upgrade instructions and maybe adjust accuracy hueristic",
                  4, HLL.MINIMUM_LOG2M_PARAM);
@@ -1792,27 +1783,25 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     ignoreException("hllPreHashed");
     for (SchemaField field : new SchemaField[] { foo_s, foo_i }) {
       // whitebox - field
-      try {
+      SolrException ex = expectThrows(SolrException.class, () -> {
         HllOptions.parseHllOptions(params("cardinality","true", "hllPreHashed", "true"), field);
-        fail("hllPreHashed should have failed for " + field.getName());
-      } catch (SolrException e) {
-        assertTrue("MSG: " + e.getMessage(),
-                   e.getMessage().contains("hllPreHashed is only supported with Long"));
-      }
+      });
+      assertTrue("MSG: " + ex.getMessage(),
+          ex.getMessage().contains("hllPreHashed is only supported with Long"));
       // blackbox - field
       assertQEx("hllPreHashed " + field.getName(), "hllPreHashed is only supported with Long",
                 req(params("stats.field","{!cardinality=true hllPreHashed=true}" + field.getName()),
                     baseParams),
                 ErrorCode.BAD_REQUEST);
     }
+
     // whitebox - function
-    try {
+    SolrException ex = expectThrows(SolrException.class, () -> {
       HllOptions.parseHllOptions(params("cardinality","true", "hllPreHashed", "true"), null);
-      fail("hllPreHashed should have failed for function");
-    } catch (SolrException e) {
-      assertTrue("MSG: " + e.getMessage(),
-                 e.getMessage().contains("hllPreHashed is only supported with Long"));
-    }
+    });
+    assertTrue("MSG: " + ex.getMessage(),
+        ex.getMessage().contains("hllPreHashed is only supported with Long"));
+
     // blackbox - function
     assertQEx("hllPreHashed function", "hllPreHashed is only supported with Long",
               req(params("stats.field","{!func cardinality=true hllPreHashed=true}sum(foo_i,foo_l)"),
@@ -1823,13 +1812,10 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     ignoreException("accuracy");
     for (String invalid : new String[] { "-1", "1.1", "100" }) {
       // whitebox
-      try {
-        Object trash = HllOptions.parseHllOptions(params("cardinality",invalid), foo_s);
-        fail("Should have failed: " + invalid);
-      } catch (SolrException e) {
-        assertTrue("MSG: " + e.getMessage(),
-                   e.getMessage().contains("number between 0 and 1"));
-      }
+      ex = expectThrows(SolrException.class, () -> {
+        HllOptions.parseHllOptions(params("cardinality",invalid), foo_s);
+      });
+      assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("number between 0 and 1"));
       // blackbox
       assertQEx("cardinality="+invalid, "number between 0 and 1",
                 req(params("stats.field","{!cardinality="+invalid+"}foo_s"),
@@ -1840,14 +1826,11 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     ignoreException("hllLog2m must be");
     for (int invalid : new int[] { HLL.MINIMUM_LOG2M_PARAM-1, HLL.MAXIMUM_LOG2M_PARAM+11 }) {
       // whitebox
-      try {
-        Object trash = HllOptions.parseHllOptions(params("cardinality","true",
-                                                         "hllLog2m", ""+invalid), foo_s);
-        fail("Should have failed: " + invalid);
-      } catch (SolrException e) {
-        assertTrue("MSG: " + e.getMessage(),
-                   e.getMessage().contains("hllLog2m must be"));
-      }
+      ex = expectThrows(SolrException.class, () -> {
+        HllOptions.parseHllOptions(params("cardinality","true", "hllLog2m", ""+invalid), foo_s);
+      });
+      assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("hllLog2m must be"));
+
       // blackbox
       assertQEx("hllLog2m="+invalid, "hllLog2m must be",
                 req(params("stats.field","{!cardinality=true hllLog2m="+invalid+"}foo_s"),
@@ -1858,14 +1841,13 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     ignoreException("hllRegwidth must be");
     for (int invalid : new int[] { HLL.MINIMUM_REGWIDTH_PARAM-1, HLL.MAXIMUM_REGWIDTH_PARAM+1 }) {
       // whitebox
-      try {
-        Object trash = HllOptions.parseHllOptions(params("cardinality","true",
-                                                         "hllRegwidth", ""+invalid), foo_s);
-        fail("Should have failed: " + invalid);
-      } catch (SolrException e) {
-        assertTrue("MSG: " + e.getMessage(),
-                   e.getMessage().contains("hllRegwidth must be"));
-      }
+      ex = expectThrows(SolrException.class, () -> {
+        HllOptions.parseHllOptions(params("cardinality","true",
+            "hllRegwidth", ""+invalid), foo_s);
+      });
+      assertTrue("MSG: " + ex.getMessage(),
+          ex.getMessage().contains("hllRegwidth must be"));
+
       // blackbox
       assertQEx("hllRegwidth="+invalid, "hllRegwidth must be",
                 req(params("stats.field","{!cardinality=true hllRegwidth="+invalid+"}foo_s"),
@@ -1881,19 +1863,16 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     String percentiles = "10.0,99.9,1.0,2.0,20.0,30.0,40.0,50.0,60.0,70.0,80.0,98.0,99.0";
     List <String> percentilesList = StrUtils.splitSmart(percentiles, ',');
     
-    // test empty case 
-    SolrQueryRequest query = req("q", "*:*", "stats", "true",
-                                 "stats.field", "{!percentiles='" + percentiles + "'}stat_f");
-    try {
+    // test empty case
+    try (SolrQueryRequest query = req("q", "*:*", "stats", "true", "stats.field",
+        "{!percentiles='" + percentiles + "'}stat_f")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
       NamedList<Double> pout = extractPercentils(rsp, "stat_f");
       for (int i = 0; i < percentilesList.size(); i++) {
         // ensure exact order, but all values should be null (empty result set)
         assertEquals(percentilesList.get(i), pout.getName(i));
-        assertEquals(null, pout.getVal(i));
+        assertNull(pout.getVal(i));
       }
-    } finally {
-      query.close();
     }
     
     int id = 0;
@@ -1907,9 +1886,8 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    query = req("q", "*:*", "stats", "true", 
-                "stats.field", "{!percentiles='" + percentiles + "'}stat_f");
-    try {
+    try (SolrQueryRequest query = req("q", "*:*", "stats", "true",
+        "stats.field", "{!percentiles='" + percentiles + "'}stat_f")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
       NamedList<Double> pout = extractPercentils(rsp, "stat_f");
       for (int i = 0; i < percentilesList.size(); i++) { 
@@ -1918,19 +1896,14 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         assertEquals(Double.parseDouble(p), pout.getVal(i), 1.0D);
                      
       }
-    } finally {
-      query.close();
     }
     
     // test request for no percentiles
-    query = req("q", "*:*", "stats", "true", 
-                "stats.field", "{!percentiles=''}stat_f");
-    try {
+    try (SolrQueryRequest query = req("q", "*:*", "stats", "true",
+        "stats.field", "{!percentiles=''}stat_f")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
       NamedList<Double> pout = extractPercentils(rsp, "stat_f");
       assertNull(pout);
-    } finally {
-      query.close();
     }
 
     // non-numeric types don't support percentiles
@@ -1939,16 +1912,12 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     
     assertU(commit());
 
-    query = req("q", "*:*", "stats", "true", 
-                "stats.field", "{!percentiles='" + percentiles + "'}stat_dt",
-                "stats.field", "{!percentiles='" + percentiles + "'}stat_s");
-
-    try {
+    try (SolrQueryRequest query = req("q", "*:*", "stats", "true",
+        "stats.field", "{!percentiles='" + percentiles + "'}stat_dt",
+        "stats.field", "{!percentiles='" + percentiles + "'}stat_s")) {
       SolrQueryResponse rsp = h.queryAndResponse(null, query);
       assertNull(extractPercentils(rsp, "stat_dt"));
       assertNull(extractPercentils(rsp, "stat_s"));
-    } finally {
-      query.close();
     }
     
   }

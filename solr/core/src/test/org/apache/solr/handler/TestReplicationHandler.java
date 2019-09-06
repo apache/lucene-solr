@@ -1512,10 +1512,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     List<String> params = Arrays.asList(ReplicationHandler.FILE, ReplicationHandler.CONF_FILE_SHORT, ReplicationHandler.TLOG_FILE);
     for (String param : params) {
       for (String filename : illegalFilenames) {
-        try {
-          invokeReplicationCommand(masterJetty.getLocalPort(), "filecontent&" + param + "=" + filename);
-          fail("Should have thrown exception on illegal path for param " + param + " and file name " + filename);
-        } catch (Exception e) {}
+        expectThrows(Exception.class, () ->
+            invokeReplicationCommand(masterJetty.getLocalPort(), "filecontent&" + param + "=" + filename));
       }
     }
   }
@@ -1606,20 +1604,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * character copy of file using UTF-8. If port is non-null, will be substituted any time "TEST_PORT" is found.
    */
   private static void copyFile(File src, File dst, Integer port, boolean internalCompression) throws IOException {
-    BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(src), StandardCharsets.UTF_8));
-    Writer out = new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.UTF_8);
+    try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(src), StandardCharsets.UTF_8));
+         Writer out = new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.UTF_8)) {
 
-    for (String line = in.readLine(); null != line; line = in.readLine()) {
-
-      if (null != port)
-        line = line.replace("TEST_PORT", port.toString());
-      
-      line = line.replace("COMPRESSION", internalCompression?"internal":"false");
-
-      out.write(line);
+      for (String line = in.readLine(); null != line; line = in.readLine()) {
+        if (null != port) {
+          line = line.replace("TEST_PORT", port.toString());
+        }
+        line = line.replace("COMPRESSION", internalCompression ? "internal" : "false");
+        out.write(line);
+      }
     }
-    in.close();
-    out.close();
   }
 
   private UpdateResponse emptyUpdate(SolrClient client, String... params)

@@ -593,14 +593,13 @@ public abstract class LuceneTestCase extends Assert {
   private final static long STATIC_LEAK_THRESHOLD = 10 * 1024 * 1024;
 
   /** By-name list of ignored types like loggers etc. */
-  private final static Set<String> STATIC_LEAK_IGNORED_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+  private final static Set<String> STATIC_LEAK_IGNORED_TYPES = Set.of(
       "org.slf4j.Logger",
       "org.apache.solr.SolrLogFormatter",
-      "java.io.File", // Solr sometimes refers to this in a static way, but it has a "java.nio.fs.Path" inside 
+      "java.io.File", // Solr sometimes refers to this in a static way, but it has a "java.nio.fs.Path" inside
       Path.class.getName(), // causes problems because interface is implemented by hidden classes
       Class.class.getName(),
-      EnumSet.class.getName()
-  )));
+      EnumSet.class.getName());
 
   /**
    * This controls how suite-level rules are nested. It is important that _all_ rules declared

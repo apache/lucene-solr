@@ -18,21 +18,23 @@ package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +76,8 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private String description="LRU Cache";
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricRegistry registry;
+  private int maxSize;
+  private int initialSize;
 
   private long maxRamBytes = Long.MAX_VALUE;
   // The synchronization used for the map will be used to update this,
@@ -84,50 +87,54 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     super.init(args, regenerator);
-    String str = (String)args.get("size");
-    final int limit = str==null ? 1024 : Integer.parseInt(str);
+    String str = (String)args.get(SIZE_PARAM);
+    this.maxSize = str==null ? 1024 : Integer.parseInt(str);
     str = (String)args.get("initialSize");
-    final int initialSize = Math.min(str==null ? 1024 : Integer.parseInt(str), limit);
-    str = (String) args.get("maxRamMB");
-    final long maxRamBytes = this.maxRamBytes = str == null ? Long.MAX_VALUE : (long) (Double.parseDouble(str) * 1024L * 1024L);
-    description = generateDescription(limit, initialSize);
+    initialSize = Math.min(str==null ? 1024 : Integer.parseInt(str), maxSize);
+    str = (String) args.get(MAX_RAM_MB_PARAM);
+    this.maxRamBytes = str == null ? Long.MAX_VALUE : (long) (Double.parseDouble(str) * 1024L * 1024L);
+    description = generateDescription();
 
     map = new LinkedHashMap<K,V>(initialSize, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry eldest) {
-          if (size() > limit || ramBytesUsed > maxRamBytes) {
-            if (maxRamBytes != Long.MAX_VALUE && ramBytesUsed > maxRamBytes) {
-              long bytesToDecrement = 0;
-
-              Iterator<Map.Entry<K, V>> iterator = entrySet().iterator();
-              do {
-                Map.Entry<K, V> entry = iterator.next();
-                if (entry.getKey() != null) {
-                  bytesToDecrement += RamUsageEstimator.sizeOfObject(entry.getKey(), QUERY_DEFAULT_RAM_BYTES_USED);
-                }
-                if (entry.getValue() != null) {
-                  bytesToDecrement += ((Accountable) entry.getValue()).ramBytesUsed();
-                }
-                bytesToDecrement += LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
-                ramBytesUsed -= bytesToDecrement;
-                iterator.remove();
-                evictions++;
-                evictionsRamUsage++;
-                stats.evictions.increment();
-                stats.evictionsRamUsage.increment();
-              } while (iterator.hasNext() && ramBytesUsed > maxRamBytes);
-              // must return false according to javadocs of removeEldestEntry if we're modifying
-              // the map ourselves
-              return false;
-            } else  {
+          if (ramBytesUsed > getMaxRamBytes()) {
+            Iterator<Map.Entry<K, V>> iterator = entrySet().iterator();
+            do {
+              Map.Entry<K, V> entry = iterator.next();
+              long bytesToDecrement = RamUsageEstimator.sizeOfObject(entry.getKey(), QUERY_DEFAULT_RAM_BYTES_USED);
+              bytesToDecrement += RamUsageEstimator.sizeOfObject(entry.getValue(), QUERY_DEFAULT_RAM_BYTES_USED);
+              bytesToDecrement += LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
+              ramBytesUsed -= bytesToDecrement;
+              iterator.remove();
+              evictions++;
+              evictionsRamUsage++;
+              stats.evictions.increment();
+              stats.evictionsRamUsage.increment();
+            } while (iterator.hasNext() && ramBytesUsed > getMaxRamBytes());
+            // must return false according to javadocs of removeEldestEntry if we're modifying
+            // the map ourselves
+            return false;
+          } else if (size() > getMaxSize()) {
+            Iterator<Map.Entry<K, V>> iterator = entrySet().iterator();
+            do {
+              Map.Entry<K, V> entry = iterator.next();
+              long bytesToDecrement = RamUsageEstimator.sizeOfObject(entry.getKey(), QUERY_DEFAULT_RAM_BYTES_USED);
+              bytesToDecrement += RamUsageEstimator.sizeOfObject(entry.getValue(), QUERY_DEFAULT_RAM_BYTES_USED);
+              bytesToDecrement += LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
+              ramBytesUsed -= bytesToDecrement;
               // increment evictions regardless of state.
               // this doesn't need to be synchronized because it will
               // only be called in the context of a higher level synchronized block.
+              iterator.remove();
               evictions++;
               stats.evictions.increment();
-              return true;
-            }
+            } while (iterator.hasNext() && size() > getMaxSize());
+            // must return false according to javadocs of removeEldestEntry if we're modifying
+            // the map ourselves
+            return false;
           }
+          // neither size nor RAM exceeded - ok to keep the entry
           return false;
         }
       };
@@ -142,17 +149,21 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     return persistence;
   }
 
+  public long getMaxRamBytes() {
+    return maxRamBytes;
+  }
+
   /**
-   * 
-   * @return Returns the description of this cache. 
+   *
+   * @return Returns the description of this cache.
    */
-  private String generateDescription(int limit, int initialSize) {
-    String description = "LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize;
+  private String generateDescription() {
+    String description = "LRU Cache(maxSize=" + getMaxSize() + ", initialSize=" + initialSize;
     if (isAutowarmingOn()) {
       description += ", " + getAutowarmDescription();
     }
-    if (maxRamBytes != Long.MAX_VALUE)  {
-      description += ", maxRamMB=" + (maxRamBytes / 1024L / 1024L);
+    if (getMaxRamBytes() != Long.MAX_VALUE)  {
+      description += ", maxRamMB=" + (getMaxRamBytes() / 1024L / 1024L);
     }
     description += ')';
     return description;
@@ -167,6 +178,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public V put(K key, V value) {
+    if (maxSize == Integer.MAX_VALUE && maxRamBytes == Long.MAX_VALUE) {
+      throw new IllegalStateException("Cache: " + getName() + " has neither size nor RAM limit!");
+    }
     synchronized (map) {
       if (getState() == State.LIVE) {
         stats.inserts.increment();
@@ -177,32 +191,15 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       inserts++;
 
       // important to calc and add new ram bytes first so that removeEldestEntry can compare correctly
-      if (maxRamBytes != Long.MAX_VALUE) {
-        long keySize = 0;
-        if (key != null) {
-          keySize = RamUsageEstimator.sizeOfObject(key, QUERY_DEFAULT_RAM_BYTES_USED);
-        }
-        long valueSize = 0;
-        if (value != null) {
-          if (value instanceof Accountable) {
-            Accountable accountable = (Accountable) value;
-            valueSize = accountable.ramBytesUsed();
-          } else {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cache: "
-                + getName() + " is configured with maxRamBytes=" + RamUsageEstimator.humanReadableUnits(maxRamBytes)
-                + " but its values do not implement org.apache.lucene.util.Accountable");
-          }
-        }
-        ramBytesUsed += keySize + valueSize + LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
-      }
+      long keySize = RamUsageEstimator.sizeOfObject(key, QUERY_DEFAULT_RAM_BYTES_USED);
+      long valueSize = RamUsageEstimator.sizeOfObject(value, QUERY_DEFAULT_RAM_BYTES_USED);
+      ramBytesUsed += keySize + valueSize + LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
       V old = map.put(key, value);
-      if (maxRamBytes != Long.MAX_VALUE && old != null) {
-        long bytesToDecrement = ((Accountable) old).ramBytesUsed();
+      if (old != null) {
+        long bytesToDecrement = RamUsageEstimator.sizeOfObject(old, QUERY_DEFAULT_RAM_BYTES_USED);
         // the key existed in the map but we added its size before the put, so let's back out
         bytesToDecrement += LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
-        if (key != null) {
-          bytesToDecrement += RamUsageEstimator.sizeOfObject(key, QUERY_DEFAULT_RAM_BYTES_USED);
-        }
+        bytesToDecrement += RamUsageEstimator.sizeOfObject(key, QUERY_DEFAULT_RAM_BYTES_USED);
         ramBytesUsed -= bytesToDecrement;
       }
       return old;
@@ -246,9 +243,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
       // Don't do the autowarming in the synchronized block, just pull out the keys and values.
       synchronized (other.map) {
-        
+
         int sz = autowarm.getWarmCount(other.map.size());
-        
+
         keys = new Object[sz];
         vals = new Object[sz];
 
@@ -285,9 +282,8 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public void close() {
-
+    if(solrMetrics != null) solrMetrics.unregister();
   }
-
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
@@ -307,22 +303,28 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     return metricNames;
   }
 
+  SolrMetrics solrMetrics;
+
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    registry = manager.registry(registryName);
+  public SolrMetrics getMetrics() {
+    return solrMetrics;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetrics m) {
+    solrMetrics = m.getChildInfo(this);
     cacheMap = new MetricsMap((detailed, res) -> {
       synchronized (map) {
-        res.put("lookups", lookups);
-        res.put("hits", hits);
-        res.put("hitratio", calcHitRatio(lookups,hits));
-        res.put("inserts", inserts);
-        res.put("evictions", evictions);
-        res.put("size", map.size());
-        if (maxRamBytes != Long.MAX_VALUE)  {
-          res.put("maxRamMB", maxRamBytes / 1024L / 1024L);
-          res.put("ramBytesUsed", ramBytesUsed());
-          res.put("evictionsRamUsage", evictionsRamUsage);
-        }
+        res.put(LOOKUPS_PARAM, lookups);
+        res.put(HITS_PARAM, hits);
+        res.put(HIT_RATIO_PARAM, calcHitRatio(lookups,hits));
+        res.put(INSERTS_PARAM, inserts);
+        res.put(EVICTIONS_PARAM, evictions);
+        res.put(SIZE_PARAM, map.size());
+        res.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
+        res.put(MAX_RAM_MB_PARAM, getMaxRamMB());
+        res.put(MAX_SIZE_PARAM, maxSize);
+        res.put("evictionsRamUsage", evictionsRamUsage);
       }
       res.put("warmupTime", warmupTime);
 
@@ -333,11 +335,10 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       res.put("cumulative_hitratio", calcHitRatio(clookups, chits));
       res.put("cumulative_inserts", stats.inserts.longValue());
       res.put("cumulative_evictions", stats.evictions.longValue());
-      if (maxRamBytes != Long.MAX_VALUE)  {
-        res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
-      }
+      res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
     });
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    String metricName = SolrMetricManager.makeName(ImmutableList.of(getCategory().toString()), solrMetrics.scope);
+    solrMetrics.gauge(this, cacheMap, true, metricName);
   }
 
   // for unit tests only
@@ -347,7 +348,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return registry;
+    return solrMetrics ==null ?null: solrMetrics.getRegistry();
   }
 
   @Override
@@ -367,5 +368,35 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     synchronized (map)  {
       return Accountables.namedAccountables(getName(), (Map<?, ? extends Accountable>) map);
     }
+  }
+
+  @Override
+  public int getMaxSize() {
+    return maxSize != Integer.MAX_VALUE ? maxSize : -1;
+  }
+
+  @Override
+  public void setMaxSize(int maxSize) {
+    if (maxSize > 0) {
+      this.maxSize = maxSize;
+    } else {
+      this.maxSize = Integer.MAX_VALUE;
+    }
+    description = generateDescription();
+  }
+
+  @Override
+  public int getMaxRamMB() {
+    return maxRamBytes != Long.MAX_VALUE ? (int) (maxRamBytes / 1024L / 1024L) : -1;
+  }
+
+  @Override
+  public void setMaxRamMB(int maxRamMB) {
+    if (maxRamMB > 0) {
+      maxRamBytes = maxRamMB * 1024L * 1024L;
+    } else {
+      maxRamBytes = Long.MAX_VALUE;
+    }
+    description = generateDescription();
   }
 }

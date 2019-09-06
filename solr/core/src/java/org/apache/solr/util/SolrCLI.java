@@ -146,7 +146,6 @@ import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
@@ -418,6 +417,8 @@ public class SolrCLI implements CLIO {
       return new AuthTool();
     else if ("autoscaling".equals(toolType))
       return new AutoscalingTool();
+    else if ("export".equals(toolType))
+      return new ExportTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -449,6 +450,7 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("cp", getToolOptions(new ZkCpTool()));
     formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
     formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
+    formatter.printHelp("export", getToolOptions(new ExportTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
@@ -566,14 +568,15 @@ public class SolrCLI implements CLIO {
     if (path.startsWith("file:") && path.contains("!")) {
       String[] split = path.split("!");
       URL jar = new URL(split[0]);
-      ZipInputStream zip = new ZipInputStream(jar.openStream());
-      ZipEntry entry;
-      while ((entry = zip.getNextEntry()) != null) {
-        if (entry.getName().endsWith(".class")) {
-          String className = entry.getName().replaceAll("[$].*", "")
-              .replaceAll("[.]class", "").replace('/', '.');
-          if (className.startsWith(packageName))
-            classes.add(className);
+      try (ZipInputStream zip = new ZipInputStream(jar.openStream())) {
+        ZipEntry entry;
+        while ((entry = zip.getNextEntry()) != null) {
+          if (entry.getName().endsWith(".class")) {
+            String className = entry.getName().replaceAll("[$].*", "")
+                .replaceAll("[.]class", "").replace('/', '.');
+            if (className.startsWith(packageName))
+              classes.add(className);
+          }
         }
       }
     }
@@ -3290,7 +3293,7 @@ public class SolrCLI implements CLIO {
 
       echo("\nWelcome to the SolrCloud example!\n");
 
-      Scanner readInput = prompt ? new Scanner(userInput, UTF_8.name()) : null;
+      Scanner readInput = prompt ? new Scanner(userInput, StandardCharsets.UTF_8.name()) : null;
       if (prompt) {
         echo("This interactive session will help you launch a SolrCloud cluster on your local workstation.");
 
@@ -4296,7 +4299,8 @@ public class SolrCLI implements CLIO {
           String config = StrUtils.join(Arrays.asList(cli.getOptionValues("config")), ' ');
           // config is base64 encoded (to get around parsing problems), decode it
           config = config.replaceAll(" ", "");
-          config = new String(Base64.getDecoder().decode(config.getBytes("UTF-8")), "UTF-8");
+          config = new String(Base64.getDecoder()
+              .decode(config.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
           config = config.replaceAll("\n", "").replaceAll("\r", "");
 
           String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
@@ -4410,7 +4414,7 @@ public class SolrCLI implements CLIO {
             password = new String(console.readPassword("Enter password: "));
           }
 
-          boolean blockUnknown = Boolean.valueOf(cli.getOptionValue("blockUnknown", "false"));
+          boolean blockUnknown = Boolean.valueOf(cli.getOptionValue("blockUnknown", "true"));
 
           String securityJson = "{" +
               "\n  \"authentication\":{" +

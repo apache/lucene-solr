@@ -428,7 +428,7 @@ public abstract class FSDirectory extends BaseDirectory {
     if (pendingDeletes.isEmpty()) {
       return Collections.emptySet();
     } else {
-      return Collections.unmodifiableSet(new HashSet<>(pendingDeletes));
+      return Set.copyOf(pendingDeletes);
     }
   }
 }

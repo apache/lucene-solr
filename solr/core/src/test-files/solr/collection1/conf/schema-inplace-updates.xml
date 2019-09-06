@@ -19,6 +19,7 @@
   
   <uniqueKey>id</uniqueKey>
   <field name="id" type="string" indexed="true" stored="true" docValues="true"/>
+  <field name="_root_" type="string" indexed="true" stored="true" docValues="true"/>
   <field name="_version_" type="long" indexed="false" stored="false"  docValues="true" />
   <field name="shardName" type="string" multiValued="false" indexed="false" required="false" stored="true"/>
 

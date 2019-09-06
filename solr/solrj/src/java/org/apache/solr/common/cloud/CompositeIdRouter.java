@@ -74,6 +74,22 @@ public class CompositeIdRouter extends HashBasedRouter {
   }
 
   @Override
+  public Range getSearchRangeSingle(String shardKey, SolrParams params, DocCollection collection) {
+    if (shardKey == null) {
+      // search across whole range
+      return fullRange();
+    }
+
+    if (shardKey.indexOf(SEPARATOR) < 0) {
+      // shardKey is a simple id, so don't do a range
+      int hash = Hash.murmurhash3_x86_32(shardKey, 0, shardKey.length(), 0);
+      return new Range(hash, hash);
+    }
+
+    return new KeyParser(shardKey).getRange();
+  }
+
+  @Override
   public Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection) {
     if (shardKey == null) {
       // search across whole collection

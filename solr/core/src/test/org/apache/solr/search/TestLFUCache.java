@@ -60,7 +60,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
   @Test
   public void testTimeDecayParams() throws IOException {
     h.getCore().withSearcher(searcher -> {
-      LFUCache cacheDecayTrue = (LFUCache) searcher.getCache("lfuCacheDecayTrue");
+      LFUCache cacheDecayTrue = (LFUCache) ((SolrCacheHolder) searcher.getCache("lfuCacheDecayTrue")).get();
       assertNotNull(cacheDecayTrue);
       Map<String,Object> stats = cacheDecayTrue.getMetricsMap().getValue();
       assertTrue((Boolean) stats.get("timeDecay"));
@@ -71,7 +71,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
       addCache(cacheDecayTrue, 11, 12, 13, 14, 15);
       assertCache(cacheDecayTrue, 1, 2, 3, 4, 5, 12, 13, 14, 15);
 
-      LFUCache cacheDecayDefault = (LFUCache) searcher.getCache("lfuCacheDecayDefault");
+      LFUCache cacheDecayDefault = (LFUCache) ((SolrCacheHolder) searcher.getCache("lfuCacheDecayDefault")).get();
       assertNotNull(cacheDecayDefault);
       stats = cacheDecayDefault.getMetricsMap().getValue();
       assertTrue((Boolean) stats.get("timeDecay"));
@@ -85,7 +85,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
       addCache(cacheDecayDefault, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
       assertCache(cacheDecayDefault, 1, 2, 3, 4, 5, 17, 18, 19, 20, 21);
 
-      LFUCache cacheDecayFalse = (LFUCache) searcher.getCache("lfuCacheDecayFalse");
+      LFUCache cacheDecayFalse = (LFUCache) ((SolrCacheHolder) searcher.getCache("lfuCacheDecayFalse")).get();
       assertNotNull(cacheDecayFalse);
       stats = cacheDecayFalse.getMetricsMap().getValue();
       assertFalse((Boolean) stats.get("timeDecay"));
@@ -452,6 +452,46 @@ public class TestLFUCache extends SolrTestCaseJ4 {
       lfuCache.close();
     }
 
+  }
+
+  public void testSetLimits() throws Exception {
+    SolrMetricManager metricManager = new SolrMetricManager();
+    Random r = random();
+    String registry = TestUtil.randomSimpleString(r, 2, 10);
+    String scope = TestUtil.randomSimpleString(r, 2, 10);
+    LFUCache<String, String> cache = new LFUCache<>();
+    cache.initializeMetrics(metricManager, registry, "foo", scope + ".lfuCache");
+
+    Map<String, String> params = new HashMap<>();
+    params.put("size", "6");
+    CacheRegenerator cr = new NoOpRegenerator();
+    Object o = cache.init(params, null, cr);
+    for (int i = 0; i < 6; i++) {
+      cache.put("" + i, "foo " + i);
+    }
+    // no evictions yet
+    assertEquals(6, cache.size());
+    // this sets minSize = 4, evictions will target minSize
+    cache.setMaxSize(5);
+    // should not happen yet - evictions are triggered by put
+    assertEquals(6, cache.size());
+    cache.put("6", "foo 6");
+    // should evict to minSize
+    assertEquals(4, cache.size());
+    // should allow adding 1 more item before hitting "size" limit
+    cache.put("7", "foo 7");
+    assertEquals(5, cache.size());
+    // should evict down to minSize = 4
+    cache.put("8", "foo 8");
+    assertEquals(4, cache.size());
+
+    // scale up
+
+    cache.setMaxSize(10);
+    for (int i = 0; i < 6; i++) {
+      cache.put("new" + i, "bar " + i);
+    }
+    assertEquals(10, cache.size());
   }
 
 // From the original LRU cache tests, they're commented out there too because they take a while.

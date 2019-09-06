@@ -61,31 +61,31 @@
   <fieldType name="text_en_splitting" class="solr.TextField"
              positionIncrementGap="100" autoGeneratePhraseQueries="true">
     <analyzer type="index">
-      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <tokenizer name="whitespace"/>
       <!-- in this example, we will only use synonyms at query time
-      <filter class="solr.SynonymGraphFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
+      <filter name="synonymGraph" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
       -->
       <!-- Case insensitive stop word removal. -->
-      <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_en.txt"/>
-      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1"
+      <filter name="stop" ignoreCase="true" words="lang/stopwords_en.txt"/>
+      <filter name="wordDelimiterGraph" generateWordParts="1" generateNumberParts="1"
               catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
-      <filter class="solr.PorterStemFilterFactory"/>
-      <filter class="solr.FlattenGraphFilterFactory"/>
+      <filter name="lowercase"/>
+      <filter name="keywordMarker" protected="protwords.txt"/>
+      <filter name="porterStem"/>
+      <filter name="flattenGraph"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
-      <filter class="solr.StopFilterFactory"
+      <tokenizer name="whitespace"/>
+      <filter name="synonymGraph" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter name="stop"
               ignoreCase="true"
               words="lang/stopwords_en.txt"
       />
-      <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1"
+      <filter name="wordDelimiterGraph" generateWordParts="1" generateNumberParts="1"
               catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
-      <filter class="solr.PorterStemFilterFactory"/>
+      <filter name="lowercase"/>
+      <filter name="keywordMarker" protected="protwords.txt"/>
+      <filter name="porterStem"/>
     </analyzer>
   </fieldType>
 
@@ -95,11 +95,11 @@
   -->
   <fieldType name="url_only" class="solr.TextField" positionIncrementGap="100">
     <analyzer type="index">
-      <tokenizer class="solr.UAX29URLEmailTokenizerFactory" maxTokenLength="255"/>
-      <filter class="solr.TypeTokenFilterFactory" types="url_types.txt" useWhitelist="true"/>
+      <tokenizer name="UAX29URLEmail" maxTokenLength="255"/>
+      <filter name="type" types="url_types.txt" useWhitelist="true"/>
     </analyzer>
     <analyzer type="query">
-      <tokenizer class="solr.KeywordTokenizerFactory"/>
+      <tokenizer name="keyword"/>
     </analyzer>
   </fieldType>
 
