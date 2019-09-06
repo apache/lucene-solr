@@ -138,7 +138,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     assertEquals("401", headers.get("code"));
     assertEquals("HTTP/1.1 401 Require authentication", headers.get(null));
     assertEquals("Bearer realm=\"my-solr-jwt\"", headers.get("WWW-Authenticate"));
-    String authData = new String(Base64.base64ToByteArray(headers.get("X-Solr-AuthData")));
+    String authData = new String(Base64.base64ToByteArray(headers.get("X-Solr-AuthData")), UTF_8);
     assertEquals("{\n" +
         "  \"scope\":\"solr:admin\",\n" +
         "  \"redirect_uris\":[],\n" +
