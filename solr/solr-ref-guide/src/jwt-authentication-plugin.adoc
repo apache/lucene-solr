@@ -130,11 +130,11 @@ Let's look at a more complex configuration, this time with two issuers configure
         },
         "clientId": "solr-client-12345", <10>
         "iss": "https://example.com/idp", <11>
-        "aud": "https://example.com/solr", <12>
+        "aud": "https://example.com/solr" <12>
       },
       {
         "name": "example2",
-        "wellKnownUrl": "https://example2.com/.well-known/oidc" <13>
+        "wellKnownUrl": "https://example2.com/.well-known/oidc", <13>
         "aud": "https://example2.com/solr"
       }
     ]
