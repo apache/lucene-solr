@@ -458,7 +458,8 @@ abstract class ShapeQuery extends Query {
     };
   }
 
-  /** Check if we have any hits by creating a visitor that terminates as soon as there is a hit */
+  /** Return true if the query matches at least one document. It creates a visitor that terminates as soon as one or more docs
+   * are matched. */
   private static boolean hasAnyHits(final ShapeQuery query, final PointValues values) throws IOException {
     try {
       values.intersect(new IntersectVisitor() {
