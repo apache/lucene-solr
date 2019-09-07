@@ -88,7 +88,7 @@ public class ReplicaInfo implements MapWriter {
   }
 
   public Object clone() {
-    return new ReplicaInfo(name, core, collection, shard, type, node, variables);
+    return new ReplicaInfo(name, core, collection, shard, type, node, new HashMap<>(variables));
   }
 
   @Override
