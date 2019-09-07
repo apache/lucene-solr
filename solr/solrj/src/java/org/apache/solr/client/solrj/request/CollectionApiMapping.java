@@ -342,6 +342,7 @@ public class CollectionApiMapping {
     CLUSTER_BLOB("cluster.blob"),
     CLUSTER_ALIASES("cluster.aliases"),
     CLUSTER_CMD("cluster.Commands"),
+    CLUSTER_PKG("cluster.package"),
     CLUSTER_REPO("cluster.repository"),
     CLUSTER_NODES("cluster.nodes"),
     CLUSTER_CMD_STATUS("cluster.commandstatus"),

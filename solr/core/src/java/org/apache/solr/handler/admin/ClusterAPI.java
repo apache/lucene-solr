@@ -63,6 +63,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_CMD;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_NODES;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_PKG;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_REPO;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.StrUtils.formatString;
@@ -228,27 +229,25 @@ class ClusterAPI {
       }
 
     },
-    ADD_PACKAGE(CLUSTER_CMD,
+    ADD_PACKAGE(CLUSTER_PKG,
         POST,
-        "add-package") {
-      @Override
-      void call(ApiInfo info) throws Exception {
-        if (addUpdatePackage(info)) syncClusterProps(info);
-      }
-
-
-    },
-    UPDATE_PACKAGE(CLUSTER_CMD,
-        POST,
-        "update-package") {
+        "add") {
       @Override
       void call(ApiInfo info) throws Exception {
         if (addUpdatePackage(info)) syncClusterProps(info);
       }
     },
-    DELETE_PKG(CLUSTER_CMD,
+    UPDATE_PACKAGE(CLUSTER_PKG,
         POST,
-        "delete-package") {
+        "update") {
+      @Override
+      void call(ApiInfo info) throws Exception {
+        if (addUpdatePackage(info)) syncClusterProps(info);
+      }
+    },
+    DELETE_PKG(CLUSTER_PKG,
+        POST,
+        "delete") {
       @Override
       void call(ApiInfo info) throws Exception {
         if (deletePackage(info)) syncClusterProps(info);
