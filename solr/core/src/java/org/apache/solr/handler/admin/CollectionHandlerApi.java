@@ -73,15 +73,6 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       apiMapping.put(api.meta(), api );
     }
 
-//    addApi(apiMapping, Meta.GET_NODES, CollectionHandlerApi::getNodes);
-//    addApi(apiMapping, Meta.POST_BLOB, CollectionHandlerApi::postBlob);
-//    addApi(apiMapping, Meta.SET_CLUSTER_PROPERTY_OBJ, CollectionHandlerApi::setClusterObj);
-//    addApi(apiMapping, Meta.ADD_PACKAGE, wrap(CollectionHandlerApi::addUpdatePackage));
-//    addApi(apiMapping, Meta.UPDATE_PACKAGE, wrap(CollectionHandlerApi::addUpdatePackage));
-//    addApi(apiMapping, Meta.DELETE_RUNTIME_LIB, wrap(CollectionHandlerApi::deletePackage));
-//    addApi(apiMapping, Meta.ADD_REQ_HANDLER, wrap(CollectionHandlerApi::addRequestHandler));
-//    addApi(apiMapping, Meta.DELETE_REQ_HANDLER, wrap(CollectionHandlerApi::deleteReqHandler));
-
     for (Meta meta : Meta.values()) {
       if (apiMapping.get(meta) == null) {
         log.error("ERROR_INIT. No corresponding API implementation for : " + meta.commandName);

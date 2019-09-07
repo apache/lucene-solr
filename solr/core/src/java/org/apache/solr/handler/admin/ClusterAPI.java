@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -51,6 +52,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SimplePostTool;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +63,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_CMD;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_NODES;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_REPO;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
@@ -130,23 +133,25 @@ class ClusterAPI {
 
   enum Commands implements ApiCommand {
 
-/*
-    ADD_REPO(CLUSTER_CMD, POST, "add-repository") {
+    ADD_REPO(CLUSTER_REPO, POST, "add") {
       @Override
       void call(ApiInfo info) throws Exception {
+        repositoryCRUD(info);
       }
     },
-    UPDATE_REPO(CLUSTER_CMD, POST, "update-repository") {
+    UPDATE_REPO(CLUSTER_REPO, POST, "update") {
       @Override
       void call(ApiInfo info) throws Exception {
+        repositoryCRUD(info);
       }
     },
-    DELETE_REPO(CLUSTER_CMD, POST, "delete-repository") {
+    DELETE_REPO(CLUSTER_REPO, POST, "delete") {
       @Override
       void call(ApiInfo info) throws Exception {
+        repositoryCRUD(info);
+
       }
     },
-*/
 
     GET_NODES(CLUSTER_NODES, GET, null) {
       @Override
@@ -318,10 +323,10 @@ class ClusterAPI {
 
     ;
 
-    private CollectionApiMapping.CommandMeta _meta;
+    private CollectionApiMapping.CommandMeta meta;
 
     Commands(CollectionApiMapping.V2EndPoint endPoint, SolrRequest.METHOD method, String cmdName) {
-      _meta = new CollectionApiMapping.CommandMeta() {
+      meta = new CollectionApiMapping.CommandMeta() {
         @Override
         public String getName() {
           return cmdName;
@@ -342,7 +347,7 @@ class ClusterAPI {
 
     @Override
     public CollectionApiMapping.CommandMeta meta() {
-      return _meta;
+      return meta;
 
     }
 
@@ -350,7 +355,7 @@ class ClusterAPI {
     public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
       CommandOperation op = null;
       if (meta().getHttpMethod() == SolrRequest.METHOD.POST) {
-        if (_meta.getName() != null) {
+        if (meta.getName() != null) {
           List<CommandOperation> commands = req.getCommands(true);
           if (commands == null || commands.size() != 1)
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "should have exactly one command");
@@ -370,6 +375,50 @@ class ClusterAPI {
 
   }
 
+  private static void repositoryCRUD(ApiInfo info) {
+    try {
+      SolrZkClient zkClient = info.coreContainer.getZkController().getZkClient();
+      Map data = Utils.getDeepCopy(Utils.getJson(zkClient, ZkStateReader.PACKAGE_REPO, true),3);
+      Map<String, Object> dataMap = null;
+      String name = null;
+      name = info.op.getCommandData() instanceof String ?
+          (String) info.op.getCommandData() :
+          info.op.getStr("name");
+
+      List<String> path = asList("repository", name);
+      boolean contains = Utils.getObjectByPath(data, false, path) != null;
+
+      if(info.op.name.equals(Commands.ADD_REPO.meta.getName())){
+        if(contains){
+          info.op.addError("repository "+ name + " already exists");
+          return;
+        }
+       dataMap = info.op.getDataMap();
+
+      } else if(info.op.name.equals(Commands.UPDATE_REPO.meta.getName())) {
+        if(!contains){
+          info.op.addError("repository "+ name + " does not exist");
+          return;
+        }
+        dataMap = info.op.getDataMap();
+
+      } else if(info.op.name.equals(Commands.DELETE_REPO.meta.getName())){
+        if(!contains){
+          info.op.addError("repository "+ name + " does not exist");
+          return;
+        }
+      }
+
+      Map delta = new LinkedHashMap();
+      Utils.setObjectByPath(delta, path, dataMap, true);
+      updateRepository(zkClient, delta);
+    } catch (SolrException se){
+      throw se;
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+  }
+
   static boolean addUpdatePackage(ApiInfo params) throws Exception {
     if (!RuntimeLib.isEnabled()) {
       params.op.addError("node not started with enable.runtime.lib=true");
@@ -380,7 +429,7 @@ class ClusterAPI {
     RuntimeLib lib = new RuntimeLib(handler.handler.coreContainer);
     CommandOperation op = params.op;
     String name = op.getStr("name");
-    ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
+    ClusterProperties clusterProperties = new ClusterProperties(params.coreContainer.getZkController().getZkClient());
     Map<String, Object> props = clusterProperties.getClusterProperties();
     List<String> pathToLib = asList(CommonParams.PACKAGE, name);
     Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
@@ -488,6 +537,16 @@ class ClusterAPI {
       }
       return true;
     }
+
+  }
+
+  static void updateRepository(SolrZkClient client, Map delta) throws KeeperException, InterruptedException {
+    client.atomicUpdate(ZkStateReader.PACKAGE_REPO, zkData -> {
+      if (zkData == null) return Utils.toJSON(delta);
+      Map<String, Object> zkJson = (Map<String, Object>) Utils.fromJSON(zkData);
+      boolean modified = Utils.mergeJson(zkJson, delta);
+      return modified ? Utils.toJSON(zkJson) : null;
+    });
 
   }
 }

@@ -1,0 +1,27 @@
+{
+  "methods": [
+    "GET", "POST"
+  ],
+  "url": {
+    "paths": [
+      "/cluster/repository"
+    ]
+  },
+  "commands": {
+    "add": {
+      "description": "",
+      "documentation": "",
+      "#include": "cluster.Commands.repository.properties"
+
+    },
+    "update": {
+      "description": "",
+      "documentation": "",
+      "#include": "cluster.Commands.repository.properties"
+    },
+    "delete": {
+      "description": "",
+      "type": "string"
+    }
+  }
+}

@@ -12,5 +12,6 @@
     "version" : {
       "type" : "string"
     }
-  }
+  },
+  "required" : ["name", "url"]
 }

@@ -52,6 +52,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -812,6 +813,47 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
       cluster.shutdown();
     }
 
+
+  }
+
+  public void testRepoCRUD() throws Exception{
+    MiniSolrCloudCluster cluster = configureCluster(4)
+        .withJettyConfig(jetty -> jetty.enableV2(true))
+        .addConfig("conf", configset("cloud-minimal"))
+        .configure();
+    try {
+      String payload = "{add : {name : myrepo, url: 'http://localhost/abc' , version : '1.1'}}";
+      new V2Request.Builder("/cluster/repository")
+          .withPayload(payload)
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      Map repojson = Utils.getJson(cluster.getZkClient(), ZkStateReader.PACKAGE_REPO, true);
+
+      assertEquals("http://localhost/abc", Utils.getObjectByPath(repojson, true, "/repository/myrepo/url"));
+      assertEquals("1.1", Utils.getObjectByPath(repojson, true, "/repository/myrepo/version"));
+      payload = "{update : {name : myrepo, url: 'http://localhost/abc' , version : '1.2'}}";
+    new V2Request.Builder("/cluster/repository")
+          .withPayload(payload)
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      repojson = Utils.getJson(cluster.getZkClient(), ZkStateReader.PACKAGE_REPO, true);
+
+      assertEquals("http://localhost/abc", Utils.getObjectByPath(repojson, true, "/repository/myrepo/url"));
+      assertEquals("1.2", Utils.getObjectByPath(repojson, true, "/repository/myrepo/version"));
+
+      payload = "{delete :  myrepo}";
+    new V2Request.Builder("/cluster/repository")
+          .withPayload(payload)
+          .withMethod(SolrRequest.METHOD.POST)
+          .build().process(cluster.getSolrClient());
+      repojson = Utils.getJson(cluster.getZkClient(), ZkStateReader.PACKAGE_REPO, true);
+
+      assertNull( Utils.getObjectByPath(repojson, true, "/repository/myrepo"));
+
+
+    }finally {
+      cluster.shutdown();
+    }
 
   }
 

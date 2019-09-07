@@ -209,21 +209,6 @@
     "delete-requesthandler" : {
       "description" : "delete a requesthandler",
       "type": "string"
-    },
-    "add-repository": {
-      "description": "",
-      "documentation": "",
-      "#include": "cluster.Commands.repository.properties"
-
-    },
-    "update-repository": {
-      "description": "",
-      "documentation": "",
-      "#include": "cluster.Commands.repository.properties"
-    },
-    "delete-repository": {
-      "description": "",
-      "type": "string"
     }
 
   }

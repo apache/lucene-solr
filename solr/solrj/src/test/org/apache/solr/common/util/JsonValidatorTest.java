@@ -41,6 +41,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
     checkSchema("core.SchemaEdit");
     checkSchema("cluster.configs.Commands");
     checkSchema("cluster.Commands");
+    checkSchema("cluster.repository");
   }
 
 

@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +39,8 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
@@ -49,6 +52,8 @@ import static org.apache.solr.common.util.StrUtils.splitSmart;
  * to actions and old parameter names to new parameter names
  */
 public abstract class BaseHandlerApiSupport implements ApiSupport {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   protected final Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping;
 
   protected BaseHandlerApiSupport() {
@@ -121,8 +126,10 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
           }
 
         } catch (SolrException e) {
+          log.error("error running command", e);
           throw e;
         } catch (Exception e) {
+          log.error("error running command", e);
           throw new SolrException(BAD_REQUEST, e); //TODO BAD_REQUEST is a wild guess; should we flip the default?  fail here to investigate how this happens in tests
         } finally {
           req.setParams(params);
