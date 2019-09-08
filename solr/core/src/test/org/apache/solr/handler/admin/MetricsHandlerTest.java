@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import java.util.Arrays;
 import java.util.Map;
 
 import com.codahale.metrics.Counter;
@@ -25,15 +24,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.PluginBag;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetrics;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -338,119 +328,5 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     metrics = (NamedList) values.get("metrics");
     assertEquals(0, metrics.size());
     assertNotNull(values.findRecursive("errors", "solr.jetty:unknown:baz"));
-  }
-
-  @Test
-  public void testMetricsUnload() throws Exception {
-
-    SolrCore core = h.getCoreContainer().getCore("collection1");//;.getRequestHandlers().put("/dumphandler", new DumpRequestHandler());
-    RefreshablePluginHolder pluginHolder =null;
-    try {
-      PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, Utils.makeMap("name", "/dumphandler", "class", DumpRequestHandler.class.getName()));
-      DumpRequestHandler requestHandler = new DumpRequestHandler();
-      requestHandler.gaugevals =  Utils.makeMap("d_k1","v1", "d_k2","v2");
-      pluginHolder = new RefreshablePluginHolder(info, requestHandler);
-      core.getRequestHandlers().put("/dumphandler",
-
-          pluginHolder);
-    } finally {
-      core.close();
-    }
-
-
-
-    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
-
-    SolrQueryResponse resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", MetricsHandler.COMPACT_PARAM, "true", "key", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge"),
-        resp);
-
-    assertEquals("v1", resp.getValues()._getStr(Arrays.asList("metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k1"), null));
-    assertEquals("v2", resp.getValues()._getStr(Arrays.asList("metrics","solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k2"), null));
-    pluginHolder.closeHandler();
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", MetricsHandler.COMPACT_PARAM, "true", "key", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge"),
-        resp);
-
-    assertEquals(null, resp.getValues()._getStr(Arrays.asList("metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k1"), null));
-    assertEquals(null, resp.getValues()._getStr(Arrays.asList("metrics","solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k2"), null));
-
-    DumpRequestHandler requestHandler = new DumpRequestHandler();
-    requestHandler.gaugevals =  Utils.makeMap("d_k1","v1.1", "d_k2","v2.1");
-    pluginHolder.reset(requestHandler);
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(req(CommonParams.QT, "/admin/metrics", CommonParams.WT, "json", MetricsHandler.COMPACT_PARAM, "true", "key", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge"),
-        resp);
-
-    assertEquals("v1.1", resp.getValues()._getStr(Arrays.asList("metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k1"), null));
-    assertEquals("v2.1", resp.getValues()._getStr(Arrays.asList("metrics","solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k2"), null));
-
-
-  }
-
-  static class RefreshablePluginHolder extends PluginBag.PluginHolder<SolrRequestHandler> {
-
-    private DumpRequestHandler rh;
-    private SolrMetrics metricsInfo;
-
-    public RefreshablePluginHolder(PluginInfo info, DumpRequestHandler rh) {
-      super(info);
-      this.rh = rh;
-    }
-
-    @Override
-    public boolean isLoaded() {
-      return true;
-    }
-
-    void closeHandler() throws Exception {
-      this.metricsInfo = rh.getMetrics();
-      if(metricsInfo.tag.contains(String.valueOf(rh.hashCode()))){
-        //this created a new child metrics
-        metricsInfo = metricsInfo.getParent();
-      }
-      this.rh.close();
-    }
-
-    void reset(DumpRequestHandler rh) throws Exception {
-        this.rh = rh;
-        if(metricsInfo != null)
-        this.rh.initializeMetrics(metricsInfo);
-    }
-
-
-    @Override
-    public SolrRequestHandler get() {
-      return rh;
-    }
-  }
-
-  public static class DumpRequestHandler extends RequestHandlerBase {
-
-    static String key = DumpRequestHandler.class.getName();
-    Map<String, Object> gaugevals ;
-    @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-      rsp.add("key", key);
-    }
-
-    @Override
-    public String getDescription() {
-      return "DO nothing";
-    }
-
-    @Override
-    public void initializeMetrics(SolrMetrics m) {
-      super.initializeMetrics(m);
-      MetricsMap metrics = new MetricsMap((detailed, map) -> map.putAll(gaugevals));
-      solrMetrics.gauge(this,
-           metrics,  true, "dumphandlergauge", getCategory().toString());
-
-    }
-
-    @Override
-    public Boolean registerV2() {
-      return Boolean.FALSE;
-    }
   }
 }
