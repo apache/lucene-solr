@@ -25,13 +25,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +41,7 @@ import org.slf4j.LoggerFactory;
  * itself to do the cleanup when the size of the cache exceeds certain limits.
  * <p>
  * Also see <a href="http://wiki.apache.org/solr/SolrCaching">SolrCaching</a>
+ *
  *
  * @see org.apache.solr.util.ConcurrentLRUCache
  * @see org.apache.solr.search.SolrCache
@@ -78,6 +77,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
 
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private MetricRegistry registry;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -225,7 +225,6 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
 
   @Override
   public void close() {
-    if (solrMetrics != null) solrMetrics.unregister();
     // add the stats to the cumulative stats object (the first in the statsList)
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
@@ -248,17 +247,9 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
     return metricNames;
   }
 
-
-  SolrMetrics solrMetrics;
-
   @Override
-  public SolrMetrics getMetrics() {
-    return solrMetrics;
-  }
-
-  @Override
-  public void initializeMetrics(SolrMetrics info) {
-    solrMetrics = info.getChildInfo(this);
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         ConcurrentLRUCache.Stats stats = cache.getStats();
@@ -311,8 +302,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
         }
       }
     });
-    String metricName = SolrMetricManager.makeName(ImmutableList.of(getCategory().toString()), solrMetrics.scope);
-    solrMetrics.gauge(this, cacheMap,true, metricName);
+    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
   }
 
 
@@ -323,7 +313,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return solrMetrics == null ? null : solrMetrics.getRegistry();
+    return registry;
   }
 
   @Override
