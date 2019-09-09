@@ -494,8 +494,9 @@ public class LRUQueryCache implements QueryCache, Accountable {
     return new CachingWrapperWeight(originalWeight, policy);
   }
 
-
-  //Should be used only when the user wishes to trade throughput for latency
+  // Should be used only when the user wishes to trade throughput for latency
+  // This method was not merged in the method above as to not break the existing contract
+  // advertised by QueryCache
   @Override
   public Weight doCache(final Weight weight, QueryCachingPolicy policy, Executor executor) {
     assert executor != null;
