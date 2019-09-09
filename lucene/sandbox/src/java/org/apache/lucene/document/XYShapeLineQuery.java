@@ -86,15 +86,15 @@ final class XYShapeLineQuery extends ShapeQuery {
   }
 
   @Override
-  protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = decode(scratchTriangle[0]);
-    double alon = decode(scratchTriangle[1]);
-    double blat = decode(scratchTriangle[2]);
-    double blon = decode(scratchTriangle[3]);
-    double clat = decode(scratchTriangle[4]);
-    double clon = decode(scratchTriangle[5]);
+    double alat = decode(scratchTriangle.aY);
+    double alon = decode(scratchTriangle.aX);
+    double blat = decode(scratchTriangle.bY);
+    double blon = decode(scratchTriangle.bX);
+    double clat = decode(scratchTriangle.cY);
+    double clon = decode(scratchTriangle.cX);
 
     if (queryRelation == QueryRelation.WITHIN) {
       return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;

@@ -67,6 +67,9 @@ Improvements
 
 * LUCENE-8952: Use a sort key instead of true distance in NearestNeighbor (Julie Tibshirani).
 
+* LUCENE-8620: Tessellator labels the edges of the generated triangles whether they belong to
+  the original polygon. This information is added to the triangle encoding. (Ignacio Vera)
+
 Optimizations
 
 * LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
