@@ -19,9 +19,11 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.lucene.document.ReferenceDocValuesField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocIDMerger;
 import org.apache.lucene.index.DocValues;
@@ -32,13 +34,19 @@ import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdinalMap;
+import org.apache.lucene.index.ReferenceDocValuesWriter;
 import org.apache.lucene.index.SegmentWriteState; // javadocs
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.VectorDocValues;
+import org.apache.lucene.index.VectorDocValuesWriter;
+import org.apache.lucene.search.GraphSearch;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.packed.PackedInts;
@@ -140,7 +148,12 @@ public abstract class DocValuesConsumer implements Closeable {
         } else if (type == DocValuesType.SORTED_SET) {
           mergeSortedSetField(mergeFieldInfo, mergeState);
         } else if (type == DocValuesType.SORTED_NUMERIC) {
-          mergeSortedNumericField(mergeFieldInfo, mergeState);
+          String refType = mergeFieldInfo.getAttribute(ReferenceDocValuesField.REFTYPE_ATTR);
+          if ("knn-graph".equals(refType)) {
+            mergeReferenceField(mergeFieldInfo, mergeState);
+          } else {
+            mergeSortedNumericField(mergeFieldInfo, mergeState);
+          }
         } else {
           throw new AssertionError("type=" + type);
         }
@@ -448,6 +461,302 @@ public abstract class DocValuesConsumer implements Closeable {
                               };
                             }
                           });
+  }
+
+  /**
+   * Merges the sorted docvalues from <code>toMerge</code>.
+   * <p>
+   * The default implementation calls {@link #addSortedNumericField}, passing
+   * iterables that filter deleted documents.
+   */
+  public void mergeReferenceField(FieldInfo mergeFieldInfo, final MergeState mergeState) throws IOException {
+    
+    assert mergeFieldInfo.name.substring(mergeFieldInfo.name.length() - 4).equals("$nbr");
+    String vectorFieldName = mergeFieldInfo.name.substring(0, mergeFieldInfo.name.length() - 4);
+    // We must compute the entire merged field in memory since each document's values depend on its neighbors
+    //mergeState.infoStream.message("ReferenceDocValues", "merging " + mergeState.segmentInfo);
+    List<VectorDocValuesSub> subs = new ArrayList<>();
+    List<VectorDocValuesSupplier> suppliers = new ArrayList<>();
+    int dimension = -1;
+    for (int i = 0 ; i < mergeState.docValuesProducers.length; i++) {
+      DocValuesProducer docValuesProducer = mergeState.docValuesProducers[i];
+      if (docValuesProducer != null) {
+        FieldInfo vectorFieldInfo = mergeState.fieldInfos[i].fieldInfo(vectorFieldName);
+        if (vectorFieldInfo != null && vectorFieldInfo.getDocValuesType() == DocValuesType.BINARY) {
+          int segmentDimension = VectorDocValuesWriter.getDimensionFromAttribute(vectorFieldInfo);
+          if (dimension == -1) {
+            dimension = segmentDimension;
+          } else if (dimension != segmentDimension) {
+            throw new IllegalStateException("Varying dimensions for vector-valued field " + mergeFieldInfo.name
+                + ": " + dimension + "!=" + segmentDimension);
+          }
+          VectorDocValues values = VectorDocValues.get(docValuesProducer.getBinary(vectorFieldInfo), dimension);
+          suppliers.add(() -> VectorDocValues.get(docValuesProducer.getBinary(vectorFieldInfo), segmentDimension));
+          subs.add(new VectorDocValuesSub(i, mergeState.docMaps[i], values));
+        }
+      }
+    }
+    // Create a new SortedNumericDocValues by iterating over the vectors, searching for
+    // its nearest neighbor vectors in the newly merged segments' vectors, mapping the resulting
+    // docids using docMaps in the mergeState.
+    MultiVectorDV multiVectors = new MultiVectorDV(suppliers, subs, mergeState.maxDocs);
+    ReferenceDocValuesWriter refWriter = new ReferenceDocValuesWriter(mergeFieldInfo, Counter.newCounter(false));
+    SortedNumericDocValues refs = refWriter.getBufferedValues();
+    float[] vector = new float[dimension];
+    GraphSearch graphSearch = GraphSearch.fromDimension(dimension);
+    int i;
+    for (i = 0; i < subs.size(); i++) {
+      // advance past the first document; there are no neighbors for it
+      if (subs.get(i).nextDoc() != NO_MORE_DOCS) {
+        break;
+      }
+    }
+    for (; i < subs.size(); i++) {
+      VectorDocValuesSub sub = subs.get(i);
+      MergeState.DocMap docMap = mergeState.docMaps[sub.segmentIndex];
+      // nocommit: test sorted index and test index with deletions
+      int docid;
+      while ((docid = sub.nextDoc()) != NO_MORE_DOCS) {
+        int mappedDocId = docMap.get(docid);
+        assert sub.values.docID() == docid;
+        assert docid == multiVectors.unmap(mappedDocId) : "unmap mismatch " + docid + " != " + multiVectors.unmap(mappedDocId);
+        sub.values.vector(vector);
+        //System.out.println("merge doc " + mappedDocId + " mapped from [" + i + "," + docid + "] in thread " + Thread.currentThread().getName());
+        for (ScoreDoc ref : graphSearch.search(() -> multiVectors, () -> refs, vector, mappedDocId)) {
+          if (ref.doc >= 0) {
+            // ignore sentinels
+            //System.out.println("  ref " + ref.doc);
+            refWriter.addValue(mappedDocId, ref.doc);
+          }
+        }
+      }
+    }
+
+    addSortedNumericField(mergeFieldInfo,
+        new EmptyDocValuesProducer() {
+          @Override
+          public SortedNumericDocValues getSortedNumeric(FieldInfo fieldInfo) {
+            if (fieldInfo != mergeFieldInfo) {
+              throw new IllegalArgumentException("wrong FieldInfo");
+            }
+            //mergeState.infoStream.message("ReferenceDocValues", "new iterator " + mergeState.segmentInfo);
+            return refWriter.getIterableValues();
+          }
+        });
+
+    //mergeState.infoStream.message("ReferenceDocValues", " mergeReferenceField done: " + mergeState.segmentInfo);
+  }
+
+  /** Tracks state of one binary sub-reader that we are merging */
+  private static class VectorDocValuesSub extends DocIDMerger.Sub {
+
+    final VectorDocValues values;
+    final int segmentIndex;
+
+    public VectorDocValuesSub(int segmentIndex, MergeState.DocMap docMap, VectorDocValues values) {
+      super(docMap);
+      this.values = values;
+      this.segmentIndex = segmentIndex;
+      assert values.docID() == -1;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return values.nextDoc();
+    }
+  }
+
+  // provides a view over multiple VectorDocValues by concatenating their docid spaces
+  private static class MultiVectorDV extends VectorDocValues {
+    private final VectorDocValues[] subValues;
+    private final int[] docBase;
+    private final int[] segmentMaxDocs;
+    private final int cost;
+
+    private int whichSub;
+
+    MultiVectorDV(List<VectorDocValuesSupplier> suppliers, List<VectorDocValuesSub> subs, int[] maxDocs) throws IOException {
+      this.subValues = new VectorDocValues[suppliers.size()];
+      // TODO: this complicated logic needs its own test
+      // maxDocs actually says *how many* docs there are, not what the number of the max doc is
+      int maxDoc = -1;
+      int lastMaxDoc = -1;
+      segmentMaxDocs = new int[subs.size() - 1];
+      docBase = new int[subs.size()];
+      for (int i = 0, j = 0; j < subs.size(); i++) {
+        lastMaxDoc = maxDoc;
+        maxDoc += maxDocs[i];
+        if (i == subs.get(j).segmentIndex) {
+          // we may skip some segments if they have no docs with values for this field
+          if (j > 0) {
+            segmentMaxDocs[j - 1] = lastMaxDoc;
+          }
+          docBase[j] = lastMaxDoc + 1;
+          ++j;
+        }
+      }
+
+      int i = 0;
+      int totalCost = 0;
+      for (VectorDocValuesSupplier supplier : suppliers) {
+        ResettingVectorDV sub = new ResettingVectorDV(supplier);
+        totalCost += sub.cost();
+        this.subValues[i++] = sub;
+      }
+      cost = totalCost;
+      whichSub = 0;
+    }
+
+    private int findSegment(int docid) {
+      int segment = Arrays.binarySearch(segmentMaxDocs, docid);
+      if (segment < 0) {
+        return -1 - segment;
+      } else {
+        return segment;
+      }
+    }
+
+    @Override
+    public int docID() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int dimension() {
+      return subValues[0].dimension();
+    }
+
+    @Override
+    public long cost() {
+      return cost;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      int rebased = unmapSettingWhich(target);
+      if (rebased < 0) {
+        rebased = 0;
+      }
+      int segmentDocId = subValues[whichSub].advance(rebased);
+      if (segmentDocId == NO_MORE_DOCS) {
+        if (++whichSub < subValues.length) {
+          // Get the first document in the next segment; Note that all segments have values.
+          segmentDocId = subValues[whichSub].advance(0);
+        } else {
+          return NO_MORE_DOCS;
+        }
+      }
+      return docBase[whichSub] + segmentDocId;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      int rebased = unmapSettingWhich(target);
+      if (rebased < 0) {
+        return false;
+      }
+      return subValues[whichSub].advanceExact(rebased);
+    }
+
+    int unmap(int docid) {
+      // map from global (merged) to segment-local (unmerged)
+      // like mapDocid but no side effect - used for assertion
+      return docid - docBase[findSegment(docid)];
+    }
+
+    private int unmapSettingWhich(int target) {
+      whichSub = findSegment(target);
+      return target - docBase[whichSub];
+    }
+
+    @Override
+    public void vector(float[] vector) throws IOException {
+      subValues[whichSub].vector(vector);
+    }
+  }
+
+  // provides pseudo-random access to the values as float[] by recreating an underlying
+  // iterator whenever the iteration goes backwards
+  private static class ResettingVectorDV extends VectorDocValues {
+
+    private final VectorDocValuesSupplier supplier;
+    private VectorDocValues delegate;
+    private int docId = -1;
+
+    ResettingVectorDV(VectorDocValuesSupplier supplier) throws IOException {
+      this.supplier = supplier;
+      delegate = supplier.get();
+    }
+
+    @Override
+    public int docID() {
+      if (docId < 0) {
+        return -docId;
+      } else {
+        return docId;
+      }
+    }
+
+    @Override
+    public int dimension() {
+      return delegate.dimension();
+    }
+
+    @Override
+    public long cost() {
+      return delegate.cost();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      docId = delegate.nextDoc();
+      return docId;
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      if (target == docId) {
+        return target;
+      }
+      maybeReset(target);
+      docId = delegate.advance(target);
+      return docId;
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      if (target == docId) {
+        return true;
+      }
+      maybeReset(target);
+      boolean advanced = delegate.advanceExact(target);
+      if (advanced) {
+        docId = delegate.docID();
+      } else {
+        docId = -delegate.docID();
+      }
+      return advanced;
+    }
+
+    @Override
+    public void vector(float[] vector) throws IOException {
+      delegate.vector(vector);
+    }
+
+    private void maybeReset(int target) throws IOException {
+      if (target < delegate.docID()) {
+        delegate = supplier.get();
+      }
+    }
+  }
+
+  private interface VectorDocValuesSupplier {
+    VectorDocValues get() throws IOException;
   }
 
   /** Tracks state of one sorted sub-reader that we are merging */

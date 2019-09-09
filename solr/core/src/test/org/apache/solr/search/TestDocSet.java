@@ -427,7 +427,7 @@ public class TestDocSet extends SolrTestCase {
       public SortedNumericDocValues getSortedNumericDocValues(String field) {
         return null;
       }
-      
+
       @Override
       public SortedSetDocValues getSortedSetDocValues(String field) {
         return null;

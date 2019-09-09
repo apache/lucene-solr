@@ -354,7 +354,7 @@ public final class CheckIndex implements Closeable {
       
       /** Total number of sortednumeric fields */
       public long totalSortedNumericFields;
-      
+
       /** Total number of sortedset fields */
       public long totalSortedSetFields;
       

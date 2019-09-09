@@ -34,7 +34,7 @@ import org.apache.lucene.util.packed.PackedLongValues;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** Buffers up pending long[] per doc, sorts, then flushes when segment flushes. */
-class SortedNumericDocValuesWriter extends DocValuesWriter {
+class SortedNumericDocValuesWriter extends SNDVWriterBase {
   private PackedLongValues.Builder pending; // stream of all values
   private PackedLongValues.Builder pendingCounts; // count of values per doc
   private DocsWithFieldSet docsWithField;
@@ -58,6 +58,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
     iwBytesUsed.addAndGet(bytesUsed);
   }
 
+  @Override
   public void addValue(int docID, long value) {
     assert docID >= currentDoc;
     if (docID != currentDoc) {
@@ -118,7 +119,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
         () -> SortedNumericSelector.wrap(docValues, sf.getSelector(), sf.getNumericType()));
   }
 
-  private long[][] sortDocValues(int maxDoc, Sorter.DocMap sortMap, SortedNumericDocValues oldValues) throws IOException {
+  static long[][] sortDocValues(int maxDoc, Sorter.DocMap sortMap, SortedNumericDocValues oldValues) throws IOException {
     long[][] values = new long[maxDoc][];
     int docID;
     while ((docID = oldValues.nextDoc()) != NO_MORE_DOCS) {
@@ -170,7 +171,7 @@ class SortedNumericDocValuesWriter extends DocValuesWriter {
                                      });
   }
 
-  private static class BufferedSortedNumericDocValues extends SortedNumericDocValues {
+  static class BufferedSortedNumericDocValues extends SortedNumericDocValues {
     final PackedLongValues.Iterator valuesIter;
     final PackedLongValues.Iterator valueCountsIter;
     final DocIdSetIterator docsWithField;

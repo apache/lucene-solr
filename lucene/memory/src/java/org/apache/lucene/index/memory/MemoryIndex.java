@@ -1220,7 +1220,7 @@ public class MemoryIndex {
         return null;
       }
     }
-    
+
     @Override
     public SortedSetDocValues getSortedSetDocValues(String field) {
       Info info = getInfoForExpectedDocValuesType(field, DocValuesType.SORTED_SET);

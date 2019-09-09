@@ -49,6 +49,22 @@ final class DocsWithFieldSet extends DocIdSet {
     cost++;
   }
 
+  boolean contains(int docID) {
+    if (set == null) {
+      return docID <= lastDocId;
+    } else {
+      return set.get(docID);
+    }
+  }
+
+  int cost() {
+    return cost;
+  }
+
+  int lastDocId() {
+    return lastDocId;
+  }
+
   @Override
   public long ramBytesUsed() {
     return BASE_RAM_BYTES_USED + (set == null ? 0 : set.ramBytesUsed());

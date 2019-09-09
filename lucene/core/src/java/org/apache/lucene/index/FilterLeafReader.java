@@ -391,7 +391,7 @@ public abstract class FilterLeafReader extends LeafReader {
     ensureOpen();
     return in.getSortedDocValues(field);
   }
-  
+
   @Override
   public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
     ensureOpen();

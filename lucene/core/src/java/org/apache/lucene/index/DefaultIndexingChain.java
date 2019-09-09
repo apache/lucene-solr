@@ -37,6 +37,8 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.KnnGraphField;
+import org.apache.lucene.document.ReferenceDocValuesField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -135,12 +137,6 @@ final class DefaultIndexingChain extends DocConsumer {
     SegmentReadState readState = new SegmentReadState(state.directory, state.segmentInfo, state.fieldInfos, true, IOContext.READ, state.segmentSuffix, Collections.emptyMap());
     
     t0 = System.nanoTime();
-    writeDocValues(state, sortMap);
-    if (docState.infoStream.isEnabled("IW")) {
-      docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write docValues");
-    }
-
-    t0 = System.nanoTime();
     writePoints(state, sortMap);
     if (docState.infoStream.isEnabled("IW")) {
       docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write points");
@@ -178,6 +174,12 @@ final class DefaultIndexingChain extends DocConsumer {
     }
     if (docState.infoStream.isEnabled("IW")) {
       docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write postings and finish vectors");
+    }
+
+    t0 = System.nanoTime();
+    writeDocValues(state, sortMap);
+    if (docState.infoStream.isEnabled("IW")) {
+      docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write docValues");
     }
 
     // Important to save after asking consumer to flush so
@@ -602,9 +604,23 @@ final class DefaultIndexingChain extends DocConsumer {
 
       case BINARY:
         if (fp.docValuesWriter == null) {
-          fp.docValuesWriter = new BinaryDocValuesWriter(fp.fieldInfo, bytesUsed);
+          if (KnnGraphField.KNN_GRAPH.equals(fp.fieldInfo.getAttribute(KnnGraphField.SUBTYPE_ATTR))) {
+            // nocommit uniquify field name - also move the naming logic into something Knn-specific, like in KnnGraphField?
+            PerField refField = getOrAddField(fp.fieldInfo.name + "$nbr", ReferenceDocValuesField.KNN_GRAPH_TYPE, false);
+            ReferenceDocValuesWriter refWriter = new ReferenceDocValuesWriter(refField.fieldInfo, bytesUsed);
+            refField.docValuesWriter = refWriter;
+            // TODO: isn't it strange that getOrAddField does not already do this?
+            refField.fieldInfo.setDocValuesType(ReferenceDocValuesField.KNN_GRAPH_TYPE.docValuesType());
+            fp.docValuesWriter = new KnnGraphWriter(fp.fieldInfo, bytesUsed, refWriter);
+          } else {
+            fp.docValuesWriter = new BinaryDocValuesWriter(fp.fieldInfo, bytesUsed);
+          }
         }
-        ((BinaryDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryValue());
+        if (KnnGraphField.KNN_GRAPH.equals(fp.fieldInfo.getAttribute(KnnGraphField.SUBTYPE_ATTR))) {
+            ((KnnGraphWriter) fp.docValuesWriter).addValue(docID, ((KnnGraphField) field).vectorValue());
+        } else {
+            ((BinaryDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryValue());
+        }
         break;
 
       case SORTED:
@@ -613,12 +629,17 @@ final class DefaultIndexingChain extends DocConsumer {
         }
         ((SortedDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryValue());
         break;
-        
+
       case SORTED_NUMERIC:
         if (fp.docValuesWriter == null) {
-          fp.docValuesWriter = new SortedNumericDocValuesWriter(fp.fieldInfo, bytesUsed);
+          String refType = fp.fieldInfo.getAttribute(ReferenceDocValuesField.REFTYPE_ATTR);
+          if (refType != null) {
+            fp.docValuesWriter = new ReferenceDocValuesWriter(fp.fieldInfo, bytesUsed);
+          } else {
+            fp.docValuesWriter = new SortedNumericDocValuesWriter(fp.fieldInfo, bytesUsed);
+          }
         }
-        ((SortedNumericDocValuesWriter) fp.docValuesWriter).addValue(docID, field.numericValue().longValue());
+        ((SNDVWriterBase) fp.docValuesWriter).addValue(docID, field.numericValue().longValue());
         break;
 
       case SORTED_SET:

@@ -393,7 +393,7 @@ public final class DocValues {
     }
     return dv;
   }
-  
+
   /**
    * Returns SortedSetDocValues for the field, or {@link #emptySortedSet} if it has none. 
    * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.

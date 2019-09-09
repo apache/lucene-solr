@@ -23,6 +23,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.ReferenceDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -251,6 +252,42 @@ public class TestDocValues extends LuceneTestCase {
       DocValues.getSortedSet(r, "foo");
     });
     
+    dr.close();
+    iw.close();
+    dir.close();
+  }
+
+  /**
+   * field with reference docvalues
+   */
+  public void testReferenceField() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    Document doc = new Document();
+    iw.addDocument(doc);
+    doc = new Document();
+    doc.add(new ReferenceDocValuesField("foo", 0));
+    iw.addDocument(doc);
+    DirectoryReader dr = DirectoryReader.open(iw);
+    LeafReader r = getOnlyLeafReader(dr);
+
+    // ok
+    assertNotNull(DocValues.getSortedNumeric(r, "foo"));
+
+    // errors
+    expectThrows(IllegalStateException.class, () -> {
+      DocValues.getBinary(r, "foo");
+    });
+    expectThrows(IllegalStateException.class, () -> {
+      DocValues.getNumeric(r, "foo");
+    });
+    expectThrows(IllegalStateException.class, () -> {
+      DocValues.getSorted(r, "foo");
+    });
+    expectThrows(IllegalStateException.class, () -> {
+      DocValues.getSortedSet(r, "foo");
+    });
+
     dr.close();
     iw.close();
     dir.close();
