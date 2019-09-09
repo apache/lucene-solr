@@ -49,8 +49,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
 //    <field name="srpt_geohash" type="srpt_geohash" multiValued="true" />
 //    <field name="" type="srpt_quad" multiValued="true" />
 //    <field name="" type="srpt_packedquad" multiValued="true" />
-//    <field name="" type="stqpt_geohash" multiValued="true" />
-    
+
     // multiple valued field
     assertU(adoc("id","H.A", "srpt_geohash","POINT( 1 2 )"));
     assertU(adoc("id","H.B", "srpt_geohash","POINT( 1 2 )", 
@@ -138,7 +137,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
         "wt","geojson", 
         "rows","2", 
         "fl","*", 
-        "geojson.field", "stqpt_geohash",
+        "geojson.field", "srptgeom",
         "indent","true"));
     
     // Check that we have a normal solr response with 'responseHeader' and 'response'
@@ -152,7 +151,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
         "rows","2", 
         "fl","*", 
         "omitHeader", "true",
-        "geojson.field", "stqpt_geohash",
+        "geojson.field", "srptgeom",
         "indent","true"));
     
     // Check that we have a normal solr response with 'responseHeader' and 'response'
@@ -171,7 +170,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
         "q","*:*", 
         "wt","geojson", 
         "fl","*", 
-        "geojson.field", "stqpt_geohash",
+        "geojson.field", "srpt_geohash",
         "indent","true")));
     
     // Multivalued Valued Point

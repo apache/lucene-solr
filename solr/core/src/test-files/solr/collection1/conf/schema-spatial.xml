@@ -22,7 +22,7 @@
   <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
   <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
   
-  <!-- tdouble class can't be randomized, because SpatialPointVectorFieldType requires TrieDoubleField.  See SOLR-11111. -->
+  <!-- tdouble class can't be randomized, because BBoxField requires TrieDoubleField.  See SOLR-11111. -->
   <fieldType name="tdouble" class="solr.TrieDoubleField" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
   
   <fieldType name="tdoubleDV" class="${solr.tests.DoubleFieldType}" precisionStep="8" docValues="true"/>
@@ -45,14 +45,6 @@
   <fieldType name="srpt_100km" class="solr.SpatialRecursivePrefixTreeFieldType"
              maxDistErr="100" distanceUnits="kilometers"
   />
-  <fieldType name="stqpt_geohash" class="solr.SpatialTermQueryPrefixTreeFieldType"
-             prefixTree="geohash" distanceUnits="degrees"/>
-
-  <fieldType name="stqpt_u" class="solr.SpatialTermQueryPrefixTreeFieldType"
-             geo="false" distCalculator="cartesian^2" worldBounds="ENVELOPE(0, 1000, 1000, 0)" distanceUnits="degrees"/>
-
-  <fieldType name="pointvector" class="solr.SpatialPointVectorFieldType"
-             numberType="tdouble" distanceUnits="degrees"/>
 
   <fieldType name="srptgeom" class="solr.RptWithGeometrySpatialField"/>
 
@@ -75,8 +67,6 @@
   <field name="srpt_geohash" type="srpt_geohash" multiValued="true"/>
   <field name="srpt_quad" type="srpt_quad" multiValued="true"/>
   <field name="srpt_packedquad" type="srpt_packedquad" multiValued="true"/>
-  <field name="stqpt_geohash" type="stqpt_geohash" multiValued="true"/>
-  <field name="pointvector" type="pointvector"/>
   <field name="srptgeom" type="srptgeom"/>
   <field name="srptgeom_geo3d" type="srptgeom_geo3d"/>
   <field name="bbox" type="bbox"/>

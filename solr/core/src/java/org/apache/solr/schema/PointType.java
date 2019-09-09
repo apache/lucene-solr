@@ -40,7 +40,7 @@ import org.locationtech.spatial4j.distance.DistanceUtils;
 
 /**
  * A point type that indexes a point in an n-dimensional space as separate fields and supports range queries.
- * See {@link LatLonType} for geo-spatial queries.
+ * See {@link LatLonPointSpatialField} for geo-spatial queries.
  */
 public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
@@ -282,7 +282,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
   @Override
   public double getSphereRadius() {
-    // This won't likely be used. You should probably be using LatLonType instead if you felt the need for this.
+    // This won't likely be used. You should probably be using LatLonPointSpatialField instead if you felt the need for this.
     // This is here just for backward compatibility reasons.
     return DistanceUtils.EARTH_MEAN_RADIUS_KM;
   }

@@ -53,8 +53,6 @@ The following table lists the field types that are available in Solr. The `org.a
 
 |LatLonPointSpatialField |A latitude/longitude coordinate pair; possibly multi-valued for multiple points. Usually it's specified as "lat,lon" order with a comma. See the section <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
 
-|LatLonType |*Deprecated*. Consider using the LatLonPointSpatialField instead. A single-valued latitude/longitude coordinate pair. Usually it's specified as "lat,lon" order with a comma. See the section <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
-
 |LongPointField |Long field (64-bit signed integer). This class encodes foo values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |PointType |A single-valued n-dimensional point. It's both for sorting spatial data that is _not_ lat-lon, and for some more rare use-cases. (NOTE: this is _not_ related to the "Point" based numeric fields). See <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.

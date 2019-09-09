@@ -376,17 +376,6 @@
 
   <fieldType name="uuid" class="solr.UUIDField"/>
 
-  <!-- Try out some point types -->
-  <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
-  <fieldType name="x" class="solr.PointType" dimension="1" subFieldType="double"/>
-  <fieldType name="tenD" class="solr.PointType" dimension="10" subFieldType="double"/>
-  <!-- Use the sub field suffix -->
-  <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1"/>
-  <fieldtype name="geohash" class="solr.GeoHashField"/>
-
-
-  <fieldType name="latLon" class="solr.LatLonType" subFieldType="double"/>
-
   <!-- Min hash analysed field type -->
 
   <fieldType name="text_min_hash" class="solr.TextField" positionIncrementGap="100">

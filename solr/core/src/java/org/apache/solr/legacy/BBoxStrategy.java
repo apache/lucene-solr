@@ -75,6 +75,7 @@ import org.locationtech.spatial4j.shape.Shape;
  *
  * @lucene.experimental
  */
+@Deprecated
 public class BBoxStrategy extends SpatialStrategy {
 
   // note: we use a FieldType to articulate the options we want on the field.  We don't use it as-is with a Field, we

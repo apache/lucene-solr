@@ -518,18 +518,6 @@
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
 
-  <!-- Poly field -->
-  <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
-  <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
-  <fieldType name="geohash" class="solr.GeoHashField"/>
-
-  <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
-  <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
-  <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
-  <!-- sub-centimeter accuracy for RPT; distance calcs -->
-  <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
-             geo="true" distErrPct="0.025" maxDistErr="0.00001" distanceUnits="kilometers"/>
-
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
 
   <fieldType name="shingle23" class="solr.TextField" enableGraphQueries="false" multiValued="true">
@@ -650,8 +638,6 @@
      so we can verify that Solr behaves correctly w/o it in those sitautions
     -->
   <!-- <field name="_version_" type="long" indexed="true" stored="true"/> -->
-
-  <dynamicField name="*_coordinate" type="tdouble" indexed="true" stored="false"/>
 
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>

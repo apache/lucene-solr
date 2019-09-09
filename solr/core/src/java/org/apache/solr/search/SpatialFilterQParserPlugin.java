@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.LatLonPointSpatialField;
+import org.apache.solr.schema.PointType;
 
 /**
  * Creates a spatial Filter based on the type of spatial point used.
@@ -34,14 +36,16 @@ import org.apache.solr.request.SolrQueryRequest;
  * <li>pt - The point to use as a reference.  Must match the dimension of the field. Required.</li>
  * <li>d - The distance in km.  Required.</li>
  * </ul>
- * The distance measure used currently depends on the FieldType.  LatLonType defaults to using haversine, PointType defaults to Euclidean (2-norm).
+ * The distance measure used currently depends on the FieldType.
+ * {@link LatLonPointSpatialField} defaults to using haversine,
+ * {@link PointType} defaults to Euclidean (2-norm).
  * <p>
  * Examples:
  * <pre>fq={!geofilt sfield=store pt=10.312,-20.556 d=3.5}</pre>
  * <pre>fq={!geofilt sfield=store}&amp;pt=10.312,-20&amp;d=3.5</pre>
  * <pre>fq={!geofilt}&amp;sfield=store&amp;pt=10.312,-20&amp;d=3.5</pre>
  * <p>
- * Note: The geofilt for LatLonType is capable of also producing scores equal to the computed distance from the point
+ * Note: The geofilt for {@link LatLonPointSpatialField} is capable of also producing scores equal to the computed distance from the point
  * to the field, making it useful as a component of the main query or a boosting query.
  */
 public class SpatialFilterQParserPlugin extends QParserPlugin {

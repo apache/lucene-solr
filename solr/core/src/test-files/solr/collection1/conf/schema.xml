@@ -428,10 +428,6 @@
   <fieldType name="x" class="solr.PointType" dimension="1" subFieldType="double"/>
   <fieldType name="tenD" class="solr.PointType" dimension="10" subFieldType="double"/>
   <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1"/>
-  <fieldType name="geohash" class="solr.GeoHashField"/>
-
-
-  <fieldType name="latLon" class="solr.LatLonType" subFieldType="double"/>
 
   <!-- Currency type -->
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
@@ -460,8 +456,6 @@
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
   </fieldType>
-
-  <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
 
   <!-- 
     Example of using PathHierarchyTokenizerFactory at index time, so
@@ -521,21 +515,12 @@
   <field name="shouldbestored" type="unstored" stored="true"/>
   <field name="shouldbeunindexed" type="unstored" indexed="false" stored="true"/>
 
-  <!-- Test points -->
-  <!-- Test points -->
+  <!-- Test spatial PointType -->
   <field name="home" type="xy" indexed="true" stored="true" multiValued="false"/>
   <field name="x" type="x" indexed="true" stored="true" multiValued="false"/>
   <field name="homed" type="xyd" indexed="true" stored="true" multiValued="false"/>
   <field name="home_ns" type="xy" indexed="true" stored="false" multiValued="false"/>
   <field name="work" type="xy" indexed="true" stored="true" multiValued="false"/>
-
-  <field name="home_ll" type="latLon" indexed="true" stored="true" multiValued="false"/>
-  <field name="work_ll" type="latLon" indexed="true" stored="true" multiValued="false"/>
-
-  <field name="home_gh" type="geohash" indexed="true" stored="true" multiValued="false"/>
-
-
-  <field name="point10" type="tenD" indexed="true" stored="true" multiValued="false"/>
 
   <!-- Test currency -->
   <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
@@ -631,8 +616,6 @@
 
   <field name="title_stringNoNorms" type="string" omitNorms="true" indexed="true" stored="true"/>
 
-  <field name="store" type="location" indexed="true" stored="true" omitNorms="false"/>
-
   <field name="lower" type="lowerfilt" indexed="false" stored="true" multiValued="true"/>
   <field name="_route_" type="string" indexed="true" stored="true" multiValued="false"/>
 
@@ -718,9 +701,6 @@
   <dynamicField name="*_ignored" type="text" indexed="false" stored="false"/>
 
   <dynamicField name="*_mfacet" type="string" indexed="true" stored="false" multiValued="true"/>
-
-  <!-- Type used to index the lat and lon components for the "location" FieldType -->
-  <dynamicField name="*_coordinate" type="double" indexed="true" stored="false" omitNorms="true" docValues="false"/>
 
   <dynamicField name="*_path" type="path" indexed="true" stored="true" omitNorms="true" multiValued="true"/>
   <dynamicField name="*_ancestor" type="ancestor_path" indexed="true" stored="true" omitNorms="true"

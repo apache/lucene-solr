@@ -53,7 +53,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     return Arrays.asList(new Object[][]{
-        {"llp"}, {"llp_idx"}, {"llp_dv"}, {"srpt_geohash"}, {"srpt_quad"}, {"srpt_packedquad"}, {"stqpt_geohash"}, {"pointvector"}, {"bbox"}, {"pbbox"}, {"bbox_ndv"}
+        {"llp"}, {"llp_idx"}, {"llp_dv"}, {"srpt_geohash"}, {"srpt_quad"}, {"srpt_packedquad"}, {"bbox"}, {"pbbox"}, {"bbox_ndv"}
     });
   }
 
@@ -392,8 +392,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   @Test
   public void testSortMultiVal() throws Exception {
     assumeTrue("dist sorting not supported on field " + fieldName, canCalcDistance);
-    assumeFalse("Multivalue not supported for this field",
-        fieldName.equals("pointvector") || isBBoxField(fieldName));
+    assumeFalse("Multivalue not supported for this field", isBBoxField(fieldName));
 
     assertU(adoc("id", "100", fieldName, "1,2"));//1 point
     assertU(adoc("id", "101", fieldName, "4,-1", fieldName, "3,5"));//2 points, 2nd is pretty close to query point

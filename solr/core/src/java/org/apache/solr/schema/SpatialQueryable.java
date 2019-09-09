@@ -22,7 +22,7 @@ import org.apache.solr.search.SpatialOptions;
 
 /**
  * Indicate that the implementing class is capable of generating a Query against spatial resources.
- * For example, the LatLonType is capable of creating a query that restricts the document space down
+ * For example, the {@link LatLonPointSpatialField} is capable of creating a query that restricts the document space down
  * to documents that are within a certain distance of a given point on Earth. *
  *
  **/

@@ -33,6 +33,7 @@ import org.locationtech.spatial4j.shape.Shape;
  *
  * @lucene.internal
  */
+@Deprecated
 class BBoxValueSource extends ShapeValuesSource {
 
   private final BBoxStrategy strategy;

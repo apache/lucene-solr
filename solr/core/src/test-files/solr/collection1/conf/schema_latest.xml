@@ -262,9 +262,6 @@
   <dynamicField name="*_txt" type="text_general" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_en" type="text_en" indexed="true" stored="true" multiValued="true"/>
 
-  <!-- Type used to index the lat and lon components for the "location" FieldType -->
-  <dynamicField name="*_coordinate" type="tdouble" indexed="true" stored="false"/>
-
   <dynamicField name="*_p" type="location" indexed="true" stored="true"/>
 
   <!-- some trie-coded dynamic fields for faster range queries -->
@@ -746,29 +743,6 @@
   <!-- since fields of this type are by default not stored or indexed,
        any data added to them will be ignored outright.  -->
   <fieldtype name="ignored" stored="false" indexed="false" docValues="false" multiValued="true" class="solr.StrField"/>
-
-  <!-- This point type indexes the coordinates as separate fields (subFields)
-    If subFieldType is defined, it references a type, and a dynamic field
-    definition is created matching *___<typename>.  Alternately, if 
-    subFieldSuffix is defined, that is used to create the subFields.
-    Example: if subFieldType="double", then the coordinates would be
-      indexed in fields myloc_0___double,myloc_1___double.
-    Example: if subFieldSuffix="_d" then the coordinates would be indexed
-      in fields myloc_0_d,myloc_1_d
-    The subFields are an implementation detail of the fieldType, and end
-    users normally should not need to know about them.
-   -->
-  <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
-
-  <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
-  <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
-
-  <!-- An alternative geospatial field type new to Solr 4.  It supports multiValued and polygon shapes.
-    For more information about this and other Spatial fields new to Solr 4, see:
-    http://wiki.apache.org/solr/SolrAdaptersForLuceneSpatial4
-  -->
-  <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
-             geo="true" distErrPct="0.025" maxDistErr="0.001" distanceUnits="kilometers"/>
 
   <!-- Money/currency field type. See http://wiki.apache.org/solr/MoneyFieldType
        Parameters:

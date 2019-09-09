@@ -28,11 +28,12 @@ Using spatial search, you can:
 There are four main field types available for spatial search:
 
 * `LatLonPointSpatialField`
-* `LatLonType` (now deprecated) and its non-geodetic twin `PointType`
+* `PointType`
 * `SpatialRecursivePrefixTreeFieldType` (RPT for short), including `RptWithGeometrySpatialField`, a derivative
 * `BBoxField`
 
-`LatLonPointSpatialField` is the ideal field type for the most common use-cases for lat-lon point data. It replaces LatLonType which still exists for backwards compatibility. RPT offers some more features for more advanced/custom use cases and options like polygons and heatmaps.
+`LatLonPointSpatialField` is the ideal field type for the most common use-cases for lat-lon point data.
+RPT offers some more features for more advanced/custom use cases and options like polygons and heatmaps.
 
 `RptWithGeometrySpatialField` is for indexing and searching non-point data though it can do points too. It can't do sorting/boosting.
 
@@ -55,7 +56,7 @@ For indexing geodetic points (latitude and longitude), supply it in "lat,lon" or
 
 For indexing non-geodetic points, it depends. Use `x y` (a space) if RPT. For PointType however, use `x,y` (a comma).
 
-If you'd rather use a standard industry format, Solr supports https://en.wikipedia.org/wiki/Well-known_text[WKT] and http://geojson.org/[GeoJSON]. However it's much bulkier than the raw coordinates for such simple data. (Not supported by the deprecated LatLonType or PointType)
+If you'd rather use a standard industry format, Solr supports https://en.wikipedia.org/wiki/Well-known_text[WKT] and http://geojson.org/[GeoJSON]. However it's much bulkier than the raw coordinates for such simple data. (Not supported by PointType)
 
 === Indexing GeoJSON and WKT
 
@@ -83,7 +84,7 @@ The center point using the format "lat,lon" if latitude & longitude. Otherwise, 
 A spatial indexed field.
 
 `score`::
-(Advanced option; not supported by LatLonType (deprecated) or PointType) If the query is used in a scoring context (e.g., as the main query in `q`), this _<<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameter>>_ determines what scores will be produced. Valid values are:
+(Advanced option; not supported by PointType) If the query is used in a scoring context (e.g., as the main query in `q`), this _<<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameter>>_ determines what scores will be produced. Valid values are:
 
 * `none`: A fixed score of 1.0. (the default)
 * `kilometers`: distance in kilometers between the field value and the specified center point
@@ -104,7 +105,8 @@ When used with `BBoxField`, additional options are supported:
 * `area2D`: cartesian coordinates based area of the overlapping shapes expressed in terms of the `distanceUnits` configured for this field
 
 `filter`::
-(Advanced option; not supported by LatLonType (deprecated) or PointType). If you only want the query to score (with the above `score` local parameter), not filter, then set this local parameter to false.
+(Advanced option; not supported by PointType).
+If you only want the query to score (with the above `score` local parameter), not filter, then set this local parameter to false.
 
 
 === geofilt
@@ -146,14 +148,15 @@ Here's an example:
 [source,text]
 &q=*:*&fq=store:[45,-94 TO 46,-93]
 
-LatLonType (deprecated) does *not* support rectangles that cross the dateline. For RPT and BBoxField, if you are non-geospatial coordinates (`geo="false"`) then you must quote the points due to the space, e.g., `"x y"`.
+For RPT and BBoxField, if you don't use lat-lon coordinates (`geo="false"`) then you must quote the points due to the space, e.g., `"x y"`.
 
 
 === Optimizing: Cache or Not
 
 It's most common to put a spatial query into an "fq" parameter – a filter query. By default, Solr will cache the query in the filter cache.
 
-If you know the filter query (be it spatial or not) is fairly unique and not likely to get a cache hit then specify `cache="false"` as a local-param as seen in the following example. The only spatial types which stand to benefit from this technique are LatLonPointSpatialField and LatLonType (deprecated). Enable docValues on the field (if it isn't already). LatLonType (deprecated) additionally requires a `cost="100"` (or more) local-param.
+If you know the filter query (be it spatial or not) is fairly unique and not likely to get a cache hit then specify `cache="false"` as a local-param as seen in the following example.
+The only spatial types which stand to benefit from this technique are those with docValues like LatLonPointSpatialField or BBoxField.
 
 [source,text]
 &q=...mykeywords...&fq=...someotherfilters...&fq={!geofilt cache=false}&sfield=store&pt=45.15,-93.85&d=5

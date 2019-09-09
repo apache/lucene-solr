@@ -129,7 +129,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     // sfield can only be in mv2, according to the logic above
     if (mv2 instanceof SpatialStrategyMultiValueSource) {
       if (constants == null)
-        throw new SyntaxError("When using AbstractSpatialFieldType (e.g. RPT not LatLonType)," +
+        throw new SyntaxError("When using AbstractSpatialFieldType (e.g. RPT)," +
             " the point must be supplied as constants");
       // note: uses Haversine by default but can be changed via distCalc=...
       SpatialStrategy strategy = ((SpatialStrategyMultiValueSource) mv2).strategy;
