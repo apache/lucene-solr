@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.store.blob.metadata;
 
 import java.util.*;
@@ -26,9 +42,6 @@ import java.lang.invoke.MethodHandles;
 
 /**
  * Class to sync between local and blob copies of a core using {@link org.apache.solr.store.blob.metadata.CorePushPull}
- *
- * @author msiddavanahalli
- * @since 214/solr.6
  */
 public class BlobCoreSyncer {
 
@@ -55,7 +68,7 @@ public class BlobCoreSyncer {
      */
     private static final String SKIPPING_PULLING_CORE = "Skipping pulling core";
 
-    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     /** The shared store name for the core currently being pulled from blob. Value is collection of objects used for synchronization by all waiting threads.
      * If both the locks on this map and on a specific SyncOnPullWait in the map are needed, the lock on the map must be acquired first.
@@ -116,9 +129,9 @@ public class BlobCoreSyncer {
         try {
           if (!collection.getActiveSlices().contains(shard)) {
             // unclear if there are side effects but logging for now
-            logger.warn("Pulling shard " + shardName + " that is inactive!");
+            log.warn("Pulling shard " + shardName + " that is inactive!");
           }
-          logger.info("Pulling for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
+          log.info("Pulling for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
           // creates the metadata node if it doesn't exist
           sharedShardMetadataController.ensureMetadataNodeExists(collectionName, shardName);
 
@@ -236,7 +249,7 @@ public class BlobCoreSyncer {
             // and clearing out state around waiting threads (it is possible that another thread has already started waiting before this thread
             // get a chance to run this block)
             try {
-                logger.info("About to enqueue pull of core " + pushPullData.getSharedStoreName() + " (countTotalWaiters=" + countTotalWaiters + ")");
+                log.info("About to enqueue pull of core " + pushPullData.getSharedStoreName() + " (countTotalWaiters=" + countTotalWaiters + ")");
 
                 // enqueue an async pull
                 CorePullTracker corePullTracker = cores.getSharedStoreManager().getCorePullTracker();
@@ -253,7 +266,7 @@ public class BlobCoreSyncer {
 
                 String msg = "Failed to enqueue pull of core " + pushPullData.getSharedStoreName() + " from blob";
                 SolrException se;
-                logger.warn(msg, e);
+                log.warn(msg, e);
                 if (e instanceof SolrException) {
                     se = (SolrException) e;
                 } else {
@@ -270,7 +283,7 @@ public class BlobCoreSyncer {
         // qualified for waiting for async pull to finish. If so we will just do that.
         if (iWait) {
             try {
-                logger.info("About to wait for pull of core " + pushPullData.getSharedStoreName() + " (countCoreWaiters=" + countCoreWaiters + " countTotalWaiters=" + countTotalWaiters + ")");
+                log.info("About to wait for pull of core " + pushPullData.getSharedStoreName() + " (countCoreWaiters=" + countCoreWaiters + " countTotalWaiters=" + countTotalWaiters + ")");
 
                 // Let's wait a bit maybe the pull completes in which case we don't have to throw an exception back.
                 // The other end of this lock activity happens in notifyEndOfPull() below
@@ -340,7 +353,7 @@ public class BlobCoreSyncer {
 
     private static void throwPullInProgressException(String corename, String msgSuffix) throws PullInProgressException {
         String msg = SKIPPING_PULLING_CORE + " " + corename + " from blob " + msgSuffix;
-        logger.info(msg);
+        log.info(msg);
         // Note that longer term, this is the place where we could decide that if the async
         // pull was enqueued too long ago and nothing happened, then there's an issue worth gacking/alerting for.
         throw new PullInProgressException(msg);

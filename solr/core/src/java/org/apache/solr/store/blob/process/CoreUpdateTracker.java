@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  * Class to track local core updates that need pushing to Blob Store.
  */
 public class CoreUpdateTracker {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private CoreContainer coreContainer;
   private SharedShardMetadataController shardSharedMetadataController; 
@@ -59,9 +59,9 @@ public class CoreUpdateTracker {
       try {
         if (!collection.getActiveSlices().contains(shard)) {
           // unclear if there are side effects but logging for now
-          logger.warn("Performing a push for shard " + shardName + " that is inactive!");
+          log.warn("Performing a push for shard " + shardName + " that is inactive!");
         }
-        logger.info("Initiating push for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
+        log.info("Initiating push for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
         // creates the metadata node if it doesn't exist
         shardSharedMetadataController.ensureMetadataNodeExists(collectionName, shardName);
 

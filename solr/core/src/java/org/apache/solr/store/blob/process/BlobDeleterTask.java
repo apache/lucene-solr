@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
  */
 class BlobDeleterTask implements Runnable {
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Note we sleep() after each failed attempt, so multiply this value by {@link #SLEEP_MS_FAILED_ATTEMPT} to find
@@ -59,7 +59,7 @@ class BlobDeleterTask implements Runnable {
         isSuccess = false;
         int attempts = attempt.incrementAndGet();
 
-        logger.warn("Blob file delete task failed."
+        log.warn("Blob file delete task failed."
                 +" attempt=" + attempts +  " sharedBlobName=" + this.sharedBlobName + " numOfBlobs=" + this.blobNames.size(), e);
 
         if (attempts < MAX_DELETE_ATTEMPTS) {
@@ -88,7 +88,7 @@ class BlobDeleterTask implements Runnable {
                       sharedBlobName, "DELETE", client.getStorageProvider().name(), client.getBucketRegion(),
                 client.getBucketName(), runTime, startLatency, 0L, attempt.get(), -1L,
                 -1L, this.blobNames.size(), isSuccess);
-        logger.info(message);
+        log.info(message);
       }
   }
 }

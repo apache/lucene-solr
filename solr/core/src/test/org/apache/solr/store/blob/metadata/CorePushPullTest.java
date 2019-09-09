@@ -68,6 +68,7 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema-minimal.xml");
     
     FileUtils.cleanDirectory(localBlobDir.toFile());
+    assumeWorkingMockito();
   }
   
   /*

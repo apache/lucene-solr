@@ -42,7 +42,7 @@ import com.google.common.annotations.VisibleForTesting;
  */
 public class CorePushPull {
 
-    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final CoreStorageClient coreStorageClient;
     
@@ -372,7 +372,7 @@ public class CorePushPull {
             solrCore.getDirectoryFactory().doneWithDirectory(tempDir);
             solrCore.getDirectoryFactory().remove(tempDir);
         } catch (Exception e) {
-            logger.warn("Cannot remove temp directory " + tempDirName, e);
+            log.warn("Cannot remove temp directory " + tempDirName, e);
         } finally {
             solrCore.getDirectoryFactory().release(tempDir);
         }
@@ -395,7 +395,7 @@ public class CorePushPull {
         + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s filesAffected=%s",
         pushPullData.toString(), action, coreStorageClient.getStorageProvider().name(), coreStorageClient.getBucketRegion(), 
         coreStorageClient.getBucketName(), runTime, startLatency, bytesTransferred, attempt, filesAffected);
-      logger.info(message);
+      log.info(message);
     }
 
     /**
@@ -408,7 +408,7 @@ public class CorePushPull {
       // Synchronously download all Blob blobs (remember we're running on an async thread, so no need to be async twice unless
       // we eventually want to parallelize downloads of multiple blobs, but for the PoC we don't :)
       for (BlobFile bf: filesToDownload) {
-        logger.info("About to create " + bf.getSolrFileName() + " for core " + pushPullData.getCoreName() +
+        log.info("About to create " + bf.getSolrFileName() + " for core " + pushPullData.getCoreName() +
             " from index on blob " + pushPullData.getSharedStoreName());
         IndexOutput io = destDir.createOutput(bf.getSolrFileName(), DirectoryFactory.IOCONTEXT_NO_CACHE);
 

@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.store.blob.process;
 
 import java.io.IOException;
@@ -27,12 +43,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Tracks cores that are being queried and if necessary enqueues them for pull from blob store
- *
- * @author msiddavanahalli
- * @since 214/solr.6
  */
 public class CorePullTracker {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static private final int TRACKING_LIST_MAX_SIZE = 500000;
 
@@ -71,9 +84,9 @@ public class CorePullTracker {
       try {
         if (!collection.getActiveSlices().contains(shard)) {
           // unclear if there are side effects but logging for now
-          logger.warn("Enqueueing a pull for shard " + shardName + " that is inactive!");
+          log.warn("Enqueueing a pull for shard " + shardName + " that is inactive!");
         }
-        logger.info("Enqueue a pull for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
+        log.info("Enqueue a pull for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
         // creates the metadata node if it doesn't exist
         sharedShardMetadataController.ensureMetadataNodeExists(collectionName, shardName);
 
@@ -117,7 +130,7 @@ public class CorePullTracker {
     // TODO: do we need isBackgroundPullEnabled in addition to isBlobEnabled? If not we should remove this.
     // TODO: always pull for this hack - want to check if local core is up to date
     if (isBackgroundPullEnabled && pushPullData.getSharedStoreName() != null && shouldPullStale(requestPath)) {
-      logger.info("Enqueuing pull on path " + requestPath);
+      log.info("Enqueuing pull on path " + requestPath);
       enqueueForPull(pushPullData, false, false);
     }
   }
@@ -134,7 +147,7 @@ public class CorePullTracker {
     try {
       coresToPull.addDeduplicated(pci, false);
     } catch (InterruptedException ie) {
-      logger.warn("Core " + pushPullData.getSharedStoreName() + " not added to Blob pull list. System shutting down?");
+      log.warn("Core " + pushPullData.getSharedStoreName() + " not added to Blob pull list. System shutting down?");
       Thread.currentThread().interrupt();
     }
   }
@@ -188,7 +201,7 @@ public class CorePullTracker {
           || action.startsWith(HIGHLIGHT_PATH_PREFIX)
           || action.startsWith(BACKUP_PATH_PREFIX);
     } else {
-      logger.warn("Not pulling for specified path " + servletPath);
+      log.warn("Not pulling for specified path " + servletPath);
       return false;
     }
   }

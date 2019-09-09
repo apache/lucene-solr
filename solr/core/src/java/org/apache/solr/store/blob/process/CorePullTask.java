@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.store.blob.process;
 
 import java.io.File;
@@ -32,12 +48,9 @@ import com.google.common.collect.Sets;
 
 /**
  * Code for pulling updates on a specific core to the Blob store. see {@CorePushTask} for the push version of this.
- * 
- * @author iginzburg/msiddavanahalli
- * @since 214/solr.6
  */
 public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Minimum delay between to pull retries for a given core. Setting this higher than the push retry to reduce noise
@@ -300,7 +313,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
     } catch (Exception e) {
       syncStatus = CoreSyncStatus.FAILURE;
       message = Throwables.getStackTraceAsString(e);
-      logger.warn("Failed (attempt=" + attemptsCopy + ") to pull core " + pullCoreInfo.getSharedStoreName(), e);
+      log.warn("Failed (attempt=" + attemptsCopy + ") to pull core " + pullCoreInfo.getSharedStoreName(), e);
     } finally {
       // Remove ourselves from the in flight set before calling the callback method (just in case it takes
       // forever)
@@ -328,7 +341,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
                   //       when we should not. Should we keep the core in coresCreatedNotPulledYet and try few more times
                   //       but at some point we would have to let it go
                   //       So may be, few more attempts here and then gack
-                  logger.warn("CorePullTask successfully created local core but failed to pull it" +
+                  log.warn("CorePullTask successfully created local core but failed to pull it" +
                       " and now is unable to delete that local core " + pullCoreInfo.getCoreName(), ex);
                 }
               }
@@ -352,7 +365,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       core = coreContainer.getCore(coreName);
     }
 
-    logger.info("Core " + coreName + " expected in dir " + coreIndexDir.getAbsolutePath() + " exists=" + coreIndexDir.exists()
+    log.info("Core " + coreName + " expected in dir " + coreIndexDir.getAbsolutePath() + " exists=" + coreIndexDir.exists()
     + " and location.instanceDirectory.getAbsolutePath()=" + coreIndexDir.getAbsolutePath());
 
     if (core != null) {
@@ -371,7 +384,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
    */
   private void createCore(PullCoreInfo pci) throws Exception {
 
-    logger.info("About to create local core " + pci.getCoreName());
+    log.info("About to create local core " + pci.getCoreName());
 
     // The location here might be different from the location used in coreExists() above. This is ok, if the core
     // did not exist and we're creating it, it's ok to create on another drive (and hopefully the HDD/SSD core placement

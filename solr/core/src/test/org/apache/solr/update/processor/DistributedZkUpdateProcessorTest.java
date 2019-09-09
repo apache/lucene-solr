@@ -60,6 +60,8 @@ public class DistributedZkUpdateProcessorTest extends SolrCloudSharedStoreTestCa
   public static void setupTestClass() throws Exception {    
     sharedStoreRootPath = createTempDir("tempDir");
     storageClient = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
+    
+    assumeWorkingMockito();
   }
   
   @After

@@ -69,6 +69,8 @@ public class SharedShardMetadataControllerTest extends SolrCloudTestCase {
     shardMetadataController = new SharedShardMetadataController(cloudManager);
     metadataNodePath = shardMetadataController.getMetadataBasePath(TEST_COLLECTION_NAME, TEST_SHARD_NAME) + 
         "/" + SharedShardMetadataController.SUFFIX_NODE_NAME;
+    
+    assumeWorkingMockito();
   }
   
   @After

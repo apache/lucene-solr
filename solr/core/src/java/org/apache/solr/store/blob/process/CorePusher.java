@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  */
 public class CorePusher {
   
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private CoreContainer coreContainer;
   
@@ -46,7 +46,7 @@ public class CorePusher {
     BlobDeleteManager deleteManager = coreContainer.getSharedStoreManager().getBlobDeleteManager(); // TODO, use a real client
         
     BlobCoreMetadata blobCoreMetadata = null;
-    logger.info("Push to shared store initiating with PushPullData= " + pushPullData.toString());
+    log.info("Push to shared store initiating with PushPullData= " + pushPullData.toString());
     
     // Read the metadata file from shared store if this isn't the first push of this index shard
     try {
@@ -63,7 +63,7 @@ public class CorePusher {
         }
       } else {
         blobCoreMetadata = BlobCoreMetadataBuilder.buildEmptyCoreMetadata(pushPullData.getSharedStoreName());
-        logger.info("This is the first time that shard " + pushPullData.getShardName() + " for collection " + 
+        log.info("This is the first time that shard " + pushPullData.getShardName() + " for collection " + 
             pushPullData.getCollectionName() + " is getting pushed to blob store.");
       }
       
@@ -81,7 +81,7 @@ public class CorePusher {
       SharedShardMetadataController shardSharedMetadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController(); 
       shardSharedMetadataController.updateMetadataValueWithVersion(pushPullData.getCollectionName(), pushPullData.getShardName(),
           pushPullData.getNewMetadataSuffix(), pushPullData.getZkVersion());
-      logger.info("Successfully pushed to shared store");
+      log.info("Successfully pushed to shared store");
       
       // TODO - make error handling a little nicer?
     } catch (InterruptedException e) {

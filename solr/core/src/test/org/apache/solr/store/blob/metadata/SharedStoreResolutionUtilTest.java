@@ -16,8 +16,6 @@
  */
 package org.apache.solr.store.blob.metadata;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -33,6 +31,8 @@ import org.apache.solr.store.blob.client.BlobCoreMetadata.BlobFile;
 import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
 import org.apache.solr.store.blob.metadata.ServerSideMetadata.CoreFileData;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil.SharedMetadataResolutionResult;
+import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
@@ -40,7 +40,12 @@ import com.google.common.collect.ImmutableSet;
 /**
  * Unit tests for {@link SharedStoreResolutionUtil}.
  */
-public class SharedStoreResolutionUtilTest {
+public class SharedStoreResolutionUtilTest extends SolrCloudSharedStoreTestCase {
+  
+  @BeforeClass
+  public static void beforeClass() {
+    assumeWorkingMockito();
+  }
   
   /**
    * Test that passing both local and blob as null to {@link SharedStoreResolutionUtil} throws exception.

@@ -61,6 +61,8 @@ public class BlobStoreUtilsTest extends SolrCloudSharedStoreTestCase {
   public static void setupTestClass() throws Exception {    
     sharedStoreRootPath = createTempDir("tempDir");
     storageClient = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
+    
+    assumeWorkingMockito();
   }
   
   @After

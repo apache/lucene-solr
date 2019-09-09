@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.store.blob.process;
 
 import java.lang.invoke.MethodHandles;
@@ -15,13 +31,10 @@ import org.slf4j.LoggerFactory;
  * {@link #pullTaskQueue}) with such tasks {@link CorePullTask} to keep the created threads busy :) The tasks will be
  * pulled from {@link CorePullTracker} to which Solr code notifies queried cores which are stale locally and need to be
  * fetched from blob.
- *
- * @author msiddavanahalli
- * @since 214/solr.6
  */
 public class CorePullerFeeder extends CoreSyncFeeder {
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CorePullTask.PullCoreCallback callback;
 
   protected final DeduplicatingList<String, CorePullTask> pullTaskQueue;
@@ -64,7 +77,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
       final long now = System.currentTimeMillis();
       final long msSinceLastLog = now - lastLoggedTimestamp;
       if (msSinceLastLog > minMsBetweenLogs) {
-        logger.info("Since last pull log " + msSinceLastLog + " ms ago, added "
+        log.info("Since last pull log " + msSinceLastLog + " ms ago, added "
             + syncsEnqueuedSinceLastLog + " cores to pull from blob. Last one is core with "
             + "shared blob name " + pci.getSharedStoreName());
         lastLoggedTimestamp = now;
@@ -153,16 +166,16 @@ public class CorePullerFeeder extends CoreSyncFeeder {
           pullTask.setAttempts(pullTask.getAttempts() + 1);
           pullTask.setLastAttemptTimestamp(System.currentTimeMillis());
           pullTaskQueue.addDeduplicated(pullTask, true);
-          logger.info(String.format("Pulling core %s failed with transient error. Retrying. Last status=%s attempts=%s . %s",
+          log.info(String.format("Pulling core %s failed with transient error. Retrying. Last status=%s attempts=%s . %s",
               pullCoreInfo.getSharedStoreName(), status, pullTask.getAttempts(), message == null ? "" : message));
           return;
         }
         
         if (status.isSuccess()) {
-          logger.info(String.format("Pulling core %s succeeded. Last status=%s attempts=%s . %s",
+          log.info(String.format("Pulling core %s succeeded. Last status=%s attempts=%s . %s",
               pullCoreInfo.getSharedStoreName(), status, pullTask.getAttempts(), message == null ? "" : message));
         } else {
-          logger.warn(String.format("Pulling core %s failed. Giving up. Last status=%s attempts=%s . %s",
+          log.warn(String.format("Pulling core %s failed. Giving up. Last status=%s attempts=%s . %s",
               pullCoreInfo.getSharedStoreName(), status, pullTask.getAttempts(), message == null ? "" : message));
         }
         BlobCoreSyncer.finishedPull(pullCoreInfo.getSharedStoreName(), status, blobMetadata, message);
