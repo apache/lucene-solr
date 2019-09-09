@@ -349,7 +349,12 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
           "class", "org.apache.solr.core.RuntimeLibReqHandler",
           "loader", MemClassLoader.class.getName(),
           "version", "3"));
-
+      assertResponseValues(5, cluster.getSolrClient(),
+          new V2Request.Builder("/cluster/package")
+          .forceV2(true)
+          .withMethod(SolrRequest.METHOD.GET)
+          .build(),
+          Utils.makeMap("/package/global/sha256","20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3"));
 
     } finally {
       cluster.shutdown();

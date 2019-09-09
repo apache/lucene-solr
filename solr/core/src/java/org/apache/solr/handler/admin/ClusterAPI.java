@@ -229,6 +229,13 @@ class ClusterAPI {
       }
 
     },
+    LIST_PKG(CLUSTER_PKG, GET, null){
+      @Override
+      void call(ApiInfo info) throws Exception {
+        ClusterProperties clusterProperties = new ClusterProperties(info.coreContainer.getZkController().getZkClient());
+        info.rsp.add("package", clusterProperties.getClusterProperty("package", MapWriter.EMPTY));
+      }
+    },
     ADD_PACKAGE(CLUSTER_PKG,
         POST,
         "add") {
