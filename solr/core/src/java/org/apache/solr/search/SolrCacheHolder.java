@@ -26,7 +26,8 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.metrics.SolrMetrics;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +76,10 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
       info = new CacheConfig.CacheInfo(info.cfg, info.core);
       delegate.close();
       delegate = info.cache;
-      delegate.initializeMetrics(metrics);
+      if(metricsInfo != null){
+        metricsInfo.init(delegate);
+
+      }
 
     }
   }
@@ -182,11 +186,31 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
     return delegate.getCategory();
   }
 
-  private SolrMetrics metrics;
-  @Override
-  public void initializeMetrics(SolrMetrics info) {
-    this.metrics = info;
-    delegate.initializeMetrics(info);
+
+  private MetricsInfo metricsInfo;
+
+  public static class MetricsInfo {
+    final SolrMetricManager manager;
+    final String registry;
+    final String tag;
+    final String scope;
+
+    MetricsInfo(SolrMetricManager manager, String registry, String tag, String scope) {
+      this.manager = manager;
+      this.registry = registry;
+      this.tag = tag;
+      this.scope = scope;
+    }
+
+    public void init(SolrMetricProducer metricProducer) {
+      metricProducer.initializeMetrics(manager,registry,tag,scope);
+    }
   }
 
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    this.metricsInfo = new MetricsInfo(manager, registry, tag, scope);
+    delegate.initializeMetrics(manager, registry, tag, scope);
+
+  }
 }
