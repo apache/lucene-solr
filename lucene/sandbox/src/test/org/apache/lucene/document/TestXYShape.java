@@ -18,8 +18,10 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.ShapeTestUtil;
+import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
+import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -105,6 +107,52 @@ public class TestXYShape extends LuceneTestCase {
        new float[] {(float)minY, (float)maxY, (float)maxY, (float)minY}
     ));
     assertEquals(2, searcher.count(q));
+
+    IOUtils.close(reader, dir);
+  }
+
+  public void testBoundingBoxQueries() throws Exception {
+    XYRectangle r1 = ShapeTestUtil.nextBox();
+    XYRectangle r2 = ShapeTestUtil.nextBox();
+    XYPolygon p;
+    //find two boxes so that r1 contains r2
+    while (true) {
+      // TODO: Should XYRectangle hold values as float?
+      if ((float)r1.minX <= (float)r2.minX && (float)r1.minY <= (float)r2.minY && (float)r1.maxX >= (float)r2.maxX && (float)r1.maxY >= (float)r2.maxY) {
+        p = new XYPolygon(new float[]{(float)r2.minX, (float)r2.maxX, (float)r2.maxX, (float)r2.minX, (float)r2.minX},
+            new float[]{(float)r2.minY, (float)r2.minY, (float)r2.maxY, (float)r2.maxY, (float)r2.minY});
+        try {
+          Tessellator.tessellate(p);
+          break;
+        } catch (Exception e) {
+          // ignore, try other combination
+        }
+      }
+      r1 = ShapeTestUtil.nextBox();
+      r2 = ShapeTestUtil.nextBox();
+    }
+
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    // add the polygon to the index
+    Document document = new Document();
+    addPolygonsToDoc(FIELDNAME, document, p);
+    writer.addDocument(document);
+
+    ////// search /////
+    IndexReader reader = writer.getReader();
+    writer.close();
+    IndexSearcher searcher = newSearcher(reader);
+    // Query by itself should match
+    Query q = newRectQuery(FIELDNAME, r2.minX, r2.maxX, r2.minY, r2.maxY);
+    assertEquals(1, searcher.count(q));
+    // r1 contains r2, intersects should match
+    q = newRectQuery(FIELDNAME, r1.minX, r1.maxX, r1.minY, r1.maxY);
+    assertEquals(r1 + " || " + r2, 1, searcher.count(q));
+    // r1 contains r2, WITHIN should match
+    q = XYShape.newBoxQuery(FIELDNAME, QueryRelation.WITHIN, (float)r1.minX, (float)r1.maxX, (float)r1.minY, (float)r1.maxY);
+    assertEquals(r1 + " || " + r2, 1, searcher.count(q));
 
     IOUtils.close(reader, dir);
   }

@@ -17,9 +17,13 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.XYEncodingUtils;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.util.NumericUtils;
+
+import static org.apache.lucene.geo.XYEncodingUtils.decode;
 
 /**
  * Finds all previously indexed cartesian shapes that intersect the specified bounding box.
@@ -41,7 +45,13 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
   @Override
   protected PointValues.Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                                         int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    return rectangle2D.relateRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    float minY = (float) XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    float minX = (float) XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    float maxY = (float) XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    float maxX = (float) XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+
+    // check internal node against query
+    return rectangle2D.relate(minX, maxX, minY, maxY);
   }
 
   /** returns true if the query matches the encoded triangle */
@@ -50,17 +60,18 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
     // decode indexed triangle
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    int aY = scratchTriangle.aY;
-    int aX = scratchTriangle.aX;
-    int bY = scratchTriangle.bY;
-    int bX = scratchTriangle.bX;
-    int cY = scratchTriangle.cY;
-    int cX = scratchTriangle.cX;
+    float alat = (float) decode(scratchTriangle.aY);
+    float alon = (float) decode(scratchTriangle.aX);
+    float blat = (float) decode(scratchTriangle.bY);
+    float blon = (float) decode(scratchTriangle.bX);
+    float clat = (float) decode(scratchTriangle.cY);
+    float clon = (float) decode(scratchTriangle.cX);
 
     if (queryRelation == QueryRelation.WITHIN) {
-      return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+      return rectangle2D.relateTriangle(alon, alat, blon, blat, clon, clat) == PointValues.Relation.CELL_INSIDE_QUERY;
     }
-    return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+    // INTERSECTS
+    return rectangle2D.relateTriangle(alon, alat, blon, blat, clon, clat) != PointValues.Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override
