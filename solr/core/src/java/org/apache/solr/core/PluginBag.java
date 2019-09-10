@@ -197,7 +197,6 @@ public class PluginBag<T> implements AutoCloseable {
     PluginHolder<T> pluginHolder = new PluginHolder<>(null, plugin);
     pluginHolder.registerAPI = false;
     PluginHolder<T> old = put(name, pluginHolder);
-    if(old != null)  closeQuietly(old);
     return old == null ? null : old.get();
   }
 
