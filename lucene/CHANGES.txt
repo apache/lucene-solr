@@ -56,6 +56,9 @@ Improvements
 * LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
   (Adrien Gallou via Tomoko Uchida)
 
+* LUCENE-8964: Fix geojson shape parsing on string arrays in properties 
+  (Alexander Reelsen)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
