@@ -20,6 +20,7 @@ package org.apache.solr.security;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -36,13 +37,18 @@ import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.lang.JoseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Holds information about an IdP (issuer), such as issuer ID, JWK url(s), keys etc
  */
 public class JWTIssuerConfig {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final String PARAM_ISS_NAME = "name";
+  @Deprecated(since = "8.3") // Remove this option at some point
   static final String PARAM_JWK_URL = "jwkUrl";
+  static final String PARAM_JWKS_URL = "jwksUrl";
   static final String PARAM_JWK = "jwk";
   static final String PARAM_ISSUER = "iss";
   static final String PARAM_AUDIENCE = "aud";
@@ -119,7 +125,11 @@ public class JWTIssuerConfig {
     setIss((String) conf.get(PARAM_ISSUER));
     setClientId((String) conf.get(PARAM_CLIENT_ID));
     setAud((String) conf.get(PARAM_AUDIENCE));
-    setJwksUrl(conf.get(PARAM_JWK_URL));
+    if (conf.get(PARAM_JWK_URL) != null) {
+      log.warn("Configuration uses deprecated key {}. Please use {} instead", PARAM_JWK_URL, PARAM_JWKS_URL);
+    }
+    Object confJwksUrl = conf.get(PARAM_JWKS_URL) != null ? conf.get(PARAM_JWKS_URL) : conf.get(PARAM_JWK_URL);
+    setJwksUrl(confJwksUrl);
     setJsonWebKeySet(conf.get(PARAM_JWK));
     setAuthorizationEndpoint((String) conf.get(PARAM_AUTHORIZATION_ENDPOINT));
 
@@ -128,6 +138,7 @@ public class JWTIssuerConfig {
     conf.remove(PARAM_ISS_NAME);
     conf.remove(PARAM_CLIENT_ID);
     conf.remove(PARAM_AUDIENCE);
+    conf.remove(PARAM_JWKS_URL);
     conf.remove(PARAM_JWK_URL);
     conf.remove(PARAM_JWK);
     conf.remove(PARAM_AUTHORIZATION_ENDPOINT);
@@ -219,7 +230,7 @@ public class JWTIssuerConfig {
     else if (jwksUrlListOrString instanceof List)
       this.jwksUrl = (List<String>) jwksUrlListOrString;
     else if (jwksUrlListOrString != null)
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parameter " + PARAM_JWK_URL + " must be either List or String");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parameter " + PARAM_JWKS_URL + " must be either List or String");
     return this;
   }
 
@@ -291,7 +302,7 @@ public class JWTIssuerConfig {
     putIfNotNull(config, PARAM_ISS_NAME, name);
     putIfNotNull(config, PARAM_ISSUER, iss);
     putIfNotNull(config, PARAM_AUDIENCE, aud);
-    putIfNotNull(config, PARAM_JWK_URL, jwksUrl);
+    putIfNotNull(config, PARAM_JWKS_URL, jwksUrl);
     putIfNotNull(config, PARAM_WELL_KNOWN_URL, wellKnownUrl);
     putIfNotNull(config, PARAM_CLIENT_ID, clientId);
     putIfNotNull(config, PARAM_AUTHORIZATION_ENDPOINT, authorizationEndpoint);
@@ -318,7 +329,7 @@ public class JWTIssuerConfig {
     jwkConfigured += jsonWebKeySet != null ? 2 : 0;
     if (jwkConfigured > 3) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuthPlugin needs to configure exactly one of " +
-          PARAM_WELL_KNOWN_URL + ", " + PARAM_JWK_URL + " and " + PARAM_JWK);
+          PARAM_WELL_KNOWN_URL + ", " + PARAM_JWKS_URL + " and " + PARAM_JWK);
     }
     if (jwkConfigured > 0 && name == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -341,12 +352,12 @@ public class JWTIssuerConfig {
 
     private HttpsJwks create(String url) {
       try {
-        URL jwkUrl = new URL(url);
-        if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must use HTTPS");
+        URL jwksUrl = new URL(url);
+        if (!"https".equalsIgnoreCase(jwksUrl.getProtocol())) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWKS_URL + " must use HTTPS");
         }
       } catch (MalformedURLException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Url " + url + " configured in " + PARAM_JWK_URL + " is not a valid URL");
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Url " + url + " configured in " + PARAM_JWKS_URL + " is not a valid URL");
       }
       HttpsJwks httpsJkws = new HttpsJwks(url);
       httpsJkws.setDefaultCacheDuration(jwkCacheDuration);

@@ -181,10 +181,20 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void initWithJwkUrl() {
+  @Deprecated(since = "8.3")
+  public void initWithJwkUrlForBackwardsCompat() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwkUrl", "https://127.0.0.1:9999/foo.jwk");
-    authConf.put("iss", "myProvider");
+    plugin = new JWTAuthPlugin();
+    plugin.init(authConf);
+    assertEquals(1, plugin.getIssuerConfigs().size());
+    assertEquals(1, plugin.getIssuerConfigs().get(0).getJwksUrls().size());
+  }
+
+  @Test
+  public void initWithJwksUrl() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
     assertEquals(1, plugin.getIssuerConfigs().size());
@@ -194,7 +204,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   @Test
   public void initWithJwkUrlArray() {
     HashMap<String, Object> authConf = new HashMap<>();
-    authConf.put("jwkUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
+    authConf.put("jwksUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
     authConf.put("iss", "myIssuer");
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
@@ -387,7 +397,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test(expected = SolrException.class)
   public void bothJwksUrlAndJwkFails() {
-    testConfig.put("jwkUrl", "http://127.0.0.1:45678/myJwk");
+    testConfig.put("jwksUrl", "http://127.0.0.1:45678/myJwk");
     plugin.init(testConfig);
   }
 
@@ -434,7 +444,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
         .setJwksUrl("https://127.0.0.1:9999/foo.jwk");
     authConf.put("issuers", Collections.singletonList(iss1.asConfig()));
     authConf.put("aud", "aud2");
-    authConf.put("jwkUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
+    authConf.put("jwksUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
 
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);

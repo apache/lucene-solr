@@ -58,7 +58,7 @@ public class JWTIssuerConfigTest {
 
     testIssuerJson = "{\n" +
         "  \"aud\":\"audience\",\n" +
-        "  \"jwkUrl\":[\"https://issuer/path\"],\n" +
+        "  \"jwksUrl\":[\"https://issuer/path\"],\n" +
         "  \"wellKnownUrl\":\"wellknown\",\n" +
         "  \"clientId\":\"clientid\",\n" +
         "  \"name\":\"name\",\n" +
@@ -116,7 +116,7 @@ public class JWTIssuerConfigTest {
     HashMap<String, Object> issuerConfigMap = new HashMap<>();
     issuerConfigMap.put("name", "myName");
     issuerConfigMap.put("iss", "myIss");
-    issuerConfigMap.put("jwkUrl", "https://host/jwk");
+    issuerConfigMap.put("jwksUrl", "https://host/jwk");
 
     JWTIssuerConfig issuerConfig = new JWTIssuerConfig(issuerConfigMap);
     assertEquals("myIss", issuerConfig.getIss());
