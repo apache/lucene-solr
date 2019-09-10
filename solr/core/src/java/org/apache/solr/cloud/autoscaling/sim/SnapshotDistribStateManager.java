@@ -18,11 +18,15 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -35,6 +39,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.RedactionUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -73,6 +78,14 @@ public class SnapshotDistribStateManager implements DistribStateManager {
    * @param snapshot previous snapshot created using this class.
    */
   public SnapshotDistribStateManager(Map<String, Object> snapshot) {
+    this(snapshot, null);
+  }
+  /**
+   * Populate this instance from a previously generated snapshot.
+   * @param snapshot previous snapshot created using this class.
+   * @param config optional config to override the one from snapshot, may be null
+   */
+  public SnapshotDistribStateManager(Map<String, Object> snapshot, AutoScalingConfig config) {
     snapshot.forEach((path, value) -> {
       Map<String, Object> map = (Map<String, Object>)value;
       Number version = (Number)map.getOrDefault("version", 0);
@@ -85,16 +98,34 @@ public class SnapshotDistribStateManager implements DistribStateManager {
       }
       dataMap.put(path, new VersionedData(version.intValue(), bytes, mode, owner));
     });
+    if (config != null) { // overwrite existing
+      VersionedData vd = new VersionedData(config.getZkVersion(), Utils.toJSON(config), CreateMode.PERSISTENT, "0");
+      dataMap.put(ZkStateReader.SOLR_AUTOSCALING_CONF_PATH, vd);
+    }
     log.debug("- loaded snapshot of {} resources", dataMap.size());
   }
 
+  // content of these nodes is a UTF-8 String and it needs to be redacted
+  private static final Set<Pattern> REDACTED = new HashSet<>() {{
+    add(Pattern.compile("/aliases\\.json"));
+    add(Pattern.compile("/autoscaling\\.json"));
+    add(Pattern.compile("/clusterstate\\.json"));
+    add(Pattern.compile("/collections/.*?/state\\.json"));
+    add(Pattern.compile("/collections/.*?/leaders/shard.*?/leader"));
+    add(Pattern.compile("/overseer_elect/leader"));
+  }};
   /**
    * Create a snapshot of all content in this instance.
    */
-  public Map<String, Object> getSnapshot() {
+  public Map<String, Object> getSnapshot(RedactionUtils.RedactionContext ctx) {
     Map<String, Object> snapshot = new LinkedHashMap<>();
     dataMap.forEach((path, vd) -> {
       Map<String, Object> data = new HashMap<>();
+      if (vd.getData() != null && ctx != null && REDACTED.stream().anyMatch(p -> p.matcher(path).matches())) {
+        String str = new String(vd.getData(), Charset.forName("UTF-8"));
+        str = RedactionUtils.redactNames(ctx.getRedactions(), str);
+        vd = new VersionedData(vd.getVersion(), str.getBytes(Charset.forName("UTF-8")), vd.getMode(), vd.getOwner());
+      }
       vd.toMap(data);
       snapshot.put(path, data);
     });

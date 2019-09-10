@@ -46,11 +46,13 @@ import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.RedactionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,8 +73,9 @@ public class SnapshotCloudManager implements SolrCloudManager {
   public static final String DISTRIB_STATE_KEY = "distribState";
   public static final String AUTOSCALING_STATE_KEY = "autoscalingState";
   public static final String STATISTICS_STATE_KEY = "statistics";
+  public static final String AUTOSCALING_JSON_KEY = "autoscaling";
 
-  private static final List<String> REQUIRED_KEYS = Arrays.asList(
+  public static final List<String> REQUIRED_KEYS = Arrays.asList(
       MANAGER_STATE_KEY,
       CLUSTER_STATE_KEY,
       NODE_STATE_KEY,
@@ -93,16 +96,25 @@ public class SnapshotCloudManager implements SolrCloudManager {
         (Map<String, Object>)snapshot.getOrDefault(MANAGER_STATE_KEY, Collections.emptyMap()),
         (Map<String, Object>)snapshot.getOrDefault(CLUSTER_STATE_KEY, Collections.emptyMap()),
         (Map<String, Object>)snapshot.getOrDefault(NODE_STATE_KEY, Collections.emptyMap()),
-        (Map<String, Object>)snapshot.getOrDefault(DISTRIB_STATE_KEY, Collections.emptyMap())
+        (Map<String, Object>)snapshot.getOrDefault(DISTRIB_STATE_KEY, Collections.emptyMap()),
+        (Map<String, Object>)snapshot.getOrDefault(AUTOSCALING_JSON_KEY, Collections.emptyMap())
     );
   }
 
-  public void saveSnapshot(File targetDir, boolean withAutoscaling) throws Exception {
-    Map<String, Object> snapshot = getSnapshot(withAutoscaling);
+  public void saveSnapshot(File targetDir, boolean withAutoscaling, boolean redact) throws Exception {
+    Map<String, Object> snapshot = getSnapshot(withAutoscaling, redact);
+    ClusterState clusterState = getClusterStateProvider().getClusterState();
+    RedactionUtils.RedactionContext ctx = SimUtils.getRedactionContext(clusterState);
     targetDir.mkdirs();
     for (Map.Entry<String, Object> e : snapshot.entrySet()) {
       FileOutputStream out = new FileOutputStream(new File(targetDir, e.getKey() + ".json"));
-      IOUtils.write(Utils.toJSON(e.getValue()), out);
+      if (redact) {
+        String data = Utils.toJSONString(e.getValue());
+        data = RedactionUtils.redactNames(ctx.getRedactions(), data);
+        IOUtils.write(data.getBytes("UTF-8"), out);
+      } else {
+        IOUtils.write(Utils.toJSON(e.getValue()), out);
+      }
       out.flush();
       out.close();
     }
@@ -116,15 +128,19 @@ public class SnapshotCloudManager implements SolrCloudManager {
       throw new Exception("Source path is not a directory: " + sourceDir);
     }
     Map<String, Object> snapshot = new HashMap<>();
+    List<String> allKeys = new ArrayList<>(REQUIRED_KEYS);
+    allKeys.add(AUTOSCALING_JSON_KEY);
     int validData = 0;
-    for (String key : REQUIRED_KEYS) {
+    for (String key : allKeys) {
       File src = new File(sourceDir, key + ".json");
       if (src.exists()) {
         InputStream is = new FileInputStream(src);
         Map<String, Object> data = (Map<String, Object>)Utils.fromJSON(is);
         is.close();
         snapshot.put(key, data);
-        validData++;
+        if (REQUIRED_KEYS.contains(key)) {
+          validData++;
+        }
       }
     }
     if (validData < REQUIRED_KEYS.size()) {
@@ -134,7 +150,7 @@ public class SnapshotCloudManager implements SolrCloudManager {
   }
 
   private void init(Map<String, Object> managerState, Map<String, Object> clusterState, Map<String, Object> nodeState,
-                    Map<String, Object> distribState) throws Exception {
+                    Map<String, Object> distribState, Map<String, Object> autoscalingJson) throws Exception {
     Objects.requireNonNull(managerState);
     Objects.requireNonNull(clusterState);
     Objects.requireNonNull(nodeState);
@@ -142,20 +158,24 @@ public class SnapshotCloudManager implements SolrCloudManager {
     this.timeSource = TimeSource.get((String)managerState.getOrDefault("timeSource", "simTime:50"));
     this.clusterStateProvider = new SnapshotClusterStateProvider(clusterState);
     this.nodeStateProvider = new SnapshotNodeStateProvider(nodeState);
-    this.distribStateManager = new SnapshotDistribStateManager(distribState);
+    if (autoscalingJson == null || autoscalingJson.isEmpty()) {
+      this.distribStateManager = new SnapshotDistribStateManager(distribState);
+    } else {
+      this.distribStateManager = new SnapshotDistribStateManager(distribState, new AutoScalingConfig(autoscalingJson));
+    }
 
     SimUtils.checkConsistency(this, null);
   }
 
-  public Map<String, Object> getSnapshot(boolean withAutoscaling) throws Exception {
+  public Map<String, Object> getSnapshot(boolean withAutoscaling, boolean redact) throws Exception {
     Map<String, Object> snapshot = new LinkedHashMap<>(4);
     Map<String, Object> managerState = new HashMap<>();
     managerState.put("timeSource", timeSource.toString());
     snapshot.put(MANAGER_STATE_KEY, managerState);
-
+    RedactionUtils.RedactionContext ctx = redact ? SimUtils.getRedactionContext(clusterStateProvider.getClusterState()) : null;
     snapshot.put(CLUSTER_STATE_KEY, clusterStateProvider.getSnapshot());
     snapshot.put(NODE_STATE_KEY, nodeStateProvider.getSnapshot());
-    snapshot.put(DISTRIB_STATE_KEY, distribStateManager.getSnapshot());
+    snapshot.put(DISTRIB_STATE_KEY, distribStateManager.getSnapshot(ctx));
     if (withAutoscaling) {
       AutoScalingConfig config = distribStateManager.getAutoScalingConfig();
       Policy.Session session = config.getPolicy().createSession(this);

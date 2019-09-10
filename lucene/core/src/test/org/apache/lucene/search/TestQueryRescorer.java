@@ -124,7 +124,8 @@ public class TestQueryRescorer extends LuceneTestCase {
     TermQuery termQuery = new TermQuery(new Term(fieldName, wordOne));
     IndexSearcher searcher = getSearcher(reader);
     searcher.setSimilarity(new BM25Similarity());
-    TopDocs hits = searcher.search(termQuery, numDocs);
+    TopDocs hits1 = searcher.search(termQuery, numDocs);
+    TopDocs hits2 = searcher.search(termQuery, numDocs);
 
     // Next, use a more specific phrase query that will return different scores
     // from the above term query
@@ -133,11 +134,11 @@ public class TestQueryRescorer extends LuceneTestCase {
 
     // rescore, requesting the same hits as topN
     int topN = numDocs;
-    TopDocs firstRescoreHits = QueryRescorer.rescore(searcher, hits, phraseQuery, 2.0, topN);
+    TopDocs firstRescoreHits = QueryRescorer.rescore(searcher, hits1, phraseQuery, 2.0, topN);
 
     // now rescore again, where topN is less than numDocs
     topN = random().nextInt(numDocs-1);
-    ScoreDoc[] secondRescoreHits = QueryRescorer.rescore(searcher, hits, phraseQuery, 2.0, topN).scoreDocs;
+    ScoreDoc[] secondRescoreHits = QueryRescorer.rescore(searcher, hits2, phraseQuery, 2.0, topN).scoreDocs;
     ScoreDoc[] expectedTopNScoreDocs = ArrayUtil.copyOfSubArray(firstRescoreHits.scoreDocs, 0, topN);
     CheckHits.checkEqual(phraseQuery, expectedTopNScoreDocs, secondRescoreHits);
 

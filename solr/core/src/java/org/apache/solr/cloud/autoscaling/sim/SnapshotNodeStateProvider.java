@@ -158,12 +158,26 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
 
   @Override
   public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
-    return nodeValues.getOrDefault(node, Collections.emptyMap());
+    return new LinkedHashMap<>(nodeValues.getOrDefault(node, Collections.emptyMap()));
   }
 
   @Override
   public Map<String, Map<String, List<ReplicaInfo>>> getReplicaInfo(String node, Collection<String> keys) {
-    return replicaInfos.getOrDefault(node, Collections.emptyMap());
+    Map<String, Map<String, List<ReplicaInfo>>> result = new LinkedHashMap<>();
+    Map<String, Map<String, List<ReplicaInfo>>> infos = replicaInfos.getOrDefault(node, Collections.emptyMap());
+    // deep copy
+    infos.forEach((coll, shards) -> {
+      shards.forEach((shard, replicas) -> {
+        replicas.forEach(ri -> {
+          List<ReplicaInfo> myReplicas = result
+              .computeIfAbsent(coll, c -> new LinkedHashMap<>())
+              .computeIfAbsent(shard, s -> new ArrayList<>());
+          ReplicaInfo myReplica = (ReplicaInfo)ri.clone();
+          myReplicas.add(myReplica);
+        });
+      });
+    });
+    return result;
   }
 
   public ReplicaInfo getReplicaInfo(String collection, String coreNode) {
@@ -171,7 +185,7 @@ public class SnapshotNodeStateProvider implements NodeStateProvider {
       for (List<ReplicaInfo> perShard : perNode.getOrDefault(collection, Collections.emptyMap()).values()) {
         for (ReplicaInfo ri : perShard) {
           if (ri.getName().equals(coreNode)) {
-            return ri;
+            return (ReplicaInfo)ri.clone();
           }
         }
       }
