@@ -116,6 +116,9 @@ public class SolrReporter extends ScheduledReporter {
     }
   }
 
+  /**
+   * Builder for the {@link SolrReporter} class.
+   */
   public static class Builder {
     private final SolrMetricManager metricManager;
     private final List<Report> reports;

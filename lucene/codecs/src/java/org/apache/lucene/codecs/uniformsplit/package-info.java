@@ -14,21 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.memory;
-
-
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseDocValuesFormatTestCase;
-import org.apache.lucene.util.TestUtil;
 
 /**
- * Tests DirectDocValuesFormat
+ * Pluggable term index / block terms dictionary implementations.
+ * <p>
+ * Structure similar to {@link org.apache.lucene.codecs.blockterms.VariableGapTermsIndexWriter}
+ * with additional optimizations.
+ * <p>
+ *   <ul>
+ *     <li>Designed to be extensible</li>
+ *     <li>Reduced on-heap memory usage.</li>
+ *     <li>Efficient to seek terms ({@link org.apache.lucene.search.TermQuery}, {@link org.apache.lucene.search.PhraseQuery})</li>
+ *     <li>Quite efficient for {@link org.apache.lucene.search.PrefixQuery}</li>
+ *     <li>Not efficient for spell-check and {@link org.apache.lucene.search.FuzzyQuery}, in this case prefer
+ * {@link org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat}</li>
+ *   </ul>
  */
-public class TestDirectDocValuesFormat extends BaseDocValuesFormatTestCase {
-  private final Codec codec = TestUtil.alwaysDocValuesFormat(new DirectDocValuesFormat());
-
-  @Override
-  protected Codec getCodec() {
-    return codec;
-  }
-}
+package org.apache.lucene.codecs.uniformsplit;

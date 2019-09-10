@@ -35,6 +35,9 @@ API Changes
 
 * LUCENE-8933: Validate JapaneseTokenizer user dictionary entry. (Tomoko Uchida)
 
+* LUCENE-8905: Better defence against malformed arguments in TopDocsCollector
+  (Atri Sharma)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -44,6 +47,11 @@ Improvements
 * LUCENE-8857: Introduce Custom Tiebreakers in TopDocs.merge for tie breaking on
   docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
   indices (Atri Sharma, Adrien Grand, Simon Willnauer)
+
+* LUCENE-8939: Introduce shared count based early termination across multiple slices
+  (Atri Sharma)
+
+* LUCENE-8958: Shared count early termination for relevance sorted indices (Atri Sharma)
 
 * LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
   (Adrien Gallou via Tomoko Uchida)
@@ -69,6 +77,9 @@ API Changes
   should do likewise for analysis components for tokenized text, or else changes to the encoding in future versions
   may be incompatible with older indexes.  (Chongchen Chen, David Smiley)
 
+* LUCENE-8956: QueryRescorer now only sorts the first topN hits instead of all
+  initial hits. (Paul Sanwald via Adrien Grand)
+
 New Features
 
 * LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)
@@ -83,6 +94,10 @@ New Features
 * LUCENE-8769: Introduce Range Query For Multiple Connected Ranges (Atri Sharma)
 
 * LUCENE-8960: Introduce LatLonDocValuesPointInPolygonQuery for LatLonDocValuesField (Ignacio Vera)
+
+* LUCENE-8753: New UniformSplitPostingsFormat (name "UniformSplit") primarily benefiting in simplicity and
+  extensibility.  New STUniformSplitPostingsFormat (name "SharedTermsUniformSplit") that shares a single internal
+  term dictionary across fields.  (Bruno Roustant, Juan Rodriguez, David Smiley)
 
 Improvements
 
@@ -105,9 +120,15 @@ Improvements
 * LUCENE-8906: Expose Lucene50PostingsFormat.IntBlockTermState as public so that other postings formats can re-use it.
   (Bruno Roustant)
 
+* LUCENE-8942: Remove redundant parameters and improve visibility strictness in
+  LRUQueryCache (Atri Sharma)
+
 * SOLR-13663: Introduce <SpanPositionRange> into XML Query Parser (Alessandro Benedetti via Mikhail Khludnev)
 
 * LUCENE-8952: Use a sort key instead of true distance in NearestNeighbor (Julie Tibshirani).
+
+* LUCENE-8620: Tessellator labels the edges of the generated triangles whether they belong to
+  the original polygon. This information is added to the triangle encoding. (Ignacio Vera)
 
 Optimizations
 

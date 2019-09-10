@@ -154,7 +154,7 @@ final class IndexFileDeleter implements Closeable {
           // Add this file to refCounts with initial count 0:
           getRefCount(fileName);
           
-          if (fileName.startsWith(IndexFileNames.SEGMENTS) && !fileName.equals(IndexFileNames.OLD_SEGMENTS_GEN)) {
+          if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
             
             // This is a commit (segments or segments_N), and
             // it's valid (<= the max gen).  Load it, then
@@ -269,7 +269,7 @@ final class IndexFileDeleter implements Closeable {
     Map<String,Long> maxPerSegmentGen = new HashMap<>();
 
     for(String fileName : files) {
-      if (fileName.equals(IndexFileNames.OLD_SEGMENTS_GEN) || fileName.equals(IndexWriter.WRITE_LOCK_NAME)) {
+      if (fileName.equals(IndexWriter.WRITE_LOCK_NAME)) {
         // do nothing
       } else if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
         try {
