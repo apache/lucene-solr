@@ -118,9 +118,8 @@ public class TestXYShape extends LuceneTestCase {
     //find two boxes so that r1 contains r2
     while (true) {
       // TODO: Should XYRectangle hold values as float?
-      if ((float)r1.minX <= (float)r2.minX && (float)r1.minY <= (float)r2.minY && (float)r1.maxX >= (float)r2.maxX && (float)r1.maxY >= (float)r2.maxY) {
-        p = new XYPolygon(new float[]{(float)r2.minX, (float)r2.maxX, (float)r2.maxX, (float)r2.minX, (float)r2.minX},
-            new float[]{(float)r2.minY, (float)r2.minY, (float)r2.maxY, (float)r2.maxY, (float)r2.minY});
+      if (areBoxDisjoint(r1, r2)) {
+        p = toPolygon(r2);
         try {
           Tessellator.tessellate(p);
           break;
@@ -149,11 +148,20 @@ public class TestXYShape extends LuceneTestCase {
     assertEquals(1, searcher.count(q));
     // r1 contains r2, intersects should match
     q = newRectQuery(FIELDNAME, r1.minX, r1.maxX, r1.minY, r1.maxY);
-    assertEquals(r1 + " || " + r2, 1, searcher.count(q));
+    assertEquals(1, searcher.count(q));
     // r1 contains r2, WITHIN should match
-    q = XYShape.newBoxQuery(FIELDNAME, QueryRelation.WITHIN, (float)r1.minX, (float)r1.maxX, (float)r1.minY, (float)r1.maxY);
-    assertEquals(r1 + " || " + r2, 1, searcher.count(q));
+    q = XYShape.newBoxQuery(FIELDNAME, QueryRelation.WITHIN, (float) r1.minX, (float) r1.maxX, (float) r1.minY, (float) r1.maxY);
+    assertEquals(1, searcher.count(q));
 
     IOUtils.close(reader, dir);
+  }
+
+  private static boolean areBoxDisjoint(XYRectangle r1, XYRectangle r2) {
+    return ((float) r1.minX <= (float) r2.minX && (float) r1.minY <= (float) r2.minY && (float) r1.maxX >= (float) r2.maxX && (float) r1.maxY >= (float) r2.maxY);
+  }
+
+  private static XYPolygon toPolygon(XYRectangle r) {
+    return new XYPolygon(new float[]{(float) r.minX, (float) r.maxX, (float) r.maxX, (float) r.minX, (float) r.minX},
+                         new float[]{(float) r.minY, (float) r.minY, (float) r.maxY, (float) r.maxY, (float) r.minY});
   }
 }

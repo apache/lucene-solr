@@ -20,6 +20,7 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.util.NumericUtils;
 
 import static org.apache.lucene.geo.XYEncodingUtils.decode;
 
@@ -43,10 +44,10 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
   @Override
   protected PointValues.Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                                         int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    float minY = (float) XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
-    float minX = (float) XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
-    float maxY = (float) XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
-    float maxX = (float) XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+    float minY = (float) decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    float minX = (float) decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    float maxY = (float) decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    float maxX = (float) decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
     return rectangle2D.relate(minX, maxX, minY, maxY);
