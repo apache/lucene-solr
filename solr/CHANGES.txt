@@ -71,6 +71,8 @@ New Features
 
 * SOLR-13122: Ability to query aliases in Solr Admin UI (janhoy)
 
+* SOLR-13713: JWTAuthPlugin to support multiple JWKS endpoints (janhoy)
+
 Improvements
 ----------------------
 

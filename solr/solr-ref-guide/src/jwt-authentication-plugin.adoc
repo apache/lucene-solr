@@ -46,7 +46,7 @@ wellKnownUrl         ; URL to an https://openid.net/specs/openid-connect-discove
 clientId             ; Client identifier for use with OpenID Connect           ; (no default value) Required to authenticate with Admin UI
 realm                ; Name of the authentication realm to echo back in HTTP 401 responses. Will also be displayed in Admin UI login page ; 'solr-jwt'
 scope                ; Whitespace separated list of valid scopes. If configured, the JWT access token MUST contain a `scope` claim with at least one of the listed scopes. Example: `solr:read solr:admin` ;
-jwkUrl               ; An https URL to a https://tools.ietf.org/html/rfc7517[JWK] keys file. ; Auto configured if `wellKnownUrl` is provided
+jwkUrl               ; A URL to a https://tools.ietf.org/html/rfc7517#section-5[JWKs] endpoint. Must use https protocol. Optionally an array of URLs in which case all public keys from all URLs will be consulted when validating signatures. ; Auto configured if `wellKnownUrl` is provided
 jwk                  ; As an alternative to `jwkUrl` you may provide a JSON object here containing the public key(s) of the issuer.  ;
 iss                  ; Validates that the `iss` (issuer) claim equals this string        ; Auto configured if `wellKnownUrl` is provided
 aud                  ; Validates that the `aud` (audience) claim equals this string      ; If `clientId` is configured, require `aud` to match it
