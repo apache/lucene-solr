@@ -144,6 +144,9 @@ the total hits is not requested.
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees now index points faster.
   (Chongchen Chen, David Smiley)
 
+* LUCENE-8968: Improve performance of WITHIN and DISJOINT queries for Shape queries by
+  doing just one pass whenever possible. (Ignacio Vera)
+
 Bug Fixes
 
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees could throw a
