@@ -105,8 +105,8 @@ abstract class ShapeQuery extends Query {
 
   @Override
   public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
-
-    return new ConstantScoreWeight(this, boost) {
+    final ShapeQuery query = this;
+    return new ConstantScoreWeight(query, boost) {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -151,6 +151,12 @@ abstract class ShapeQuery extends Query {
             }
           };
         } else {
+          if (queryRelation != QueryRelation.INTERSECTS
+              && hasAnyHits(query, values) == false) {
+            // First we check if we have any hits so we are fast in the adversarial case where
+            // the shape does not match any documents and we are in the dense case
+            return null;
+          }
           // walk the tree to get matching documents
           return new RelationScorerSupplier(values, ShapeQuery.this) {
             @Override
@@ -251,12 +257,6 @@ abstract class ShapeQuery extends Query {
       final FixedBitSet result = new FixedBitSet(reader.maxDoc());
       final long[] cost;
       if (values.getDocCount() == reader.maxDoc()) {
-        // First we check if we have any hits so we are fast in the adversarial case where
-        // the shape does not match any documents
-        if (hasAnyHits(query, values) == false) {
-          // no hits so we can return
-          return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
-        }
         cost = new long[]{values.size()};
         // In this case we can spare one visit to the tree, all documents
         // are potential matches
@@ -268,10 +268,6 @@ abstract class ShapeQuery extends Query {
         // Get potential  documents.
         final FixedBitSet excluded = new FixedBitSet(reader.maxDoc());
         values.intersect(getDenseVisitor(query, result, excluded, cost));
-        if (cost[0] == 0) {
-          // no hits so we can return
-          return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
-        }
         result.andNot(excluded);
         // Remove false positives, we only care about the inner nodes as intersecting
         // leaf nodes have been already taken into account. Unfortunately this
