@@ -69,7 +69,6 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.InvalidJwtSignatureException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
-import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.JwksVerificationKeyResolver;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.JoseException;
@@ -102,6 +101,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private static final String AUTH_REALM = "solr-jwt";
   private static final String CLAIM_SCOPE = "scope";
   private static final long RETRY_INIT_DELAY_SECONDS = 30;
+  private static final long DEFAULT_REFRESH_REPRIEVE_THRESHOLD = 5000;
 
   private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN, PARAM_JWK_URL, PARAM_JWK, PARAM_ISSUER,
       PARAM_AUDIENCE, PARAM_REQUIRE_SUBJECT, PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
@@ -120,7 +120,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private boolean blockUnknown;
   private List<String> requiredScopes = new ArrayList<>();
   private String clientId;
-  private long jwkCacheDuration;
   private WellKnownDiscoveryConfig oidcDiscoveryConfig;
   private String confIdpConfigUrl;
   private Map<String, Object> pluginConfig;
@@ -128,7 +127,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private String authorizationEndpoint;
   private String adminUiScope;
   private List<String> redirectUris;
-  private HttpsJwks httpsJkws;
+  private IssuerConfig issuerConfig;
 
 
   /**
@@ -226,9 +225,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   @SuppressWarnings("unchecked")
   private void initJwk(Map<String, Object> pluginConfig) {
     this.pluginConfig = pluginConfig;
-    String confJwkUrl = (String) pluginConfig.get(PARAM_JWK_URL);
+    Object confJwkUrl = pluginConfig.get(PARAM_JWK_URL);
     Map<String, Object> confJwk = (Map<String, Object>) pluginConfig.get(PARAM_JWK);
-    jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
+    long jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
 
     jwtConsumer = null;
     int jwkConfigured = confIdpConfigUrl != null ? 1 : 0;
@@ -241,38 +240,33 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     if (jwkConfigured == 0) {
       log.warn("Initialized JWTAuthPlugin without any JWK config. Requests with jwk header will fail.");
     }
-    if (oidcDiscoveryConfig != null) {
-      String jwkUrl = oidcDiscoveryConfig.getJwksUrl();
-      setupJwkUrl(jwkUrl);
-    } else if (confJwkUrl != null) {
-      setupJwkUrl(confJwkUrl);
+
+    HttpsJwksFactory httpsJwksFactory = new HttpsJwksFactory(jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD);
+    if (confJwkUrl != null) {
+      try {
+        List<String> urls = (confJwkUrl instanceof List) ? (List<String>)confJwkUrl : Collections.singletonList((String) confJwkUrl);
+        issuerConfig = new IssuerConfig(iss, urls);
+        issuerConfig.setHttpsJwksFactory(httpsJwksFactory);
+        verificationKeyResolver = new JWTVerificationkeyResolver(issuerConfig);
+      } catch (ClassCastException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parameter " + PARAM_JWK_URL + " must be either List or String");
+      }
     } else if (confJwk != null) {
       try {
         JsonWebKeySet jwks = parseJwkSet(confJwk);
+        issuerConfig = new IssuerConfig(iss, jwks);
         verificationKeyResolver = new JwksVerificationKeyResolver(jwks.getJsonWebKeys());
-        httpsJkws = null;
       } catch (JoseException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JWTAuthPlugin configuration, " + PARAM_JWK + " parse error", e);
       }
+    } else if (oidcDiscoveryConfig != null) {
+      List<String> urls = Collections.singletonList(oidcDiscoveryConfig.getJwksUrl());
+      issuerConfig = new IssuerConfig(iss, urls);
+      issuerConfig.setHttpsJwksFactory(httpsJwksFactory);
+      verificationKeyResolver = new JWTVerificationkeyResolver(issuerConfig);
     }
     initConsumer();
     log.debug("JWK configured");
-  }
-
-  void setupJwkUrl(String url) {
-    // The HttpsJwks retrieves and caches keys from a the given HTTPS JWKS endpoint.
-    try {
-      URL jwkUrl = new URL(url);
-      if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be an HTTPS url");
-      }
-    } catch (MalformedURLException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be a valid URL");
-    }
-    httpsJkws = new HttpsJwks(url);
-    httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
-    httpsJkws.setRefreshReprieveThreshold(5000);
-    verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
   }
 
   @SuppressWarnings("unchecked")
@@ -319,10 +313,12 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
 
     JWTAuthenticationResponse authResponse = authenticate(header);
-    if (AuthCode.SIGNATURE_INVALID.equals(authResponse.getAuthCode()) && httpsJkws != null) {
+    if (AuthCode.SIGNATURE_INVALID.equals(authResponse.getAuthCode()) && issuerConfig.usesHttpsJwk()) {
       log.warn("Signature validation failed. Refreshing JWKs from IdP before trying again: {}",
           authResponse.getJwtException() == null ? "" : authResponse.getJwtException().getMessage());
-      httpsJkws.refresh();
+      for (HttpsJwks httpsJwks : issuerConfig.getHttpsJwks()) {
+        httpsJwks.refresh();
+      }
       authResponse = authenticate(header);
     }
     String exceptionMessage = authResponse.getJwtException() != null ? authResponse.getJwtException().getMessage() : "";
@@ -563,7 +559,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     return Base64.byteArrayToBase64(headerJson.getBytes(StandardCharsets.UTF_8));
   }
 
-
   /**
    * Response for authentication attempt
    */
@@ -705,6 +700,104 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     @SuppressWarnings("unchecked")
     public List<String> getResponseTypesSupported() {
       return (List<String>) securityConf.get("response_types_supported");
+    }
+  }
+
+  /**
+   * Holds information about an IdP (issuer), such as issuer ID, JWK url(s), keys etc
+   */
+  public static class IssuerConfig {
+    private HttpsJwksFactory httpsJwksFactory;
+    private String iss;
+    private JsonWebKeySet jsonWebKeySet;
+    private List<String> jwksUrl;
+    private List<HttpsJwks> httpsJwks;
+
+    /**
+     * Create config
+     * @param iss unique issuer id string
+     * @param jwksUrls list of URLs for JWKs endpoints
+     */
+    public IssuerConfig(String iss, List<String> jwksUrls) {
+      this.jwksUrl = jwksUrls;
+      this.iss = iss;
+    }
+
+    public IssuerConfig(String iss, JsonWebKeySet jsonWebKeySet) {
+      this.iss = iss;
+      this.jsonWebKeySet = jsonWebKeySet;
+    }
+
+    public String getIss() {
+      return iss;
+    }
+
+    public List<String> getJwksUrl() {
+      return jwksUrl;
+    }
+
+    public List<HttpsJwks> getHttpsJwks() {
+      if (httpsJwks == null) {
+        if (httpsJwksFactory == null) {
+          httpsJwksFactory = new HttpsJwksFactory(3600, DEFAULT_REFRESH_REPRIEVE_THRESHOLD);
+          log.warn("Created HttpsJwksFactory with default cache duration and reprieveThreshold");
+        }
+        httpsJwks = httpsJwksFactory.createList(getJwksUrl());
+      }
+      return httpsJwks;
+    }
+
+    public void setHttpsJwks(List<HttpsJwks> httpsJwks) {
+      this.httpsJwks = httpsJwks;
+    }
+
+    /**
+     * Set the factory to use when creating HttpsJwks objects
+     * @param httpsJwksFactory factory with custom settings
+     */
+    public void setHttpsJwksFactory(HttpsJwksFactory httpsJwksFactory) {
+      this.httpsJwksFactory = httpsJwksFactory;
+    }
+
+    public JsonWebKeySet getJsonWebKeySet() {
+      return jsonWebKeySet;
+    }
+
+    /**
+     * Check if the issuer is backed by HttpsJwk url(s)
+     * @return true if keys are fetched over https
+     */
+    public boolean usesHttpsJwk() {
+      return getJwksUrl() != null && !getJwksUrl().isEmpty();
+    }
+  }
+
+  public static class HttpsJwksFactory {
+    private final long jwkCacheDuration;
+    private final long refreshReprieveThreshold;
+
+    public HttpsJwksFactory(long jwkCacheDuration, long refreshReprieveThreshold) {
+      this.jwkCacheDuration = jwkCacheDuration;
+      this.refreshReprieveThreshold = refreshReprieveThreshold;
+    }
+
+    public HttpsJwks create(String url) {
+      try {
+        URL jwkUrl = new URL(url);
+        if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must use HTTPS");
+        }
+      } catch (MalformedURLException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Url " + url + " configured in " + PARAM_JWK_URL + " is not a valid URL");
+      }
+      HttpsJwks httpsJkws = new HttpsJwks(url);
+      httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
+      httpsJkws.setRefreshReprieveThreshold(refreshReprieveThreshold);
+      return httpsJkws;
+    }
+
+    public List<HttpsJwks> createList(List<String> jwkUrls) {
+      return jwkUrls.stream().map(this::create).collect(Collectors.toList());
     }
   }
 
