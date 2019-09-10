@@ -295,6 +295,8 @@ class SimpleGeoJSONPolygonParser {
         o = null;
       } else if (ch == '-' || ch == '.' || (ch >= '0' && ch <= '9')) {
         o = parseNumber();
+      } else if (ch == '"') {
+        o = parseString();
       } else {
         throw newParseException("expected another array or number while parsing array, not '" + ch + "'");
       }
