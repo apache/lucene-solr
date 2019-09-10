@@ -176,7 +176,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void initWithJwkUrl() {
+  public void initWithJwkUrlForBackwardsCompat() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwkUrl", "https://127.0.0.1:9999/foo.jwk");
     plugin = new JWTAuthPlugin();
@@ -186,9 +186,19 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void initWithJwkUrlArray() {
+  public void initWithJwksUrl() {
     HashMap<String, Object> authConf = new HashMap<>();
-    authConf.put("jwkUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
+    authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
+    plugin = new JWTAuthPlugin();
+    plugin.init(authConf);
+    JWTVerificationkeyResolver resolver = (JWTVerificationkeyResolver) plugin.verificationKeyResolver;
+    assertEquals(1, resolver.getIssuerConfig().getJwksUrl().size());
+  }
+
+  @Test
+  public void initWithjwksUrlArray() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwksUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
     JWTVerificationkeyResolver resolver = (JWTVerificationkeyResolver) plugin.verificationKeyResolver;
@@ -371,7 +381,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test(expected = SolrException.class)
   public void onlyOneJwkConfig() {
-    testConfig.put("jwkUrl", "http://127.0.0.1:45678/myJwk");
+    testConfig.put("jwksUrl", "http://127.0.0.1:45678/myJwk");
     plugin.init(testConfig);
   }
 
