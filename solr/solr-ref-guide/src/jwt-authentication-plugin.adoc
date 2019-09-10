@@ -60,8 +60,6 @@ issuers              ; List of issuers (Identity providers) to  support. See bel
 
 This plugin supports one or more token issuers (IdPs). Issuers are configured as a list of JSON objects under the `issuers` configuration key. The first issuer in the list is the "Primary Issuer", which is the one used for logging in to the Admin UI.
 
-TIP: For backwards compatibility, all the configuration keys for the primary issuer may be configured as top-level keys, except `name`.
-
 [%header,format=csv,separator=;,cols="25%,55%,20%"]
 |===
 Key                  ; Description                                             ; Default
@@ -74,6 +72,8 @@ iss                  ; Validates that the `iss` (issuer) claim equals this strin
 aud                  ; Validates that the `aud` (audience) claim equals this string      ; Uses `clientId` is configured
 authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided
 |===
+
+TIP: For backwards compatibility, all the configuration keys for the primary issuer may be configured as top-level keys, except `name`.
 
 == More Configuration Examples
 === With JWKS URL
