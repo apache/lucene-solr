@@ -1,6 +1,7 @@
 name: Java CI
 
-pull_request:
+on: 
+  pull_request:
     branches:
     - anshum/test-github-precommit-action
 jobs:
