@@ -121,7 +121,7 @@ class CheckSourcePatterns extends DefaultTask {
     
     if (found) {
       throw new GradleException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
-      found, violations.join(', ')))
+      found.get(), violations.join(', ')))
     }
   }
   
