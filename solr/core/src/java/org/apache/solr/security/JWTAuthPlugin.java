@@ -232,6 +232,11 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
   }
 
+  /**
+   * Fetch the primary issuer to be used for Admin UI authentication. Callers of this method must ensure that at least
+   * one issuer is configured. The primary issuer is defined as the first issuer configured in the list.
+   * @return JWTIssuerConfig object for the primary issuer
+   */
   JWTIssuerConfig getPrimaryIssuer() {
     if (issuerConfigs.size() == 0) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No issuers configured");
@@ -240,7 +245,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   }
 
   /**
-   * Initialize optional additional issuers configured in 'issuers' condfig map
+   * Initialize optional additional issuers configured in 'issuers' config map
    * @param pluginConfig the main config object
    * @return a list of parsed {@link JWTIssuerConfig} objects
    */
