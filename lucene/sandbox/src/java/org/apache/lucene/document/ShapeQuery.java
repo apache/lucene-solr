@@ -84,7 +84,7 @@ abstract class ShapeQuery extends Query {
                                                      int maxXOffset, int maxYOffset, byte[] maxTriangle);
 
   /** returns true if the provided triangle matches the query */
-  protected abstract boolean queryMatches(byte[] triangle, int[] scratchTriangle, ShapeField.QueryRelation queryRelation);
+  protected abstract boolean queryMatches(byte[] triangle, ShapeField.DecodedTriangle scratchTriangle, ShapeField.QueryRelation queryRelation);
 
   /** relates a range of triangles (internal node) to the query */
   protected Relation relateRangeToQuery(byte[] minTriangle, byte[] maxTriangle, QueryRelation queryRelation) {
@@ -317,7 +317,7 @@ abstract class ShapeQuery extends Query {
   /** create a visitor that adds documents that match the query using a sparse bitset. (Used by INTERSECT) */
   private static IntersectVisitor getSparseVisitor(final ShapeQuery query, final DocIdSetBuilder result) {
     return new IntersectVisitor() {
-      final int[] scratchTriangle = new int[6];
+      final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
       DocIdSetBuilder.BulkAdder adder;
 
       @Override
@@ -357,7 +357,7 @@ abstract class ShapeQuery extends Query {
   /** create a visitor that adds documents that match the query using a dense bitset; used with WITHIN & DISJOINT */
   private static IntersectVisitor getDenseVisitor(final ShapeQuery query, final FixedBitSet result, final FixedBitSet excluded, final long[] cost) {
     return new IntersectVisitor() {
-      final int[] scratchTriangle = new int[6];
+      final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
 
       @Override
       public void visit(int docID) {
@@ -397,7 +397,7 @@ abstract class ShapeQuery extends Query {
   /** create a visitor that clears documents that do not match the polygon query using a dense bitset; used with WITHIN & DISJOINT */
   private static IntersectVisitor getInverseDenseVisitor(final ShapeQuery query, final FixedBitSet result, final long[] cost) {
     return new IntersectVisitor() {
-      final int[] scratchTriangle = new int[6];
+      final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
 
       @Override
       public void visit(int docID) {
@@ -461,7 +461,7 @@ abstract class ShapeQuery extends Query {
   private static boolean hasAnyHits(final ShapeQuery query, final PointValues values) throws IOException {
     try {
       values.intersect(new IntersectVisitor() {
-        final int[] scratchTriangle = new int[6];
+        final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
 
         @Override
         public void visit(int docID) {

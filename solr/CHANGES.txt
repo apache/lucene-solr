@@ -150,6 +150,11 @@ Improvements
 * SOLR-13720: BlockJoinParentQParser.getCachedFilter()made public for accessing from QParser plugins
   (Stanislav Livotov via Mikhail Khludnev)
 
+* SOLR-13728: If a partial update (aka atomic update) is attempted on a document that has child docs, then ensure
+  the schema supports it (_root_ stored/docValues) by throwing an exception. (David Smiley)
+
+* SOLR-13742: Allow optional redaction of data saved by 'bin/solr autoscaling -save'. (ab)
+
 Bug Fixes
 ----------------------
 
@@ -193,6 +198,9 @@ Bug Fixes
 * SOLR-13718: SPLITSHARD (async) with failures in underlying sub-operations can result in data loss (Ishan Chattopadhyaya)
 
 * SOLR-13717: Fixed distributed grouping when multiple 'fl' params are specified (hossman, Christine Poerschke)
+
+* SOLR-13240: Fixed UTILIZENODE action resulting in IllegalArgumentException.
+  (Hendrik Haddorp, Richard Goodman, Tim Owen, shalin, noble, Christine Poerschke)
 
 Other Changes
 ----------------------

@@ -46,16 +46,16 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
 
   /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
     // decode indexed triangle
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    int aY = scratchTriangle[0];
-    int aX = scratchTriangle[1];
-    int bY = scratchTriangle[2];
-    int bX = scratchTriangle[3];
-    int cY = scratchTriangle[4];
-    int cX = scratchTriangle[5];
+    int aY = scratchTriangle.aY;
+    int aX = scratchTriangle.aX;
+    int bY = scratchTriangle.bY;
+    int bX = scratchTriangle.bX;
+    int cY = scratchTriangle.cY;
+    int cX = scratchTriangle.cX;
 
     switch (queryRelation) {
       case INTERSECTS: return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);

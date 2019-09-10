@@ -221,3 +221,10 @@ set shard indices for hits as they are seen during the merge process. This is do
 to be more dynamic in terms of passing in custom tie breakers.
 If shard indices are to be used for tie breaking docs with equal scores during TopDocs.merge, then it is
 mandatory that the input ScoreDocs have their shard indices set to valid values prior to calling TopDocs.merge
+
+## TopDocsCollector Shall Throw IllegalArgumentException For Malformed Arguments ##
+
+TopDocsCollector shall no longer return an empty TopDocs for malformed arguments.
+Rather, an IllegalArgumentException shall be thrown. This is introduced for better
+defence and to ensure that there is no bubbling up of errors when Lucene is
+used in multi level applications
