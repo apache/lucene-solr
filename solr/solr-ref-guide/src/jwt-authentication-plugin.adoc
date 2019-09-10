@@ -68,15 +68,15 @@ Key                  ; Description                                             ;
 name                 ; A unique name of the issuer. Used to manipulate list through API. ;
 wellKnownUrl         ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; (no default)
 clientId             ; Client identifier for use with OpenID Connect. Required to authenticate with Admin UI. Needed for primary issuer only ; (no default value)
-jwkUrl               ; A URL to a https://tools.ietf.org/html/rfc7517#section-5[JWKs] endpoint. Must use https protocol. Optionally an array of URLs in which case all public keys from all URLs will be consulted when validating signatures. ; Auto configured if `wellKnownUrl` is provided
-jwk                  ; As an alternative to `jwkUrl` you may provide a static JSON object containing the public key(s) of the issuer.  ;
+jwksUrl              ; A URL to a https://tools.ietf.org/html/rfc7517#section-5[JWKs] endpoint. Must use https protocol. Optionally an array of URLs in which case all public keys from all URLs will be consulted when validating signatures. ; Auto configured if `wellKnownUrl` is provided
+jwk                  ; As an alternative to `jwksUrl` you may provide a static JSON object containing the public key(s) of the issuer.  ;
 iss                  ; Validates that the `iss` (issuer) claim equals this string        ; Auto configured if `wellKnownUrl` is provided
 aud                  ; Validates that the `aud` (audience) claim equals this string      ; Uses `clientId` is configured
 authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided
 |===
 
 == More Configuration Examples
-=== With JWK URL
+=== With JWKS URL
 To start enforcing authentication for all users, requiring a valid JWT in the `Authorization` header, you need to configure the plugin with one or more https://tools.ietf.org/html/rfc7517[JSON Web Key]s (JWK). This is a JSON document containing the key used to sign/encrypt the JWT. It could be a symmetric or asymmetric key. The JWK can either be fetched (and cached) from an external HTTPS endpoint or specified directly in `security.json`. Below is an example of the former:
 
 [source,json]
@@ -84,10 +84,12 @@ To start enforcing authentication for all users, requiring a valid JWT in the `A
 {
   "authentication": {
     "class": "solr.JWTAuthPlugin",
-    "jwkUrl": "https://my.key.server/jwk.json"
+    "jwksUrl": "https://my.key.server/jwk.json"
   }
 }
 ----
+
+TIP: The configuration key `jwkUrl` is also supported as an alternative to `jwksUrl` for backwards compatibility with early versions of the plugin.
 
 === With Admin UI Support
 The next example shows configuring using https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] with a well-known URI for automatic configuration of many common settings, including ability to use the Admin UI with an OpenID Connect enabled Identity Provider.
@@ -104,7 +106,7 @@ The next example shows configuring using https://openid.net/specs/openid-connect
 }
 ----
 
-In this case, `jwkUrl`, `iss` and `authorizationEndpoint` will be automatically configured from the fetched configuration.
+In this case, `jwksUrl`, `iss` and `authorizationEndpoint` will be automatically configured from the fetched configuration.
 
 === Complex Example
 Let's look at a more complex configuration, this time with two issuers configured, where one uses a static embedded JWK:
@@ -152,7 +154,7 @@ Let's comment on this config:
 <6> Only accept RSA algorithms for signatures
 <7> Array of issuer configurations
 <8> Each issuer object should have a unique name
-<9> Here we pass the JWK inline instead of referring to a URL with `jwkUrl`
+<9> Here we pass the JWK inline instead of referring to a URL with `jwksUrl`
 <10> Set the client id registered with Identity Provider
 <11> Configure the issuer id. Will be used for validating tokens. A token's 'iss' claim must match one of the configured issuer IDs.
 <12> Configure the audience claim. A token's 'aud' claim must match 'aud' for one of the configured issuers.
