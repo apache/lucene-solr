@@ -58,9 +58,9 @@ public class JWTIssuerConfigTest {
 
     testIssuerJson = "{\n" +
         "  \"aud\":\"audience\",\n" +
-        "  \"jwksUrl\":[\"https://issuer/path\"],\n" +
         "  \"wellKnownUrl\":\"wellknown\",\n" +
         "  \"clientId\":\"clientid\",\n" +
+        "  \"jwksUrl\":[\"https://issuer/path\"],\n" +
         "  \"name\":\"name\",\n" +
         "  \"iss\":\"issuer\",\n" +
         "  \"authorizationEndpoint\":\"https://issuer/authz\"}";
