@@ -143,4 +143,9 @@ public class XYRectangle2D  {
     sb.append(")");
     return sb.toString();
   }
+
+  /** Builds a Rectangle2D from rectangle */
+  public static XYRectangle2D create(XYRectangle rectangle) {
+    return new XYRectangle2D((float)rectangle.minX, (float)rectangle.maxX, (float)rectangle.minY, (float)rectangle.maxY);
+  }
 }
