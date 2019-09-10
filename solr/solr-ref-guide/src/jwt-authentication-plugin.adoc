@@ -69,7 +69,7 @@ name                 ; A unique name of the issuer. Used to manipulate list thro
 wellKnownUrl         ; URL to an https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] endpoint ; (no default)
 clientId             ; Client identifier for use with OpenID Connect. Required to authenticate with Admin UI. Needed for primary issuer only ; (no default value)
 jwksUrl              ; A URL to a https://tools.ietf.org/html/rfc7517#section-5[JWKs] endpoint. Must use https protocol. Optionally an array of URLs in which case all public keys from all URLs will be consulted when validating signatures. ; Auto configured if `wellKnownUrl` is provided
-jwk                  ; As an alternative to `jwksUrl` you may provide a static JSON object containing the public key(s) of the issuer.  ;
+jwk                  ; As an alternative to `jwksUrl` you may provide a static JSON object containing the public key(s) of the issuer. The format is either JWK or JWK Set, see https://tools.ietf.org/html/rfc7517#appendix-A[RFC7517] for examples. ;
 iss                  ; Validates that the `iss` (issuer) claim equals this string        ; Auto configured if `wellKnownUrl` is provided
 aud                  ; Validates that the `aud` (audience) claim equals this string      ; Uses `clientId` is configured
 authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided
