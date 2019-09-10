@@ -298,21 +298,22 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
 
     JWTAuthenticationResponse authResponse = authenticate(header);
+    String exceptionMessage = authResponse.getJwtException() != null ? authResponse.getJwtException().getMessage() : "";
     if (AuthCode.SIGNATURE_INVALID.equals(authResponse.getAuthCode())) {
       String issuer = jwtConsumer.processToClaims(header).getIssuer();
       if (issuer != null) {
         Optional<JWTIssuerConfig> issuerConfig = issuerConfigs.stream().filter(ic -> issuer.equals(ic.getIss())).findFirst();
         if (issuerConfig.isPresent() && issuerConfig.get().usesHttpsJwk()) {
-          log.warn("Signature validation failed for issuer {}. Refreshing JWKs from IdP before trying again: {}",
-              issuer, authResponse.getJwtException() == null ? "" : authResponse.getJwtException().getMessage());
+          log.info("Signature validation failed for issuer {}. Refreshing JWKs from IdP before trying again: {}",
+              issuer, exceptionMessage);
           for (HttpsJwks httpsJwks : issuerConfig.get().getHttpsJwks()) {
             httpsJwks.refresh();
           }
+          authResponse = authenticate(header); // Retry
+          exceptionMessage = authResponse.getJwtException() != null ? authResponse.getJwtException().getMessage() : "";
         }
       }
-      authResponse = authenticate(header);
     }
-    String exceptionMessage = authResponse.getJwtException() != null ? authResponse.getJwtException().getMessage() : "";
 
     switch (authResponse.getAuthCode()) {
       case AUTHENTICATED:
