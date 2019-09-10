@@ -19,26 +19,10 @@ package org.apache.solr.metrics;
 /**
  * Used by objects that expose metrics through {@link SolrCoreMetricManager}.
  */
-public interface SolrMetricProducer extends AutoCloseable {
-
-  /**
-   * Unique metric name is in the format of A.B.C
-   * A is the parent of B is the parent of C and so on.
-   * If object "B" is unregistered , C also must get unregistered.
-   * If object "A" is unregistered ,  B , C also must get unregistered.
-   */
-  default String getUniqueMetricTag(String parentName) {
-    String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
-    if (parentName != null && parentName.contains(name)) return parentName;
-    return parentName == null ?
-        name :
-        parentName + ":" + name;
-  }
-
+public interface SolrMetricProducer {
 
   /**
    * Initializes metrics specific to this producer
-   *
    * @param manager  an instance of {@link SolrMetricManager}
    * @param registry registry name where metrics are registered
    * @param tag      a symbolic tag that represents this instance of the producer,
@@ -47,25 +31,5 @@ public interface SolrMetricProducer extends AutoCloseable {
    *                 {@link #initializeMetrics(SolrMetricManager, String, String, String)} is called.
    * @param scope    scope of the metrics (eg. handler name) to separate metrics of
    */
-  default void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    initializeMetrics(new SolrMetrics(manager, registry, tag, scope));
-
-  }
-
-  default void initializeMetrics(SolrMetrics info) {
-    throw new RuntimeException("This means , the class has not implemented both of these methods");
-
-  }
-
-  default SolrMetrics getMetrics() {
-    return null;
-  }
-
-  @Override
-  default void close() throws Exception {
-    SolrMetrics info = getMetrics();
-    if (info == null || info.tag.indexOf(':') == -1) return;//this will end up unregistering the root itself
-    info.unregister();
-  }
-
+  void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope);
 }

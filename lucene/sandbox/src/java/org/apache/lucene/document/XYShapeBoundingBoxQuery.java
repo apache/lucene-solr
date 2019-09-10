@@ -17,11 +17,9 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.XYEncodingUtils;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues;
-import org.apache.lucene.util.NumericUtils;
 
 import static org.apache.lucene.geo.XYEncodingUtils.decode;
 
@@ -60,18 +58,19 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
     // decode indexed triangle
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    float alat = (float) decode(scratchTriangle.aY);
-    float alon = (float) decode(scratchTriangle.aX);
-    float blat = (float) decode(scratchTriangle.bY);
-    float blon = (float) decode(scratchTriangle.bX);
-    float clat = (float) decode(scratchTriangle.cY);
-    float clon = (float) decode(scratchTriangle.cX);
+    float aY = (float) decode(scratchTriangle.aY);
+    float aX = (float) decode(scratchTriangle.aX);
+    float bY = (float) decode(scratchTriangle.bY);
+    float bX = (float) decode(scratchTriangle.bX);
+    float cY = (float) decode(scratchTriangle.cY);
+    float cX = (float) decode(scratchTriangle.cX);
 
-    if (queryRelation == QueryRelation.WITHIN) {
-      return rectangle2D.relateTriangle(alon, alat, blon, blat, clon, clat) == PointValues.Relation.CELL_INSIDE_QUERY;
+    switch (queryRelation) {
+      case INTERSECTS: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) != PointValues.Relation.CELL_OUTSIDE_QUERY;
+      case WITHIN: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) == PointValues.Relation.CELL_INSIDE_QUERY;
+      case DISJOINT: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) == PointValues.Relation.CELL_OUTSIDE_QUERY;
+      default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
-    // INTERSECTS
-    return rectangle2D.relateTriangle(alon, alat, blon, blat, clon, clat) != PointValues.Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override

@@ -130,6 +130,9 @@ Improvements
 * LUCENE-8620: Tessellator labels the edges of the generated triangles whether they belong to
   the original polygon. This information is added to the triangle encoding. (Ignacio Vera)
 
+* LUCENE-8964: Fix geojson shape parsing on string arrays in properties
+  (Alexander Reelsen)
+
 Optimizations
 
 * LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
@@ -143,6 +146,9 @@ the total hits is not requested.
 
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees now index points faster.
   (Chongchen Chen, David Smiley)
+
+* LUCENE-8968: Improve performance of WITHIN and DISJOINT queries for Shape queries by
+  doing just one pass whenever possible. (Ignacio Vera)
 
 Bug Fixes
 
