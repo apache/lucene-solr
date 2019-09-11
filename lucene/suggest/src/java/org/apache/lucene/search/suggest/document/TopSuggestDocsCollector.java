@@ -63,6 +63,8 @@ public class TopSuggestDocsCollector extends SimpleCollector {
   /** Document base offset for the current Leaf */
   protected int docBase;
 
+  private boolean isComplete = true;
+
   /**
    * Sole constructor
    *
@@ -116,7 +118,7 @@ public class TopSuggestDocsCollector extends SimpleCollector {
    * NOTE: collection at the leaf level is guaranteed to be in
    * descending order of score
    */
-  public void collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
+  public boolean collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
     SuggestScoreDoc current = new SuggestScoreDoc(docBase + docID, key, context, score);
     if (current == priorityQueue.insertWithOverflow(current)) {
       // if the current SuggestScoreDoc has overflown from pq,
@@ -125,6 +127,7 @@ public class TopSuggestDocsCollector extends SimpleCollector {
       // TODO: reuse the overflow instance?
       throw new CollectionTerminatedException();
     }
+    return true;
   }
 
   /**
@@ -200,5 +203,20 @@ public class TopSuggestDocsCollector extends SimpleCollector {
   @Override
   public ScoreMode scoreMode() {
     return ScoreMode.COMPLETE;
+  }
+
+  /**
+   * returns true if the collector clearly exhausted all possibilities to collect results
+   */
+  public boolean isComplete() {
+    return this.isComplete ;
+  }
+
+  /**
+   * call to signal that during collection at least one segment might have returned incomplete results, e.g. because
+   * of too many rejections
+   */
+  void notComplete() {
+    this.isComplete = false;
   }
 }

@@ -39,6 +39,7 @@ import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.util.fst.Util.TopResults;
 
 import static org.apache.lucene.search.suggest.document.NRTSuggester.PayLoadProcessor.parseSurfaceForm;
 
@@ -200,23 +201,30 @@ public final class NRTSuggester implements Accountable {
         if (!scorer.accept(docID, acceptDocs)) {
           return false;
         }
+        boolean duplicateSurfaceForm = false;
+        boolean collected = false;
         if (collector.doSkipDuplicates()) {
           // now record that we've seen this surface form:
           char[] key = new char[spare.length()];
           System.arraycopy(spare.chars(), 0, key, 0, spare.length());
           if (collector.seenSurfaceForms.contains(key)) {
             // we already collected a higher scoring document with this key, in this segment:
-            return false;
+            duplicateSurfaceForm = true;
+          } else {
+            collector.seenSurfaceForms.add(key);
           }
-          collector.seenSurfaceForms.add(key);
         }
-        try {
-          float score = scorer.score(decode(path.output.output1), path.boost);
-          collector.collect(docID, spare.toCharsRef(), path.context, score);
-          return true;
-        } catch (IOException e) {
-          throw new RuntimeException(e);
+
+        // only try collecting if we didn't already detect a surface form duplicate and collector.doSkipDuplicates() == true
+        if (duplicateSurfaceForm == false) {
+          try {
+            float score = scorer.score(decode(path.output.output1), path.boost);
+            collected = collector.collect(docID, spare.toCharsRef(), path.context, score);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
         }
+        return collected;
       }
     };
 
@@ -239,7 +247,11 @@ public final class NRTSuggester implements Accountable {
     }
     // hits are also returned by search()
     // we do not use it, instead collect at acceptResult
-    searcher.search();
+    TopResults<Pair<Long,BytesRef>> results = searcher.search();
+    if (results.isComplete == false) {
+      collector.notComplete();
+    }
+    return;
     // search admissibility is not guaranteed
     // see comment on getMaxTopNSearcherQueueSize
     // assert  search.isComplete;

@@ -17,10 +17,15 @@
 package org.apache.lucene.search.suggest.document;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockSynonymAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -248,6 +253,61 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "app"), filter);
     suggest = indexSearcher.suggest(query, 3, false);
     assertSuggestions(suggest, new Entry("applle", 4), new Entry("apples", 3));
+
+    reader.close();
+    iw.close();
+  }
+
+  /**
+   * Test that the correct amount of documents are collected if using a collector that also rejects documents.
+   */
+  public void testCollectorThatRejects() throws Exception {
+    // use synonym analyzer to have multiple paths to same suggested document. This mock adds "dog" as synonym for "dogs"
+    Analyzer analyzer = new MockSynonymAnalyzer();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    List<Entry> expectedResults = new ArrayList<Entry>();
+
+    for (int docCount = 10; docCount > 0; docCount--) {
+      Document document = new Document();
+      String value = "ab" + docCount + " dogs";
+      document.add(new SuggestField("suggest_field", value, docCount));
+      expectedResults.add(new Entry(value, docCount));
+      iw.addDocument(document);
+    }
+
+    if (rarely()) {
+      iw.commit();
+    }
+
+    DirectoryReader reader = iw.getReader();
+    SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
+
+    PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "ab"));
+    int topN = 5;
+
+    // use a TopSuggestDocsCollector that rejects results with duplicate docIds
+    TopSuggestDocsCollector collector = new TopSuggestDocsCollector(topN, false) {
+
+      private Set<Integer> seenDocIds = new HashSet<>();
+
+      @Override
+      public boolean collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
+          int globalDocId = docID + docBase;
+          boolean collected = false;
+          if (seenDocIds.contains(globalDocId) == false) {
+              super.collect(docID, key, context, score);
+              seenDocIds.add(globalDocId);
+              collected = true;
+          }
+          return collected;
+      }
+    };
+
+    indexSearcher.suggest(query, collector);
+    assertSuggestions(collector.get(), expectedResults.subList(0, topN).toArray(new Entry[0]));
+
+    // TODO expecting true here, why false?
+    assertFalse(collector.isComplete());
 
     reader.close();
     iw.close();

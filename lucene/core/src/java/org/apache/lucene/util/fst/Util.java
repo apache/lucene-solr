@@ -460,11 +460,6 @@ public final class Util {
           continue;
         }
 
-        if (results.size() == topN-1 && maxQueueDepth == topN) {
-          // Last path -- don't bother w/ queue anymore:
-          queue = null;
-        }
-
         // We take path and find its "0 output completion",
         // ie, just keep traversing the first arc with
         // NO_OUTPUT that we can find, since this must lead
