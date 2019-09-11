@@ -76,6 +76,13 @@ public class PackageTool extends SolrCLI.ToolBase {
         case "deploy":
           deploy(pluginManager, updateManager, cli.getArgList().subList(1, cli.getArgList().size()));
           break;
+        case "update":
+          if (cli.getArgList().size()==1) {
+            update(pluginManager, updateManager);
+          } else {
+            updatePlugin(pluginManager, updateManager, cli.getArgs()[1], cli.getArgList().subList(2, cli.getArgList().size()));
+          }
+          break;
         default:
           throw new RuntimeException("Unrecognized command: "+cmd);
       };
@@ -123,7 +130,8 @@ public class PackageTool extends SolrCLI.ToolBase {
   }
   protected void available(SolrPluginManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
     //System.out.println(updateManager.getAvailablePlugins());
-    for (PluginInfo i: updateManager.getAvailablePlugins()) {
+    System.out.println("Available packages:\n-----");
+    for (PluginInfo i: updateManager.getPlugins()) {
       SolrPluginInfo plugin = (SolrPluginInfo)i;
       System.out.println(plugin.id + " \t\t"+plugin.description);
       for (SolrPluginRelease version: plugin.versions) {
@@ -141,6 +149,34 @@ public class PackageTool extends SolrCLI.ToolBase {
     System.out.println(pluginManager.deployPlugin(args.get(0).toString(), args.subList(1, args.size())));
   }
 
+  protected void update(SolrPluginManager pluginManager, SolrUpdateManager updateManager) throws PluginException {
+    if (updateManager.hasUpdates()) {
+      System.out.println("Available updates:\n-----");
+
+      for (PluginInfo i: updateManager.getUpdates()) {
+        SolrPluginInfo plugin = (SolrPluginInfo)i;
+        System.out.println(plugin.id + " \t\t"+plugin.description);
+        for (SolrPluginRelease version: plugin.versions) {
+          System.out.println("\tVersion: "+version.version);
+        }
+      }
+
+    } else {
+      System.out.println("No updates found. System is up to date.");
+    }
+  }
+
+  protected void updatePlugin(SolrPluginManager pluginManager, SolrUpdateManager updateManager, String pluginName, List args) throws PluginException {
+    if (updateManager.hasUpdates()) {
+      String latestVersion = updateManager.getLastPluginRelease(pluginName).version;
+      System.out.println("Updating ["+pluginName+"] to version: "+latestVersion);
+      updateManager.updatePlugin(pluginName, latestVersion);
+    } else {
+      System.out.println("Package "+pluginName+" is already up to date.");
+    }
+  }
+
+  
   @SuppressWarnings("static-access")
   public Option[] getOptions() {
     return new Option[] {

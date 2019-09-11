@@ -56,10 +56,9 @@ public class SolrUpdateManager extends UpdateManager {
       e.printStackTrace();
       repositories = Collections.emptyList();
     }*/
-    System.out.println("Initialising from: "+repositoriesJsonStr);
     UpdateRepository items[] = new Gson().fromJson(this.repositoriesJsonStr, SolrUpdateRepository[].class);
     this.repositories = Arrays.asList(items);
-    System.out.println(repositories);
+    //System.out.println(repositories);
   }
 
   @Override
@@ -73,10 +72,20 @@ public class SolrUpdateManager extends UpdateManager {
 
   @Override
   public synchronized boolean installPlugin(String id, String version) throws PluginException {
-    System.out.println("ENTERS HERE");
+    return updateOrInstallPackage(Operation.INSTALL, id, version);
+  }
+
+  @Override
+  public synchronized boolean updatePlugin(String id, String version) throws PluginException {
+    return updateOrInstallPackage(Operation.UPDATE, id, version);
+  }
+  
+  
+  private boolean updateOrInstallPackage(Operation op, String id, String version) throws PluginException {
+    //System.out.println("ENTERS HERE");
     // Download to temporary location
     Path downloaded = downloadPlugin(id, version);
-    System.out.println("Downloaded in "+downloaded);
+    //System.out.println("Downloaded in "+downloaded);
     Path pluginsRoot = pluginManager.getPluginsRoot();
 
     PluginWrapper existingPlugin = pluginManager.getPlugin(id);
@@ -86,7 +95,7 @@ public class SolrUpdateManager extends UpdateManager {
 
     SolrPluginRelease release = null;
     String repository = null;
-    for (PluginInfo info: getAvailablePlugins()) {
+    for (PluginInfo info: getPlugins()) {
       if (id.equals(info.id)) {
         for (SolrPluginRelease r: ((SolrPluginInfo)info).versions) {
           if (version.equals(r.version) ) {
@@ -104,13 +113,24 @@ public class SolrUpdateManager extends UpdateManager {
 
     String sha256 = uploadToBlobHandler(downloaded);
 
-    addPackage(id, version, sha256, repository, release.setupCommands, "some-signature");
+    addOrUpdatePackage(op, id, version, sha256, repository, release.setupCommands, "some-signature");
     return true; //PluginState.STARTED.equals(state);
   }
 
-  private boolean addPackage(String id, String version, String sha256, String repository, List<String> setupCommands, String sig) {
+  public static enum Operation {
+    INSTALL, UPDATE;
+  }
+  
+  private boolean addOrUpdatePackage(Operation op, String id, String version, String sha256, String repository, List<String> setupCommands, String sig) {
 
-    String json = "{add: "
+    String json;
+    
+    if (op.equals(Operation.INSTALL)) {
+      json = "{add: ";
+    } else {
+      json = "{update: ";
+    }
+    json = json
         + "{name: '"+id+"', "
         + "version: '"+version+"', "
         + "repository: '"+repository+"', "
@@ -168,7 +188,7 @@ public class SolrUpdateManager extends UpdateManager {
           String results = writer.toString();
           System.out.println(results);
           String sha = new Gson().fromJson(results, Map.class).get("sha256").toString();
-          System.out.println("SHA: "+sha);
+          //System.out.println("SHA: "+sha);
           return sha;
         }
       } catch (IOException e) {
