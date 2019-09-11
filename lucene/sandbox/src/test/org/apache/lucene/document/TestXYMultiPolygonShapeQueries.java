@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Line2D;
-import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYPolygon;
 

@@ -89,7 +89,7 @@ abstract class ShapeQuery extends Query {
   /** returns true if the provided triangle matches the query */
   protected abstract boolean queryMatches(byte[] triangle, ShapeField.DecodedTriangle scratchTriangle, ShapeField.QueryRelation queryRelation);
 
-  /** Return the within relationship between the query and the indexed shape. See {@link EdgeTree.WithinRelation} */
+  /** Return the within relationship between the query and the indexed shape.*/
   protected abstract EdgeTree.WithinRelation queryWithin(byte[] triangle, ShapeField.DecodedTriangle scratchTriangle);
 
   /** relates a range of triangles (internal node) to the query */

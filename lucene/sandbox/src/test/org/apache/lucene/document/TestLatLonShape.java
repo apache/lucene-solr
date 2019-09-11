@@ -25,7 +25,6 @@ import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
-import org.apache.lucene.geo.SimpleWKTShapeParser;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
