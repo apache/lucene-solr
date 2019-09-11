@@ -2,6 +2,8 @@ package org.apache.solr.packagemanager;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -12,6 +14,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.pf4j.AbstractPluginManager;
 import org.pf4j.DefaultVersionManager;
 import org.pf4j.ExtensionFactory;
@@ -51,7 +59,8 @@ public 	class SolrPluginManager extends AbstractPluginManager {
 
 			for (Object packageName: packages.keySet()) {
 				Map pkg = (Map)packages.get(packageName);
-				PluginDescriptor descriptor = new SolrPluginDescriptor(pkg.get("name").toString(), null, pkg.get("version").toString(), (List)pkg.get("setup-commands"));
+				PluginDescriptor descriptor = new SolrPluginDescriptor(pkg.get("name").toString(), null, 
+				    pkg.get("version").toString(), (List)pkg.get("setup-commands"), (List)pkg.get("update-commands"));
 				PluginWrapper wrapper = new PluginWrapper(this, descriptor, null, null);
 				plugins.put(packageName.toString(), wrapper);
 				ret.add(wrapper);
@@ -62,16 +71,58 @@ public 	class SolrPluginManager extends AbstractPluginManager {
 		return ret;
 	}
 
-	public boolean deployPlugin(String pluginId, List<String> collections) {
+	public boolean deployInstallPlugin(String pluginId, List<String> collections) {
 		PluginWrapper plugin = getPlugin(pluginId);
 		System.out.println(((SolrPluginDescriptor)plugin.getDescriptor()).getSetupCommands());
 		for (String collection: collections) {
 			for (String cmd: ((SolrPluginDescriptor)plugin.getDescriptor()).getSetupCommands()) {
 				System.out.println("Executing " + cmd + " for collection:" + collection);
+				postJson("http://localhost:8983/solr/"+collection+"/config", cmd);
 			}
 		}
 		return true;
 	}
+
+	 public boolean deployUpdatePlugin(String pluginId, List<String> collections) {
+	    PluginWrapper plugin = getPlugin(pluginId);
+	    System.out.println(((SolrPluginDescriptor)plugin.getDescriptor()).getSetupCommands());
+	    for (String collection: collections) {
+	      for (String cmd: ((SolrPluginDescriptor)plugin.getDescriptor()).getUpdateCommands()) {
+	        System.out.println("Executing " + cmd + " for collection:" + collection);
+	        postJson("http://localhost:8983/solr/"+collection+"/config", cmd);
+	      }
+	    }
+	    return true;
+	  }
+
+
+	 private void postJson(String url, String postBody) {
+	    try (CloseableHttpClient client = HttpClients.createDefault();) {
+	      HttpPost httpPost = new HttpPost(url);
+	      StringEntity entity = new StringEntity(postBody);
+	      httpPost.setEntity(entity);
+	      httpPost.setHeader("Accept", "application/json");
+	      httpPost.setHeader("Content-type", "application/json");
+
+	      CloseableHttpResponse response = client.execute(httpPost);
+
+	      try {
+	        HttpEntity rspEntity = response.getEntity();
+	        if (rspEntity != null) {
+	          InputStream is = rspEntity.getContent();
+	          StringWriter writer = new StringWriter();
+	          IOUtils.copy(is, writer, "UTF-8");
+	          String results = writer.toString();
+	          System.out.println(results);
+	        }
+	      } catch (IOException e) {
+	        e.printStackTrace();
+	      }
+	    } catch (IOException e1) {
+        throw new RuntimeException(e1);
+      }
+	 }
+	 
 	@Override
 	public List<PluginWrapper> getPlugins(PluginState pluginState) {
 		return null;

@@ -26,7 +26,14 @@
       "items": {
         "type": "string"
       },
-      "description": "Commands that are passed on to the config API to deploy this plugin"
+      "description": "Commands that are passed on to the config API to install this plugin"
+    },
+    "update-commands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Commands that are passed on to the config API to update this plugin"
     }
   },
   "required" : ["name","sha256"]

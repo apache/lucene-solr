@@ -76,6 +76,9 @@ public class PackageTool extends SolrCLI.ToolBase {
         case "deploy":
           deploy(pluginManager, updateManager, cli.getArgList().subList(1, cli.getArgList().size()));
           break;
+        case "redeploy":
+          redeploy(pluginManager, updateManager, cli.getArgList().subList(1, cli.getArgList().size()));
+          break;
         case "update":
           if (cli.getArgList().size()==1) {
             update(pluginManager, updateManager);
@@ -129,7 +132,6 @@ public class PackageTool extends SolrCLI.ToolBase {
     }
   }
   protected void available(SolrPluginManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
-    //System.out.println(updateManager.getAvailablePlugins());
     System.out.println("Available packages:\n-----");
     for (PluginInfo i: updateManager.getPlugins()) {
       SolrPluginInfo plugin = (SolrPluginInfo)i;
@@ -146,7 +148,11 @@ public class PackageTool extends SolrCLI.ToolBase {
     System.out.println(args.get(0).toString() + " installed.");
   }
   protected void deploy(SolrPluginManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
-    System.out.println(pluginManager.deployPlugin(args.get(0).toString(), args.subList(1, args.size())));
+    System.out.println(pluginManager.deployInstallPlugin(args.get(0).toString(), args.subList(1, args.size())));
+  }
+
+  protected void redeploy(SolrPluginManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
+    System.out.println(pluginManager.deployUpdatePlugin(args.get(0).toString(), args.subList(1, args.size())));
   }
 
   protected void update(SolrPluginManager pluginManager, SolrUpdateManager updateManager) throws PluginException {

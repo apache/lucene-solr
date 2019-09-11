@@ -47,18 +47,8 @@ public class SolrUpdateManager extends UpdateManager {
 
   @Override
   protected synchronized void initRepositoriesFromJson() {
-    //System.out.println("Read repositories from '"+repositoriesJson+"'"); //nocommit
-    /*try (StringReader reader = new StringReader(repositoriesJsonStr)) {
-      Gson gson = new GsonBuilder().create();
-      UpdateRepository[] items = gson.fromJson(reader, SolrUpdateRepository[].class);
-      repositories = Arrays.asList(items);
-    } catch (Exception e) {
-      e.printStackTrace();
-      repositories = Collections.emptyList();
-    }*/
     UpdateRepository items[] = new Gson().fromJson(this.repositoriesJsonStr, SolrUpdateRepository[].class);
     this.repositories = Arrays.asList(items);
-    //System.out.println(repositories);
   }
 
   @Override
@@ -113,15 +103,15 @@ public class SolrUpdateManager extends UpdateManager {
 
     String sha256 = uploadToBlobHandler(downloaded);
 
-    addOrUpdatePackage(op, id, version, sha256, repository, release.setupCommands, "some-signature");
-    return true; //PluginState.STARTED.equals(state);
+    addOrUpdatePackage(op, id, version, sha256, repository, release.setupCommands, release.updateCommands, "some-signature");
+    return true;
   }
 
   public static enum Operation {
     INSTALL, UPDATE;
   }
   
-  private boolean addOrUpdatePackage(Operation op, String id, String version, String sha256, String repository, List<String> setupCommands, String sig) {
+  private boolean addOrUpdatePackage(Operation op, String id, String version, String sha256, String repository, List<String> setupCommands, List<String> updateCommands, String sig) {
 
     String json;
     
@@ -135,7 +125,8 @@ public class SolrUpdateManager extends UpdateManager {
         + "version: '"+version+"', "
         + "repository: '"+repository+"', "
         + "sha256: '"+sha256+"', "
-        + "setup-commands: "+new Gson().toJson(setupCommands)
+        + "setup-commands: "+new Gson().toJson(setupCommands)+","
+        + "update-commands: "+new Gson().toJson(updateCommands)
         + "}}";
 
     try (CloseableHttpClient client = HttpClients.createDefault();) {

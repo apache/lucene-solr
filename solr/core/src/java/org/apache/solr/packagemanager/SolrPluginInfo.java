@@ -19,6 +19,9 @@ public class SolrPluginInfo extends PluginInfo {
     	@SerializedName("setup-commands")
         public List<String> setupCommands;
 
+      @SerializedName("update-commands")
+      public List<String> updateCommands;
+
         @Override
         public String toString() {
             return "SolrPluginRelease{" +
@@ -27,6 +30,7 @@ public class SolrPluginInfo extends PluginInfo {
                 ", requires='" + requires + '\'' +
                 ", url='" + url + '\'' +
                 ", setupCommand='" + setupCommands + '\'' +
+                ", updateCommand='" + updateCommands + '\'' +
                 ", sha512sum='" + sha512sum + '\'' +
                 '}';
         }

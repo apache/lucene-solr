@@ -8,4 +8,5 @@ public class SolrPackage {
 	public String repository;
 	public String sha256;
 	public List<String> setupCommands;
+  public List<String> updateCommands;
 }

@@ -75,7 +75,6 @@ public class SolrUpdateRepository extends DefaultUpdateRepository {
         	}
 
             for (PluginRelease r : p.releases) {
-            	System.out.println(r);
                 try {
                     r.url = new URL(getUrl(), r.url).toString();
                     if (r.date.getTime() == 0) {
