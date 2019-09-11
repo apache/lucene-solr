@@ -39,7 +39,7 @@ The plugin will by default require a valid JWT token for all traffic. If the `bl
 == Configuration Parameters
 
 //TODO: standard is not to put parameters in tables but use labeled lists instead
-[%header,format=csv,separator=;,cols="25%,55%,20%"]
+[%header,format=csv,separator=;,cols="25%,50%,25%"]
 |===
 Key                  ; Description                                             ; Default
 blockUnknown         ; Set to `false` to if you need to perform configuration through REST API or if you use an Authorization Plugin and only want certain paths protected. By default all requests will require a token  ; `true`
@@ -53,14 +53,14 @@ principalClaim       ; What claim id to pull principal from                    ;
 claimsMatch          ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ;
 adminUiScope         ; Define what scope is requested when logging in from Admin UI ; If not defined, the first scope from `scope` parameter is used
 redirectUris         ; Valid location(s) for redirect after external authentication. Takes a string or array of strings. Must be the base URL of Solr, e.g., https://solr1.example.com:8983/solr/ and must match the list of redirect URIs registered with the Identity Provider beforehand. ; Defaults to empty list, i.e., any node is assumed to be a valid redirect target.
-issuers              ; List of issuers (Identity providers) to  support. See below sub chapter for configuration syntax ;
+issuers              ; List of issuers (Identity providers) to  support. See section <<issuer-configuration,Issuer configuration>> for configuration syntax ;
 |===
 
 === Issuer configuration
 
 This plugin supports one or more token issuers (IdPs). Issuers are configured as a list of JSON objects under the `issuers` configuration key. The first issuer in the list is the "Primary Issuer", which is the one used for logging in to the Admin UI.
 
-[%header,format=csv,separator=;,cols="25%,55%,20%"]
+[%header,format=csv,separator=;,cols="25%,50%,25%"]
 |===
 Key                  ; Description                                             ; Default
 name                 ; A unique name of the issuer. Used to manipulate list through API. ;
@@ -68,7 +68,7 @@ wellKnownUrl         ; URL to an https://openid.net/specs/openid-connect-discove
 clientId             ; Client identifier for use with OpenID Connect. Required to authenticate with Admin UI. Needed for primary issuer only ;
 jwksUrl              ; A URL to a https://tools.ietf.org/html/rfc7517#section-5[JWKs] endpoint. Must use https protocol. Optionally an array of URLs in which case all public keys from all URLs will be consulted when validating signatures. ; Auto configured if `wellKnownUrl` is provided
 jwk                  ; As an alternative to `jwksUrl` you may provide a static JSON object containing the public key(s) of the issuer. The format is either JWK or JWK Set, see https://tools.ietf.org/html/rfc7517#appendix-A[RFC7517] for examples. ;
-iss                  ; Validates that the `iss` (issuer) claim equals this string        ; Auto configured if `wellKnownUrl` is provided
+iss                  ; Unique issuer id as configured on the IdP. Incoming tokens must have a matching `iss` claim. Also used to resolve issuer when multiple issuers configured.      ; Auto configured if `wellKnownUrl` is provided
 aud                  ; Validates that the `aud` (audience) claim equals this string      ; Uses `clientId` is configured
 authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided
 |===
