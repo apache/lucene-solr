@@ -20,6 +20,13 @@
     "version": {
       "type": "string",
       "description": "version of he package"
+    },
+    "setup-commands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Commands that are passed on to the config API to deploy this plugin"
     }
   },
   "required" : ["name","sha256"]

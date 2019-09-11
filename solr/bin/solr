@@ -1354,6 +1354,11 @@ if [[ "$SCRIPT_CMD" == "export" ]]; then
   exit $?
 fi
 
+if [[ "$SCRIPT_CMD" == "package" ]]; then
+  run_tool package $@
+  exit $?
+fi
+
 if [[ "$SCRIPT_CMD" == "auth" ]]; then
 
   VERBOSE=""
