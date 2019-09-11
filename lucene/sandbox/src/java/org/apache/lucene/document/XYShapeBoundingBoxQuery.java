@@ -20,6 +20,9 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.util.NumericUtils;
+
+import static  org.apache.lucene.geo.XYEncodingUtils.decode;
 
 /**
  * Finds all previously indexed cartesian shapes that intersect the specified bounding box.
@@ -41,7 +44,13 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
   @Override
   protected PointValues.Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                                         int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    return rectangle2D.relateRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    float minY = (float) decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    float minX = (float) decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    float maxY = (float) decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    float maxX = (float) decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+
+    // check internal node against query
+    return rectangle2D.relate(minX, maxX, minY, maxY);
   }
 
   /** returns true if the query matches the encoded triangle */
@@ -50,17 +59,17 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
     // decode indexed triangle
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    int aY = scratchTriangle.aY;
-    int aX = scratchTriangle.aX;
-    int bY = scratchTriangle.bY;
-    int bX = scratchTriangle.bX;
-    int cY = scratchTriangle.cY;
-    int cX = scratchTriangle.cX;
+    float aY = (float) decode(scratchTriangle.aY);
+    float aX = (float) decode(scratchTriangle.aX);
+    float bY = (float) decode(scratchTriangle.bY);
+    float bX = (float) decode(scratchTriangle.bX);
+    float cY = (float) decode(scratchTriangle.cY);
+    float cX = (float) decode(scratchTriangle.cX);
 
     switch (queryRelation) {
-      case INTERSECTS: return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
-      case WITHIN: return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
-      case DISJOINT: return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY) == false;
+      case INTERSECTS: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) != PointValues.Relation.CELL_OUTSIDE_QUERY;
+      case WITHIN: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) == PointValues.Relation.CELL_INSIDE_QUERY;
+      case DISJOINT: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) == PointValues.Relation.CELL_OUTSIDE_QUERY;
       default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
   }
