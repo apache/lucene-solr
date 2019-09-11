@@ -52,6 +52,20 @@
     <url-pattern>/index.html</url-pattern>
   </servlet-mapping>
 
+  <!-- Fullstory additions -->
+  <servlet>
+    <servlet-name>PrometheusMetrics</servlet-name>
+    <servlet-class>org.apache.solr.servlet.PrometheusMetricsServlet</servlet-class>
+  </servlet>
+  <!-- Fullstory additions -->
+
+  <!-- Fullstory additions -->
+  <servlet-mapping>
+    <servlet-name>PrometheusMetrics</servlet-name>
+    <url-pattern>/metrics</url-pattern>
+  </servlet-mapping>
+  <!-- Fullstory additions -->
+
   <mime-mapping>
     <extension>.xsl</extension>
     <!-- per http://www.w3.org/TR/2006/PR-xslt20-20061121/ -->
