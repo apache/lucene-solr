@@ -78,6 +78,60 @@ public class XYRectangle2D  {
     return PointValues.Relation.CELL_OUTSIDE_QUERY;
   }
 
+  public EdgeTree.WithinRelation withinTriangle(float ax, float ay, boolean ab, float bx, float by, boolean bc, float cx, float cy, boolean ca) {
+    // Short cut, lines and points cannot contain a bbox
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      return EdgeTree.WithinRelation.DISJOINT;
+    }
+    // Compute bounding box of triangle
+    float tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
+    float tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
+    float tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
+    float tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
+    // Bounding boxes disjoint?
+    if (tMaxX < minX || tMinX > maxX || tMinY > maxY || tMaxY < minY) {
+      return EdgeTree.WithinRelation.DISJOINT;
+    }
+    // Points belong to the shape so if points are inside the rectangle then it cannot be within.
+    if (contains(ax, ay) || contains(bx, by) || contains(cx, cy)) {
+      return EdgeTree.WithinRelation.NOTWITHIN;
+    }
+    // If any of the edges intersects an edge belonging to the shape then it cannot be within.
+    EdgeTree.WithinRelation relation = EdgeTree.WithinRelation.DISJOINT;
+    if (edgesIntersect(ax, ay, bx, by) == true) {
+      if (ab == true) {
+        return EdgeTree.WithinRelation.NOTWITHIN;
+      } else {
+        relation = EdgeTree.WithinRelation.CANDIDATE;
+      }
+    }
+    if (edgesIntersect(bx, by, cx, cy) == true) {
+      if (bc == true) {
+        return EdgeTree.WithinRelation.NOTWITHIN;
+      } else {
+        relation = EdgeTree.WithinRelation.CANDIDATE;
+      }
+    }
+
+    if (edgesIntersect(cx, cy, ax, ay) == true) {
+      if (ca == true) {
+        return EdgeTree.WithinRelation.NOTWITHIN;
+      } else {
+        relation = EdgeTree.WithinRelation.CANDIDATE;
+      }
+    }
+    // If any of the rectangle edges crosses a triangle edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == EdgeTree.WithinRelation.CANDIDATE) {
+      return EdgeTree. WithinRelation.CANDIDATE;
+    }
+    // Check if shape is within the triangle
+    if (Tessellator.pointInTriangle(minX, minY, ax, ay, bx, by, cx, cy)) {
+      return EdgeTree.WithinRelation.CANDIDATE;
+    }
+    return relation;
+  }
+
   private  boolean edgesIntersect(float ax, float ay, float bx, float by) {
     // shortcut: if edge is a point (occurs w/ Line shapes); simply check bbox w/ point
     if (ax == bx && ay == by) {

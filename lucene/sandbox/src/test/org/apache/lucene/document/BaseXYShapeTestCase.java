@@ -124,6 +124,15 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   protected Encoder getEncoder() {
     return new Encoder() {
       @Override
+      double decodeX(int encoded) {
+        return decode(encoded);
+      }
+
+      @Override
+      double decodeY(int encoded) {
+        return decode(encoded);
+      }
+      @Override
       double quantizeX(double raw) {
         return decode(encode(raw));
       }

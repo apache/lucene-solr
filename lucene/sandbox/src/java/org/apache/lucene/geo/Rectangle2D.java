@@ -156,6 +156,66 @@ public class Rectangle2D {
     return false;
   }
 
+  /** Returns the Within relation to the provided triangle */
+  public EdgeTree.WithinRelation withinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca) {
+    if (this.crossesDateline() == true) {
+      throw new IllegalArgumentException("withinTriangle is not supported for rectangles crossing the date line");
+    }
+    // Short cut, lines and points cannot contain a bbox
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      return EdgeTree.WithinRelation.DISJOINT;
+    }
+    // Compute bounding box of triangle
+    int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
+    int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
+    int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
+    int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
+    // Bounding boxes disjoint?
+    if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY)) {
+      return EdgeTree.WithinRelation.DISJOINT;
+    }
+    // Points belong to the shape so if points are inside the rectangle then it cannot be within.
+    if (bboxContainsPoint(ax, ay, minX, maxX, minY, maxY) ||
+        bboxContainsPoint(bx, by, minX, maxX, minY, maxY) ||
+        bboxContainsPoint(cx, cy, minX, maxX, minY, maxY)) {
+      return EdgeTree.WithinRelation.NOTWITHIN;
+    }
+    // If any of the edges intersects an edge belonging to the shape then it cannot be within.
+    EdgeTree.WithinRelation relation = EdgeTree.WithinRelation.DISJOINT;
+    if (edgeIntersectsBox(ax, ay, bx, by, minX, maxX, minY, maxY) == true) {
+      if (ab == true) {
+        return EdgeTree.WithinRelation.NOTWITHIN;
+      } else {
+        relation = EdgeTree.WithinRelation.CANDIDATE;
+      }
+    }
+    if (edgeIntersectsBox(bx, by, cx, cy, minX, maxX, minY, maxY) == true) {
+      if (bc == true) {
+        return EdgeTree.WithinRelation.NOTWITHIN;
+      } else {
+        relation = EdgeTree.WithinRelation.CANDIDATE;
+      }
+    }
+
+    if (edgeIntersectsBox(cx, cy, ax, ay, minX, maxX, minY, maxY) == true) {
+      if (ca == true) {
+        return EdgeTree.WithinRelation.NOTWITHIN;
+      } else {
+        relation = EdgeTree.WithinRelation.CANDIDATE;
+      }
+    }
+    // If any of the rectangle edges crosses a triangle edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == EdgeTree.WithinRelation.CANDIDATE) {
+      return EdgeTree.WithinRelation.CANDIDATE;
+    }
+    // Check if shape is within the triangle
+    if (Tessellator.pointInTriangle(minX, minY, ax, ay, bx, by, cx, cy)) {
+      return EdgeTree.WithinRelation.CANDIDATE;
+    }
+    return relation;
+  }
+
   /** Checks if the rectangle contains the provided triangle **/
   public boolean containsTriangle(int ax, int ay, int bx, int by, int cx, int cy) {
     if (this.crossesDateline() == true) {

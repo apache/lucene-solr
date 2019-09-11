@@ -76,6 +76,9 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return false;
+      }
       Point p = (Point)shape;
       double lat = encoder.quantizeY(p.y);
       double lon = encoder.quantizeX(p.x);
@@ -101,6 +104,9 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
     }
 
     private boolean testPoint(EdgeTree tree, Point p) {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return false;
+      }
       double lat = encoder.quantizeY(p.y);
       double lon = encoder.quantizeX(p.x);
       // for consistency w/ the query we test the point as a triangle

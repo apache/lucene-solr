@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -62,9 +63,11 @@ abstract class ShapeQuery extends Query {
   /** field name */
   final String field;
   /** query relation
-   * disjoint: {@code CELL_OUTSIDE_QUERY}
-   * intersects: {@code CELL_CROSSES_QUERY},
-   * within: {@code CELL_WITHIN_QUERY} */
+   * disjoint: {@link QueryRelation#DISJOINT},
+   * intersects: {@link QueryRelation#INTERSECTS},
+   * within: {@link QueryRelation#DISJOINT},
+   * contains: {@link QueryRelation#CONTAINS}
+   * */
   final QueryRelation queryRelation;
 
   protected ShapeQuery(String field, final QueryRelation queryType) {
@@ -85,6 +88,9 @@ abstract class ShapeQuery extends Query {
 
   /** returns true if the provided triangle matches the query */
   protected abstract boolean queryMatches(byte[] triangle, ShapeField.DecodedTriangle scratchTriangle, ShapeField.QueryRelation queryRelation);
+
+  /** Return the within relationship between the query and the indexed shape. See {@link EdgeTree.WithinRelation} */
+  protected abstract EdgeTree.WithinRelation queryWithin(byte[] triangle, ShapeField.DecodedTriangle scratchTriangle);
 
   /** relates a range of triangles (internal node) to the query */
   protected Relation relateRangeToQuery(byte[] minTriangle, byte[] maxTriangle, QueryRelation queryRelation) {
@@ -133,11 +139,10 @@ abstract class ShapeQuery extends Query {
 
         final Weight weight = this;
         final Relation rel = relateRangeToQuery(values.getMinPackedValue(), values.getMaxPackedValue(), queryRelation);
-        if (rel == Relation.CELL_OUTSIDE_QUERY) {
+        if (rel == Relation.CELL_OUTSIDE_QUERY || (rel == Relation.CELL_INSIDE_QUERY && queryRelation == QueryRelation.CONTAINS)) {
           // no documents match the query
           return null;
-        }
-        else if (values.getDocCount() == reader.maxDoc() && rel == Relation.CELL_INSIDE_QUERY) {
+        } else if (values.getDocCount() == reader.maxDoc() && rel == Relation.CELL_INSIDE_QUERY) {
           // all documents match the query
           return new ScorerSupplier() {
             @Override
@@ -152,6 +157,7 @@ abstract class ShapeQuery extends Query {
           };
         } else {
           if (queryRelation != QueryRelation.INTERSECTS
+              && queryRelation != QueryRelation.CONTAINS
               && hasAnyHits(query, values) == false) {
             // First we check if we have any hits so we are fast in the adversarial case where
             // the shape does not match any documents and we are in the dense case
@@ -227,6 +233,7 @@ abstract class ShapeQuery extends Query {
         case INTERSECTS: return getSparseScorer(reader, weight, boost, scoreMode);
         case WITHIN:
         case DISJOINT: return getDenseScorer(reader, weight, boost, scoreMode);
+        case CONTAINS: return getContainsDenseScorer(reader, weight, boost, scoreMode);
         default: throw new IllegalArgumentException("Unsupported query type :[" + query.getQueryRelation() + "]");
       }
     }
@@ -275,6 +282,17 @@ abstract class ShapeQuery extends Query {
         values.intersect(getShallowInverseDenseVisitor(query, result));
       }
       assert cost[0] > 0;
+      final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
+      return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
+    }
+
+    private Scorer getContainsDenseScorer(LeafReader reader, Weight weight, final float boost, ScoreMode scoreMode) throws IOException {
+      final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+      final long[] cost = new long[]{0};
+      // Get potential  documents.
+      final FixedBitSet excluded = new FixedBitSet(reader.maxDoc());
+      values.intersect(getContainsDenseVisitor(query, result, excluded, cost));
+      result.andNot(excluded);
       final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
@@ -378,6 +396,48 @@ abstract class ShapeQuery extends Query {
           if (matches) {
             visit(docID);
           } else {
+            excluded.set(docID);
+          }
+        }
+      }
+
+      @Override
+      public Relation compare(byte[] minTriangle, byte[] maxTriangle) {
+        return query.relateRangeToQuery(minTriangle, maxTriangle, query.getQueryRelation());
+      }
+    };
+  }
+
+  /** create a visitor that adds documents that match the query using a dense bitset; used with CONTAINS */
+  private static IntersectVisitor getContainsDenseVisitor(final ShapeQuery query, final FixedBitSet result, final FixedBitSet excluded, final long[] cost) {
+    return new IntersectVisitor() {
+      final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
+
+      @Override
+      public void visit(int docID) {
+        excluded.set(docID);
+      }
+
+      @Override
+      public void visit(int docID, byte[] t) {
+        EdgeTree.WithinRelation within = query.queryWithin(t, scratchTriangle);
+        if (within == EdgeTree.WithinRelation.CANDIDATE) {
+          cost[0]++;
+          result.set(docID);
+        } else if (within == EdgeTree.WithinRelation.NOTWITHIN) {
+          excluded.set(docID);
+        }
+      }
+
+      @Override
+      public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
+        EdgeTree.WithinRelation within = query.queryWithin(t, scratchTriangle);
+        int docID;
+        while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          if (within == EdgeTree.WithinRelation.CANDIDATE) {
+            cost[0]++;
+            result.set(docID);
+          } else if (within == EdgeTree.WithinRelation.NOTWITHIN) {
             excluded.set(docID);
           }
         }

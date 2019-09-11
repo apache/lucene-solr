@@ -17,6 +17,7 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues;
@@ -73,6 +74,22 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
       default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
   }
+
+  @Override
+  protected EdgeTree.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+    // decode indexed triangle
+    ShapeField.decodeTriangle(t, scratchTriangle);
+
+    float aY = (float) decode(scratchTriangle.aY);
+    float aX = (float) decode(scratchTriangle.aX);
+    float bY = (float) decode(scratchTriangle.bY);
+    float bX = (float) decode(scratchTriangle.bX);
+    float cY = (float) decode(scratchTriangle.cY);
+    float cX = (float) decode(scratchTriangle.cX);
+
+    return rectangle2D.withinTriangle(aX, aY, scratchTriangle.ab, bX, bY, scratchTriangle.bc, cX, cY, scratchTriangle.ca);
+  }
+
 
   @Override
   public boolean equals(Object o) {

@@ -32,7 +32,8 @@ public class TestLine2D extends LuceneTestCase {
     int by = GeoEncodingUtils.encodeLatitude(5);
     int cx = GeoEncodingUtils.encodeLongitude(5);
     int cy = GeoEncodingUtils.encodeLatitude(4);
-    assertEquals(Relation.CELL_OUTSIDE_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));;
+    assertEquals(Relation.CELL_OUTSIDE_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(EdgeTree.WithinRelation.DISJOINT, line2D.componentRelateWithinTriangle(ax, ay, true, bx, by , true, cx, cy, true));
   }
 
   public void testTriangleIntersects() {
@@ -45,6 +46,7 @@ public class TestLine2D extends LuceneTestCase {
     int cx = GeoEncodingUtils.encodeLongitude(0);
     int cy = GeoEncodingUtils.encodeLatitude(1);
     assertEquals(Relation.CELL_CROSSES_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(EdgeTree.WithinRelation.NOTWITHIN, line2D.componentRelateWithinTriangle(ax, ay, true, bx, by , true, cx, cy, true));
   }
 
   public void testTriangleContains() {
@@ -57,6 +59,7 @@ public class TestLine2D extends LuceneTestCase {
     int cx = GeoEncodingUtils.encodeLongitude(4);
     int cy = GeoEncodingUtils.encodeLatitude(30);
     assertEquals(Relation.CELL_CROSSES_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(EdgeTree.WithinRelation.CANDIDATE, line2D.componentRelateWithinTriangle(ax, ay, true, bx, by , true, cx, cy, true));
   }
 
   public void testRandomTriangles() {
@@ -79,6 +82,9 @@ public class TestLine2D extends LuceneTestCase {
       Relation r = line2D.relate(tMinY, tMaxY, tMinX, tMaxX);
       if (r == Relation.CELL_OUTSIDE_QUERY) {
         assertEquals(Relation.CELL_OUTSIDE_QUERY, line2D.componentRelateTriangle(ax, ay, bx, by, cx, cy));
+        assertEquals(EdgeTree.WithinRelation.DISJOINT, line2D.componentRelateWithinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+      } else if (line2D.componentRelateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_INSIDE_QUERY) {
+        assertNotEquals(EdgeTree.WithinRelation.CANDIDATE, line2D.componentRelateWithinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       }
     }
   }

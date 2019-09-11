@@ -23,6 +23,7 @@ import java.util.Set;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -60,7 +61,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   protected static final String FIELD_NAME = "shape";
   public final Encoder ENCODER;
   public final Validator VALIDATOR;
-  protected static final QueryRelation[] POINT_LINE_RELATIONS = {QueryRelation.INTERSECTS, QueryRelation.DISJOINT};
+  protected static final QueryRelation[] POINT_LINE_RELATIONS = {QueryRelation.INTERSECTS, QueryRelation.DISJOINT, QueryRelation.CONTAINS};
 
   public BaseShapeTestCase() {
     ENCODER = getEncoder();
@@ -312,17 +313,25 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          // check quantized poly against quantized query
-          if (qMinLon > qMaxLon && rectCrossesDateline(rect) == false) {
-            // if the quantization creates a false dateline crossing (because of encodeCeil):
-            // then do not use encodeCeil
-            qMinLon = ENCODER.quantizeX(rectMinX(rect));
-          }
-
           if (qMinLat > qMaxLat) {
             qMinLat = ENCODER.quantizeY(rectMaxY(rect));
           }
-          expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, qMaxLon, shapes[id]);
+          if (queryRelation == QueryRelation.CONTAINS && rectCrossesDateline(rect)) {
+            //For contains we need to call the validator for each section. It is only expected
+            //if both sides are contained.
+            expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, GeoUtils.MAX_LON_INCL, shapes[id]);
+            if (expected) {
+              expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(qMinLat, qMaxLat, GeoUtils.MIN_LON_INCL, qMaxLon, shapes[id]);
+            }
+          } else {
+            // check quantized poly against quantized query
+            if (qMinLon > qMaxLon && rectCrossesDateline(rect) == false) {
+              // if the quantization creates a false dateline crossing (because of encodeCeil):
+              // then do not use encodeCeil
+              qMinLon = ENCODER.quantizeX(rectMinX(rect));
+            }
+            expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, qMaxLon, shapes[id]);
+          }
         }
 
         if (hits.get(docID) != expected) {
@@ -541,6 +550,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   protected abstract Validator getValidator();
 
   protected static abstract class Encoder {
+    abstract double decodeX(int encoded);
+    abstract double decodeY(int encoded);
     abstract double quantizeX(double raw);
     abstract double quantizeXCeil(double raw);
     abstract double quantizeY(double raw);

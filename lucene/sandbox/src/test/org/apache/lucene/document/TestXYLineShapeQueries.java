@@ -80,27 +80,48 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
     public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
       XYLine line = (XYLine)shape;
       XYRectangle2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
+      EdgeTree.WithinRelation withinRelation = EdgeTree.WithinRelation.DISJOINT;
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
         double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
-        Relation r = rectangle2D.relateTriangle((float)qTriangle[1], (float)qTriangle[0], (float)qTriangle[3], (float)qTriangle[2], (float)qTriangle[5], (float)qTriangle[4]);
-        if (queryRelation == QueryRelation.DISJOINT) {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return false;
-        } else if (queryRelation == QueryRelation.WITHIN) {
-          if (r != Relation.CELL_INSIDE_QUERY) return false;
+        if (queryRelation == QueryRelation.CONTAINS) {
+          EdgeTree.WithinRelation relation = rectangle2D.withinTriangle((float) qTriangle[1], (float) qTriangle[0], true,
+                                                                        (float) qTriangle[3], (float) qTriangle[2], true,
+                                                                        (float) qTriangle[5], (float) qTriangle[4], true);
+          if (relation == EdgeTree.WithinRelation.NOTWITHIN) {
+            return false;
+          } else if (relation == EdgeTree.WithinRelation.CANDIDATE) {
+            withinRelation = EdgeTree.WithinRelation.CANDIDATE;
+          }
         } else {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return true;
+          Relation r = rectangle2D.relateTriangle((float) qTriangle[1], (float) qTriangle[0], (float) qTriangle[3], (float) qTriangle[2], (float) qTriangle[5], (float) qTriangle[4]);
+          if (queryRelation == QueryRelation.DISJOINT) {
+            if (r != Relation.CELL_OUTSIDE_QUERY) return false;
+          } else if (queryRelation == QueryRelation.WITHIN) {
+            if (r != Relation.CELL_INSIDE_QUERY) return false;
+          } else {
+            if (r != Relation.CELL_OUTSIDE_QUERY) return true;
+          }
         }
+      }
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return withinRelation == EdgeTree.WithinRelation.CANDIDATE;
       }
       return queryRelation != QueryRelation.INTERSECTS;
     }
 
     @Override
     public boolean testLineQuery(Line2D line2d, Object shape) {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return testWithinLine(line2d, (XYLine) shape);
+      }
       return testLine(line2d, (XYLine) shape);
     }
 
     @Override
     public boolean testPolygonQuery(Object poly2d, Object shape) {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return testWithinLine((XYPolygon2D) poly2d, (XYLine) shape);
+      }
       return testLine((XYPolygon2D)poly2d, (XYLine) shape);
     }
 
@@ -118,6 +139,20 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
         }
       }
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
+    }
+
+    private boolean testWithinLine(EdgeTree tree, XYLine line) {
+      EdgeTree.WithinRelation answer = EdgeTree.WithinRelation.DISJOINT;
+      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
+        double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
+        EdgeTree.WithinRelation relation = tree.withinTriangle(qTriangle[1], qTriangle[0], true, qTriangle[3], qTriangle[2], true, qTriangle[5], qTriangle[4], true);
+        if (relation == EdgeTree.WithinRelation.NOTWITHIN) {
+          return false;
+        } else if (relation == EdgeTree.WithinRelation.CANDIDATE) {
+          answer = EdgeTree.WithinRelation.CANDIDATE;
+        }
+      }
+      return answer == EdgeTree.WithinRelation.CANDIDATE;
     }
   }
 }

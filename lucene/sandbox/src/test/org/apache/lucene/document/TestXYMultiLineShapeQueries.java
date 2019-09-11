@@ -79,13 +79,13 @@ public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
         boolean b = LINEVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, l);
         if (b == true && queryRelation == ShapeField.QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation == ShapeField.QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == ShapeField.QueryRelation.WITHIN) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
-      return queryRelation != ShapeField.QueryRelation.INTERSECTS;
+      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
     }
 
     @Override
@@ -95,13 +95,13 @@ public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
         boolean b = LINEVALIDATOR.testLineQuery(query, l);
         if (b == true && queryRelation == ShapeField.QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation == ShapeField.QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == ShapeField.QueryRelation.WITHIN) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
-      return queryRelation != ShapeField.QueryRelation.INTERSECTS;
+      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
     }
 
     @Override
@@ -111,13 +111,13 @@ public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
         boolean b = LINEVALIDATOR.testPolygonQuery(query, l);
         if (b == true && queryRelation == ShapeField.QueryRelation.INTERSECTS) {
           return true;
-        } else if (b == false && queryRelation == ShapeField.QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == ShapeField.QueryRelation.WITHIN) {
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
+        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
           return false;
         }
       }
-      return queryRelation != ShapeField.QueryRelation.INTERSECTS;
+      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
     }
   }
 
