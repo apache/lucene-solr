@@ -284,6 +284,10 @@ public class LRUQueryCache implements QueryCache, Accountable {
     assert key instanceof BoostQuery == false;
     assert key instanceof ConstantScoreQuery == false;
 
+    /*
+     * If the current query is already being asynchronously cached,
+     * do not trigger another cache operation
+     */
     if (inFlightAsyncLoadQueries.contains(key)) {
       throw new AsyncQueryLoadInProgressException(key.toString());
     }
@@ -393,9 +397,9 @@ public class LRUQueryCache implements QueryCache, Accountable {
       if (singleton != null) {
         onEviction(singleton);
       }
-      inFlightAsyncLoadQueries.remove(query);
     } finally {
       lock.unlock();
+      inFlightAsyncLoadQueries.remove(query);
     }
   }
 
