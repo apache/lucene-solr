@@ -34,7 +34,7 @@ The simplest possible `security.json` for registering the plugin without configu
 }
 ----
 
-The plugin will by default require a valid JWT token for all traffic. If the `blockUnknown` property is set to false as in the above example, it is possible to start configuring the plugin using REST API calls, which is further described below.
+The plugin will by default require a valid JWT token for all traffic. If the `blockUnknown` property is set to false as in the above example, it is possible to start configuring the plugin using unauthenticated REST API calls, which is further described in section <<editing-jwt-authentication-plugin-configuration,Editing JWT Authentication Plugin Configuration>>.
 
 == Configuration Parameters
 
