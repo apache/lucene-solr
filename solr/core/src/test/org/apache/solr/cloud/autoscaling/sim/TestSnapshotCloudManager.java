@@ -117,10 +117,12 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     for (String key : SnapshotCloudManager.REQUIRED_KEYS) {
       File src = new File(tmpDir, key + ".json");
       assertTrue(src.toString() + " doesn't exist", src.exists());
-      String data = IOUtils.toString(new FileInputStream(src), Charset.forName("UTF-8"));
-      assertFalse("empty data in " + src, data.trim().isEmpty());
-      for (String redactedName : redacted) {
-        assertFalse("redacted name " + redactedName + " found in " + src, data.contains(redactedName));
+      try (FileInputStream is = new FileInputStream(src)) {
+        String data = IOUtils.toString(is, Charset.forName("UTF-8"));
+        assertFalse("empty data in " + src, data.trim().isEmpty());
+        for (String redactedName : redacted) {
+          assertFalse("redacted name " + redactedName + " found in " + src, data.contains(redactedName));
+        }
       }
     }
   }
