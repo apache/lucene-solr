@@ -74,8 +74,8 @@ public class FloatPointNearestNeighbor {
     final PriorityQueue<NearestHit> hitQueue;
     final float[] origin;
     final private int dims;
-    double worstNearestDistanceSquared = Double.POSITIVE_INFINITY;
-    int worstNearestDistanceDoc =Integer.MAX_VALUE;
+    double bottomNearestDistanceSquared = Double.POSITIVE_INFINITY;
+    int bottomNearestDistanceDoc = Integer.MAX_VALUE;
 
     public NearestVisitor(PriorityQueue<NearestHit> hitQueue, int topN, float[] origin) {
       this.hitQueue = hitQueue;
@@ -100,7 +100,7 @@ public class FloatPointNearestNeighbor {
       for (int d = 0, offset = 0 ; d < dims ; ++d, offset += Float.BYTES) {
         double diff = (double) FloatPoint.decodeDimension(packedValue, offset) - (double) origin[d];
         distanceSquared += diff * diff;
-        if (distanceSquared > worstNearestDistanceSquared) {
+        if (distanceSquared > bottomNearestDistanceSquared) {
           return;
         }
       }
@@ -110,7 +110,7 @@ public class FloatPointNearestNeighbor {
       int fullDocID = curDocBase + docID;
 
       if (hitQueue.size() == topN) { // queue already full
-        if (distanceSquared == worstNearestDistanceSquared && fullDocID > worstNearestDistanceDoc) {
+        if (distanceSquared == bottomNearestDistanceSquared && fullDocID > bottomNearestDistanceDoc) {
           return;
         }
         NearestHit bottom = hitQueue.poll();
@@ -118,7 +118,7 @@ public class FloatPointNearestNeighbor {
         bottom.docID = fullDocID;
         bottom.distanceSquared = distanceSquared;
         hitQueue.offer(bottom);
-        updateWorstNearestDistance();
+        updateBottomNearestDistance();
           // System.out.println("      ** keep1, now bottom=" + bottom);
       } else {
         NearestHit hit = new NearestHit();
@@ -126,21 +126,21 @@ public class FloatPointNearestNeighbor {
         hit.distanceSquared = distanceSquared;
         hitQueue.offer(hit);
         if (hitQueue.size() == topN) {
-          updateWorstNearestDistance();
+          updateBottomNearestDistance();
         }
         // System.out.println("      ** keep2, new addition=" + hit);
       }
     }
 
-    private void updateWorstNearestDistance() {
-      NearestHit newBottom =  hitQueue.peek();
-      worstNearestDistanceSquared = newBottom.distanceSquared;
-      worstNearestDistanceDoc = newBottom.docID;
+    private void updateBottomNearestDistance() {
+      NearestHit newBottom = hitQueue.peek();
+      bottomNearestDistanceSquared = newBottom.distanceSquared;
+      bottomNearestDistanceDoc = newBottom.docID;
     }
 
     @Override
     public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-      if (hitQueue.size() == topN && pointToRectangleDistanceSquared(minPackedValue, maxPackedValue, origin, worstNearestDistanceSquared) == Double.POSITIVE_INFINITY) {
+      if (hitQueue.size() == topN && pointToRectangleDistanceSquared(minPackedValue, maxPackedValue, origin) > bottomNearestDistanceSquared) {
         return PointValues.Relation.CELL_OUTSIDE_QUERY;
       }
       return PointValues.Relation.CELL_CROSSES_QUERY;
@@ -193,14 +193,14 @@ public class FloatPointNearestNeighbor {
       states.add(state);
 
       cellQueue.offer(new Cell(state.index, i, reader.getMinPackedValue(), reader.getMaxPackedValue(),
-          pointToRectangleDistanceSquared(minPackedValue, maxPackedValue, origin, visitor.worstNearestDistanceSquared)));
+          pointToRectangleDistanceSquared(minPackedValue, maxPackedValue, origin)));
     }
 
     while (cellQueue.size() > 0) {
       Cell cell = cellQueue.poll();
       // System.out.println("  visit " + cell);
 
-      if (cell.distanceSquared > visitor.worstNearestDistanceSquared) {
+      if (cell.distanceSquared > visitor.bottomNearestDistanceSquared) {
         break;
       }
 
@@ -227,8 +227,8 @@ public class FloatPointNearestNeighbor {
         System.arraycopy(splitValue.bytes, splitValue.offset, splitPackedValue, splitDim * bytesPerDim, bytesPerDim);
 
         cell.index.pushLeft();
-        double distanceLeft = pointToRectangleDistanceSquared(cell.minPacked, splitPackedValue, origin, visitor.worstNearestDistanceSquared);
-        if (distanceLeft != Double.POSITIVE_INFINITY) {
+        double distanceLeft = pointToRectangleDistanceSquared(cell.minPacked, splitPackedValue, origin);
+        if (distanceLeft <= visitor.bottomNearestDistanceSquared) {
           cellQueue.offer(new Cell(cell.index, cell.readerIndex, cell.minPacked, splitPackedValue, distanceLeft));
         }
 
@@ -236,11 +236,10 @@ public class FloatPointNearestNeighbor {
         System.arraycopy(splitValue.bytes, splitValue.offset, splitPackedValue, splitDim * bytesPerDim, bytesPerDim);
 
         newIndex.pushRight();
-        double distanceRight = pointToRectangleDistanceSquared(splitPackedValue, cell.maxPacked, origin, visitor.worstNearestDistanceSquared);
-        if (distanceRight != Double.POSITIVE_INFINITY) {
+        double distanceRight = pointToRectangleDistanceSquared(splitPackedValue, cell.maxPacked, origin);
+        if (distanceRight <= visitor.bottomNearestDistanceSquared) {
           cellQueue.offer(new Cell(newIndex, cell.readerIndex, splitPackedValue, cell.maxPacked, distanceRight));
         }
-
       }
     }
 
@@ -254,32 +253,23 @@ public class FloatPointNearestNeighbor {
     return hits;
   }
 
-  private static double pointToRectangleDistanceSquared(byte[] minPackedValue, byte[] maxPackedValue, float[] value, double worstNearestDistanceSquare) {
+  private static double pointToRectangleDistanceSquared(byte[] minPackedValue, byte[] maxPackedValue, float[] value) {
     double sumOfSquaredDiffs = 0.0d;
     for (int i = 0, offset = 0 ; i < value.length ; ++i, offset += Float.BYTES) {
       double min = FloatPoint.decodeDimension(minPackedValue, offset);
       if (value[i] < min) {
         double diff = min - (double)value[i];
         sumOfSquaredDiffs += diff * diff;
-        if (worstNearestDistanceSquare < sumOfSquaredDiffs) {
-          return Double.POSITIVE_INFINITY;
-        }
         continue;
       }
       double max = FloatPoint.decodeDimension(maxPackedValue, offset);
       if (value[i] > max) {
         double diff =  max - (double)value[i];
         sumOfSquaredDiffs += diff * diff;
-        if (worstNearestDistanceSquare < sumOfSquaredDiffs) {
-          return Double.POSITIVE_INFINITY;
-        }
       }
-
     }
     return sumOfSquaredDiffs;
   }
-  
-
 
   public static TopFieldDocs nearest(IndexSearcher searcher, String field, int topN, float... origin) throws IOException {
     if (topN < 1) {
