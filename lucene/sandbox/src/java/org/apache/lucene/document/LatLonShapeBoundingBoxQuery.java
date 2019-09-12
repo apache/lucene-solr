@@ -58,9 +58,6 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
     int cY = scratchTriangle.cY;
     int cX = scratchTriangle.cX;
 
-    if (queryRelation == QueryRelation.WITHIN) {
-      return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
-    }
     switch (queryRelation) {
       case INTERSECTS: return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
       case WITHIN: return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
