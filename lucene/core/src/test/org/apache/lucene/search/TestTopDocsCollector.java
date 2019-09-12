@@ -128,7 +128,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(reader, service);
 
     CollectorManager collectorManager = TopScoreDocCollector.createSharedManager(numResults,
-        null, Integer.MAX_VALUE);
+        null, thresHold);
 
     TopDocs tdc = (TopDocs) searcher.search(q, collectorManager);
 
