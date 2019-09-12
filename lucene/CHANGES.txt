@@ -133,6 +133,8 @@ Improvements
 * LUCENE-8964: Fix geojson shape parsing on string arrays in properties
   (Alexander Reelsen)
 
+* LUCENE-8976: Use exact distance between point and bounding rectangle in FloatPointNearestNeighbor. (Ignacio Vera)
+
 Optimizations
 
 * LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
