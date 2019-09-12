@@ -27,6 +27,7 @@ import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
 
 import static org.apache.lucene.geo.XYEncodingUtils.decode;
 import static org.apache.lucene.geo.XYEncodingUtils.encode;
@@ -97,6 +98,34 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
     return false;
   }
 
+  public void testBoxQueryEqualsAndHashcode() {
+    XYRectangle rectangle = ShapeTestUtil.nextBox();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    String fieldName = "foo";
+    Query q1 = newRectQuery(fieldName, queryRelation, rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY);
+    Query q2 = newRectQuery(fieldName, queryRelation, rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newRectQuery("bar", queryRelation, rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY);
+    QueryUtils.checkUnequal(q1, q3);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    Query q4 = newRectQuery(fieldName, newQueryRelation, rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    //different shape
+    XYRectangle newRectangle = ShapeTestUtil.nextBox();
+    Query q5 = newRectQuery(fieldName, queryRelation, newRectangle.minX, newRectangle.maxX, newRectangle.minY, newRectangle.maxY);
+    if (rectangle.equals(newRectangle)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
+  }
+
   /** use {@link ShapeTestUtil#nextPolygon()} to create a random line; TODO: move to GeoTestUtil */
   @Override
   public XYLine nextLine() {
@@ -115,9 +144,65 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
     return new XYLine(x, y);
   }
 
+  public void testLineQueryEqualsAndHashcode() {
+    XYLine line = nextLine();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), POINT_LINE_RELATIONS);
+    String fieldName = "foo";
+    Query q1 = newLineQuery(fieldName, queryRelation, line);
+    Query q2 = newLineQuery(fieldName, queryRelation, line);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newLineQuery("bar", queryRelation, line);
+    QueryUtils.checkUnequal(q1, q3);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), POINT_LINE_RELATIONS);
+    Query q4 = newLineQuery(fieldName, newQueryRelation, line);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    //different shape
+    XYLine newLine = nextLine();
+    Query q5 = newLineQuery(fieldName, queryRelation, newLine);
+    if (line.equals(newLine)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
+  }
+
   @Override
   protected XYPolygon nextPolygon() {
     return ShapeTestUtil.nextPolygon();
+  }
+
+  public void testPolygonQueryEqualsAndHashcode() {
+    XYPolygon polygon = nextPolygon();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    String fieldName = "foo";
+    Query q1 = newPolygonQuery(fieldName, queryRelation, polygon);
+    Query q2 = newPolygonQuery(fieldName, queryRelation, polygon);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newPolygonQuery("bar", queryRelation, polygon);
+    QueryUtils.checkUnequal(q1, q3);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    Query q4 = newPolygonQuery(fieldName, newQueryRelation, polygon);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    //different shape
+    XYPolygon newPolygon = nextPolygon();
+    Query q5 = newPolygonQuery(fieldName, queryRelation, newPolygon);
+    if (polygon.equals(newPolygon)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
   }
 
   @Override

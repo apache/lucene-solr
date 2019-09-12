@@ -135,8 +135,8 @@ public class XYRectangle2D  {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof Rectangle2D)) return false;
-    Rectangle2D that = (Rectangle2D) o;
+    if (!(o instanceof XYRectangle2D)) return false;
+    XYRectangle2D that = (XYRectangle2D) o;
     return minX == that.minX &&
         maxX == that.maxX &&
         minY == that.minY &&
