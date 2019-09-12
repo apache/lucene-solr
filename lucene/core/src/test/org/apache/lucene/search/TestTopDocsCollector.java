@@ -29,9 +29,15 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
 
@@ -114,7 +120,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     return tdc;
   }
 
-  private TopDocs doConcurrentSearchWithThreshold(int numResults, int thresHold) throws IOException {
+  private TopDocs doConcurrentSearchWithThreshold(int numResults, int thresHold, IndexReader reader) throws IOException {
     Query q = new MatchAllDocsQuery();
     ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>(),
@@ -339,10 +345,52 @@ public class TestTopDocsCollector extends LuceneTestCase {
     w.close();
 
     TopDocsCollector collector = doSearchWithThreshold(5, 10);
-    TopDocs tdc = doConcurrentSearchWithThreshold(5, 10);
+    TopDocs tdc = doConcurrentSearchWithThreshold(5, 10, reader);
     TopDocs tdc2 = collector.topDocs();
 
     CheckHits.checkEqual(q, tdc.scoreDocs, tdc2.scoreDocs);
+
+    reader.close();
+    dir.close();
+  }
+
+  public void testGlobalScore() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    try (LineFileDocs docs = new LineFileDocs(random())) {
+      int numDocs = atLeast(100);
+      for (int i = 0; i < numDocs; i++) {
+        writer.addDocument(docs.nextDoc());
+      }
+    }
+
+    IndexReader reader = writer.getReader();
+    writer.close();
+
+    final IndexSearcher s = newSearcher(reader);
+    Terms terms = MultiTerms.getTerms(reader, "body");
+    int termCount = 0;
+    TermsEnum termsEnum = terms.iterator();
+    while(termsEnum.next() != null) {
+      termCount++;
+    }
+    assertTrue(termCount > 0);
+
+    // Target ~10 terms to search:
+    double chance = 10.0 / termCount;
+    termsEnum = terms.iterator();
+    while(termsEnum.next() != null) {
+      if (random().nextDouble() <= chance) {
+        BytesRef term = BytesRef.deepCopyOf(termsEnum.term());
+        Query query = new TermQuery(new Term("body", term));
+
+        TopDocsCollector collector = doSearchWithThreshold(5, 10);
+        TopDocs tdc = doConcurrentSearchWithThreshold(5, 10, reader);
+        TopDocs tdc2 = collector.topDocs();
+
+        CheckHits.checkEqual(query, tdc.scoreDocs, tdc2.scoreDocs);
+      }
+    }
 
     reader.close();
     dir.close();
