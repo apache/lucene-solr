@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.geo;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 import org.apache.lucene.index.PointValues;
 
 import static org.apache.lucene.geo.GeoUtils.orient;
@@ -127,6 +130,23 @@ public class XYRectangle2D  {
       containsCount++;
     }
     return containsCount;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Rectangle2D)) return false;
+    Rectangle2D that = (Rectangle2D) o;
+    return minX == that.minX &&
+        maxX == that.maxX &&
+        minY == that.minY &&
+        maxY == that.maxY;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(minX, maxX, minY, maxY);
+    return result;
   }
 
   @Override

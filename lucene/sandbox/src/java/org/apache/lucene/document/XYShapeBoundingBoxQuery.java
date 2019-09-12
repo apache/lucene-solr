@@ -68,7 +68,7 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
 
     switch (queryRelation) {
       case INTERSECTS: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) != PointValues.Relation.CELL_OUTSIDE_QUERY;
-      case WITHIN: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) == PointValues.Relation.CELL_INSIDE_QUERY;
+      case WITHIN: return rectangle2D.contains(aX, aY) && rectangle2D.contains(bX, bY) && rectangle2D.contains(cX, cY);
       case DISJOINT: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) == PointValues.Relation.CELL_OUTSIDE_QUERY;
       default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
