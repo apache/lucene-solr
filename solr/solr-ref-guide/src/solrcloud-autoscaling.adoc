@@ -1,5 +1,5 @@
 = SolrCloud Autoscaling
-:page-children: solrcloud-autoscaling-overview, solrcloud-autoscaling-policy-preferences, solrcloud-autoscaling-triggers, solrcloud-autoscaling-trigger-actions, solrcloud-autoscaling-listeners, solrcloud-autoscaling-auto-add-replicas, solrcloud-autoscaling-fault-tolerance, solrcloud-autoscaling-api
+:page-children: solrcloud-autoscaling-overview, solrcloud-autoscaling-policy-preferences, solrcloud-autoscaling-triggers, solrcloud-autoscaling-trigger-actions, solrcloud-autoscaling-listeners, solrcloud-autoscaling-auto-add-replicas, solrcloud-autoscaling-fault-tolerance, solrcloud-autoscaling-api, migrate-to-policy-rule
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -32,3 +32,4 @@ The following sections describe the autoscaling features of SolrCloud:
 * <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,Automatically Adding Replicas>>
 * <<solrcloud-autoscaling-fault-tolerance.adoc#solrcloud-autoscaling-fault-tolerance,Autoscaling Fault Tolerance>>
 * <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,Autoscaling API>>
+* <<migrate-to-policy-rule.adoc#migrate-to-policy-rule, Migrating Rule-Based Replica Rules to Autoscaling Policies>>

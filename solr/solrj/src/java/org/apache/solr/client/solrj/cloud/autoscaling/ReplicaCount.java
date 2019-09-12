@@ -70,7 +70,18 @@ class ReplicaCount  implements MapWriter {
   }
 
   void increment(ReplicaInfo info) {
-    switch (info.getType()) {
+    increment(info.getType());
+  }
+
+  void increment(ReplicaCount count) {
+    nrt += count.nrt;
+    pull += count.pull;
+    tlog += count.tlog;
+  }
+
+
+  public void increment(Replica.Type type) {
+    switch (type) {
       case NRT:
         nrt++;
         break;
@@ -86,6 +97,16 @@ class ReplicaCount  implements MapWriter {
   }
 
   @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof ReplicaCount) {
+      ReplicaCount that = (ReplicaCount) obj;
+      return that.nrt == this.nrt && that.tlog == this.tlog && that.pull == this.pull;
+
+    }
+    return false;
+  }
+
+  @Override
   public String toString() {
     return Utils.toJSONString(this);
   }
@@ -96,5 +117,12 @@ class ReplicaCount  implements MapWriter {
 
   public void reset() {
     nrt = tlog = pull = 0;
+  }
+
+  public int delta(int expectedReplicaCount, Replica.Type type) {
+    if (type == Replica.Type.NRT) return (int) (nrt - expectedReplicaCount);
+    if (type == Replica.Type.PULL) return (int) (pull - expectedReplicaCount);
+    if (type == Replica.Type.TLOG) return (int) (tlog - expectedReplicaCount);
+    throw new RuntimeException("NO type");
   }
 }

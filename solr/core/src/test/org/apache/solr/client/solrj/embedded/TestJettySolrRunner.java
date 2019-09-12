@@ -19,8 +19,12 @@ package org.apache.solr.client.solrj.embedded;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.net.BindException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,11 +66,56 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
 
       assertTrue(Files.exists(coresDir.resolve("newcore").resolve("core.properties")));
 
-    }
-    finally {
+    } finally {
       runner.stop();
     }
 
   }
+
+
+  @SuppressWarnings("ThrowableNotThrown")
+  @Test
+  public void testLookForBindException() throws IOException {
+    Path solrHome = createTempDir();
+    Files.write(solrHome.resolve("solr.xml"), MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.getBytes(Charset.defaultCharset()));
+
+    JettyConfig config = JettyConfig.builder().build();
+
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.toString(), config);
+
+    Exception result;
+    BindException be = new BindException();
+    IOException test = new IOException();
+
+    result = jetty.lookForBindException(test);
+    assertEquals(result, test);
+
+    test = new IOException();
+    result = jetty.lookForBindException(test);
+    assertEquals(result, test);
+
+    test = new IOException((Throwable) null);
+    result = jetty.lookForBindException(test);
+    assertEquals(result, test);
+
+    test = new IOException() {
+      @Override
+      public synchronized Throwable getCause() {
+        return this;
+      }
+    };
+    result = jetty.lookForBindException(test);
+    assertEquals(result, test);
+
+    test = new IOException(new RuntimeException());
+    result = jetty.lookForBindException(test);
+    assertEquals(result, test);
+
+    test = new IOException(new RuntimeException(be));
+    result = jetty.lookForBindException(test);
+    assertEquals(result, be);
+
+  }
+
 
 }

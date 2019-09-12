@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,16 +34,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.sql.DataSource;
-
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.handler.dataimport.JdbcDataSource.ResultSetIterator;
-import static org.mockito.Mockito.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * <p>
@@ -96,7 +101,9 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
       System.setProperty("java.naming.factory.initial", sysProp);
     }
     super.tearDown();
-    reset(driver, dataSource, connection);
+    if (null != driver) {
+      reset(driver, dataSource, connection);
+    }
   }
 
   @Test
@@ -203,11 +210,9 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     SQLException sqlException = new SQLException("fake");
     when(dataSource.getConnection()).thenThrow(sqlException);
 
-    try {
-      jdbcDataSource.createConnectionFactory(context, props).call();
-    } catch (SQLException ex) {
-      assertSame(sqlException, ex);
-    }
+    SQLException ex = expectThrows(SQLException.class,
+        () -> jdbcDataSource.createConnectionFactory(context, props).call());
+    assertSame(sqlException, ex);
 
     verify(dataSource).getConnection();
   }
@@ -222,11 +227,10 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     when(dataSource.getConnection()).thenReturn(connection);
     doThrow(sqlException).when(connection).setAutoCommit(false);
 
-    try {
-      jdbcDataSource.createConnectionFactory(context, props).call();
-    } catch (DataImportHandlerException ex) {
-      assertSame(sqlException, ex.getCause());
-    }
+    DataImportHandlerException ex = expectThrows(DataImportHandlerException.class,
+        () -> jdbcDataSource.createConnectionFactory(context, props).call());
+    assertSame(sqlException, ex.getCause());
+
     verify(dataSource).getConnection();
     verify(connection).setAutoCommit(false);
     verify(connection).close();
@@ -247,12 +251,9 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
         .thenReturn(statement);
     when(statement.execute("query")).thenThrow(sqlException);
 
-    try {
-      jdbcDataSource.getData("query");
-      fail("exception expected");
-    } catch (DataImportHandlerException ex) {
-      assertSame(sqlException, ex.getCause());
-    }
+    DataImportHandlerException ex = expectThrows(DataImportHandlerException.class,
+        () -> jdbcDataSource.getData("query"));
+    assertSame(sqlException, ex.getCause());
 
     verify(dataSource).getConnection();
     verify(connection).setAutoCommit(false);

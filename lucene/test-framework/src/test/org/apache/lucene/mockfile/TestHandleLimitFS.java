@@ -54,12 +54,9 @@ public class TestHandleLimitFS extends MockFileSystemTestCase {
     }
     
     // now exceed
-    try {
-      Files.newOutputStream(Files.createTempFile(dir, null, null));
-      fail("didn't hit exception");
-    } catch (IOException e) {
-      assertTrue(e.getMessage().contains("Too many open files"));
-    }
+    IOException e = expectThrows(IOException.class, () ->
+        Files.newOutputStream(Files.createTempFile(dir, null, null)));
+    assertTrue(e.getMessage().contains("Too many open files"));
     
     IOUtils.close(toClose);
   }

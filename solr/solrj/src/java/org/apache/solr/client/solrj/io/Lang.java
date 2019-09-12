@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io;
 import org.apache.solr.client.solrj.io.eval.*;
 import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
-import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
@@ -36,14 +35,16 @@ public class Lang {
   public static void register(StreamFactory streamFactory) {
     streamFactory
         // source streams
-        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("search", SearchFacadeStream.class)
         .withFunctionName("facet", FacetStream.class)
+        .withFunctionName("facet2D", Facet2DStream.class)
         .withFunctionName("update", UpdateStream.class)
         .withFunctionName("jdbc", JDBCStream.class)
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("commit", CommitStream.class)
-        .withFunctionName("random", RandomStream.class)
+        .withFunctionName("random", RandomFacadeStream.class)
         .withFunctionName("knnSearch", KnnStream.class)
+
 
             // decorator streams
         .withFunctionName("merge", MergeStream.class)
@@ -80,6 +81,7 @@ public class Lang {
         .withFunctionName("significantTerms", SignificantTermsStream.class)
         .withFunctionName("cartesianProduct", CartesianProductStream.class)
         .withFunctionName("shuffle", ShuffleStream.class)
+        .withFunctionName("export", ShuffleStream.class)
         .withFunctionName("calc", CalculatorStream.class)
         .withFunctionName("eval", EvalStream.class)
         .withFunctionName("echo", EchoStream.class)
@@ -90,8 +92,12 @@ public class Lang {
         .withFunctionName("timeseries", TimeSeriesStream.class)
         .withFunctionName("tuple", TupStream.class)
         .withFunctionName("sql", SqlStream.class)
+        .withFunctionName("plist", ParallelListStream.class)
+        .withFunctionName("zplot", ZplotStream.class)
+        .withFunctionName("hashRollup", HashRollupStream.class)
+        .withFunctionName("noop", NoOpStream.class)
 
-            // metrics
+        // metrics
         .withFunctionName("min", MinMetric.class)
         .withFunctionName("max", MaxMetric.class)
         .withFunctionName("avg", MeanMetric.class)
@@ -100,7 +106,6 @@ public class Lang {
 
             // tuple manipulation operations
         .withFunctionName("replace", ReplaceOperation.class)
-        .withFunctionName("concat", ConcatOperation.class)
 
             // stream reduction operations
         .withFunctionName("group", GroupOperation.class)
@@ -167,6 +172,8 @@ public class Lang {
         .withFunctionName("constantDistribution", ConstantDistributionEvaluator.class)
         .withFunctionName("weibullDistribution", WeibullDistributionEvaluator.class)
         .withFunctionName("mean", MeanEvaluator.class)
+        .withFunctionName("var", VarianceEvaluator.class)
+        .withFunctionName("stddev", StandardDeviationEvaluator.class)
         .withFunctionName("mode", ModeEvaluator.class)
         .withFunctionName("logNormalDistribution", LogNormalDistributionEvaluator.class)
         .withFunctionName("zipFDistribution", ZipFDistributionEvaluator.class)
@@ -174,6 +181,7 @@ public class Lang {
         .withFunctionName("betaDistribution", BetaDistributionEvaluator.class)
         .withFunctionName("polyfit", PolyFitEvaluator.class)
         .withFunctionName("harmonicFit", HarmonicFitEvaluator.class)
+        .withFunctionName("harmfit", HarmonicFitEvaluator.class)
         .withFunctionName("loess", LoessEvaluator.class)
         .withFunctionName("matrix", MatrixEvaluator.class)
         .withFunctionName("transpose", TransposeEvaluator.class)
@@ -256,6 +264,42 @@ public class Lang {
         .withFunctionName("listCache", ListCacheEvaluator.class)
         .withFunctionName("zscores", NormalizeEvaluator.class)
         .withFunctionName("latlonVectors", LatLonVectorsEvaluator.class)
+        .withFunctionName("convexHull", ConvexHullEvaluator.class)
+        .withFunctionName("getVertices", GetVerticesEvaluator.class)
+        .withFunctionName("getBaryCenter", GetBaryCenterEvaluator.class)
+        .withFunctionName("getArea", GetAreaEvaluator.class)
+        .withFunctionName("getBoundarySize", GetBoundarySizeEvaluator.class)
+        .withFunctionName("oscillate", OscillateEvaluator.class)
+        .withFunctionName("getAmplitude", GetAmplitudeEvaluator.class)
+        .withFunctionName("getPhase", GetPhaseEvaluator.class)
+        .withFunctionName("getAngularFrequency", GetAngularFrequencyEvaluator.class)
+        .withFunctionName("enclosingDisk", EnclosingDiskEvaluator.class)
+        .withFunctionName("getCenter", GetCenterEvaluator.class)
+        .withFunctionName("getRadius", GetRadiusEvaluator.class)
+        .withFunctionName("getSupportPoints", GetSupportPointsEvaluator.class)
+        .withFunctionName("pairSort", PairSortEvaluator.class)
+        .withFunctionName("recip", RecipEvaluator.class)
+        .withFunctionName("pivot", PivotEvaluator.class)
+        .withFunctionName("ltrim", LeftShiftEvaluator.class)
+        .withFunctionName("rtrim", RightShiftEvaluator.class)
+        .withFunctionName("repeat", RepeatEvaluator.class)
+        .withFunctionName("natural", NaturalEvaluator.class)
+        .withFunctionName("movingMAD", MovingMADEvaluator.class)
+        .withFunctionName("recNum", RecNumEvaluator.class)
+        .withFunctionName("notNull", NotNullEvaluator.class)
+        .withFunctionName("isNull", IsNullEvaluator.class)
+        .withFunctionName("matches", MatchesEvaluator.class)
+        .withFunctionName("projectToBorder", ProjectToBorderEvaluator.class)
+        .withFunctionName("parseCSV", CsvStream.class)
+        .withFunctionName("parseTSV", TsvStream.class)
+        .withFunctionName("double", DoubleEvaluator.class)
+        .withFunctionName("long", LongEvaluator.class)
+        .withFunctionName("dateTime", DateEvaluator.class)
+        .withFunctionName("concat", ConcatEvaluator.class)
+        .withFunctionName("lower", LowerEvaluator.class)
+        .withFunctionName("upper", UpperEvaluator.class)
+        .withFunctionName("split", SplitEvaluator.class)
+        .withFunctionName("trim", TrimEvaluator.class)
 
         // Boolean Stream Evaluators
 
@@ -289,6 +333,7 @@ public class Lang {
         .withFunctionName("mult", MultiplyEvaluator.class)
         .withFunctionName("sub", SubtractEvaluator.class)
         .withFunctionName("log", NaturalLogEvaluator.class)
+        .withFunctionName("log10", Log10Evaluator.class)
         .withFunctionName("pow", PowerEvaluator.class)
         .withFunctionName("mod", ModuloEvaluator.class)
         .withFunctionName("ceil", CeilingEvaluator.class)

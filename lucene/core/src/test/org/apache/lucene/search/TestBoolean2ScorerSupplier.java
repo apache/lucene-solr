@@ -22,15 +22,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Set;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestBoolean2ScorerSupplier extends LuceneTestCase {
 
@@ -38,11 +35,6 @@ public class TestBoolean2ScorerSupplier extends LuceneTestCase {
 
     FakeWeight() {
       super(new MatchNoDocsQuery());
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-
     }
 
     @Override

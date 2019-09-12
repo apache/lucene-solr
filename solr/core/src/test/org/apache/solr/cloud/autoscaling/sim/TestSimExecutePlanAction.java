@@ -26,16 +26,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Lists;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.autoscaling.ActionContext;
-import org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
 import org.apache.solr.cloud.autoscaling.NodeLostTrigger;
 import org.apache.solr.common.cloud.ClusterState;
@@ -44,14 +42,16 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
-import org.apache.solr.common.util.TimeSource;
 import org.junit.After;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
 
 /**
  * Test for {@link ExecutePlanAction}
@@ -60,15 +60,21 @@ import org.slf4j.LoggerFactory;
 public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final TimeSource SIM_TIME_SOURCE = TimeSource.get("simTime:50");
   private static final int NODE_COUNT = 2;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-    configureCluster(NODE_COUNT, TimeSource.get("simTime:50"));
+  @Before
+  public void setupCluster() throws Exception {
+    configureCluster(NODE_COUNT, SIM_TIME_SOURCE);
   }
 
   @After
   public void printState() throws Exception {
+    if (null == cluster) {
+      // test didn't init, nothing to do
+      return;
+    }
+                          
     log.info("-------------_ FINAL STATE --------------");
     log.info("* Node values: " + Utils.toJSONString(cluster.getSimNodeStateProvider().simGetAllNodeValues()));
     log.info("* Live nodes: " + cluster.getClusterStateProvider().getLiveNodes());
@@ -76,11 +82,11 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
     for (String coll: cluster.getSimClusterStateProvider().simListCollections()) {
       log.info("* Collection " + coll + " state: " + state.getCollection(coll));
     }
-
+    shutdownCluster();
   }
 
   @Test
-  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
+  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void testExecute() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String collectionName = "testExecute";
@@ -89,8 +95,8 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
-    log.info("Collection ready after " + CloudTestUtils.waitForState(cluster, collectionName, 120, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(1, 2, false, true)) + "ms");
+    log.info("Collection ready after " + CloudUtil.waitForState(cluster, collectionName, 120, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(1, 2, false, true)) + "ms");
 
     String sourceNodeName = cluster.getSimClusterStateProvider().simGetRandomNode();
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
@@ -136,7 +142,7 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
       };
       List<CollectionAdminRequest.AsyncCollectionAdminRequest> operations = Lists.asList(moveReplica, new CollectionAdminRequest.AsyncCollectionAdminRequest[]{mockRequest});
       NodeLostTrigger.NodeLostEvent nodeLostEvent = new NodeLostTrigger.NodeLostEvent(TriggerEventType.NODELOST,
-          "mock_trigger_name", Collections.singletonList(TimeSource.CURRENT_TIME.getTimeNs()),
+          "mock_trigger_name", Collections.singletonList(SIM_TIME_SOURCE.getTimeNs()),
           Collections.singletonList(sourceNodeName), CollectionParams.CollectionAction.MOVEREPLICA.toLower());
       ActionContext actionContext = new ActionContext(cluster, null,
           new HashMap<>(Collections.singletonMap("operations", operations)));
@@ -151,8 +157,8 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
       assertNotNull(response.get("success"));
     }
 
-    log.info("Collection ready after " + CloudTestUtils.waitForState(cluster, collectionName, 300, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(1, 2, false, true)) + "ms");
+    log.info("Collection ready after " + CloudUtil.waitForState(cluster, collectionName, 300, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(1, 2, false, true)) + "ms");
   }
 
   @Test
@@ -168,9 +174,11 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
         "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
         "{'name':'execute_plan','class':'solr.ExecutePlanAction'}]" +
         "}}";
-    SolrRequest req = AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
+
+    assertAutoscalingUpdateComplete();
 
     String collectionName = "testIntegration";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
@@ -178,8 +186,8 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
-    CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
-        collectionName, CloudTestUtils.clusterShape(1, 2, false, true));
+    CloudUtil.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
+        collectionName, CloudUtil.clusterShape(1, 2, false, true));
 
     String sourceNodeName = cluster.getSimClusterStateProvider().simGetRandomNode();
     ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
@@ -197,8 +205,8 @@ public class TestSimExecutePlanAction extends SimSolrCloudTestCase {
 
     cluster.getTimeSource().sleep(3000);
 
-    CloudTestUtils.waitForState(cluster, "Timed out waiting for replicas of collection to be 2 again",
-        collectionName, CloudTestUtils.clusterShape(1, 2, false, true));
+    CloudUtil.waitForState(cluster, "Timed out waiting for replicas of collection to be 2 again",
+        collectionName, CloudUtil.clusterShape(1, 2, false, true));
 
     clusterState = cluster.getClusterStateProvider().getClusterState();
     docCollection = clusterState.getCollection(collectionName);

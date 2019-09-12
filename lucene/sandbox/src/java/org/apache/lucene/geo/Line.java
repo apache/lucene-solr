@@ -98,6 +98,16 @@ public class Line {
     return lons[vertex];
   }
 
+  /** Returns a copy of the internal latitude array */
+  public double[] getLats() {
+    return lats.clone();
+  }
+
+  /** Returns a copy of the internal longitude array */
+  public double[] getLons() {
+    return lons.clone();
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
@@ -119,9 +129,9 @@ public class Line {
     sb.append("LINE(");
     for (int i = 0; i < lats.length; i++) {
       sb.append("[")
-          .append(lats[i])
-          .append(", ")
           .append(lons[i])
+          .append(", ")
+          .append(lats[i])
           .append("]");
     }
     sb.append(')');

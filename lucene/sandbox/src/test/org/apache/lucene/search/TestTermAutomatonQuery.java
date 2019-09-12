@@ -595,7 +595,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
               //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
             }
           }
-          return new ConstantScoreScorer(this, score(), new BitSetIterator(bits, bits.approximateCardinality()));
+          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
         }
 
         @Override
@@ -603,6 +603,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
           return false;
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override
@@ -742,12 +747,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     TermAutomatonQuery q = new TermAutomatonQuery("field");
     int initState = q.createState();
     q.setAccept(initState, true);
-    try {
-      q.finish();
-      fail("did not hit exc");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    expectThrows(IllegalStateException.class, q::finish);
   }
 
   public void testRewriteNoMatch() throws Exception {

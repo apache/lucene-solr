@@ -41,7 +41,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 
@@ -144,7 +143,7 @@ public abstract class FSDirectory extends BaseDirectory {
    * real path to ensure it can correctly lock the index directory and no other process
    * can interfere with changing possible symlinks to the index directory inbetween.
    * If you want to use symlinks and change them dynamically, close all
-   * {@code IndexWriters} and create a new {@code FSDirecory} instance.
+   * {@code IndexWriters} and create a new {@code FSDirectory} instance.
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
    * ({@link NativeFSLockFactory});
@@ -168,7 +167,7 @@ public abstract class FSDirectory extends BaseDirectory {
    * real path to ensure it can correctly lock the index directory and no other process
    * can interfere with changing possible symlinks to the index directory inbetween.
    * If you want to use symlinks and change them dynamically, close all
-   * {@code IndexWriters} and create a new {@code FSDirecory} instance.
+   * {@code IndexWriters} and create a new {@code FSDirectory} instance.
    *
    *  <p>Currently this returns {@link MMapDirectory} for Linux, MacOSX, Solaris,
    *  and Windows 64-bit JREs, {@link NIOFSDirectory} for other
@@ -261,7 +260,7 @@ public abstract class FSDirectory extends BaseDirectory {
     maybeDeletePendingFiles();
     while (true) {
       try {
-        String name = IndexFileNames.segmentFileName(prefix, suffix + "_" + Long.toString(nextTempFileCounter.getAndIncrement(), Character.MAX_RADIX), "tmp");
+        String name = getTempFileName(prefix, suffix, nextTempFileCounter.getAndIncrement());
         if (pendingDeletes.contains(name)) {
           continue;
         }
@@ -429,7 +428,7 @@ public abstract class FSDirectory extends BaseDirectory {
     if (pendingDeletes.isEmpty()) {
       return Collections.emptySet();
     } else {
-      return Collections.unmodifiableSet(new HashSet<>(pendingDeletes));
+      return Set.copyOf(pendingDeletes);
     }
   }
 }

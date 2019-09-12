@@ -19,11 +19,11 @@ package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -44,7 +44,7 @@ import org.apache.lucene.util.fst.Outputs;
  *  Likewise, in next it scans until it finds a term that matches the
  *  current automaton transition. */
 
-final class IntersectTermsEnum extends TermsEnum {
+final class IntersectTermsEnum extends BaseTermsEnum {
 
   //static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
@@ -111,7 +111,7 @@ final class IntersectTermsEnum extends TermsEnum {
     f.prefix = 0;
     f.setState(0);
     f.arc = arc;
-    f.outputPrefix = arc.output;
+    f.outputPrefix = arc.output();
     f.load(fr.rootCode);
 
     // for assert:
@@ -186,14 +186,14 @@ final class IntersectTermsEnum extends TermsEnum {
       // passed to findTargetArc
       arc = fr.index.findTargetArc(target, arc, getArc(1+idx), fstReader);
       assert arc != null;
-      output = fstOutputs.add(output, arc.output);
+      output = fstOutputs.add(output, arc.output());
       idx++;
     }
 
     f.arc = arc;
     f.outputPrefix = output;
     assert arc.isFinal();
-    f.load(fstOutputs.add(output, arc.nextFinalOutput));
+    f.load(fstOutputs.add(output, arc.nextFinalOutput()));
     return f;
   }
 

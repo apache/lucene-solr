@@ -19,10 +19,10 @@ package org.apache.solr.index;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
-import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 
@@ -31,7 +31,7 @@ import org.apache.lucene.util.Version;
  * MultiReader} or {@link DirectoryReader}) to emulate a
  * {@link LeafReader}.  This requires implementing the postings
  * APIs on-the-fly, using the static methods in {@link
- * MultiFields}, {@link MultiDocValues}, by stepping through
+ * MultiTerms}, {@link MultiDocValues}, by stepping through
  * the sub-readers to merge fields/terms, appending docs, etc.
  *
  * <p><b>NOTE</b>: this class almost always results in a
@@ -45,9 +45,20 @@ import org.apache.lucene.util.Version;
 public final class SlowCompositeReaderWrapper extends LeafReader {
 
   private final CompositeReader in;
-  private final Fields fields;
   private final LeafMetaData metaData;
-  
+
+  // Cached copy of FieldInfos to prevent it from being re-created on each
+  // getFieldInfos call.  Most (if not all) other LeafReader implementations
+  // also have a cached FieldInfos instance so this is consistent. SOLR-12878
+  private final FieldInfos fieldInfos;
+
+  final Map<String,Terms> cachedTerms = new ConcurrentHashMap<>();
+
+  // TODO: consider ConcurrentHashMap ?
+  // TODO: this could really be a weak map somewhere else on the coreCacheKey,
+  // but do we really need to optimize slow-wrapper any more?
+  final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<>();
+
   /** This method is sugar for getting an {@link LeafReader} from
    * an {@link IndexReader} of any kind. If the reader is already atomic,
    * it is returned unchanged, otherwise wrapped by this class.
@@ -62,9 +73,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
-    super();
     in = reader;
-    fields = MultiFields.getFields(in);
     in.registerParentReader(this);
     if (reader.leaves().isEmpty()) {
       metaData = new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
@@ -81,6 +90,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       }
       metaData = new LeafMetaData(reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor(), minVersion, null);
     }
+    fieldInfos = FieldInfos.getMergedFieldInfos(in);
   }
 
   @Override
@@ -104,25 +114,38 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public Terms terms(String field) throws IOException {
     ensureOpen();
-    return fields.terms(field);
+    try {
+      return cachedTerms.computeIfAbsent(field, f -> {
+        try {
+          return MultiTerms.getTerms(in, f);
+        } catch (IOException e) { // yuck!  ...sigh... checked exceptions with built-in lambdas are a pain
+          throw new RuntimeException("unwrapMe", e);
+        }
+      });
+    } catch (RuntimeException e) {
+      if (e.getMessage().equals("unwrapMe") && e.getCause() instanceof IOException) {
+        throw (IOException) e.getCause();
+      }
+      throw e;
+    }
   }
 
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
-    return MultiDocValues.getNumericValues(in, field);
+    return MultiDocValues.getNumericValues(in, field); // TODO cache?
   }
 
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     ensureOpen();
-    return MultiDocValues.getBinaryValues(in, field);
+    return MultiDocValues.getBinaryValues(in, field); // TODO cache?
   }
   
   @Override
   public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
     ensureOpen();
-    return MultiDocValues.getSortedNumericValues(in, field);
+    return MultiDocValues.getSortedNumericValues(in, field); // TODO cache?
   }
 
   @Override
@@ -210,15 +233,11 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     starts[size] = maxDoc();
     return new MultiDocValues.MultiSortedSetDocValues(values, starts, map, cost);
   }
-  
-  // TODO: this could really be a weak map somewhere else on the coreCacheKey,
-  // but do we really need to optimize slow-wrapper any more?
-  final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<>();
 
   @Override
   public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
-    return MultiDocValues.getNormValues(in, field);
+    return MultiDocValues.getNormValues(in, field); // TODO cache?
   }
   
   @Override
@@ -248,19 +267,18 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
-    return MultiFields.getLiveDocs(in);
+    return MultiBits.getLiveDocs(in); // TODO cache?
   }
 
   @Override
   public PointValues getPointValues(String field) {
     ensureOpen();
-    return null;
+    return null; // because not supported.  Throw UOE?
   }
 
   @Override
   public FieldInfos getFieldInfos() {
-    ensureOpen();
-    return MultiFields.getMergedFieldInfos(in);
+    return fieldInfos;
   }
 
   @Override

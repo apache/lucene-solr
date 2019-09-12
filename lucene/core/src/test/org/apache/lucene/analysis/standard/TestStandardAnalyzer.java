@@ -18,8 +18,11 @@ package org.apache.lucene.analysis.standard;
 
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -27,6 +30,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
 
@@ -282,7 +286,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testUnicodeWordBreaks() throws Exception {
-    WordBreakTestUnicode_6_3_0 wordBreakTest = new WordBreakTestUnicode_6_3_0();
+    WordBreakTestUnicode_9_0_0 wordBreakTest = new WordBreakTestUnicode_9_0_0();
     wordBreakTest.test(a);
   }
   
@@ -358,8 +362,80 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "3_1.,2", new String[] { "3_1", "2" });
   }
 
+  /** simple emoji */
+  public void testEmoji() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "💩 💩💩",
+        new String[] { "💩", "💩", "💩" },
+        new String[] { "<EMOJI>", "<EMOJI>", "<EMOJI>" });
+  }
 
+  /** emoji zwj sequence */
+  public void testEmojiSequence() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "👩‍❤️‍👩",
+        new String[] { "👩‍❤️‍👩" },
+        new String[] { "<EMOJI>" });
+  }
 
+  /** emoji zwj sequence with fitzpatrick modifier */
+  public void testEmojiSequenceWithModifier() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "👨🏼‍⚕️",
+        new String[] { "👨🏼‍⚕️" },
+        new String[] { "<EMOJI>" });
+  }
+
+  /** regional indicator */
+  public void testEmojiRegionalIndicator() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "🇺🇸🇺🇸",
+        new String[] { "🇺🇸", "🇺🇸" },
+        new String[] { "<EMOJI>", "<EMOJI>" });
+  }
+
+  /** variation sequence */
+  public void testEmojiVariationSequence() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "#️⃣",
+        new String[] { "#️⃣" },
+        new String[] { "<EMOJI>" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "3️⃣",
+        new String[] { "3️⃣",},
+        new String[] { "<EMOJI>" });
+
+    // text presentation sequences
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "#\uFE0E",
+        new String[] { },
+        new String[] { });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "3\uFE0E",  // \uFE0E is included in \p{WB:Extend}
+        new String[] { "3\uFE0E",},
+        new String[] { "<NUM>" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "\u2B55\uFE0E",     // \u2B55 = HEAVY BLACK CIRCLE
+        new String[] { "\u2B55",},
+        new String[] { "<EMOJI>" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "\u2B55\uFE0E\u200D\u2B55\uFE0E",
+        new String[] { "\u2B55", "\u200D\u2B55"},
+        new String[] { "<EMOJI>", "<EMOJI>" });
+  }
+
+  public void testEmojiTagSequence() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+        new String[] { "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+        new String[] { "<EMOJI>" });
+  }
+
+  public void testEmojiTokenization() throws Exception {
+    // simple emoji around latin
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "poo💩poo",
+        new String[] { "poo", "💩", "poo" },
+        new String[] { "<ALPHANUM>", "<EMOJI>", "<ALPHANUM>" });
+    // simple emoji around non-latin
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "💩中國💩",
+        new String[] { "💩", "中", "國", "💩" },
+        new String[] { "<EMOJI>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<EMOJI>" });
+  }
+  
+  public void testUnicodeEmojiTests() throws Exception {
+    EmojiTokenizationTestUnicode_11_0 emojiTest = new EmojiTokenizationTestUnicode_11_0();
+    emojiTest.test(a);
+  }
+  
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new StandardAnalyzer();
@@ -415,5 +491,54 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     a.setMaxTokenLength(5);
     assertAnalyzesTo(a, "ab cd toolong xy z", new String[]{"ab", "cd", "toolo", "ng", "xy", "z"});
     a.close();
+  }
+
+  public void testSplitSurrogatePairWithSpoonFeedReader() throws Exception {
+    String text = "12345678\ud800\udf00"; // U+D800 U+DF00 = U+10300 = 𐌀 (OLD ITALIC LETTER A)
+    
+    // Collect tokens with normal reader
+    StandardAnalyzer a = new StandardAnalyzer();
+    TokenStream ts = a.tokenStream("dummy", text);
+    List<String> tokens = new ArrayList<>();
+    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+    ts.reset();
+    while (ts.incrementToken()) {
+      tokens.add(termAtt.toString());
+    }
+    ts.end();
+    ts.close();
+
+    // Tokens from a spoon-feed reader should be the same as from a normal reader
+    // The 9th char is a high surrogate, so the 9-max-chars spoon-feed reader will split the surrogate pair at a read boundary
+    Reader reader = new SpoonFeedMaxCharsReaderWrapper(9, new StringReader(text));
+    ts = a.tokenStream("dummy", reader);
+    termAtt = ts.addAttribute(CharTermAttribute.class);
+    ts.reset();
+    for (int tokenNum = 0 ; ts.incrementToken() ; ++tokenNum) {
+      assertEquals("token #" + tokenNum + " mismatch: ", termAtt.toString(), tokens.get(tokenNum));
+    }
+    ts.end();
+    ts.close();
+  }
+}
+
+class SpoonFeedMaxCharsReaderWrapper extends Reader {
+  private final Reader in;
+  private final int maxChars; 
+
+  public SpoonFeedMaxCharsReaderWrapper(int maxChars, Reader in) {
+    this.in = in;
+    this.maxChars = maxChars;
+  }
+
+  @Override
+  public void close() throws IOException {
+    in.close();
+  }
+
+  /** Returns the configured number of chars if available */
+  @Override
+  public int read(char[] cbuf, int off, int len) throws IOException {
+    return in.read(cbuf, off, Math.min(maxChars, len));
   }
 }

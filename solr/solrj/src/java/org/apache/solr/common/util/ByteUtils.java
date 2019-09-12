@@ -21,6 +21,7 @@ import java.io.OutputStream;
 
 import org.noggit.CharArr;
 
+
 public class ByteUtils {
 
   /** Maximum number of UTF8 bytes per UTF16 character. */
@@ -142,6 +143,7 @@ public class ByteUtils {
       if (upto > scratch.length - 4)  {
         // a code point may take upto 4 bytes and we don't have enough space, so reset
         totalBytes += upto;
+        if(fos == null) throw new IOException("buffer over flow");
         fos.write(scratch, 0, upto);
         upto = 0;
       }
@@ -180,7 +182,7 @@ public class ByteUtils {
     }
 
     totalBytes += upto;
-    fos.write(scratch, 0, upto);
+    if(fos != null) fos.write(scratch, 0, upto);
 
     return totalBytes;
   }

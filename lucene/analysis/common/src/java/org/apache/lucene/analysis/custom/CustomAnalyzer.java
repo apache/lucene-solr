@@ -40,7 +40,6 @@ import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.FilesystemResourceLoader;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -54,23 +53,21 @@ import static org.apache.lucene.analysis.util.AnalysisSPILoader.newFactoryClassI
  * A general-purpose Analyzer that can be created with a builder-style API.
  * Under the hood it uses the factory classes {@link TokenizerFactory},
  * {@link TokenFilterFactory}, and {@link CharFilterFactory}.
- * <p>You can create an instance of this Analyzer using the builder:
+ * <p>You can create an instance of this Analyzer using the builder by passing the SPI names (as defined by {@link java.util.ServiceLoader} interface) to it:
  * <pre class="prettyprint">
  * Analyzer ana = CustomAnalyzer.builder(Paths.get(&quot;/path/to/config/dir&quot;))
- *   .withTokenizer(StandardTokenizerFactory.class)
- *   .addTokenFilter(StandardFilterFactory.class)
- *   .addTokenFilter(LowerCaseFilterFactory.class)
- *   .addTokenFilter(StopFilterFactory.class, &quot;ignoreCase&quot;, &quot;false&quot;, &quot;words&quot;, &quot;stopwords.txt&quot;, &quot;format&quot;, &quot;wordset&quot;)
+ *   .withTokenizer(StandardTokenizerFactory.NAME)
+ *   .addTokenFilter(LowerCaseFilterFactory.NAME)
+ *   .addTokenFilter(StopFilterFactory.NAME, &quot;ignoreCase&quot;, &quot;false&quot;, &quot;words&quot;, &quot;stopwords.txt&quot;, &quot;format&quot;, &quot;wordset&quot;)
  *   .build();
  * </pre>
  * The parameters passed to components are also used by Apache Solr and are documented
  * on their corresponding factory classes. Refer to documentation of subclasses
  * of {@link TokenizerFactory}, {@link TokenFilterFactory}, and {@link CharFilterFactory}.
- * <p>You can also use the SPI names (as defined by {@link java.util.ServiceLoader} interface):
+ * <p>This is the same as the above:
  * <pre class="prettyprint">
  * Analyzer ana = CustomAnalyzer.builder(Paths.get(&quot;/path/to/config/dir&quot;))
  *   .withTokenizer(&quot;standard&quot;)
- *   .addTokenFilter(&quot;standard&quot;)
  *   .addTokenFilter(&quot;lowercase&quot;)
  *   .addTokenFilter(&quot;stop&quot;, &quot;ignoreCase&quot;, &quot;false&quot;, &quot;words&quot;, &quot;stopwords.txt&quot;, &quot;format&quot;, &quot;wordset&quot;)
  *   .build();
@@ -89,6 +86,8 @@ import static org.apache.lucene.analysis.util.AnalysisSPILoader.newFactoryClassI
  *    .endwhen()
  *    .build();
  * </pre>
+ *
+ * @since 5.0.0
  */
 public final class CustomAnalyzer extends Analyzer {
   
@@ -141,10 +140,7 @@ public final class CustomAnalyzer extends Analyzer {
   @Override
   protected Reader initReaderForNormalization(String fieldName, Reader reader) {
     for (CharFilterFactory charFilter : charFilters) {
-      if (charFilter instanceof MultiTermAwareComponent) {
-        charFilter = (CharFilterFactory) ((MultiTermAwareComponent) charFilter).getMultiTermComponent();
-        reader = charFilter.create(reader);
-      }
+      reader = charFilter.normalize(reader);
     }
     return reader;
   }
@@ -162,17 +158,8 @@ public final class CustomAnalyzer extends Analyzer {
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
     TokenStream result = in;
-    // tokenizers can return a tokenfilter if the tokenizer does normalization,
-    // although this is really bogus/abstraction violation...
-    if (tokenizer instanceof MultiTermAwareComponent) {
-      TokenFilterFactory filter = (TokenFilterFactory) ((MultiTermAwareComponent) tokenizer).getMultiTermComponent();
-      result = filter.create(result);
-    }
     for (TokenFilterFactory filter : tokenFilters) {
-      if (filter instanceof MultiTermAwareComponent) {
-        filter = (TokenFilterFactory) ((MultiTermAwareComponent) filter).getMultiTermComponent();
-        result = filter.create(result);
-      }
+      result = filter.normalize(result);
     }
     return result;
   }

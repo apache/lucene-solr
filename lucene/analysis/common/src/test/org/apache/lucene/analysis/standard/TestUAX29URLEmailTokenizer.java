@@ -21,8 +21,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer;
-import org.apache.lucene.analysis.standard.WordBreakTestUnicode_6_3_0;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
@@ -469,7 +467,7 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
   }
 
   public void testUnicodeWordBreaks() throws Exception {
-    WordBreakTestUnicode_6_3_0 wordBreakTest = new WordBreakTestUnicode_6_3_0();
+    WordBreakTestUnicode_9_0_0 wordBreakTest = new WordBreakTestUnicode_9_0_0();
     wordBreakTest.test(a);
   }
   
@@ -546,6 +544,80 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     BaseTokenStreamTestCase.assertAnalyzesTo(a, "3_1.,2", new String[] { "3_1", "2" });
   }
 
+
+  /** simple emoji */
+  public void testEmoji() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "💩 💩💩",
+        new String[] { "💩", "💩", "💩" },
+        new String[] { "<EMOJI>", "<EMOJI>", "<EMOJI>" });
+  }
+
+  /** emoji zwj sequence */
+  public void testEmojiSequence() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "👩‍❤️‍👩",
+        new String[] { "👩‍❤️‍👩" },
+        new String[] { "<EMOJI>" });
+  }
+
+  /** emoji zwj sequence with fitzpatrick modifier */
+  public void testEmojiSequenceWithModifier() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "👨🏼‍⚕️",
+        new String[] { "👨🏼‍⚕️" },
+        new String[] { "<EMOJI>" });
+  }
+
+  /** regional indicator */
+  public void testEmojiRegionalIndicator() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "🇺🇸🇺🇸",
+        new String[] { "🇺🇸", "🇺🇸" },
+        new String[] { "<EMOJI>", "<EMOJI>" });
+  }
+
+  /** variation sequence */
+  public void testEmojiVariationSequence() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "#️⃣",
+        new String[] { "#️⃣" },
+        new String[] { "<EMOJI>" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "3️⃣",
+        new String[] { "3️⃣",},
+        new String[] { "<EMOJI>" });
+
+    // text presentation sequences
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "#\uFE0E",
+        new String[] { },
+        new String[] { });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "3\uFE0E",  // \uFE0E is included in \p{WB:Extend}
+        new String[] { "3\uFE0E",},
+        new String[] { "<NUM>" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "\u2B55\uFE0E",     // \u2B55 = HEAVY BLACK CIRCLE
+        new String[] { "\u2B55",},
+        new String[] { "<EMOJI>" });
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "\u2B55\uFE0E\u200D\u2B55\uFE0E",
+        new String[] { "\u2B55", "\u200D\u2B55"},
+        new String[] { "<EMOJI>", "<EMOJI>" });
+  }
+
+  public void testEmojiTagSequence() throws Exception {
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+        new String[] { "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+        new String[] { "<EMOJI>" });
+  }
+
+  public void testEmojiTokenization() throws Exception {
+    // simple emoji around latin
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "poo💩poo",
+        new String[] { "poo", "💩", "poo" },
+        new String[] { "<ALPHANUM>", "<EMOJI>", "<ALPHANUM>" });
+    // simple emoji around non-latin
+    BaseTokenStreamTestCase.assertAnalyzesTo(a, "💩中國💩",
+        new String[] { "💩", "中", "國", "💩" },
+        new String[] { "<EMOJI>", "<IDEOGRAPHIC>", "<IDEOGRAPHIC>", "<EMOJI>" });
+  }
+
+  public void testUnicodeEmojiTests() throws Exception {
+    EmojiTokenizationTestUnicode_11_0 emojiTest = new EmojiTokenizationTestUnicode_11_0();
+    emojiTest.test(a);
+  }
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {

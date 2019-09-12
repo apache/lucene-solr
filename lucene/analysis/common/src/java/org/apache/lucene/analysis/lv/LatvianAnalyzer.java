@@ -35,6 +35,8 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * {@link Analyzer} for Latvian.
+ *
+ * @since 3.2
  */
 public final class LatvianAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

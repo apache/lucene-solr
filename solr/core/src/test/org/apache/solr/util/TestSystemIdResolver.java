@@ -23,12 +23,11 @@ import java.util.Arrays;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 import org.xml.sax.InputSource;
 
-public class TestSystemIdResolver extends LuceneTestCase {
+public class TestSystemIdResolver extends SolrTestCaseJ4 {
   
   public void tearDown() throws Exception {
     System.clearProperty("solr.allow.unsafe.resourceloading");

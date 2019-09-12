@@ -23,12 +23,14 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -37,6 +39,8 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
 
 /**
  * Provides methods for marshalling an UpdateRequest to a NamedList which can be serialized in the javabin format and
@@ -47,6 +51,13 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class JavaBinUpdateRequestCodec {
+  private boolean readStringAsCharSeq = false;
+
+  public JavaBinUpdateRequestCodec setReadStringAsCharSeq(boolean flag) {
+    this.readStringAsCharSeq = flag;
+    return this;
+
+  }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
@@ -111,87 +122,7 @@ public class JavaBinUpdateRequestCodec {
     Map<String,Map<String,Object>> delByIdMap;
     List<String> delByQ;
     final NamedList[] namedList = new NamedList[1];
-    try (JavaBinCodec codec = new JavaBinCodec() {
-
-      // NOTE: this only works because this is an anonymous inner class 
-      // which will only ever be used on a single stream -- if this class 
-      // is ever refactored, this will not work.
-      private boolean seenOuterMostDocIterator = false;
-        
-      @Override
-      public NamedList readNamedList(DataInputInputStream dis) throws IOException {
-        int sz = readSize(dis);
-        NamedList nl = new NamedList();
-        if (namedList[0] == null) {
-          namedList[0] = nl;
-        }
-        for (int i = 0; i < sz; i++) {
-          String name = (String) readVal(dis);
-          Object val = readVal(dis);
-          nl.add(name, val);
-        }
-        return nl;
-      }
-
-      @Override
-      public List readIterator(DataInputInputStream fis) throws IOException {
-        // default behavior for reading any regular Iterator in the stream
-        if (seenOuterMostDocIterator) return super.readIterator(fis);
-
-        // special treatment for first outermost Iterator 
-        // (the list of documents)
-        seenOuterMostDocIterator = true;
-        return readOuterMostDocIterator(fis);
-      }
-
-      private List readOuterMostDocIterator(DataInputInputStream fis) throws IOException {
-        NamedList params = (NamedList) namedList[0].get("params");
-        updateRequest.setParams(new ModifiableSolrParams(params.toSolrParams()));
-        if (handler == null) return super.readIterator(fis);
-        Integer commitWithin = null;
-        Boolean overwrite = null;
-        Object o = null;
-        while (true) {
-          if (o == null) {
-            o = readVal(fis);
-          }
-
-          if (o == END_OBJ) {
-            break;
-          }
-
-          SolrInputDocument sdoc = null;
-          if (o instanceof List) {
-            sdoc = listToSolrInputDocument((List<NamedList>) o);
-          } else if (o instanceof NamedList)  {
-            UpdateRequest req = new UpdateRequest();
-            req.setParams(new ModifiableSolrParams(((NamedList) o).toSolrParams()));
-            handler.update(null, req, null, null);
-          } else if (o instanceof Map.Entry){
-            sdoc = (SolrInputDocument) ((Map.Entry) o).getKey();
-            Map p = (Map) ((Map.Entry) o).getValue();
-            if (p != null) {
-              commitWithin = (Integer) p.get(UpdateRequest.COMMIT_WITHIN);
-              overwrite = (Boolean) p.get(UpdateRequest.OVERWRITE);
-            }
-          } else  {
-            sdoc = (SolrInputDocument) o;
-          }
-
-          // peek at the next object to see if we're at the end
-          o = readVal(fis);
-          if (o == END_OBJ) {
-            // indicate that we've hit the last doc in the batch, used to enable optimizations when doing replication
-            updateRequest.lastDocInBatch();
-          }
-
-          handler.update(sdoc, updateRequest, commitWithin, overwrite);
-        }
-        return Collections.EMPTY_LIST;
-      }
-
-    };) {
-
+    try (JavaBinCodec codec = new StreamingCodec(namedList, updateRequest, handler)) {
       codec.unmarshal(is);
     }
     
@@ -248,43 +179,159 @@ public class JavaBinUpdateRequestCodec {
     return updateRequest;
   }
 
-  private SolrInputDocument listToSolrInputDocument(List<NamedList> namedList) {
-    SolrInputDocument doc = new SolrInputDocument();
-    for (int i = 0; i < namedList.size(); i++) {
-      NamedList nl = namedList.get(i);
-      if (i == 0) {
-        Float boost = (Float) nl.getVal(0);
-        if (boost != null && boost.floatValue() != 1f) {
-          String message = "Ignoring document boost: " + boost + " as index-time boosts are not supported anymore";
-          if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
-            log.warn(message);
-          } else {
-            log.debug(message);
-          }
-        }
-      } else {
-        Float boost = (Float) nl.getVal(2);
-        if (boost != null && boost.floatValue() != 1f) {
-          String message = "Ignoring field boost: " + boost + " as index-time boosts are not supported anymore";
-          if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
-            log.warn(message);
-          } else {
-            log.debug(message);
-          }
-        }
-        doc.addField((String) nl.getVal(0),
-                nl.getVal(1));
-      }
-    }
-    return doc;
-  }
 
   private NamedList solrParamsToNamedList(SolrParams params) {
     if (params == null) return new NamedList();
     return params.toNamedList();
   }
 
-  public static interface StreamingUpdateHandler {
-    public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean override);
+  public interface StreamingUpdateHandler {
+    void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean override);
+  }
+
+  static class MaskCharSequenceSolrInputDoc extends SolrInputDocument {
+    public MaskCharSequenceSolrInputDoc(Map<String, SolrInputField> fields) {
+      super(fields);
+    }
+
+    @Override
+    public Object getFieldValue(String name) {
+      return convertCharSeq(super.getFieldValue(name));
+    }
+
+  }
+
+  class StreamingCodec extends JavaBinCodec {
+
+    private final NamedList[] namedList;
+    private final UpdateRequest updateRequest;
+    private final StreamingUpdateHandler handler;
+    // NOTE: this only works because this is an anonymous inner class
+    // which will only ever be used on a single stream -- if this class
+    // is ever refactored, this will not work.
+    private boolean seenOuterMostDocIterator;
+
+    public StreamingCodec(NamedList[] namedList, UpdateRequest updateRequest, StreamingUpdateHandler handler) {
+      this.namedList = namedList;
+      this.updateRequest = updateRequest;
+      this.handler = handler;
+      seenOuterMostDocIterator = false;
+    }
+
+    @Override
+    protected SolrInputDocument createSolrInputDocument(int sz) {
+      return new MaskCharSequenceSolrInputDoc(new LinkedHashMap(sz));
+    }
+
+    @Override
+    public NamedList readNamedList(DataInputInputStream dis) throws IOException {
+      int sz = readSize(dis);
+      NamedList nl = new NamedList();
+      if (namedList[0] == null) {
+        namedList[0] = nl;
+      }
+      for (int i = 0; i < sz; i++) {
+        String name = (String) readVal(dis);
+        Object val = readVal(dis);
+        nl.add(name, val);
+      }
+      return nl;
+    }
+
+    private SolrInputDocument listToSolrInputDocument(List<NamedList> namedList) {
+      SolrInputDocument doc = new SolrInputDocument();
+      for (int i = 0; i < namedList.size(); i++) {
+        NamedList nl = namedList.get(i);
+        if (i == 0) {
+          Float boost = (Float) nl.getVal(0);
+          if (boost != null && boost.floatValue() != 1f) {
+            String message = "Ignoring document boost: " + boost + " as index-time boosts are not supported anymore";
+            if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+              log.warn(message);
+            } else {
+              log.debug(message);
+            }
+          }
+        } else {
+          Float boost = (Float) nl.getVal(2);
+          if (boost != null && boost.floatValue() != 1f) {
+            String message = "Ignoring field boost: " + boost + " as index-time boosts are not supported anymore";
+            if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
+              log.warn(message);
+            } else {
+              log.debug(message);
+            }
+          }
+          doc.addField((String) nl.getVal(0),
+              nl.getVal(1));
+        }
+      }
+      return doc;
+    }
+
+    @Override
+    public List readIterator(DataInputInputStream fis) throws IOException {
+      // default behavior for reading any regular Iterator in the stream
+      if (seenOuterMostDocIterator) return super.readIterator(fis);
+
+      // special treatment for first outermost Iterator
+      // (the list of documents)
+      seenOuterMostDocIterator = true;
+      return readOuterMostDocIterator(fis);
+    }
+
+
+    private List readOuterMostDocIterator(DataInputInputStream fis) throws IOException {
+      NamedList params = (NamedList) namedList[0].get("params");
+      updateRequest.setParams(new ModifiableSolrParams(params.toSolrParams()));
+      if (handler == null) return super.readIterator(fis);
+      Integer commitWithin = null;
+      Boolean overwrite = null;
+      Object o = null;
+      super.readStringAsCharSeq = JavaBinUpdateRequestCodec.this.readStringAsCharSeq;
+      try {
+        while (true) {
+          if (o == null) {
+            o = readVal(fis);
+          }
+
+          if (o == END_OBJ) {
+            break;
+          }
+
+          SolrInputDocument sdoc = null;
+          if (o instanceof List) {
+            sdoc = listToSolrInputDocument((List<NamedList>) o);
+          } else if (o instanceof NamedList) {
+            UpdateRequest req = new UpdateRequest();
+            req.setParams(new ModifiableSolrParams(((NamedList) o).toSolrParams()));
+            handler.update(null, req, null, null);
+          } else if (o instanceof Map.Entry) {
+            sdoc = (SolrInputDocument) ((Entry) o).getKey();
+            Map p = (Map) ((Entry) o).getValue();
+            if (p != null) {
+              commitWithin = (Integer) p.get(UpdateRequest.COMMIT_WITHIN);
+              overwrite = (Boolean) p.get(UpdateRequest.OVERWRITE);
+            }
+          } else {
+            sdoc = (SolrInputDocument) o;
+          }
+
+          // peek at the next object to see if we're at the end
+          o = readVal(fis);
+          if (o == END_OBJ) {
+            // indicate that we've hit the last doc in the batch, used to enable optimizations when doing replication
+            updateRequest.lastDocInBatch();
+          }
+
+          handler.update(sdoc, updateRequest, commitWithin, overwrite);
+        }
+        return Collections.EMPTY_LIST;
+      } finally {
+        super.readStringAsCharSeq = false;
+
+      }
+    }
+
   }
 }

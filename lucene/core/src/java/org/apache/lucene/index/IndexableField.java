@@ -61,6 +61,13 @@ public interface IndexableField {
   /** Non-null if this field has a string value */
   public String stringValue();
 
+  /**
+   * Non-null if this field has a string value
+   */
+  default CharSequence getCharSequenceValue() {
+    return stringValue();
+  }
+
   /** Non-null if this field has a Reader value */
   public Reader readerValue();
 

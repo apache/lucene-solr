@@ -41,15 +41,15 @@ final class NodeHash<T> {
 
   private boolean nodesEqual(Builder.UnCompiledNode<T> node, long address) throws IOException {
     fst.readFirstRealTargetArc(address, scratchArc, in);
-    if (scratchArc.bytesPerArc != 0 && node.numArcs != scratchArc.numArcs) {
+    if (scratchArc.isPackedArray() && node.numArcs != scratchArc.numArcs()) {
       return false;
     }
-    for(int arcUpto=0;arcUpto<node.numArcs;arcUpto++) {
+    for(int arcUpto=0; arcUpto < node.numArcs; arcUpto++) {
       final Builder.Arc<T> arc = node.arcs[arcUpto];
-      if (arc.label != scratchArc.label ||
-          !arc.output.equals(scratchArc.output) ||
-          ((Builder.CompiledNode) arc.target).node != scratchArc.target ||
-          !arc.nextFinalOutput.equals(scratchArc.nextFinalOutput) ||
+      if (arc.label != scratchArc.label() ||
+          !arc.output.equals(scratchArc.output()) ||
+          ((Builder.CompiledNode) arc.target).node != scratchArc.target() ||
+          !arc.nextFinalOutput.equals(scratchArc.nextFinalOutput()) ||
           arc.isFinal != scratchArc.isFinal()) {
         return false;
       }
@@ -74,7 +74,7 @@ final class NodeHash<T> {
     //System.out.println("hash unfrozen");
     long h = 0;
     // TODO: maybe if number of arcs is high we can safely subsample?
-    for(int arcIdx=0;arcIdx<node.numArcs;arcIdx++) {
+    for (int arcIdx=0; arcIdx < node.numArcs; arcIdx++) {
       final Builder.Arc<T> arc = node.arcs[arcIdx];
       //System.out.println("  label=" + arc.label + " target=" + ((Builder.CompiledNode) arc.target).node + " h=" + h + " output=" + fst.outputs.outputToString(arc.output) + " isFinal?=" + arc.isFinal);
       h = PRIME * h + arc.label;
@@ -97,11 +97,11 @@ final class NodeHash<T> {
     long h = 0;
     fst.readFirstRealTargetArc(node, scratchArc, in);
     while(true) {
-      //System.out.println("  label=" + scratchArc.label + " target=" + scratchArc.target + " h=" + h + " output=" + fst.outputs.outputToString(scratchArc.output) + " next?=" + scratchArc.flag(4) + " final?=" + scratchArc.isFinal() + " pos=" + in.getPosition());
-      h = PRIME * h + scratchArc.label;
-      h = PRIME * h + (int) (scratchArc.target^(scratchArc.target>>32));
-      h = PRIME * h + scratchArc.output.hashCode();
-      h = PRIME * h + scratchArc.nextFinalOutput.hashCode();
+      // System.out.println("  label=" + scratchArc.label + " target=" + scratchArc.target + " h=" + h + " output=" + fst.outputs.outputToString(scratchArc.output) + " next?=" + scratchArc.flag(4) + " final?=" + scratchArc.isFinal() + " pos=" + in.getPosition());
+      h = PRIME * h + scratchArc.label();
+      h = PRIME * h + (int) (scratchArc.target() ^(scratchArc.target() >>32));
+      h = PRIME * h + scratchArc.output().hashCode();
+      h = PRIME * h + scratchArc.nextFinalOutput().hashCode();
       if (scratchArc.isFinal()) {
         h += 17;
       }
@@ -170,4 +170,5 @@ final class NodeHash<T> {
       }
     }
   }
+
 }

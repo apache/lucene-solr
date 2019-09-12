@@ -27,7 +27,7 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanQuery.TooManyClauses;
+import org.apache.lucene.search.IndexSearcher.TooManyClauses;
 
 /**
  * Builds a BooleanQuery of SHOULD clauses, possibly with

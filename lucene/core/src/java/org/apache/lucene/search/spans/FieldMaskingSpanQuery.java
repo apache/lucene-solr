@@ -17,13 +17,15 @@
 package org.apache.lucene.search.spans;
 
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreMode;
-
 import java.io.IOException;
 import java.util.Objects;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
 
 /**
  * <p>Wrapper to allow {@link SpanQuery} objects participate in composite 
@@ -102,6 +104,13 @@ public final class FieldMaskingSpanQuery extends SpanQuery {
     }
 
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      maskedQuery.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+    }
   }
 
   @Override

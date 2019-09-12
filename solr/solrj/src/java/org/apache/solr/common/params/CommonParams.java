@@ -16,9 +16,6 @@
  */
 package org.apache.solr.common.params;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
@@ -176,8 +173,8 @@ public interface CommonParams {
   String OMIT_HEADER = "omitHeader";
   String CORES_HANDLER_PATH = "/admin/cores";
   String COLLECTIONS_HANDLER_PATH = "/admin/collections";
-  String HEALTH_CHECK_HANDLER_PATH = "/admin/health";
   String INFO_HANDLER_PATH = "/admin/info";
+  String HEALTH_CHECK_HANDLER_PATH = INFO_HANDLER_PATH + "/health";
   String CONFIGSETS_HANDLER_PATH = "/admin/configs";
   String AUTHZ_PATH = "/admin/authorization";
   String AUTHC_PATH = "/admin/authentication";
@@ -196,7 +193,7 @@ public interface CommonParams {
   String OK = "OK";
   String FAILURE = "FAILURE";
 
-  Set<String> ADMIN_PATHS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+  Set<String> ADMIN_PATHS = Set.of(
       CORES_HANDLER_PATH,
       COLLECTIONS_HANDLER_PATH,
       HEALTH_CHECK_HANDLER_PATH,
@@ -209,7 +206,7 @@ public interface CommonParams {
       AUTOSCALING_PATH,
       AUTOSCALING_HISTORY_PATH,
       AUTOSCALING_DIAGNOSTICS_PATH,
-      AUTOSCALING_SUGGESTIONS_PATH)));
+      AUTOSCALING_SUGGESTIONS_PATH);
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 
@@ -289,15 +286,14 @@ public interface CommonParams {
 
   String VERSION_FIELD="_version_";
 
+  String FAIL_ON_VERSION_CONFLICTS ="failOnVersionConflicts";
+
   String ID = "id";
   String JSON_MIME = "application/json";
 
   String JAVABIN_MIME = "application/javabin";
 
-  /**
-   * If set to true, child documents will be added as anonymous children into the _childDocuments list,
-   * else, child documents will be added to SolrInputDocument as field values according to their key name.
-   */
-  String ANONYMOUS_CHILD_DOCS = "anonChildDocs";
+  String PACKAGE = "package";
+
 }
 

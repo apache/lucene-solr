@@ -52,6 +52,8 @@ public abstract class RecursiveNumericListEvaluator extends RecursiveEvaluator {
         return null;
       }
       return new BigDecimal(value.toString());
+    } else if (value instanceof String) {
+      return new BigDecimal(value.toString());
     }
     else if(value instanceof BigDecimal){
       return (BigDecimal)value;

@@ -24,7 +24,7 @@ Many of these parsers are expressed the same way as <<local-parameters-in-querie
 
 == Block Join Query Parsers
 
-There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<uploading-data-with-index-handlers.adoc#nested-child-documents, indexed as nested documents>>.
+There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<indexing-nested-documents.adoc#indexing-nested-documents, indexed as Nested Documents>>.
 
 The example usage of the query parsers below assumes these two documents and each of their child documents have been indexed:
 
@@ -1042,6 +1042,7 @@ The XmlQParser implementation uses the {solr-javadocs}/solr-core/org/apache/solr
 |<MatchAllDocsQuery> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/MatchAllDocsQueryBuilder.html[MatchAllDocsQueryBuilder]
 |<RangeQuery> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/RangeQueryBuilder.html[RangeQueryBuilder]
 |<SpanFirst> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/SpanFirstBuilder.html[SpanFirstBuilder]
+|<SpanPositionRange> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/SpanPositionRangeBuilder.html[SpanPositionRangeBuilder]
 |<SpanNear> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/SpanNearBuilder.html[SpanNearBuilder]
 |<SpanNot> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/SpanNotBuilder.html[SpanNotBuilder]
 |<SpanOr> |{lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/builders/SpanOrBuilder.html[SpanOrBuilder]

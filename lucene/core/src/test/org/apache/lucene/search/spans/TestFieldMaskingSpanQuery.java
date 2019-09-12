@@ -17,6 +17,9 @@
 package org.apache.lucene.search.spans;
 
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -27,15 +30,13 @@ import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.apache.lucene.search.spans.SpanTestUtil.assertFinished;
 import static org.apache.lucene.search.spans.SpanTestUtil.assertNext;
@@ -143,7 +144,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkEqual(q, qr);
 
     Set<Term> terms = new HashSet<>();
-    qr.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).extractTerms(terms);
+    qr.visit(QueryVisitor.termCollector(terms));
     assertEquals(1, terms.size());
   }
   
@@ -163,7 +164,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkUnequal(q, qr);
 
     Set<Term> terms = new HashSet<>();
-    qr.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).extractTerms(terms);
+    qr.visit(QueryVisitor.termCollector(terms));
     assertEquals(2, terms.size());
   }
   
@@ -177,7 +178,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     QueryUtils.checkEqual(q, qr);
 
     HashSet<Term> set = new HashSet<>();
-    qr.createWeight(searcher, ScoreMode.COMPLETE, 1f).extractTerms(set);
+    qr.visit(QueryVisitor.termCollector(set));
     assertEquals(2, set.size());
   }
   

@@ -49,13 +49,13 @@ The selection of the node that will host the new replica is made according to th
 
 == Cluster Preferences
 
-Cluster preferences allow you to tell Solr how to assess system load on each node.  This information is used to guide selection of the node(s) on which cluster management operations will be performed. 
+Cluster preferences allow you to tell Solr how to assess system load on each node.  This information is used to guide selection of the node(s) on which cluster management operations will be performed.
 
-In general, when an operation increases replica counts, the *least loaded* <<solrcloud-autoscaling-policy-preferences.adoc#node-selector,qualified node>> will be chosen, and when the operation reduces replica counts, the *most loaded* qualified node will be chosen. 
+In general, when an operation increases replica counts, the *least loaded* <<solrcloud-autoscaling-policy-preferences.adoc#node-selector,qualified node>> will be chosen, and when the operation reduces replica counts, the *most loaded* qualified node will be chosen.
 
-The default cluster preferences are `[{minimize:cores}]`, which tells Solr to minimize the number of cores on all nodes.  In this case, the least loaded node is the one with the fewest cores.
+The default cluster preferences are `[{minimize:cores},{maximize:freedisk}]`, which tells Solr to minimize the number of cores on all nodes and if number of cores are equal, maximize the free disk space available.  In this case, the least loaded node is the one with the fewest cores or if two nodes have an equal number of cores, the node with the most free disk space.
 
-You can learn more about preferences in the <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Cluster Preferences>> section.
+You can learn more about preferences in the section on <<solrcloud-autoscaling-policy-preferences.adoc#cluster-preferences-specification,Cluster Preferences Specification>>.
 
 == Cluster Policy
 
@@ -63,7 +63,7 @@ A cluster policy is a set of rules that a node, shard, or collection must satisf
 
 There are many metrics on which the rule can be based, e.g., system load average, heap usage, free disk space, etc. The full list of supported metrics can be found in the section describing <<solrcloud-autoscaling-policy-preferences.adoc#policy-rule-attributes,Autoscaling Policy Rule Attributes>>.
 
-When a node, shard, or collection does not satisfy a policy rule, we call it a *violation*.   By default, cluster management operations will fail if there is even one violation.  You can allow operations to succeed in the face of a violation by marking the corresponding rule with <<solrcloud-autoscaling-policy-preferences.adoc#rule-strictness,`"strict":false`>>.  When you do this, Solr ensures that cluster management operations minimize the number of violations.   
+When a node, shard, or collection does not satisfy a policy rule, we call it a *violation*.   By default, cluster management operations will fail if there is even one violation.  You can allow operations to succeed in the face of a violation by marking the corresponding rule with <<solrcloud-autoscaling-policy-preferences.adoc#rule-strictness,`"strict":false`>>.  When you do this, Solr ensures that cluster management operations minimize the number of violations.
 
 Solr also supports <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy,collection-specific policies>>, which operate in tandem with the cluster policy.
 

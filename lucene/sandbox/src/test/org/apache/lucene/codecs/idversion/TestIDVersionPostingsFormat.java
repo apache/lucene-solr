@@ -368,7 +368,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     duplicate.add(makeIDField("id", 17));
     expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(duplicate);
-      w.commit();
+      w.commit(false);
     });
 
     w.close();
@@ -465,7 +465,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     doc.add(newTextField("id", "id", Field.Store.NO));
     expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      w.commit();
+      w.commit(false);
     });
              
     w.close();
@@ -481,7 +481,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     doc.add(newStringField("id", "id", Field.Store.NO));
     expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      w.commit();
+      w.commit(false);
     });
 
              
@@ -498,7 +498,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     doc.add(new StringAndPayloadField("id", "id", new BytesRef("foo")));
     expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      w.commit();
+      w.commit(false);
     });
              
     w.close();
@@ -543,7 +543,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     doc.add(new Field("id", ts, ft));
     expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      w.commit();
+      w.commit(false);
       fail("didn't hit expected exception");
     });
 
@@ -561,7 +561,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     doc.add(makeIDField("id", 17));
     expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      w.commit();
+      w.commit(false);
     });
 
     w.close();
@@ -578,7 +578,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
     expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      w.commit();
+      w.commit(false);
     });
     expectThrows(AlreadyClosedException.class, () -> {
       w.addDocument(doc);
@@ -596,7 +596,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0x7f, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
     expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      w.commit();
+      w.commit(false);
     });
     expectThrows(AlreadyClosedException.class, () -> {
       w.addDocument(doc);

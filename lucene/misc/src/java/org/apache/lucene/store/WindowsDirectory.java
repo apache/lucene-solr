@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.io.EOFException;
 import java.nio.file.Path;
 
-import org.apache.lucene.store.Directory; // javadoc
-
 /**
  * Native {@link Directory} implementation for Microsoft Windows.
  * <p>

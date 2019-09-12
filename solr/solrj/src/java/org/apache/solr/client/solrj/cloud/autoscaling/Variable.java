@@ -21,9 +21,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -32,7 +30,7 @@ import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.unmodifiableMap;
-import static java.util.Collections.unmodifiableSet;
+
 
 /**
  * A Variable Type used in Autoscaling policy rules. Each variable type may have unique implementation
@@ -59,8 +57,22 @@ public interface Variable {
 
   void getSuggestions(Suggestion.Ctx ctx);
 
+  /**When a non constant value is used in a variable, the actual value needs to be computed at the runtime
+   *
+   */
   default Object computeValue(Policy.Session session, Condition condition, String collection, String shard, String node) {
     return condition.val;
+  }
+
+  default void computeDeviation(Policy.Session session, double[] deviations, ReplicaCount replicaCount, SealedClause sealedClause) {
+    if (deviations != null) {
+      Number actualCount = replicaCount.getVal(sealedClause.type);
+      if(sealedClause.replica.val instanceof RangeVal) {
+        Double realDelta = ((RangeVal) sealedClause.replica.val).realDelta(actualCount.doubleValue());
+        realDelta = sealedClause.isReplicaZero() ? -1 * realDelta : realDelta;
+        deviations[0] += Math.abs(realDelta);
+      }
+    }
   }
 
   int compareViolation(Violation v1, Violation v2);
@@ -191,11 +203,18 @@ public interface Variable {
         min = 0)
     NUMBER,
 
-    @Meta(name = "STRING",
+    @Meta(name = "host",
         type = String.class,
         wildCards = Policy.EACH,
         supportArrayVals = true)
-    STRING,
+    HOST,
+
+    @Meta(name = "STRING",
+        type = String.class,
+        wildCards = Policy.EACH,
+        supportArrayVals = true
+    )
+    SYSPROP,
 
     @Meta(name = "node",
         type = String.class,
@@ -256,7 +275,7 @@ public interface Variable {
       this.metricsAttribute = readStr(meta.metricsKey());
       this.supportedComputedTypes = meta.computedValues()[0] == ComputedType.NULL ?
           emptySet() :
-          unmodifiableSet(new HashSet(Arrays.asList(meta.computedValues())));
+          Set.of(meta.computedValues());
       this.wildCards = readSet(meta.wildCards());
 
     }
@@ -276,7 +295,7 @@ public interface Variable {
 
     Set<String> readSet(String[] vals) {
       if (NULL.equals(vals[0])) return emptySet();
-      return unmodifiableSet(new HashSet<>(Arrays.asList(vals)));
+      return Set.of(vals);
     }
 
     @Override
@@ -326,6 +345,12 @@ public interface Variable {
     public Object computeValue(Policy.Session session, Condition condition, String collection, String shard, String node) {
       return impl.computeValue(session, condition, collection, shard, node);
     }
+
+    @Override
+    public void computeDeviation(Policy.Session session, double[] deviations, ReplicaCount replicaCount, SealedClause sealedClause) {
+      impl.computeDeviation(session, deviations, replicaCount, sealedClause);
+    }
+
 
     @Override
     public boolean match(Object inputVal, Operand op, Object val, String name, Row row) {

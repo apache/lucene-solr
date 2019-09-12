@@ -29,15 +29,15 @@ import java.util.function.LongConsumer;
 public interface LongValueStream extends AnalyticsValueStream {
   /**
    * Stream the long representations of all current values, if any exist.
-   * 
+   *
    * @param cons The consumer to accept the values
    */
   void streamLongs(LongConsumer cons);
 
   /**
-   * An interface that represents all of the types a {@link LongValueStream} should be able to cast to. 
+   * An interface that represents all of the types a {@link LongValueStream} should be able to cast to.
    */
-  public static interface CastingLongValueStream extends LongValueStream, DoubleValueStream, 
+  public static interface CastingLongValueStream extends LongValueStream, DoubleValueStream,
                                                          StringValueStream { }
 
   /**

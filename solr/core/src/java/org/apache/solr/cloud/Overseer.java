@@ -16,19 +16,28 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
-import com.codahale.metrics.Timer;
+import org.apache.lucene.util.Version;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.autoscaling.OverseerTriggerThread;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -39,21 +48,27 @@ import org.apache.solr.cloud.overseer.ReplicaMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ConnectionManager;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
@@ -61,7 +76,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.ID;
+import com.codahale.metrics.Timer;
 
 /**
  * Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
@@ -107,7 +122,7 @@ public class Overseer implements SolrCloseable {
     public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
       this.zkClient = reader.getZkClient();
       this.zkStats = zkStats;
-      this.stateUpdateQueue = getStateUpdateQueue(zkClient, zkStats);
+      this.stateUpdateQueue = getStateUpdateQueue(zkStats);
       this.workQueue = getInternalWorkQueue(zkClient, zkStats);
       this.failureMap = getFailureMap(zkClient);
       this.runningMap = getRunningMap(zkClient);
@@ -188,6 +203,8 @@ public class Overseer implements SolrCloseable {
               // the workQueue is empty now, use stateUpdateQueue as fallback queue
               fallbackQueue = stateUpdateQueue;
               fallbackQueueSize = 0;
+            } catch (AlreadyClosedException e) {
+              return;
             } catch (KeeperException.SessionExpiredException e) {
               log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
               return;
@@ -211,6 +228,8 @@ public class Overseer implements SolrCloseable {
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
+          } catch (AlreadyClosedException e) {
+
           } catch (Exception e) {
             log.error("Exception in Overseer main queue loop", e);
           }
@@ -247,6 +266,8 @@ public class Overseer implements SolrCloseable {
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
+          } catch (AlreadyClosedException e) {
+  
           } catch (Exception e) {
             log.error("Exception in Overseer main queue loop", e);
             refreshClusterState = true; // it might have been a bad version error
@@ -308,8 +329,10 @@ public class Overseer implements SolrCloseable {
       byte[] data;
       try {
         data = zkClient.getData(path, null, stat, true);
+      } catch (AlreadyClosedException e) {
+        return;
       } catch (Exception e) {
-        log.error("could not read the "+path+" data" ,e);
+        log.warn("Error communicating with ZooKeeper", e);
         return;
       }
       try {
@@ -437,6 +460,11 @@ public class Overseer implements SolrCloseable {
       } catch (InterruptedException e) {
         success = false;
         Thread.currentThread().interrupt();
+      } catch (AlreadyClosedException e) {
+        success = false;
+      } catch (Exception e) {
+        success = false;
+        log.warn("Unexpected exception", e);
       } finally {
         timerContext.stop();
         if (success)  {
@@ -495,7 +523,7 @@ public class Overseer implements SolrCloseable {
 
   private final ZkStateReader reader;
 
-  private final ShardHandler shardHandler;
+  private final HttpShardHandler shardHandler;
 
   private final UpdateShardHandler updateShardHandler;
 
@@ -507,11 +535,13 @@ public class Overseer implements SolrCloseable {
 
   private Stats stats;
   private String id;
-  private boolean closed;
+  private volatile boolean closed;
+  private volatile boolean systemCollCompatCheck = true;
+
   private CloudConfig config;
 
   // overseer not responsible for closing reader
-  public Overseer(ShardHandler shardHandler,
+  public Overseer(HttpShardHandler shardHandler,
       UpdateShardHandler updateShardHandler, String adminPath,
       final ZkStateReader reader, ZkController zkController, CloudConfig config)
       throws KeeperException, InterruptedException {
@@ -541,7 +571,7 @@ public class Overseer implements SolrCloseable {
 
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
 
-    OverseerNodePrioritizer overseerPrioritizer = new OverseerNodePrioritizer(reader, adminPath, shardHandler.getShardHandlerFactory());
+    OverseerNodePrioritizer overseerPrioritizer = new OverseerNodePrioritizer(reader, getStateUpdateQueue(), adminPath, shardHandler.getShardHandlerFactory(), updateShardHandler.getDefaultHttpClient());
     overseerCollectionConfigSetProcessor = new OverseerCollectionConfigSetProcessor(reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer);
     ccThread = new OverseerThread(ccTg, overseerCollectionConfigSetProcessor, "OverseerCollectionConfigSetProcessor-" + id);
     ccThread.setDaemon(true);
@@ -554,8 +584,127 @@ public class Overseer implements SolrCloseable {
     updaterThread.start();
     ccThread.start();
     triggerThread.start();
-    if (this.id != null) {
-      assert ObjectReleaseTracker.track(this);
+
+    systemCollectionCompatCheck(new BiConsumer<String, Object>() {
+      boolean firstPair = true;
+      @Override
+      public void accept(String s, Object o) {
+        if (firstPair) {
+          log.warn("WARNING: Collection '.system' may need re-indexing due to compatibility issues listed below. See REINDEXCOLLECTION documentation for more details.");
+          firstPair = false;
+        }
+        log.warn("WARNING: *\t{}:\t{}", s, o);
+      }
+    });
+
+    assert ObjectReleaseTracker.track(this);
+  }
+
+  public void systemCollectionCompatCheck(final BiConsumer<String, Object> consumer) {
+    ClusterState clusterState = zkController.getClusterState();
+    if (clusterState == null) {
+      log.warn("Unable to check back-compat of .system collection - can't obtain ClusterState.");
+      return;
+    }
+    DocCollection coll = clusterState.getCollectionOrNull(CollectionAdminParams.SYSTEM_COLL);
+    if (coll == null) {
+      return;
+    }
+    // check that all shard leaders are active
+    boolean allActive = true;
+    for (Slice s : coll.getActiveSlices()) {
+      if (s.getLeader() == null || !s.getLeader().isActive(clusterState.getLiveNodes())) {
+        allActive = false;
+        break;
+      }
+    }
+    if (allActive) {
+      doCompatCheck(consumer);
+    } else {
+      // wait for all leaders to become active and then check
+      zkController.zkStateReader.registerCollectionStateWatcher(CollectionAdminParams.SYSTEM_COLL, (liveNodes, state) -> {
+        boolean active = true;
+        if (state == null || liveNodes.isEmpty()) {
+          return true;
+        }
+        for (Slice s : state.getActiveSlices()) {
+          if (s.getLeader() == null || !s.getLeader().isActive(liveNodes)) {
+            active = false;
+            break;
+          }
+        }
+        if (active) {
+          doCompatCheck(consumer);
+        }
+        return active;
+      });
+    }
+  }
+
+  private void doCompatCheck(BiConsumer<String, Object> consumer) {
+    if (systemCollCompatCheck) {
+      systemCollCompatCheck = false;
+    } else {
+      return;
+    }
+    try (CloudSolrClient client = new CloudSolrClient.Builder(Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
+          .withSocketTimeout(30000).withConnectionTimeout(15000)
+        .withHttpClient(updateShardHandler.getDefaultHttpClient()).build()) {
+      CollectionAdminRequest.ColStatus req = CollectionAdminRequest.collectionStatus(CollectionAdminParams.SYSTEM_COLL)
+          .setWithSegments(true)
+          .setWithFieldInfo(true);
+      CollectionAdminResponse rsp = req.process(client);
+      NamedList<Object> status = (NamedList<Object>)rsp.getResponse().get(CollectionAdminParams.SYSTEM_COLL);
+      Collection<String> nonCompliant = (Collection<String>)status.get("schemaNonCompliant");
+      if (!nonCompliant.contains("(NONE)")) {
+        consumer.accept("indexFieldsNotMatchingSchema", nonCompliant);
+      }
+      Set<Integer> segmentCreatedMajorVersions = new HashSet<>();
+      Set<String> segmentVersions = new HashSet<>();
+      int currentMajorVersion = Version.LATEST.major;
+      String currentVersion = Version.LATEST.toString();
+      segmentVersions.add(currentVersion);
+      segmentCreatedMajorVersions.add(currentMajorVersion);
+      NamedList<Object> shards = (NamedList<Object>)status.get("shards");
+      for (Map.Entry<String, Object> entry : shards) {
+        NamedList<Object> leader = (NamedList<Object>)((NamedList<Object>)entry.getValue()).get("leader");
+        if (leader == null) {
+          continue;
+        }
+        NamedList<Object> segInfos = (NamedList<Object>)leader.get("segInfos");
+        if (segInfos == null) {
+          continue;
+        }
+        NamedList<Object> infos = (NamedList<Object>)segInfos.get("info");
+        if (((Number)infos.get("numSegments")).intValue() > 0) {
+          segmentVersions.add(infos.get("minSegmentLuceneVersion").toString());
+        }
+        if (infos.get("commitLuceneVersion") != null) {
+          segmentVersions.add(infos.get("commitLuceneVersion").toString());
+        }
+        NamedList<Object> segmentInfos = (NamedList<Object>)segInfos.get("segments");
+        segmentInfos.forEach((k, v) -> {
+          NamedList<Object> segment = (NamedList<Object>)v;
+          segmentVersions.add(segment.get("version").toString());
+          if (segment.get("minVersion") != null) {
+            segmentVersions.add(segment.get("version").toString());
+          }
+          if (segment.get("createdVersionMajor") != null) {
+            segmentCreatedMajorVersions.add(((Number)segment.get("createdVersionMajor")).intValue());
+          }
+        });
+      }
+      if (segmentVersions.size() > 1) {
+        consumer.accept("differentSegmentVersions", segmentVersions);
+        consumer.accept("currentLuceneVersion", currentVersion);
+      }
+      if (segmentCreatedMajorVersions.size() > 1) {
+        consumer.accept("differentMajorSegmentVersions", segmentCreatedMajorVersions);
+        consumer.accept("currentLuceneMajorVersion", currentMajorVersion);
+      }
+
+    } catch (SolrServerException | IOException e) {
+      log.warn("Unable to perform back-compat check of .system collection", e);
     }
   }
 
@@ -595,16 +744,13 @@ public class Overseer implements SolrCloseable {
   }
   
   public synchronized void close() {
-    if (closed) return;
     if (this.id != null) {
       log.info("Overseer (id=" + id + ") closing");
     }
-    
-    doClose();
     this.closed = true;
-    if (this.id != null) {
-      assert ObjectReleaseTracker.release(this);
-    }
+    doClose();
+
+    assert ObjectReleaseTracker.release(this);
   }
 
   @Override
@@ -660,11 +806,10 @@ public class Overseer implements SolrCloseable {
    * <p>
    * This method will create the /overseer znode in ZooKeeper if it does not exist already.
    *
-   * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
    * @return a {@link ZkDistributedQueue} object
    */
-  public static ZkDistributedQueue getStateUpdateQueue(final SolrZkClient zkClient) {
-    return getStateUpdateQueue(zkClient, new Stats());
+  ZkDistributedQueue getStateUpdateQueue() {
+    return getStateUpdateQueue(new Stats());
   }
 
   /**
@@ -672,13 +817,15 @@ public class Overseer implements SolrCloseable {
    * This method should not be used directly by anyone other than the Overseer itself.
    * This method will create the /overseer znode in ZooKeeper if it does not exist already.
    *
-   * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
    * @param zkStats  a {@link Stats} object which tracks statistics for all zookeeper operations performed by this queue
    * @return a {@link ZkDistributedQueue} object
    */
-  static ZkDistributedQueue getStateUpdateQueue(final SolrZkClient zkClient, Stats zkStats) {
-    createOverseerNode(zkClient);
-    return new ZkDistributedQueue(zkClient, "/overseer/queue", zkStats, STATE_UPDATE_MAX_QUEUE);
+  ZkDistributedQueue getStateUpdateQueue(Stats zkStats) {
+    return new ZkDistributedQueue(reader.getZkClient(), "/overseer/queue", zkStats, STATE_UPDATE_MAX_QUEUE, new ConnectionManager.IsClosed(){
+      public boolean isClosed() {
+        return Overseer.this.isClosed() || zkController.getCoreContainer().isShutDown();
+      }
+    });
   }
 
   /**
@@ -697,31 +844,26 @@ public class Overseer implements SolrCloseable {
    * @return a {@link ZkDistributedQueue} object
    */
   static ZkDistributedQueue getInternalWorkQueue(final SolrZkClient zkClient, Stats zkStats) {
-    createOverseerNode(zkClient);
     return new ZkDistributedQueue(zkClient, "/overseer/queue-work", zkStats);
   }
 
   /* Internal map for failed tasks, not to be used outside of the Overseer */
   static DistributedMap getRunningMap(final SolrZkClient zkClient) {
-    createOverseerNode(zkClient);
     return new DistributedMap(zkClient, "/overseer/collection-map-running");
   }
 
   /* Size-limited map for successfully completed tasks*/
   static DistributedMap getCompletedMap(final SolrZkClient zkClient) {
-    createOverseerNode(zkClient);
     return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-completed", NUM_RESPONSES_TO_STORE, (child) -> getAsyncIdsMap(zkClient).remove(child));
   }
 
   /* Map for failed tasks, not to be used outside of the Overseer */
   static DistributedMap getFailureMap(final SolrZkClient zkClient) {
-    createOverseerNode(zkClient);
     return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-failure", NUM_RESPONSES_TO_STORE, (child) -> getAsyncIdsMap(zkClient).remove(child));
   }
   
   /* Map of async IDs currently in use*/
   static DistributedMap getAsyncIdsMap(final SolrZkClient zkClient) {
-    createOverseerNode(zkClient);
     return new DistributedMap(zkClient, "/overseer/async_ids");
   }
 
@@ -740,7 +882,7 @@ public class Overseer implements SolrCloseable {
    * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
    * @return a {@link ZkDistributedQueue} object
    */
-  static OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient) {
+  OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient) {
     return getCollectionQueue(zkClient, new Stats());
   }
 
@@ -758,8 +900,7 @@ public class Overseer implements SolrCloseable {
    * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
    * @return a {@link ZkDistributedQueue} object
    */
-  static OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient, Stats zkStats) {
-    createOverseerNode(zkClient);
+  OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient, Stats zkStats) {
     return new OverseerTaskQueue(zkClient, "/overseer/collection-queue-work", zkStats);
   }
 
@@ -778,7 +919,7 @@ public class Overseer implements SolrCloseable {
    * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
    * @return a {@link ZkDistributedQueue} object
    */
-  static OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient)  {
+  OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient)  {
     return getConfigSetQueue(zkClient, new Stats());
   }
 
@@ -801,15 +942,14 @@ public class Overseer implements SolrCloseable {
    * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
    * @return a {@link ZkDistributedQueue} object
    */
-  static OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient, Stats zkStats) {
+  OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient, Stats zkStats) {
     // For now, we use the same queue as the collection queue, but ensure
     // that the actions are prefixed with a unique string.
-    createOverseerNode(zkClient);
     return getCollectionQueue(zkClient, zkStats);
   }
   
 
-  private static void createOverseerNode(final SolrZkClient zkClient) {
+  private void createOverseerNode(final SolrZkClient zkClient) {
     try {
       zkClient.create("/overseer", new byte[0], CreateMode.PERSISTENT, true);
     } catch (KeeperException.NodeExistsException e) {
@@ -823,6 +963,7 @@ public class Overseer implements SolrCloseable {
       throw new RuntimeException(e);
     }
   }
+  
   public static boolean isLegacy(ZkStateReader stateReader) {
     String legacyProperty = stateReader.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "false");
     return "true".equals(legacyProperty);
@@ -835,6 +976,13 @@ public class Overseer implements SolrCloseable {
 
   public ZkStateReader getZkStateReader() {
     return reader;
+  }
+
+  public void offerStateUpdate(byte[] data) throws KeeperException, InterruptedException {
+    if (zkController.getZkClient().isClosed()) {
+      throw new AlreadyClosedException();
+    }
+    getStateUpdateQueue().offer(data);
   }
 
 }

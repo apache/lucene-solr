@@ -45,6 +45,15 @@ public class VariableBase implements Variable {
     }
   }
 
+  @Override
+  public String postValidate(Condition condition) {
+    if(Clause.IGNORE_TAGS.contains(condition.getName())) return null;
+    if(condition.getOperand() == Operand.WILDCARD && condition.clause.nodeSetPresent){
+      return "#EACH not supported in tags in nodeset";
+    }
+    return null;
+  }
+
   static Object getOperandAdjustedValue(Object val, Object original) {
     if (original instanceof Condition) {
       Condition condition = (Condition) original;
@@ -84,7 +93,7 @@ public class VariableBase implements Variable {
 
   public static Type getTagType(String name) {
     Type info = Type.get(name);
-    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = Type.STRING;
+    if (info == null && name.startsWith(ImplicitSnitch.SYSPROP)) info = Type.SYSPROP;
     if (info == null && name.startsWith(Clause.METRICS_PREFIX)) info = Type.LAZY;
     return info;
   }

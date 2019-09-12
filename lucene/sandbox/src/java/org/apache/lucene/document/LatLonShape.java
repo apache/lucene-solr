@@ -19,30 +19,29 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
+import org.apache.lucene.document.ShapeField.Triangle;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
-import org.apache.lucene.geo.Tessellator.Triangle;
-import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.PointValues; // javadoc
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
 /**
- * An indexed shape utility class.
+ * An geo shape utility class for indexing and searching gis geometries
+ * whose vertices are latitude, longitude values (in decimal degrees).
  * <p>
- * {@link Polygon}'s are decomposed into a triangular mesh using the {@link Tessellator} utility class
- * Each {@link Triangle} is encoded and indexed as a multi-value field.
- * <p>
- * Finding all shapes that intersect a range (e.g., bounding box) at search time is efficient.
- * <p>
- * This class defines static factory methods for common operations:
+ * This class defines six static factory methods for common indexing and search operations:
  * <ul>
- *   <li>{@link #createIndexableFields(String, Polygon)} for matching polygons that intersect a bounding box.
- *   <li>{@link #newBoxQuery newBoxQuery()} for matching polygons that intersect a bounding box.
+ *   <li>{@link #createIndexableFields(String, Polygon)} for indexing a geo polygon.
+ *   <li>{@link #createIndexableFields(String, Line)} for indexing a geo linestring.
+ *   <li>{@link #createIndexableFields(String, double, double)} for indexing a lat, lon geo point.
+ *   <li>{@link #newBoxQuery newBoxQuery()} for matching geo shapes that have some {@link QueryRelation} with a bounding box.
+ *   <li>{@link #newLineQuery newLineQuery()} for matching geo shapes that have some {@link QueryRelation} with a linestring.
+ *   <li>{@link #newPolygonQuery newPolygonQuery()} for matching geo shapes that have some {@link QueryRelation} with a polygon.
  * </ul>
 
  * <b>WARNING</b>: Like {@link LatLonPoint}, vertex values are indexed with some loss of precision from the
@@ -54,13 +53,6 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
  * @lucene.experimental
  */
 public class LatLonShape {
-  public static final int BYTES = LatLonPoint.BYTES;
-
-  protected static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setDimensions(6, BYTES);
-    TYPE.freeze();
-  }
 
   // no instance:
   private LatLonShape() {
@@ -69,11 +61,10 @@ public class LatLonShape {
   /** create indexable fields for polygon geometry */
   public static Field[] createIndexableFields(String fieldName, Polygon polygon) {
     // the lionshare of the indexing is done by the tessellator
-    List<Triangle> tessellation = Tessellator.tessellate(polygon);
-    List<LatLonTriangle> fields = new ArrayList<>();
-    for (Triangle t : tessellation) {
-      fields.add(new LatLonTriangle(fieldName, t.getEncodedX(0), t.getEncodedY(0),
-          t.getEncodedX(1), t.getEncodedY(1), t.getEncodedX(2), t.getEncodedY(2)));
+    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
+    List<Triangle> fields = new ArrayList<>();
+    for (Tessellator.Triangle t : tessellation) {
+      fields.add(new Triangle(fieldName, t));
     }
     return fields.toArray(new Field[fields.size()]);
   }
@@ -81,95 +72,41 @@ public class LatLonShape {
   /** create indexable fields for line geometry */
   public static Field[] createIndexableFields(String fieldName, Line line) {
     int numPoints = line.numPoints();
-    List<LatLonTriangle> fields = new ArrayList<>(numPoints - 1);
-
-    // encode the line vertices
-    int[] encodedLats = new int[numPoints];
-    int[] encodedLons = new int[numPoints];
-    for (int i = 0; i < numPoints; ++i) {
-      encodedLats[i] = encodeLatitude(line.getLat(i));
-      encodedLons[i] = encodeLongitude(line.getLon(i));
-    }
-
+    Field[] fields = new Field[numPoints - 1];
     // create "flat" triangles
-    int aLat, bLat, aLon, bLon, temp;
     for (int i = 0, j = 1; j < numPoints; ++i, ++j) {
-      aLat = encodedLats[i];
-      aLon = encodedLons[i];
-      bLat = encodedLats[j];
-      bLon = encodedLons[j];
-      if (aLat > bLat) {
-        temp = aLat;
-        aLat = bLat;
-        bLat = temp;
-        temp = aLon;
-        aLon = bLon;
-        bLon = temp;
-      } else if (aLat == bLat) {
-        if (aLon > bLon) {
-          temp = aLat;
-          aLat = bLat;
-          bLat = temp;
-          temp = aLon;
-          aLon = bLon;
-          bLon = temp;
-        }
-      }
-      fields.add(new LatLonTriangle(fieldName, aLon, aLat, bLon, bLat, aLon, aLat));
+      fields[i] = new Triangle(fieldName,
+          encodeLongitude(line.getLon(i)), encodeLatitude(line.getLat(i)),
+          encodeLongitude(line.getLon(j)), encodeLatitude(line.getLat(j)),
+          encodeLongitude(line.getLon(i)), encodeLatitude(line.getLat(i)));
     }
-    return fields.toArray(new Field[fields.size()]);
+    return fields;
   }
 
   /** create indexable fields for point geometry */
   public static Field[] createIndexableFields(String fieldName, double lat, double lon) {
-    final int encodedLat = encodeLatitude(lat);
-    final int encodedLon = encodeLongitude(lon);
-    return new Field[] {new LatLonTriangle(fieldName, encodedLon, encodedLat, encodedLon, encodedLat, encodedLon, encodedLat)};
+    return new Field[] {new Triangle(fieldName,
+        encodeLongitude(lon), encodeLatitude(lat),
+        encodeLongitude(lon), encodeLatitude(lat),
+        encodeLongitude(lon), encodeLatitude(lat))};
   }
 
-  /** create a query to find all polygons that intersect a defined bounding box
-   *  note: does not currently support dateline crossing boxes
-   * todo split dateline crossing boxes into two queries like {@link LatLonPoint#newBoxQuery}
-   **/
+  /** create a query to find all indexed geo shapes that intersect a defined bounding box **/
   public static Query newBoxQuery(String field, QueryRelation queryRelation, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
     return new LatLonShapeBoundingBoxQuery(field, queryRelation, minLatitude, maxLatitude, minLongitude, maxLongitude);
   }
 
+  /** create a query to find all indexed geo shapes that intersect a provided linestring (or array of linestrings)
+   *  note: does not support dateline crossing
+   **/
+  public static Query newLineQuery(String field, QueryRelation queryRelation, Line... lines) {
+    return new LatLonShapeLineQuery(field, queryRelation, lines);
+  }
+
+  /** create a query to find all indexed geo shapes that intersect a provided polygon (or array of polygons)
+   *  note: does not support dateline crossing
+   **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
     return new LatLonShapePolygonQuery(field, queryRelation, polygons);
-  }
-
-  /** polygons are decomposed into tessellated triangles using {@link org.apache.lucene.geo.Tessellator}
-   * these triangles are encoded and inserted as separate indexed POINT fields
-   */
-  private static class LatLonTriangle extends Field {
-
-    LatLonTriangle(String name, int ax, int ay, int bx, int by, int cx, int cy) {
-      super(name, TYPE);
-      setTriangleValue(ax, ay, bx, by, cx, cy);
-    }
-
-    public void setTriangleValue(int aX, int aY, int bX, int bY, int cX, int cY) {
-      final byte[] bytes;
-
-      if (fieldsData == null) {
-        bytes = new byte[24];
-        fieldsData = new BytesRef(bytes);
-      } else {
-        bytes = ((BytesRef) fieldsData).bytes;
-      }
-
-      NumericUtils.intToSortableBytes(aY, bytes, 0);
-      NumericUtils.intToSortableBytes(aX, bytes, BYTES);
-      NumericUtils.intToSortableBytes(bY, bytes, BYTES * 2);
-      NumericUtils.intToSortableBytes(bX, bytes, BYTES * 3);
-      NumericUtils.intToSortableBytes(cY, bytes, BYTES * 4);
-      NumericUtils.intToSortableBytes(cX, bytes, BYTES * 5);
-    }
-  }
-
-  /** Query Relation Types **/
-  public enum QueryRelation {
-    INTERSECTS, WITHIN, DISJOINT
   }
 }

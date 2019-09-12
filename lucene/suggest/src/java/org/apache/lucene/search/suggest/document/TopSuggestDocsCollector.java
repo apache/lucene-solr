@@ -19,7 +19,6 @@ package org.apache.lucene.search.suggest.document;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.analysis.CharArraySet;
@@ -28,6 +27,7 @@ import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.search.suggest.Lookup;
 
 import static org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestScoreDoc;
 
@@ -148,18 +148,19 @@ public class TopSuggestDocsCollector extends SimpleCollector {
       // numSegments), but typically numSegments is smallish and num is smallish so this won't matter much in practice:
 
       Collections.sort(pendingResults,
-                       new Comparator<SuggestScoreDoc>() {
-                         @Override
-                         public int compare(SuggestScoreDoc a, SuggestScoreDoc b) {
-                           // sort by higher score
-                           int cmp = Float.compare(b.score, a.score);
-                           if (cmp == 0) {
-                             // tie break by lower docID:
-                             cmp = Integer.compare(a.doc, b.doc);
-                           }
-                           return cmp;
-                         }
-                       });
+          (a, b) -> {
+            // sort by higher score
+            int cmp = Float.compare(b.score, a.score);
+            if (cmp == 0) {
+              // tie break by completion key
+              cmp = Lookup.CHARSEQUENCE_COMPARATOR.compare(a.key, b.key);
+              if (cmp == 0) {
+                // prefer smaller doc id, in case of a tie
+                cmp = Integer.compare(a.doc, b.doc);
+              }
+            }
+            return cmp;
+          });
 
       List<SuggestScoreDoc> hits = new ArrayList<>();
       

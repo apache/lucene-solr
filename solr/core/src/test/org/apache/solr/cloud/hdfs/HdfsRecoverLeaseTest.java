@@ -72,8 +72,7 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
     
     URI uri = dfsCluster.getURI();
     Path path = new Path(uri);
-    Configuration conf = new Configuration();
-    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
+    Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
     FileSystem fs1 = FileSystem.get(path.toUri(), conf);
     Path testFile = new Path(uri.toString() + "/testfile");
     FSDataOutputStream out = fs1.create(testFile);
@@ -131,8 +130,7 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
     
     final URI uri = dfsCluster.getURI();
     final Path path = new Path(uri);
-    final Configuration conf = new Configuration();
-    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
+    final Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
     
     // n threads create files
     class WriterThread extends Thread {

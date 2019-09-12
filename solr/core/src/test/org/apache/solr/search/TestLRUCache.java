@@ -21,16 +21,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.SolrMetricManager;
 
 /**
  * Test for <code>org.apache.solr.search.LRUCache</code>
  */
-public class TestLRUCache extends LuceneTestCase {
+public class TestLRUCache extends SolrTestCase {
 
   SolrMetricManager metricManager = new SolrMetricManager();
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
@@ -146,19 +145,19 @@ public class TestLRUCache extends LuceneTestCase {
       }
     });
     assertEquals(1, accountableLRUCache.size());
-    assertEquals(baseSize + 512 * 1024 + LRUCache.DEFAULT_RAM_BYTES_USED + LRUCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY, accountableLRUCache.ramBytesUsed());
-    accountableLRUCache.put("2", new Accountable() {
+    assertEquals(baseSize + 512 * 1024 + RamUsageEstimator.sizeOfObject("1") + RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY, accountableLRUCache.ramBytesUsed());
+    accountableLRUCache.put("20", new Accountable() {
       @Override
       public long ramBytesUsed() {
         return 512 * 1024;
       }
     });
     assertEquals(1, accountableLRUCache.size());
-    assertEquals(baseSize + 512 * 1024 + LRUCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY + LRUCache.DEFAULT_RAM_BYTES_USED, accountableLRUCache.ramBytesUsed());
+    assertEquals(baseSize + 512 * 1024 + RamUsageEstimator.sizeOfObject("20") + RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY, accountableLRUCache.ramBytesUsed());
     Map<String,Object> nl = accountableLRUCache.getMetricsMap().getValue();
     assertEquals(1L, nl.get("evictions"));
     assertEquals(1L, nl.get("evictionsRamUsage"));
-    accountableLRUCache.put("3", new Accountable() {
+    accountableLRUCache.put("300", new Accountable() {
       @Override
       public long ramBytesUsed() {
         return 1024;
@@ -168,25 +167,92 @@ public class TestLRUCache extends LuceneTestCase {
     assertEquals(1L, nl.get("evictions"));
     assertEquals(1L, nl.get("evictionsRamUsage"));
     assertEquals(2L, accountableLRUCache.size());
-    assertEquals(baseSize + 513 * 1024 + LRUCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY * 2 + LRUCache.DEFAULT_RAM_BYTES_USED * 2, accountableLRUCache.ramBytesUsed());
+    assertEquals(baseSize + 513 * 1024 + RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY * 2 +
+        RamUsageEstimator.sizeOfObject("20") + RamUsageEstimator.sizeOfObject("300"), accountableLRUCache.ramBytesUsed());
 
     accountableLRUCache.clear();
     assertEquals(RamUsageEstimator.shallowSizeOfInstance(LRUCache.class), accountableLRUCache.ramBytesUsed());
   }
 
-  public void testNonAccountableValues() throws Exception {
-    LRUCache<String, String> cache = new LRUCache<>();
+//  public void testNonAccountableValues() throws Exception {
+//    LRUCache<String, String> cache = new LRUCache<>();
+//    Map<String, String> params = new HashMap<>();
+//    params.put("size", "5");
+//    params.put("maxRamMB", "1");
+//    CacheRegenerator cr = new NoOpRegenerator();
+//    Object o = cache.init(params, null, cr);
+//
+//    expectThrows(SolrException.class, "Adding a non-accountable value to a cache configured with maxRamBytes should have failed",
+//        () -> cache.put("1", "1")
+//    );
+//  }
+//
+
+  public void testSetLimits() throws Exception {
+    LRUCache<String, Accountable> cache = new LRUCache<>();
+    cache.initializeMetrics(metricManager, registry, "foo", scope);
     Map<String, String> params = new HashMap<>();
-    params.put("size", "5");
-    params.put("maxRamMB", "1");
+    params.put("size", "6");
+    params.put("maxRamMB", "8");
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = cache.init(params, null, cr);
-
-    try {
-      cache.put("1", "1");
-      fail("Adding a non-accountable value to a cache configured with maxRamBytes should have failed");
-    } catch (Exception e) {
-      assertEquals(e.getClass(), SolrException.class);
+    for (int i = 0; i < 6; i++) {
+      cache.put("" + i, new Accountable() {
+        @Override
+        public long ramBytesUsed() {
+          return 1024 * 1024;
+        }
+      });
     }
+    // no evictions yet
+    assertEquals(6, cache.size());
+    cache.setMaxSize(5);
+    // should not happen yet - evictions are triggered by put
+    assertEquals(6, cache.size());
+    cache.put("6", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 1024 * 1024;
+      }
+    });
+    // should evict by count limit
+    assertEquals(5, cache.size());
+
+    // modify ram limit
+    cache.setMaxRamMB(3);
+    // should not happen yet - evictions are triggered by put
+    assertEquals(5, cache.size());
+    cache.put("7", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 0;
+      }
+    });
+    assertEquals(3, cache.size());
+    assertNotNull("5", cache.get("5"));
+    assertNotNull("6", cache.get("6"));
+    assertNotNull("7", cache.get("7"));
+
+    // scale up
+
+    cache.setMaxRamMB(4);
+    cache.put("8", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 1024 * 1024;
+      }
+    });
+    assertEquals(4, cache.size());
+
+    cache.setMaxSize(10);
+    for (int i = 0; i < 6; i++) {
+      cache.put("new" + i, new Accountable() {
+        @Override
+        public long ramBytesUsed() {
+          return 0;
+        }
+      });
+    }
+    assertEquals(10, cache.size());
   }
 }

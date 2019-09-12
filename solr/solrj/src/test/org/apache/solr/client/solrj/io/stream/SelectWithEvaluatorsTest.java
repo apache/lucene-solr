@@ -60,7 +60,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .addConfig("ml", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
         .configure();
-
+    
     String collection;
     useAlias = random().nextBoolean();
     if (useAlias) {

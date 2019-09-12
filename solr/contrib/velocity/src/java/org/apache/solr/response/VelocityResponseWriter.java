@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
@@ -46,16 +45,14 @@ import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
-import org.apache.velocity.tools.ConversionUtils;
+import org.apache.velocity.tools.generic.CollectionTool;
 import org.apache.velocity.tools.generic.ComparisonDateTool;
 import org.apache.velocity.tools.generic.DisplayTool;
 import org.apache.velocity.tools.generic.EscapeTool;
-import org.apache.velocity.tools.generic.ListTool;
 import org.apache.velocity.tools.generic.LocaleConfig;
 import org.apache.velocity.tools.generic.MathTool;
 import org.apache.velocity.tools.generic.NumberTool;
 import org.apache.velocity.tools.generic.ResourceTool;
-import org.apache.velocity.tools.generic.SortTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +84,6 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   private String initPropertiesFileName;  // used just to hold from init() to inform()
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final SolrVelocityLogger velocityLogger = new SolrVelocityLogger(log);
   private Properties velocityInitProps = new Properties();
   private Map<String,String> customTools = new HashMap<String,String>();
 
@@ -211,8 +207,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     context.put("log", log);   // TODO: add test; TODO: should this be overridable with a custom "log" named tool?
     context.put("esc", new EscapeTool());
     context.put("date", new ComparisonDateTool());
-    context.put("list", new ListTool());
-    context.put(SORT, new SortTool());
+    context.put(SORT, new CollectionTool());
 
     MathTool mathTool = new MathTool();
     mathTool.configure(toolConfig);
@@ -285,9 +280,6 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   private VelocityEngine createEngine(SolrQueryRequest request) {
     VelocityEngine engine = new VelocityEngine();
 
-    // route all Velocity logging through Solr's logging facility
-    engine.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM, velocityLogger);
-
     // Set some engine properties that improve the experience
     //   - these could be considered in the future for parameterization, but can also be overridden by using
     //     the init.properties.file setting.  (TODO: add a test for this properties set here overridden)
@@ -338,9 +330,23 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     loaders.add("builtin");
     engine.setProperty("builtin.resource.loader.instance", new ClasspathResourceLoader());
 
-    engine.setProperty(RuntimeConstants.RESOURCE_LOADER, StringUtils.join(loaders,','));
+    engine.setProperty(RuntimeConstants.RESOURCE_LOADER, String.join(",", loaders));
 
     engine.setProperty(RuntimeConstants.INPUT_ENCODING, "UTF-8");
+
+    // Work around VELOCITY-908 with Velocity not handling locales properly
+    Object spaceGobblingInitProperty = velocityInitProps.get(RuntimeConstants.SPACE_GOBBLING);
+    if(spaceGobblingInitProperty != null) {
+      // If there is an init property, uppercase it before Velocity.
+      velocityInitProps.put(RuntimeConstants.SPACE_GOBBLING,
+          String.valueOf(spaceGobblingInitProperty).toUpperCase(Locale.ROOT));
+    } else {
+      // Fallback to checking if the engine default property is set and if not make it a reasonable default.
+      Object spaceGobblingEngineProperty = engine.getProperty(RuntimeConstants.SPACE_GOBBLING);
+      if(spaceGobblingEngineProperty == null) {
+        engine.setProperty(RuntimeConstants.SPACE_GOBBLING, RuntimeConstants.SpaceGobbling.LINES.toString());
+      }
+    }
 
     // bring in any custom properties too
     engine.init(velocityInitProps);
@@ -381,7 +387,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     return "{\"result\":\"" + replaced + "\"}";
   }
 
-  // see: http://svn.apache.org/repos/asf/velocity/tools/branches/2.0.x/src/main/java/org/apache/velocity/tools/generic/ResourceTool.java
+  // see: https://github.com/apache/velocity-tools/blob/trunk/velocity-tools-generic/src/main/java/org/apache/velocity/tools/generic/ResourceTool.java
   private static class SolrVelocityResourceTool extends ResourceTool {
 
     private ClassLoader solrClassLoader;
@@ -397,18 +403,6 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
           "velocity." + baseName,
           (loc == null) ? this.getLocale() : this.toLocale(loc),
           solrClassLoader);
-    }
-
-    // Why did Velocity Tools make this private?  Copied from ResourceTools.java
-    private Locale toLocale(Object obj) {
-      if (obj == null) {
-        return null;
-      }
-      if (obj instanceof Locale) {
-        return (Locale) obj;
-      }
-      String s = String.valueOf(obj);
-      return ConversionUtils.toLocale(s);
     }
   }
 }

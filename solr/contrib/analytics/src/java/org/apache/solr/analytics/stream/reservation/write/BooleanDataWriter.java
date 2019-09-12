@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.function.BooleanSupplier;
 
 public class BooleanDataWriter extends ReductionDataWriter<BooleanSupplier> {
-  
+
   public BooleanDataWriter(DataOutput output, BooleanSupplier extractor) {
     super(output, extractor);
   }

@@ -24,6 +24,8 @@ import org.apache.lucene.analysis.AnalyzerWrapper;
  * This Analyzer limits the number of tokens while indexing. It is
  * a replacement for the maximum field length setting inside {@link org.apache.lucene.index.IndexWriter}.
  * @see LimitTokenCountFilter
+ *
+ * @since 3.1
  */
 public final class LimitTokenCountAnalyzer extends AnalyzerWrapper {
   private final Analyzer delegate;

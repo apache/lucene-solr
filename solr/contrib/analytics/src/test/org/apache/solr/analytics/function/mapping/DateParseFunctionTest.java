@@ -81,27 +81,27 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     assertFalse(func.exists());
     func.getLong();
     assertFalse(func.exists());
-    
+
     // Incorrect Value
     val.setValue("1800-01T10:30:15Z").setExists(true);
     func.getDate();
     assertFalse(func.exists());
     func.getLong();
     assertFalse(func.exists());
-    
+
     val.setValue("1800-01-T::Z").setExists(true);
     func.getDate();
     assertFalse(func.exists());
     func.getLong();
     assertFalse(func.exists());
-    
+
     val.setValue("1800--01T30:30:15Z").setExists(true);
     func.getDate();
     assertFalse(func.exists());
     func.getLong();
     assertFalse(func.exists());
-   
-    
+
+
     // Value exists
     val.setValue("1800-01-01T10:30:15Z").setExists(true);
     assertEquals(date1, func.getDate());
@@ -122,7 +122,7 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     Date date2 = Date.from(Instant.parse("1920-04-15T18:15:45Z"));
     Date date3 = Date.from(Instant.parse("2012-11-30T20:30:15Z"));
     TestLongValueStream val = new TestLongValueStream();
-    
+
     AnalyticsValueStream uncasted = DateParseFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof DateValueStream);
     DateValueStream func = (DateValueStream) uncasted;
@@ -135,7 +135,7 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(date1.getTime());
     Iterator<Date> values1 = Arrays.asList(date1).iterator();
@@ -150,7 +150,7 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
       assertEquals(times1.next().longValue(), value);
     });
     assertFalse(times1.hasNext());
-    
+
     // Multiple values
     val.setValues(date1.getTime(), date2.getTime(), date3.getTime());
     Iterator<Date> values2 = Arrays.asList(date1, date2, date3).iterator();
@@ -173,7 +173,7 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     Date date2 = Date.from(Instant.parse("1920-04-15T18:15:45Z"));
     Date date3 = Date.from(Instant.parse("2012-11-30T20:30:15Z"));
     TestStringValueStream val = new TestStringValueStream();
-    
+
     AnalyticsValueStream uncasted = DateParseFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof DateValueStream);
     DateValueStream func = (DateValueStream) uncasted;
@@ -186,7 +186,7 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Incorrect value
     val.setValues("10:30:15Z");
     func.streamDates( value -> {
@@ -195,7 +195,7 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     val.setValues("01-33T10:30:15Z");
     func.streamDates( value -> {
       assertTrue("There should be no values to stream", false);
@@ -203,7 +203,7 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     val.setValues("1800-01T30:30:15Z");
     func.streamDates( value -> {
       assertTrue("There should be no values to stream", false);
@@ -211,7 +211,7 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues("1800-01-01T10:30:15Z");
     Iterator<Date> values1 = Arrays.asList(date1).iterator();
@@ -226,7 +226,7 @@ public class DateParseFunctionTest extends SolrTestCaseJ4 {
       assertEquals(times1.next().longValue(), value);
     });
     assertFalse(times1.hasNext());
-    
+
     // Multiple values
     val.setValues("1800-01-01T10:30:15Z", "1920-04-15T18:15:45Z", "2012-11-30T20:30:15Z");
     Iterator<Date> values2 = Arrays.asList(date1, date2, date3).iterator();

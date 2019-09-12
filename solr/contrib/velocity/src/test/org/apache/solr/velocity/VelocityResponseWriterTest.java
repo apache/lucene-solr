@@ -16,19 +16,19 @@
  */
 package org.apache.solr.velocity;
 
+import java.io.IOException;
+import java.io.StringWriter;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrParamResourceLoader;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.VelocityResponseWriter;
-import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.io.StringWriter;
 
 public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   @BeforeClass
@@ -46,7 +46,7 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   @Test
   public void testCustomParamTemplate() throws Exception {
     org.apache.solr.response.VelocityResponseWriter vrw = new VelocityResponseWriter();
-    NamedList<String> nl = new NamedList<String>();
+    NamedList<String> nl = new NamedList<>();
     nl.add(VelocityResponseWriter.PARAMS_RESOURCE_LOADER_ENABLED, "true");
     vrw.init(nl);
     SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"custom",
@@ -59,25 +59,20 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testParamResourceLoaderDisabled() throws Exception {
+  public void testParamResourceLoaderDisabled() {
     VelocityResponseWriter vrw = new VelocityResponseWriter();
     // by default param resource loader is disabled, no need to set it here
     SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"custom",
         SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"custom","$response.response.response_data");
     SolrQueryResponse rsp = new SolrQueryResponse();
     StringWriter buf = new StringWriter();
-    try {
-      vrw.write(buf, req, rsp);
-      fail("Should have thrown exception due to missing template");
-    } catch (IOException e) {
-      // expected exception
-    }
+    expectThrows(IOException.class, () -> vrw.write(buf, req, rsp));
   }
 
   @Test
   public void testFileResourceLoader() throws Exception {
     VelocityResponseWriter vrw = new VelocityResponseWriter();
-    NamedList<String> nl = new NamedList<String>();
+    NamedList<String> nl = new NamedList<>();
     nl.add("template.base.dir", getFile("velocity").getAbsolutePath());
     vrw.init(nl);
     SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"file");
@@ -196,9 +191,9 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testContentType() throws Exception {
+  public void testContentType() {
     VelocityResponseWriter vrw = new VelocityResponseWriter();
-    NamedList<String> nl = new NamedList<String>();
+    NamedList<String> nl = new NamedList<>();
     vrw.init(nl);
     SolrQueryResponse rsp = new SolrQueryResponse();
 
@@ -220,5 +215,4 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
             VelocityResponseWriter.JSON,"wrf",
             VelocityResponseWriter.CONTENT_TYPE,"text/plain"), rsp));
   }
-
 }

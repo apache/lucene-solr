@@ -53,6 +53,7 @@ public class MetricTriggerTest extends SolrCloudTestCase {
     CloudSolrClient solrClient = cluster.getSolrClient();
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
+    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 1);
   }
 
   @Test

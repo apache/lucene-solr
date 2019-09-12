@@ -38,6 +38,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * 
  * <p><b>NOTE</b>: This class uses the same {@link org.apache.lucene.util.Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
+ *
+ * @since 3.1
  */
 public final class GreekAnalyzer extends StopwordAnalyzerBase {
   /** File containing default Greek stopwords. */

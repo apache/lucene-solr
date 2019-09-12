@@ -99,7 +99,7 @@ The configset to be created when the upload is complete. This parameter is requi
 
 The body of the request should be a zip file that contains the configset. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file).
 
-Here is an example on how to create the zip file named "myconfig.zip" and upload it as a config set named "myConfigSet":
+Here is an example on how to create the zip file named "myconfig.zip" and upload it as a configset named "myConfigSet":
 
 [source,bash]
 ----

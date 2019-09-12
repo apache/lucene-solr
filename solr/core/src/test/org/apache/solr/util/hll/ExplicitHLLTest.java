@@ -18,7 +18,7 @@ package org.apache.solr.util.hll;
 
 import java.util.HashSet;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 import com.carrotsearch.hppc.LongHashSet;
@@ -28,7 +28,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
 /**
  * Tests {@link HLL} of type {@link HLLType#EXPLICIT}.
  */
-public class ExplicitHLLTest extends LuceneTestCase {
+public class ExplicitHLLTest extends SolrTestCase {
     /**
      * Tests basic set semantics of {@link HLL#addRaw(long)}.
      */

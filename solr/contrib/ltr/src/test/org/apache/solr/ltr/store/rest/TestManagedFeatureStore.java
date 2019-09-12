@@ -25,7 +25,6 @@ import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.store.FeatureStore;
-import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -130,20 +129,15 @@ public class TestManagedFeatureStore extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void getInvalidInstanceTest()
-  {
+  public void getInvalidInstanceTest() {
     final String nonExistingClassName = "org.apache.solr.ltr.feature.LOLFeature";
     final ClassNotFoundException expectedException =
         new ClassNotFoundException(nonExistingClassName);
-    try {
-      fstore.addFeature(createMap("test",
-          nonExistingClassName, null),
-          "testFstore2");
-      fail("getInvalidInstanceTest failed to throw exception: "+expectedException);
-    } catch (Exception actualException) {
-      Throwable rootError = getRootCause(actualException);
-      assertEquals(expectedException.toString(), rootError.toString());
-    }
+    Exception ex = expectThrows(Exception.class, () -> {
+      fstore.addFeature(createMap("test", nonExistingClassName, null), "testFstore2");
+    });
+    Throwable rootError = getRootCause(ex);
+    assertEquals(expectedException.toString(), rootError.toString());
   }
 
 }

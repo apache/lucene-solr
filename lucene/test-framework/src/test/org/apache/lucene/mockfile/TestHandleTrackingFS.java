@@ -19,17 +19,12 @@ package org.apache.lucene.mockfile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.Object;
-import java.lang.Override;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import org.apache.lucene.mockfile.HandleTrackingFS;
-import org.apache.lucene.mockfile.LeakFS;
 
 /** Basic tests for HandleTrackingFS */
 public class TestHandleTrackingFS extends MockFileSystemTestCase {
@@ -58,37 +53,17 @@ public class TestHandleTrackingFS extends MockFileSystemTestCase {
 
     OutputStream file = Files.newOutputStream(dir.resolve("somefile"));
     file.write(5);
-    try {
-      file.close();
-      fail("expected IOException");
-    } catch (IOException ex) {
-      // expected
-    }
+    expectThrows(IOException.class, file::close);
 
     SeekableByteChannel channel = Files.newByteChannel(dir.resolve("somefile"));
-    try {
-      channel.close();
-      fail("expected IOException");
-    } catch (IOException ex) {
-      // expected
-    }
+    expectThrows(IOException.class, channel::close);
 
     InputStream stream = Files.newInputStream(dir.resolve("somefile"));
-    try {
-      stream.close();
-      fail("expected IOException");
-    } catch (IOException ex) {
-      // expected
-    }
+    expectThrows(IOException.class, stream::close);
     fs.close();
 
     DirectoryStream<Path> dirStream = Files.newDirectoryStream(dir);
-    try {
-      dirStream.close();
-      fail("expected IOException");
-    } catch (IOException ex) {
-      // expected
-    }
+    expectThrows(IOException.class, dirStream::close);
   }
 
 
@@ -107,34 +82,14 @@ public class TestHandleTrackingFS extends MockFileSystemTestCase {
     }.getFileSystem(URI.create("file:///"));
     Path dir = new FilterPath(path, fs);
 
-    try {
-      OutputStream file = Files.newOutputStream(dir.resolve("somefile"));
-      fail("expected IOException");
-    } catch (IOException ex) {
-      // expected
-    }
+    expectThrows(IOException.class, () -> Files.newOutputStream(dir.resolve("somefile")));
 
-    try {
-      SeekableByteChannel channel = Files.newByteChannel(dir.resolve("somefile"));
-      fail("expected IOException");
-    } catch (IOException ex) {
-      // expected
-    }
+    expectThrows(IOException.class, () -> Files.newByteChannel(dir.resolve("somefile")));
 
-    try {
-      InputStream stream = Files.newInputStream(dir.resolve("somefile"));
-      fail("expected IOException");
-    } catch (IOException ex) {
-      // expected
-    }
+    expectThrows(IOException.class, () -> Files.newInputStream(dir.resolve("somefile")));
     fs.close();
 
-    try {
-      DirectoryStream<Path> dirStream = Files.newDirectoryStream(dir);
-      fail("expected IOException");
-    } catch (IOException ex) {
-      // expected
-    }
+    expectThrows(IOException.class, () -> Files.newDirectoryStream(dir));
     fs.close();
   }
 }

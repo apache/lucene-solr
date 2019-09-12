@@ -19,9 +19,9 @@ package org.apache.lucene.queryparser.surround.query;
 import java.util.Random;
 
 import org.apache.lucene.document.Field;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
@@ -35,7 +35,7 @@ public class SingleFieldTestDb {
   
   public SingleFieldTestDb(Random random, String[] documents, String fName) {
     try {
-      db = new MockDirectoryWrapper(random, new RAMDirectory());
+      db = new MockDirectoryWrapper(random, new ByteBuffersDirectory());
       docs = documents;
       fieldName = fName;
       IndexWriter writer = new IndexWriter(db, new IndexWriterConfig(new MockAnalyzer(random)));

@@ -18,16 +18,18 @@ package org.apache.lucene.document;
 
 import java.util.List;
 
-import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.EdgeTree;
+import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
+import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues.Relation;
 
-/** random bounding box and polygon query tests for random indexed {@link Polygon} types */
+/** random bounding box, line, and polygon query tests for random indexed {@link Polygon} types */
 public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
-
-  protected final PolygonValidator VALIDATOR = new PolygonValidator();
 
   @Override
   protected ShapeType getShapeType() {
@@ -55,37 +57,54 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  protected Validator getValidator(QueryRelation relation) {
-    VALIDATOR.setRelation(relation);
-    return VALIDATOR;
+  protected Validator getValidator() {
+    return new PolygonValidator(this.ENCODER);
   }
 
-  protected class PolygonValidator extends Validator {
-    @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Polygon p = (Polygon)shape;
-      if (queryRelation == QueryRelation.WITHIN) {
-        // within: bounding box of shape should be within query box
-        return minLat <= quantizeLat(p.minLat) && maxLat >= quantizeLat(p.maxLat)
-            && minLon <= quantizeLon(p.minLon) && maxLon >= quantizeLon(p.maxLon);
-      }
-
-      Polygon2D poly = Polygon2D.create(quantizePolygon(p));
-      Relation r = poly.relate(minLat, maxLat, minLon, maxLon);
-      if (queryRelation == QueryRelation.DISJOINT) {
-        return r == Relation.CELL_OUTSIDE_QUERY;
-      }
-      return r != Relation.CELL_OUTSIDE_QUERY;
+  protected static class PolygonValidator extends Validator {
+    protected PolygonValidator(Encoder encoder) {
+      super(encoder);
     }
 
     @Override
-    public boolean testPolygonQuery(Polygon2D query, Object shape) {
-      List<Tessellator.Triangle> tessellation = Tessellator.tessellate((Polygon) shape);
+    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
+      Polygon p = (Polygon)shape;
+      Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(minLat, maxLat, minLon, maxLon));
+      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(p);
       for (Tessellator.Triangle t : tessellation) {
-        // we quantize the triangle for consistency with the index
-        Relation r = query.relateTriangle(quantizeLon(t.getLon(0)), quantizeLat(t.getLat(0)),
-            quantizeLon(t.getLon(1)), quantizeLat(t.getLat(1)),
-            quantizeLon(t.getLon(2)), quantizeLat(t.getLat(2)));
+        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(t.getX(0), t.getY(0), t.isEdgefromPolygon(0),
+                                                                          t.getX(1), t.getY(1), t.isEdgefromPolygon(1),
+                                                                          t.getX(2), t.getY(2), t.isEdgefromPolygon(2));
+        if (queryRelation == QueryRelation.WITHIN) {
+          if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
+            return false;
+          }
+        } else {
+          if (rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
+            return queryRelation == QueryRelation.INTERSECTS;
+          }
+        }
+      }
+      return queryRelation != QueryRelation.INTERSECTS;
+    }
+
+    @Override
+    public boolean testLineQuery(Line2D query, Object shape) {
+      return testPolygon(query, (Polygon) shape);
+    }
+
+    @Override
+    public boolean testPolygonQuery(Object query, Object shape) {
+      return testPolygon((Polygon2D)query, (Polygon) shape);
+    }
+
+    private boolean testPolygon(EdgeTree tree, Polygon shape) {
+      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
+      for (Tessellator.Triangle t : tessellation) {
+        double[] qTriangle = encoder.quantizeTriangle(t.getX(0), t.getY(0), t.isEdgefromPolygon(0),
+                                                      t.getX(1), t.getY(1), t.isEdgefromPolygon(1),
+                                                      t.getX(2), t.getY(2), t.isEdgefromPolygon(2));
+        Relation r = tree.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
         if (queryRelation == QueryRelation.DISJOINT) {
           if (r != Relation.CELL_OUTSIDE_QUERY) return false;
         } else if (queryRelation == QueryRelation.WITHIN) {

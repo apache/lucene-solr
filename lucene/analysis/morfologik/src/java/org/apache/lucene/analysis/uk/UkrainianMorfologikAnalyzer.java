@@ -39,6 +39,8 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * A dictionary-based {@link Analyzer} for Ukrainian.
+ *
+ * @since 6.2.0
  */
 public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

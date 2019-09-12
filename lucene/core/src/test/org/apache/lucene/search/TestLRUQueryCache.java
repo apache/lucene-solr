@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -62,6 +61,10 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
+
+import static org.apache.lucene.util.RamUsageEstimator.HASHTABLE_RAM_BYTES_PER_ENTRY;
+import static org.apache.lucene.util.RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
+import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
 
 public class TestLRUQueryCache extends LuceneTestCase {
 
@@ -291,7 +294,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
           return ((DocIdSet) o).ramBytesUsed();
         }
         if (o instanceof Query) {
-          return LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
+          return QUERY_DEFAULT_RAM_BYTES_USED;
         }
         if (o instanceof IndexReader || o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
           // do not take readers or core cache keys into account
@@ -302,8 +305,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
           queue.addAll(map.keySet());
           queue.addAll(map.values());
           final long sizePerEntry = o instanceof LinkedHashMap
-              ? LRUQueryCache.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY
-              : LRUQueryCache.HASHTABLE_RAM_BYTES_PER_ENTRY;
+              ? LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY
+              : HASHTABLE_RAM_BYTES_PER_ENTRY;
           return sizePerEntry * map.size();
         }
         // follow links to other objects, but ignore their memory usage
@@ -379,6 +382,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    @Override
     public boolean equals(Object other) {
       return sameClassAs(other) &&
              id == ((DummyQuery) other).id;
@@ -412,7 +420,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
           return ((DocIdSet) o).ramBytesUsed();
         }
         if (o instanceof Query) {
-          return LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
+          return QUERY_DEFAULT_RAM_BYTES_USED;
         }
         if (o.getClass().getSimpleName().equals("SegmentCoreReaders")) {
           // do not follow references to core cache keys
@@ -748,7 +756,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     assertEquals(segmentCount2, missCount2.longValue());
 
     // check that the recomputed stats are the same as those reported by the cache
-    assertEquals(queryCache.ramBytesUsed(), (segmentCount1 + segmentCount2) * LRUQueryCache.HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsage.longValue());
+    assertEquals(queryCache.ramBytesUsed(), (segmentCount1 + segmentCount2) * HASHTABLE_RAM_BYTES_PER_ENTRY + ramBytesUsage.longValue());
     assertEquals(queryCache.getCacheSize(), cacheSize.longValue());
 
     reader1.close();
@@ -822,18 +830,15 @@ public class TestLRUQueryCache extends LuceneTestCase {
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
 
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    TermQuery should = new TermQuery(new Term("foo", "baz"));
     TermQuery must = new TermQuery(new Term("foo", "bar"));
     TermQuery filter = new TermQuery(new Term("foo", "quux"));
     TermQuery mustNot = new TermQuery(new Term("foo", "foo"));
-    bq.add(should, Occur.SHOULD);
     bq.add(must, Occur.MUST);
     bq.add(filter, Occur.FILTER);
     bq.add(mustNot, Occur.MUST_NOT);
 
     // same bq but with FILTER instead of MUST
     BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
-    bq2.add(should, Occur.SHOULD);
     bq2.add(must, Occur.FILTER);
     bq2.add(filter, Occur.FILTER);
     bq2.add(mustNot, Occur.MUST_NOT);
@@ -845,7 +850,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     queryCache.clear();
     assertEquals(Collections.emptySet(), new HashSet<>(queryCache.cachedQueries()));
     searcher.search(new ConstantScoreQuery(bq.build()), 1);
-    assertEquals(new HashSet<>(Arrays.asList(bq2.build(), should, must, filter, mustNot)), new HashSet<>(queryCache.cachedQueries()));
+    assertEquals(new HashSet<>(Arrays.asList(bq2.build(), must, filter, mustNot)), new HashSet<>(queryCache.cachedQueries()));
 
     reader.close();
     dir.close();
@@ -970,6 +975,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
           return true;
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override
@@ -1305,11 +1315,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
       return new Weight(this) {
         @Override
-        public void extractTerms(Set<Term> terms) {
-
-        }
-
-        @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
           return null;
         }
@@ -1324,6 +1329,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
           return false;
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override
@@ -1398,7 +1408,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
             @Override
             public Scorer get(long leadCost) throws IOException {
               scorerCreated.set(true);
-              return new ConstantScoreScorer(weight, boost, DocIdSetIterator.all(1));
+              return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.all(1));
             }
 
             @Override
@@ -1408,6 +1418,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
           };
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override
@@ -1484,7 +1499,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           scorerCreatedCount.incrementAndGet();
-          return new ConstantScoreScorer(this, 1, DocIdSetIterator.all(context.reader().maxDoc()));
+          return new ConstantScoreScorer(this, 1, scoreMode, DocIdSetIterator.all(context.reader().maxDoc()));
         }
 
         @Override
@@ -1493,6 +1508,11 @@ public class TestLRUQueryCache extends LuceneTestCase {
         }
 
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
   }
 

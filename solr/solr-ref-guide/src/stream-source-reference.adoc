@@ -130,8 +130,12 @@ The `facet` function provides aggregations that are rolled up over buckets. Unde
 * `collection`: (Mandatory) Collection the facets will be aggregated from.
 * `q`: (Mandatory) The query to build the aggregations from.
 * `buckets`: (Mandatory) Comma separated list of fields to rollup over. The comma separated list represents the dimensions in a multi-dimensional rollup.
-* `bucketSorts`: Comma separated list of sorts to apply to each dimension in the buckets parameters. Sorts can be on the computed metrics or on the bucket values.
-* `bucketSizeLimit`: The number of buckets to include. This value is applied to each dimension. '-1' will fetch all the buckets.
+* `bucketSorts`: (Mandatory) Comma separated list of sorts to apply to each dimension in the buckets parameters. Sorts can be on the computed metrics or on the bucket values.
+* `rows`: (Default 10) The number of rows to return. '-1' will return all rows.
+* `offset`:(Default 0) The offset in the result set to start from.
+* `overfetch`: (Default 150) Over-fetching is used to provide accurate aggregations over high cardinality fields.
+* `method`: The JSON facet API aggregation method.
+* `bucketSizeLimit`: Sets the absolute number of rows to fetch. This is incompatible with rows, offset and overfetch. This value is applied to each dimension. '-1' will fetch all the buckets.
 * `metrics`: List of metrics to compute for the buckets. Currently supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`.
 
 === facet Syntax
@@ -144,7 +148,7 @@ facet(collection1,
       q="*:*",
       buckets="a_s",
       bucketSorts="sum(a_i) desc",
-      bucketSizeLimit=100,
+      rows=100,
       sum(a_i),
       sum(a_f),
       min(a_i),
@@ -166,7 +170,8 @@ facet(collection1,
       q="*:*",
       buckets="year_i, month_i, day_i",
       bucketSorts="year_i desc, month_i desc, day_i desc",
-      bucketSizeLimit=100,
+      rows=10,
+      offset=20,
       sum(a_i),
       sum(a_f),
       min(a_i),
@@ -178,7 +183,8 @@ facet(collection1,
       count(*))
 ----
 
-The example above shows a facet function with rollups over three buckets, where the buckets are returned in descending order by bucket value.
+The example above shows a `facet` function with rollups over three buckets, where the buckets are returned in descending order by bucket value.
+The `rows` parameter returns 10 rows and the `offset` parameter starts returning rows from the 20th row.
 
 == features
 
@@ -208,6 +214,33 @@ features(collection1,
          field="body",
          outcome="out_i",
          numTerms=250)
+----
+
+== cat
+
+The `cat` function reads the specified files or directories and emits each line in the file(s) as a tuple.
+
+Each emitted tuple contains two fields: `file` and `line`.  `file` contains the path to the file being read from relative to the `userfiles` chroot (directly under `$SOLR_HOME`), and `line` contains a line in that file.
+
+`cat` is ideally used with the `update` stream to index data from the specified documents, or with the `analyze` stream to further split the lines into individual tokens for statistical processing or visualization.
+
+=== cat Parameters
+
+* `filePaths`: (Mandatory) a comma separated list of filepaths to read lines from.  If the specified path is a directory, it will be crawled recursively and all contained files will be read.  To prevent malicious users from reading arbitrary files from Solr nodes, `filePaths` must be a relative path measured from a chroot of `$SOLR_HOME/userfiles` on the node running the streaming expression.
+* `maxLines`: (defaults to -1) The maximum number of lines to read (and tuples to emit).  If a negative value is specified, all lines in the specified files will be emitted as tuples.  Files are read in the order that they appear in the comma-separated `filePaths` argument.  If the line-limit is hit, it will be these later files that are partially emitted or not read at all.
+
+=== cat Examples
+
+The following example emits all lines from a single text file located at `$SOLR_HOME/userfiles/authors.txt`:
+[source,text]
+----
+cat("authors.txt")
+----
+
+This example will read lines from `$SOLR_HOME/userfiles/authors.txt`, as well as all files (recursively) found under `$SOLR_HOME/userfiles/fiction/scifi`.  Only 500 lines will be emitted, meaning that some files may be partially emitted or not read at all:
+[source,text]
+----
+cat("authors.txt,fiction/scifi/", maxLines=500)
 ----
 
 == nodes

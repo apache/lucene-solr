@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -31,9 +34,6 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.xml.sax.SAXException;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 public class TestCoreParser extends LuceneTestCase {
 
@@ -133,6 +133,31 @@ public class TestCoreParser extends LuceneTestCase {
     SpanQuery sq = parseAsSpan("SpanQuery.xml");
     dumpResults("Span Query", sq, 5);
     assertEquals(q, sq);
+  }
+
+  public void testSpanPositionRangeQueryXML() throws Exception {
+    Query q = parse("SpanPositionRangeQuery.xml");
+    long h = searcher().search(q, 10).totalHits.value;
+    assertEquals("SpanPositionRangeQuery should produce 2 result ", 2, h);
+    SpanQuery sq = parseAsSpan("SpanPositionRangeQuery.xml");
+    dumpResults("SpanPositionRangeQuery", sq, 5);
+    assertEquals(q, sq);
+  }
+
+  public void testSpanNearQueryWithoutSlopXML() throws Exception {
+    Exception expectedException = new NumberFormatException("For input string: \"\"");
+    try {
+      Query q = parse("SpanNearQueryWithoutSlop.xml");
+      fail("got query "+q+" instead of expected exception "+expectedException);
+    } catch (Exception e) {
+      assertEquals(expectedException.toString(), e.toString());
+    }
+    try {
+      SpanQuery sq = parseAsSpan("SpanNearQueryWithoutSlop.xml");
+      fail("got span query "+sq+" instead of expected exception "+expectedException);
+    } catch (Exception e) {
+      assertEquals(expectedException.toString(), e.toString());
+    }
   }
 
   public void testConstantScoreQueryXML() throws Exception {

@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.math3.random.EmpiricalDistribution;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.EmpiricalDistributionEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -29,7 +29,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class EmpiricalDistributionEvaluatorTest extends LuceneTestCase {
+public class EmpiricalDistributionEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String,Object> values;

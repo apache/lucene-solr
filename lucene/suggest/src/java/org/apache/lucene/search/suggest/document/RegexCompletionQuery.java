@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.suggest.BitsProducer;
@@ -122,5 +123,10 @@ public class RegexCompletionQuery extends CompletionQuery {
   @Override
   public int hashCode() {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 }

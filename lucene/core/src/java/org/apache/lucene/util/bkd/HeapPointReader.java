@@ -16,49 +16,33 @@
  */
 package org.apache.lucene.util.bkd;
 
-import java.util.List;
+import org.apache.lucene.util.BytesRef;
 
-/** Utility class to read buffered points from in-heap arrays.
+/**
+ * Utility class to read buffered points from in-heap arrays.
  *
- * @lucene.internal */
-public final class HeapPointReader extends PointReader {
+ * @lucene.internal
+ * */
+public final class HeapPointReader implements PointReader {
   private int curRead;
-  final List<byte[]> blocks;
-  final int valuesPerBlock;
+  final byte[] block;
   final int packedBytesLength;
-  final long[] ordsLong;
-  final int[] ords;
-  final int[] docIDs;
+  final int packedBytesDocIDLength;
   final int end;
-  final byte[] scratch;
-  final boolean singleValuePerDoc;
+  private final HeapPointValue pointValue;
 
-  public HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, int[] ords, long[] ordsLong, int[] docIDs, int start, int end, boolean singleValuePerDoc) {
-    this.blocks = blocks;
-    this.valuesPerBlock = valuesPerBlock;
-    this.singleValuePerDoc = singleValuePerDoc;
-    this.ords = ords;
-    this.ordsLong = ordsLong;
-    this.docIDs = docIDs;
+  public HeapPointReader(byte[] block, int packedBytesLength, int start, int end) {
+    this.block = block;
     curRead = start-1;
     this.end = end;
     this.packedBytesLength = packedBytesLength;
-    scratch = new byte[packedBytesLength];
-  }
-
-  void writePackedValue(int index, byte[] bytes) {
-    int block = index / valuesPerBlock;
-    int blockIndex = index % valuesPerBlock;
-    while (blocks.size() <= block) {
-      blocks.add(new byte[valuesPerBlock*packedBytesLength]);
+    this.packedBytesDocIDLength = packedBytesLength + Integer.BYTES;
+    if (start < end) {
+      this.pointValue = new HeapPointValue(block, packedBytesLength);
+    } else {
+      //no values
+      this.pointValue = null;
     }
-    System.arraycopy(bytes, 0, blocks.get(blockIndex), blockIndex * packedBytesLength, packedBytesLength);
-  }
-
-  void readPackedValue(int index, byte[] bytes) {
-    int block = index / valuesPerBlock;
-    int blockIndex = index % valuesPerBlock;
-    System.arraycopy(blocks.get(block), blockIndex * packedBytesLength, bytes, 0, packedBytesLength);
   }
 
   @Override
@@ -68,28 +52,53 @@ public final class HeapPointReader extends PointReader {
   }
 
   @Override
-  public byte[] packedValue() {
-    readPackedValue(curRead, scratch);
-    return scratch;
-  }
-
-  @Override
-  public int docID() {
-    return docIDs[curRead];
-  }
-
-  @Override
-  public long ord() {
-    if (singleValuePerDoc) {
-      return docIDs[curRead];
-    } else if (ordsLong != null) {
-      return ordsLong[curRead];
-    } else {
-      return ords[curRead];
-    }
+  public PointValue pointValue() {
+    pointValue.setOffset(curRead * packedBytesDocIDLength);
+    return pointValue;
   }
 
   @Override
   public void close() {
+  }
+
+  /**
+   * Reusable implementation for a point value on-heap
+   */
+  static class HeapPointValue implements PointValue {
+
+    final BytesRef packedValue;
+    final BytesRef packedValueDocID;
+    final int packedValueLength;
+
+    HeapPointValue(byte[] value, int packedValueLength) {
+      this.packedValueLength = packedValueLength;
+      this.packedValue = new BytesRef(value, 0, packedValueLength);
+      this.packedValueDocID = new BytesRef(value, 0, packedValueLength + Integer.BYTES);
+    }
+
+    /**
+     * Sets a new value by changing the offset.
+     */
+    public void setOffset(int offset) {
+      packedValue.offset = offset;
+      packedValueDocID.offset = offset;
+    }
+
+    @Override
+    public BytesRef packedValue() {
+      return packedValue;
+    }
+
+    @Override
+    public int docID() {
+      int position = packedValueDocID.offset + packedValueLength;
+      return ((packedValueDocID.bytes[position] & 0xFF) << 24) | ((packedValueDocID.bytes[++position] & 0xFF) << 16)
+          | ((packedValueDocID.bytes[++position] & 0xFF) <<  8) |  (packedValueDocID.bytes[++position] & 0xFF);
+    }
+
+    @Override
+    public BytesRef packedValueDocIDBytes() {
+      return packedValueDocID;
+    }
   }
 }

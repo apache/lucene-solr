@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -43,9 +44,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.update.PeerSync.MissedUpdatesRequest;
 import static org.apache.solr.update.PeerSync.absComparator;
 import static org.apache.solr.update.PeerSync.percentile;
-import static org.apache.solr.update.PeerSync.MissedUpdatesRequest;
 
 public class PeerSyncWithLeader implements SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -62,7 +63,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private SolrCore core;
   private PeerSync.Updater updater;
-  private PeerSync.MissedUpdatesFinder missedUpdatesFinder;
+  private MissedUpdatesFinder missedUpdatesFinder;
   private Set<Long> bufferedUpdates;
 
   // metrics
@@ -203,7 +204,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       log.info("Leader fingerprint {}", leaderFingerprint);
     }
 
-    missedUpdatesFinder = new PeerSync.MissedUpdatesFinder(ourUpdates, msg(), nUpdates, ourLowThreshold, ourHighThreshold);
+    missedUpdatesFinder = new MissedUpdatesFinder(ourUpdates, msg(), nUpdates, ourLowThreshold);
     MissedUpdatesRequest missedUpdates = buildMissedUpdatesRequest(leaderVersionsAndFingerprint);
     if (missedUpdates == MissedUpdatesRequest.ALREADY_IN_SYNC) return true;
     if (missedUpdates != MissedUpdatesRequest.UNABLE_TO_SYNC) {
@@ -369,4 +370,56 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     }
     return false;
   }
+
+  /**
+   * Helper class for doing comparison ourUpdates and other replicas's updates to find the updates that we missed
+   */
+  public static class MissedUpdatesFinder extends PeerSync.MissedUpdatesFinderBase {
+    private long ourHighest;
+    private String logPrefix;
+    private long nUpdates;
+
+    MissedUpdatesFinder(List<Long> ourUpdates, String logPrefix, long nUpdates,
+                        long ourLowThreshold) {
+      super(ourUpdates, ourLowThreshold);
+
+      this.logPrefix = logPrefix;
+      this.ourHighest = ourUpdates.get(0);
+      this.nUpdates = nUpdates;
+    }
+
+    public MissedUpdatesRequest find(List<Long> leaderVersions, Object updateFrom, Supplier<Boolean> canHandleVersionRanges) {
+      leaderVersions.sort(absComparator);
+      log.debug("{} sorted versions from {} = {}", logPrefix, leaderVersions, updateFrom);
+
+      long leaderLowest = leaderVersions.get(leaderVersions.size() - 1);
+      if (Math.abs(ourHighest) < Math.abs(leaderLowest)) {
+        log.info("{} Our versions are too old comparing to leader, ourHighest={} otherLowest={}", logPrefix, ourHighest, leaderLowest);
+        return MissedUpdatesRequest.UNABLE_TO_SYNC;
+      }
+      // we don't have to check the case we ahead of the leader.
+      // (maybe we are the old leader and we contain some updates that no one have)
+      // In that case, we will fail on compute fingerprint with the current leader and start segments replication
+
+      boolean completeList = leaderVersions.size() < nUpdates;
+      MissedUpdatesRequest updatesRequest;
+      if (canHandleVersionRanges.get()) {
+        updatesRequest = handleVersionsWithRanges(leaderVersions, completeList);
+      } else {
+        updatesRequest = handleIndividualVersions(leaderVersions, completeList);
+      }
+
+      if (updatesRequest.totalRequestedUpdates > nUpdates) {
+        log.info("{} PeerSync will fail because number of missed updates is more than:{}", logPrefix, nUpdates);
+        return MissedUpdatesRequest.UNABLE_TO_SYNC;
+      }
+
+      if (updatesRequest == MissedUpdatesRequest.EMPTY) {
+        log.info("{} No additional versions requested", logPrefix);
+      }
+
+      return updatesRequest;
+    }
+  }
+
 }

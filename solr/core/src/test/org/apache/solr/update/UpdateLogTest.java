@@ -31,7 +31,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
 
 public class UpdateLogTest extends SolrTestCaseJ4 {
 

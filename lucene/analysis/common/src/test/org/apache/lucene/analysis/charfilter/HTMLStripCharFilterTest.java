@@ -499,7 +499,7 @@ public class HTMLStripCharFilterTest extends BaseTokenStreamTestCase {
 
     String randomHtmlishString2 // Don't create a comment (disallow "<!--") and don't include a closing ">"
         = TestUtil.randomHtmlishString(random(), maxNumElems).replaceAll(">", " ").replaceFirst("^--","__");
-    String unclosedAngleBangNonCDATA = "<!" + randomHtmlishString1 +"-[CDATA[";
+    String unclosedAngleBangNonCDATA = "<!" + randomHtmlishString2 +"-[CDATA[";
 
     String[] testGold = {
         "one<![CDATA[<one><two>three<four></four></two></one>]]>two",

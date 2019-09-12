@@ -25,12 +25,11 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestBase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 
 /**
  * Test that a ConfigSet marked as immutable cannot be modified via
@@ -76,7 +75,7 @@ public class TestConfigSetImmutable extends RestTestBase {
         "}";
     String uri = "/config";
     String response = restTestHarness.post(uri, SolrTestCaseJ4.json(payload));
-    Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    Map map = (Map) Utils.fromJSONString(response);
     assertNotNull(map.get("error"));
     assertTrue(map.get("error").toString().contains("immutable"));
   }
@@ -93,7 +92,7 @@ public class TestConfigSetImmutable extends RestTestBase {
         "    }";
 
     String response = restTestHarness.post("/schema", json(payload));
-    Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    Map map = (Map) Utils.fromJSONString(response);
     Map error = (Map)map.get("error");
     assertNotNull("No errors", error);
     String msg = (String)error.get("msg");

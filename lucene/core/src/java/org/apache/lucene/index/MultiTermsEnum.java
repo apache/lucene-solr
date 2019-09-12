@@ -32,7 +32,7 @@ import org.apache.lucene.util.PriorityQueue;
  *
  * @lucene.experimental
  */
-public final class MultiTermsEnum extends TermsEnum {
+public final class MultiTermsEnum extends BaseTermsEnum {
 
   private static final Comparator<TermsEnumWithSlice> INDEX_COMPARATOR = new Comparator<TermsEnumWithSlice>() {
     @Override

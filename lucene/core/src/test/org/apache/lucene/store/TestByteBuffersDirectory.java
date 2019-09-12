@@ -58,7 +58,7 @@ public class TestByteBuffersDirectory extends BaseDirectoryTestCase {
         writer.addDocument(doc);
       }
       writer.commit();
-      assertEquals(docs, writer.numDocs());
+      assertEquals(docs, writer.getDocStats().numDocs);
     }
   }
   

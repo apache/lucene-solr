@@ -23,60 +23,62 @@ import java.util.function.BiPredicate;
 
 public class ConditionalMapWriter implements MapWriter {
   private final MapWriter delegate;
-  private final BiPredicate<String, Object> predicate;
+  private final BiPredicate<CharSequence, Object> predicate;
 
-  public ConditionalMapWriter(MapWriter delegate, BiPredicate<String, Object> predicate) {
+  public ConditionalMapWriter(MapWriter delegate, BiPredicate<CharSequence, Object> predicate) {
     this.delegate = delegate;
     this.predicate = predicate;
   }
 
-  private class EntryWriterWrapper implements EntryWriter {
+  public static class EntryWriterWrapper implements EntryWriter {
     private final EntryWriter delegate;
+    private final BiPredicate<CharSequence, Object> predicate;
 
-    EntryWriterWrapper(EntryWriter delegate) {
+    public EntryWriterWrapper(EntryWriter delegate, BiPredicate<CharSequence, Object> predicate) {
       this.delegate = delegate;
+      this.predicate = predicate;
     }
 
     @Override
-    public EntryWriter put(String k, Object v) throws IOException {
+    public EntryWriter put(CharSequence k, Object v) throws IOException {
       if (predicate.test(k, v)) delegate.put(k, v);
       return this;
     }
 
     @Override
-    public EntryWriter put(String k, int v) throws IOException {
+    public EntryWriter put(CharSequence k, int v) throws IOException {
       return put(k, Integer.valueOf(v));
     }
 
     @Override
-    public EntryWriter put(String k, long v) throws IOException {
+    public EntryWriter put(CharSequence k, long v) throws IOException {
       return put(k, Long.valueOf(v));
     }
 
     @Override
-    public EntryWriter put(String k, float v) throws IOException {
+    public EntryWriter put(CharSequence k, float v) throws IOException {
       return put(k, Float.valueOf(v));
     }
 
     @Override
-    public EntryWriter put(String k, double v) throws IOException {
+    public EntryWriter put(CharSequence k, double v) throws IOException {
       return put(k, Double.valueOf(v));
     }
 
     @Override
-    public EntryWriter put(String k, boolean v) throws IOException {
+    public EntryWriter put(CharSequence k, boolean v) throws IOException {
       return put(k, Boolean.valueOf(v));
     }
   }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    if(delegate!=null) delegate.writeMap(new EntryWriterWrapper(ew));
+    if (delegate != null) delegate.writeMap(new EntryWriterWrapper(ew, predicate));
   }
 
-  public static BiPredicate<String, Object> dedupeKeyPredicate(Set<String> keys) {
+  public static BiPredicate<CharSequence, Object> dedupeKeyPredicate(Set<CharSequence> keys) {
     return (k, v) -> keys.add(k);
   }
 
-  public static final BiPredicate<String, Object> NON_NULL_VAL = (s, o) -> o != null;
+  public static final BiPredicate<CharSequence, Object> NON_NULL_VAL = (s, o) -> o != null;
 }

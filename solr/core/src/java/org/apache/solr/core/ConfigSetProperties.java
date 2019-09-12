@@ -25,11 +25,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
-
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.fromJSON;
 
 
 public class ConfigSetProperties {
@@ -43,7 +42,7 @@ public class ConfigSetProperties {
    * Return the properties associated with the ConfigSet (e.g. immutable)
    *
    * @param loader the resource loader
-   * @param name the name of the config set properties file
+   * @param name   the name of the config set properties file
    * @return the properties in a NamedList
    */
   public static NamedList readFromResourceLoader(SolrResourceLoader loader, String name) {
@@ -66,13 +65,12 @@ public class ConfigSetProperties {
 
   public static NamedList readFromInputStream(InputStreamReader reader) {
     try {
-      JSONParser jsonParser = new JSONParser(reader);
-      Object object = ObjectBuilder.getVal(jsonParser);
+      Object object = fromJSON(reader);
       if (!(object instanceof Map)) {
         final String objectClass = object == null ? "null" : object.getClass().getName();
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + objectClass + ", expected Map");
       }
-      return new NamedList((Map)object);
+      return new NamedList((Map) object);
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load ConfigSet properties", ex);
     } finally {

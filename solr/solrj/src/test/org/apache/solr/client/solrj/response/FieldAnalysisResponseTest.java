@@ -16,7 +16,7 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
@@ -31,7 +31,7 @@ import java.util.List;
  * @since solr 1.4
  */
 @SuppressWarnings("unchecked")
-public class FieldAnalysisResponseTest extends LuceneTestCase {
+public class FieldAnalysisResponseTest extends SolrTestCase {
 
   /**
    * Tests the {@link FieldAnalysisResponse#setResponse(org.apache.solr.common.util.NamedList)} method.

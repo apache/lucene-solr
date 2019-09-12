@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
@@ -55,25 +56,25 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected ZkTestServer zkServer;
-  
-  protected String zkDir;
-  
+
+  protected Path zkDir;
+
   private String solrHome;
 
   private SolrZkClient zkClient;
 
   protected static final String SOLR_HOME = SolrTestCaseJ4.TEST_HOME();
-  
+
   @BeforeClass
   public static void beforeClass() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
   }
-  
+
   @AfterClass
   public static void afterClass() throws InterruptedException {
     System.clearProperty("solrcloud.skip.autorecovery");
   }
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -81,11 +82,10 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     String exampleHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
 
-    File tmpDir = createTempDir().toFile();
+    Path tmpDir = createTempDir();
     solrHome = exampleHome;
 
-    zkDir = tmpDir.getAbsolutePath() + File.separator
-        + "zookeeper/server1/data";
+    zkDir = tmpDir.resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:" + zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
@@ -94,13 +94,13 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
-    
+
     this.zkClient = new SolrZkClient(zkServer.getZkAddress(),
         AbstractZkTestCase.TIMEOUT);
-    
+
     log.info("####SETUP_END " + getTestName());
   }
-  
+
   @Test
   public void testCmdConstants() throws Exception {
     assertEquals("upconfig", ZkCLI.UPCONFIG);
@@ -113,12 +113,12 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void testBootstrapWithChroot() throws Exception {
     String chroot = "/foo/bar";
     assertFalse(zkClient.exists(chroot, true));
-    
+
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress() + chroot,
         "-cmd", "bootstrap", "-solrhome", this.solrHome};
-    
+
     ZkCLI.main(args);
-    
+
     assertTrue(zkClient.exists(chroot + ZkConfigManager.CONFIGS_ZKNODE
         + "/collection1", true));
   }
@@ -211,7 +211,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     ZkCLI.setStdout(myOut);
 
     ZkCLI.main(args);
-    
+
     final String standardOutput = byteStream.toString(StandardCharsets.UTF_8.name());
     String separator = System.lineSeparator();
     assertEquals("/test (1)" + separator + " /test/path (0)" + separator + separator, standardOutput);
@@ -220,7 +220,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Test
   public void testUpConfigLinkConfigClearZk() throws Exception {
     File tmpDir = createTempDir().toFile();
-    
+
     // test upconfig
     String confsetname = "confsetone";
     final String[] upconfigArgs;
@@ -240,21 +240,21 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           "-confname", confsetname};
     }
     ZkCLI.main(upconfigArgs);
-    
+
     assertTrue(zkClient.exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + confsetname, true));
 
     // print help
     // ZkCLI.main(new String[0]);
-    
+
     // test linkconfig
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "linkconfig", "-collection", "collection1", "-confname", confsetname};
     ZkCLI.main(args);
-    
+
     ZkNodeProps collectionProps = ZkNodeProps.load(zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", null, null, true));
     assertTrue(collectionProps.containsKey("configName"));
     assertEquals(confsetname, collectionProps.getStr("configName"));
-    
+
     // test down config
     File confDir = new File(tmpDir,
         "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.nanoTime());
@@ -263,11 +263,11 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "downconfig", "-confdir", confDir.getAbsolutePath(), "-confname", confsetname};
     ZkCLI.main(args);
-    
+
     File[] files = confDir.listFiles();
     List<String> zkFiles = zkClient.getChildren(ZkConfigManager.CONFIGS_ZKNODE + "/" + confsetname, null, true);
     assertEquals(files.length, zkFiles.size());
-    
+
     File sourceConfDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);
     // filter out all directories starting with . (e.g. .svn)
     Collection<File> sourceFiles = FileUtils.listFiles(sourceConfDir, TrueFileFilter.INSTANCE, new RegexFileFilter("[^\\.].*"));
@@ -282,8 +282,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           assertTrue(relativePathofFile+" content changed",FileUtils.contentEquals(sourceFile,downloadedFile));
         }
     }
-    
-   
+
+
     // test reset zk
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "clear", "/"};
@@ -291,7 +291,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     assertEquals(0, zkClient.getChildren("/", null, true).size());
   }
-  
+
   @Test
   public void testGet() throws Exception {
     String getNode = "/getNode";
@@ -305,7 +305,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Test
   public void testGetFile() throws Exception {
     File tmpDir = createTempDir().toFile();
-    
+
     String getNode = "/getFileNode";
     byte [] data = "getFileNode-data".getBytes(StandardCharsets.UTF_8);
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
@@ -331,9 +331,10 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     assertEquals(e.code(), KeeperException.Code.NONODE);
   }
 
-  @Test(expected = SolrException.class)
-  public void testInvalidZKAddress() throws SolrException{
-    SolrZkClient zkClient = new SolrZkClient("----------:33332", 100);
+  public void testInvalidZKAddress() throws SolrException {
+    SolrException ex = expectThrows(SolrException.class, () -> {
+      new SolrZkClient("----------:33332", 100);
+    });
     zkClient.close();
   }
 
@@ -341,19 +342,19 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void testSetClusterProperty() throws Exception {
     ClusterProperties properties = new ClusterProperties(zkClient);
     // add property urlScheme=http
-    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(),
+    String[] args = new String[]{"-zkhost", zkServer.getZkAddress(),
         "-cmd", "CLUSTERPROP", "-name", "urlScheme", "-val", "http"};
     ZkCLI.main(args);
     assertEquals("http", properties.getClusterProperty("urlScheme", "none"));
 
     // remove it again
-    args = new String[] {"-zkhost", zkServer.getZkAddress(),
+    args = new String[]{"-zkhost", zkServer.getZkAddress(),
         "-cmd", "CLUSTERPROP", "-name", "urlScheme"};
     ZkCLI.main(args);
     assertNull(properties.getClusterProperty("urlScheme", (String) null));
 
   }
-  
+
   @Test
   public void testUpdateAcls() throws Exception {
     try {
@@ -361,7 +362,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
       System.setProperty(VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME, "user");
       System.setProperty(VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME, "pass");
 
-      String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "updateacls", "/"};
+      String[] args = new String[]{"-zkhost", zkServer.getZkAddress(), "-cmd", "updateacls", "/"};
       ZkCLI.main(args);
     } finally {
       // Need to clear these before we open the next SolrZkClient
@@ -369,7 +370,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
       System.clearProperty(VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME);
       System.clearProperty(VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
     }
-    
+
     boolean excepted = false;
     try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT)) {
       zkClient.getData("/", null, null, true);
@@ -385,10 +386,10 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     zkServer.shutdown();
     super.tearDown();
   }
-  
+
   private void printLayout(String zkHost) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT);
-    zkClient.printLayoutToStdOut();
+    zkClient.printLayoutToStream(System.out);
     zkClient.close();
   }
 }

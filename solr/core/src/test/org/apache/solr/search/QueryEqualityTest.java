@@ -327,6 +327,18 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testMinHash() throws Exception {
+    SolrQueryRequest req = req("q","apache lucene is a search library",
+        "df", "min_hash_analyzed");
+
+    try {
+      assertQueryEquals("min_hash", req,
+          "{!min_hash field=\"min_hash_analysed\"}apache lucene is a search library");
+    } finally {
+      req.close();
+    }
+  }
+
   public void testQueryNested() throws Exception {
     SolrQueryRequest req = req("df", "foo_s");
     try {
@@ -1190,14 +1202,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("gte(foo_i,2)", "gte(foo_i,2)");
     assertFuncEquals("eq(foo_i,2)", "eq(foo_i,2)");
 
-    boolean equals = false;
-    try {
-      assertFuncEquals("eq(foo_i,2)", "lt(foo_i,2)");
-      equals = true;
-    } catch (AssertionError e) {
-      //expected
-    }
-    assertFalse(equals);
+    expectThrows(AssertionError.class, "expected error, functions are not equal",
+        () -> assertFuncEquals("eq(foo_i,2)", "lt(foo_i,2)"));
   }
 
   public void testChildField() throws Exception {
@@ -1211,32 +1217,25 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testPayloadScoreQuery() throws Exception {
-    // I don't see a precedent to test query inequality in here, so doing a `try`
     // There was a bug with PayloadScoreQuery's .equals() method that said two queries were equal with different includeSpanScore settings
 
-    try {
-      assertQueryEquals
-          ("payload_score"
-              , "{!payload_score f=foo_dpf v=query func=min includeSpanScore=false}"
-              , "{!payload_score f=foo_dpf v=query func=min includeSpanScore=true}"
-          );
-      fail("queries should not have been equal");
-    } catch(AssertionFailedError e) {
-      assertTrue("queries were not equal, as expected", true);
-    }
+    expectThrows(AssertionFailedError.class, "queries should not have been equal",
+        () -> assertQueryEquals
+            ("payload_score"
+                , "{!payload_score f=foo_dpf v=query func=min includeSpanScore=false}"
+                , "{!payload_score f=foo_dpf v=query func=min includeSpanScore=true}"
+            )
+    );
   }
 
   public void testPayloadCheckQuery() throws Exception {
-    try {
-      assertQueryEquals
-          ("payload_check"
-              , "{!payload_check f=foo_dpf payloads=2}one"
-              , "{!payload_check f=foo_dpf payloads=2}two"
-          );
-      fail("queries should not have been equal");
-    } catch(AssertionFailedError e) {
-      assertTrue("queries were not equal, as expected", true);
-    }
+    expectThrows(AssertionFailedError.class, "queries should not have been equal",
+        () -> assertQueryEquals
+            ("payload_check"
+                , "{!payload_check f=foo_dpf payloads=2}one"
+                , "{!payload_check f=foo_dpf payloads=2}two"
+            )
+    );
   }
 
   public void testPayloadFunction() throws Exception {
@@ -1260,16 +1259,14 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
             "must='{!lucene}foo_s:c' filter='{!lucene}foo_s:d' filter='{!lucene}foo_s:e'}",
         "{!bool must='{!lucene}foo_s:c' filter='{!lucene}foo_s:d' " +
             "must_not='{!lucene}foo_s:a' should='{!lucene}foo_s:b' filter='{!lucene}foo_s:e'}");
-    try {
-      assertQueryEquals
-          ("bool"
-              , "{!bool must='{!lucene}foo_s:a'}"
-              , "{!bool should='{!lucene}foo_s:a'}"
-          );
-      fail("queries should not have been equal");
-    } catch(AssertionFailedError e) {
-      assertTrue("queries were not equal, as expected", true);
-    }
+
+    expectThrows(AssertionFailedError.class, "queries should not have been equal",
+        () -> assertQueryEquals
+            ("bool"
+                , "{!bool must='{!lucene}foo_s:a'}"
+                , "{!bool should='{!lucene}foo_s:a'}"
+            )
+    );
   }
 
   // Override req to add df param

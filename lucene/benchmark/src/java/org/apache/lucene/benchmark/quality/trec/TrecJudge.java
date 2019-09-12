@@ -45,7 +45,7 @@ public class TrecJudge implements Judge {
    *     19    0   doc303       1
    *     19    0   doc7295      0
    * </pre> 
-   * @param reader where judgments are read from.
+   * @param reader where judgements are read from.
    * @throws IOException If there is a low-level I/O error.
    */
   public TrecJudge (BufferedReader reader) throws IOException {

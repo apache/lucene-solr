@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
@@ -35,8 +36,8 @@ import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.CloudTestUtils;
-import org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -46,12 +47,11 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.KeeperException;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG")
 public class TestSimPolicyCloud extends SimSolrCloudTestCase {
@@ -60,9 +60,14 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
   @org.junit.Rule
   public ExpectedException expectedException = ExpectedException.none();
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(5, TimeSource.get("simTime:50"));
+  }
+  
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
   }
 
   public void testDataProviderPerReplicaDetails() throws Exception {
@@ -70,8 +75,8 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     CollectionAdminRequest.createCollection("perReplicaDataColl", "conf", 1, 5)
         .process(solrClient);
 
-    CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", "perReplicaDataColl",
-        CloudTestUtils.clusterShape(1, 5, false, true));
+    CloudUtil.waitForState(cluster, "Timeout waiting for collection to become active", "perReplicaDataColl",
+        CloudUtil.clusterShape(1, 5, false, true));
     DocCollection coll = getCollectionState("perReplicaDataColl");
     String autoScaleJson = "{" +
         "  'cluster-preferences': [" +
@@ -107,6 +112,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
 
   }
 
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testCreateCollectionAddReplica() throws Exception  {
     SolrClient solrClient = cluster.simGetSolrClient();
     String nodeId = cluster.getSimClusterStateProvider().simGetRandomNode();
@@ -114,20 +120,21 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     int port = (Integer)cluster.getSimNodeStateProvider().simGetNodeValue(nodeId, ImplicitSnitch.PORT);
 
     String commands =  "{set-policy :{c1 : [{replica:0 , shard:'#EACH', port: '!" + port + "'}]}}";
-    solrClient.request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
 
     String collectionName = "testCreateCollectionAddReplica";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
         .setPolicy("c1")
         .process(solrClient);
-    CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", collectionName,
-        CloudTestUtils.clusterShape(1, 1, false, true));
+    CloudUtil.waitForState(cluster, collectionName, 120, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(1, 1, false, true));
 
     getCollectionState(collectionName).forEachReplica((s, replica) -> assertEquals(nodeId, replica.getNodeName()));
 
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1").process(solrClient);
-    CloudTestUtils.waitForState(cluster, "Timed out waiting to see 2 replicas for collection: " + collectionName,
-        collectionName, (liveNodes, collectionState) -> collectionState.getReplicas().size() == 2);
+    CloudUtil.waitForState(cluster,
+        collectionName, 120l, TimeUnit.SECONDS,
+        (liveNodes, collectionState) -> collectionState.getReplicas().size() == 2);
 
     getCollectionState(collectionName).forEachReplica((s, replica) -> assertEquals(nodeId, replica.getNodeName()));
   }
@@ -146,15 +153,15 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     }
 
     String commands =  "{set-policy :{c1 : [{replica:1 , shard:'#EACH', port: '" + firstNodePort + "'}, {replica:1, shard:'#EACH', port:'" + secondNodePort + "'}]}}";
-    NamedList<Object> response = solrClient.request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    NamedList<Object> response = solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     assertEquals("success", response.get("result"));
 
     String collectionName = "testCreateCollectionSplitShard";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .setPolicy("c1")
         .process(solrClient);
-    CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", collectionName,
-        CloudTestUtils.clusterShape(1, 2, false, true));
+    CloudUtil.waitForState(cluster, "Timeout waiting for collection to become active", collectionName,
+        CloudUtil.clusterShape(1, 2, false, true));
 
     DocCollection docCollection = getCollectionState(collectionName);
     List<Replica> list = docCollection.getReplicas(firstNode);
@@ -167,7 +174,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
 
     CollectionAdminRequest.splitShard(collectionName).setShardName("shard1").process(solrClient);
 
-    CloudTestUtils.waitForState(cluster, "Timed out waiting to see 6 replicas for collection: " + collectionName,
+    CloudUtil.waitForState(cluster, "Timed out waiting to see 6 replicas for collection: " + collectionName,
         collectionName, (liveNodes, collectionState) -> collectionState.getReplicas().size() == 6);
 
     docCollection = getCollectionState(collectionName);
@@ -191,7 +198,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
         "      {'metrics:abc':'overseer', 'replica':0}" +
         "    ]" +
         "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     try {
       solrClient.request(req);
       fail("expected exception");
@@ -206,14 +213,14 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
         "      {'metrics:solr.node:ADMIN./admin/authorization.clientErrors:count':'>58768765', 'replica':0}" +
         "    ]" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
     solrClient.request(req);
 
     //org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses
     CollectionAdminRequest.createCollection("metricsTest", "conf", 1, 1)
         .process(solrClient);
-    CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", "metricsTest",
-        CloudTestUtils.clusterShape(1, 1));
+    CloudUtil.waitForState(cluster, "Timeout waiting for collection to become active", "metricsTest",
+        CloudUtil.clusterShape(1, 1));
 
     DocCollection collection = getCollectionState("metricsTest");
     List<String> tags = Arrays.asList("metrics:solr.node:ADMIN./admin/authorization.clientErrors:count",
@@ -247,7 +254,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
         "]}";
 
 
-    solrClient.request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     Map<String, Object> json = Utils.getJson(cluster.getDistribStateManager(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
     assertEquals("full json:" + Utils.toJSONString(json), "!" + nrtPort,
         Utils.getObjectByPath(json, true, "cluster-policy[0]/port"));
@@ -259,8 +266,8 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1", 1, 1, 1)
         .setMaxShardsPerNode(-1)
         .process(solrClient);
-    CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
-        CloudTestUtils.clusterShape(1, 3, false, true));
+    CloudUtil.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
+        CloudUtil.clusterShape(1, 3, false, true));
 
     DocCollection coll = getCollectionState("policiesTest");
 
@@ -290,30 +297,30 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     assertEquals(3, coll.getSlice("s3").getReplicas().size());
     coll.forEachReplica(verifyReplicas);
   }
-
+  
   public void testCreateCollectionAddShardUsingPolicy() throws Exception {
     SolrClient solrClient = cluster.simGetSolrClient();
     String nodeId = cluster.getSimClusterStateProvider().simGetRandomNode();
     int port = (Integer)cluster.getSimNodeStateProvider().simGetNodeValue(nodeId, ImplicitSnitch.PORT);
 
     String commands =  "{set-policy :{c1 : [{replica:1 , shard:'#EACH', port: '" + port + "'}]}}";
-    solrClient.request(AutoScalingHandlerTest.createAutoScalingRequest(SolrRequest.METHOD.POST, commands));
+    solrClient.request(AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
     Map<String, Object> json = Utils.getJson(cluster.getDistribStateManager(), ZkStateReader.SOLR_AUTOSCALING_CONF_PATH);
     assertEquals("full json:"+ Utils.toJSONString(json) , "#EACH",
         Utils.getObjectByPath(json, true, "/policies/c1[0]/shard"));
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "s1,s2", 1)
         .setPolicy("c1")
         .process(solrClient);
-    CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
-        CloudTestUtils.clusterShape(2, 1));
+    CloudUtil.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
+        CloudUtil.clusterShape(2, 1));
 
     DocCollection coll = getCollectionState("policiesTest");
     assertEquals("c1", coll.getPolicyName());
     assertEquals(2,coll.getReplicas().size());
     coll.forEachReplica((s, replica) -> assertEquals(nodeId, replica.getNodeName()));
     CollectionAdminRequest.createShard("policiesTest", "s3").process(solrClient);
-    CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
-        CloudTestUtils.clusterShape(3, 1));
+    CloudUtil.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
+        CloudUtil.clusterShape(3, 1));
 
     coll = getCollectionState("policiesTest");
     assertEquals(1, coll.getSlice("s3").getReplicas().size());
@@ -324,8 +331,8 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     SolrClient solrClient = cluster.simGetSolrClient();
     CollectionAdminRequest.createCollectionWithImplicitRouter("policiesTest", "conf", "shard1", 2)
         .process(solrClient);
-    CloudTestUtils.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
-        CloudTestUtils.clusterShape(1, 2, false, true));
+    CloudUtil.waitForState(cluster, "Timeout waiting for collection to become active", "policiesTest",
+        CloudUtil.clusterShape(1, 2, false, true));
     DocCollection rulesCollection = getCollectionState("policiesTest");
 
     Map<String, Object> val = cluster.getNodeStateProvider().getNodeValues(rulesCollection.getReplicas().get(0).getNodeName(), Arrays.asList(

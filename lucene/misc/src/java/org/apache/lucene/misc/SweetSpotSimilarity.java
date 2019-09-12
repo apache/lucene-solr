@@ -34,7 +34,7 @@ import org.apache.lucene.search.similarities.ClassicSimilarity;
  * subclasses can choose between.
  * </p>
  *
- * @see <a href="doc-files/ss.gnuplot">A Gnuplot file used to generate some of the visualizations refrenced from each function.</a> 
+ * @see <a href="doc-files/ss.gnuplot">A Gnuplot file used to generate some of the visualizations referenced from each function.</a> 
  */
 public class SweetSpotSimilarity extends ClassicSimilarity {
 
@@ -207,8 +207,7 @@ public class SweetSpotSimilarity extends ClassicSimilarity {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("SweetSpotSimilarity")
-        .append("(")
-        .append("ln_min="+ln_min+", ")
+        .append('(').append("ln_min=").append(ln_min).append(", ")
         .append("ln_max=").append(ln_max).append(", ")
         .append("ln_steep=").append(ln_steep).append(", ")
         .append("tf_base=").append(tf_base).append(", ")

@@ -26,7 +26,7 @@ These Solr features, all controlled via `solrconfig.xml`, are:
 
 == Using the Schemaless Example
 
-The three features of schemaless mode are pre-configured in the `_default` <<config-sets.adoc#config-sets,config set>> in the Solr distribution. To start an example instance of Solr using these configs, run the following command:
+The three features of schemaless mode are pre-configured in the `_default` <<config-sets.adoc#config-sets,configset>> in the Solr distribution. To start an example instance of Solr using these configs, run the following command:
 
 [source,bash]
 ----
@@ -66,7 +66,7 @@ You can use the `/schema/fields` <<schema-api.adoc#schema-api,Schema API>> to co
 
 == Configuring Schemaless Mode
 
-As described above, there are three configuration elements that need to be in place to use Solr in schemaless mode. In the `_default` config set included with Solr these are already configured. If, however, you would like to implement schemaless on your own, you should make the following changes.
+As described above, there are three configuration elements that need to be in place to use Solr in schemaless mode. In the `_default` configset included with Solr these are already configured. If, however, you would like to implement schemaless on your own, you should make the following changes.
 
 === Enable Managed Schema
 

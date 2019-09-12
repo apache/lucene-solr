@@ -50,7 +50,7 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
   
   /**
    * Create ControlledRealTimeReopenThread, to periodically
-   * reopen the a {@link ReferenceManager}.
+   * reopen the {@link ReferenceManager}.
    *
    * @param targetMaxStaleSec Maximum time until a new
    *        reader must be opened; this sets the upper bound

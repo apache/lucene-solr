@@ -31,6 +31,7 @@ class RangeVal implements MapWriter {
   }
 
   public boolean match(Number testVal) {
+    if (testVal == null) return false;
     return Double.compare(testVal.doubleValue(), min.doubleValue()) >= 0 &&
         Double.compare(testVal.doubleValue(), max.doubleValue()) <= 0;
   }

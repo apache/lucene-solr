@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -1006,6 +1007,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertQ(req("q", "cat:aaa", "indent", "true"), "//result[@numFound = '1']");
     assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']");
     assertQ(req("q", "cat:ccc", "indent", "true"), "//result[@numFound = '1']");
+
+    // update on id
+    doc = new SolrInputDocument();
+    doc.setField("id", ImmutableMap.of("set", "1001"));
+    assertFailedU(adoc(doc));
   }
 
   public void testAtomicUpdatesOnDateFields() throws Exception {
@@ -1174,6 +1180,36 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
         "/response/docs/[0]/single_i_dvn==5");
   }
 
+  /**
+   * Test what happens if we try to update the parent of a doc with children.
+   * This fails because _root_ is not stored which is currently required for doing this.
+   */
+  @Test
+  public void testUpdateNestedDocUnsupported() throws Exception {
+    assertU(adoc(sdoc(
+        "id", "1",
+        "children", Arrays.asList(sdoc(
+            "id", "100",
+            "cat", "childCat1")
+        )
+    )));
+
+    assertU(commit());
+
+    // update the parent doc to have a category
+    try {
+      assertU(adoc(sdoc(
+          "id", "1",
+          "cat", Collections.singletonMap("add", Arrays.asList("parentCat"))
+      )));
+      fail("expected a failure");
+    } catch (Exception e) {
+      assertEquals("org.apache.solr.common.SolrException: " +
+          "This schema does not support partial updates to nested docs. See ref guide.", e.toString());
+    }
+
+  }
+
   @Test
   public void testInvalidOperation() {
     SolrInputDocument doc;
@@ -1190,7 +1226,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc = new SolrInputDocument();
     doc.setField("id", "7");
     doc.setField("cat", ImmutableMap.of("whatever", "bbb"));
-    assertU(adoc(doc));
+    assertFailedU( adoc(doc));
     assertU(commit());
 
     assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '1']");
@@ -1198,6 +1234,45 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '0']");
     assertQ(req("q", "cat:ccc", "indent", "true"), "//result[@numFound = '1']");
 
+    // add a nested document;
+    doc = new SolrInputDocument();
+    doc.setField("id", "123");
+    doc.setField("cat", ImmutableMap.of("whatever", "ddd"));
+
+    SolrInputDocument childDoc = new SolrInputDocument();
+    childDoc.setField("id", "1231");
+    childDoc.setField("title", "title_nested");
+    doc.addChildDocument(childDoc);
+    assertFailedU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:aaa", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:ddd", "indent", "true"), "//result[@numFound = '0']");
+    assertQ(req("q", "title:title_nested", "indent", "true"), "//result[@numFound = '0']");
+    assertQ(req("q", "id:123", "indent", "true"), "//result[@numFound = '0']");
+    assertQ(req("q", "id:1231", "indent", "true"), "//result[@numFound = '0']");
+    assertQ(req("q", "cat:ccc", "indent", "true"), "//result[@numFound = '1']");
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "123");
+    doc.setField("title", "title_parent");
+
+    childDoc = new SolrInputDocument();
+    childDoc.setField("id", "12311");
+    childDoc.setField("cat", "ddd");
+    childDoc.setField("title", "title_nested");
+    doc.addChildDocument(childDoc);
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "*:*", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "cat:aaa", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:ddd", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "title:title_nested", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "id:123", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "id:12311", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:ccc", "indent", "true"), "//result[@numFound = '1']");
   }
 
   public void testFieldsWithDefaultValuesWhenAtomicUpdatesAgainstTlog() {
@@ -1215,7 +1290,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=7"
               );
 
       // do atomic update
@@ -1230,7 +1304,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=7"
               );
 
       assertU(commit());
@@ -1244,7 +1317,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=7"
               );
     }
     
@@ -1267,7 +1339,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=6"
               );
       // do atomic update
       assertU(adoc(sdoc("id", "7", fieldToUpdate, ImmutableMap.of("inc", -555))));
@@ -1281,7 +1352,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=6"
               );
 
       // diff doc where we check that we can overwrite the default value
@@ -1296,7 +1366,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=6"
               );
       // do atomic update
       assertU(adoc(sdoc("id", "8", fieldToUpdate, ImmutableMap.of("inc", -555))));
@@ -1310,7 +1379,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=6"
               );
       
       assertU(commit());
@@ -1325,7 +1393,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=6"
               );
       assertQ(fieldToUpdate + ": doc8 post commit RTG"
               , req("qt", "/get", "id", "8")
@@ -1337,7 +1404,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
               , "//doc/long[@name='_version_']"
               , "//doc/date[@name='timestamp']"
               , "//doc/arr[@name='multiDefault']/str[.='muLti-Default']"
-              , "count(//doc/*)=6"
               );
     }
     

@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -39,9 +40,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,15 +55,22 @@ import org.slf4j.LoggerFactory;
 @Slow
 public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
-  private static final int MAX_TIMEOUT_SECONDS = 60;
+  private static final int MAX_TIMEOUT_SECONDS = 90;
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
+    // we recreate per test - they need to be isolated to be solid
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
+  }
+  
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    shutdownCluster();
   }
 
   @Test
@@ -88,10 +98,14 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  //commented 9-Aug-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testAsyncRequests() throws Exception {
-
+    boolean legacy = random().nextBoolean();
+    if (legacy) {
+      CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "true").process(cluster.getSolrClient());
+    } else {
+      CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false").process(cluster.getSolrClient());
+    }
+    
     final String collection = "testAsyncOperations";
     final CloudSolrClient client = cluster.getSolrClient();
 
@@ -101,6 +115,9 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
 
+    
+    cluster.waitForActiveCollection(collection, 1, 1);
+    
     //Add a few documents to shard1
     int numDocs = TestUtil.nextInt(random(), 10, 100);
     List<SolrInputDocument> docs = new ArrayList<>(numDocs);
@@ -125,6 +142,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateShard did not complete", RequestStatusState.COMPLETED, state);
 
+    client.getZkStateReader().forceUpdateCollection(collection);
+    
     //Add a doc to shard2 to make sure shard2 was created properly
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", numDocs + 1);
@@ -143,14 +162,20 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     assertSame("AddReplica did not complete", RequestStatusState.COMPLETED, state);
 
     //cloudClient watch might take a couple of seconds to reflect it
-    Slice shard1 = client.getZkStateReader().getClusterState().getCollection(collection).getSlice("shard1");
-    int count = 0;
-    while (shard1.getReplicas().size() != 2) {
-      if (count++ > 1000) {
-        fail("2nd Replica not reflecting in the cluster state");
+    client.getZkStateReader().waitForState(collection, 20, TimeUnit.SECONDS, (n, c) -> {
+      if (c == null)
+        return false;
+      Slice slice = c.getSlice("shard1");
+      if (slice == null) {
+        return false;
       }
-      Thread.sleep(100);
-    }
+
+      if (slice.getReplicas().size() == 2) {
+        return true;
+      }
+
+      return false;
+    });
 
     state = CollectionAdminRequest.createAlias("myalias",collection)
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
@@ -170,7 +195,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     } catch (SolrException e) {
       //expected
     }
-
+    
+    Slice shard1 = client.getZkStateReader().getClusterState().getCollection(collection).getSlice("shard1");
     Replica replica = shard1.getReplicas().iterator().next();
     for (String liveNode : client.getZkStateReader().getClusterState().getLiveNodes()) {
       if (!replica.getNodeName().equals(liveNode)) {
@@ -180,19 +206,23 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
         break;
       }
     }
-
+    client.getZkStateReader().forceUpdateCollection(collection);
+    
     shard1 = client.getZkStateReader().getClusterState().getCollection(collection).getSlice("shard1");
     String replicaName = shard1.getReplicas().iterator().next().getName();
     state = CollectionAdminRequest.deleteReplica(collection, "shard1", replicaName)
       .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteReplica did not complete", RequestStatusState.COMPLETED, state);
 
-    state = CollectionAdminRequest.deleteCollection(collection)
-        .processAndWait(client, MAX_TIMEOUT_SECONDS);
-    assertSame("DeleteCollection did not complete", RequestStatusState.COMPLETED, state);
+    if (!legacy) {
+      state = CollectionAdminRequest.deleteCollection(collection)
+          .processAndWait(client, MAX_TIMEOUT_SECONDS);
+      assertSame("DeleteCollection did not complete", RequestStatusState.COMPLETED, state);
+    }
   }
-  // commented 4-Sep-2018  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+
   public void testAsyncIdRaceCondition() throws Exception {
+
     SolrClient[] clients = new SolrClient[cluster.getJettySolrRunners().size()];
     int j = 0;
     for (JettySolrRunner r:cluster.getJettySolrRunners()) {

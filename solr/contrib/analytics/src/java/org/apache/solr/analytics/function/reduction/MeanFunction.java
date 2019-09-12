@@ -49,12 +49,12 @@ public class MeanFunction extends AbstractDoubleValue implements ReductionFuncti
       casted = (DoubleValueStream) params[0];
     }
     catch (ClassCastException e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires numeric parameter. " + 
+      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires numeric parameter. " +
           "Incorrect parameter: "+params[0].getExpressionStr());
     }
     return new MeanFunction(casted);
   });
-  
+
   public MeanFunction(DoubleValueStream param) {
     this.sumCollector = new SumCollector(param);
     this.countCollector = new ExpressionCountCollector(param);

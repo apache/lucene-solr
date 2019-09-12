@@ -64,7 +64,6 @@ import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -372,10 +371,9 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     }
 
     String path = params.get(PATH);
-    String addr = params.get("addr");
 
-    if (addr != null && addr.length() == 0) {
-      addr = null;
+    if (params.get("addr") != null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Illegal parameter \"addr\"");
     }
 
     String detailS = params.get("detail");
@@ -402,7 +400,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         filter = null;
     }
 
-    ZKPrinter printer = new ZKPrinter(cores.getZkController(), addr);
+    ZKPrinter printer = new ZKPrinter(cores.getZkController());
     printer.detail = detail;
     printer.dump = dump;
     boolean isGraphView = "graph".equals(params.get("view"));
@@ -430,61 +428,23 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     boolean detail = false;
     boolean dump = false;
 
-    String addr; // the address passed to us
     String keeperAddr; // the address we're connected to
-
-    boolean doClose;  // close the client after done if we opened it
 
     final BAOS baos = new BAOS();
     final Writer out = new OutputStreamWriter(baos,  StandardCharsets.UTF_8);
     SolrZkClient zkClient;
 
-    int level;
-    int maxData = 95;
-
     PageOfCollections page;
     PagedCollectionSupport pagingSupport;
     ZkController zkController;
 
-    public ZKPrinter(ZkController controller, String addr) throws IOException {
+    public ZKPrinter(ZkController controller) throws IOException {
       this.zkController = controller;
-      this.addr = addr;
-
-      if (addr == null) {
-        if (controller != null) {
-          // this core is zk enabled
-          keeperAddr = controller.getZkServerAddress();
-          zkClient = controller.getZkClient();
-          if (zkClient != null && zkClient.isConnected()) {
-            return;
-          } else {
-            // try a different client with this address
-            addr = keeperAddr;
-          }
-        }
-      }
-
-      keeperAddr = addr;
-      if (addr == null) {
-        writeError(404, "Zookeeper is not configured for this Solr Core. Please try connecting to an alternate zookeeper address.");
-        return;
-      }
-
-      try {
-        zkClient = new SolrZkClient(addr, 10000);
-        doClose = true;
-      } catch (Exception e) {
-        writeError(503, "Could not connect to zookeeper at '" + addr + "'\"");
-        zkClient = null;
-        return;
-      }
-
+      keeperAddr = controller.getZkServerAddress();
+      zkClient = controller.getZkClient();
     }
 
     public void close() {
-      if (doClose) {
-        zkClient.close();
-      }
       try {
         out.flush();
       } catch (Exception e) {
@@ -691,7 +651,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           Map<String, Object> clusterstateJsonMap = null;
           if (dataStr != null) {
             try {
-              clusterstateJsonMap = (Map<String, Object>) ObjectBuilder.fromJSON(dataStr);
+              clusterstateJsonMap = (Map<String, Object>) Utils.fromJSONString(dataStr);
             } catch (Exception e) {
               throw new SolrException(ErrorCode.SERVER_ERROR,
                   "Failed to parse /clusterstate.json from ZooKeeper due to: " + e, e);
@@ -739,7 +699,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
               }
 
               if (childDataStr != null) {
-                Map<String, Object> extColl = (Map<String, Object>) ObjectBuilder.fromJSON(childDataStr);
+                Map<String, Object> extColl = (Map<String, Object>) Utils.fromJSONString(childDataStr);
                 collectionState = extColl.get(collection);
 
                 if (applyStatusFilter) {

@@ -81,7 +81,8 @@ public class AutoScalingConfig implements MapWriter {
           TriggerEventProcessorStage stage = TriggerEventProcessorStage.valueOf(String.valueOf(stageName).toUpperCase(Locale.ROOT));
           stages.add(stage);
         } catch (Exception e) {
-          log.warn("Invalid stage name '" + name + "' in listener config, skipping: " + properties);
+          log.warn("Invalid stage name '{}' for '{}' in listener config, skipping it in: {}",
+              stageName, name, properties);
         }
       }
       listenerClass = (String)this.properties.get(AutoScalingParams.CLASS);
@@ -311,7 +312,7 @@ public class AutoScalingConfig implements MapWriter {
    */
   public AutoScalingConfig(Map<String, Object> jsonMap) {
     this.jsonMap = jsonMap;
-    int version = -1;
+    int version = 0;
     if (jsonMap.containsKey(AutoScalingParams.ZK_VERSION)) {
       try {
         version = (Integer)jsonMap.get(AutoScalingParams.ZK_VERSION);
@@ -324,7 +325,7 @@ public class AutoScalingConfig implements MapWriter {
     empty = jsonMap.isEmpty();
   }
 
-  private AutoScalingConfig(Policy policy, Map<String, TriggerConfig> triggerConfigs, Map<String,
+  public AutoScalingConfig(Policy policy, Map<String, TriggerConfig> triggerConfigs, Map<String,
       TriggerListenerConfig> listenerConfigs, Map<String, Object> properties, int zkVersion) {
     this.policy = policy;
     this.triggers = triggerConfigs != null ? Collections.unmodifiableMap(new LinkedHashMap<>(triggerConfigs)) : null;

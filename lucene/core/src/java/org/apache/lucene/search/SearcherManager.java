@@ -172,7 +172,7 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
   }
 
   /**
-   * Returns <code>true</code> if no changes have occured since this searcher
+   * Returns <code>true</code> if no changes have occurred since this searcher
    * ie. reader was opened, otherwise <code>false</code>.
    * @see DirectoryReader#isCurrent() 
    */

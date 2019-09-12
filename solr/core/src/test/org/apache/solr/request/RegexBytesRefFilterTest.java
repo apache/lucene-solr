@@ -17,10 +17,10 @@
 package org.apache.solr.request;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-public class RegexBytesRefFilterTest extends LuceneTestCase {
+public class RegexBytesRefFilterTest extends SolrTestCase {
 
   @Test
   public void testSubstringBytesRefFilter() {

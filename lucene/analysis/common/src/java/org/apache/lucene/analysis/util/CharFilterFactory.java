@@ -26,6 +26,8 @@ import org.apache.lucene.analysis.CharFilter;
 /**
  * Abstract parent class for analysis factories that create {@link CharFilter}
  * instances.
+ *
+ * @since 3.1
  */
 public abstract class CharFilterFactory extends AbstractAnalysisFactory {
 
@@ -45,6 +47,15 @@ public abstract class CharFilterFactory extends AbstractAnalysisFactory {
   /** returns a list of all available charfilter names */
   public static Set<String> availableCharFilters() {
     return loader.availableServices();
+  }
+
+  /** looks up a SPI name for the specified char filter factory */
+  public static String findSPIName(Class<? extends CharFilterFactory> serviceClass) {
+    try {
+      return lookupSPIName(serviceClass);
+    } catch (NoSuchFieldException | IllegalAccessException | IllegalStateException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   /** 
@@ -71,4 +82,13 @@ public abstract class CharFilterFactory extends AbstractAnalysisFactory {
 
   /** Wraps the given Reader with a CharFilter. */
   public abstract Reader create(Reader input);
+
+  /**
+   * Normalize the specified input Reader
+   * While the default implementation returns input unchanged,
+   * char filters that should be applied at normalization time can delegate to {@code create} method.
+   */
+  public Reader normalize(Reader input) {
+    return input;
+  }
 }

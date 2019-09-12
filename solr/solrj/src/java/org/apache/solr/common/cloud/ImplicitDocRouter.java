@@ -76,6 +76,11 @@ public class ImplicitDocRouter extends DocRouter {
   }
 
   @Override
+  public String getName() {
+    return NAME;
+  }
+
+  @Override
   public Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection) {
 
     if (shardKey == null) {

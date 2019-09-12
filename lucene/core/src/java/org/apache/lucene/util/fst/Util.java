@@ -55,11 +55,11 @@ public final class Util {
       if (fst.findTargetArc(input.ints[input.offset + i], arc, arc, fstReader) == null) {
         return null;
       }
-      output = fst.outputs.add(output, arc.output);
+      output = fst.outputs.add(output, arc.output());
     }
 
     if (arc.isFinal()) {
-      return fst.outputs.add(output, arc.nextFinalOutput);
+      return fst.outputs.add(output, arc.nextFinalOutput());
     } else {
       return null;
     }
@@ -75,7 +75,7 @@ public final class Util {
     final BytesReader fstReader = fst.getBytesReader();
 
     // TODO: would be nice not to alloc this on every lookup
-    final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
+    final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<>());
 
     // Accumulate output as we go
     T output = fst.outputs.getNoOutput();
@@ -83,11 +83,11 @@ public final class Util {
       if (fst.findTargetArc(input.bytes[i+input.offset] & 0xFF, arc, arc, fstReader) == null) {
         return null;
       }
-      output = fst.outputs.add(output, arc.output);
+      output = fst.outputs.add(output, arc.output());
     }
 
     if (arc.isFinal()) {
-      return fst.outputs.add(output, arc.nextFinalOutput);
+      return fst.outputs.add(output, arc.nextFinalOutput());
     } else {
       return null;
     }
@@ -103,8 +103,9 @@ public final class Util {
    *  works when the outputs are ascending in order with
    *  the inputs.
    *  For example, simple ordinals (0, 1,
-   *  2, ...), or file offets (when appending to a file)
+   *  2, ...), or file offsets (when appending to a file)
    *  fit this. */
+  @Deprecated
   public static IntsRef getByOutput(FST<Long> fst, long targetOutput) throws IOException {
 
     final BytesReader in = fst.getBytesReader();
@@ -122,8 +123,9 @@ public final class Util {
    * Expert: like {@link Util#getByOutput(FST, long)} except reusing 
    * BytesReader, initial and scratch Arc, and result.
    */
+  @Deprecated
   public static IntsRef getByOutput(FST<Long> fst, long targetOutput, BytesReader in, Arc<Long> arc, Arc<Long> scratchArc, IntsRefBuilder result) throws IOException {
-    long output = arc.output;
+    long output = arc.output();
     int upto = 0;
 
     //System.out.println("reverseLookup output=" + targetOutput);
@@ -131,7 +133,7 @@ public final class Util {
     while(true) {
       //System.out.println("loop: output=" + output + " upto=" + upto + " arc=" + arc);
       if (arc.isFinal()) {
-        final long finalOutput = output + arc.nextFinalOutput;
+        final long finalOutput = output + arc.nextFinalOutput();
         //System.out.println("  isFinal finalOutput=" + finalOutput);
         if (finalOutput == targetOutput) {
           result.setLength(upto);
@@ -147,19 +149,19 @@ public final class Util {
         //System.out.println("  targetHasArcs");
         result.grow(1+upto);
         
-        fst.readFirstRealTargetArc(arc.target, arc, in);
+        fst.readFirstRealTargetArc(arc.target(), arc, in);
 
-        if (arc.bytesPerArc != 0) {
+        if (arc.bytesPerArc() != 0 && arc.arcIdx() > Integer.MIN_VALUE) {
 
           int low = 0;
-          int high = arc.numArcs-1;
+          int high = arc.numArcs() -1;
           int mid = 0;
           //System.out.println("bsearch: numArcs=" + arc.numArcs + " target=" + targetOutput + " output=" + output);
           boolean exact = false;
           while (low <= high) {
             mid = (low + high) >>> 1;
-            in.setPosition(arc.posArcsStart);
-            in.skipBytes(arc.bytesPerArc*mid);
+            in.setPosition(arc.posArcsStart());
+            in.skipBytes(arc.bytesPerArc() *mid);
             final byte flags = in.readByte();
             fst.readLabel(in);
             final long minArcOutput;
@@ -169,7 +171,7 @@ public final class Util {
             } else {
               minArcOutput = output;
             }
-            //System.out.println("  cycle mid=" + mid + " label=" + (char) label + " output=" + minArcOutput);
+            //System.out.println("  cycle mid=" + mid + " output=" + minArcOutput);
             if (minArcOutput == targetOutput) {
               exact = true;
               break;
@@ -180,17 +182,18 @@ public final class Util {
             }
           }
 
+          int idx;
           if (high == -1) {
             return null;
           } else if (exact) {
-            arc.arcIdx = mid-1;
+            idx = mid;
           } else {
-            arc.arcIdx = low-2;
+            idx = low - 1;
           }
 
-          fst.readNextRealArc(arc, in);
-          result.setIntAt(upto++, arc.label);
-          output += arc.output;
+          fst.readArcByIndex(arc, in, idx);
+          result.setIntAt(upto++, arc.label());
+          output += arc.output();
 
         } else {
 
@@ -201,13 +204,13 @@ public final class Util {
 
             // This is the min output we'd hit if we follow
             // this arc:
-            final long minArcOutput = output + arc.output;
+            final long minArcOutput = output + arc.output();
 
             if (minArcOutput == targetOutput) {
               // Recurse on this arc:
               //System.out.println("  match!  break");
               output = minArcOutput;
-              result.setIntAt(upto++, arc.label);
+              result.setIntAt(upto++, arc.label());
               break;
             } else if (minArcOutput > targetOutput) {
               if (prevArc == null) {
@@ -216,8 +219,8 @@ public final class Util {
               } else {
                 // Recurse on previous arc:
                 arc.copyFrom(prevArc);
-                result.setIntAt(upto++, arc.label);
-                output += arc.output;
+                result.setIntAt(upto++, arc.label());
+                output += arc.output();
                 //System.out.println("    recurse prev label=" + (char) arc.label + " output=" + output);
                 break;
               }
@@ -225,7 +228,7 @@ public final class Util {
               // Recurse on this arc:
               output = minArcOutput;
               //System.out.println("    recurse last label=" + (char) arc.label + " output=" + output);
-              result.setIntAt(upto++, arc.label);
+              result.setIntAt(upto++, arc.label());
               break;
             } else {
               // Read next arc in this node:
@@ -259,12 +262,7 @@ public final class Util {
     // Custom int payload for consumers; the NRT suggester uses this to record if this path has already enumerated a surface form
     public int payload;
 
-    /** Sole constructor */
-    public FSTPath(T output, FST.Arc<T> arc, IntsRefBuilder input) {
-      this(output, arc, input, 0, null, -1);
-    }
-
-    public FSTPath(T output, FST.Arc<T> arc, IntsRefBuilder input, float boost, CharSequence context, int payload) {
+    FSTPath(T output, FST.Arc<T> arc, IntsRefBuilder input, float boost, CharSequence context, int payload) {
       this.arc = new FST.Arc<T>().copyFrom(arc);
       this.output = output;
       this.input = input;
@@ -273,7 +271,7 @@ public final class Util {
       this.payload = payload;
     }
 
-    public FSTPath<T> newPath(T output, IntsRefBuilder input) {
+    FSTPath<T> newPath(T output, IntsRefBuilder input) {
       return new FSTPath<>(output, this.arc, input, this.boost, this.context, this.payload);
     }
 
@@ -287,7 +285,8 @@ public final class Util {
    *  tie breaks by path.input. */
   private static class TieBreakByInputComparator<T> implements Comparator<FSTPath<T>> {
     private final Comparator<T> comparator;
-    public TieBreakByInputComparator(Comparator<T> comparator) {
+
+    TieBreakByInputComparator(Comparator<T> comparator) {
       this.comparator = comparator;
     }
 
@@ -316,7 +315,7 @@ public final class Util {
     private final Comparator<T> comparator;
     private final Comparator<FSTPath<T>> pathComparator;
 
-    TreeSet<FSTPath<T>> queue = null;
+    TreeSet<FSTPath<T>> queue;
 
     /**
      * Creates an unbounded TopNSearcher
@@ -345,7 +344,7 @@ public final class Util {
 
       assert queue != null;
 
-      T output = fst.outputs.add(path.output, path.arc.output);
+      T output = fst.outputs.add(path.output, path.arc.output());
 
       if (queue.size() == maxQueueDepth) {
         FSTPath<T> bottom = queue.last();
@@ -355,7 +354,7 @@ public final class Util {
           return;
         } else if (comp == 0) {
           // Tie break by alpha sort on the input:
-          path.input.append(path.arc.label);
+          path.input.append(path.arc.label());
           final int cmp = bottom.input.get().compareTo(path.input.get());
           path.input.setLength(path.input.length() - 1);
 
@@ -368,15 +367,14 @@ public final class Util {
           }
         }
         // Competes
-      } else {
-        // Queue isn't full yet, so any path we hit competes:
       }
+      // else ... Queue isn't full yet, so any path we hit competes:
 
       // copy over the current input to the new input
       // and add the arc.label to the end
       IntsRefBuilder newInput = new IntsRefBuilder();
       newInput.copyInts(path.input.get());
-      newInput.append(path.arc.label);
+      newInput.append(path.arc.label());
 
       FSTPath<T> newPath = path.newPath(output, newInput);
       if (acceptPartialPath(newPath)) {
@@ -406,7 +404,7 @@ public final class Util {
 
       // Bootstrap: find the min starting arc
       while (true) {
-        if (allowEmptyString || path.arc.label != FST.END_LABEL) {
+        if (allowEmptyString || path.arc.label() != FST.END_LABEL) {
           addIfCompetitive(path);
         }
         if (path.arc.isLast()) {
@@ -455,7 +453,7 @@ public final class Util {
           continue;
         }
 
-        if (path.arc.label == FST.END_LABEL) {
+        if (path.arc.label() == FST.END_LABEL) {
           // Empty string!
           path.input.setLength(path.input.length() - 1);
           results.add(new Result<>(path.input.get(), path.output));
@@ -483,7 +481,7 @@ public final class Util {
           while(true) {
             // tricky: instead of comparing output == 0, we must
             // express it via the comparator compare(output, 0) == 0
-            if (comparator.compare(NO_OUTPUT, path.arc.output) == 0) {
+            if (comparator.compare(NO_OUTPUT, path.arc.output()) == 0) {
               if (queue == null) {
                 foundZero = true;
                 break;
@@ -512,9 +510,9 @@ public final class Util {
             path.arc.copyFrom(scratchArc);
           }
 
-          if (path.arc.label == FST.END_LABEL) {
+          if (path.arc.label() == FST.END_LABEL) {
             // Add final output:
-            path.output = fst.outputs.add(path.output, path.arc.output);
+            path.output = fst.outputs.add(path.output, path.arc.output());
             if (acceptResult(path)) {
               results.add(new Result<>(path.input.get(), path.output));
             } else {
@@ -522,8 +520,8 @@ public final class Util {
             }
             break;
           } else {
-            path.input.append(path.arc.label);
-            path.output = fst.outputs.add(path.output, path.arc.output);
+            path.input.append(path.arc.label());
+            path.output = fst.outputs.add(path.output, path.arc.output());
             if (acceptPartialPath(path) == false) {
               break;
             }
@@ -639,7 +637,7 @@ public final class Util {
 
     // This is the start arc in the automaton (from the epsilon state to the first state 
     // with outgoing transitions.
-    final FST.Arc<T> startArc = fst.getFirstArc(new FST.Arc<T>());
+    final FST.Arc<T> startArc = fst.getFirstArc(new FST.Arc<>());
 
     // A queue of transitions to consider for the next level.
     final List<FST.Arc<T>> thisLevelQueue = new ArrayList<>();
@@ -654,7 +652,7 @@ public final class Util {
 
     // A bitset of already seen states (target offset).
     final BitSet seen = new BitSet();
-    seen.set((int) startArc.target);
+    seen.set((int) startArc.target());
 
     // Shape for states.
     final String stateShape = "circle";
@@ -687,16 +685,16 @@ public final class Util {
       final T finalOutput;
       if (startArc.isFinal()) {
         isFinal = true;
-        finalOutput = startArc.nextFinalOutput == NO_OUTPUT ? null : startArc.nextFinalOutput;
+        finalOutput = startArc.nextFinalOutput() == NO_OUTPUT ? null : startArc.nextFinalOutput();
       } else {
         isFinal = false;
         finalOutput = null;
       }
       
-      emitDotState(out, Long.toString(startArc.target), isFinal ? finalStateShape : stateShape, stateColor, finalOutput == null ? "" : fst.outputs.outputToString(finalOutput));
+      emitDotState(out, Long.toString(startArc.target()), isFinal ? finalStateShape : stateShape, stateColor, finalOutput == null ? "" : fst.outputs.outputToString(finalOutput));
     }
 
-    out.write("  initial -> " + startArc.target + "\n");
+    out.write("  initial -> " + startArc.target() + "\n");
 
     int level = 0;
 
@@ -715,9 +713,9 @@ public final class Util {
           // scan all target arcs
           //System.out.println("  readFirstTarget...");
 
-          final long node = arc.target;
+          final long node = arc.target();
 
-          fst.readFirstRealTargetArc(arc.target, arc, r);
+          fst.readFirstRealTargetArc(arc.target(), arc, r);
 
           //System.out.println("    firstTarget: " + arc);
 
@@ -725,7 +723,7 @@ public final class Util {
 
             //System.out.println("  cycle arc=" + arc);
             // Emit the unseen state and add it to the queue for the next level.
-            if (arc.target >= 0 && !seen.get((int) arc.target)) {
+            if (arc.target() >= 0 && !seen.get((int) arc.target())) {
 
               /*
               boolean isFinal = false;
@@ -746,35 +744,35 @@ public final class Util {
               }
 
               final String finalOutput;
-              if (arc.nextFinalOutput != null && arc.nextFinalOutput != NO_OUTPUT) {
-                finalOutput = fst.outputs.outputToString(arc.nextFinalOutput);
+              if (arc.nextFinalOutput() != null && arc.nextFinalOutput() != NO_OUTPUT) {
+                finalOutput = fst.outputs.outputToString(arc.nextFinalOutput());
               } else {
                 finalOutput = "";
               }
 
-              emitDotState(out, Long.toString(arc.target), stateShape, stateColor, finalOutput);
+              emitDotState(out, Long.toString(arc.target()), stateShape, stateColor, finalOutput);
               // To see the node address, use this instead:
               //emitDotState(out, Integer.toString(arc.target), stateShape, stateColor, String.valueOf(arc.target));
-              seen.set((int) arc.target);
+              seen.set((int) arc.target());
               nextLevelQueue.add(new FST.Arc<T>().copyFrom(arc));
-              sameLevelStates.add((int) arc.target);
+              sameLevelStates.add((int) arc.target());
             }
 
             String outs;
-            if (arc.output != NO_OUTPUT) {
-              outs = "/" + fst.outputs.outputToString(arc.output);
+            if (arc.output() != NO_OUTPUT) {
+              outs = "/" + fst.outputs.outputToString(arc.output());
             } else {
               outs = "";
             }
 
-            if (!FST.targetHasArcs(arc) && arc.isFinal() && arc.nextFinalOutput != NO_OUTPUT) {
+            if (!FST.targetHasArcs(arc) && arc.isFinal() && arc.nextFinalOutput() != NO_OUTPUT) {
               // Tricky special case: sometimes, due to
               // pruning, the builder can [sillily] produce
               // an FST with an arc into the final end state
               // (-1) but also with a next final output; in
               // this case we pull that output up onto this
               // arc
-              outs = outs + "/[" + fst.outputs.outputToString(arc.nextFinalOutput) + "]";
+              outs = outs + "/[" + fst.outputs.outputToString(arc.nextFinalOutput()) + "]";
             }
 
             final String arcColor;
@@ -784,8 +782,8 @@ public final class Util {
               arcColor = "black";
             }
 
-            assert arc.label != FST.END_LABEL;
-            out.write("  " + node + " -> " + arc.target + " [label=\"" + printableLabel(arc.label) + outs + "\"" + (arc.isFinal() ? " style=\"bold\"" : "" ) + " color=\"" + arcColor + "\"]\n");
+            assert arc.label() != FST.END_LABEL;
+            out.write("  " + node + " -> " + arc.target() + " [label=\"" + printableLabel(arc.label()) + outs + "\"" + (arc.isFinal() ? " style=\"bold\"" : "" ) + " color=\"" + arcColor + "\"]\n");
                    
             // Break the loop if we're on the last arc of this state.
             if (arc.isLast()) {
@@ -924,7 +922,7 @@ public final class Util {
   */
 
   /**
-   * Reads the first arc greater or equal that the given label into the provided
+   * Reads the first arc greater or equal than the given label into the provided
    * arc in place and returns it iff found, otherwise return <code>null</code>.
    * 
    * @param label the label to ceil on
@@ -933,74 +931,48 @@ public final class Util {
    * @param arc the arc to read into in place
    * @param in the fst's {@link BytesReader}
    */
-  public static <T> Arc<T> readCeilArc(int label, FST<T> fst, Arc<T> follow,
-      Arc<T> arc, BytesReader in) throws IOException {
-    // TODO maybe this is a useful in the FST class - we could simplify some other code like FSTEnum?
+  public static <T> Arc<T> readCeilArc(int label, FST<T> fst, Arc<T> follow, Arc<T> arc, BytesReader in) throws IOException {
     if (label == FST.END_LABEL) {
-      if (follow.isFinal()) {
-        if (follow.target <= 0) {
-          arc.flags = FST.BIT_LAST_ARC;
-        } else {
-          arc.flags = 0;
-          // NOTE: nextArc is a node (not an address!) in this case:
-          arc.nextArc = follow.target;
-        }
-        arc.output = follow.nextFinalOutput;
-        arc.label = FST.END_LABEL;
-        return arc;
-      } else {
-        return null;
-      }
+      return FST.readEndArc(follow, arc);
     }
-
     if (!FST.targetHasArcs(follow)) {
       return null;
     }
     fst.readFirstTargetArc(follow, arc, in);
-    if (arc.bytesPerArc != 0 && arc.label != FST.END_LABEL) {
-      // Arcs are fixed array -- use binary search to find
-      // the target.
-
-      int low = arc.arcIdx;
-      int high = arc.numArcs - 1;
-      int mid = 0;
-      // System.out.println("do arc array low=" + low + " high=" + high +
-      // " targetLabel=" + targetLabel);
-      while (low <= high) {
-        mid = (low + high) >>> 1;
-        in.setPosition(arc.posArcsStart);
-        in.skipBytes(arc.bytesPerArc * mid + 1);
-        final int midLabel = fst.readLabel(in);
-        final int cmp = midLabel - label;
-        // System.out.println("  cycle low=" + low + " high=" + high + " mid=" +
-        // mid + " midLabel=" + midLabel + " cmp=" + cmp);
-        if (cmp < 0) {
-          low = mid + 1;
-        } else if (cmp > 0) {
-          high = mid - 1;
+    if (arc.bytesPerArc() != 0 && arc.label() != FST.END_LABEL) {
+      if (arc.arcIdx() == Integer.MIN_VALUE) {
+        // Arcs are in an array-with-gaps
+        int offset = label - arc.label();
+        if (offset >= arc.numArcs()) {
+          return null;
+        } else if (offset < 0) {
+          return arc;
         } else {
-          arc.arcIdx = mid-1;
-          return fst.readNextRealArc(arc, in);
+          return fst.readArcAtPosition(arc, in, arc.posArcsStart() - offset * arc.bytesPerArc());
         }
       }
-      if (low == arc.numArcs) {
+      // Arcs are packed array -- use binary search to find the target.
+      int idx = binarySearch(fst, arc, label);
+      if (idx >= 0) {
+        return fst.readArcByIndex(arc, in, idx);
+      }
+      idx = -1 - idx;
+      if (idx == arc.numArcs()) {
         // DEAD END!
         return null;
       }
-      
-      arc.arcIdx = (low > high ? high : low);
-      return fst.readNextRealArc(arc, in);
+      return fst.readArcByIndex(arc, in , idx);
     }
 
     // Linear scan
-    fst.readFirstRealTargetArc(follow.target, arc, in);
+    fst.readFirstRealTargetArc(follow.target(), arc, in);
 
     while (true) {
       // System.out.println("  non-bs cycle");
       // TODO: we should fix this code to not have to create
       // object for the output of every arc we scan... only
       // for the matching arc, if found
-      if (arc.label >= label) {
+      if (arc.label() >= label) {
         // System.out.println("    found!");
         return arc;
       } else if (arc.isLast()) {
@@ -1009,5 +981,38 @@ public final class Util {
         fst.readNextRealArc(arc, in);
       }
     }
+  }
+
+  /**
+   * Perform a binary search of Arcs encoded as a packed array
+   * @param fst the FST from which to read
+   * @param arc the starting arc; sibling arcs greater than this will be searched. Usually the first arc in the array.
+   * @param targetLabel the label to search for
+   * @param <T> the output type of the FST
+   * @return the index of the Arc having the target label, or if no Arc has the matching label, {@code -1 - idx)},
+   * where {@code idx} is the index of the Arc with the next highest label, or the total number of arcs
+   * if the target label exceeds the maximum.
+   * @throws IOException when the FST reader does
+   */
+  static <T> int binarySearch(FST<T> fst, FST.Arc<T> arc, int targetLabel) throws IOException {
+    BytesReader in = fst.getBytesReader();
+    int low = arc.arcIdx();
+    int mid = 0;
+    int high = arc.numArcs() -1;
+    while (low <= high) {
+      mid = (low + high) >>> 1;
+      in.setPosition(arc.posArcsStart());
+      in.skipBytes(arc.bytesPerArc() * mid + 1);
+      final int midLabel = fst.readLabel(in);
+      final int cmp = midLabel - targetLabel;
+      if (cmp < 0) {
+        low = mid + 1;
+      } else if (cmp > 0) {
+        high = mid - 1;
+      } else {
+        return mid;
+      }
+    }
+    return -1 - low;
   }
 }

@@ -192,7 +192,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
     assert params != null : "init must be called before create";
     log.info("creating directory factory for path {}", path);
-    Configuration conf = getConf();
+    Configuration conf = getConf(new Path(path));
     
     if (metrics == null) {
       metrics = MetricsHolder.metrics;
@@ -333,16 +333,21 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
   }
   
-  public Configuration getConf() {
+  public Configuration getConf(Path path) {
     Configuration conf = new Configuration();
     confDir = getConfig(CONFIG_DIRECTORY, null);
     HdfsUtil.addHdfsResources(conf, confDir);
-    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
+
+    if(path != null) {
+      String fsScheme = path.toUri().getScheme();
+      if(fsScheme != null) {
+        conf.setBoolean("fs." + fsScheme + ".impl.disable.cache", true);
+      }
+    }
     return conf;
   }
   
-  protected synchronized void removeDirectory(final CacheValue cacheValue)
-      throws IOException {
+  protected synchronized void removeDirectory(final CacheValue cacheValue) {
     FileSystem fileSystem = getCachedFileSystem(cacheValue.path);
 
     try {
@@ -359,7 +364,10 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   
   @Override
   public boolean isAbsolute(String path) {
-    return path.startsWith("hdfs:/");
+    if(path.startsWith("/")) {
+      return false;
+    }
+    return new Path(path).isAbsolute();
   }
   
   @Override
@@ -435,10 +443,11 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
   }
 
-  private FileSystem getCachedFileSystem(String path) {
+  private FileSystem getCachedFileSystem(String pathStr) {
     try {
       // no need to close the fs, the cache will do it
-      return tmpFsCache.get(path, () -> FileSystem.get(new Path(path).toUri(), getConf()));
+      Path path = new Path(pathStr);
+      return tmpFsCache.get(pathStr, () -> FileSystem.get(path.toUri(), getConf(path)));
     } catch (ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -462,7 +471,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     synchronized (HdfsDirectoryFactory.class) {
       if (kerberosInit == null) {
         kerberosInit = Boolean.TRUE;
-        final Configuration conf = getConf();
+        final Configuration conf = getConf(null);
         final String authVal = conf.get(HADOOP_SECURITY_AUTHENTICATION);
         final String kerberos = "kerberos";
         if (authVal != null && !authVal.equals(kerberos)) {
@@ -471,7 +480,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
               + " connect to HDFS via kerberos");
         }
         // let's avoid modifying the supplied configuration, just to be conservative
-        final Configuration ugiConf = new Configuration(getConf());
+        final Configuration ugiConf = new Configuration(getConf(null));
         ugiConf.set(HADOOP_SECURITY_AUTHENTICATION, kerberos);
         UserGroupInformation.setConfiguration(ugiConf);
         log.info(
@@ -531,7 +540,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
           boolean accept = false;
           String pathName = path.getName();
           try {
-            accept = fs.isDirectory(path) && !path.equals(currentIndexDirPath) &&
+            accept = fs.getFileStatus(path).isDirectory() && !path.equals(currentIndexDirPath) &&
                 (pathName.equals("index") || pathName.matches(INDEX_W_TIMESTAMP_REGEX));
           } catch (IOException e) {
             log.error("Error checking if path {} is an old index directory, caused by: {}", path, e);
@@ -585,8 +594,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   // perform an atomic rename if possible
   public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
     String hdfsDirPath = getPath(dir);
-    FileContext fileContext = FileContext.getFileContext(getConf());
-    fileContext.rename(new Path(hdfsDirPath + "/" + fileName), new Path(hdfsDirPath + "/" + toName), Options.Rename.OVERWRITE);
+    FileContext fileContext = FileContext.getFileContext(getConf(new Path(hdfsDirPath)));
+    fileContext.rename(new Path(hdfsDirPath, fileName), new Path(hdfsDirPath, toName), Options.Rename.OVERWRITE);
   }
   
   @Override
@@ -600,7 +609,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       Path dir2 = ((HdfsDirectory) baseToDir).getHdfsDirPath();
       Path file1 = new Path(dir1, fileName);
       Path file2 = new Path(dir2, fileName);
-      FileContext fileContext = FileContext.getFileContext(getConf());
+      FileContext fileContext = FileContext.getFileContext(getConf(dir1));
       fileContext.rename(file1, file2);
       return;
     }

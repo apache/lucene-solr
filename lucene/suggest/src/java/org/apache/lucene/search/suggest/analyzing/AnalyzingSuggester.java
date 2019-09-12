@@ -727,7 +727,7 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
           if (fst.findTargetArc(END_BYTE, path.fstNode, scratchArc, bytesReader) != null) {
             // This node has END_BYTE arc leaving, meaning it's an
             // "exact" match:
-            searcher.addStartPaths(scratchArc, fst.outputs.add(path.output, scratchArc.output), false, path.input);
+            searcher.addStartPaths(scratchArc, fst.outputs.add(path.output, scratchArc.output()), false, path.input);
           }
         }
 

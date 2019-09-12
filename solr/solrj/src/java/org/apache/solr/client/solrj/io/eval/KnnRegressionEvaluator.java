@@ -64,11 +64,20 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
     List<Number> outcomes = null;
     int k = 5;
     DistanceMeasure distanceMeasure = new EuclideanDistance();
+    boolean bivariate = false;
 
     if(values[0] instanceof Matrix) {
       observations = (Matrix)values[0];
+    } else if(values[0] instanceof List) {
+      bivariate = true;
+      List<Number> vec = (List<Number>)values[0];
+      double[][] data = new double[vec.size()][1];
+      for(int i=0; i<vec.size(); i++) {
+        data[i][0] = vec.get(i).doubleValue();
+      }
+      observations = new Matrix(data);
     } else {
-      throw new IOException("The first parameter for knnRegress should be the observation matrix.");
+      throw new IOException("The first parameter for knnRegress should be the observation vector or matrix.");
     }
 
     if(values[1] instanceof List) {
@@ -104,7 +113,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
     map.put("robust", robust);
     map.put("scale", scale);
 
-    return new KnnRegressionTuple(observations, outcomeData, k, distanceMeasure, map, scale, robust);
+    return new KnnRegressionTuple(observations, outcomeData, k, distanceMeasure, map, scale, robust, bivariate);
   }
 
 
@@ -117,6 +126,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
     private DistanceMeasure distanceMeasure;
     private boolean scale;
     private boolean robust;
+    private boolean bivariate;
 
     public KnnRegressionTuple(Matrix observations,
                               double[] outcomes,
@@ -124,7 +134,8 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
                               DistanceMeasure distanceMeasure,
                               Map<?,?> map,
                               boolean scale,
-                              boolean robust) {
+                              boolean robust,
+                              boolean bivariate) {
       super(map);
       this.observations = observations;
       this.outcomes = outcomes;
@@ -132,10 +143,14 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
       this.distanceMeasure = distanceMeasure;
       this.scale = scale;
       this.robust = robust;
+      this.bivariate = bivariate;
     }
 
     public boolean getScale() {
       return this.scale;
+    }
+    public boolean getBivariate() {
+      return this.bivariate;
     }
 
     //MinMax Scale both the observations and the predictors

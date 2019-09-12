@@ -163,7 +163,7 @@
  * all documents omit position data.
  * </li>
  * <li>
- * {@link org.apache.lucene.codecs.lucene70.Lucene70NormsFormat Normalization factors}. 
+ * {@link org.apache.lucene.codecs.lucene80.Lucene80NormsFormat Normalization factors}.
  * For each field in each document, a value is stored
  * that is multiplied into the score for hits on that field.
  * </li>
@@ -175,7 +175,7 @@
  * {@link org.apache.lucene.document.Field Field} constructors
  * </li>
  * <li>
- * {@link org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat Per-document values}. 
+ * {@link org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat Per-document values}.
  * Like stored values, these are also keyed by document
  * number, but are generally intended to be loaded into main memory for fast
  * access. Whereas stored values are generally intended for summary results from
@@ -284,12 +284,12 @@
  * <td>Stores additional per-position metadata information such as character offsets and user payloads</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene70.Lucene70NormsFormat Norms}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene80.Lucene80NormsFormat Norms}</td>
  * <td>.nvd, .nvm</td>
  * <td>Encodes length and boost factors for docs and fields</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene70.Lucene70DocValuesFormat Per-Document Values}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat Per-Document Values}</td>
  * <td>.dvd, .dvm</td>
  * <td>Encodes additional scoring factors or other per-document information.</td>
  * </tr>
@@ -393,7 +393,9 @@
  * doc ids, the (term freq, normalization factor) pairs that may trigger the
  * maximum score of the block. This information is recorded alongside skip data
  * in order to be able to skip blocks of doc ids if they may not produce high
- * enough scores.</li>
+ * enough scores.
+ * Additionally doc values and norms has been extended with jump-tables to make access O(1)
+ * instead of O(n), where n is the number of elements to skip when advancing in the data.</li>
  * </ul>
  * <a name="Limitations"></a>
  * <h2>Limitations</h2>

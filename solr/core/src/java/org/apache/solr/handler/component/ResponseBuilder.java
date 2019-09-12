@@ -16,6 +16,13 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -23,27 +30,21 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.RTimer;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.DocListAndSet;
+import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryResult;
-import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.RankQuery;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Set;
+import org.apache.solr.util.RTimer;
 
 /**
  * This class is experimental and will be changing in the future.
@@ -460,7 +461,11 @@ public class ResponseBuilder
   public void setResult(QueryResult result) {
     setResults(result.getDocListAndSet());
     if (result.isPartialResults()) {
-      rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+      rsp.getResponseHeader().asShallowMap()
+          .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+      if(getResults() != null && getResults().docList==null) {
+        getResults().docList = new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0);
+      }
     }
     final Boolean segmentTerminatedEarly = result.getSegmentTerminatedEarly();
     if (segmentTerminatedEarly != null) {
@@ -491,5 +496,29 @@ public class ResponseBuilder
   }
   public void setNextCursorMark(CursorMark nextCursorMark) {
     this.nextCursorMark = nextCursorMark;
+  }
+
+  public void setAnalytics(boolean doAnalytics) {
+    this.doAnalytics = doAnalytics;
+  }
+
+  public boolean isAnalytics() {
+    return this.doAnalytics;
+  }
+
+  public void setAnalyticsRequestManager(Object analyticsRequestManager) {
+    this._analyticsRequestManager = analyticsRequestManager;
+  }
+
+  public Object getAnalyticsRequestManager() {
+    return this._analyticsRequestManager;
+  }
+
+  public void setOlapAnalytics(boolean isOlapAnalytics) {
+    this._isOlapAnalytics = isOlapAnalytics;
+  }
+
+  public boolean isOlapAnalytics() {
+    return this._isOlapAnalytics;
   }
 }

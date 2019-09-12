@@ -79,25 +79,27 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     }
   }
 
-  public void sortBuckets() {
+
+  public void sortBuckets(final FacetRequest.FacetSort sort) {
+    // NOTE: we *always* re-init from buckets, because it may have been modified post-refinement 
     sortedBuckets = new ArrayList<>( buckets.values() );
 
     Comparator<FacetBucket> comparator = null;
 
-    final FacetRequest.SortDirection direction = freq.sortDirection;
+    final FacetRequest.SortDirection direction = sort.sortDirection;
     final int sortMul = direction.getMultiplier();
 
-    if ("count".equals(freq.sortVariable)) {
+    if ("count".equals(sort.sortVariable)) {
       comparator = (o1, o2) -> {
         int v = -Long.compare(o1.count, o2.count) * sortMul;
         return v == 0 ? o1.bucketValue.compareTo(o2.bucketValue) : v;
       };
       Collections.sort(sortedBuckets, comparator);
-    } else if ("index".equals(freq.sortVariable)) {
+    } else if ("index".equals(sort.sortVariable)) {
       comparator = (o1, o2) -> -o1.bucketValue.compareTo(o2.bucketValue) * sortMul;
       Collections.sort(sortedBuckets, comparator);
     } else {
-      final String key = freq.sortVariable;
+      final String key = sort.sortVariable;
 
       /**
        final FacetSortableMerger[] arr = new FacetSortableMerger[buckets.size()];
@@ -154,6 +156,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       out.addAll(nulls);
       sortedBuckets = out;
     }
+    assert null != sortedBuckets;
   }
 
   boolean isBucketComplete(FacetBucket bucket, Context mcontext) {
@@ -181,6 +184,8 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       return null;
     }
 
+    final FacetRequest.FacetSort initial_sort = null == freq.prelim_sort ? freq.sort : freq.prelim_sort;
+    
     // Tags for sub facets that have partial facets somewhere in their children.
     // If we are missing a bucket for this shard, we'll need to get the specific buckets that need refining.
     Collection<String> tagsWithPartial = mcontext.getSubsWithPartial(freq);
@@ -206,9 +211,9 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
 
         // when we don't have to worry about mincount pruning, there is no need for any
         // over refinement for these sorts..
-        if (freq.mincount <= 1 && ("index".equals(freq.sortVariable)
-                                   || ("count".equals(freq.sortVariable)
-                                       && FacetRequest.SortDirection.desc == freq.sortDirection))) {
+        if (freq.mincount <= 1 && ("index".equals(initial_sort.sortVariable)
+                                   || ("count".equals(initial_sort.sortVariable)
+                                       && FacetRequest.SortDirection.desc == initial_sort.sortDirection))) {
           // No-Op
         } else if (0 <= freq.overrequest) {
           // if user asked for an explicit amount of overrequesting,
@@ -241,9 +246,9 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       // todo: but we may need to filter.... simplify by always sorting?
       bucketList = buckets.values();
     } else {
-      // only sort once
+      // don't re-sort (the prerefinement values) if our subclass already did it
       if (sortedBuckets == null) {
-        sortBuckets();  // todo: make sure this filters buckets as well
+        sortBuckets(initial_sort);  // todo: make sure this filters buckets as well
       }
       bucketList = sortedBuckets;
     }

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.function.DoubleConsumer;
 
 public class DoubleCheckedDataReader extends ReductionCheckedDataReader<DoubleConsumer> {
-  
+
   public DoubleCheckedDataReader(DataInput inputStream, DoubleConsumer applier) {
     super(inputStream, applier);
   }

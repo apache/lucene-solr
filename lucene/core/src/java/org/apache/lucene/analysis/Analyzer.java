@@ -79,6 +79,8 @@ import org.apache.lucene.util.Version;
  *   <li><a href="{@docRoot}/../analyzers-stempel/overview-summary.html">Stempel</a>:
  *       Algorithmic Stemmer for the Polish Language.
  * </ul>
+ *
+ * @since 3.1
  */
 public abstract class Analyzer implements Closeable {
 

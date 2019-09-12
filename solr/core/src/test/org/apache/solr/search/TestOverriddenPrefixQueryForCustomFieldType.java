@@ -51,6 +51,8 @@ public class TestOverriddenPrefixQueryForCustomFieldType extends SolrTestCaseJ4 
     super.setUp();
     clearIndex();
     assertU(commit());
+    otherCounts=0;
+    counts = new int[2];
   }
 
   public void createIndex(int nDocs) {

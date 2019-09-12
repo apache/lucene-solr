@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.en;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -33,8 +32,14 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.PorterStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class PorterStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "porterStem";
   
   /** Creates a new PorterStemFilterFactory */
   public PorterStemFilterFactory(Map<String,String> args) {

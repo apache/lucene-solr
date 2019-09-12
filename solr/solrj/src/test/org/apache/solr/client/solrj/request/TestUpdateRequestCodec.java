@@ -29,7 +29,7 @@ import java.util.Set;
 
 import junit.framework.Assert;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.junit.Test;
@@ -41,10 +41,10 @@ import org.junit.Test;
  *
  * @see org.apache.solr.client.solrj.request.UpdateRequest
  */
-public class TestUpdateRequestCodec extends LuceneTestCase {
+public class TestUpdateRequestCodec extends SolrTestCase {
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void simple() throws IOException {
     UpdateRequest updateRequest = new UpdateRequest();
     updateRequest.deleteById("*:*");
@@ -111,7 +111,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIteratable() throws IOException {
     final List<String> values = new ArrayList<>();
     values.add("iterItem1");
@@ -162,7 +162,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
 
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testBackCompat4_5() throws IOException {
 
     UpdateRequest updateRequest = new UpdateRequest();

@@ -90,6 +90,6 @@ In most cases, specifying global level similarity like this will cause an error 
 
 In the example above `IBSimilarityFactory` (using the Information-Based model) will be used for any fields of type `text_ib`, while `DFRSimilarityFactory` (divergence from random) will be used for any fields of type `text_dfr`, as well as any fields using a type that does not explicitly specify a `<similarity/>`.
 
-If `SchemaSimilarityFactory` is explicitly declared without configuring a `defaultSimFromFieldType`, then `BM25Similarity` is implicitly used as the default.
+If `SchemaSimilarityFactory` is explicitly declared without configuring a `defaultSimFromFieldType`, then `BM25Similarity` is implicitly used as the default for `luceneMatchVersion >= 8.0.0` and otherwise `LegacyBM25Similarity` is used to mimic the same BM25 formula that was the default in those versions.
 
-In addition to the various factories mentioned on this page, there are several other similarity implementations that can be used such as the `SweetSpotSimilarityFactory`, `ClassicSimilarityFactory`, etc. For details, see the Solr Javadocs for the {solr-javadocs}/solr-core/org/apache/solr/schema/SimilarityFactory.html[similarity factories].
+In addition to the various factories mentioned on this page, there are several other similarity implementations that can be used such as the `SweetSpotSimilarityFactory`, `ClassicSimilarityFactory`, `LegacyBM25SimilarityFactory` etc. For details, see the Solr Javadocs for the {solr-javadocs}/solr-core/org/apache/solr/schema/SimilarityFactory.html[similarity factories].

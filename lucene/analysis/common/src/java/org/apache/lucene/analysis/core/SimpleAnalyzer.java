@@ -24,6 +24,8 @@ import org.apache.lucene.analysis.Tokenizer;
 
 /** An {@link Analyzer} that filters {@link LetterTokenizer} 
  *  with {@link LowerCaseFilter} 
+ *
+ * @since 3.1
  **/
 public final class SimpleAnalyzer extends Analyzer {
 

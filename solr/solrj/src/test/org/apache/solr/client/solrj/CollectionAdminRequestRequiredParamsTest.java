@@ -22,7 +22,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.FLUSH;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -37,7 +37,7 @@ import com.google.common.collect.Sets;
  * Tests that default {@link CollectionAdminRequest#getParams()} returns only
  * the required parameters of this request, and none other.
  */
-public class CollectionAdminRequestRequiredParamsTest extends LuceneTestCase {
+public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
 
   public void testBalanceShardUnique() {
     CollectionAdminRequest.BalanceShardUnique request = CollectionAdminRequest.balanceReplicaProperty("foo","prop");

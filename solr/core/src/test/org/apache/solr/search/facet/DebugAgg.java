@@ -32,17 +32,17 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.ValueSourceParser;
 
 
-public class DebugAgg extends AggValueSource {
+class DebugAgg extends AggValueSource {
   public static AtomicLong parses = new AtomicLong(0);
 
   public static class Parser extends ValueSourceParser {
     @Override
     public ValueSource parse(FunctionQParser fp) throws SyntaxError {
       parses.incrementAndGet();
-      final String what = fp.hasMoreArguments() ? fp.parseId() : "debug";
+      final String what = fp.hasMoreArguments() ? fp.parseId() : "wrap";
 
       switch (what) {
-        case "debug": return new DebugAgg(fp.getLocalParams());
+        case "wrap": return new DebugAgg(fp);
         case "numShards": return new DebugAggNumShards();
         default: /* No-Op */
       }
@@ -59,14 +59,17 @@ public class DebugAgg extends AggValueSource {
    * wrap them in defaults from the request
    */
   public final SolrParams localParams;
-  public DebugAgg(SolrParams localParams) {
+  public final AggValueSource inner;
+  
+  public DebugAgg(FunctionQParser fp) throws SyntaxError { 
     super("debug");
-    this.localParams = localParams;
+    this.localParams = fp.getLocalParams();
+    this.inner = fp.hasMoreArguments() ? fp.parseAgg(FunctionQParser.FLAG_IS_AGG) : new CountAgg();
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) {
-    return new Acc(fcontext, numDocs, numSlots);
+  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+    return new Acc(fcontext, numDocs, numSlots, inner.createSlotAcc(fcontext, numDocs, numSlots));
   }
 
   @Override
@@ -83,25 +86,34 @@ public class DebugAgg extends AggValueSource {
     public static AtomicLong creates = new AtomicLong(0);
     public static AtomicLong resets = new AtomicLong(0);
     public static AtomicLong resizes = new AtomicLong(0);
+    public static AtomicLong collectDocs = new AtomicLong(0);
+    public static AtomicLong collectDocSets = new AtomicLong(0);
     public static Acc last;
 
-    public CountSlotAcc sub;
+    public SlotAcc sub;
     public int numDocs;
     public int numSlots;
 
-    public Acc(FacetContext fcontext, int numDocs, int numSlots) {
+    public Acc(FacetContext fcontext, int numDocs, int numSlots, SlotAcc sub) {
       super(fcontext);
       this.last = this;
       this.numDocs = numDocs;
       this.numSlots = numSlots;
+      this.sub = sub;
       creates.addAndGet(1);
-      sub = new CountSlotArrAcc(fcontext, numSlots);
-//      new RuntimeException("DEBUG Acc numSlots=" + numSlots).printStackTrace();
     }
 
     @Override
     public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      collectDocs.addAndGet(1);
       sub.collect(doc, slot, slotContext);
+    }
+    
+
+    @Override
+    public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      collectDocSets.addAndGet(1);
+      return sub.collect(docs, slot, slotContext);
     }
 
     @Override
@@ -138,11 +150,6 @@ public class DebugAgg extends AggValueSource {
     }
 
     @Override
-    public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-      return sub.collect(docs, slot, slotContext);
-    }
-
-    @Override
     public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
       sub.key = this.key;  // TODO: Blech... this should be fixed
       sub.setValues(bucket, slotNum);
@@ -156,7 +163,7 @@ public class DebugAgg extends AggValueSource {
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetLongMerger();
+    return inner.createFacetMerger(prototype);
   }
 
   /** A simple agg that just returns the number of shards contributing to a bucket */

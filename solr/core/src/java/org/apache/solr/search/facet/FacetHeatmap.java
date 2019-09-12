@@ -208,62 +208,69 @@ public class FacetHeatmap extends FacetRequest {
 
   @Override
   public FacetProcessor createFacetProcessor(FacetContext fcontext) {
-    return new FacetProcessor(fcontext, this) {
-      @Override
-      public void process() throws IOException {
-        super.process(); // handles domain changes
+    return new FacetHeatmapProcessor(fcontext);
+  }
 
-        //Compute!
-        final HeatmapFacetCounter.Heatmap heatmap;
-        try {
-          heatmap = HeatmapFacetCounter.calcFacets(
-              strategy,
-              fcontext.searcher.getTopReaderContext(),
-              getTopAcceptDocs(fcontext.base, fcontext.searcher), // turn DocSet into Bits
-              boundsShape,
-              gridLevel,
-              maxCells);
-        } catch (IllegalArgumentException e) {//e.g. too many cells
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.toString(), e);
-        }
+  // don't use an anonymous class since the getSimpleName() isn't friendly in debug output
+  private class FacetHeatmapProcessor extends FacetProcessor {
+    public FacetHeatmapProcessor(FacetContext fcontext) {
+      super(fcontext, FacetHeatmap.this);
+    }
 
-        //Populate response
-        response = new SimpleOrderedMap();
-        response.add("gridLevel", gridLevel);
-        response.add("columns", heatmap.columns);
-        response.add("rows", heatmap.rows);
-        response.add("minX", heatmap.region.getMinX());
-        response.add("maxX", heatmap.region.getMaxX());
-        response.add("minY", heatmap.region.getMinY());
-        response.add("maxY", heatmap.region.getMaxY());
+    @Override
+    public void process() throws IOException {
+      super.process(); // handles domain changes
 
-        //A shard request will always be a PNG
-        String format = fcontext.isShard() ? FORMAT_PNG : FacetHeatmap.this.format;
-
-        response.add("counts_" + format, formatCountsVal(format, heatmap.columns, heatmap.rows, heatmap.counts, fcontext.getDebugInfo()));
-
-        // note: we do not call processStats or processSubs as it's not supported yet
+      //Compute!
+      final HeatmapFacetCounter.Heatmap heatmap;
+      try {
+        heatmap = HeatmapFacetCounter.calcFacets(
+            strategy,
+            fcontext.searcher.getTopReaderContext(),
+            getTopAcceptDocs(fcontext.base, fcontext.searcher), // turn DocSet into Bits
+            boundsShape,
+            gridLevel,
+            maxCells);
+      } catch (IllegalArgumentException e) {//e.g. too many cells
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.toString(), e);
       }
 
-      //TODO this is a general utility that should go elsewhere?  DocSetUtil?  Then should DocSetBase.getBits go away?
-      private Bits getTopAcceptDocs(DocSet docSet, SolrIndexSearcher searcher) throws IOException {
-        if (docSet.size() == searcher.numDocs()) {
-          return null; // means match everything (all live docs). This can speedup things a lot.
-        } else if (docSet.size() == 0) {
-          return new Bits.MatchNoBits(searcher.maxDoc()); // can speedup things a lot
-        } else if (docSet instanceof BitDocSet) {
-          return ((BitDocSet) docSet).getBits();
-        } else {
-          // TODO DocSetBase.getBits ought to be at DocSet level?  Though it doesn't know maxDoc but it could?
-          FixedBitSet bits = new FixedBitSet(searcher.maxDoc());
-          for (DocIterator iter = docSet.iterator(); iter.hasNext();) {
-            bits.set(iter.nextDoc());
-          }
-          return bits;
-        }
-      }
+      //Populate response
+      response = new SimpleOrderedMap();
+      response.add("gridLevel", gridLevel);
+      response.add("columns", heatmap.columns);
+      response.add("rows", heatmap.rows);
+      response.add("minX", heatmap.region.getMinX());
+      response.add("maxX", heatmap.region.getMaxX());
+      response.add("minY", heatmap.region.getMinY());
+      response.add("maxY", heatmap.region.getMaxY());
 
-    };
+      //A shard request will always be a PNG
+      String format = fcontext.isShard() ? FORMAT_PNG : FacetHeatmap.this.format;
+
+      response.add("counts_" + format, formatCountsVal(format, heatmap.columns, heatmap.rows, heatmap.counts, fcontext.getDebugInfo()));
+
+      // note: we do not call processStats or processSubs as it's not supported yet
+    }
+
+    //TODO this is a general utility that should go elsewhere?  DocSetUtil?  Then should DocSetBase.getBits go away?
+    private Bits getTopAcceptDocs(DocSet docSet, SolrIndexSearcher searcher) throws IOException {
+      if (docSet.size() == searcher.numDocs()) {
+        return null; // means match everything (all live docs). This can speedup things a lot.
+      } else if (docSet.size() == 0) {
+        return new Bits.MatchNoBits(searcher.maxDoc()); // can speedup things a lot
+      } else if (docSet instanceof BitDocSet) {
+        return ((BitDocSet) docSet).getBits();
+      } else {
+        // TODO DocSetBase.getBits ought to be at DocSet level?  Though it doesn't know maxDoc but it could?
+        FixedBitSet bits = new FixedBitSet(searcher.maxDoc());
+        for (DocIterator iter = docSet.iterator(); iter.hasNext();) {
+          bits.set(iter.nextDoc());
+        }
+        return bits;
+      }
+    }
+
   }
 
   private static Object formatCountsVal(String format, int columns, int rows, int[] counts, FacetDebugInfo debugInfo) {

@@ -202,7 +202,7 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   /**
-   * Create a new JapaneseTokenizer.
+   * Create a new JapaneseTokenizer using the system and unknown dictionaries shipped with Lucene.
    *
    * @param factory the AttributeFactory to use
    * @param userDictionary Optional: if non-null, user dictionary.
@@ -211,13 +211,40 @@ public final class JapaneseTokenizer extends Tokenizer {
    */
   public JapaneseTokenizer
       (AttributeFactory factory, UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
+    this(factory,
+         TokenInfoDictionary.getInstance(),
+         UnknownDictionary.getInstance(),
+         ConnectionCosts.getInstance(),
+         userDictionary, discardPunctuation, mode);
+  }
+
+  /**
+   * Create a new JapaneseTokenizer, supplying a custom system dictionary and unknown dictionary.
+   * <p>
+   * Uses the default AttributeFactory.
+   *
+   * @param factory the AttributeFactory to use
+   * @param systemDictionary a custom known token dictionary
+   * @param unkDictionary a custom unknown token dictionary
+   * @param connectionCosts custom token transition costs
+   * @param userDictionary Optional: if non-null, user dictionary.
+   * @param discardPunctuation true if punctuation tokens should be dropped from the output.
+   * @param mode tokenization mode.
+   */
+  public JapaneseTokenizer(AttributeFactory factory,
+                           TokenInfoDictionary systemDictionary,
+                           UnknownDictionary unkDictionary,
+                           ConnectionCosts connectionCosts,
+                           UserDictionary userDictionary,
+                           boolean discardPunctuation,
+                           Mode mode) {
     super(factory);
-    dictionary = TokenInfoDictionary.getInstance();
-    fst = dictionary.getFST();
-    unkDictionary = UnknownDictionary.getInstance();
-    characterDefinition = unkDictionary.getCharacterDefinition();
+    this.dictionary = systemDictionary;
+    this.fst = dictionary.getFST();
+    this.unkDictionary = unkDictionary;
+    this.characterDefinition = unkDictionary.getCharacterDefinition();
     this.userDictionary = userDictionary;
-    costs = ConnectionCosts.getInstance();
+    this.costs = connectionCosts;
     fstReader = fst.getBytesReader();
     if (userDictionary != null) {
       userFST = userDictionary.getFST();
@@ -772,12 +799,12 @@ public final class JapaneseTokenizer extends Tokenizer {
           if (userFST.findTargetArc(ch, arc, arc, posAhead == posData.pos, userFSTReader) == null) {
             break;
           }
-          output += arc.output.intValue();
+          output += arc.output().intValue();
           if (arc.isFinal()) {
             if (VERBOSE) {
               System.out.println("    USER word " + new String(buffer.get(pos, posAhead - pos + 1)) + " toPos=" + (posAhead + 1));
             }
-            add(userDictionary, posData, posAhead+1, output + arc.nextFinalOutput.intValue(), Type.USER, false);
+            add(userDictionary, posData, posAhead+1, output + arc.nextFinalOutput().intValue(), Type.USER, false);
             anyMatches = true;
           }
         }
@@ -803,7 +830,7 @@ public final class JapaneseTokenizer extends Tokenizer {
             break;
           }
 
-          output += arc.output.intValue();
+          output += arc.output().intValue();
 
           // Optimization: for known words that are too-long
           // (compound), we should pre-compute the 2nd
@@ -812,7 +839,7 @@ public final class JapaneseTokenizer extends Tokenizer {
           // match is found.
 
           if (arc.isFinal()) {
-            dictionary.lookupWordIds(output + arc.nextFinalOutput.intValue(), wordIdRef);
+            dictionary.lookupWordIds(output + arc.nextFinalOutput().intValue(), wordIdRef);
             if (VERBOSE) {
               System.out.println("    KNOWN word " + new String(buffer.get(pos, posAhead - pos + 1)) + " toPos=" + (posAhead + 1) + " " + wordIdRef.length + " wordIDs");
             }

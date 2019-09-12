@@ -27,8 +27,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.packed.DirectReader;
-import org.apache.lucene.util.packed.DirectWriter;
 
 public class TestDirectPacked extends LuceneTestCase {
   

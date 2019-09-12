@@ -28,14 +28,21 @@ import java.io.IOException;
  */
 abstract class PhraseMatcher {
 
-  protected final DocIdSetIterator approximation;
   private final float matchCost;
 
-  PhraseMatcher(DocIdSetIterator approximation, float matchCost) {
-    assert TwoPhaseIterator.unwrap(approximation) == null;
-    this.approximation = approximation;
+  PhraseMatcher(float matchCost) {
     this.matchCost = matchCost;
   }
+
+  /**
+   * Approximation that only matches documents that have all terms.
+   */
+  abstract DocIdSetIterator approximation();
+
+  /**
+   * Approximation that is aware of impacts.
+   */
+  abstract ImpactsDISI impactsApproximation();
 
   /**
    * An upper bound on the number of possible matches on this document

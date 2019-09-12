@@ -1,0 +1,30 @@
+doctype 5
+html lang=(attr :lang, 'en' unless attr? :nolang)
+  head
+    meta charset=(attr :encoding, 'UTF-8')
+    /[if IE]
+      meta http-equiv="X-UA-Compatible" content="IE=edge"
+    meta name='viewport' content='width=device-width, initial-scale=1.0'
+    meta name='generator' content="Asciidoctor #{attr 'asciidoctor-version'}"
+    = html_meta_if 'application-name', (attr 'app-name')
+    = html_meta_if 'author', (attr :authors)
+    = html_meta_if 'copyright', (attr :copyright)
+    = html_meta_if 'description', (attr :description)
+    = html_meta_if 'keywords', (attr :keywords)
+    title=((doctitle sanitize: true) || (attr 'untitled-label'))
+    = styles_and_scripts
+    - unless (docinfo_content = docinfo).empty?
+      =docinfo_content
+  body [
+      id=id
+      class=[(attr :doctype), ("#{attr 'toc-class'} toc-#{attr 'toc-position', 'left'}" if (attr? 'toc-class') && (attr? :toc) && (attr? 'toc-placement', 'auto'))]
+      style=style_value(max_width: (attr 'max-width')) ]
+    - unless noheader
+      header
+        include _header.html
+    #content =content
+    - unless !footnotes? || (attr? :nofootnotes)
+      include _footnotes.html
+    - unless nofooter
+      footer
+        include _footer.html

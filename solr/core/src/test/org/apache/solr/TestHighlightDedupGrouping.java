@@ -16,13 +16,15 @@
  */
 package org.apache.solr;
 
+import java.io.IOException;
+
+import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
 import org.junit.Test;
-
-import java.io.IOException;
 
 /**
  * Tests that highlighting doesn't break on grouped documents
@@ -34,6 +36,12 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
   private static final String group_ti1 = "group_ti1";
   private static final String shard_i1 = "shard_i1";
 
+  @AfterClass
+  public static void afterClass() throws Exception {
+    TimeLimitingCollector.getGlobalTimerThread().stopTimer();
+    TimeLimitingCollector.getGlobalTimerThread().join();
+  }
+  
   @Test
   @ShardsFixed(num = 2)
   public void test() throws Exception {

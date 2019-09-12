@@ -32,6 +32,8 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer;
  * with {@link org.apache.lucene.analysis.LowerCaseFilter} and
  * {@link org.apache.lucene.analysis.StopFilter}, using a list of
  * English stop words.
+ *
+ * @since 3.6.0
  */
 public final class UAX29URLEmailAnalyzer extends StopwordAnalyzerBase {
   

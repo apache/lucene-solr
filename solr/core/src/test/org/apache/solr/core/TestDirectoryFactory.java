@@ -62,7 +62,7 @@ public class TestDirectoryFactory extends SolrTestCaseJ4 {
     final String path = createTempDir().toString() + "/" + clazz + "_somedir";
     DirectoryFactory dirFac = null;
     try {
-      dirFac = clazz.newInstance();
+      dirFac = clazz.getConstructor().newInstance();
       dirFac.initCoreContainer(null); // greybox testing directly against path
       dirFac.init(new NamedList());
 

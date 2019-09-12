@@ -24,6 +24,11 @@ The roles can be used with any of the authentication plugins or with a custom au
 
 Once defined through the API, roles are stored in `security.json`.
 
+[CAUTION]
+====
+Solr's Admin UI interacts with Solr using its regular APIs. When rule-based authorization is in use, logged-in users not authorized to access the full range of these APIs may see some sections of the UI that appear blank or "broken". For best results, the Admin UI should only be accessed by users with full API access.
+====
+
 == Enable the Authorization Plugin
 
 The plugin must be enabled in `security.json`. This file and where to put it in your system is described in detail in the section <<authentication-and-authorization-plugins.adoc#enable-plugins-with-security-json,Enable Plugins with security.json>>.
@@ -76,9 +81,26 @@ The pre-defined permissions are:
 * *schema-edit*: this permission is allowed to edit a collection's schema using the <<schema-api.adoc#schema-api,Schema API>>. Note that this allows schema edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created.
 * *schema-read*: this permission is allowed to read a collection's schema using the <<schema-api.adoc#schema-api,Schema API>>. Note that this allows schema read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created.
 * *config-edit*: this permission is allowed to edit a collection's configuration using the <<config-api.adoc#config-api,Config API>>, the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>, and other APIs which modify `configoverlay.json`. Note that this allows configuration edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created.
-* *core-admin-read*: Read operations on the core admin API
-* *core-admin-edit*: Core admin commands that can mutate the system state.
 * *config-read*: this permission is allowed to read a collection's configuration using the <<config-api.adoc#config-api,Config API>>, the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>, and other APIs which modify `configoverlay.json`. Note that this allows configuration read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created.
+* *metrics-read*: this permission allows access to Solr's <<metrics-reporting.adoc#metrics-api,Metrics API>>
+* *metrics-history-read*: this permission allows access to Solr's <<metrics-history.adoc#metrics-history-api,Metrics History API>>, which provides long-term history for a select set of key Solr metrics.
+* *autoscaling-read*: this permission allows users to read Solr's <<solrcloud-autoscaling-api.adoc#read-api,autoscaling>> configuration.  This covers all read-only autoscaling APIs, including:
+** the "READ" API (`/solr/admin/autoscaling`)
+** the Diagnostics API (`/solr/admin/autoscaling/diagnostics`)
+** the Suggestions API (`/solr/admin/autoscaling/suggestions`)
+** The History API (`/solr/admin/autoscaling/history`)
+* *autoscaling-write*: this permission allows users to make changes to Solr's <<solrcloud-autoscaling-api.adoc#write-api,autoscaling>> configuration.  This covers all operations in the autoscaling Write API, including:
+** set-cluster-preferences
+** set-cluster-policy
+** set-policy
+** remove-policy
+** set-trigger
+** remove-trigger
+** set-listener
+** remove-listener
+** set-properties
+* *core-admin-edit*: Core admin commands that can mutate the system state.
+* *core-admin-read*: Read operations on the core admin API
 * *collection-admin-edit*: this permission is allowed to edit a collection's configuration using the <<collections-api.adoc#collections-api,Collections API>>. Note that this allows configuration edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created. Specifically, the following actions of the Collections API would be allowed:
 ** CREATE
 ** RELOAD

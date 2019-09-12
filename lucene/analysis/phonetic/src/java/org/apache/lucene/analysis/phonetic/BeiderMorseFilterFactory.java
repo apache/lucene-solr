@@ -40,8 +40,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
 public class BeiderMorseFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "beiderMorse";
+
   private final PhoneticEngine engine;
   private final LanguageSet languageSet;
   

@@ -356,7 +356,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
                   }
                   if (s.getIndexReader().numDocs() > 0) {
                     smokeTestSearcher(s);
-                    Terms terms = MultiFields.getTerms(s.getIndexReader(), "body");
+                    Terms terms = MultiTerms.getTerms(s.getIndexReader(), "body");
                     if (terms == null) {
                       continue;
                     }
@@ -635,7 +635,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     writer.commit();
 
-    assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.numDocs());
+    assertEquals("index=" + writer.segString() + " addCount=" + addCount + " delCount=" + delCount, addCount.get() - delCount.get(), writer.getDocStats().numDocs);
 
     doClose();
 

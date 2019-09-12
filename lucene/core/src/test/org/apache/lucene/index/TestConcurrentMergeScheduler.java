@@ -552,7 +552,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       }
     }.start();
 
-    while (w.numDocs() != 8) {
+    while (w.getDocStats().numDocs != 8) {
       Thread.sleep(10);
     }
 

@@ -68,6 +68,8 @@ public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
     CollectionAdminRequest.createCollection(collection, configName, shards, replicas)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(collection, shards, shards * replicas);
 
   }
 

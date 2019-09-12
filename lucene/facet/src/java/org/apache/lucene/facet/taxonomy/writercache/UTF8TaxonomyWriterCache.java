@@ -17,7 +17,6 @@
 package org.apache.lucene.facet.taxonomy.writercache;
 
 import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;

@@ -102,19 +102,20 @@ public class TransactionLog implements Closeable {
   };
 
   public class LogCodec extends JavaBinCodec {
+
     public LogCodec(JavaBinCodec.ObjectResolver resolver) {
       super(resolver);
     }
 
     @Override
-    public void writeExternString(String s) throws IOException {
+    public void writeExternString(CharSequence s) throws IOException {
       if (s == null) {
         writeTag(NULL);
         return;
       }
 
       // no need to synchronize globalStringMap - it's only updated before the first record is written to the log
-      Integer idx = globalStringMap.get(s);
+      Integer idx = globalStringMap.get(s.toString());
       if (idx == null) {
         // write a normal string
         writeStr(s);
@@ -125,10 +126,10 @@ public class TransactionLog implements Closeable {
     }
 
     @Override
-    public String readExternString(DataInputInputStream fis) throws IOException {
+    public CharSequence readExternString(DataInputInputStream fis) throws IOException {
       int idx = readSize(fis);
       if (idx != 0) {// idx != 0 is the index of the extern string
-      // no need to synchronize globalStringList - it's only updated before the first record is written to the log
+        // no need to synchronize globalStringList - it's only updated before the first record is written to the log
         return globalStringList.get(idx - 1);
       } else {// idx == 0 means it has a string value
         // this shouldn't happen with this codec subclass.
@@ -136,6 +137,25 @@ public class TransactionLog implements Closeable {
       }
     }
 
+    @Override
+    protected Object readObject(DataInputInputStream dis) throws IOException {
+      if (UUID == tagByte) {
+        return new java.util.UUID(dis.readLong(), dis.readLong());
+      }
+      return super.readObject(dis);
+    }
+
+    @Override
+    public boolean writePrimitive(Object val) throws IOException {
+      if (val instanceof java.util.UUID) {
+        java.util.UUID uuid = (java.util.UUID) val;
+        daos.writeByte(UUID);
+        daos.writeLong(uuid.getMostSignificantBits());
+        daos.writeLong(uuid.getLeastSignificantBits());
+        return true;
+      }
+      return super.writePrimitive(val);
+    }
   }
 
   TransactionLog(File tlogFile, Collection<String> globalStrings) {

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CyclicBarrier;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -53,6 +53,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.suggest.BitsProducer;
+import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.Bits;
@@ -342,18 +343,19 @@ public class TestSuggestField extends LuceneTestCase {
         }
       }
       Collections.sort(expected,
-                       new Comparator<Entry>() {
-                         @Override
-                         public int compare(Entry a, Entry b) {
-                           // sort by higher score:
-                           int cmp = Float.compare(b.value, a.value);
-                           if (cmp == 0) {
-                             // tie break by smaller docID:
-                             cmp = Integer.compare(a.id, b.id);
-                           }
-                           return cmp;
-                         }
-                       });
+          (a, b) -> {
+            // sort by higher score:
+            int cmp = Float.compare(b.value, a.value);
+            if (cmp == 0) {
+              // tie break by completion key
+              cmp = Lookup.CHARSEQUENCE_COMPARATOR.compare(a.output, b.output);
+              if (cmp == 0) {
+                // prefer smaller doc id, in case of a tie
+                cmp = Integer.compare(a.id, b.id);
+              }
+            }
+            return cmp;
+          });
 
       boolean dedup = random().nextBoolean();
       if (dedup) {
@@ -885,7 +887,9 @@ public class TestSuggestField extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(random(), analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
     Codec filterCodec = new Lucene80Codec() {
-      PostingsFormat postingsFormat = new Completion50PostingsFormat();
+      CompletionPostingsFormat.FSTLoadMode fstLoadMode =
+          RandomPicks.randomFrom(random(), CompletionPostingsFormat.FSTLoadMode.values());
+      PostingsFormat postingsFormat = new Completion50PostingsFormat(fstLoadMode);
 
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {

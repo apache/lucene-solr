@@ -18,21 +18,27 @@ package org.apache.lucene.document;
 
 import java.util.Arrays;
 
-import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.util.NumericUtils;
 
 /**
- * Finds all previously indexed shapes that intersect the specified arbitrary.
+ * Finds all previously indexed geo shapes that intersect the specified arbitrary.
+ * <p>
+ * Note:
+ * <ul>
+ *    <li>Dateline crossing is not yet supported. Polygons should be cut at the dateline and provided as a multipolygon query</li>
+ * </ul>
  *
  * <p>The field must be indexed using
- * {@link org.apache.lucene.document.LatLonShape#createIndexableFields(String, Polygon)} added per document.
+ * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
-final class LatLonShapePolygonQuery extends LatLonShapeQuery {
+final class LatLonShapePolygonQuery extends ShapeQuery {
   final Polygon[] polygons;
   final private Polygon2D poly2D;
 
@@ -61,29 +67,33 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    double minLat = GeoEncodingUtils.decodeLatitude(minTriangle, minYOffset);
-    double minLon = GeoEncodingUtils.decodeLongitude(minTriangle, minXOffset);
-    double maxLat = GeoEncodingUtils.decodeLatitude(maxTriangle, maxYOffset);
-    double maxLon = GeoEncodingUtils.decodeLongitude(maxTriangle, maxXOffset);
+
+    double minLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    double minLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    double maxLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
     return poly2D.relate(minLat, maxLat, minLon, maxLon);
   }
 
   @Override
-  protected boolean queryMatches(byte[] triangle) {
-    double ay = GeoEncodingUtils.decodeLatitude(triangle, 0);
-    double ax = GeoEncodingUtils.decodeLongitude(triangle, LatLonPoint.BYTES);
-    double by = GeoEncodingUtils.decodeLatitude(triangle, 2 * LatLonPoint.BYTES);
-    double bx = GeoEncodingUtils.decodeLongitude(triangle, 3 * LatLonPoint.BYTES);
-    double cy = GeoEncodingUtils.decodeLatitude(triangle, 4 * LatLonPoint.BYTES);
-    double cx = GeoEncodingUtils.decodeLongitude(triangle, 5 * LatLonPoint.BYTES);
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
-    if (queryRelation == QueryRelation.WITHIN) {
-      return poly2D.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_INSIDE_QUERY;
+    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
+    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
+    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
+    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
+
+    switch (queryRelation) {
+      case INTERSECTS: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
+      case WITHIN: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+      case DISJOINT: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
+      default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
-    // INTERSECTS
-    return poly2D.relateTriangle(ax, ay, bx, by, cx, cy) != Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override
@@ -96,7 +106,7 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("Polygon(" + polygons[0].toGeoJSON() + ")");
+    sb.append("Polygon(").append(polygons[0].toGeoJSON()).append(')');
     return sb.toString();
   }
 

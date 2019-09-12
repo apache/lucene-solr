@@ -93,7 +93,17 @@ public class TestAdapterModel extends TestRerankBase {
 
   public static class CustomModel extends AdapterModel {
 
+    /**
+     * answerFileName is part of the LTRScoringModel params map
+     * and therefore here it does not individually
+     * influence the class hashCode, equals, etc.
+     */
     private String answerFileName;
+    /**
+     * answerValue is obtained from answerFileName
+     * and therefore here it does not individually
+     * influence the class hashCode, equals, etc.
+     */
     private float answerValue;
 
     public CustomModel(String name, List<Feature> features, List<Normalizer> norms, String featureStoreName,

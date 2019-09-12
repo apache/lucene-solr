@@ -142,7 +142,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
     registry.put("application/xml", new XMLLoader().init(p) );
     registry.put("application/json", new JsonLoader().init(p) );
     registry.put("application/csv", new CSVLoader().init(p) );
-    registry.put("application/javabin", new JavabinLoader().init(p) );
+    registry.put("application/javabin", new JavabinLoader(instance).init(p) );
     registry.put("text/csv", registry.get("application/csv") );
     registry.put("text/xml", registry.get("application/xml") );
     registry.put("text/json", registry.get("application/json"));

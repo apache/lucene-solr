@@ -22,11 +22,13 @@ import java.util.List;
 import org.apache.lucene.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
+import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -38,26 +40,31 @@ public class SSLCredentialProviderFactoryTest {
       SSLCredentialProviderFactory.PROVIDER_CHAIN_KEY
   );
 
+  public static <T> Matcher<T> isA(Class<?> type) {
+    final Matcher<T> typeMatcher = instanceOf(type);
+    return is(typeMatcher);
+  }
+
   @Test
   public void testGetProvidersOrder() {
     SSLCredentialProviderFactory sut = getSut("sysprop;env");
     List<SSLCredentialProvider> providers = sut.getProviders();
-    assertThat(providers.get(0), is(SysPropSSLCredentialProvider.class));
-    assertThat(providers.get(1), is(EnvSSLCredentialProvider.class));
+    assertThat(providers.get(0), isA(SysPropSSLCredentialProvider.class));
+    assertThat(providers.get(1), isA(EnvSSLCredentialProvider.class));
 
     sut = getSut("env;sysprop");
     providers = sut.getProviders();
-    assertThat(providers.get(0), is(EnvSSLCredentialProvider.class));
-    assertThat(providers.get(1), is(SysPropSSLCredentialProvider.class));
+    assertThat(providers.get(0), isA(EnvSSLCredentialProvider.class));
+    assertThat(providers.get(1), isA(SysPropSSLCredentialProvider.class));
   }
 
   @Test
   public void testGetProvidersWithCustomProvider() {
     SSLCredentialProviderFactory sut = getSut("sysprop;class://" + CustomSSLCredentialProvider.class.getName() + ";env");
     List<SSLCredentialProvider> providers = sut.getProviders();
-    assertThat(providers.get(0), is(SysPropSSLCredentialProvider.class));
-    assertThat(providers.get(1), is(CustomSSLCredentialProvider.class));
-    assertThat(providers.get(2), is(EnvSSLCredentialProvider.class));
+    assertThat(providers.get(0), isA(SysPropSSLCredentialProvider.class));
+    assertThat(providers.get(1), isA(CustomSSLCredentialProvider.class));
+    assertThat(providers.get(2), isA(EnvSSLCredentialProvider.class));
   }
 
   @Test(expected = RuntimeException.class)
@@ -71,9 +78,9 @@ public class SSLCredentialProviderFactoryTest {
     System.setProperty(SSLCredentialProviderFactory.PROVIDER_CHAIN_KEY, chain);
     SSLCredentialProviderFactory sut = new SSLCredentialProviderFactory();
     List<SSLCredentialProvider> providers = sut.getProviders();
-    assertThat(providers.get(0), is(SysPropSSLCredentialProvider.class));
-    assertThat(providers.get(1), is(CustomSSLCredentialProvider.class));
-    assertThat(providers.get(2), is(EnvSSLCredentialProvider.class));
+    assertThat(providers.get(0), isA(SysPropSSLCredentialProvider.class));
+    assertThat(providers.get(1), isA(CustomSSLCredentialProvider.class));
+    assertThat(providers.get(2), isA(EnvSSLCredentialProvider.class));
   }
 
   private SSLCredentialProviderFactory getSut(String providerChain) {

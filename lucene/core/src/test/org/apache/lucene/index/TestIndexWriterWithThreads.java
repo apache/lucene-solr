@@ -328,7 +328,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
       if (success) {
         IndexReader reader = DirectoryReader.open(dir);
-        final Bits delDocs = MultiFields.getLiveDocs(reader);
+        final Bits delDocs = MultiBits.getLiveDocs(reader);
         for(int j=0;j<reader.maxDoc();j++) {
           if (delDocs == null || !delDocs.get(j)) {
             reader.document(j);

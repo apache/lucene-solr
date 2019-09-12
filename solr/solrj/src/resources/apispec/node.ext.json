@@ -1,0 +1,13 @@
+{
+  "methods": [
+    "POST",
+    "GET",
+    "DELETE"
+  ],
+  "url": {
+    "paths": [
+      "/node/ext/{handlerName}",
+      "/node/ext"
+    ]
+  }
+}

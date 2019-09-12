@@ -17,14 +17,21 @@
 package org.apache.lucene.analysis.query;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -40,6 +47,8 @@ import org.apache.lucene.util.CharsRefBuilder;
  * a 38 million doc index which had a term in around 50% of docs and was causing TermQueries for 
  * this term to take 2 seconds.
  * </p>
+ *
+ * @since 3.1
  */
 public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
 
@@ -78,7 +87,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
       Analyzer delegate,
       IndexReader indexReader,
       int maxDocFreq) throws IOException {
-    this(delegate, indexReader, MultiFields.getIndexedFields(indexReader), maxDocFreq);
+    this(delegate, indexReader, FieldInfos.getIndexedFields(indexReader), maxDocFreq);
   }
 
   /**
@@ -96,7 +105,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
       Analyzer delegate,
       IndexReader indexReader,
       float maxPercentDocs) throws IOException {
-    this(delegate, indexReader, MultiFields.getIndexedFields(indexReader), maxPercentDocs);
+    this(delegate, indexReader, FieldInfos.getIndexedFields(indexReader), maxPercentDocs);
   }
 
   /**
@@ -140,7 +149,7 @@ public final class QueryAutoStopWordAnalyzer extends AnalyzerWrapper {
     
     for (String field : fields) {
       Set<String> stopWords = new HashSet<>();
-      Terms terms = MultiFields.getTerms(indexReader, field);
+      Terms terms = MultiTerms.getTerms(indexReader, field);
       CharsRefBuilder spare = new CharsRefBuilder();
       if (terms != null) {
         TermsEnum te = terms.iterator();

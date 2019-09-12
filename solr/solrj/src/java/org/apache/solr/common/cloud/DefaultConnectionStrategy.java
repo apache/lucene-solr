@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.solr.common.SolrException;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +48,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
 
   @Override
   public void reconnect(final String serverAddress, final int zkClientTimeout,
-      final Watcher watcher, final ZkUpdate updater) throws IOException {
+      final Watcher watcher, final ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
     log.warn("Connection expired - starting a new one...");
     SolrZooKeeper zk = createSolrZooKeeper(serverAddress, zkClientTimeout, watcher);
     boolean success = false;
@@ -57,9 +57,8 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
           .update(zk);
       success = true;
       log.info("Reconnected to ZooKeeper");
-    } catch (Exception e) {
-      SolrException.log(log, "Reconnect to ZooKeeper failed", e);
-      log.warn("Reconnect to ZooKeeper failed");
+    } catch (AlreadyClosedException e) {
+
     } finally {
       if (!success) {
         try {

@@ -18,7 +18,6 @@ package org.apache.solr.handler.dataimport;
 
 import java.util.HashMap;
 
-import org.apache.solr.handler.dataimport.RequestInfo;
 import org.junit.Test;
 
 public class TestContextImpl extends AbstractDataImportHandlerTestCase {

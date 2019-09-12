@@ -130,8 +130,8 @@ When this expression is sent to the `/stream` handler it responds with:
 
 The following scalar math functions are available in the math expressions library:
 
-`abs`, `add`, `div`, `mult`, `sub`, `log`,
+`abs`, `add`, `div`, `mult`, `sub`, `log`, `log10`,
 `pow`, `mod`, `ceil`, `floor`, `sin`, `asin`,
 `sinh`, `cos`, `acos`, `cosh`, `tan`, `atan`,
-`tanh`, `round`, `precision`, `sqrt`, `cbrt`
+`tanh`, `round`, `precision`, `recip`, `sqrt`, `cbrt`
 

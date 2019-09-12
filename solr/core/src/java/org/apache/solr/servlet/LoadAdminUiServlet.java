@@ -18,8 +18,8 @@ package org.apache.solr.servlet;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -71,9 +71,9 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
             "${version}" 
         };
         String[] replace = new String[] {
-            StringEscapeUtils.escapeJavaScript(request.getContextPath()),
-            StringEscapeUtils.escapeJavaScript(CommonParams.CORES_HANDLER_PATH),
-            StringEscapeUtils.escapeJavaScript(pack.getSpecificationVersion())
+            StringEscapeUtils.escapeEcmaScript(request.getContextPath()),
+            StringEscapeUtils.escapeEcmaScript(CommonParams.CORES_HANDLER_PATH),
+            StringEscapeUtils.escapeEcmaScript(pack.getSpecificationVersion())
         };
         
         out.write( StringUtils.replaceEach(html, search, replace) );

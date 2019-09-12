@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/../../idea-build/lucene/luke/classes/java" />
+    <output-test url="file://$MODULE_DIR$/../../idea-build/lucene/luke/classes/test" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/resources" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/test" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/work" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/lib" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+        <jarDirectory url="file://$MODULE_DIR$/lib" recursive="false" />
+      </library>
+    </orderEntry>
+    <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
+    <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
+    <orderEntry type="module" module-name="lucene-core" />
+    <orderEntry type="module" module-name="analysis-common" />
+    <orderEntry type="module" module-name="misc" />
+    <orderEntry type="module" module-name="queries" />
+    <orderEntry type="module" module-name="queryparser" />
+  </component>
+</module>

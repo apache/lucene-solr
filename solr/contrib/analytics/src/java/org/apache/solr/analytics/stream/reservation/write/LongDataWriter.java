@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.function.LongSupplier;
 
 public class LongDataWriter extends ReductionDataWriter<LongSupplier> {
-  
+
   public LongDataWriter(DataOutput output, LongSupplier extractor) {
     super(output, extractor);
   }

@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -309,7 +308,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private void tryCreateFail(CoreAdminHandler admin, String name, String dataDir, String... errs) throws Exception {
-    try {
+    SolrException thrown = expectThrows(SolrException.class, () -> {
       SolrQueryResponse resp = new SolrQueryResponse();
 
       SolrQueryRequest request = req(CoreAdminParams.ACTION,
@@ -320,14 +319,11 @@ public class TestLazyCores extends SolrTestCaseJ4 {
           "config", "solrconfig.xml");
 
       admin.handleRequestBody(request, resp);
-      fail("Should have thrown an error");
-    } catch (SolrException se) {
-      //SolrException cause = (SolrException)se.getCause();
-      assertEquals("Exception code should be 500", 500, se.code());
-      for (String err : errs) {
-       assertTrue("Should have seen an exception containing the an error",
-            se.getMessage().contains(err));
-      }
+    });
+    assertEquals("Exception code should be 500", 500, thrown.code());
+    for (String err : errs) {
+      assertTrue("Should have seen an exception containing the an error",
+          thrown.getMessage().contains(err));
     }
   }
   @Test
@@ -739,7 +735,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private static final String makePath(String... args) {
-    return StringUtils.join(args, File.separator);
+    return String.join(File.separator, args);
   }
 
   @Test

@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -243,6 +244,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           final boolean isXml = ClientUtils.TEXT_XML.equals(contentType);
 
           final ModifiableSolrParams origParams = new ModifiableSolrParams(update.getRequest().getParams());
+          final String origTargetCollection = update.getCollection();
 
           EntityTemplate template = new EntityTemplate(new ContentProducer() {
             
@@ -256,8 +258,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               while (upd != null) {
                 UpdateRequest req = upd.getRequest();
                 SolrParams currentParams = new ModifiableSolrParams(req.getParams());
-                if (!origParams.toNamedList().equals(currentParams.toNamedList())) {
-                  queue.add(upd); // params are different, push back to queue
+                if (!origParams.toNamedList().equals(currentParams.toNamedList()) || !StringUtils.equals(origTargetCollection, upd.getCollection())) {
+                  queue.add(upd); // Request has different params or destination core/collection, return to queue
                   break;
                 }
 
@@ -824,6 +826,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     /**
      * The maximum number of threads used to empty {@link ConcurrentUpdateSolrClient}s queue.
      *
+     * Threads are created when documents are added to the client's internal queue and exit when no updates remain in
+     * the queue.
+     * <p>
      * This value should be carefully paired with the maximum queue capacity.  A client with too few threads may suffer
      * decreased throughput as the queue fills up and {@link ConcurrentUpdateSolrClient#request(SolrRequest)} calls
      * block waiting to add requests to the queue.
@@ -838,7 +843,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
     
     /**
-     * Provides the {@link ExecutorService} for clients to use when servicing requests.
+     * Provides the {@link ExecutorService} for the created client to use when servicing the update-request queue.
      */
     public Builder withExecutorService(ExecutorService executorService) {
       this.executorService = executorService;
@@ -847,6 +852,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     
     /**
      * Configures created clients to always stream delete requests.
+     *
+     * Streamed deletes are put into the update-queue and executed like any other update request.
      */
     public Builder alwaysStreamDeletes() {
       this.streamDeletes = true;
@@ -855,6 +862,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     
     /**
      * Configures created clients to not stream delete requests.
+     *
+     * With this option set when the created ConcurrentUpdateSolrClient sents a delete request it will first will lock
+     * the queue and block until all queued updates have been sent, and then send the delete request.
      */
     public Builder neverStreamDeletes() {
       this.streamDeletes = false;

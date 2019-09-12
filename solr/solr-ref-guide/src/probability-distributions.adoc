@@ -16,8 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This section of the user guide covers the
-probability distribution
+This section of the user guide covers the probability distribution
 framework included in the math expressions library.
 
 == Probability Distribution Framework

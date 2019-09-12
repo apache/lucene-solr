@@ -19,12 +19,6 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefIterator;
-import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-
 public class TestBytesRefArray extends LuceneTestCase {
 
   public void testAppend() throws IOException {

@@ -220,7 +220,7 @@ public class FSTTester<T> {
           return null;
         }
       }
-      output = fst.outputs.add(output, arc.output);
+      output = fst.outputs.add(output, arc.output());
     }
 
     if (prefixLength != null) {
@@ -253,14 +253,14 @@ public class FSTTester<T> {
       arcs.clear();
 
       // accumulate output
-      output = fst.outputs.add(output, arc.output);
+      output = fst.outputs.add(output, arc.output());
 
       // append label
-      if (arc.label == FST.END_LABEL) {
+      if (arc.label() == FST.END_LABEL) {
         break;
       }
 
-      in.append(arc.label);
+      in.append(arc.label());
     }
 
     return output;
@@ -301,7 +301,7 @@ public class FSTTester<T> {
       out.close();
       IndexInput in = dir.openInput("fst.bin", context);
       try {
-        fst = new FST<>(in, outputs);
+        fst = new FST<T>(in, outputs);
       } finally {
         in.close();
         dir.deleteFile("fst.bin");
@@ -812,3 +812,4 @@ public class FSTTester<T> {
     }
   }
 }
+

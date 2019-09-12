@@ -86,21 +86,29 @@ Requests are sent in the form of {solr-javadocs}/solr-solrj/org/apache/solr/clie
 `SolrClient` has a few concrete implementations, each geared towards a different usage-pattern or resiliency model:
 
 - {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`] - geared towards query-centric workloads, though also a good general-purpose client.  Communicates directly with a single Solr node.
+- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] - async, non-blocking and general-purpose client that leverage HTTP/2. This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
 - {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/LBHttpSolrClient.html[`LBHttpSolrClient`] - balances request load across a list of Solr nodes. Adjusts the list of "in-service" nodes based on node health.
+- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/LBHttp2SolrClient.html[`LBHttp2SolrClient`] - just like `LBHttpSolrClient` but using `Http2SolrClient` instead. This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
 - {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - geared towards communicating with SolrCloud deployments. Uses already-recorded ZooKeeper state to discover and route requests to healthy Solr nodes.
 - {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.html[`ConcurrentUpdateSolrClient`] - geared towards indexing-centric workloads.  Buffers documents internally before sending larger batches to Solr.
+- {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateHttp2SolrClient.html[`ConcurrentUpdateSolrClient`] - just like `ConcurrentUpdateSolrClient` but using `Http2SolrClient` instead. This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
 
 === Common Configuration Options
 
 Most SolrJ configuration happens at the `SolrClient` level.  The most common/important of these are discussed below.  For comprehensive information on how to tweak your `SolrClient`, see the Javadocs for the involved client, and its corresponding builder object.
 
 ==== Base URLs
-Most `SolrClient` implementations (with the notable exception of `CloudSolrClient`) require users to specify one or more Solr base URLs, which the client then uses to send HTTP requests to Solr.  The path users include on the base URL they provide has an effect on the behavior of the created client from that point on.
+Most `SolrClient` implementations (except for `CloudSolrClient` and `Http2SolrClient`) require users to specify one or more Solr base URLs, which the client then uses to send HTTP requests to Solr.  The path users include on the base URL they provide has an effect on the behavior of the created client from that point on.
 
 . A URL with a path pointing to a specific core or collection (e.g., `\http://hostname:8983/solr/core1`).  When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.  However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
 . A URL pointing to the root Solr path (e.g., `\http://hostname:8983/solr`).  When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
 
 Generally speaking, if your `SolrClient` will only be used on a single core/collection, including that entity in the path is the most convenient.  Where more flexibility is required, the collection/core should be excluded.
+
+==== Base URLs of Http2SolrClient
+Since `Http2SolrClient` can manages connections to different nodes efficiently. `Http2SolrClient`
+does not require a `baseUrl`. In case of `baseUrl` is not provided, `SolrRequest.basePath` must be set, so
+`Http2SolrClient` can know which node it will request to. If not an `IllegalArgumentException` will be thrown.
 
 ==== Timeouts
 All `SolrClient` implementations allow users to specify the connection and read timeouts for communicating with Solr.  These are provided at client creation time, as in the example below:

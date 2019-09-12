@@ -17,7 +17,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import junit.framework.Assert;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
@@ -34,7 +34,7 @@ import org.junit.Test;
 /**
  **/
 
-public class StreamExpressionToExplanationTest extends LuceneTestCase {
+public class StreamExpressionToExplanationTest extends SolrTestCase {
 
   private StreamFactory factory;
   
@@ -88,7 +88,7 @@ public class StreamExpressionToExplanationTest extends LuceneTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testDaemonStream() throws Exception {
     // Basic test
     try (DaemonStream stream = new DaemonStream(StreamExpressionParser.parse("daemon(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), id=\"blah\", runInterval=\"1000\", queueSize=\"100\")"), factory)) {
@@ -175,7 +175,7 @@ public class StreamExpressionToExplanationTest extends LuceneTestCase {
   }
   
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testUpdateStream() throws Exception {
     StreamExpression expression = StreamExpressionParser.parse("update("
                                                                + "collection2, "

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -59,7 +61,7 @@ import org.apache.solr.common.params.SolrParams;
  * </p>
  *
  */
-public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> {
+public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> , MapWriter {
 
   private static final long serialVersionUID = 1957981902839867821L;
   protected final List<Object> nvPairs;
@@ -74,6 +76,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     nvPairs = new ArrayList<>(sz<<1);
   }
 
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    for (int i = 0; i < nvPairs.size(); i+=2) {
+      ew.put((CharSequence) nvPairs.get(i), nvPairs.get(i + 1));
+    }
+  }
 
   /**
    * Creates a NamedList instance containing the "name,value" pairs contained in the

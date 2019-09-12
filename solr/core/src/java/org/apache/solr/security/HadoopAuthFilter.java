@@ -19,6 +19,7 @@ package org.apache.solr.security;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -26,7 +27,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.AuthInfo;
@@ -58,6 +58,7 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
   static final String DELEGATION_TOKEN_ZK_CLIENT = "solr.kerberos.delegation.token.zk.client";
 
   private CuratorFramework curatorFramework;
+  private final Locale defaultLocale = Locale.getDefault();
 
   @Override
   public void init(FilterConfig conf) throws ServletException {
@@ -77,23 +78,12 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
   @Override
   public void doFilter(ServletRequest request, ServletResponse response,
       FilterChain filterChain) throws IOException, ServletException {
-    // HttpClient 4.4.x throws NPE if query string is null and parsed through URLEncodedUtils.
-    // See HTTPCLIENT-1746 and HADOOP-12767
-    HttpServletRequest httpRequest = (HttpServletRequest)request;
-    String queryString = httpRequest.getQueryString();
-    final String nonNullQueryString = queryString == null ? "" : queryString;
-    HttpServletRequest requestNonNullQueryString = new HttpServletRequestWrapper(httpRequest){
-      @Override
-      public String getQueryString() {
-        return nonNullQueryString;
-      }
-    };
-
     // include Impersonator User Name in case someone (e.g. logger) wants it
     FilterChain filterChainWrapper = new FilterChain() {
       @Override
       public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse)
           throws IOException, ServletException {
+        Locale.setDefault(defaultLocale);
         HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
 
         UserGroupInformation ugi = HttpUserGroupInformation.get();
@@ -107,7 +97,9 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
       }
     };
 
-    super.doFilter(requestNonNullQueryString, response, filterChainWrapper);
+    // A hack until HADOOP-15681 get committed
+    Locale.setDefault(Locale.US);
+    super.doFilter(request, response, filterChainWrapper);
   }
 
   @Override

@@ -230,7 +230,7 @@ public class Field implements IndexableField {
    *         is null, or if the field's type is neither indexed() nor stored(), 
    *         or if indexed() is false but storeTermVectors() is true.
    */
-  public Field(String name, String value, IndexableFieldType type) {
+  public Field(String name, CharSequence value, IndexableFieldType type) {
     if (name == null) {
       throw new IllegalArgumentException("name must not be null");
     }
@@ -256,13 +256,19 @@ public class Field implements IndexableField {
    */
   @Override
   public String stringValue() {
-    if (fieldsData instanceof String || fieldsData instanceof Number) {
+    if (fieldsData instanceof CharSequence || fieldsData instanceof Number) {
       return fieldsData.toString();
     } else {
       return null;
     }
   }
-  
+
+  @Override
+  public CharSequence getCharSequenceValue() {
+    return fieldsData instanceof CharSequence ?
+        (CharSequence) fieldsData : stringValue();
+  }
+
   /**
    * The value of the field as a Reader, or null. If null, the String value or
    * binary value is used. Exactly one of stringValue(), readerValue(), and
@@ -446,7 +452,7 @@ public class Field implements IndexableField {
       return null;
     }
   }
-  
+
   /** Prints a Field for human consumption. */
   @Override
   public String toString() {

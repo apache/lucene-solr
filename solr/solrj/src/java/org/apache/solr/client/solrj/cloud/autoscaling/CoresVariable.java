@@ -50,6 +50,7 @@ public class CoresVariable extends VariableBase {
     if (ctx.violation == null || ctx.violation.replicaCountDelta == 0) return;
     if (ctx.violation.replicaCountDelta > 0) {//there are more replicas than necessary
       for (int i = 0; i < Math.abs(ctx.violation.replicaCountDelta); i++) {
+        if (!ctx.needMore()) return;
         Suggester suggester = ctx.session.getSuggester(MOVEREPLICA)
             .hint(Suggester.Hint.SRC_NODE, ctx.violation.node);
         if (ctx.addSuggestion(suggester) == null) break;
@@ -83,14 +84,23 @@ public class CoresVariable extends VariableBase {
     }
   }
 
+  static final String TOTALCORES = CoresVariable.class.getSimpleName() + ".totalcores";
   private int getTotalCores(Policy.Session session, AtomicInteger liveNodes) {
-    int[] coresCount = new int[1];
+    int coresCount = 0;
     for (Row row : session.matrix) {
       if (!row.isLive) continue;
       liveNodes.incrementAndGet();
-      row.forEachReplica(replicaInfo -> coresCount[0]++);
+      Integer res = row.computeCacheIfAbsent(TOTALCORES, o -> {
+        int[] result = new int[1];
+        row.forEachReplica(replicaInfo -> result[0]++);
+        return result[0];
+      });
+      if (res != null)
+        coresCount += res;
+
+
     }
-    return coresCount[0];
+    return coresCount;
   }
 
   @Override

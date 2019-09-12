@@ -189,7 +189,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 The `getCache` function retrieves an object from the cache by its workspace and key.
 
-In the example below the `getCache` function retrieves the array the was cached above and assigns it to variable *`a`*.
+In the example below the `getCache` function retrieves the array that was cached above and assigns it to variable *`a`*.
 
 [source,text]
 ----
@@ -279,8 +279,8 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-The `removeCache` function can be used to remove a a key from a specific
-workspace. This `removeCache` function removes the key from the cache
+The `removeCache` function can be used to remove a key from a specific
+workspace. The `removeCache` function removes the key from the cache
 and returns the object that was removed.
 
 In the example below the array that was cached above is removed from the cache.

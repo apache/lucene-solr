@@ -19,10 +19,8 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import com.carrotsearch.hppc.IntHashSet;
 import com.carrotsearch.hppc.IntObjectHashMap;
@@ -34,10 +32,6 @@ import com.carrotsearch.hppc.cursors.LongCursor;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.carrotsearch.hppc.cursors.ObjectCursor;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -67,6 +61,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ExpandParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -85,7 +80,7 @@ import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
-import org.apache.solr.uninverting.UninvertingReader;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
@@ -153,7 +148,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     if (field == null) {
-      throw new IOException("Expand field is null.");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing expand field");
     }
 
     String sortParam = params.get(ExpandParams.EXPAND_SORT);
@@ -168,39 +163,34 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     Query query;
-    if (qs == null) {
-      query = rb.getQuery();
-    } else {
-      try {
+    List<Query> newFilters = new ArrayList<>();
+    try {
+      if (qs == null) {
+        query = rb.getQuery();
+      } else {
         QParser parser = QParser.getParser(qs, req);
         query = parser.getQuery();
-      } catch (Exception e) {
-        throw new IOException(e);
       }
-    }
 
-    List<Query> newFilters = new ArrayList<>();
-
-    if (fqs == null) {
-      List<Query> filters = rb.getFilters();
-      if (filters != null) {
-        for (Query q : filters) {
-          if (!(q instanceof CollapsingQParserPlugin.CollapsingPostFilter)) {
-            newFilters.add(q);
+      if (fqs == null) {
+        List<Query> filters = rb.getFilters();
+        if (filters != null) {
+          for (Query q : filters) {
+            if (!(q instanceof CollapsingQParserPlugin.CollapsingPostFilter)) {
+              newFilters.add(q);
+            }
           }
         }
-      }
-    } else {
-      try {
+      } else {
         for (String fq : fqs) {
           if (fq != null && fq.trim().length() != 0 && !fq.equals("*:*")) {
             QParser fqp = QParser.getParser(fq, req);
             newFilters.add(fqp.getQuery());
           }
         }
-      } catch (Exception e) {
-        throw new IOException(e);
       }
+    } catch (SyntaxError e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
     SolrIndexSearcher searcher = req.getSearcher();
@@ -215,15 +205,13 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if(fieldType instanceof StrField) {
       //Get The Top Level SortedDocValues
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
-        Map<String, UninvertingReader.Type> mapping = new HashMap();
-        mapping.put(field, UninvertingReader.Type.SORTED);
         @SuppressWarnings("resource")
-        UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
+        LeafReader uninvertingReader = CollapsingQParserPlugin.getTopFieldCacheReader(searcher, field);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
         values = DocValues.getSorted(reader, field);
       }
-    } else {
+    } else if (fieldType.getNumberType() != null) {
       //Get the nullValue for the numeric collapse field
       String defaultValue = searcher.getSchema().getField(field).getDefaultValue();
       
@@ -232,6 +220,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       // Since the expand component depends on the operation of the collapse component, 
       // which validates that numeric field types are 32-bit,
       // we don't need to handle invalid 64-bit field types here.
+      // FIXME: what happens when expand.field specified?
+      //  how would this work for date field?
+      //  SOLR-10400: before this, long and double were explicitly handled
       if (defaultValue != null) {
         if (numType == NumberType.INTEGER) {
           nullValue = Long.parseLong(defaultValue);
@@ -241,6 +232,10 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       } else if (NumberType.FLOAT.equals(numType)) { // Integer case already handled by nullValue defaulting to 0
         nullValue = Float.floatToIntBits(0.0f);
       }
+    } else {
+      // possible if directly expand.field is specified
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Expand not supported for fieldType:'" + fieldType.getTypeName() +"'");
     }
 
     FixedBitSet groupBits = null;
@@ -386,10 +381,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     if(values != null) {
       //Get The Top Level SortedDocValues again so we can re-iterate:
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
-        Map<String, UninvertingReader.Type> mapping = new HashMap();
-        mapping.put(field, UninvertingReader.Type.SORTED);
         @SuppressWarnings("resource")
-        UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
+        LeafReader uninvertingReader = CollapsingQParserPlugin.getTopFieldCacheReader(searcher, field);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
         values = DocValues.getSorted(reader, field);
@@ -765,66 +758,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   @Override
   public Category getCategory() {
     return Category.QUERY;
-  }
-
-  // this reader alters the content of the given reader so it should not
-  // delegate the caching stuff
-  private static class ReaderWrapper extends FilterLeafReader {
-
-    private String field;
-
-    public ReaderWrapper(LeafReader leafReader, String field) {
-      super(leafReader);
-      this.field = field;
-    }
-
-    public SortedDocValues getSortedDocValues(String field) {
-      return null;
-    }
-
-    public FieldInfos getFieldInfos() {
-      Iterator<FieldInfo> it = in.getFieldInfos().iterator();
-      List<FieldInfo> newInfos = new ArrayList<>();
-      while(it.hasNext()) {
-        FieldInfo fieldInfo = it.next();
-
-        if(fieldInfo.name.equals(field)) {
-          FieldInfo f = new FieldInfo(fieldInfo.name,
-              fieldInfo.number,
-              fieldInfo.hasVectors(),
-              fieldInfo.hasNorms(),
-              fieldInfo.hasPayloads(),
-              fieldInfo.getIndexOptions(),
-              DocValuesType.NONE,
-              fieldInfo.getDocValuesGen(),
-              fieldInfo.attributes(),
-              fieldInfo.getPointDimensionCount(),
-              fieldInfo.getPointNumBytes(),
-              fieldInfo.isSoftDeletesField());
-          newInfos.add(f);
-
-        } else {
-          newInfos.add(fieldInfo);
-        }
-      }
-      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[newInfos.size()]));
-      return infos;
-    }
-
-    // NOTE: delegating the caches is wrong here as we are altering the content
-    // of the reader, this should ONLY be used under an uninvertingreader which
-    // will restore doc values back using uninversion, otherwise all sorts of
-    // crazy things could happen.
-
-    @Override
-    public CacheHelper getCoreCacheHelper() {
-      return in.getCoreCacheHelper();
-    }
-
-    @Override
-    public CacheHelper getReaderCacheHelper() {
-      return in.getReaderCacheHelper();
-    }
   }
 
 }

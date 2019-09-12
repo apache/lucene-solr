@@ -16,40 +16,19 @@
  */
 package org.apache.lucene.document;
 
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
-import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.search.QueryUtils;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
@@ -59,9 +38,8 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 import static org.apache.lucene.geo.GeoTestUtil.nextLatitude;
 import static org.apache.lucene.geo.GeoTestUtil.nextLongitude;
 
-public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
-
-  protected static final String FIELD_NAME = "shape";
+/** Base test case for testing geospatial indexing and search functionality **/
+public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
 
   protected abstract ShapeType getShapeType();
 
@@ -69,374 +47,244 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     return getShapeType().nextShape();
   }
 
-  protected double quantizeLat(double rawLat) {
-    return decodeLatitude(encodeLatitude(rawLat));
-  }
-
-  protected double quantizeLatCeil(double rawLat) {
-    return decodeLatitude(encodeLatitudeCeil(rawLat));
-  }
-
-  protected double quantizeLon(double rawLon) {
-    return decodeLongitude(encodeLongitude(rawLon));
-  }
-
-  protected double quantizeLonCeil(double rawLon) {
-    return decodeLongitude(encodeLongitudeCeil(rawLon));
-  }
-
-  protected Polygon quantizePolygon(Polygon polygon) {
-    double[] lats = new double[polygon.numPoints()];
-    double[] lons = new double[polygon.numPoints()];
-    for (int i = 0; i < lats.length; ++i) {
-      lats[i] = quantizeLat(polygon.getPolyLat(i));
-      lons[i] = quantizeLon(polygon.getPolyLon(i));
-    }
-    return new Polygon(lats, lons);
-  }
-
-  protected Line quantizeLine(Line line) {
-    double[] lats = new double[line.numPoints()];
-    double[] lons = new double[line.numPoints()];
-    for (int i = 0; i < lats.length; ++i) {
-      lats[i] = quantizeLat(line.getLat(i));
-      lons[i] = quantizeLon(line.getLon(i));
-    }
-    return new Line(lats, lons);
-  }
-
-  protected abstract Field[] createIndexableFields(String field, Object shape);
-
-  private void addShapeToDoc(String field, Document doc, Object shape) {
-    Field[] fields = createIndexableFields(field, shape);
-    for (Field f : fields) {
-      doc.add(f);
-    }
-  }
-
-  protected Query newRectQuery(String field, QueryRelation queryRelation, double minLat, double maxLat, double minLon, double maxLon) {
+  /** factory method to create a new bounding box query */
+  @Override
+  protected Query newRectQuery(String field, QueryRelation queryRelation, double minLon, double maxLon, double minLat, double maxLat) {
     return LatLonShape.newBoxQuery(field, queryRelation, minLat, maxLat, minLon, maxLon);
   }
 
+  /** factory method to create a new line query */
+  @Override
+  protected Query newLineQuery(String field, QueryRelation queryRelation, Object... lines) {
+    return LatLonShape.newLineQuery(field, queryRelation, Arrays.stream(lines).toArray(Line[]::new));
+  }
+
+  /** factory method to create a new polygon query */
+  @Override
+  protected Query newPolygonQuery(String field, QueryRelation queryRelation, Object... polygons) {
+    return LatLonShape.newPolygonQuery(field, queryRelation, Arrays.stream(polygons).toArray(Polygon[]::new));
+  }
+
+  @Override
+  protected Line2D toLine2D(Object... lines) {
+    return Line2D.create(Arrays.stream(lines).toArray(Line[]::new));
+  }
+
+  @Override
+  protected Polygon2D toPolygon2D(Object... polygons) {
+    return Polygon2D.create(Arrays.stream(polygons).toArray(Polygon[]::new));
+  }
+
+  @Override
+  public Rectangle randomQueryBox() {
+    return GeoTestUtil.nextBox();
+  }
+
+  @Override
+  protected double rectMinX(Object rect) {
+    return ((Rectangle)rect).minLon;
+  }
+
+  @Override
+  protected double rectMaxX(Object rect) {
+    return ((Rectangle)rect).maxLon;
+  }
+
+  @Override
+  protected double rectMinY(Object rect) {
+    return ((Rectangle)rect).minLat;
+  }
+
+  public void testBoxQueryEqualsAndHashcode() {
+    Rectangle rectangle = GeoTestUtil.nextBox();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    String fieldName = "foo";
+    Query q1 = newRectQuery(fieldName, queryRelation, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat);
+    Query q2 = newRectQuery(fieldName, queryRelation, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newRectQuery("bar", queryRelation, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat);
+    QueryUtils.checkUnequal(q1, q3);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    Query q4 = newRectQuery(fieldName, newQueryRelation, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    //different shape
+    Rectangle newRectangle = GeoTestUtil.nextBox();
+    Query q5 = newRectQuery(fieldName, queryRelation, newRectangle.minLon, newRectangle.maxLon, newRectangle.minLat, newRectangle.maxLat);
+    if (rectangle.equals(newRectangle)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
+  }
+
+  /** factory method to create a new line query */
+  protected Query newLineQuery(String field, QueryRelation queryRelation, Line... lines) {
+    return LatLonShape.newLineQuery(field, queryRelation, lines);
+  }
+
+  public void testLineQueryEqualsAndHashcode() {
+    Line line = nextLine();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), POINT_LINE_RELATIONS);
+    String fieldName = "foo";
+    Query q1 = newLineQuery(fieldName, queryRelation, line);
+    Query q2 = newLineQuery(fieldName, queryRelation, line);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newLineQuery("bar", queryRelation, line);
+    QueryUtils.checkUnequal(q1, q3);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), POINT_LINE_RELATIONS);
+    Query q4 = newLineQuery(fieldName, newQueryRelation, line);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    //different shape
+    Line newLine = nextLine();
+    Query q5 = newLineQuery(fieldName, queryRelation, newLine);
+    if (line.equals(newLine)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
+  }
+
+  /** factory method to create a new polygon query */
   protected Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
     return LatLonShape.newPolygonQuery(field, queryRelation, polygons);
   }
 
-  // A particularly tricky adversary for BKD tree:
-  public void testSameShapeManyTimes() throws Exception {
-    int numShapes = atLeast(1000);
-
-    // Every doc has 2 points:
-    Object theShape = nextShape();
-
-    Object[] shapes = new Object[numShapes];
-    Arrays.fill(shapes, theShape);
-
-    verify(shapes);
-  }
-
-  public void testRandomTiny() throws Exception {
-    // Make sure single-leaf-node case is OK:
-    doTestRandom(10);
-  }
-
-  public void testRandomMedium() throws Exception {
-    doTestRandom(10000);
-  }
-
-  @Nightly
-  public void testRandomBig() throws Exception {
-    doTestRandom(50000);
-  }
-
-  protected void doTestRandom(int count) throws Exception {
-    int numShapes = atLeast(count);
-    ShapeType type = getShapeType();
-
-    if (VERBOSE) {
-      System.out.println("TEST: number of " + type.name() + " shapes=" + numShapes);
-    }
-
-    Object[] shapes = new Object[numShapes];
-    for (int id = 0; id < numShapes; ++id) {
-      int x = randomInt(20);
-      if (x == 17) {
-        shapes[id] = null;
-        if (VERBOSE) {
-          System.out.println("  id=" + id + " is missing");
-        }
-      } else {
-        // create a new shape
-        shapes[id] = nextShape();
-      }
-    }
-    verify(shapes);
-  }
-
-  private void verify(Object... shapes) throws Exception {
-    IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setMergeScheduler(new SerialMergeScheduler());
-    int mbd = iwc.getMaxBufferedDocs();
-    if (mbd != -1 && mbd < shapes.length / 100) {
-      iwc.setMaxBufferedDocs(shapes.length / 100);
-    }
-    Directory dir;
-    if (shapes.length > 1000) {
-      dir = newFSDirectory(createTempDir(getClass().getSimpleName()));
+  public void testPolygonQueryEqualsAndHashcode() {
+    Polygon polygon = GeoTestUtil.nextPolygon();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    String fieldName = "foo";
+    Query q1 = newPolygonQuery(fieldName, queryRelation, polygon);
+    Query q2 = newPolygonQuery(fieldName, queryRelation, polygon);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newPolygonQuery("bar", queryRelation, polygon);
+    QueryUtils.checkUnequal(q1, q3);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    Query q4 = newPolygonQuery(fieldName, newQueryRelation, polygon);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
     } else {
-      dir = newDirectory();
+      QueryUtils.checkUnequal(q1, q4);
     }
-    IndexWriter w = new IndexWriter(dir, iwc);
-
-    // index random polygons
-    indexRandomShapes(w, shapes);
-
-    // query testing
-    final IndexReader reader = DirectoryReader.open(w);
-
-    // test random bbox queries
-    verifyRandomBBoxQueries(reader, shapes);
-    // test random polygon queires
-    verifyRandomPolygonQueries(reader, shapes);
-
-    IOUtils.close(w, reader, dir);
-  }
-
-  protected void indexRandomShapes(IndexWriter w, Object... shapes) throws Exception {
-    Set<Integer> deleted = new HashSet<>();
-    for (int id = 0; id < shapes.length; ++id) {
-      Document doc = new Document();
-      doc.add(newStringField("id", "" + id, Field.Store.NO));
-      doc.add(new NumericDocValuesField("id", id));
-      if (shapes[id] != null) {
-        addShapeToDoc(FIELD_NAME, doc, shapes[id]);
-      }
-      w.addDocument(doc);
-      if (id > 0 && randomInt(100) == 42) {
-        int idToDelete = randomInt(id);
-        w.deleteDocuments(new Term("id", ""+idToDelete));
-        deleted.add(idToDelete);
-        if (VERBOSE) {
-          System.out.println("   delete id=" + idToDelete);
-        }
-      }
-    }
-
-    if (randomBoolean()) {
-      w.forceMerge(1);
+    //different shape
+    Polygon newPolygon = GeoTestUtil.nextPolygon();;
+    Query q5 = newPolygonQuery(fieldName, queryRelation, newPolygon);
+    if (polygon.equals(newPolygon)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
     }
   }
 
-  protected void verifyRandomBBoxQueries(IndexReader reader, Object... shapes) throws Exception {
-    IndexSearcher s = newSearcher(reader);
-
-    final int iters = atLeast(75);
-
-    Bits liveDocs = MultiFields.getLiveDocs(s.getIndexReader());
-    int maxDoc = s.getIndexReader().maxDoc();
-
-    for (int iter = 0; iter < iters; ++iter) {
-      if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + (iter+1) + " of " + iters + " s=" + s);
-      }
-
-      // BBox
-      Rectangle rect;
-      // quantizing the bbox may end up w/ bounding boxes crossing dateline...
-      // todo add support for bounding boxes crossing dateline
-      while (true) {
-        rect = GeoTestUtil.nextBoxNotCrossingDateline();
-        if (decodeLongitude(encodeLongitudeCeil(rect.minLon)) <= decodeLongitude(encodeLongitude(rect.maxLon)) &&
-            decodeLatitude(encodeLatitudeCeil(rect.minLat)) <= decodeLatitude(encodeLatitude(rect.maxLat))) {
-          break;
-        }
-      }
-      QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
-      Query query = newRectQuery(FIELD_NAME, queryRelation, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
-
-      if (VERBOSE) {
-        System.out.println("  query=" + query);
-      }
-
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
-
-      boolean fail = false;
-      NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
-      for (int docID = 0; docID < maxDoc; ++docID) {
-        assertEquals(docID, docIDToID.nextDoc());
-        int id = (int) docIDToID.longValue();
-        boolean expected;
-        if (liveDocs != null && liveDocs.get(docID) == false) {
-          // document is deleted
-          expected = false;
-        } else if (shapes[id] == null) {
-          expected = false;
-        } else {
-          // check quantized poly against quantized query
-          expected = getValidator(queryRelation).testBBoxQuery(quantizeLatCeil(rect.minLat), quantizeLat(rect.maxLat),
-              quantizeLonCeil(rect.minLon), quantizeLon(rect.maxLon), shapes[id]);
-        }
-
-        if (hits.get(docID) != expected) {
-          StringBuilder b = new StringBuilder();
-
-          if (expected) {
-            b.append("FAIL: id=" + id + " should match but did not\n");
-          } else {
-            b.append("FAIL: id=" + id + " should not match but did\n");
-          }
-          b.append("  relation=" + queryRelation + "\n");
-          b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  shape=" + shapes[id] + "\n");
-          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  rect=Rectangle(" + quantizeLatCeil(rect.minLat) + " TO " + quantizeLat(rect.maxLat) + " lon=" + quantizeLonCeil(rect.minLon) + " TO " + quantizeLon(rect.maxLon) + ")\n");
-          if (true) {
-            fail("wrong hit (first of possibly more):\n\n" + b);
-          } else {
-            System.out.println(b.toString());
-            fail = true;
-          }
-        }
-      }
-      if (fail) {
-        fail("some hits were wrong");
-      }
-    }
+  @Override
+  protected double rectMaxY(Object rect) {
+    return ((Rectangle)rect).maxLat;
   }
 
-  protected void verifyRandomPolygonQueries(IndexReader reader, Object... shapes) throws Exception {
-    IndexSearcher s = newSearcher(reader);
-
-    final int iters = atLeast(75);
-
-    Bits liveDocs = MultiFields.getLiveDocs(s.getIndexReader());
-    int maxDoc = s.getIndexReader().maxDoc();
-
-    for (int iter = 0; iter < iters; ++iter) {
-      if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + (iter + 1) + " of " + iters + " s=" + s);
-      }
-
-      // Polygon
-      Polygon queryPolygon = GeoTestUtil.nextPolygon();
-      Polygon2D queryPoly2D = Polygon2D.create(queryPolygon);
-      QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
-      Query query = newPolygonQuery(FIELD_NAME, queryRelation, queryPolygon);
-
-      if (VERBOSE) {
-        System.out.println("  query=" + query);
-      }
-
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
-
-      boolean fail = false;
-      NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
-      for (int docID = 0; docID < maxDoc; ++docID) {
-        assertEquals(docID, docIDToID.nextDoc());
-        int id = (int) docIDToID.longValue();
-        boolean expected;
-        if (liveDocs != null && liveDocs.get(docID) == false) {
-          // document is deleted
-          expected = false;
-        } else if (shapes[id] == null) {
-          expected = false;
-        } else {
-          expected = getValidator(queryRelation).testPolygonQuery(queryPoly2D, shapes[id]);
-        }
-
-        if (hits.get(docID) != expected) {
-          StringBuilder b = new StringBuilder();
-
-          if (expected) {
-            b.append("FAIL: id=" + id + " should match but did not\n");
-          } else {
-            b.append("FAIL: id=" + id + " should not match but did\n");
-          }
-          b.append("  relation=" + queryRelation + "\n");
-          b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  shape=" + shapes[id] + "\n");
-          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  queryPolygon=" + queryPolygon.toGeoJSON());
-          if (true) {
-            fail("wrong hit (first of possibly more):\n\n" + b);
-          } else {
-            System.out.println(b.toString());
-            fail = true;
-          }
-        }
-      }
-      if (fail) {
-        fail("some hits were wrong");
-      }
-    }
+  @Override
+  protected boolean rectCrossesDateline(Object rect) {
+    return ((Rectangle)rect).crossesDateline();
   }
 
-  protected abstract Validator getValidator(QueryRelation relation);
+  /** use {@link GeoTestUtil#nextPolygon()} to create a random line; TODO: move to GeoTestUtil */
+  @Override
+  public Line nextLine() {
+    return getNextLine();
+  }
 
-  /** internal point class for testing point shapes */
-  protected static class Point {
-    double lat;
-    double lon;
+  public static Line getNextLine() {
+    Polygon poly = GeoTestUtil.nextPolygon();
+    double[] lats = new double[poly.numPoints() - 1];
+    double[] lons = new double[lats.length];
+    System.arraycopy(poly.getPolyLats(), 0, lats, 0, lats.length);
+    System.arraycopy(poly.getPolyLons(), 0, lons, 0, lons.length);
 
-    public Point(double lat, double lon) {
-      this.lat = lat;
-      this.lon = lon;
-    }
+    return new Line(lats, lons);
+  }
 
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append("POINT(");
-      sb.append(lon);
-      sb.append(',');
-      sb.append(lat);
-      sb.append(')');
-      return sb.toString();
-    }
+  @Override
+  protected Polygon nextPolygon() {
+    return GeoTestUtil.nextPolygon();
+  }
+
+  @Override
+  protected Encoder getEncoder() {
+    return new Encoder() {
+      @Override
+      double quantizeX(double raw) {
+        return decodeLongitude(encodeLongitude(raw));
+      }
+
+      @Override
+      double quantizeXCeil(double raw) {
+        return decodeLongitude(encodeLongitudeCeil(raw));
+      }
+
+      @Override
+      double quantizeY(double raw) {
+        return decodeLatitude(encodeLatitude(raw));
+      }
+
+      @Override
+      double quantizeYCeil(double raw) {
+        return decodeLatitude(encodeLatitudeCeil(raw));
+      }
+
+      /** quantizes a latitude value to be consistent with index encoding */
+      protected double quantizeLat(double rawLat) {
+        return quantizeY(rawLat);
+      }
+
+      /** quantizes a provided latitude value rounded up to the nearest encoded integer */
+      protected double quantizeLatCeil(double rawLat) {
+        return quantizeYCeil(rawLat);
+      }
+
+      /** quantizes a longitude value to be consistent with index encoding */
+      protected double quantizeLon(double rawLon) {
+        return quantizeX(rawLon);
+      }
+
+      /** quantizes a provided longitude value rounded up to the nearest encoded integer */
+      protected double quantizeLonCeil(double rawLon) {
+        return quantizeXCeil(rawLon);
+      }
+
+      @Override
+      double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+        ShapeField.DecodedTriangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+        return new double[]{decodeLatitude(decoded.aY), decodeLongitude(decoded.aX), decodeLatitude(decoded.bY), decodeLongitude(decoded.bX), decodeLatitude(decoded.cY), decodeLongitude(decoded.cX)};
+      }
+
+      @Override
+      ShapeField.DecodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+        byte[] encoded = new byte[7 * ShapeField.BYTES];
+        ShapeField.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), ab, encodeLatitude(by), encodeLongitude(bx), bc, encodeLatitude(cy), encodeLongitude(cx), ca);
+        ShapeField.DecodedTriangle triangle  = new ShapeField.DecodedTriangle();
+        ShapeField.decodeTriangle(encoded, triangle);
+        return triangle;
+      }
+    };
   }
 
   /** internal shape type for testing different shape types */
   protected enum ShapeType {
     POINT() {
       public Point nextShape() {
-        return new Point(nextLatitude(), nextLongitude());
+        return new Point(nextLongitude(), nextLatitude());
       }
     },
     LINE() {
@@ -481,13 +329,25 @@ public abstract class BaseLatLonShapeTestCase extends LuceneTestCase {
     }
   }
 
-  protected abstract class Validator {
-    protected QueryRelation queryRelation = QueryRelation.INTERSECTS;
-    public abstract boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
-    public abstract boolean testPolygonQuery(Polygon2D poly2d, Object shape);
+  /** internal lat lon point class for testing point shapes */
+  protected static class Point {
+    double lon;
+    double lat;
 
-    public void setRelation(QueryRelation relation) {
-      this.queryRelation = relation;
+    public Point(double lon, double lat) {
+      this.lon = lon;
+      this.lat = lat;
+    }
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      sb.append("POINT(");
+      sb.append(lon);
+      sb.append(',');
+      sb.append(lat);
+      sb.append(')');
+      return sb.toString();
     }
   }
+
 }

@@ -16,16 +16,20 @@
  */
 package org.apache.solr.cloud;
 
-import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+
+import com.codahale.metrics.Timer;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Pair;
@@ -44,8 +48,11 @@ import org.slf4j.LoggerFactory;
  */
 public class OverseerTaskQueue extends ZkDistributedQueue {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private static final String RESPONSE_PREFIX = "qnr-" ;
+
+  private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
+  private final AtomicInteger pendingResponses = new AtomicInteger(0);
 
   public OverseerTaskQueue(SolrZkClient zookeeper, String dir) {
     this(zookeeper, dir, new Stats());
@@ -54,7 +61,18 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
   public OverseerTaskQueue(SolrZkClient zookeeper, String dir, Stats stats) {
     super(zookeeper, dir, stats);
   }
-  
+
+  public void allowOverseerPendingTasksToComplete() {
+    shuttingDown.set(true);
+    while (pendingResponses.get() > 0) {
+      try {
+        Thread.sleep(50);
+      } catch (InterruptedException e) {
+        log.error("Interrupted while waiting for overseer queue to drain before shutdown!");
+      }
+    }
+  }
+
   /**
    * Returns true if the queue contains a task with the specified async id.
    */
@@ -93,9 +111,11 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       String path = event.getId();
       String responsePath = dir + "/" + RESPONSE_PREFIX
           + path.substring(path.lastIndexOf("-") + 1);
-      if (zookeeper.exists(responsePath, true)) {
+
+      try {
         zookeeper.setData(responsePath, event.getBytes(), true);
-      } else {
+      } catch (KeeperException.NoNodeException ignored) {
+        // we must handle the race case where the node no longer exists
         log.info("Response ZK path: " + responsePath + " doesn't exist."
             + "  Requestor may have disconnected from ZooKeeper");
       }
@@ -117,11 +137,11 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     private final Condition eventReceived;
     private WatchedEvent event;
     private Event.EventType latchEventType;
-    
+
     LatchWatcher() {
       this(null);
     }
-    
+
     LatchWatcher(Event.EventType eventType) {
       this.lock = new ReentrantLock();
       this.eventReceived = lock.newCondition();
@@ -168,7 +188,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
   /**
    * Inserts data into zookeeper.
-   * 
+   *
    * @return true if data was successfully added
    */
   private String createData(String path, byte[] data, CreateMode mode)
@@ -185,13 +205,16 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       }
     }
   }
-  
+
   /**
    * Offer the data and wait for the response
-   * 
+   *
    */
   public QueueEvent offer(byte[] data, long timeout) throws KeeperException,
       InterruptedException {
+    if (shuttingDown.get()) {
+      throw new SolrException(SolrException.ErrorCode.CONFLICT,"Solr is shutting down, no more overseer tasks may be offered");
+    }
     Timer.Context time = stats.time(dir + "_offer");
     try {
       // Create and watch the response node before creating the request node;
@@ -205,6 +228,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       createRequestNode(data, watchID);
 
       if (stat != null) {
+        pendingResponses.incrementAndGet();
         watcher.await(timeout);
       }
       byte[] bytes = zookeeper.getData(watchID, null, null, true);
@@ -215,6 +239,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       return event;
     } finally {
       time.stop();
+      pendingResponses.decrementAndGet();
     }
   }
 
@@ -283,7 +308,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       }
     return null;
   }
-  
+
   public static class QueueEvent {
     @Override
     public int hashCode() {
@@ -292,7 +317,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       result = prime * result + ((id == null) ? 0 : id.hashCode());
       return result;
     }
-    
+
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
@@ -304,36 +329,36 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       } else if (!id.equals(other.id)) return false;
       return true;
     }
-    
+
     private WatchedEvent event = null;
     private String id;
     private byte[] bytes;
-    
+
     QueueEvent(String id, byte[] bytes, WatchedEvent event) {
       this.id = id;
       this.bytes = bytes;
       this.event = event;
     }
-    
+
     public void setId(String id) {
       this.id = id;
     }
-    
+
     public String getId() {
       return id;
     }
-    
+
     public void setBytes(byte[] bytes) {
       this.bytes = bytes;
     }
-    
+
     public byte[] getBytes() {
       return bytes;
     }
-    
+
     public WatchedEvent getWatchedEvent() {
       return event;
     }
-    
+
   }
 }

@@ -23,9 +23,13 @@
     <conf name="test" transitive="false"/>
   </configurations>
   <dependencies>
-    <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="compile"/>
-    <dependency org="org.apache.velocity" name="velocity" rev="${/org.apache.velocity/velocity}" conf="compile"/>
-    <dependency org="org.apache.velocity" name="velocity-tools" rev="${/org.apache.velocity/velocity-tools}" conf="compile"/>
+    <dependency org="org.apache.commons" name="commons-lang3" rev="${/org.apache.commons/commons-lang3}" conf="compile"/>
+
+    <dependency org="org.apache.velocity" name="velocity-engine-core" rev="${/org.apache.velocity/velocity-engine-core}" conf="compile"/>
+
+    <dependency org="org.apache.velocity.tools" name="velocity-tools-generic" rev="${/org.apache.velocity.tools/velocity-tools-generic}" conf="compile"/>
+    <dependency org="org.apache.velocity.tools" name="velocity-tools-view" rev="${/org.apache.velocity.tools/velocity-tools-view}" conf="compile"/>
+    <dependency org="org.apache.velocity.tools" name="velocity-tools-view-jsp" rev="${/org.apache.velocity.tools/velocity-tools-view-jsp}" conf="compile"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>

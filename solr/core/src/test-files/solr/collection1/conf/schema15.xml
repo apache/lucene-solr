@@ -445,6 +445,14 @@
   <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
   <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
 
+  <fieldType name="text_min_hash" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.ICUTokenizerFactory"/>
+      <filter class="solr.ICUFoldingFilterFactory"/>
+      <filter class="solr.ShingleFilterFactory" minShingleSize="5" outputUnigrams="false" outputUnigramsIfNoShingles="false" maxShingleSize="5" tokenSeparator=" "/>
+      <filter class="org.apache.lucene.analysis.minhash.MinHashFilterFactory" bucketCount="512" hashSetSize="1" hashCount="1"/>
+    </analyzer>
+  </fieldType>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
@@ -553,6 +561,8 @@
   <field name="_root_" type="string" indexed="true" stored="true"/>
 
   <field name="multi_int_with_docvals" type="tint" multiValued="true" docValues="true" indexed="false"/>
+
+  <field name="min_hash_analysed" type="text_min_hash" multiValued="false" indexed="true" stored="false"/>
 
   <dynamicField name="*_coordinate" type="tdouble" indexed="true" stored="false"/>
 

@@ -46,6 +46,8 @@ import opennlp.tools.langdetect.LanguageDetectorModel;
  * &lt;/processor&gt;
  * </pre>
  * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
+ *
+ * @since 7.3.0
  */
 public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProcessorFactory
   implements SolrCoreAware {

@@ -149,11 +149,14 @@ public class Test2BFST extends LuceneTestCase {
           //System.out.println("add: " + input + " -> " + output);
           b.add(input, BytesRef.deepCopyOf(output));
           count++;
-          if (count % 1000000 == 0) {
-            System.out.println(count + "...: " + b.fstRamBytesUsed() + " bytes");
-          }
-          if (b.fstRamBytesUsed() > LIMIT) {
-            break;
+          if (count % 10000 == 0) {
+            long size = b.fstRamBytesUsed();
+            if (count % 1000000 == 0) {
+              System.out.println(count + "...: " + size + " bytes");
+            }
+            if (size > LIMIT) {
+              break;
+            }
           }
           nextInput(r, ints);
         }
@@ -226,11 +229,14 @@ public class Test2BFST extends LuceneTestCase {
           b.add(input, output);
           output += 1+r.nextInt(10);
           count++;
-          if (count % 1000000 == 0) {
-            System.out.println(count + "...: " + b.fstRamBytesUsed() + " bytes");
-          }
-          if (b.fstRamBytesUsed() > LIMIT) {
-            break;
+          if (count % 10000 == 0) {
+            long size = b.fstRamBytesUsed();
+            if (count % 1000000 == 0) {
+              System.out.println(count + "...: " + size + " bytes");
+            }
+            if (size > LIMIT) {
+              break;
+            }
           }
           nextInput(r, ints);
         }

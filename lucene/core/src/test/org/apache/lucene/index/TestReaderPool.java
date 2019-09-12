@@ -45,7 +45,7 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
 
-    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l, null, null, null);
+    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l, null, null, null, Collections.emptyMap());
     SegmentCommitInfo commitInfo = RandomPicks.randomFrom(random(), segmentInfos.asList());
     ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
     assertSame(readersAndUpdates, pool.get(commitInfo, false));
@@ -64,7 +64,7 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
 
-    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l, null, null, null);
+    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l, null, null, null, Collections.emptyMap());
     SegmentCommitInfo commitInfo = RandomPicks.randomFrom(random(), segmentInfos.asList());
     assertFalse(pool.isReaderPoolingEnabled());
     pool.release(pool.get(commitInfo, true), random().nextBoolean());
@@ -100,7 +100,7 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
     ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l,
-        new NullInfoStream(), null, null);
+        new NullInfoStream(), null, null, Collections.emptyMap());
     int id = random().nextInt(10);
     if (random().nextBoolean()) {
       pool.enableReaderPooling();
@@ -168,7 +168,7 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
     ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l,
-        new NullInfoStream(), null, null);
+        new NullInfoStream(), null, null, Collections.emptyMap());
     int id = random().nextInt(10);
     if (random().nextBoolean()) {
       pool.enableReaderPooling();
@@ -213,7 +213,7 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
     ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0L,
-        new NullInfoStream(), null, null);
+        new NullInfoStream(), null, null, Collections.emptyMap());
     if (random().nextBoolean()) {
       pool.enableReaderPooling();
     }
@@ -287,7 +287,7 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
     ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l,
-        new NullInfoStream(), null, null);
+        new NullInfoStream(), null, null, Collections.emptyMap());
     assertEquals(0, pool.getReadersByRam().size());
 
     int ord = 0;

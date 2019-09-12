@@ -37,8 +37,8 @@ public final class CharacterDefinition {
   public static final int CLASS_COUNT = CharacterClass.values().length;
 
   // only used internally for lookup:
-  private enum CharacterClass {
-    NGRAM, DEFAULT, SPACE, SYMBOL, NUMERIC, ALPHA, CYRILLIC, GREEK, HIRAGANA, KATAKANA, KANJI, HANGUL, HANJA, HANJANUMERIC;
+  enum CharacterClass {
+    NGRAM, DEFAULT, SPACE, SYMBOL, NUMERIC, ALPHA, CYRILLIC, GREEK, HIRAGANA, KATAKANA, KANJI, HANGUL, HANJA, HANJANUMERIC
   }
 
   private final byte[] characterCategoryMap = new byte[0x10000];
@@ -108,11 +108,7 @@ public final class CharacterDefinition {
   }
 
   public boolean hasCoda(char ch){
-    if (((ch - 0xAC00) % 0x001C) == 0) {
-      return false;
-    } else {
-      return true;
-    }
+    return ((ch - 0xAC00) % 0x001C) != 0;
   }
 
   public static byte lookupCharacterClass(String characterClassName) {

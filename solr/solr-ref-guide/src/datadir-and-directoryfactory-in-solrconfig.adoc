@@ -36,7 +36,7 @@ element `<solrDataHome>` then the location of data directory will be `<SOLR_DATA
 
 == Specifying the DirectoryFactory For Your Index
 
-The default {solr-javadocs}/solr-core/org/apache/solr/core/NRTCachingDirectoryFactory.html[`solr.NRTCachingDirectoryFactory`] is filesystem based, and tries to pick the best implementation for the current JVM and platform. You can force a particular implementation and/or config options by specifying {solr-javadocs}/solr-core/org/apache/solr/core/MMapDirectoryFactory.html[`solr.MMapDirectoryFactory`], {solr-javadocs}/solr-core/org/apache/solr/core/NIOFSDirectoryFactory.html[`solr.NIOFSDirectoryFactory`], or {solr-javadocs}/solr-core/org/apache/solr/core/SimpleFSDirectoryFactory.html[`solr.SimpleFSDirectoryFactory`].
+The default {solr-javadocs}/solr-core/org/apache/solr/core/NRTCachingDirectoryFactory.html[`solr.NRTCachingDirectoryFactory`] is filesystem based, and tries to pick the best implementation for the current JVM and platform. You can force a particular implementation and/or configuration options by specifying {solr-javadocs}/solr-core/org/apache/solr/core/MMapDirectoryFactory.html[`solr.MMapDirectoryFactory`], {solr-javadocs}/solr-core/org/apache/solr/core/NIOFSDirectoryFactory.html[`solr.NIOFSDirectoryFactory`], or {solr-javadocs}/solr-core/org/apache/solr/core/SimpleFSDirectoryFactory.html[`solr.SimpleFSDirectoryFactory`].
 
 [source,xml]
 ----

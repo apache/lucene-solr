@@ -313,29 +313,24 @@ public class ZkShardTerms implements AutoCloseable{
    * Create correspond ZK term node
    */
   private void ensureTermNodeExist() {
-    String path = "/collections/"+collection+ "/terms";
+    String path = "/collections/" + collection + "/terms";
     try {
-      if (!zkClient.exists(path, true)) {
-        try {
-          zkClient.makePath(path, true);
-        } catch (KeeperException.NodeExistsException e) {
-          // it's okay if another beats us creating the node
-        }
+      path += "/" + shard;
+
+      try {
+        Map<String,Long> initialTerms = new HashMap<>();
+        zkClient.makePath(path, Utils.toJSON(initialTerms), CreateMode.PERSISTENT, true);
+      } catch (KeeperException.NodeExistsException e) {
+        // it's okay if another beats us creating the node
       }
-      path += "/"+shard;
-      if (!zkClient.exists(path, true)) {
-        try {
-          Map<String, Long> initialTerms = new HashMap<>();
-          zkClient.create(path, Utils.toJSON(initialTerms), CreateMode.PERSISTENT, true);
-        } catch (KeeperException.NodeExistsException e) {
-          // it's okay if another beats us creating the node
-        }
-      }
-    }  catch (InterruptedException e) {
+
+    } catch (InterruptedException e) {
       Thread.interrupted();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating shard term node in Zookeeper for collection: " + collection, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Error creating shard term node in Zookeeper for collection: " + collection, e);
     } catch (KeeperException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating shard term node in Zookeeper for collection: " + collection, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Error creating shard term node in Zookeeper for collection: " + collection, e);
     }
   }
 

@@ -49,6 +49,10 @@ import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
  */
 
 public class Builder<T> {
+
+  // The amount of Arc array oversizing used to enable direct addressing of Arcs by their labels
+  static final int DIRECT_ARC_LOAD_FACTOR = 4;
+
   private final NodeHash<T> dedupHash;
   final FST<T> fst;
   private final T NO_OUTPUT;
@@ -92,9 +96,9 @@ public class Builder<T> {
   BytesStore bytes;
 
   /**
-   * Instantiates an FST/FSA builder without any pruning. A shortcut
-   * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean,
-   * boolean, int, Outputs, boolean, int)} with pruning options turned off.
+   * Instantiates an FST/FSA builder without any pruning. A shortcut to {@link
+   * #Builder(FST.INPUT_TYPE, int, int, boolean, boolean, int, Outputs, boolean, int)} with
+   * pruning options turned off.
    */
   public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
     this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
@@ -583,7 +587,7 @@ public class Builder<T> {
 
     public void addArc(int label, Node target) {
       assert label >= 0;
-      assert numArcs == 0 || label > arcs[numArcs-1].label: "arc[-1].label=" + arcs[numArcs-1].label + " new label=" + label + " numArcs=" + numArcs;
+      assert numArcs == 0 || label > arcs[numArcs-1].label: "arc[numArcs-1].label=" + arcs[numArcs-1].label + " new label=" + label + " numArcs=" + numArcs;
       if (numArcs == arcs.length) {
         final Arc<T>[] newArcs = ArrayUtil.grow(arcs, numArcs+1);
         for(int arcIdx=numArcs;arcIdx<newArcs.length;arcIdx++) {

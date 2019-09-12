@@ -26,7 +26,7 @@
        seconds part (.999) is optional.
     -->
   <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  
+
   <!-- Point Fields -->
   <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
   <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
@@ -40,6 +40,27 @@
 
   <fieldType name="uuid" class="solr.UUIDField"/>
 
+
+  <!-- SortableTextField generaly functions exactly like TextField,
+     except that it supports, and by default uses, docValues for sorting (or faceting)
+     on the first 1024 characters of the original field values (which is configurable).
+
+     This makes it a bit more useful then TextField in many situations, but the trade-off
+     is that it takes up more space on disk; which is why it's not used in place of TextField
+     for every fieldType in this _default schema.
+-->
+  <fieldType name="text_gen_sort" class="solr.SortableTextField" positionIncrementGap="100" multiValued="true">
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+
   <field name="id" type="string" required="true" indexed="true" docValues="true"/>
   <field name="floatdv_m" type="float" indexed="false" stored="false" docValues="true" multiValued="true"/>
   <field name="intdv_m" type="int" indexed="false" stored="false" docValues="true" multiValued="true"/>
@@ -47,6 +68,9 @@
   <field name="longdv_m" type="long" indexed="false" stored="false" docValues="true" multiValued="true"/>
   <field name="datedv_m" type="date" indexed="false" stored="false" docValues="true" multiValued="true"/>
   <field name="stringdv_m" type="string" indexed="false" stored="false" docValues="true" multiValued="true"/>
+  <field name="sortabledv_m" type="text_gen_sort" indexed="true" stored="true" multiValued="true" />
+  <field name="sortabledv_m_udvas" type="text_gen_sort" indexed="true" stored="true" multiValued="true" useDocValuesAsStored="true"/>
+
 
   <field name="floatdv" type="float" indexed="false" stored="false" docValues="true"/>
   <field name="intdv" type="int" indexed="false" stored="false" docValues="true"/>
@@ -55,6 +79,8 @@
   <field name="datedv" type="date" indexed="false" stored="false" docValues="true"/>
   <field name="stringdv" type="string" indexed="false" stored="false" docValues="true"/>
   <field name="booleandv" type="boolean" indexed="false" stored="false" docValues="true" />
+  <field name="sortabledv" type="text_gen_sort" indexed="true" stored="true" multiValued="false" />
+  <field name="sortabledv_udvas" type="text_gen_sort" indexed="true" stored="true" multiValued="false" useDocValuesAsStored="true" />
 
   <dynamicField name="*_s_dv"   type="string"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
 

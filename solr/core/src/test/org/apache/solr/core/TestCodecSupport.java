@@ -56,13 +56,15 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
   }
 
   public void testDocValuesFormats() {
+    // NOTE: Direct (and Disk) DocValues formats were removed, so we use "Asserting" 
+    // as a way to vet that the configuration actually matters.
     Codec codec = h.getCore().getCodec();
     Map<String, SchemaField> fields = h.getCore().getLatestSchema().getFields();
     SchemaField schemaField = fields.get("string_disk_f");
     PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
     assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_direct_f");
-    assertEquals("Direct", format.getDocValuesFormatForField(schemaField.getName()).getName());
+    assertEquals("Asserting", format.getDocValuesFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_f");
     assertEquals(TestUtil.getDefaultDocValuesFormat().getName(),
         format.getDocValuesFormatForField(schemaField.getName()).getName());
@@ -79,13 +81,15 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
   }
 
   public void testDynamicFieldsDocValuesFormats() {
+    // NOTE: Direct (and Disk) DocValues formats were removed, so we use "Asserting" 
+    // as a way to vet that the configuration actually matters.
     Codec codec = h.getCore().getCodec();
     PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
 
     assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField("foo_disk").getName());
     assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField("bar_disk").getName());
-    assertEquals("Direct", format.getDocValuesFormatForField("foo_direct").getName());
-    assertEquals("Direct", format.getDocValuesFormatForField("bar_direct").getName());
+    assertEquals("Asserting", format.getDocValuesFormatForField("foo_direct").getName());
+    assertEquals("Asserting", format.getDocValuesFormatForField("bar_direct").getName());
   }
   
   private void reloadCoreAndRecreateIndex() {
@@ -159,39 +163,32 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
   }
   
   public void testBadCompressionMode() throws Exception {
-    try {
+    SolrException thrown = expectThrows(SolrException.class, () -> {
       doTestCompressionMode("something_that_doesnt_exist", "something_that_doesnt_exist");
-      fail("Expecting exception");
-    } catch (SolrException e) {
-      assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, e.code());
-      assertTrue("Unexpected Exception message: " + e.getMessage(), 
-          e.getMessage().contains("Unable to reload core"));
-    }
+    });
+    assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, thrown.code());
+    assertTrue("Unexpected Exception message: " + thrown.getMessage(),
+        thrown.getMessage().contains("Unable to reload core"));
     
-    SchemaCodecFactory factory = new SchemaCodecFactory();
-    NamedList<String> nl = new NamedList<>();
+    final SchemaCodecFactory factory1 = new SchemaCodecFactory();
+    final NamedList<String> nl = new NamedList<>();
     nl.add(SchemaCodecFactory.COMPRESSION_MODE, "something_that_doesnt_exist");
-    try {
-      factory.init(nl);
-      fail("Expecting exception");
-    } catch (SolrException e) {
-      assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, e.code());
-      assertTrue("Unexpected Exception message: " + e.getMessage(), 
-          e.getMessage().contains("Invalid compressionMode: 'something_that_doesnt_exist'"));
-    }
+    thrown = expectThrows(SolrException.class, () -> {
+      factory1.init(nl);
+    });
+    assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, thrown.code());
+    assertTrue("Unexpected Exception message: " + thrown.getMessage(),
+        thrown.getMessage().contains("Invalid compressionMode: 'something_that_doesnt_exist'"));
     
-    factory = new SchemaCodecFactory();
-    nl = new NamedList<>();
-    nl.add(SchemaCodecFactory.COMPRESSION_MODE, "");
-    try {
-      factory.init(nl);
-      fail("Expecting exception");
-    } catch (SolrException e) {
-      assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, e.code());
-      assertTrue("Unexpected Exception message: " + e.getMessage(), 
-          e.getMessage().contains("Invalid compressionMode: ''"));
-    }
-    
+    final SchemaCodecFactory factory2 = new SchemaCodecFactory();
+    final NamedList<String> nl2 = new NamedList<>();
+    nl2.add(SchemaCodecFactory.COMPRESSION_MODE, "");
+    thrown = expectThrows(SolrException.class, () -> {
+      factory2.init(nl2);
+    });
+    assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, thrown.code());
+    assertTrue("Unexpected Exception message: " + thrown.getMessage(),
+        thrown.getMessage().contains("Invalid compressionMode: ''"));
   }
   
   public void testCompressionModeDefault() throws IOException {

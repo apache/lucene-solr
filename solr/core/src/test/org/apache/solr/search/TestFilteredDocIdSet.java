@@ -37,9 +37,9 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
-public class TestFilteredDocIdSet extends LuceneTestCase {
+public class TestFilteredDocIdSet extends SolrTestCase {
   public void testFilteredDocIdSet() throws Exception {
     final int maxdoc=10;
     final DocIdSet innerSet = new DocIdSet() {

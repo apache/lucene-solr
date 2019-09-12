@@ -18,19 +18,27 @@ package org.apache.solr.response;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
+import org.apache.solr.common.util.ByteUtils;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter.Resolver;
 import org.apache.solr.search.SolrReturnFields;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.SimplePostTool;
 import org.junit.BeforeClass;
 
 /**
@@ -46,6 +54,41 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
+  }
+
+  public void testBytesRefWriting() {
+    compareStringFormat("ThisIsUTF8String");
+    compareStringFormat("Thailand (ประเทศไทย)");
+    compareStringFormat("LIVE: सबरीमाला मंदिर के पास पहुंची दो महिलाएं, जमकर हो रहा विरोध-प्रदर्शन");
+  }
+
+  public void testJavabinCodecWithCharSeq() throws IOException {
+    SolrDocument document = new SolrDocument();
+    document.put("id", "1");
+    String text = "नए लुक में धमाल मचाने आ रहे हैं MS Dhoni, कुछ यूं दिखाया हेलीकॉप्टर शॉट";
+    document.put("desc", new StoredField("desc", new ByteArrayUtf8CharSequence(text) {
+    }, TextField.TYPE_STORED));
+
+    NamedList nl = new NamedList();
+    nl.add("doc1", document);
+    SimplePostTool.BAOS baos = new SimplePostTool.BAOS();
+    new JavaBinCodec(new BinaryResponseWriter.Resolver(null, null)).marshal(nl, baos);
+    ByteBuffer byteBuffer = baos.getByteBuffer();
+    nl = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(byteBuffer.array(), 0, byteBuffer.limit()));
+    assertEquals(text, nl._get("doc1/desc", null));
+
+
+  }
+
+  private void compareStringFormat(String input) {
+    byte[] bytes1 = new byte[1024];
+    int len1 = ByteUtils.UTF16toUTF8(input, 0, input.length(), bytes1, 0);
+    BytesRef bytesref = new BytesRef(input);
+    System.out.println();
+    assertEquals(len1, bytesref.length);
+    for (int i = 0; i < len1; i++) {
+      assertEquals(input + " not matching char at :" + i, bytesref.bytes[i], bytes1[i]);
+    }
   }
 
   /**

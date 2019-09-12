@@ -18,7 +18,7 @@ package org.apache.solr.search.mlt;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -77,9 +77,10 @@ public class SimpleMLTQParserTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt}17");
-    assertQ(req(params),
+    // for score tiebreaker, use doc ID order
+    final SolrParams sortParams = params("sort", "score desc, id asc");
+    
+    assertQ(req(sortParams, CommonParams.Q, "{!mlt qf=lowerfilt}17"),
         "//result/doc[1]/str[@name='id'][.='13']",
         "//result/doc[2]/str[@name='id'][.='14']",
         "//result/doc[3]/str[@name='id'][.='15']",
@@ -92,9 +93,7 @@ public class SimpleMLTQParserTest extends SolrTestCaseJ4 {
         "//result/doc[10]/str[@name='id'][.='23']"
     );
 
-    params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt boost=true}17");
-    assertQ(req(params),
+    assertQ(req(sortParams, CommonParams.Q, "{!mlt qf=lowerfilt boost=true}17"),
         "//result/doc[1]/str[@name='id'][.='13']",
         "//result/doc[2]/str[@name='id'][.='14']",
         "//result/doc[3]/str[@name='id'][.='15']",
@@ -107,9 +106,7 @@ public class SimpleMLTQParserTest extends SolrTestCaseJ4 {
         "//result/doc[10]/str[@name='id'][.='23']"
     );
 
-    params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt,lowerfilt1^1000 boost=false mintf=0 mindf=0}30");
-    assertQ(req(params),
+    assertQ(req(sortParams, CommonParams.Q, "{!mlt qf=lowerfilt,lowerfilt1^1000 boost=false mintf=0 mindf=0}30"),
         "//result/doc[1]/str[@name='id'][.='31']",
         "//result/doc[2]/str[@name='id'][.='13']",
         "//result/doc[3]/str[@name='id'][.='14']",
@@ -122,9 +119,7 @@ public class SimpleMLTQParserTest extends SolrTestCaseJ4 {
         "//result/doc[10]/str[@name='id'][.='16']"
     );
 
-    params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt,lowerfilt1^1000 boost=true mintf=0 mindf=0}30");
-    assertQ(req(params),
+    assertQ(req(sortParams, CommonParams.Q, "{!mlt qf=lowerfilt,lowerfilt1^1000 boost=true mintf=0 mindf=0}30"),
         "//result/doc[1]/str[@name='id'][.='29']",
         "//result/doc[2]/str[@name='id'][.='31']",
         "//result/doc[3]/str[@name='id'][.='32']",
@@ -137,30 +132,22 @@ public class SimpleMLTQParserTest extends SolrTestCaseJ4 {
         "//result/doc[10]/str[@name='id'][.='15']"
     );
 
-    params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt mindf=0 mintf=1}26");
-    assertQ(req(params),
+    assertQ(req(sortParams, CommonParams.Q, "{!mlt qf=lowerfilt mindf=0 mintf=1}26"),
         "//result/doc[1]/str[@name='id'][.='29']",
         "//result/doc[2]/str[@name='id'][.='27']",
         "//result/doc[3]/str[@name='id'][.='28']"
     );
 
-    params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt mindf=10 mintf=1}26");
-    assertQ(req(params),
+    assertQ(req(CommonParams.Q, "{!mlt qf=lowerfilt mindf=10 mintf=1}26"),
         "//result[@numFound='0']"
     );
 
-    params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt minwl=3 mintf=1 mindf=1}26");
-    assertQ(req(params),
+    assertQ(req(CommonParams.Q, "{!mlt qf=lowerfilt minwl=3 mintf=1 mindf=1}26"),
         "//result[@numFound='3']"
     );
 
-    params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt minwl=4 mintf=1 mindf=1}26");
-    params.set(CommonParams.DEBUG, "true");
-    assertQ(req(params),
+    assertQ(req(CommonParams.Q, "{!mlt qf=lowerfilt minwl=4 mintf=1 mindf=1}26",
+                CommonParams.DEBUG, "true"),
         "//result[@numFound='0']"
     );
   }

@@ -48,7 +48,7 @@ public abstract class PointsWriter implements Closeable {
       PointsReader pointsReader = mergeState.pointsReaders[i];
       if (pointsReader != null) {
         FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(fieldInfo.name);
-        if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
+        if (readerFieldInfo != null && readerFieldInfo.getPointDataDimensionCount() > 0) {
           PointValues values = pointsReader.getValues(fieldInfo.name);
           if (values != null) {
             maxPointCount += values.size();
@@ -92,7 +92,7 @@ public abstract class PointsWriter implements Closeable {
                     continue;
                   }
 
-                  if (readerFieldInfo.getPointDimensionCount() == 0) {
+                  if (readerFieldInfo.getPointDataDimensionCount() == 0) {
                     // This segment saw this field, but the field did not index points in it:
                     continue;
                   }
@@ -143,7 +143,12 @@ public abstract class PointsWriter implements Closeable {
               }
 
               @Override
-              public int getNumDimensions() {
+              public int getNumDataDimensions() {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public int getNumIndexDimensions() {
                 throw new UnsupportedOperationException();
               }
 
@@ -182,7 +187,7 @@ public abstract class PointsWriter implements Closeable {
     }
     // merge field at a time
     for (FieldInfo fieldInfo : mergeState.mergeFieldInfos) {
-      if (fieldInfo.getPointDimensionCount() != 0) {
+      if (fieldInfo.getPointDataDimensionCount() != 0) {
         mergeOneField(mergeState, fieldInfo);
       }
     }

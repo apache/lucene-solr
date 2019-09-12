@@ -22,17 +22,14 @@ import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 @Slow
 @Nightly
-@SuppressObjectReleaseTracker(bugUrl="this is a purposely leaky test")
 public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
 
   //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
@@ -64,8 +61,8 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
     System.setProperty("leaderVoteWait", "300000");
     System.setProperty("solr.autoCommit.maxTime", "30000");
     System.setProperty("solr.autoSoftCommit.maxTime", "3000");
-    TestInjection.nonGracefullClose = "true:60";
-    TestInjection.failReplicaRequests = "true:03";
+    // SOLR-13212 // TestInjection.nonGracefullClose = "true:60";
+    // SOLR-13189 // TestInjection.failReplicaRequests = "true:03";
   }
   
   @AfterClass
@@ -76,7 +73,6 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);

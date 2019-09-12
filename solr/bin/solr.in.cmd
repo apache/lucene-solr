@@ -34,7 +34,20 @@ REM set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+Prin
 
 REM Various GC settings have shown to work well for a number of common Solr workloads.
 REM See solr.cmd GC_TUNE for the default list.
-REM set GC_TUNE=-XX:NewRatio=3 -XX:SurvivorRatio=4     etc.
+REM set GC_TUNE=-XX:SurvivorRatio=4
+REM set GC_TUNE=%GC_TUNE% -XX:TargetSurvivorRatio=90
+REM set GC_TUNE=%GC_TUNE% -XX:MaxTenuringThreshold=8
+REM set GC_TUNE=%GC_TUNE% -XX:+UseConcMarkSweepGC
+REM set GC_TUNE=%GC_TUNE% -XX:ConcGCThreads=4
+REM set GC_TUNE=%GC_TUNE% -XX:ParallelGCThreads=4
+REM set GC_TUNE=%GC_TUNE% -XX:+CMSScavengeBeforeRemark
+REM set GC_TUNE=%GC_TUNE% -XX:PretenureSizeThreshold=64m
+REM set GC_TUNE=%GC_TUNE% -XX:+UseCMSInitiatingOccupancyOnly
+REM set GC_TUNE=%GC_TUNE% -XX:CMSInitiatingOccupancyFraction=50
+REM set GC_TUNE=%GC_TUNE% -XX:CMSMaxAbortablePrecleanTime=6000
+REM set GC_TUNE=%GC_TUNE% -XX:+CMSParallelRemarkEnabled
+REM set GC_TUNE=%GC_TUNE% -XX:+ParallelRefProcEnabled
+REM set GC_TUNE=%GC_TUNE% -XX:-OmitStackTraceInFastThrow    etc.
 
 REM Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 REM e.g. host1:2181,host2:2181/chroot
@@ -135,6 +148,7 @@ REM * javax.net.ssl.keyStorePassword
 REM * javax.net.ssl.trustStorePassword
 REM More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
 REM set SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
+REM set SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
 
 REM Settings for authentication
 REM Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
@@ -148,3 +162,14 @@ REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCrede
 REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
+
+REM When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
+REM list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can be configured in solr.xml,
+REM or if you are using the OOTB solr.xml, can be specified using the system property "solr.shardsWhitelist". Alternatively
+REM host checking can be disabled by using the system property "solr.disable.shardsWhitelist"
+REM set SOLR_OPTS="%SOLR_OPTS% -Dsolr.shardsWhitelist=http://localhost:8983,http://localhost:8984"
+
+REM For a visual indication in the Admin UI of what type of environment this cluster is, configure
+REM a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
+REM label or color, e.g. -Dsolr.environment=test,label=Functional+test,color=brown
+REM SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"

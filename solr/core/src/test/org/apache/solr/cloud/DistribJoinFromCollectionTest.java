@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -98,7 +97,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
 
     // deploy the "from" collection to all nodes where the "to" collection exists
     CollectionAdminRequest.createCollection(fromColl, configName, 1, 4)
-        .setCreateNodeSet(StringUtils.join(nodeSet, ","))
+        .setCreateNodeSet(String.join(",", nodeSet))
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 

@@ -225,32 +225,27 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
       "]}";
   
   @Test
-  public void testParsers() {
+  public void testParsers() throws Exception {
     PreAnalyzedField paf = new PreAnalyzedField();
     // use Simple format
     HashMap<String,String> args = new HashMap<>();
     args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
     paf.init(h.getCore().getLatestSchema(), args);
-    try {
+    {
       Field f = (Field)paf.fromString(field, valid[0]);
-    } catch (Exception e) {
-      fail("Should pass: '" + valid[0] + "', exception: " + e);
     }
+
     // use JSON format
     args.put(PreAnalyzedField.PARSER_IMPL, JsonPreAnalyzedParser.class.getName());
     paf.init(h.getCore().getLatestSchema(), args);
-    try {
-      Field f = (Field)paf.fromString(field, valid[0]);
-      fail("Should fail JSON parsing: '" + valid[0] + "'");
-    } catch (Exception e) {
-    }
+    expectThrows(Exception.class, () -> paf.fromString(field, valid[0]));
+
     byte[] deadbeef = new byte[]{(byte)0xd, (byte)0xe, (byte)0xa, (byte)0xd, (byte)0xb, (byte)0xe, (byte)0xe, (byte)0xf};
     PreAnalyzedParser parser = new JsonPreAnalyzedParser();
-    try {
+
+    {
       Field f = (Field)paf.fromString(field, jsonValid);
       assertEquals(jsonValid, parser.toFormattedString(f));
-    } catch (Exception e) {
-      fail("Should pass: '" + jsonValid + "', exception: " + e);
     }
   }
 }

@@ -31,6 +31,12 @@ to vectorize and analyze the results sets.
 
 Below are some of the key stream sources:
 
+* *`facet`*: Multi-dimensional aggregations are a powerful tool for generating
+co-occurrence counts for categorical data. The `facet` function uses the JSON facet API
+under the covers to provide fast, distributed, multi-dimension aggregations. With math expressions
+the aggregated results can be pivoted into a co-occurance matrix which can be mined for
+correlations and hidden similarities within the data.
+
 * *`random`*: Random sampling is widely used in statistics, probability and machine learning.
 The `random` function returns a random sample of search results that match a
 query. The random samples can be vectorized and operated on by math expressions and the results
@@ -240,6 +246,80 @@ When this expression is sent to the `/stream` handler it responds with:
     ]
   }
 }
+----
+
+== Facet Co-occurrence Matrices
+
+The `facet` function can be used to quickly perform multi-dimension aggregations of categorical data from
+records stored in a Solr Cloud collection. These multi-dimension aggregations can represent co-occurrence
+counts for the values in the dimensions. The `pivot` function can be used to move two dimensional
+aggregations into a co-occurrence matrix. The co-occurrence matrix can then be clustered or analyzed for
+correlations to learn about the hidden connections within the data.
+
+In the example below the `facet` expression is used to generate a two dimensional faceted aggregation.
+The first dimension is the US State that a car was purchased in and the second dimension is the car model.
+This two dimensional facet generates the co-occurrence counts for the number of times a particular car model
+was purchased in a particular state.
+
+
+[source,text]
+----
+facet(collection1, q="*:*", buckets="state, model", bucketSorts="count(*) desc", rows=5, count(*))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "state": "NY",
+        "model": "camry",
+        "count(*)": 13342
+      },
+      {
+        "state": "NJ",
+        "model": "accord",
+        "count(*)": 13002
+      },
+      {
+        "state": "NY",
+        "model": "civic",
+        "count(*)": 12901
+      },
+      {
+        "state": "CA",
+        "model": "focus",
+        "count(*)": 12892
+      },
+      {
+        "state": "TX",
+        "model": "f150",
+        "count(*)": 12871
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 171
+      }
+    ]
+  }
+}
+----
+
+The `pivot` function can be used to move the facet results into a co-occurrence matrix. In the example below
+The `pivot` function is used to create a matrix where the rows of the matrix are the US States (state) and the
+columns of the matrix are the car models (model). The values in the matrix are the co-occurrence counts (count(*))
+ from the facet results.  Once the co-occurrence matrix has been created the US States can be clustered
+by car model, or the matrix can be transposed and car models can be clustered by the US States
+where they were bought.
+
+[source,text]
+----
+let(a=facet(collection1, q="*:*", buckets="state, model", bucketSorts="count(*) desc", rows="-1", count(*)),
+    b=pivot(a, state, model, count(*)),
+    c=kmeans(b, 7))
 ----
 
 == Latitude / Longitude Vectors

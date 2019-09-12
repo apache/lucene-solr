@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -147,7 +146,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     List<String> nodes = getAllNodeNames(collectionName);
 
     CollectionAdminRequest.createShard(collectionName, "shard4")
-        .setNodeSet(StringUtils.join(nodes, ","))
+        .setNodeSet(String.join(",", nodes))
         .process(cluster.getSolrClient());
 
     // And just for yucks, insure we fail the "regular" one again.

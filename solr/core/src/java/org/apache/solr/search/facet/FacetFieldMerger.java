@@ -102,7 +102,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
       result.add("numBuckets", ((Number)numBuckets.getMergedResult()).longValue());
     }
 
-    sortBuckets();
+    sortBuckets(freq.sort);
 
     long first = freq.offset;
     long end = freq.limit >=0 ? first + (int) freq.limit : Integer.MAX_VALUE;

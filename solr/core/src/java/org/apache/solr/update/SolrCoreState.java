@@ -26,6 +26,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.RecoveryStrategy;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -172,7 +173,12 @@ public abstract class SolrCoreState {
 
   public abstract void setLastReplicateIndexSuccess(boolean success);
 
-  public static class CoreIsClosedException extends IllegalStateException {
+  public static class CoreIsClosedException extends AlreadyClosedException {
+    
+    public CoreIsClosedException() {
+      super();
+    }
+    
     public CoreIsClosedException(String s) {
       super(s);
     }

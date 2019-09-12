@@ -16,22 +16,23 @@
  */
 package org.apache.lucene.misc;
 
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.SuppressForbidden;
-
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Locale;
+
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiTerms;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.SuppressForbidden;
 
 /**
  * <code>HighFreqTerms</code> class extracts the top n most frequent terms
@@ -98,7 +99,7 @@ public class HighFreqTerms {
     TermStatsQueue tiq = null;
     
     if (field != null) {
-      Terms terms = MultiFields.getTerms(reader, field);
+      Terms terms = MultiTerms.getTerms(reader, field);
       if (terms == null) {
         throw new RuntimeException("field " + field + " not found");
       }
@@ -107,13 +108,13 @@ public class HighFreqTerms {
       tiq = new TermStatsQueue(numTerms, comparator);
       tiq.fill(field, termsEnum);
     } else {
-      Fields fields = MultiFields.getFields(reader);
+      Collection<String> fields = FieldInfos.getIndexedFields(reader);
       if (fields.size() == 0) {
         throw new RuntimeException("no fields found for this index");
       }
       tiq = new TermStatsQueue(numTerms, comparator);
       for (String fieldName : fields) {
-        Terms terms = fields.terms(fieldName);
+        Terms terms = MultiTerms.getTerms(reader, fieldName);
         if (terms != null) {
           tiq.fill(fieldName, terms.iterator());
         }

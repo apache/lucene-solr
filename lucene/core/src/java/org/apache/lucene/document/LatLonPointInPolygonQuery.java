@@ -31,13 +31,15 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.NumericUtils;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
@@ -76,11 +78,69 @@ final class LatLonPointInPolygonQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
+  }
+
+  private IntersectVisitor getIntersectVisitor(DocIdSetBuilder result, Polygon2D tree, GeoEncodingUtils.PolygonPredicate polygonPredicate,
+                                               byte[] minLat, byte[] maxLat, byte[] minLon, byte[] maxLon) {
+    return new IntersectVisitor() {
+          DocIdSetBuilder.BulkAdder adder;
+
+          @Override
+          public void grow(int count) {
+            adder = result.grow(count);
+          }
+
+          @Override
+          public void visit(int docID) {
+            adder.add(docID);
+          }
+
+          @Override
+          public void visit(int docID, byte[] packedValue) {
+            if (polygonPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
+                NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
+              visit(docID);
+            }
+          }
+
+          @Override
+          public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+            if (polygonPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
+                NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
+              int docID;
+              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                visit(docID);
+              }
+            }
+          }
+
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            if (Arrays.compareUnsigned(minPackedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
+                Arrays.compareUnsigned(maxPackedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0 ||
+                Arrays.compareUnsigned(minPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
+                Arrays.compareUnsigned(maxPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0) {
+              // outside of global bounding box range
+              return Relation.CELL_OUTSIDE_QUERY;
+            }
+
+            double cellMinLat = decodeLatitude(minPackedValue, 0);
+            double cellMinLon = decodeLongitude(minPackedValue, Integer.BYTES);
+            double cellMaxLat = decodeLatitude(maxPackedValue, 0);
+            double cellMaxLon = decodeLongitude(maxPackedValue, Integer.BYTES);
+
+            return tree.relate(cellMinLat, cellMaxLat, cellMinLon, cellMaxLon);
+          }
+        };
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
-    // I don't use RandomAccessWeight here: it's no good to approximate with "match all docs"; this is an inverted structure and should be
-    // used in the first pass:
-    
     // bounding box over all polygons, this can speed up tree intersection/cheaply improve approximation for complex multi-polygons
     // these are pre-encoded with LatLonPoint's encoding
     final Rectangle box = Rectangle.fromPolygon(polygons);
@@ -99,7 +159,7 @@ final class LatLonPointInPolygonQuery extends Query {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
+      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
         PointValues values = reader.getPointValues(field);
         if (values == null) {
@@ -112,53 +172,39 @@ final class LatLonPointInPolygonQuery extends Query {
           return null;
         }
         LatLonPoint.checkCompatible(fieldInfo);
+        final Weight weight = this;
 
-        // matching docids
-        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
+        return new ScorerSupplier() {
 
-        values.intersect( 
-                         new IntersectVisitor() {
+          long cost = -1;
+          DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
+          final IntersectVisitor visitor = getIntersectVisitor(result, tree, polygonPredicate, minLat, maxLat, minLon, maxLon);
 
-                           DocIdSetBuilder.BulkAdder adder;
+          @Override
+          public Scorer get(long leadCost) throws IOException {
+            values.intersect(visitor);
+            return new ConstantScoreScorer(weight, score(), scoreMode, result.build().iterator());
+          }
 
-                           @Override
-                           public void grow(int count) {
-                             adder = result.grow(count);
-                           }
+          @Override
+          public long cost() {
+            if (cost == -1) {
+               // Computing the cost may be expensive, so only do it if necessary
+              cost = values.estimatePointCount(visitor);
+              assert cost >= 0;
+            }
+            return cost;
+          }
+        };
+      }
 
-                           @Override
-                           public void visit(int docID) {
-                             adder.add(docID);
-                           }
-
-                           @Override
-                           public void visit(int docID, byte[] packedValue) {
-                             if (polygonPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
-                                                       NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
-                               adder.add(docID);
-                             }
-                           }
-
-                           @Override
-                           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                             if (FutureArrays.compareUnsigned(minPackedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
-                                 FutureArrays.compareUnsigned(maxPackedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0 ||
-                                 FutureArrays.compareUnsigned(minPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
-                                 FutureArrays.compareUnsigned(maxPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0) {
-                               // outside of global bounding box range
-                               return Relation.CELL_OUTSIDE_QUERY;
-                             }
-                             
-                             double cellMinLat = decodeLatitude(minPackedValue, 0);
-                             double cellMinLon = decodeLongitude(minPackedValue, Integer.BYTES);
-                             double cellMaxLat = decodeLatitude(maxPackedValue, 0);
-                             double cellMaxLon = decodeLongitude(maxPackedValue, Integer.BYTES);
-
-                             return tree.relate(cellMinLat, cellMaxLat, cellMinLon, cellMaxLon);
-                           }
-                         });
-
-        return new ConstantScoreScorer(this, score(), result.build().iterator());
+      @Override
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        ScorerSupplier scorerSupplier = scorerSupplier(context);
+        if (scorerSupplier == null) {
+          return null;
+        }
+        return scorerSupplier.get(Long.MAX_VALUE);
       }
 
       @Override
@@ -166,6 +212,7 @@ final class LatLonPointInPolygonQuery extends Query {
         return true;
       }
     };
+
   }
 
   /** Returns the query field */

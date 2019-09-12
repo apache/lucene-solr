@@ -90,4 +90,41 @@ public interface CollectionAdminParams {
    * and points to the collection on which the `withCollection` was specified.
    */
   String COLOCATED_WITH = "COLOCATED_WITH";
+
+  /**
+   * Used by cluster properties API as a wrapper key to provide defaults for collection, cluster etc.
+   *
+   * e.g. {defaults:{collection:{replicationFactor:2}}}
+   */
+  String DEFAULTS = "defaults";
+
+  /**
+   * Cluster wide defaults can be nested under this key e.g.
+   * {defaults: {cluster:{useLegacyReplicaAssignment:false}}}
+   */
+  String CLUSTER = "cluster";
+
+  /**
+   * This cluster property decides whether Solr should use the legacy round-robin replica placement strategy
+   * or the autoscaling policy based strategy to assign replicas to nodes. The default is false.
+   */
+  String USE_LEGACY_REPLICA_ASSIGNMENT = "useLegacyReplicaAssignment";
+
+  /**
+   * When creating a collection create also a specified alias.
+   */
+  String ALIAS = "alias";
+
+  /**
+   * Specifies the target of RENAME operation.
+   */
+  String TARGET = "target";
+
+  /**
+   * Prefix for {@link org.apache.solr.common.cloud.DocRouter} properties
+   */
+  String ROUTER_PREFIX = "router.";
+
+  /** Option to follow aliases when deciding the target of a collection admin command. */
+  String FOLLOW_ALIASES = "followAliases";
 }

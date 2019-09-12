@@ -38,6 +38,9 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   public static void beforeSuperClass() {
     schemaString = "schema15.xml";      // we need a string id
     System.setProperty("solr.autoCommit.maxTime", "15000");
+    System.clearProperty("solr.httpclient.retries");
+    System.clearProperty("solr.retries.on.forward");
+    System.clearProperty("solr.retries.to.followers"); 
     setErrorHook();
   }
   
@@ -81,7 +84,6 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  // 29-June-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
     
     handle.clear();
@@ -170,7 +172,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     if (random().nextBoolean()) {
       zkServer.shutdown();
       zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
-      zkServer.run();
+      zkServer.run(false);
     }
 
     try (CloudSolrClient client = createCloudClient("collection1")) {

@@ -1,0 +1,25 @@
+{
+  "liveNodes":["node1:8983",
+    "node2:8984",
+    "node3:8985"],
+  "replicaInfo":{"node1:8983":{"c1":{
+    "s1":[{"r1":{"type":"NRT"}},
+      {"r2":{"type":"NRT"}}],
+    "s2":[{"r1":{"type":"NRT"}},
+      {"r2":{"type":"NRT"}}]}}},
+  "nodeValues":{
+    "node1:8983":{
+      "cores":4,
+      "freedisk":230,
+      "totaldisk":800,
+      "port":8983},
+    "node2:8984":{
+      "cores":0,
+      "freedisk":1000,
+      "totaldisk":1200,
+      "port":8984},
+    "node3:8985":{
+      "cores":0,
+      "freedisk":1500,
+      "totaldisk":1700,
+      "port":8985}}}

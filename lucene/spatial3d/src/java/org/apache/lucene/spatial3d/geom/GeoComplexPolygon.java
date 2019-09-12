@@ -1777,7 +1777,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       return false;
     final GeoComplexPolygon other = (GeoComplexPolygon) o;
     return super.equals(other) && testPoint1InSet == other.testPoint1InSet
-        && testPoint1.equals(testPoint1)
+        && testPoint1.equals(other.testPoint1)
         && pointsList.equals(other.pointsList);
   }
 

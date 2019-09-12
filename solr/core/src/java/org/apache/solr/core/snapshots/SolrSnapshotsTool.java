@@ -58,6 +58,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
+import org.apache.solr.util.CLIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +67,7 @@ import com.google.common.base.Preconditions;
 /**
  * This class provides utility functions required for Solr snapshots functionality.
  */
-public class SolrSnapshotsTool implements Closeable {
+public class SolrSnapshotsTool implements Closeable, CLIO {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final DateFormat dateFormat = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.getDefault());
 
@@ -107,11 +108,11 @@ public class SolrSnapshotsTool implements Closeable {
     try {
       resp = createSnap.process(solrClient);
       Preconditions.checkState(resp.getStatus() == 0, "The CREATESNAPSHOT request failed. The status code is " + resp.getStatus());
-      System.out.println("Successfully created snapshot with name " + snapshotName + " for collection " + collectionName);
+      CLIO.out("Successfully created snapshot with name " + snapshotName + " for collection " + collectionName);
 
     } catch (Exception e) {
       log.error("Failed to create a snapshot with name " + snapshotName + " for collection " + collectionName, e);
-      System.out.println("Failed to create a snapshot with name " + snapshotName + " for collection " + collectionName
+      CLIO.out("Failed to create a snapshot with name " + snapshotName + " for collection " + collectionName
           +" due to following error : "+e.getLocalizedMessage());
     }
   }
@@ -122,11 +123,11 @@ public class SolrSnapshotsTool implements Closeable {
     try {
       resp = deleteSnap.process(solrClient);
       Preconditions.checkState(resp.getStatus() == 0, "The DELETESNAPSHOT request failed. The status code is " + resp.getStatus());
-      System.out.println("Successfully deleted snapshot with name " + snapshotName + " for collection " + collectionName);
+      CLIO.out("Successfully deleted snapshot with name " + snapshotName + " for collection " + collectionName);
 
     } catch (Exception e) {
       log.error("Failed to delete a snapshot with name " + snapshotName + " for collection " + collectionName, e);
-      System.out.println("Failed to delete a snapshot with name " + snapshotName + " for collection " + collectionName
+      CLIO.out("Failed to delete a snapshot with name " + snapshotName + " for collection " + collectionName
           +" due to following error : "+e.getLocalizedMessage());
     }
   }
@@ -141,12 +142,12 @@ public class SolrSnapshotsTool implements Closeable {
 
       NamedList apiResult = (NamedList) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
       for (int i = 0; i < apiResult.size(); i++) {
-        System.out.println(apiResult.getName(i));
+        CLIO.out(apiResult.getName(i));
       }
 
     } catch (Exception e) {
       log.error("Failed to list snapshots for collection " + collectionName, e);
-      System.out.println("Failed to list snapshots for collection " + collectionName
+      CLIO.out("Failed to list snapshots for collection " + collectionName
           +" due to following error : "+e.getLocalizedMessage());
     }
   }
@@ -156,11 +157,11 @@ public class SolrSnapshotsTool implements Closeable {
       Collection<CollectionSnapshotMetaData> snaps = listCollectionSnapshots(collectionName);
       for (CollectionSnapshotMetaData m : snaps) {
         if (snapshotName.equals(m.getName())) {
-          System.out.println("Name: " + m.getName());
-          System.out.println("Status: " + m.getStatus());
-          System.out.println("Time of creation: " + dateFormat.format(m.getCreationDate()));
-          System.out.println("Total number of cores with snapshot: " + m.getReplicaSnapshots().size());
-          System.out.println("-----------------------------------");
+          CLIO.out("Name: " + m.getName());
+          CLIO.out("Status: " + m.getStatus());
+          CLIO.out("Time of creation: " + dateFormat.format(m.getCreationDate()));
+          CLIO.out("Total number of cores with snapshot: " + m.getReplicaSnapshots().size());
+          CLIO.out("-----------------------------------");
           for (CoreSnapshotMetaData n : m.getReplicaSnapshots()) {
             StringBuilder builder = new StringBuilder();
             builder.append("Core [name=");
@@ -172,13 +173,13 @@ public class SolrSnapshotsTool implements Closeable {
             builder.append(", indexDirPath=");
             builder.append(n.getIndexDirPath());
             builder.append("]\n");
-            System.out.println(builder.toString());
+            CLIO.out(builder.toString());
           }
         }
       }
     } catch (Exception e) {
       log.error("Failed to fetch snapshot details", e);
-      System.out.println("Failed to fetch snapshot details due to following error : " + e.getLocalizedMessage());
+      CLIO.out("Failed to fetch snapshot details due to following error : " + e.getLocalizedMessage());
     }
   }
 
@@ -272,21 +273,21 @@ public class SolrSnapshotsTool implements Closeable {
   public void prepareForExport(String collectionName, String snapshotName, String localFsPath, Optional<String> pathPrefix, String destPath) {
     try {
       buildCopyListings(collectionName, snapshotName, localFsPath, pathPrefix);
-      System.out.println("Successfully prepared copylisting for the snapshot export.");
+      CLIO.out("Successfully prepared copylisting for the snapshot export.");
     } catch (Exception e) {
       log.error("Failed to prepare a copylisting for snapshot with name " + snapshotName + " for collection "
       + collectionName, e);
-      System.out.println("Failed to prepare a copylisting for snapshot with name " + snapshotName + " for collection "
+      CLIO.out("Failed to prepare a copylisting for snapshot with name " + snapshotName + " for collection "
       + collectionName + " due to following error : " + e.getLocalizedMessage());
       System.exit(1);
     }
 
     try {
       backupCollectionMetaData(collectionName, snapshotName, destPath);
-      System.out.println("Successfully backed up collection meta-data");
+      CLIO.out("Successfully backed up collection meta-data");
     } catch (Exception e) {
       log.error("Failed to backup collection meta-data for collection " + collectionName, e);
-      System.out.println("Failed to backup collection meta-data for collection " + collectionName
+      CLIO.out("Failed to backup collection meta-data for collection " + collectionName
           + " due to following error : " + e.getLocalizedMessage());
       System.exit(1);
     }
@@ -306,7 +307,7 @@ public class SolrSnapshotsTool implements Closeable {
       backup.processAsync(asyncReqId.orElse(null), solrClient);
     } catch (Exception e) {
       log.error("Failed to backup collection meta-data for collection " + collectionName, e);
-      System.out.println("Failed to backup collection meta-data for collection " + collectionName
+      CLIO.out("Failed to backup collection meta-data for collection " + collectionName
           + " due to following error : " + e.getLocalizedMessage());
       System.exit(1);
     }
@@ -342,7 +343,7 @@ public class SolrSnapshotsTool implements Closeable {
     try {
       cmd = parser.parse(options, args);
     } catch (ParseException e) {
-      System.out.println(e.getLocalizedMessage());
+      CLIO.out(e.getLocalizedMessage());
       printHelp(options);
       System.exit(1);
     }
@@ -380,7 +381,7 @@ public class SolrSnapshotsTool implements Closeable {
             try {
               new URI(pathPrefix.get());
             } catch (URISyntaxException e) {
-              System.out.println(
+              CLIO.out(
                   "The specified File system path prefix " + pathPrefix.get()
                       + " is invalid. The error is " + e.getLocalizedMessage());
               System.exit(1);
@@ -401,14 +402,14 @@ public class SolrSnapshotsTool implements Closeable {
     } else if (cmd.hasOption(HELP))  {
       printHelp(options);
     } else {
-      System.out.println("Unknown command specified.");
+      CLIO.out("Unknown command specified.");
       printHelp(options);
     }
   }
 
   private static String requiredArg(Options options, CommandLine cmd, String optVal) {
     if (!cmd.hasOption(optVal)) {
-      System.out.println("Please specify the value for option " + optVal);
+      CLIO.out("Please specify the value for option " + optVal);
       printHelp(options);
       System.exit(1);
     }

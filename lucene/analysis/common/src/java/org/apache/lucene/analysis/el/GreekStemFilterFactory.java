@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.el;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.el.GreekStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
@@ -34,8 +33,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class GreekStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "greekStem";
 
   /** Creates a new GreekStemFilterFactory */
   public GreekStemFilterFactory(Map<String,String> args) {

@@ -24,7 +24,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -114,7 +116,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     
   }
 
-  public void testAnyChanges() throws Exception {
+  public void testAnyChanges() {
     DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue(null);
     final int size = 200 + random().nextInt(500) * RANDOM_MULTIPLIER;
     int termsSinceFreeze = 0;
@@ -205,7 +207,35 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
         .numGlobalTermDeletes());
     assertEquals(uniqueValues.size(), frozenSet.size());
     assertEquals(uniqueValues, frozenSet);
-   
+  }
+
+  public void testClose() {
+    {
+      DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue(null);
+      assertTrue(queue.isOpen());
+      queue.close();
+      if (random().nextBoolean()) {
+        queue.close(); // double close
+      }
+      expectThrows(AlreadyClosedException.class, () -> queue.addDelete(new Term("foo", "bar")));
+      expectThrows(AlreadyClosedException.class, () -> queue.freezeGlobalBuffer(null));
+      expectThrows(AlreadyClosedException.class, () -> queue.addDelete(new MatchNoDocsQuery()));
+      expectThrows(AlreadyClosedException.class,
+          () -> queue.addDocValuesUpdates(new DocValuesUpdate.NumericDocValuesUpdate(new Term("foo", "bar"), "foo", 1)));
+      expectThrows(AlreadyClosedException.class, () -> queue.add(null));
+      assertNull(queue.maybeFreezeGlobalBuffer()); // this is fine
+      assertFalse(queue.isOpen());
+    }
+    {
+      DocumentsWriterDeleteQueue queue = new DocumentsWriterDeleteQueue(null);
+      queue.addDelete(new Term("foo", "bar"));
+      expectThrows(IllegalStateException.class, () -> queue.close());
+      assertTrue(queue.isOpen());
+      queue.tryApplyGlobalSlice();
+      queue.freezeGlobalBuffer(null);
+      queue.close();
+      assertFalse(queue.isOpen());
+    }
   }
 
   private static class UpdateThread extends Thread {

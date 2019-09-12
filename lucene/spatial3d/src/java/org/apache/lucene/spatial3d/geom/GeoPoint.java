@@ -77,12 +77,39 @@ public class GeoPoint extends Vector implements SerializableObject {
     this(planetModel, Math.sin(lat), Math.sin(lon), Math.cos(lat), Math.cos(lon), lat, lon);
   }
   
-  /** Construct a GeoPoint from a planet model and an input stream.
+  /** Construct a GeoPoint from an input stream.
+   * @param planetModel is the planet model
+   * @param inputStream is the input stream
    */
   public GeoPoint(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+    this(inputStream);
+  }
+  
+  /** Construct a GeoPoint from an input stream with no planet model.
+   * @param inputStream is the input stream
+   */
+  public GeoPoint(final InputStream inputStream) throws IOException {
     // Note: this relies on left-right parameter execution order!!  Much code depends on that though and
     // it is apparently in a java spec: https://stackoverflow.com/questions/2201688/order-of-execution-of-parameters-guarantees-in-java
-    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+    this(SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream),
+      SerializableObject.readDouble(inputStream));
+  }
+  
+  /** Construct a GeoPoint from five unchecked parameters: lat, lon, x, y, z.  This is primarily used for deserialization,
+   * but can also be used to fully initialize a point externally.
+   * @param lat is the latitude in radians
+   * @param lon is the longitude in radians
+   * @param x is the unit x value
+   * @param y is the unit y value
+   * @param z is the unit z value
+   */
+  public GeoPoint(final double lat, final double lon, final double x, final double y, final double z) {
+    super(x, y, z);
+    this.latitude = lat;
+    this.longitude = lon;
   }
   
   /** Construct a GeoPoint from a unit (x,y,z) vector and a magnitude.
@@ -131,6 +158,9 @@ public class GeoPoint extends Vector implements SerializableObject {
   public void write(final OutputStream outputStream) throws IOException {
     SerializableObject.writeDouble(outputStream, getLatitude());
     SerializableObject.writeDouble(outputStream, getLongitude());
+    SerializableObject.writeDouble(outputStream, x);
+    SerializableObject.writeDouble(outputStream, y);
+    SerializableObject.writeDouble(outputStream, z);
   }
 
   /** Compute an arc distance between two points.

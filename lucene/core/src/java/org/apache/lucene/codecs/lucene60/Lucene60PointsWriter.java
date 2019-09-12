@@ -89,17 +89,16 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
   public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
     PointValues values = reader.getValues(fieldInfo.name);
-    boolean singleValuePerDoc = values.size() == values.getDocCount();
 
     try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
                                           writeState.directory,
                                           writeState.segmentInfo.name,
-                                          fieldInfo.getPointDimensionCount(),
+                                          fieldInfo.getPointDataDimensionCount(),
+                                          fieldInfo.getPointIndexDimensionCount(),
                                           fieldInfo.getPointNumBytes(),
                                           maxPointsInLeafNode,
                                           maxMBSortInHeap,
-                                          values.size(),
-                                          singleValuePerDoc)) {
+                                          values.size())) {
 
       if (values instanceof MutablePointValues) {
         final long fp = writer.writeField(dataOut, fieldInfo.name, (MutablePointValues) values);
@@ -152,10 +151,8 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
     }
 
     for (FieldInfo fieldInfo : mergeState.mergeFieldInfos) {
-      if (fieldInfo.getPointDimensionCount() != 0) {
-        if (fieldInfo.getPointDimensionCount() == 1) {
-
-          boolean singleValuePerDoc = true;
+      if (fieldInfo.getPointDataDimensionCount() != 0) {
+        if (fieldInfo.getPointDataDimensionCount() == 1) {
 
           // Worst case total maximum size (if none of the points are deleted):
           long totMaxSize = 0;
@@ -164,11 +161,10 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
             if (reader != null) {
               FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
               FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
-              if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
+              if (readerFieldInfo != null && readerFieldInfo.getPointDataDimensionCount() > 0) {
                 PointValues values = reader.getValues(fieldInfo.name);
                 if (values != null) {
                   totMaxSize += values.size();
-                  singleValuePerDoc &= values.size() == values.getDocCount();
                 }
               }
             }
@@ -181,12 +177,12 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
           try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
                                                 writeState.directory,
                                                 writeState.segmentInfo.name,
-                                                fieldInfo.getPointDimensionCount(),
+                                                fieldInfo.getPointDataDimensionCount(),
+                                                fieldInfo.getPointIndexDimensionCount(),
                                                 fieldInfo.getPointNumBytes(),
                                                 maxPointsInLeafNode,
                                                 maxMBSortInHeap,
-                                                totMaxSize,
-                                                singleValuePerDoc)) {
+                                                totMaxSize)) {
             List<BKDReader> bkdReaders = new ArrayList<>();
             List<MergeState.DocMap> docMaps = new ArrayList<>();
             for(int i=0;i<mergeState.pointsReaders.length;i++) {
@@ -204,7 +200,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
                 FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
                 FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
-                if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
+                if (readerFieldInfo != null && readerFieldInfo.getPointDataDimensionCount() > 0) {
                   BKDReader bkdReader = reader60.readers.get(readerFieldInfo.number);
                   if (bkdReader != null) {
                     bkdReaders.add(bkdReader);

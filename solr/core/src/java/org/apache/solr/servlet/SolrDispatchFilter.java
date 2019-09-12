@@ -53,8 +53,13 @@ import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import io.opentracing.Scope;
+import io.opentracing.Span;
+import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
+import io.opentracing.tag.Tags;
 import org.apache.commons.io.FileCleaningTracker;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.V2HttpCall;
@@ -72,15 +77,18 @@ import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.util.SolrFileCleaningTracker;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
+import org.apache.solr.util.tracing.GlobalTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.security.AuditEvent.EventType;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -94,6 +102,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected final CountDownLatch init = new CountDownLatch(1);
 
   protected String abortErrorMessage = null;
+  //TODO using Http2Client
   protected HttpClient httpClient;
   private ArrayList<Pattern> excludePatterns;
   
@@ -102,6 +111,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private final String metricTag = Integer.toHexString(hashCode());
   private SolrMetricManager metricManager;
   private String registryName;
+  private volatile boolean closeOnDestroy = true;
 
   /**
    * Enum to define action that needs to be processed.
@@ -167,10 +177,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         extraProperties = new Properties();
 
       String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
-      ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
-
-      coresInit = createCoreContainer(solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome),
-                                       extraProperties);
+      final Path solrHomePath = solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome);
+      coresInit = createCoreContainer(solrHomePath, extraProperties);
+      SolrResourceLoader.ensureUserFilesDataDir(solrHomePath);
+      SolrResourceLoader.ensureBlobsDir(solrHomePath);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
       log.debug("user.dir=" + System.getProperty("user.dir"));
@@ -294,27 +304,45 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   @Override
   public void destroy() {
+    if (closeOnDestroy) {
+      close();
+    }
+  }
+  
+  public void close() {
+    CoreContainer cc = cores;
+    cores = null;
     try {
-      FileCleaningTracker fileCleaningTracker = SolrRequestParsers.fileCleaningTracker;
-      if (fileCleaningTracker != null) {
-        fileCleaningTracker.exitWhenFinished();
-      }
-    } catch (Exception e) {
-      log.warn("Exception closing FileCleaningTracker", e);
-    } finally {
-      SolrRequestParsers.fileCleaningTracker = null;
-    }
-
-    if (metricManager != null) {
-      metricManager.unregisterGauges(registryName, metricTag);
-    }
-
-    if (cores != null) {
       try {
-        cores.shutdown();
+        FileCleaningTracker fileCleaningTracker = SolrRequestParsers.fileCleaningTracker;
+        if (fileCleaningTracker != null) {
+          fileCleaningTracker.exitWhenFinished();
+        }
+      } catch (NullPointerException e) {
+        // okay
+      } catch (Exception e) {
+        log.warn("Exception closing FileCleaningTracker", e);
       } finally {
-        cores = null;
+        SolrRequestParsers.fileCleaningTracker = null;
       }
+
+      if (metricManager != null) {
+        try {
+          metricManager.unregisterGauges(registryName, metricTag);
+        } catch (NullPointerException e) {
+          // okay
+        } catch (Exception e) {
+          log.warn("Exception closing FileCleaningTracker", e);
+        } finally {
+          metricManager = null;
+        }
+      }
+    } finally {
+      if (cc != null) {
+        httpClient = null;
+        cc.shutdown();
+      }
+      GlobalTracer.get().close();
     }
   }
   
@@ -327,7 +355,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (!(_request instanceof HttpServletRequest)) return;
     HttpServletRequest request = closeShield((HttpServletRequest)_request, retry);
     HttpServletResponse response = closeShield((HttpServletResponse)_response, retry);
-    
+    Scope scope = null;
+    Span span = null;
     try {
 
       if (cores == null || cores.isShutDown()) {
@@ -342,21 +371,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
 
-      AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
-      if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
-        return;
-      }
-      if (wrappedRequest.get() != null) {
-        request = wrappedRequest.get();
-      }
-
-      if (cores.getAuthenticationPlugin() != null) {
-        log.debug("User principal: {}", request.getUserPrincipal());
-      }
-
+      String requestPath = request.getServletPath();
       // No need to even create the HttpSolrCall object if this path is excluded.
       if (excludePatterns != null) {
-        String requestPath = request.getServletPath();
         String extraPath = request.getPathInfo();
         if (extraPath != null) {
           // In embedded mode, servlet path is empty - include all post-context path here for testing
@@ -369,6 +386,36 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             return;
           }
         }
+      }
+
+      SpanContext parentSpan = GlobalTracer.get().extract(request);
+      Tracer tracer = GlobalTracer.getTracer();
+
+      Tracer.SpanBuilder spanBuilder = null;
+      String hostAndPort = request.getServerName() + "_" + request.getServerPort();
+      if (parentSpan == null) {
+        spanBuilder = tracer.buildSpan(request.getMethod() + ":" + hostAndPort);
+      } else {
+        spanBuilder = tracer.buildSpan(request.getMethod() + ":" + hostAndPort)
+            .asChildOf(parentSpan);
+      }
+
+      spanBuilder
+          .withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
+          .withTag(Tags.HTTP_URL.getKey(), request.getRequestURL().toString());
+      span = spanBuilder.start();
+      scope = tracer.scopeManager().activate(span);
+
+      AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
+      if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
+        return;
+      }
+      if (wrappedRequest.get() != null) {
+        request = wrappedRequest.get();
+      }
+
+      if (cores.getAuthenticationPlugin() != null) {
+        log.debug("User principal: {}", request.getUserPrincipal());
       }
 
       HttpSolrCall call = getHttpSolrCall(request, response, retry);
@@ -396,6 +443,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         ExecutorUtil.setServerThreadFlag(null);
       }
     } finally {
+      if (span != null) span.finish();
+      if (scope != null) scope.close();
+
+      GlobalTracer.get().clearContext();
       consumeInputFully(request);
     }
   }
@@ -435,20 +486,35 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
     AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
     if (authenticationPlugin == null) {
+      if (shouldAudit(EventType.ANONYMOUS)) {
+        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ANONYMOUS, request));
+      }
       return true;
     } else {
       // /admin/info/key must be always open. see SOLR-9188
       // tests work only w/ getPathInfo
       //otherwise it's just enough to have getServletPath()
-      if (PublicKeyHandler.PATH.equals(request.getServletPath()) ||
-          PublicKeyHandler.PATH.equals(request.getPathInfo())) return true;
+      String requestPath = request.getPathInfo();
+      if (requestPath == null) 
+        requestPath = request.getServletPath();
+      if (PublicKeyHandler.PATH.equals(requestPath)) {
+        if (log.isDebugEnabled())
+          log.debug("Pass through PKI authentication endpoint");
+        return true;
+      }
+      // /solr/ (Admin UI) must be always open to allow displaying Admin UI with login page  
+      if ("/solr/".equals(requestPath) || "/".equals(requestPath)) {
+        if (log.isDebugEnabled())
+          log.debug("Pass through Admin UI entry point");
+        return true;
+      }
       String header = request.getHeader(PKIAuthenticationPlugin.HEADER);
       if (header != null && cores.getPkiAuthenticationPlugin() != null)
         authenticationPlugin = cores.getPkiAuthenticationPlugin();
       try {
         log.debug("Request to authenticate: {}, domain: {}, port: {}", request, request.getLocalName(), request.getLocalPort());
         // upon successful authentication, this should call the chain's next filter.
-        requestContinues = authenticationPlugin.doAuthenticate(request, response, (req, rsp) -> {
+        requestContinues = authenticationPlugin.authenticate(request, response, (req, rsp) -> {
           isAuthenticated.set(true);
           wrappedRequest.set((HttpServletRequest) req);
         });
@@ -465,7 +531,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     // multiple code paths.
     if (!requestContinues || !isAuthenticated.get()) {
       response.flushBuffer();
+      if (shouldAudit(EventType.REJECTED)) {
+        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.REJECTED, request));
+      }
       return false;
+    }
+    if (shouldAudit(EventType.AUTHENTICATED)) {
+      cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.AUTHENTICATED, request));
     }
     return true;
   }
@@ -524,6 +596,15 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       + "Closing the request stream prevents us from gauranteeing ourselves that streams are fully read for proper connection reuse."
       + "Let the container manage the lifecycle of these streams when possible.";
  
+
+  /**
+   * Check if audit logging is enabled and should happen for given event type
+   * @param eventType the audit event
+   */
+  private boolean shouldAudit(AuditEvent.EventType eventType) {
+    return cores.getAuditLoggerPlugin() != null && cores.getAuditLoggerPlugin().shouldLog(eventType);
+  }
+  
   /**
    * Wrap the request's input stream with a close shield. If this is a
    * retry, we will assume that the stream has already been wrapped and do nothing.
@@ -546,8 +627,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             public void close() {
               // even though we skip closes, we let local tests know not to close so that a full understanding can take
               // place
-              assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") ? false : true : CLOSE_STREAM_MSG;
+              assert !Thread.currentThread().getStackTrace()[2].getClassName().matches(
+                  "org\\.apache\\.(?:solr|lucene).*") : CLOSE_STREAM_MSG;
               this.stream = ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM;
             }
           };
@@ -581,9 +662,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             public void close() {
               // even though we skip closes, we let local tests know not to close so that a full understanding can take
               // place
-              assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") ? false
-                      : true : CLOSE_STREAM_MSG;
+              assert !Thread.currentThread().getStackTrace()[2].getClassName().matches(
+                  "org\\.apache\\.(?:solr|lucene).*") : CLOSE_STREAM_MSG;
               stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
             }
           };
@@ -593,5 +673,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     } else {
       return response;
     }
+  }
+  
+  public void closeOnDestroy(boolean closeOnDestroy) {
+    this.closeOnDestroy = closeOnDestroy;
   }
 }

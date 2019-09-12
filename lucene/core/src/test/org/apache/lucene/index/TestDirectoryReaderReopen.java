@@ -39,10 +39,10 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -688,7 +688,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   }
 
   public void testNPEAfterInvalidReindex1() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
 
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc = new Document();
@@ -735,7 +735,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   }
 
   public void testNPEAfterInvalidReindex2() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
 
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc = new Document();
@@ -974,7 +974,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   // LUCENE-5931: we make a "best effort" to catch this abuse and throw a clear(er)
   // exception than what would otherwise look like hard to explain index corruption during searching
   public void testDeleteIndexFilesWhileReaderStillOpen() throws Exception {
-    RAMDirectory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     IndexWriter w = new IndexWriter(dir,
                                     new IndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();

@@ -74,8 +74,10 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop2", "proptwo");
     String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-metricreporter.xml").toFile(), "UTF-8");
     NodeConfig cfg = SolrXmlConfig.fromString(new SolrResourceLoader(home), solrXml);
-    cc = createCoreContainer(cfg,
-        new TestHarness.TestCoresLocator(DEFAULT_TEST_CORENAME, initCoreDataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml"));
+    cc = createCoreContainer(cfg, new TestHarness.TestCoresLocator
+                             (DEFAULT_TEST_CORENAME, initAndGetDataDir().getAbsolutePath(),
+                              "solrconfig.xml", "schema.xml"));
+                             
     h.coreName = DEFAULT_TEST_CORENAME;
     jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1 : 0;
     metricManager = cc.getMetricManager();
@@ -109,6 +111,10 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
   @After
   public void afterTest() throws Exception {
+    if (null == metricManager) {
+      return; // test failed to init, nothing to cleanup
+    }
+      
     SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
 

@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.ManagedResourceStorage.FileStorageIO;
@@ -49,13 +48,12 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
     
     // test using ZooKeeper
     assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());
-    SolrZkClient zkClient = h.getCoreContainer().getZkController().getZkClient();
     SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
     // Solr unit tests can only write to their working directory due to
     // a custom Java Security Manager installed in the test environment
     NamedList<String> initArgs = new NamedList<>();
     try {
-      ZooKeeperStorageIO zkStorageIO = new ZooKeeperStorageIO(zkClient, "/test");
+      ZooKeeperStorageIO zkStorageIO = new ZooKeeperStorageIO(zkServer.getZkClient(), "/test");
       zkStorageIO.configure(loader, initArgs);
       doStorageTests(loader, zkStorageIO);
     } finally {

@@ -19,7 +19,6 @@ package org.apache.solr.metrics.reporters.solr;
 import java.nio.file.Paths;
 import java.util.Map;
 
-import com.codahale.metrics.Metric;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -35,13 +34,15 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.codahale.metrics.Metric;
+
 /**
  *
  */
 public class SolrCloudReportersTest extends SolrCloudTestCase {
-  int leaderRegistries;
-  int clusterRegistries;
-  int jmxReporter;
+  volatile int leaderRegistries;
+  volatile int clusterRegistries;
+  volatile int jmxReporter;
 
 
 
@@ -64,12 +65,17 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
     configureCluster(2)
         .withSolrXml(solrXml).configure();
     cluster.uploadConfigSet(Paths.get(TEST_PATH().toString(), "configsets", "minimal", "conf"), "test");
-    System.out.println("ZK: " + cluster.getZkServer().getZkAddress());
+
     CollectionAdminRequest.createCollection("test_collection", "test", 2, 2)
         .setMaxShardsPerNode(4)
         .process(cluster.getSolrClient());
-    waitForState("Expected test_collection with 2 shards and 2 replicas", "test_collection", clusterShape(2, 2));
-    Thread.sleep(15000);
+    cluster.waitForActiveCollection("test_collection", 2, 4);
+    
+    waitForState("Expected test_collection with 2 shards and 2 replicas", "test_collection", clusterShape(2, 4));
+ 
+    // TODO this is no good
+    Thread.sleep(10000);
+    
     cluster.getJettySolrRunners().forEach(jetty -> {
       CoreContainer cc = jetty.getCoreContainer();
       // verify registry names
@@ -149,6 +155,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
         assertTrue(key, metrics.get(key) instanceof AggregateMetric);
       }
     });
+
     assertEquals("leaderRegistries", 2, leaderRegistries);
     assertEquals("clusterRegistries", 1, clusterRegistries);
   }
@@ -160,11 +167,12 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
     configureCluster(2)
         .withSolrXml(solrXml).configure();
     cluster.uploadConfigSet(Paths.get(TEST_PATH().toString(), "configsets", "minimal", "conf"), "test");
-    System.out.println("ZK: " + cluster.getZkServer().getZkAddress());
+
     CollectionAdminRequest.createCollection("test_collection", "test", 2, 2)
         .setMaxShardsPerNode(4)
         .process(cluster.getSolrClient());
-    waitForState("Expected test_collection with 2 shards and 2 replicas", "test_collection", clusterShape(2, 2));
+    cluster.waitForActiveCollection("test_collection", 2, 4);
+    waitForState("Expected test_collection with 2 shards and 2 replicas", "test_collection", clusterShape(2, 4));
     cluster.getJettySolrRunners().forEach(jetty -> {
       CoreContainer cc = jetty.getCoreContainer();
       SolrMetricManager metricManager = cc.getMetricManager();

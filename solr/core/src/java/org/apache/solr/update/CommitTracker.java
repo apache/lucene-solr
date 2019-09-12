@@ -326,4 +326,9 @@ public final class CommitTracker implements Runnable {
   public void setOpenSearcher(boolean openSearcher) {
     this.openSearcher = openSearcher;
   }
+
+  // only for testing - not thread safe
+  public boolean hasPending() {
+    return (null != pending && !pending.isDone());
+  }
 }

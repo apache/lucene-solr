@@ -33,6 +33,8 @@ public interface LiveNodesListener {
    *
    * @param oldLiveNodes set of live nodes before the change
    * @param newLiveNodes set of live nodes after the change
+   * 
+   * @return true if the listener should be removed
    */
-  void onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes);
+  boolean onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes);
 }

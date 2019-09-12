@@ -27,7 +27,6 @@ import org.junit.Test;
  */
 public class AnalysisErrorHandlingTest extends SolrTestCaseJ4 {
 
-
   public String getCoreName() { return "basic"; }
 
   @BeforeClass
@@ -35,16 +34,12 @@ public class AnalysisErrorHandlingTest extends SolrTestCaseJ4 {
     initCore("solrconfig-basic.xml","solr/analysisconfs/analysis-err-schema.xml");
   }
 
-
-
   @Test
   public void testMultipleUpdatesPerAdd() {
     clearIndex();
-    try {
-      h.update("<add><doc><field name=\"id\">1</field><field name=\"text\">Alas Poor Yorik</field></doc></add>");
-      fail("Failed to even throw the exception we are stewing over.");
-    } catch (SolrException se) {
-      assertTrue(se.getMessage().contains("Exception writing document id 1 to the index"));
-    }
+    SolrException se = expectThrows(SolrException.class,
+        () -> h.update("<add><doc><field name=\"id\">1</field><field name=\"text\">Alas Poor Yorik</field></doc></add>")
+    );
+    assertTrue(se.getMessage().contains("Exception writing document id 1 to the index"));
   }
 }

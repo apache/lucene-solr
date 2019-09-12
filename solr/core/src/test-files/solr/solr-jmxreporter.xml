@@ -35,6 +35,7 @@
     <int name="autoReplicaFailoverWaitAfterExpiration">${autoReplicaFailoverWaitAfterExpiration:10000}</int>
     <int name="autoReplicaFailoverWorkLoopDelay">${autoReplicaFailoverWorkLoopDelay:10000}</int>
     <int name="autoReplicaFailoverBadNodeExpiration">${autoReplicaFailoverBadNodeExpiration:60000}</int>
+    <int name="createCollectionWaitTimeTillActive">${createCollectionWaitTimeTillActive:30}</int>
   </solrcloud>
 
   <metrics>

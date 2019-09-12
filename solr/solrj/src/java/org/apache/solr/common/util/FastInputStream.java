@@ -16,7 +16,10 @@
  */
 package org.apache.solr.common.util;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
 
 /** Single threaded buffered InputStream
  *  Internal Solr use only, subject to change.
@@ -41,6 +44,13 @@ public class FastInputStream extends DataInputInputStream {
     this.end = end;
   }
 
+  @Override
+  boolean readDirectUtf8(ByteArrayUtf8CharSequence utf8, int len) {
+    if (in != null || end < pos + len) return false;
+    utf8.reset(buf, pos, len, null);
+    pos = pos + len;
+    return true;
+  }
 
   public static FastInputStream wrap(InputStream in) {
     return (in instanceof FastInputStream) ? (FastInputStream)in : new FastInputStream(in);
@@ -76,6 +86,7 @@ public class FastInputStream extends DataInputInputStream {
   }
 
   public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
+    if(in == null) return -1;
     return in.read(target, offset, len);
   }
 

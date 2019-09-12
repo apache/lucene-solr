@@ -40,9 +40,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.CRC32;
 
-import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.generators.RandomBytes;
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexNotFoundException;
@@ -52,8 +49,12 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Assert;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.generators.RandomBytes;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+
 /**
- * Base class for per-Directory tests.
+ * Base class for {@link Directory} implementations.
  */
 public abstract class BaseDirectoryTestCase extends LuceneTestCase {
 
@@ -410,7 +411,6 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       AtomicBoolean stop = new AtomicBoolean();
       Thread writer = new Thread(() -> {
         try {
-          Random rnd = new Random(RandomizedTest.randomLong() + 1);
           for (int i = 0, max = RandomizedTest.randomIntBetween(500, 1000); i < max; i++) {
             String fileName = "file-" + i;
             try (IndexOutput output = dir.createOutput(fileName, newIOContext(random()))) {
@@ -513,9 +513,17 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       o.writeBytes(b, 0, len);
       o.close();
       IndexInput i = dir.openInput("out", newIOContext(random()));
+
+      // Seeking past EOF should always throw EOFException
+      expectThrows(EOFException.class, () -> i.seek(len + RandomizedTest.randomIntBetween(1, 2048)));
+
+      // Seeking exactly to EOF should never throw any exception.
+      i.seek(len);
+
+      // But any read following the seek(len) should throw an EOFException.
+      expectThrows(EOFException.class, i::readByte);
       expectThrows(EOFException.class, () -> {
-        i.seek(len + random().nextInt(2048));
-        i.readByte();
+        i.readBytes(new byte [1], 0, 1);
       });
 
       i.close();
@@ -632,7 +640,8 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   // LUCENE-3541
   public void testCopyBytesWithThreads() throws Exception {
     try (Directory d = getDirectory(createTempDir("testCopyBytesWithThreads"))) {
-      byte data[] = RandomBytes.randomBytesOfLengthBetween(random(), 101, 10000);
+      int headerLen = 100;
+      byte data[] = RandomBytes.randomBytesOfLengthBetween(random(), headerLen + 1, 10000);
 
       IndexOutput output = d.createOutput("data", IOContext.DEFAULT);
       output.writeBytes(data, 0, data.length);
@@ -640,8 +649,8 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
 
       IndexInput input = d.openInput("data", IOContext.DEFAULT);
       IndexOutput outputHeader = d.createOutput("header", IOContext.DEFAULT);
-      // copy our 100-byte header
-      outputHeader.copyBytes(input, 100);
+      // copy our header
+      outputHeader.copyBytes(input, headerLen);
       outputHeader.close();
 
       // now make N copies of the remaining bytes
@@ -654,7 +663,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
               try {
                 start.await();
                 IndexOutput dst = d.createOutput("copy" + i, IOContext.DEFAULT);
-                dst.copyBytes(src, src.length() - 100);
+                dst.copyBytes(src, src.length() - headerLen);
                 dst.close();
               } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -672,8 +681,8 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       for (int i = 0; i < threads; i++) {
         try (IndexInput copiedData = d.openInput("copy" + i, IOContext.DEFAULT)) {
           byte[] dataCopy = new byte[data.length];
-          System.arraycopy(data, 0, dataCopy, 0, 100);
-          copiedData.readBytes(dataCopy, 100, data.length - 100);
+          System.arraycopy(data, 0, dataCopy, 0, headerLen);
+          copiedData.readBytes(dataCopy, headerLen, data.length - headerLen);
           assertArrayEquals(data, dataCopy);
         }
       }
@@ -715,7 +724,6 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   }
   
   // random access APIs
-
   public void testRandomLong() throws Exception {
     try (Directory dir = getDirectory(createTempDir("testLongs"))) {
       IndexOutput output = dir.createOutput("longs", newIOContext(random()));
@@ -927,7 +935,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       output.close();
 
       IndexInput input = dir.openInput("bytes", newIOContext(random()));
-      // seek to a random spot shouldnt impact slicing.
+      // seek to a random spot should not impact slicing.
       input.seek(TestUtil.nextLong(random(), 0, input.length()));
       for (int i = 0; i < num; i += 16) {
         IndexInput slice1 = input.slice("slice1", i, num - i);

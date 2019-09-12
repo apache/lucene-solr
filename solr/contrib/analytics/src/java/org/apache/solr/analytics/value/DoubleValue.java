@@ -33,16 +33,16 @@ public interface DoubleValue extends DoubleValueStream, AnalyticsValue {
    * Get the double representation of the current value.
    * <p>
    * NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns {@code TRUE}.
-   * 
+   *
    * @return the current value
    */
   double getDouble();
 
   /**
-   * An interface that represents all of the types a {@link DoubleValue} should be able to cast to. 
+   * An interface that represents all of the types a {@link DoubleValue} should be able to cast to.
    */
   public static interface CastingDoubleValue extends DoubleValue, StringValue, ComparableValue {}
-  
+
 
   /**
    * An abstract base for {@link CastingDoubleValue} that automatically casts to all types if {@link #getDouble()} and {@link #exists()} are implemented.

@@ -52,7 +52,7 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  *             [optional tokenizer factory parameters]/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * 
+ *
  * <p>
  * An optional param name prefix of "tokenizerFactory." may be used for any 
  * init params that the SynonymFilterFactory needs to pass to the specified 
@@ -76,9 +76,16 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  *
  * @deprecated Use {@link SynonymGraphFilterFactory} instead, but be sure to also
  * use {@link FlattenGraphFilterFactory} at index time (not at search time) as well.
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 @Deprecated
 public class SynonymFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "synonym";
+
   private final boolean ignoreCase;
   private final String tokenizerFactory;
   private final String synonyms;

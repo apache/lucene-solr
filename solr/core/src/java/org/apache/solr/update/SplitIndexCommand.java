@@ -60,17 +60,17 @@ public class SplitIndexCommand extends UpdateCommand {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder(super.toString());
-    sb.append(",paths=" + paths);
-    sb.append(",cores=" + cores);
-    sb.append(",ranges=" + ranges);
-    sb.append(",router=" + router);
+    sb.append(",paths=").append(paths);
+    sb.append(",cores=").append(cores);
+    sb.append(",ranges=").append(ranges);
+    sb.append(",router=").append(router);
     if (routeFieldName != null) {
-      sb.append(",routeFieldName=" + routeFieldName);
+      sb.append(",routeFieldName=").append(routeFieldName);
     }
     if (splitKey != null) {
-      sb.append(",split.key=" + splitKey);
+      sb.append(",split.key=").append(splitKey);
     }
-    sb.append(",method=" + splitMethod.toLower());
+    sb.append(",method=").append(splitMethod.toLower());
     sb.append('}');
     return sb.toString();
   }

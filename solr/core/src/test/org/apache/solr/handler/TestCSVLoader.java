@@ -16,21 +16,24 @@
  */
 package org.apache.solr.handler;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.List;
-import java.util.ArrayList;
 
 public class TestCSVLoader extends SolrTestCaseJ4 {
 
@@ -61,14 +64,15 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.tearDown();
-    Files.delete(file.toPath());
+    if (null != file) {
+      Files.delete(file.toPath());
+      file = null;
+    }
   }
 
   void makeFile(String contents) {
-    try {
-      Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8);
+    try (Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {
       out.write(contents);
-      out.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

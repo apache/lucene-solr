@@ -49,7 +49,7 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
   /**
    * map of per field analyzers
    */
-  protected Map<String, Analyzer> field2analyzer;
+  protected final Map<String, Analyzer> field2analyzer;
 
   /**
    * Creates a {@link KNearestNeighborClassifier}.

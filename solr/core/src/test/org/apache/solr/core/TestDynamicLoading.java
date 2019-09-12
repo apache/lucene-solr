@@ -16,14 +16,6 @@
  */
 package org.apache.solr.core;
 
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.handler.TestBlobHandler;
-import org.apache.solr.util.RestTestHarness;
-import org.apache.solr.util.SimplePostTool;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -33,6 +25,14 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.handler.TestBlobHandler;
+import org.apache.solr.util.RestTestHarness;
+import org.apache.solr.util.SimplePostTool;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
@@ -48,6 +48,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   //17-Aug-2018 commented @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void testDynamicLoading() throws Exception {
+
     System.setProperty("enable.runtime.lib", "true");
     setupRestTestHarnesses();
 
@@ -86,8 +87,8 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
     Map map = TestSolrConfigHandler.getRespMap("/test1", client);
 
-    assertNotNull(TestBlobHandler.getAsString(map), map = (Map) map.get("error"));
-    assertTrue(TestBlobHandler.getAsString(map), map.get("msg").toString().contains(".system collection not available"));
+    assertNotNull(map.toString(), map = (Map) map.get("error"));
+    assertTrue(map.toString(), map.get("msg").toString().contains(".system collection not available"));
 
 
     TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient.getHttpClient()));
@@ -97,7 +98,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
 
     assertNotNull(map = (Map) map.get("error"));
-    assertTrue("full output " + TestBlobHandler.getAsString(map), map.get("msg").toString().contains("no such blob or version available: colltest/1" ));
+    assertTrue("full output " + map, map.get("msg").toString().contains("no such resource available: colltest/1" ));
     payload = " {\n" +
         "  'set' : {'watched': {" +
         "                    'x':'X val',\n" +
@@ -127,9 +128,6 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
       Thread.sleep(100);
     }
     ByteBuffer jar = null;
-
-//     jar = persistZip("/tmp/runtimelibs.jar.bin", TestDynamicLoading.class, RuntimeLibReqHandler.class, RuntimeLibResponseWriter.class, RuntimeLibSearchComponent.class);
-//    if(true) return;
 
     jar = getFileContent("runtimecode/runtimelibs.jar.bin");
     TestBlobHandler.postAndCheck(cloudClient, baseURL, blobName, jar, 1);
@@ -269,20 +267,23 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
 
   public static ByteBuffer generateZip(Class... classes) throws IOException {
-    ZipOutputStream zipOut = null;
     SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
-    zipOut = new ZipOutputStream(bos);
-    zipOut.setLevel(ZipOutputStream.DEFLATED);
-    for (Class c : classes) {
-      String path = c.getName().replace('.', '/').concat(".class");
-      ZipEntry entry = new ZipEntry(path);
-      ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
-      zipOut.putNextEntry(entry);
-      zipOut.write(b.array(), 0, b.limit());
-      zipOut.closeEntry();
+    try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
+      zipOut.setLevel(ZipOutputStream.DEFLATED);
+      for (Class c : classes) {
+        String path = c.getName().replace('.', '/').concat(".class");
+        ZipEntry entry = new ZipEntry(path);
+        ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
+        zipOut.putNextEntry(entry);
+        zipOut.write(b.array(), 0, b.limit());
+        zipOut.closeEntry();
+      }
     }
-    zipOut.close();
     return bos.getByteBuffer();
   }
 
+/*  public static void main(String[] args) throws Exception {
+    persistZip("/tmp/runtimelibs_v3.jar.bin", TestDynamicLoading.class, RuntimeLibReqHandler.class, RuntimeLibResponseWriter.class, RuntimeLibSearchComponent.class);
+    if(true) return;
+  }*/
 }

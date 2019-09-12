@@ -1,5 +1,5 @@
 = Math Expressions
-:page-children: scalar-math, vector-math, variables, matrix-math, vectorization, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning
+:page-children: scalar-math, vector-math, variables, matrix-math, vectorization, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning, computational-geometry
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -44,18 +44,21 @@ record in your Solr Cloud cluster computable.
 
 *<<statistics.adoc#statistics,Statistics>>*: Statistical functions in math expressions.
 
-*<<probability-distributions.adoc#probability-distributions,Probability>>*: Mathematical models for probability.
+*<<probability-distributions.adoc#probability-distributions,Probability>>*: Mathematical models of probability.
 
-*<<simulations.adoc#simulations,Monte Carlo Simulations>>*: Performing correlated and uncorrelated Monte Carlo simulations.
+*<<simulations.adoc#simulations,Monte Carlo Simulations>>*: Performing uncorrelated and correlated Monte Carlo simulations.
 
 *<<regression.adoc#regression,Linear Regression>>*: Simple and multivariate linear regression.
 
 *<<numerical-analysis.adoc#numerical-analysis,Interpolation, Derivatives and Integrals>>*: Numerical analysis math expressions.
 
-*<<curve-fitting.adoc#curve-fitting,Curve Fitting>>*: Polynomial and Gaussian curve fitting.
-
 *<<dsp.adoc#dsp,Digital Signal Processing>>*: Functions commonly used with digital signal processing.
 
-*<<time-series.adoc#time-series,Time Series>>*: Aggregation, smoothing, differencing, modeling and anomaly detection for time series.
+*<<curve-fitting.adoc#curve-fitting,Curve Fitting>>*: Polynomial, Harmonic and Gaussian curve fitting.
+
+*<<time-series.adoc#time-series,Time Series>>*: Aggregation, smoothing and differencing of time series.
 
 *<<machine-learning.adoc#machine-learning,Machine Learning>>*: Functions used in machine learning.
+
+*<<computational-geometry.adoc#computational-geometry,Computational Geometry>>*: Convex Hulls and Enclosing Disks.
+

@@ -23,9 +23,11 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
@@ -68,21 +70,14 @@ public final class ByteBuffersDirectory extends BaseDirectory {
         return new ByteBuffersIndexInput(dataInput, inputName);
       };
 
-  public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_BYTE_ARRAY = 
-      (fileName, output) -> {
-        byte[] array = output.toArrayCopy();
-        String inputName = String.format(Locale.ROOT, "%s (file=%s, length=%s)",
-            ByteArrayIndexInput.class.getSimpleName(),
-            fileName,
-            array.length);
-        return new ByteArrayIndexInput(inputName, array, 0, array.length);
-      };
+  public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_BYTE_ARRAY = OUTPUT_AS_ONE_BUFFER;
 
   public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_MANY_BUFFERS_LUCENE = 
       (fileName, output) -> {
         List<ByteBuffer> bufferList = output.toBufferList();
-        int chunkSizePower;
         bufferList.add(ByteBuffer.allocate(0));
+
+        int chunkSizePower;
         int blockSize = ByteBuffersDataInput.determineBlockPage(bufferList);
         if (blockSize == 0) {
           chunkSizePower = 30;
@@ -95,8 +90,8 @@ public final class ByteBuffersDirectory extends BaseDirectory {
             fileName);
 
         ByteBufferGuard guard = new ByteBufferGuard("none", (String resourceDescription, ByteBuffer b) -> {});
-        return ByteBufferIndexInput.newInstance(inputName, 
-            bufferList.toArray(new ByteBuffer [bufferList.size()]), 
+        return ByteBufferIndexInput.newInstance(inputName,
+            bufferList.toArray(new ByteBuffer [bufferList.size()]),
             output.size(), chunkSizePower, guard);
       };
 
@@ -164,6 +159,12 @@ public final class ByteBuffersDirectory extends BaseDirectory {
     return file.length();
   }
 
+  public boolean fileExists(String name) {
+    ensureOpen();
+    FileEntry file = files.get(name);
+    return file != null;
+  }
+
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
@@ -228,6 +229,11 @@ public final class ByteBuffersDirectory extends BaseDirectory {
   public void close() throws IOException {
     isOpen = false;
     files.clear();
+  }
+
+  @Override
+  public Set<String> getPendingDeletions() {
+    return Collections.emptySet();
   }
 
   private final class FileEntry {

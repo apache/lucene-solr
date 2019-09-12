@@ -17,6 +17,7 @@
 package org.apache.solr.response;
 
 import java.util.Iterator;
+import java.util.function.Predicate;
 
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrDocument;
@@ -54,6 +55,7 @@ public abstract class ResultContext {
   public Iterator<SolrDocument> getProcessedDocuments() {
     return new DocsStreamer(this);
   }
+  public static final ThreadLocal<Predicate<String>>  READASBYTES = new ThreadLocal<>();
 }
 
 

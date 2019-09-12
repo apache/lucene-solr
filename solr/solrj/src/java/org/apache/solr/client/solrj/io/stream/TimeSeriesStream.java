@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -88,6 +89,11 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   public TimeSeriesStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
+
+    if(collectionName.indexOf('"') > -1) {
+      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+    }
+
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter startExpression = factory.getNamedOperand(expression, "start");
     StreamExpressionNamedParameter endExpression = factory.getNamedOperand(expression, "end");
@@ -211,7 +217,11 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     // collection
-    expression.addParameter(collection);
+    if(collection.indexOf(',') > -1) {
+      expression.addParameter("\""+collection+"\"");
+    } else {
+      expression.addParameter(collection);
+    }
 
     // parameters
     ModifiableSolrParams tmpParams = new ModifiableSolrParams(params);
@@ -288,7 +298,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     paramsLoc.set("json.facet", json);
     paramsLoc.set("rows", "0");
 
-    QueryRequest request = new QueryRequest(paramsLoc);
+    QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
       NamedList response = cloudSolrClient.request(request, collection);
       getTuples(response, field, metrics);
@@ -334,10 +344,10 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     buf.append('"');
     buf.append(":{");
     buf.append("\"type\":\"range\"");
-    buf.append(",\"field\":\""+field+"\"");
-    buf.append(",\"start\":\""+start+"\"");
-    buf.append(",\"end\":\""+end+"\"");
-    buf.append(",\"gap\":\""+gap+"\"");
+    buf.append(",\"field\":\"").append(field).append('"');
+    buf.append(",\"start\":\"").append(start).append('"');
+    buf.append(",\"end\":\"").append(end).append('"');
+    buf.append(",\"gap\":\"").append(gap).append('"');
 
     buf.append(",\"facet\":{");
     int metricCount = 0;
@@ -347,7 +357,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
         if(metricCount>0) {
           buf.append(",");
         }
-        buf.append("\"facet_" + metricCount + "\":\"" +identifier+"\"");
+        buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
         ++metricCount;
       }
     }

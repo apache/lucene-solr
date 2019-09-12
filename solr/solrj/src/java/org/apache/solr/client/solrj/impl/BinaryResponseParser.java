@@ -32,7 +32,7 @@ import java.io.Reader;
 public class BinaryResponseParser extends ResponseParser {
   public static final String BINARY_CONTENT_TYPE = "application/octet-stream";
 
-  private JavaBinCodec.StringCache stringCache;
+  protected JavaBinCodec.StringCache stringCache;
 
   public BinaryResponseParser setStringCache(JavaBinCodec.StringCache cache) {
     this.stringCache = cache;
@@ -47,11 +47,15 @@ public class BinaryResponseParser extends ResponseParser {
   @Override
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     try {
-      return (NamedList<Object>) new JavaBinCodec(null,stringCache).unmarshal(body);
+      return (NamedList<Object>) createCodec().unmarshal(body);
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
 
     }
+  }
+
+  protected JavaBinCodec createCodec() {
+    return new JavaBinCodec(null, stringCache);
   }
 
   @Override

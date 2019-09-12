@@ -39,9 +39,7 @@ import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
 import org.apache.lucene.analysis.reverse.ReverseStringFilterFactory;
 import org.apache.lucene.analysis.standard.ClassicTokenizerFactory;
 import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
 import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
@@ -107,7 +105,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
 
   public void testFactoryHtmlStripClassicFolding() throws Exception {
     CustomAnalyzer a = CustomAnalyzer.builder()
-        .withDefaultMatchVersion(Version.LUCENE_7_0_0)
+        .withDefaultMatchVersion(Version.LUCENE_8_0_0)
         .addCharFilter(HTMLStripCharFilterFactory.class)
         .withTokenizer(ClassicTokenizerFactory.class)
         .addTokenFilter(ASCIIFoldingFilterFactory.class, "preserveOriginal", "true")
@@ -126,7 +124,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     assertSame(LowerCaseFilterFactory.class, tokenFilters.get(1).getClass());
     assertEquals(100, a.getPositionIncrementGap("dummy"));
     assertEquals(1000, a.getOffsetGap("dummy"));
-    assertSame(Version.LUCENE_7_0_0, a.getVersion());
+    assertSame(Version.LUCENE_8_0_0, a.getVersion());
 
     assertAnalyzesTo(a, "<p>foo bar</p> FOO BAR", 
         new String[] { "foo", "bar", "foo", "bar" },
@@ -139,7 +137,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
   
   public void testHtmlStripClassicFolding() throws Exception {
     CustomAnalyzer a = CustomAnalyzer.builder()
-        .withDefaultMatchVersion(Version.LUCENE_7_0_0)
+        .withDefaultMatchVersion(Version.LUCENE_8_0_0)
         .addCharFilter("htmlstrip")
         .withTokenizer("classic")
         .addTokenFilter("asciifolding", "preserveOriginal", "true")
@@ -158,7 +156,7 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     assertSame(LowerCaseFilterFactory.class, tokenFilters.get(1).getClass());
     assertEquals(100, a.getPositionIncrementGap("dummy"));
     assertEquals(1000, a.getOffsetGap("dummy"));
-    assertSame(Version.LUCENE_7_0_0, a.getVersion());
+    assertSame(Version.LUCENE_8_0_0, a.getVersion());
 
     assertAnalyzesTo(a, "<p>foo bar</p> FOO BAR", 
         new String[] { "foo", "bar", "foo", "bar" },
@@ -397,17 +395,16 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     
   }
 
-  public static class DummyMultiTermAwareCharFilterFactory extends DummyCharFilterFactory implements MultiTermAwareComponent {
+  public static class DummyMultiTermAwareCharFilterFactory extends DummyCharFilterFactory {
 
     public DummyMultiTermAwareCharFilterFactory(Map<String,String> args) {
       super(args);
     }
 
     @Override
-    public AbstractAnalysisFactory getMultiTermComponent() {
-      return new DummyCharFilterFactory(Collections.emptyMap(), '0', '2');
+    public Reader normalize(Reader input) {
+      return create(input);
     }
-
   }
 
   public static class DummyTokenizerFactory extends TokenizerFactory {
@@ -423,19 +420,6 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
 
   }
 
-  public static class DummyMultiTermAwareTokenizerFactory extends DummyTokenizerFactory implements MultiTermAwareComponent {
-
-    public DummyMultiTermAwareTokenizerFactory(Map<String,String> args) {
-      super(args);
-    }
-
-    @Override
-    public AbstractAnalysisFactory getMultiTermComponent() {
-      return new DummyTokenFilterFactory(Collections.emptyMap());
-    }
-    
-  }
-
   public static class DummyTokenFilterFactory extends TokenFilterFactory {
 
     public DummyTokenFilterFactory(Map<String,String> args) {
@@ -449,15 +433,15 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     
   }
 
-  public static class DummyMultiTermAwareTokenFilterFactory extends DummyTokenFilterFactory implements MultiTermAwareComponent {
+  public static class DummyMultiTermAwareTokenFilterFactory extends DummyTokenFilterFactory {
 
     public DummyMultiTermAwareTokenFilterFactory(Map<String,String> args) {
       super(args);
     }
 
     @Override
-    public AbstractAnalysisFactory getMultiTermComponent() {
-      return new ASCIIFoldingFilterFactory(Collections.emptyMap());
+    public TokenStream normalize(TokenStream input) {
+      return new ASCIIFoldingFilterFactory(Collections.emptyMap()).normalize(input);
     }
     
   }
@@ -472,12 +456,13 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     assertEquals(new BytesRef("0À"), analyzer1.normalize("dummy", "0À"));
 
     CustomAnalyzer analyzer2 = CustomAnalyzer.builder()
+        // this component in not multi-term aware so it should not be applied
+        .withTokenizer(DummyTokenizerFactory.class, Collections.emptyMap())
         // these components are multi-term aware so they should be applied
-        .withTokenizer(DummyMultiTermAwareTokenizerFactory.class, Collections.emptyMap())
         .addCharFilter(DummyMultiTermAwareCharFilterFactory.class, Collections.emptyMap())
         .addTokenFilter(DummyMultiTermAwareTokenFilterFactory.class, Collections.emptyMap())
         .build();
-    assertEquals(new BytesRef("2A"), analyzer2.normalize("dummy", "0À"));
+    assertEquals(new BytesRef("1A"), analyzer2.normalize("dummy", "0À"));
   }
 
   public void testNormalizationWithMultipleTokenFilters() throws IOException {

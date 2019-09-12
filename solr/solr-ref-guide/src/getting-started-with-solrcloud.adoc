@@ -35,7 +35,7 @@ This tutorial assumes that you're already familiar with the basics of using Solr
 
 === Interactive Startup
 
-The `bin/solr` script makes it easy to get started with SolrCloud as it walks you through the process of launching Solr nodes in cloud mode and adding a collection. To get started, simply do:
+The `bin/solr` script makes it easy to get started with SolrCloud as it walks you through the process of launching Solr nodes in SolrCloud mode and adding a collection. To get started, simply do:
 
 [source,bash]
 ----

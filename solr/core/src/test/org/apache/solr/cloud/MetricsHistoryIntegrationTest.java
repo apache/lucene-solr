@@ -16,12 +16,13 @@
  */
 package org.apache.solr.cloud;
 
-import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import javax.imageio.ImageIO;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -58,7 +59,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    boolean simulated = random().nextBoolean();
+    boolean simulated = TEST_NIGHTLY ? random().nextBoolean() : true;
     if (simulated) {
       cloudManager = SimCloudManager.createCluster(1, TimeSource.get("simTime:50"));
       solrClient = ((SimCloudManager)cloudManager).simGetSolrClient();
@@ -74,11 +75,15 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
     // create .system
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
         .process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL,
-        30, TimeUnit.SECONDS, CloudTestUtils.clusterShape(1, 1));
+    CloudUtil.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL,
+        30, TimeUnit.SECONDS, CloudUtil.clusterShape(1, 1));
     solrClient.query(CollectionAdminParams.SYSTEM_COLL, params(CommonParams.Q, "*:*"));
     // sleep a little to allow the handler to collect some metrics
-    timeSource.sleep(90000);
+    if (simulated) {
+      timeSource.sleep(90000);
+    } else {
+      timeSource.sleep(100000);
+    }
   }
 
   @AfterClass

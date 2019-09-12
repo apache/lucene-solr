@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AbsoluteValueEvaluator;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
+public class AbsoluteValueEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
@@ -107,7 +107,7 @@ public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
     factory.constructEvaluator("abs(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void absNoValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("abs(a)");
     
@@ -116,7 +116,7 @@ public class AbsoluteValueEvaluatorTest extends LuceneTestCase {
     assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void absNullValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("abs(a)");
     

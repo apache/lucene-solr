@@ -18,6 +18,7 @@ package org.apache.solr.request;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,14 +35,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.MultiPostingsEnum;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -66,7 +68,6 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -93,7 +94,6 @@ import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.search.facet.FacetRequest;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,6 +170,7 @@ public class SimpleFacets {
     this.docsOrig = docs;
     this.global = params;
     this.rb = rb;
+    this.facetExecutor = req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor();
   }
 
   public void setFacetDebugInfo(FacetDebugInfo fdebugParent) {
@@ -261,7 +262,7 @@ public class SimpleFacets {
     DocSet base = searcher.getDocSet(qlist);
     if (rb.grouping() && rb.getGroupingSpec().isTruncateGroups()) {
       Grouping grouping = new Grouping(searcher, null, rb.createQueryCommand(), false, 0, false);
-      grouping.setWithinGroupSort(rb.getGroupingSpec().getSortWithinGroup());
+      grouping.setWithinGroupSort(rb.getGroupingSpec().getWithinGroupSortSpec().getSort());
       if (rb.getGroupingSpec().getFields().length > 0) {
         grouping.addFieldCommand(rb.getGroupingSpec().getFields()[0], req);
       } else if (rb.getGroupingSpec().getFunctions().length > 0) {
@@ -440,14 +441,18 @@ public class SimpleFacets {
     final int threads = parsed.threads;
     int offset = params.getFieldInt(field, FacetParams.FACET_OFFSET, 0);
     int limit = params.getFieldInt(field, FacetParams.FACET_LIMIT, 100);
-    if (limit == 0) return new NamedList<>();
+    boolean missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
+
+    // when limit=0 and missing=false then return empty list
+    if (limit == 0 && !missing) return new NamedList<>();
+
     if (mincount==null) {
       Boolean zeros = params.getFieldBool(field, FacetParams.FACET_ZEROS);
       // mincount = (zeros!=null && zeros) ? 0 : 1;
       mincount = (zeros!=null && !zeros) ? 1 : 0;
       // current default is to include zeros.
     }
-    boolean missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
+
     // default to sorting if there is a limit.
     String sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
     String prefix = params.getFieldParam(field, FacetParams.FACET_PREFIX);
@@ -670,6 +675,13 @@ public class SimpleFacets {
        method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
      }
 
+     /* Unless isUninvertible() is true, we prohibit any use of UIF...
+        Here we just force FC(S) instead, and trust that the DocValues faceting logic will
+        do the right thing either way (with or w/o docvalues) */
+     if (FacetMethod.UIF == method && ! field.isUninvertible()) {
+       method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
+     }
+     
      /* ENUM can't deal with trie fields that index several terms per value */
      if (method == FacetMethod.ENUM
          && TrieField.getMainValuePrefix(type) != null) {
@@ -698,7 +710,8 @@ public class SimpleFacets {
                                              String prefix,
                                              Predicate<BytesRef> termFilter) throws IOException {
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
-    final String groupField  = groupingSpecification != null ? groupingSpecification.getFields()[0] : null;
+    String[] groupFields = groupingSpecification != null? groupingSpecification.getFields(): null;
+    final String groupField = ArrayUtils.isNotEmpty(groupFields) ? groupFields[0] : null;
     if (groupField == null) {
       throw new SolrException (
           SolrException.ErrorCode.BAD_REQUEST,
@@ -766,13 +779,7 @@ public class SimpleFacets {
     }
   };
 
-  static final Executor facetExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-          0,
-          Integer.MAX_VALUE,
-          10, TimeUnit.SECONDS, // terminate idle threads after 10 sec
-          new SynchronousQueue<Runnable>()  // directly hand off tasks
-          , new DefaultSolrThreadFactory("facetExecutor")
-  );
+  private final Executor facetExecutor;
   
   /**
    * Returns a list of value constraints and the associated facet counts 
@@ -828,7 +835,11 @@ public class SimpleFacets {
             return result;
           } catch (SolrException se) {
             throw se;
-          } catch (Exception e) {
+          } 
+          catch(ExitableDirectoryReader.ExitingReaderException timeout) {
+            throw timeout;
+          }
+          catch (Exception e) {
             throw new SolrException(ErrorCode.SERVER_ERROR,
                                     "Exception during facet.field: " + facetValue, e);
           } finally {
@@ -863,22 +874,39 @@ public class SimpleFacets {
   }
 
   /**
-   * Computes the term-&gt;count counts for the specified term values relative to the 
+   * Computes the term-&gt;count counts for the specified term values relative to the
+   *
    * @param field the name of the field to compute term counts against
    * @param parsed contains the docset to compute term counts relative to
-   * @param terms a list of term values (in the specified field) to compute the counts for 
+   * @param terms a list of term values (in the specified field) to compute the counts for
    */
-  protected NamedList<Integer> getListedTermCounts(String field, final ParsedParams parsed, List<String> terms) throws IOException {
-    SchemaField sf = searcher.getSchema().getField(field);
-    FieldType ft = sf.getType();
-    NamedList<Integer> res = new NamedList<>();
-    for (String term : terms) {
-      int count = searcher.numDocs(ft.getFieldQuery(null, sf, term), parsed.docs);
-      res.add(term, count);
+  protected NamedList<Integer> getListedTermCounts(String field, final ParsedParams parsed, List<String> terms)
+      throws IOException {
+    final String sort = parsed.params.getFieldParam(field, FacetParams.FACET_SORT, "empty");
+    final SchemaField sf = searcher.getSchema().getField(field);
+    final FieldType ft = sf.getType();
+    final DocSet baseDocset = parsed.docs;
+    final NamedList<Integer> res = new NamedList<>();
+    Stream<String> inputStream = terms.stream();
+    if (sort.equals(FacetParams.FACET_SORT_INDEX)) { // it might always make sense
+      inputStream = inputStream.sorted();
     }
-    return res;    
+    Stream<SimpleImmutableEntry<String,Integer>> termCountEntries = inputStream
+        .map((term) -> new SimpleImmutableEntry<>(term, numDocs(term, sf, ft, baseDocset)));
+    if (sort.equals(FacetParams.FACET_SORT_COUNT)) {
+      termCountEntries = termCountEntries.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()));
+    }
+    termCountEntries.forEach(e -> res.add(e.getKey(), e.getValue()));
+    return res;
   }
 
+  private int numDocs(String term, final SchemaField sf, final FieldType ft, final DocSet baseDocset) {
+    try {
+      return searcher.numDocs(ft.getFieldQuery(null, sf, term), baseDocset);
+    } catch (IOException e1) {
+      throw new RuntimeException(e1);
+    }
+  }
 
   /**
    * Returns a count of the documents in the set which do not have any 
@@ -925,6 +953,11 @@ public class SimpleFacets {
     * don't enum if we get our max from them
     */
 
+    final NamedList<Integer> res = new NamedList<>();
+    if (limit == 0) {
+      return finalize(res, searcher, docs, field, missing);
+    }
+
     // Minimum term docFreq in order to use the filterCache for that term.
     int minDfFilterCache = global.getFieldInt(field, FacetParams.FACET_ENUM_CACHE_MINDF, 0);
 
@@ -942,7 +975,6 @@ public class SimpleFacets {
     boolean sortByCount = sort.equals("count") || sort.equals("true");
     final int maxsize = limit>=0 ? offset+limit : Integer.MAX_VALUE-1;
     final BoundedTreeSet<CountPair<BytesRef,Integer>> queue = sortByCount ? new BoundedTreeSet<CountPair<BytesRef,Integer>>(maxsize) : null;
-    final NamedList<Integer> res = new NamedList<>();
 
     int min=mincount-1;  // the smallest value in the top 'N' values    
     int off=offset;
@@ -954,7 +986,7 @@ public class SimpleFacets {
       prefixTermBytes = new BytesRef(indexedPrefix);
     }
 
-    Terms terms = MultiFields.getTerms(searcher.getIndexReader(), field);
+    Terms terms = MultiTerms.getTerms(searcher.getIndexReader(), field);
     TermsEnum termsEnum = null;
     SolrIndexSearcher.DocsEnumState deState = null;
     BytesRef term = null;
@@ -1084,6 +1116,11 @@ public class SimpleFacets {
       }
     }
 
+    return finalize(res, searcher, docs, field, missing);
+  }
+
+  private static NamedList<Integer> finalize(NamedList<Integer> res, SolrIndexSearcher searcher, DocSet docs,
+                                             String field, boolean missing) throws IOException {
     if (missing) {
       res.add(null, getFieldMissingCount(searcher,docs,field));
     }

@@ -48,8 +48,8 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.SloppyMath;
 
 /** Shows simple usage of dynamic range faceting, using the
@@ -61,7 +61,7 @@ public class DistanceFacetsExample implements Closeable {
   final DoubleRange FIVE_KM = new DoubleRange("< 5 km", 0.0, true, 5.0, false);
   final DoubleRange TEN_KM = new DoubleRange("< 10 km", 0.0, true, 10.0, false);
 
-  private final Directory indexDir = new RAMDirectory();
+  private final Directory indexDir = new ByteBuffersDirectory();
   private IndexSearcher searcher;
   private final FacetsConfig config = new FacetsConfig();
 

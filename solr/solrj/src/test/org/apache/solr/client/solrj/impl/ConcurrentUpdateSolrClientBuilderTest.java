@@ -17,14 +17,14 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder;
 import org.junit.Test;
 
 /**
  * Unit tests for {@link Builder}.
  */
-public class ConcurrentUpdateSolrClientBuilderTest extends LuceneTestCase {
+public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testRejectsMissingBaseSolrUrl() {
@@ -32,7 +32,7 @@ public class ConcurrentUpdateSolrClientBuilderTest extends LuceneTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testMissingQueueSize() {
     try (ConcurrentUpdateSolrClient client = new Builder("someurl").build()){
       // Do nothing as we just need to test that the only mandatory parameter for building the client

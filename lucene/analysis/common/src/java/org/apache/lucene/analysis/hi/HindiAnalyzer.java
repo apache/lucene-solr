@@ -33,6 +33,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
  * Analyzer for Hindi.
+ *
+ * @since 3.1
  */
 public final class HindiAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;

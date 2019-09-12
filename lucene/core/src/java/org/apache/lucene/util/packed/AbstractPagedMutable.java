@@ -29,7 +29,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * Base implementation for {@link PagedMutable} and {@link PagedGrowableWriter}.
  * @lucene.internal
  */
-abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends LongValues implements Accountable {
+public abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends LongValues implements Accountable {
 
   static final int MIN_BLOCK_SIZE = 1 << 6;
   static final int MAX_BLOCK_SIZE = 1 << 30;
@@ -161,5 +161,4 @@ abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends L
   public final String toString() {
     return getClass().getSimpleName() + "(size=" + size() + ",pageSize=" + pageSize() + ")";
   }
-
 }

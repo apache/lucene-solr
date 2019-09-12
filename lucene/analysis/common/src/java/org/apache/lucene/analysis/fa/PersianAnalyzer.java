@@ -38,6 +38,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * zero-width non-joiner in addition to whitespace. Some persian-specific variant forms (such as farsi
  * yeh and keheh) are standardized. "Stemming" is accomplished via stopwords.
  * </p>
+ *
+ * @since 3.1
  */
 public final class PersianAnalyzer extends StopwordAnalyzerBase {
 

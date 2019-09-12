@@ -26,6 +26,7 @@ import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,24 +44,53 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean allJarsLoaded = false;
   private final SolrResourceLoader parentLoader;
-  private List<PluginBag.RuntimeLib> libs = new ArrayList<>();
+  private List<RuntimeLib> libs = new ArrayList<>();
   private Map<String, Class> classCache = new HashMap<>();
+  private List<String> errors = new ArrayList<>();
 
 
-  public MemClassLoader(List<PluginBag.RuntimeLib> libs, SolrResourceLoader resourceLoader) {
+  public MemClassLoader(List<RuntimeLib> libs, SolrResourceLoader resourceLoader) {
     this.parentLoader = resourceLoader;
     this.libs = libs;
   }
 
+  public int getZnodeVersion(){
+    int result = -1;
+    for (RuntimeLib lib : libs) {
+      if(lib.znodeVersion > result) result = lib.znodeVersion;
+    }
+    return result;
+  }
 
+  synchronized void loadRemoteJars() {
+    if (allJarsLoaded) return;
+    int count = 0;
+    for (RuntimeLib lib : libs) {
+      if (lib.getUrl() != null) {
+        try {
+          lib.loadJar();
+          lib.verify();
+        } catch (Exception e) {
+          log.error("Error loading runtime library", e);
+        }
+        count++;
+      }
+    }
+    if (count == libs.size()) allJarsLoaded = true;
+  }
+
+  public Collection<String> getErrors(){
+    return errors;
+  }
   public synchronized void loadJars() {
     if (allJarsLoaded) return;
 
-    for (PluginBag.RuntimeLib lib : libs) {
+    for (RuntimeLib lib : libs) {
       try {
         lib.loadJar();
         lib.verify();
       } catch (Exception exception) {
+        errors.add(exception.getMessage());
         if (exception instanceof SolrException) throw (SolrException) exception;
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Atleast one runtimeLib could not be loaded", exception);
       }
@@ -87,7 +118,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     try {
       buf = getByteBuffer(name, jarName);
     } catch (Exception e) {
-      throw new ClassNotFoundException("class could not be loaded " + name, e);
+      throw new ClassNotFoundException("class could not be loaded " + name + (errors.isEmpty()? "": "Some dynamic libraries could not be loaded: "+ StrUtils.join(errors, '|')), e);
     }
     if (buf == null) throw new ClassNotFoundException("Class not found :" + name);
     ProtectionDomain defaultDomain = null;
@@ -114,7 +145,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
 
     String path = name.replace('.', '/').concat(".class");
     ByteBuffer buf = null;
-    for (PluginBag.RuntimeLib lib : libs) {
+    for (RuntimeLib lib : libs) {
       try {
         buf = lib.getFileContent(path);
         if (buf != null) {
@@ -131,7 +162,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
 
   @Override
   public void close() throws Exception {
-    for (PluginBag.RuntimeLib lib : libs) {
+    for (RuntimeLib lib : libs) {
       try {
         lib.close();
       } catch (Exception e) {
@@ -157,6 +188,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     try {
       return findClass(cname).asSubclass(expectedType);
     } catch (Exception e) {
+      log.error("Error loading class from runtime libs ", e);
       if (e instanceof SolrException) {
         throw (SolrException) e;
       } else {
@@ -169,7 +201,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
   @Override
   public <T> T newInstance(String cname, Class<T> expectedType) {
     try {
-      return findClass(cname, expectedType).newInstance();
+      return findClass(cname, expectedType).getConstructor().newInstance();
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {

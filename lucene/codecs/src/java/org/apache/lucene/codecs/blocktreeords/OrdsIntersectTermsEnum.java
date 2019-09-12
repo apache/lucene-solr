@@ -20,10 +20,10 @@ package org.apache.lucene.codecs.blocktreeords;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -34,7 +34,7 @@ import org.apache.lucene.util.automaton.RunAutomaton;
 import org.apache.lucene.util.fst.FST;
 
 // NOTE: cannot seek!
-final class OrdsIntersectTermsEnum extends TermsEnum {
+final class OrdsIntersectTermsEnum extends BaseTermsEnum {
   final IndexInput in;
 
   private OrdsIntersectTermsEnumFrame[] stack;
@@ -95,7 +95,7 @@ final class OrdsIntersectTermsEnum extends TermsEnum {
     f.prefix = 0;
     f.setState(0);
     f.arc = arc;
-    f.outputPrefix = arc.output;
+    f.outputPrefix = arc.output();
     f.load(fr.rootCode);
 
     // for assert:
@@ -168,14 +168,14 @@ final class OrdsIntersectTermsEnum extends TermsEnum {
       // passed to findTargetArc
       arc = fr.index.findTargetArc(target, arc, getArc(1+idx), fstReader);
       assert arc != null;
-      output = OrdsBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output);
+      output = OrdsBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output());
       idx++;
     }
 
     f.arc = arc;
     f.outputPrefix = output;
     assert arc.isFinal();
-    f.load(OrdsBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput));
+    f.load(OrdsBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput()));
     return f;
   }
 

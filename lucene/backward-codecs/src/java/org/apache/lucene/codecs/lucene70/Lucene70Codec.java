@@ -55,7 +55,8 @@ public class Lucene70Codec extends Codec {
   private final SegmentInfoFormat segmentInfosFormat = new Lucene70SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene50LiveDocsFormat();
   private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
-  
+  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene70");
+
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
@@ -66,7 +67,7 @@ public class Lucene70Codec extends Codec {
   private final DocValuesFormat docValuesFormat = new PerFieldDocValuesFormat() {
     @Override
     public DocValuesFormat getDocValuesFormatForField(String field) {
-      throw new IllegalStateException("This codec should only be used for reading, not writing");
+      return defaultDVFormat;
     }
   };
   

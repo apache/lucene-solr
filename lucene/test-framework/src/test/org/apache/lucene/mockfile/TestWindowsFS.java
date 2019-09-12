@@ -20,8 +20,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.Exception;
-import java.lang.RuntimeException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -57,12 +55,9 @@ public class TestWindowsFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     InputStream is = Files.newInputStream(dir.resolve("stillopen"));
-    try {
-      Files.delete(dir.resolve("stillopen"));
-      fail("should have gotten exception");
-    } catch (IOException e) {
-      assertTrue(e.getMessage().contains("access denied"));
-    }
+
+    IOException e = expectThrows(IOException.class, () -> Files.delete(dir.resolve("stillopen")));
+    assertTrue(e.getMessage().contains("access denied"));
     is.close();
   }
   
@@ -74,12 +69,9 @@ public class TestWindowsFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     InputStream is = Files.newInputStream(dir.resolve("stillopen"));
-    try {
-      Files.deleteIfExists(dir.resolve("stillopen"));
-      fail("should have gotten exception");
-    } catch (IOException e) {
-      assertTrue(e.getMessage().contains("access denied"));
-    }
+
+    IOException e = expectThrows(IOException.class, () -> Files.deleteIfExists(dir.resolve("stillopen")));
+    assertTrue(e.getMessage().contains("access denied"));
     is.close();
   }
   
@@ -92,12 +84,10 @@ public class TestWindowsFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     InputStream is = Files.newInputStream(dir.resolve("stillopen"));
-    try {
-      Files.move(dir.resolve("stillopen"), dir.resolve("target"), StandardCopyOption.ATOMIC_MOVE);
-      fail("should have gotten exception");
-    } catch (IOException e) {
-      assertTrue(e.getMessage().contains("access denied"));
-    }
+
+    IOException e = expectThrows(IOException.class, () ->
+        Files.move(dir.resolve("stillopen"), dir.resolve("target"), StandardCopyOption.ATOMIC_MOVE));
+    assertTrue(e.getMessage().contains("access denied"));
     is.close();
   }
 

@@ -171,7 +171,7 @@ public class TestBoolean2 extends LuceneTestCase {
       RandomIndexWriter w = new RandomIndexWriter(random(), dir2, iwc);
       w.addIndexes(copy);
       copy.close();
-      docCount = w.maxDoc();
+      docCount = w.getDocStats().maxDoc;
       w.close();
       mulFactor *= 2;
     } while(docCount < 3000 * NUM_FILLER_DOCS);

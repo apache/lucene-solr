@@ -91,7 +91,7 @@ public final class ClasspathResourceLoader implements ResourceLoader {
   public <T> T newInstance(String cname, Class<T> expectedType) {
     Class<? extends T> clazz = findClass(cname, expectedType);
     try {
-      return clazz.newInstance();
+      return clazz.getConstructor().newInstance();
     } catch (Exception e) {
       throw new RuntimeException("Cannot create instance: " + cname, e);
     }

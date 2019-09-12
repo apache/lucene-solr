@@ -30,6 +30,7 @@ import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.automaton.Automata;
@@ -79,7 +80,8 @@ public class TermsQParserPlugin extends QParserPlugin {
     automaton {
       @Override
       Query makeFilter(String fname, BytesRef[] byteRefs) {
-        Automaton union = Automata.makeStringUnion(Arrays.asList(byteRefs));
+        ArrayUtil.timSort(byteRefs); // same sort algo as TermInSetQuery's choice
+        Automaton union = Automata.makeStringUnion(Arrays.asList(byteRefs)); // input must be sorted
         return new AutomatonQuery(new Term(fname), union);//constant scores
       }
     },

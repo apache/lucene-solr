@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
 public class StringDataArrayReader extends ReductionDataArrayReader<Consumer<String>> {
-  
+
   public StringDataArrayReader(DataInput inputStream, Consumer<String> applier, IntConsumer signal) {
     super(inputStream, applier, signal);
   }

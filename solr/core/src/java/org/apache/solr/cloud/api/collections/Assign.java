@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -51,6 +52,7 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.NumberUtils;
@@ -113,7 +115,7 @@ public class Assign {
       } catch (IOException | KeeperException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error inc and get counter from Zookeeper for collection:"+collection, e);
       } catch (InterruptedException e) {
-        Thread.interrupted();
+        Thread.currentThread().interrupt();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error inc and get counter from Zookeeper for collection:" + collection, e);
       }
     }
@@ -180,21 +182,34 @@ public class Assign {
     return String.format(Locale.ROOT, "%s_%s_replica_%s%s", collectionName, shard, type.name().substring(0,1).toLowerCase(Locale.ROOT), replicaNum);
   }
 
-  private static int defaultCounterValue(DocCollection collection, boolean newCollection) {
+  private static int defaultCounterValue(DocCollection collection, boolean newCollection, String shard) {
     if (newCollection) return 0;
-    int defaultValue = collection.getReplicas().size();
+
+    int defaultValue;
+    if (collection.getSlice(shard) != null && collection.getSlice(shard).getReplicas().isEmpty()) {
+      return 0;
+    } else {
+      defaultValue = collection.getReplicas().size() * 2;
+    }
+
     if (collection.getReplicationFactor() != null) {
       // numReplicas and replicationFactor * numSlices can be not equals,
       // in case of many addReplicas or deleteReplicas are executed
       defaultValue = Math.max(defaultValue,
           collection.getReplicationFactor() * collection.getSlices().size());
     }
-    return defaultValue * 20;
+    return defaultValue;
+  }
+  
+  private static int defaultCounterValue(DocCollection collection, boolean newCollection) {
+    if (newCollection) return 0;
+    int defaultValue = collection.getReplicas().size();
+    return defaultValue;
   }
 
   public static String buildSolrCoreName(DistribStateManager stateManager, DocCollection collection, String shard, Replica.Type type, boolean newCollection) {
     Slice slice = collection.getSlice(shard);
-    int defaultValue = defaultCounterValue(collection, newCollection);
+    int defaultValue = defaultCounterValue(collection, newCollection, shard);
     int replicaNum = incAndGetId(stateManager, collection.getName(), defaultValue);
     String coreName = buildSolrCoreName(collection.getName(), shard, type, replicaNum);
     while (existCoreName(coreName, slice)) {
@@ -238,6 +253,56 @@ public class Assign {
     }
 
     return nodeList;
+  }
+
+  /**
+   * <b>Note:</b> where possible, the {@link #usePolicyFramework(DocCollection, SolrCloudManager)} method should
+   * be used instead of this method
+   *
+   * @return true if autoscaling policy framework should be used for replica placement
+   */
+  public static boolean usePolicyFramework(SolrCloudManager cloudManager) throws IOException, InterruptedException {
+    Objects.requireNonNull(cloudManager, "The SolrCloudManager instance cannot be null");
+    return usePolicyFramework(Optional.empty(), cloudManager);
+  }
+
+  /**
+   * @return true if auto scaling policy framework should be used for replica placement
+   * for this collection, otherwise false
+   */
+  public static boolean usePolicyFramework(DocCollection collection, SolrCloudManager cloudManager)
+      throws IOException, InterruptedException {
+    Objects.requireNonNull(collection, "The DocCollection instance cannot be null");
+    Objects.requireNonNull(cloudManager, "The SolrCloudManager instance cannot be null");
+    return usePolicyFramework(Optional.of(collection), cloudManager);
+  }
+
+  private static boolean usePolicyFramework(Optional<DocCollection> collection, SolrCloudManager cloudManager) throws IOException, InterruptedException {
+    boolean useLegacyAssignment = true;
+    Map<String, Object> clusterProperties = cloudManager.getClusterStateProvider().getClusterProperties();
+    if (clusterProperties.containsKey(CollectionAdminParams.DEFAULTS))  {
+      Map<String, Object> defaults = (Map<String, Object>) clusterProperties.get(CollectionAdminParams.DEFAULTS);
+      Map<String, Object> collectionDefaults = (Map<String, Object>) defaults.getOrDefault(CollectionAdminParams.CLUSTER, Collections.emptyMap());
+      useLegacyAssignment = Boolean.parseBoolean(collectionDefaults.getOrDefault(CollectionAdminParams.USE_LEGACY_REPLICA_ASSIGNMENT, "true").toString());
+    }
+
+    if (!useLegacyAssignment) {
+      // if legacy assignment is not selected then autoscaling is always available through the implicit policy/preferences
+      return true;
+    }
+
+    // legacy assignment is turned on, which means we must look at the actual autoscaling config
+    // to determine whether policy framework can be used or not for this collection
+
+    AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
+    // if no autoscaling configuration exists then obviously we cannot use the policy framework
+    if (autoScalingConfig.getPolicy().isEmpty()) return false;
+    // do custom preferences exist
+    if (!autoScalingConfig.getPolicy().isEmptyPreferences()) return true;
+    // does a cluster policy exist
+    if (!autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) return true;
+    // finally we check if the current collection has a policy
+    return !collection.isPresent() || collection.get().getPolicyName() != null;
   }
 
   static class ReplicaCount {
@@ -580,18 +645,17 @@ public class Assign {
       List<Map> ruleMaps = (List<Map>) collection.get("rule");
       String policyName = collection.getStr(POLICY);
       List snitches = (List) collection.get(SNITCH);
-      AutoScalingConfig autoScalingConfig = solrCloudManager.getDistribStateManager().getAutoScalingConfig();
 
-      StrategyType strategyType = null;
-      if ((ruleMaps == null || ruleMaps.isEmpty()) && policyName == null && autoScalingConfig.getPolicy().getClusterPolicy().isEmpty()) {
-        strategyType = StrategyType.LEGACY;
+      Strategy strategy = null;
+      if ((ruleMaps == null || ruleMaps.isEmpty()) && !usePolicyFramework(collection, solrCloudManager)) {
+        strategy = Strategy.LEGACY;
       } else if (ruleMaps != null && !ruleMaps.isEmpty()) {
-        strategyType = StrategyType.RULES;
+        strategy = Strategy.RULES;
       } else {
-        strategyType = StrategyType.POLICY;
+        strategy = Strategy.POLICY;
       }
 
-      switch (strategyType) {
+      switch (strategy) {
         case LEGACY:
           return new LegacyAssignStrategy();
         case RULES:
@@ -601,11 +665,11 @@ public class Assign {
         case POLICY:
           return new PolicyBasedAssignStrategy(policyName);
         default:
-          throw new Assign.AssignmentException("Unknown strategy type: " + strategyType);
+          throw new Assign.AssignmentException("Unknown strategy type: " + strategy);
       }
     }
 
-    private enum StrategyType {
+    private enum Strategy {
       LEGACY, RULES, POLICY;
     }
   }

@@ -93,7 +93,7 @@ In addition to returning the top N sorted results (where you can control N using
 
 === Constraints when using Cursors
 
-There are a few important constraints to be aware of when using `cursorMark` parameter in a Solr request
+There are a few important constraints to be aware of when using `cursorMark` parameter in a Solr request.
 
 . `cursorMark` and `start` are mutually exclusive parameters.
 * Your requests must either not include a `start` parameter, or it must be specified with a value of "```0```".

@@ -86,6 +86,8 @@ If set to `true`, activates the `MoreLikeThis` component and enables Solr to ret
 `mlt.count`::
 Specifies the number of similar documents to be returned for each result. The default value is 5.
 
+`mlt.interestingTerms`:: _Same as defined below for the MLT Handler._
+
 == Parameters for the MoreLikeThisHandler
 
 The table below summarizes parameters accessible through the `MoreLikeThisHandler`. It supports faceting, paging, and filtering using common query parameters, but does not work well with alternate query parsers.
@@ -97,7 +99,12 @@ Specifies whether or not the response should include the matched document. If se
 Specifies an offset into the main query search results to locate the document on which the `MoreLikeThis` query should operate. By default, the query operates on the first result for the q parameter.
 
 `mlt.interestingTerms`::
-Controls how the `MoreLikeThis` component presents the "interesting" terms (the top TF/IDF terms) for the query. Supports three settings. The setting list lists the terms. The setting none lists no terms. The setting details lists the terms along with the boost value used for each term. Unless `mlt.boost=true`, all terms will have `boost=1.0`.
+Controls how the `MoreLikeThis` component presents the "interesting" terms (the top TF/IDF terms) for the query.
+It supports three settings:
+The setting `list` lists the terms.
+The setting `none` lists no terms.
+The setting `details` lists the terms along with the boost value used for each term.
+Unless `mlt.boost=true`, all terms will have `boost=1.0`.
 
 
 == MoreLikeThis Query Parser

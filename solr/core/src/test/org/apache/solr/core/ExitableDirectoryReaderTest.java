@@ -24,7 +24,8 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
+
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /**
  * Test that checks that long running queries are exited by Solr using the
@@ -98,7 +99,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     // This gets 0 docs back. Use 10000 instead of 1 for timeAllowed and it gets 100 back and the for loop below
     // succeeds.
     String response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", "1", "sleep", sleep));
-    Map res = (Map) ObjectBuilder.fromJSON(response);
+    Map res = (Map) fromJSONString(response);
     Map body = (Map) (res.get("response"));
     assertTrue("Should have fewer docs than " + NUM_DOCS, (long) (body.get("numFound")) < NUM_DOCS);
 
@@ -117,7 +118,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertEquals("Hits should still be 0", (long) filterCacheStats.getValue().get("hits"), 0L);
     assertEquals("Inserts should be bumped", (long) filterCacheStats.getValue().get("inserts"), fqInserts + 1);
 
-    res = (Map) ObjectBuilder.fromJSON(response);
+    res = (Map) fromJSONString(response);
     body = (Map) (res.get("response"));
 
     assertEquals("Should have exactly " + NUM_DOCS, (long) (body.get("numFound")), NUM_DOCS);
@@ -141,7 +142,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     nl = queryCacheStats.getValue();
     assertEquals("Should NOT have inserted partial results!", inserts, (long) nl.get("inserts"));
 
-    Map res = (Map) ObjectBuilder.fromJSON(response);
+    Map res = (Map) fromJSONString(response);
     Map body = (Map) (res.get("response"));
     Map header = (Map) (res.get("responseHeader"));
 
@@ -155,7 +156,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertEquals("Hits should still be 0", (long) nl.get("hits"), (long) nl2.get("hits"));
     assertTrue("Inserts should be bumped", inserts < (long) nl2.get("inserts"));
 
-    res = (Map) ObjectBuilder.fromJSON(response);
+    res = (Map) fromJSONString(response);
     body = (Map) (res.get("response"));
     header = (Map) (res.get("responseHeader"));
 

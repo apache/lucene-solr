@@ -309,7 +309,7 @@ public class TrecContentSource extends ContentSource {
     // trec doc parser
     try {
       String trecDocParserClassName = config.get("trec.doc.parser", "org.apache.lucene.benchmark.byTask.feeds.TrecGov2Parser");
-      trecDocParser = Class.forName(trecDocParserClassName).asSubclass(TrecDocParser.class).newInstance();
+      trecDocParser = Class.forName(trecDocParserClassName).asSubclass(TrecDocParser.class).getConstructor().newInstance();
     } catch (Exception e) {
       // Should not get here. Throw runtime exception.
       throw new RuntimeException(e);
@@ -318,7 +318,7 @@ public class TrecContentSource extends ContentSource {
     try {
       String htmlParserClassName = config.get("html.parser",
           "org.apache.lucene.benchmark.byTask.feeds.DemoHTMLParser");
-      htmlParser = Class.forName(htmlParserClassName).asSubclass(HTMLParser.class).newInstance();
+      htmlParser = Class.forName(htmlParserClassName).asSubclass(HTMLParser.class).getConstructor().newInstance();
     } catch (Exception e) {
       // Should not get here. Throw runtime exception.
       throw new RuntimeException(e);

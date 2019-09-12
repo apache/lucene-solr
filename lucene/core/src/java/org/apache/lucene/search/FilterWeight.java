@@ -17,10 +17,8 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 
 /**
  * A {@code FilterWeight} contains another {@code Weight} and implements
@@ -58,11 +56,6 @@ public abstract class FilterWeight extends Weight {
   @Override
   public boolean isCacheable(LeafReaderContext ctx) {
     return in.isCacheable(ctx);
-  }
-
-  @Override
-  public void extractTerms(Set<Term> terms) {
-    in.extractTerms(terms);
   }
 
   @Override
