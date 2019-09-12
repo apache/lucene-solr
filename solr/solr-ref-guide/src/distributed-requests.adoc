@@ -74,18 +74,18 @@ http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=shard1,localhost:7
 
 For finer-grained control, you can directly configure and tune aspects of the concurrency and thread-pooling used within distributed search in Solr. The default configuration favors throughput over latency.
 
-This is done by defining a `shardHandler` in the configuration for your search handler.
+This is done by defining a `shardHandlerFactory` in the configuration for your search handler.
 
-To add a `shardHandler` to the standard search handler, provide a configuration in `solrconfig.xml`, as in this example:
+To add a `shardHandlerFactory` to the standard search handler, provide a configuration in `solrconfig.xml`, as in this example:
 
 [source,xml]
 ----
 <requestHandler name="/select" class="solr.SearchHandler">
   <!-- other params go here -->
-  <shardHandler class="HttpShardHandlerFactory">
+  <shardHandlerFactory class="HttpShardHandlerFactory">
     <int name="socketTimeOut">1000</int>
     <int name="connTimeOut">5000</int>
-  </shardHandler>
+  </shardHandlerFactory>
 </requestHandler>
 ----
 
