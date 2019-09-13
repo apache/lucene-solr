@@ -86,8 +86,7 @@ public class Polygon2D implements Component2D {
    */
   @Override
   public boolean contains(double x, double y) {
-    // check bounding box
-    if (x >= minX & x <= maxX && y >= minY && y <= maxY) {
+    if (minX < x && maxX > x && minY < y && maxY > y) {
       return internalContains(x, y);
     }
     return false;
@@ -106,10 +105,10 @@ public class Polygon2D implements Component2D {
 
   @Override
   public Relation relate(double minX, double maxX, double minY, double maxY) {
-    if (disjoint(minX, maxX, minY, maxY)) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return Relation.CELL_OUTSIDE_QUERY;
     }
-    if (within(minX, maxX, minY, maxY)) {
+    if (Component2D.within(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return Relation.CELL_CROSSES_QUERY;
     }
     // check any holes
@@ -143,7 +142,7 @@ public class Polygon2D implements Component2D {
   @Override
   public Relation relateTriangle(double minX, double maxX, double minY, double maxY,
                                  double ax, double ay, double bx, double by, double cx, double cy) {
-    if (disjoint(minX, maxX, minY, maxY)) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return Relation.CELL_OUTSIDE_QUERY;
     }
     // check any holes

@@ -60,14 +60,14 @@ public interface Component2D {
     return relateTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY);
   }
 
-  /** true if the component bounding box is disjoint with the provided bounding box **/
-  default boolean disjoint(double minX, double maxX, double minY, double maxY) {
-    return (getMaxY() < minY || getMinY() > maxY || getMaxX() < minX || getMinX() > maxX);
+  /** Compute whether the bounding boxes are disjoint **/
+  static  boolean disjoint(double minX1, double maxX1, double minY1, double maxY1, double minX2, double maxX2, double minY2, double maxY2) {
+    return (maxY1 < minY2 || minY1 > maxY2 || maxX1 < minX2 || minX1 > maxX2);
   }
 
-  /** true if the component bounding box is within with the provided bounding box **/
-  default boolean within(double minX, double maxX, double minY, double maxY) {
-    return (minY < getMinY() && maxY > getMaxY() && minX < getMinX() && maxX > getMaxX());
+  /** Compute whether the first bounding box 1 is within the second bounding box **/
+  static boolean within(double minX1, double maxX1, double minY1, double maxY1, double minX2, double maxX2, double minY2, double maxY2) {
+    return (minY2 < minY1 && maxY2 > maxY1&& minX2 < minX1 && maxX2 > maxX1);
   }
 
   /**

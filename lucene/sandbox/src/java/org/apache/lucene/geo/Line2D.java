@@ -43,7 +43,7 @@ public final class Line2D implements Component2D {
     this.maxY = line.maxLat;
     this.minX = line.minLon;
     this.maxX = line.maxLon;
-    this.tree = EdgeTree.createTree(line.getLons(),line.getLats());
+    this.tree = EdgeTree.createTree(line.getLons(), line.getLats());
   }
 
   private Line2D(XYLine line) {
@@ -76,21 +76,21 @@ public final class Line2D implements Component2D {
 
   @Override
   public boolean contains(double x, double y) {
-    if (x >= minX & x <= maxX && y >= minY && y <= maxY) {
-      return tree.isPointOnLine(x, y);
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, x, x, y, y)) {
+      return false;
     }
-    return false;
+    return tree.isPointOnLine(x, y);
   }
 
   @Override
-  public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
-    if (disjoint(minX, maxX, minY, maxY)) {
+  public Relation relate(double minX, double maxX, double minY, double maxY) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return Relation.CELL_OUTSIDE_QUERY;
     }
-    if (within(minX, maxX, minY, maxY)) {
+    if (Component2D.within(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return Relation.CELL_CROSSES_QUERY;
     }
-    if (tree.crossesBox(minLat, maxLat, minLon, maxLon, true)) {
+    if (tree.crossesBox(minX, maxX, minY, maxY, true)) {
       return Relation.CELL_CROSSES_QUERY;
     }
     return Relation.CELL_OUTSIDE_QUERY;
@@ -99,7 +99,7 @@ public final class Line2D implements Component2D {
   @Override
   public Relation relateTriangle(double minX, double maxX, double minY, double maxY,
                                  double ax, double ay, double bx, double by, double cx, double cy) {
-    if (disjoint(minX, maxX, minY, maxY)) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return Relation.CELL_OUTSIDE_QUERY;
     }
     if (ax == bx && bx == cx && ay == by && by == cy) {
