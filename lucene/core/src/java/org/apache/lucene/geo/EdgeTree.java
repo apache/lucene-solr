@@ -134,8 +134,8 @@ public  class EdgeTree {
 
 
   /** Returns true if the triangle crosses any edge in this edge subtree */
-    boolean crossesTriangle(double minX, double maxX, double minY, double maxY,
-                            double ax, double ay, double bx, double by, double cx, double cy) {
+  public boolean crossesTriangle(double minX, double maxX, double minY, double maxY,
+                          double ax, double ay, double bx, double by, double cx, double cy) {
       if (minY <= max) {
         double dy = y1;
         double ey = y2;
@@ -168,86 +168,85 @@ public  class EdgeTree {
       return false;
     }
 
-    /** Returns true if the box crosses any edge in this edge subtree */
-    boolean crossesBox(double minX, double maxX, double minY, double maxY, boolean includeBoundary) {
-      // we just have to cross one edge to answer the question, so we descend the tree and return when we do.
-      if (minY <= max) {
-        // we compute line intersections of every polygon edge with every box line.
-        // if we find one, return true.
-        // for each box line (AB):
-        //   for each poly line (CD):
-        //     intersects = orient(C,D,A) * orient(C,D,B) <= 0 && orient(A,B,C) * orient(A,B,D) <= 0
-        double cy = y1;
-        double dy = y2;
-        double cx = x1;
-        double dx = x2;
+  /** Returns true if the box crosses any edge in this edge subtree */
+  public boolean crossesBox(double minX, double maxX, double minY, double maxY, boolean includeBoundary) {
+    // we just have to cross one edge to answer the question, so we descend the tree and return when we do.
+    if (minY <= max) {
+      // we compute line intersections of every polygon edge with every box line.
+      // if we find one, return true.
+      // for each box line (AB):
+      //   for each poly line (CD):
+      //     intersects = orient(C,D,A) * orient(C,D,B) <= 0 && orient(A,B,C) * orient(A,B,D) <= 0
+      double cy = y1;
+      double dy = y2;
+      double cx = x1;
+      double dx = x2;
 
-        // optimization: see if either end of the line segment is contained by the rectangle
-        if (Rectangle.containsPoint(cy, cx, minY, maxY, minX, maxX) ||
-            Rectangle.containsPoint(dy, dx, minY, maxY, minX, maxX)) {
+      // optimization: see if either end of the line segment is contained by the rectangle
+      if (Rectangle.containsPoint(cy, cx, minY, maxY, minX, maxX) ||
+          Rectangle.containsPoint(dy, dx, minY, maxY, minX, maxX)) {
+        return true;
+      }
+
+      // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
+      // if not, don't waste our time trying more complicated stuff
+      boolean outside = (cy < minY && dy < minY) ||
+          (cy > maxY && dy > maxY) ||
+          (cx < minX && dx < minX) ||
+          (cx > maxX && dx > maxX);
+
+      if (outside == false) {
+        if (includeBoundary == true &&
+            lineCrossesLineWithBoundary(cx, cy, dx, dy, minX, minY, maxX, minY) ||
+            lineCrossesLineWithBoundary(cx, cy, dx, dy, maxX, minY, maxX, maxY) ||
+            lineCrossesLineWithBoundary(cx, cy, dx, dy, maxX, maxY, minX, maxY) ||
+            lineCrossesLineWithBoundary(cx, cy, dx, dy, minX, maxY, minX, minY)) {
+          // include boundaries: ensures box edges that terminate on the polygon are included
           return true;
-        }
-
-        // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
-        // if not, don't waste our time trying more complicated stuff
-        boolean outside = (cy < minY && dy < minY) ||
-            (cy > maxY && dy > maxY) ||
-            (cx < minX && dx < minX) ||
-            (cx > maxX && dx > maxX);
-
-        if (outside == false) {
-          if (includeBoundary == true &&
-              lineCrossesLineWithBoundary(cx, cy, dx, dy, minX, minY, maxX, minY) ||
-              lineCrossesLineWithBoundary(cx, cy, dx, dy, maxX, minY, maxX, maxY) ||
-              lineCrossesLineWithBoundary(cx, cy, dx, dy, maxX, maxY, minX, maxY) ||
-              lineCrossesLineWithBoundary(cx, cy, dx, dy, minX, maxY, minX, minY)) {
-            // include boundaries: ensures box edges that terminate on the polygon are included
-            return true;
-          } else if (lineCrossesLine(cx, cy, dx, dy, minX, minY, maxX, minY) ||
-              lineCrossesLine(cx, cy, dx, dy, maxX, minY, maxX, maxY) ||
-              lineCrossesLine(cx, cy, dx, dy, maxX, maxY, minX, maxY) ||
-              lineCrossesLine(cx, cy, dx, dy, minX, maxY, minX, minY)) {
-            return true;
-          }
-        }
-
-        if (left != null && left.crossesBox(minX, maxX, minY, maxY, includeBoundary)) {
-          return true;
-        }
-
-        if (right != null && maxY >= low && right.crossesBox(minX, maxX, minY, maxY, includeBoundary)) {
+        } else if (lineCrossesLine(cx, cy, dx, dy, minX, minY, maxX, minY) ||
+            lineCrossesLine(cx, cy, dx, dy, maxX, minY, maxX, maxY) ||
+            lineCrossesLine(cx, cy, dx, dy, maxX, maxY, minX, maxY) ||
+            lineCrossesLine(cx, cy, dx, dy, minX, maxY, minX, minY)) {
           return true;
         }
       }
-      return false;
-    }
 
-    /** Returns true if the line crosses any edge in this edge subtree */
-    boolean crossesLine(double minX, double maxX, double minY, double maxY, double a2x, double a2y, double b2x, double b2y) {
-      if (minY <= max) {
-        double a1x = x1;
-        double a1y = y1;
-        double b1x = x2;
-        double b1y = y2;
-
-        boolean outside = (a1y < minY && b1y < minY) ||
-            (a1y > maxY && b1y > maxY) ||
-            (a1x < minX && b1x < minX) ||
-            (a1x > maxX && b1x > maxX);
-        if (outside == false && lineCrossesLineWithBoundary(a1x, a1y, b1x, b1y, a2x, a2y, b2x, b2y)) {
-          return true;
-        }
-
-        if (left != null && left.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y)) {
-          return true;
-        }
-        if (right != null && maxY >= low && right.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y)) {
-          return true;
-        }
+      if (left != null && left.crossesBox(minX, maxX, minY, maxY, includeBoundary)) {
+        return true;
       }
-      return false;
-    }
 
+      if (right != null && maxY >= low && right.crossesBox(minX, maxX, minY, maxY, includeBoundary)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Returns true if the line crosses any edge in this edge subtree */
+  public boolean crossesLine(double minX, double maxX, double minY, double maxY, double a2x, double a2y, double b2x, double b2y) {
+    if (minY <= max) {
+      double a1x = x1;
+      double a1y = y1;
+      double b1x = x2;
+      double b1y = y2;
+
+      boolean outside = (a1y < minY && b1y < minY) ||
+          (a1y > maxY && b1y > maxY) ||
+          (a1x < minX && b1x < minX) ||
+          (a1x > maxX && b1x > maxX);
+      if (outside == false && lineCrossesLineWithBoundary(a1x, a1y, b1x, b1y, a2x, a2y, b2x, b2y)) {
+        return true;
+      }
+
+      if (left != null && left.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y)) {
+        return true;
+      }
+      if (right != null && maxY >= low && right.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y)) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   /**
    * Creates an edge interval tree from a set of geometry vertices.
