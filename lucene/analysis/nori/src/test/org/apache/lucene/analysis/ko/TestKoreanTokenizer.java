@@ -108,6 +108,22 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
     };
   }
 
+  public void testSeparateNumber() throws IOException {
+    assertAnalyzesTo(analyzer, "44사이즈",
+        new String[]{"44", "사이즈"},
+        new int[]{0, 2},
+        new int[]{2, 5},
+        new int[]{1, 1}
+    );
+
+    assertAnalyzesTo(analyzer, "９.９사이즈",
+        new String[]{"９", "９", "사이즈"},
+        new int[]{0, 2, 3},
+        new int[]{1, 3, 6},
+        new int[]{1, 1, 1}
+    );
+  }
+
   public void testSpaces() throws IOException {
     assertAnalyzesTo(analyzer, "화학        이외의         것",
         new String[]{"화학", "이외", "의", "것"},
