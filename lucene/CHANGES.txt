@@ -48,9 +48,6 @@ Improvements
   docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
   indices (Atri Sharma, Adrien Grand, Simon Willnauer)
 
-* LUCENE-8939: Introduce shared count based early termination across multiple slices
-  (Atri Sharma)
-
 * LUCENE-8958: Shared count early termination for relevance sorted indices (Atri Sharma)
 
 * LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
@@ -153,6 +150,9 @@ the total hits is not requested.
 
 * LUCENE-8968: Improve performance of WITHIN and DISJOINT queries for Shape queries by
   doing just one pass whenever possible. (Ignacio Vera)
+
+* LUCENE-8939: Introduce shared count based early termination across multiple slices
+  (Atri Sharma)
 
 Bug Fixes
 
