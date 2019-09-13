@@ -166,6 +166,8 @@ Other
 
 * LUCENE-8758: QuadPrefixTree: removed levelS and levelN fields which weren't used. (Amish Shah)
 
+* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible.
+
 ======================= Lucene 8.2.0 =======================
 
 API Changes

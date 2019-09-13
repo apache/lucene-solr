@@ -3467,8 +3467,9 @@ public class SolrCLI implements CLIO {
         Map<String,String> startEnv = new HashMap<>();
         Map<String,String> procEnv = EnvironmentUtils.getProcEnvironment();
         if (procEnv != null) {
-          for (String envVar : procEnv.keySet()) {
-            String envVarVal = procEnv.get(envVar);
+          for (Map.Entry<String, String> entry : procEnv.entrySet()) {
+            String envVar = entry.getKey();
+            String envVarVal = entry.getValue();
             if (envVarVal != null && !"EXAMPLE".equals(envVar) && !envVar.startsWith("SOLR_")) {
               startEnv.put(envVar, envVarVal);
             }
