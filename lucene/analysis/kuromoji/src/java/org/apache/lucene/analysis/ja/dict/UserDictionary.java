@@ -194,11 +194,11 @@ public final class UserDictionary implements Dictionary {
    */
   private int[][] toIndexArray(Map<Integer, int[]> input) {
     ArrayList<int[]> result = new ArrayList<>();
-    for (int i : input.keySet()) {
-      int[] wordIdAndLength = input.get(i);
+    for (Map.Entry<Integer, int[]> entry : input.entrySet()) {
+      int[] wordIdAndLength = entry.getValue();
       int wordId = wordIdAndLength[0];
       // convert length to index
-      int current = i;
+      int current = entry.getKey();
       for (int j = 1; j < wordIdAndLength.length; j++) { // first entry is wordId offset
         int[] token = { wordId + j - 1, current, wordIdAndLength[j] };
         result.add(token);

@@ -90,9 +90,9 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
    */
   public void exportPivot(DataOutput output, Map<String,T> pivot) throws IOException {
     output.writeInt(pivot.size());
-    for (String pivotValue : pivot.keySet()) {
-      output.writeUTF(pivotValue);
-      exportPivotValue(output, pivot.get(pivotValue));
+    for (Map.Entry<String, T> entry : pivot.entrySet()) {
+      output.writeUTF(entry.getKey());
+      exportPivotValue(output, entry.getValue());
     }
   }
   /**

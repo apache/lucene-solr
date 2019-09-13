@@ -101,8 +101,8 @@ public class RandomFacadeStream extends TupleStream implements Expressible  {
 
   private SolrParams toSolrParams(Map<String, String> props) {
     ModifiableSolrParams sp = new ModifiableSolrParams();
-    for(String key : props.keySet()) {
-      sp.add(key, props.get(key));
+    for(Map.Entry<String, String> entry : props.entrySet()) {
+      sp.add(entry.getKey(), entry.getValue());
     }
     return sp;
   }
