@@ -100,6 +100,8 @@ Improvements
 
 * SOLR-13742: Allow optional redaction of data saved by 'bin/solr autoscaling -save'. (ab)
 
+* SOLR-13739: Optimized large managed schema modifications; Internal O(n^2) problem.  (Thomas Wöckinger via David Smiley)
+
 Bug Fixes
 ----------------------
 
