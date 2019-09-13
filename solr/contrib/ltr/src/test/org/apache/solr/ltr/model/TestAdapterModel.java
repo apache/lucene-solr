@@ -38,7 +38,8 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FieldValueFeature;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestAdapterModel extends TestRerankBase {
@@ -46,15 +47,15 @@ public class TestAdapterModel extends TestRerankBase {
   private static int numDocs = 0;
   private static float scoreValue;
 
-  @BeforeClass
-  public static void setupBeforeClass() throws Exception {
+  @Before
+  public void setup() throws Exception {
 
     setuptest(false);
 
-    for (int ii=1; ii<=random().nextInt(10); ++ii) {
+    numDocs = random().nextInt(10);
+    for (int ii=1; ii <= numDocs; ++ii) {
       String id = Integer.toString(ii);
       assertU(adoc("id", id, "popularity", ii+"00"));
-      ++numDocs;
     }
     assertU(commit());
 
@@ -75,6 +76,10 @@ public class TestAdapterModel extends TestRerankBase {
         "test",
         "{\"answerFileName\":\"" + scoreValueFile.getName() + "\"}");
     assertJPut(ManagedModelStore.REST_END_POINT, modelJson, "/responseHeader/status==0");
+  }
+  @After
+  public void cleanup() throws Exception {
+    aftertest();
   }
 
   @Test
