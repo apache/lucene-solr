@@ -135,7 +135,7 @@ Improvements
 
 * LUCENE-8976: Use exact distance between point and bounding rectangle in FloatPointNearestNeighbor. (Ignacio Vera)
 
-* LUCENE-8966: The Korean analyzer now split tokens on boundaries between digits and alphabetic characters. (Jim Ferenczi)
+* LUCENE-8966: The Korean analyzer now splits tokens on boundaries between digits and alphabetic characters. (Jim Ferenczi)
 
 Optimizations
 
