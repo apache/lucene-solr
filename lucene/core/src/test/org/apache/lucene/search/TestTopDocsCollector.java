@@ -120,7 +120,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     return tdc;
   }
 
-  private TopDocs doConcurrentSearchWithThreshold(int numResults, int thresHold, IndexReader reader) throws IOException {
+  private TopDocs doConcurrentSearchWithThreshold(int numResults, int threshold, IndexReader reader) throws IOException {
     Query q = new MatchAllDocsQuery();
     ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>(),
@@ -128,7 +128,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(reader, service);
 
     CollectorManager collectorManager = TopScoreDocCollector.createSharedManager(numResults,
-        null, thresHold);
+        null, threshold);
 
     TopDocs tdc = (TopDocs) searcher.search(q, collectorManager);
 

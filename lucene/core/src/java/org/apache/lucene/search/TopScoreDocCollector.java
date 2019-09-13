@@ -75,7 +75,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           totalHits++;
           hitsThresholdChecker.incrementHitCount();
 
-          if (score <= pqTop.score || (bottomValueChecker != null && score < bottomValueChecker.getBottomValue())) {
+          if (score <= pqTop.score) {
             if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && hitsThresholdChecker.isThresholdReached()) {
               // Since the queue is prepopulated with sentinel objects, getting here means that the local
               // priority queue is full
@@ -159,7 +159,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
             return;
           }
 
-          if (score <= pqTop.score || (bottomValueChecker != null && score < bottomValueChecker.getBottomValue())) {
+          if (score <= pqTop.score) {
             // Since docs are returned in-order (i.e., increasing doc Id), a document
             // with equal score to pqTop.score cannot compete since HitQueue favors
             // documents with lower doc Ids. Therefore reject those docs too.
