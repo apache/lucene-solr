@@ -29,7 +29,7 @@ import org.gradle.api.Project
 import org.apache.commons.io.FilenameUtils
 
 plugins {
-  id "com.palantir.consistent-versions" version "1.11.0"
+  id "com.palantir.consistent-versions" version "1.12.4"
 }
 
 // TOC
@@ -250,7 +250,7 @@ configure(allprojects) {
       exclude group: 'org.apache.yetus', module: 'audience-annotations' // annotations jar brought in by zk
       exclude group: 'org.slf4j', module: 'slf4j-log4j12' // zk and perhaps others can bring in log4j12 binding
       
-      exclude group: 'xml-apis', module: 'xml-apis:xml-apis' // this is brought in depending on env - ensure it's not
+      exclude group: 'xml-apis', module: 'xml-apis' // somehow can be inconsistenly brought in by xerces:xercesImpl - exlude it
     }
     
     modules {
