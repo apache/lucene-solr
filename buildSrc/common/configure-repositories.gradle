@@ -20,14 +20,12 @@ repositories {
     url "https://jcenter.bintray.com"
   }
   maven {
-    url "https://oss.sonatype.org/content/repositories/releases"
+    url "https://repo.maven.apache.org/maven2"
   }
   maven {
     url "https://maven.restlet.com"
   }
-  mavenCentral()
-  // chinese mirror
   maven {
-    url "https://uk.maven.org/maven2"
+    url "https://repo1.maven.org"
   }
 }
