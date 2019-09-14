@@ -206,6 +206,8 @@ Bug Fixes
 * SOLR-13240: Fixed UTILIZENODE action resulting in IllegalArgumentException.
   (Hendrik Haddorp, Richard Goodman, Tim Owen, shalin, noble, Christine Poerschke)
 
+* SOLR-13238: BlobHandler generates non-padded md5 (Jeff Walraven via janhoy)
+
 Other Changes
 ----------------------
 
