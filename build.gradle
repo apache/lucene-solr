@@ -43,7 +43,7 @@ plugins {
 // -> other config
 
 
-// *** defs and all project ext config
+// *** defs and all project ext config ***
 
 buildDir = file("build")
 
@@ -60,7 +60,7 @@ apply from: file("${rootProjectDir}/buildSrc/common/configure-ext.gradle")
 apply from: mfile(rootProjectDir, 'buildSrc/common/build-help.gradle')
 
 
-// *** lucene-solr all module config - configure all lucene-solr projects, including root project
+// *** lucene-solr all module config - configure all lucene-solr projects, including root project ***
 configure(luceneSolrProjects) {
     buildDir = file("build")
     
@@ -88,7 +88,7 @@ configure(luceneSolrProjects) {
   }
 }
 
-// *** lucene-solr sub module config - configure all lucene-solr modules (excludes the root project)
+// *** lucene-solr sub module config - configure all lucene-solr modules (excludes the root project) ***
 configure(luceneSolrSubProjects) {
 
 // TODO: prob wont go here    
@@ -184,7 +184,7 @@ configure(luceneSolrSubProjects) {
   }
 }
 
-// *** lucene-solr root project config - configure the root project
+// *** lucene-solr root project config - configure the root project ***
 configure(rootProject) {
   
   // root project config
@@ -211,7 +211,7 @@ configure(rootProject) {
   }
 }
 
-// *** all projects config
+// *** all projects config ***
 configure(allprojects) {
   
   // -> lucene-solr IDE config - setup eclipse and idea
@@ -298,7 +298,7 @@ configure(allprojects) {
   }
 }
 
-// *** other config
+// *** other config ***
 
 
 // Single JavaDocs for all modules
