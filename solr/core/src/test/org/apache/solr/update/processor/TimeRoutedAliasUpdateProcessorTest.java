@@ -20,6 +20,7 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,6 +51,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.update.UpdateCommand;
+import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
@@ -704,6 +706,30 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + TRA + "2017-10-02_03"));
     assertEquals(Instant.parse("2017-10-02T00:00:00Z"),
       TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + TRA + "2017-10-02"));
+  }
+
+  @Test
+  public void testDateMathInStart() throws Exception {
+
+    // This test prevents recurrence of SOLR-13760
+
+    String configName = getSaferTestName();
+    createConfigSet(configName);
+
+    // each collection has 4 shards with 3 replicas for 12 possible destinations
+    // 4 of which are leaders, and 8 of which should fail this test.
+    final int numShards = 1 + random().nextInt(4);
+    final int numReplicas = 1 + random().nextInt(3);
+    CollectionAdminRequest.createTimeRoutedAlias(alias, "2019-09-14T03:00:00Z/DAY", "+1DAY", getTimeField(),
+        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
+            .setMaxShardsPerNode(numReplicas))
+        .process(solrClient);
+
+    ModifiableSolrParams params = params();
+    String nowDay = DateTimeFormatter.ISO_INSTANT.format(DateMathParser.parseMath(new Date(), "2019-09-14T01:00:00Z").toInstant());
+    assertUpdateResponse(add(alias, Arrays.asList(
+        sdoc("id", "1", "timestamp_dt", nowDay)), // should not cause preemptive creation of 10-28 now
+        params));
   }
 
   /**

@@ -355,7 +355,11 @@ public class TimeRoutedAlias extends RoutedAlias {
     // Although this is also checked later, we need to check it here too to handle the case in Dimensional Routed
     // aliases where one can legally have zero collections for a newly encountered category and thus the loop later
     // can't catch this.
-    Instant startTime = parseRouteKey(start);
+
+    // SOLR-13760
+    // todo: we might want to think about converting datemath start times to an instant when the first collection
+    //  is created...
+    Instant startTime = DateMathParser.parseMath(new Date(), start).toInstant();
     if (docTimestamp.isBefore(startTime)) {
       throw new SolrException(BAD_REQUEST, "The document couldn't be routed because " + docTimestamp +
           " is before the start time for this alias " +start+")");
