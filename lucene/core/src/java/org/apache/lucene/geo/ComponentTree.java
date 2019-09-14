@@ -22,7 +22,7 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
- * 2D line/polygon geometry implementation represented as an R-tree of components.
+ * 2D multi-component geometry implementation represented as an interval tree of components.
  * <p>
  * Construction takes {@code O(n log n)} time for sorting and tree construction.
  *
@@ -148,6 +148,7 @@ class ComponentTree implements Component2D {
     return Relation.CELL_OUTSIDE_QUERY;
   }
 
+  /** Creates tree from provided components */
   public static Component2D create(Component2D[] components) {
     if (components.length == 1) {
       return components[0];
