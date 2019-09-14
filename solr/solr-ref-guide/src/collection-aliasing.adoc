@@ -255,7 +255,7 @@ Notice that the collection creation parameters follow the v2 API naming conventi
 ----
 POST /api/c
 {
-  "create-routed-alias" : {
+  "create-alias" : {
     "name": "somethingTemporalThisWayComes",
     "router" : {
       "name": "time",
@@ -285,7 +285,7 @@ POST /api/c
 
 *Output*
 
-[source,xml]
+[source,json]
 ----
 {
     "responseHeader": {
