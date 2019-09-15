@@ -211,7 +211,7 @@ Other
 
 * LUCENE-8758: QuadPrefixTree: removed levelS and levelN fields which weren't used. (Amish Shah)
 
-* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible.
+* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible. (Koen De Groote)
 
 * LUCENE-8993, LUCENE-8807: Changed all repository and download references in build files
   to HTTPS. (Uwe Schindler)
@@ -220,6 +220,8 @@ Other
 
 * LUCENE-8999: LuceneTestCase.expectThrows now propogates assert/assumption failures up to the test
   w/o wrapping in a new assertion failure unless the caller has explicitly expected them (hossman)
+
+* LUCENE-8979: Code Cleanup: Use entryset for map iteration wherever possible. - Part 2 (Koen De Groote)
 
 ======================= Lucene 8.2.0 =======================
 
