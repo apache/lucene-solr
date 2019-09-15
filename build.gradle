@@ -28,6 +28,7 @@ import org.apache.lucene.gradle.PristineClean
 import org.gradle.api.Project
 import org.apache.commons.io.FilenameUtils
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
+import org.apache.lucene.gradle.DepInsightReportTask
 
 plugins {
   id "com.palantir.consistent-versions" version "1.12.4"
@@ -112,6 +113,11 @@ configure(luceneSolrSubProjects) {
 //  }
   
   // TODO: check.dependsOn checkMissingJavaDocs
+  
+  task depInsight(type: DepInsightReportTask) {
+    group = 'Help'
+    description = "An alternate to dependencyInsight that works across projects so that you can run it from the root directory or aggregate projects eg lucene, solr, solr-contrib"
+  }
   
   configurations {
     sourceJarOutput
