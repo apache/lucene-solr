@@ -164,6 +164,11 @@ configure(luceneSolrSubProjects) {
     }
     jar.dependsOn sourceJar
     
+    task packageJavadoc(type: Jar) {
+      classifier = 'javadoc'
+      from javadoc
+    }
+    
     configurations {
       sourceJarOutput
     }
@@ -180,9 +185,8 @@ configure(luceneSolrSubProjects) {
           publications {
             mavenJava(MavenPublication) {
               from components.java
-              artifact(tasks.sourceJar) {
-                classifier 'sources'
-              }
+              artifact(tasks.sourceJar)
+              artifact(tasks.packageJavadoc)
             }
           }
         }
@@ -254,7 +258,6 @@ configure(allprojects) {
       exclude group: 'com.google.j2objc', module: 'j2objc-annotations'
       exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
       
-      exclude group: 'org.apache.yetus', module: 'audience-annotations' // annotations jar brought in by zk
       exclude group: 'org.slf4j', module: 'slf4j-log4j12' // zk and perhaps others can bring in log4j12 binding
       
       exclude group: 'xml-apis', module: 'xml-apis' // somehow can be inconsistenly brought in by xerces:xercesImpl - exlude it
