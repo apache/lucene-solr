@@ -27,6 +27,7 @@ import org.apache.lucene.gradle.TopHints
 import org.apache.lucene.gradle.PristineClean
 import org.gradle.api.Project
 import org.apache.commons.io.FilenameUtils
+import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 
 plugins {
   id "com.palantir.consistent-versions" version "1.12.4"
@@ -171,12 +172,18 @@ configure(luceneSolrSubProjects) {
     }
     
     // configure maven
-    if (project.getPlugins().hasPlugin('publish-maven')) {
-      publishing {
-        publications {
-          mavenJava(MavenPublication) {
-            from components.java
-            artifact tasks.sourceJar
+    project.getPlugins().withType(MavenPublishPlugin) {
+
+      // you can add the following above the apply maven-publish plugin to allow overriding in subprojects: project.ext.set("publishOverride", true)
+      if (!project.hasProperty('publishOverride') || !project.publishOverride) {
+        publishing {
+          publications {
+            mavenJava(MavenPublication) {
+              from components.java
+              artifact(tasks.sourceJar) {
+                classifier 'sources'
+              }
+            }
           }
         }
       }
