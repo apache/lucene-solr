@@ -16,7 +16,6 @@
  */
 
 apply plugin: 'java-library'
-apply plugin: 'maven-publish'
 apply plugin: org.apache.lucene.gradle.dist.PartOfDist
 
 jar.enabled = false
