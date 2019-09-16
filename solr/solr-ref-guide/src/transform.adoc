@@ -17,6 +17,9 @@
 // under the License.
 
 
+Streaming Expressions provides a powerful set of functions for transforming result sets. This section
+of the user guide provides an overview of some useful transformations applied to result sets.
+
 == Selecting and Adding Fields
 
 The `select` function wraps another streaming expression and can select a
@@ -30,7 +33,6 @@ of streaming math will be shown later in the userguide.
 
 image::images/math-expressions/select1.png[]
 
-
 == Filtering Tuples
 
 The `having` function can be used to filter tuples in the stream based
@@ -40,6 +42,17 @@ In the example below the `having` function is filtering the output of the
 `facet` function to only emit tuples that have `count(*)` greater then 20404.
 
 image::images/math-expressions/having.png[]
+
+
+== Paging
+
+The *record number*, added with the `recNum` function
+can, be filtered on to support paging.
+
+In the example below the `and` function with nested `lt` and `gt` functions are
+used to select records within a specific record number range:
+
+image::images/math-expressions/search-page.png[]
 
 
 == Handling Nulls
@@ -69,12 +82,39 @@ and field that is not in the result set, which always returns false.
 
 image::images/math-expressions/having3.png[]
 
-== Regex Matching
+== Regex Matching and Filtering
 
-The `matches` function can used to perform regex matches on fields ...
+The `matches` function can be used inside of a `having` function
+to test if a field in the record matches a specific
+regular expression. This allows for sophisticated regex matching over search results.
 
-== Paging
+The example below uses the `matches` function to return all records where
+the *complaint_type_s* field ends with *Commercial*.
+
+image::images/math-expressions/search-matches.png[]
 
 == Sorting
 
+The `sort` and `top` function can be used to resort a result set in memory. The `sort` function
+sorts and returns the entire result set based on the sort criteria. The `top` function
+can be used to return the top N values in a result set based on the sort criteria.
+
+image::images/math-expressions/search-resort.png[]
+
 == Rollups
+
+The `rollup` and `hashRollup` functions can be used to perform aggregations over result sets. This
+is different then the `facet`, `facet2D` and `timeseries` aggregation functions which push the aggregations
+into the search engine using.
+
+The `rollup` function performs map-reduce style rollups, which requires the result stream to be sorted by the
+the grouping fields. This allows for aggregations over very high cardinality fields. The `hashRollup` function
+performs rollups keeping all buckets in an in-memory hashmap. This requires enough memory to store all the
+distinct group by fields in memory, but does not require that the underlying stream be sorted.
+
+The example below shows a visualization of the top 5 complaint types
+from a random sample from the `nyc311` complaint database. The `top`
+function is used to select the top 5 complaint types based on
+the `count(*)` field output by the `hashRollup`.
+
+image::images/math-expressions/hashRollup.png[]
