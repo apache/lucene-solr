@@ -18,24 +18,33 @@
 
 
 Streaming Expressions provides a powerful set of functions for transforming result sets. This section
-of the user guide provides an overview of some useful transformations applied to result sets.
+of the user guide provides an overview of useful transformations applied to result sets.
 
 == Selecting and Adding Fields
 
-The `select` function wraps another streaming expression and can select a
-subset of fields, map fields to new
-names and/or add new fields to each tuple in the stream.
+The `select` function wraps another streaming expression can perform the following operations on each tuple
+in the stream:
+
+* *Select* a subset of fields
+* *Map* fields to new names
+* *Compute* new fields
 
 Below is an example showing the `select` function wrapping a `search` function
 and mapping fields to new field names. The `recNum` function is a math expression
-which the `select` expression calls on each tuple. More examples of this type
-of streaming math will be shown later in the userguide.
+which simply returns the current record number of the tuple. The `select` expression can call
+any math expression to compute new values.
 
 image::images/math-expressions/select1.png[]
 
+Below is an example using the `div` function to compute a new field
+from two existing fields:
+
+image::images/math-expressions/select-math.png[]
+
+
 == Filtering Tuples
 
-The `having` function can be used to filter tuples in the stream based
+The `having` function can be used to filter tuples in the stream based on
 boolean logic.
 
 In the example below the `having` function is filtering the output of the
@@ -46,8 +55,8 @@ image::images/math-expressions/having.png[]
 
 == Paging
 
-The *record number*, added with the `recNum` function
-can, be filtered on to support paging.
+The *record number*, added with the `recNum` function,
+can be filtered on to support paging.
 
 In the example below the `and` function with nested `lt` and `gt` functions are
 used to select records within a specific record number range:
@@ -57,7 +66,7 @@ image::images/math-expressions/search-page.png[]
 
 == Handling Nulls
 
-The `notNull` and `isNull` function can be used to either replace null values with different values,
+The `notNull` and `isNull` functions can be used to either replace null values with different values,
 or to filter out tuples with null values.
 
 The example below is using the `isNull` function inside of `select` function
