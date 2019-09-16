@@ -66,8 +66,7 @@ Upgrade Notes
 
 * SOLR-13593 SOLR-13690 SOLR-13691: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
 
-* SOLR-13734: JWTAuthPlugin configuration option `requireSub` is no longer needed and will cause an error if used.
-  Also, the 'jwkUrl' configuration key is deprecated and may be removed later, please use 'jwksUrl' instead. (janhoy)
+* SOLR-13734: JWTAuthPlugin configuration option `requireSub` is no longer needed and will cause an error if used (janhoy)
 
 Other Changes
 ----------------------
@@ -97,6 +96,9 @@ Upgrade Notes
   in tests that call initCore()/deleteCore() multiple times in a given test (class).  initCoreDataDir
   is now deprecated, and users are encouraged to use SolrTestCaseJ4.initAndGetDataDir() in it's place.
   See SOLR-13664 for more details.
+
+* For JWTAuthPlugin, the 'jwkUrl' configuration key is deprecated and may be removed later, please use 'jwksUrl'
+  instead. See SOLR-13734.
 
 New Features
 ----------------------
