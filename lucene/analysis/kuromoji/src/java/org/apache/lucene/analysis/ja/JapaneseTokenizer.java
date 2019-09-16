@@ -219,9 +219,9 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   /**
-   * Create a new JapaneseTokenizer, supplying a custom system dictionary and unknown dictionary.
-   * <p>
-   * Uses the default AttributeFactory.
+   * <p>Create a new JapaneseTokenizer, supplying a custom system dictionary and unknown dictionary.
+   * This constructor provides an entry point for users that want to construct custom language models
+   * that can be used as input to {@link org.apache.lucene.analysis.ja.util.DictionaryBuilder}.</p>
    *
    * @param factory the AttributeFactory to use
    * @param systemDictionary a custom known token dictionary
@@ -230,6 +230,7 @@ public final class JapaneseTokenizer extends Tokenizer {
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
    * @param mode tokenization mode.
+   * @lucene.experimental
    */
   public JapaneseTokenizer(AttributeFactory factory,
                            TokenInfoDictionary systemDictionary,
