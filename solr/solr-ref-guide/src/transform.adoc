@@ -72,9 +72,9 @@ or to filter out tuples with null values.
 The example below is using the `isNull` function inside of `select` function
 to replace null values with -1. The `if` function takes 3 parameters. The first
 is a boolean expression, in this case `isNull`. The `if` function returns
-the secopnd parameter if the boolean function returns true, and the third
+the second parameter if the boolean function returns true, and the third
 parameter if it returns false. In this case `isNull` is always true because its
-check for a field in the tuples that is not included in the result set.
+checking for a field in the tuples that is not included in the result set.
 
 image::images/math-expressions/select2.png[]
 
@@ -82,12 +82,12 @@ image::images/math-expressions/select2.png[]
 tuples with null values.
 
 The example below emits all the documents because it is evaluating `isNull` for
-and field that is not in the result set, which always returns true.
+a field that is not in the result set, which always returns true.
 
 image::images/math-expressions/having2.png[]
 
 The example below emits zero documents because it is evaluating `notNull` for
-and field that is not in the result set, which always returns false.
+a field that is not in the result set, which always returns false.
 
 image::images/math-expressions/having3.png[]
 
@@ -114,15 +114,15 @@ image::images/math-expressions/search-resort.png[]
 
 The `rollup` and `hashRollup` functions can be used to perform aggregations over result sets. This
 is different then the `facet`, `facet2D` and `timeseries` aggregation functions which push the aggregations
-into the search engine using.
+into the search engine using the JSON facet API.
 
-The `rollup` function performs map-reduce style rollups, which requires the result stream to be sorted by the
+The `rollup` function performs map-reduce style rollups, which requires the result stream be sorted by the
 the grouping fields. This allows for aggregations over very high cardinality fields. The `hashRollup` function
 performs rollups keeping all buckets in an in-memory hashmap. This requires enough memory to store all the
 distinct group by fields in memory, but does not require that the underlying stream be sorted.
 
 The example below shows a visualization of the top 5 complaint types
-from a random sample from the `nyc311` complaint database. The `top`
+from a random sample of the `nyc311` complaint database. The `top`
 function is used to select the top 5 complaint types based on
 the `count(*)` field output by the `hashRollup`.
 
