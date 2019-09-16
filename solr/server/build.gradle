@@ -69,6 +69,16 @@ dependencies {
   startJar 'org.eclipse.jetty:jetty-start::shaded'
 }
 
+task getStartJar(type: Copy) {
+  from {project.configurations.startJar.files} {
+    include 'jetty-start*'
+  }
+  into project.projectDir
+  rename { String fileName ->
+    'start.jar'
+  }
+}
+
 unusedDeps {
   jarExclude '.*?\\.jar' // solr-server creates no jar, so we don't currently check it
 }
