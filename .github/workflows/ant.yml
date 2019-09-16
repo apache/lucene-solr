@@ -1,0 +1,22 @@
+name: Ant precommit (w/ Java11)
+
+on: 
+  pull_request:
+    branches:
+    - '*'
+jobs:
+  test:
+    name: ant precommit w/ Java 11
+ 
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up JDK 11
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    - name: Ivy bootstrap
+      run: ant ivy-bootstrap
+    - name: Precommit
+      run: ant precommit

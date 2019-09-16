@@ -102,8 +102,8 @@ public abstract class SpanWeight extends Weight {
       return null;
     TermStatistics[] termStats = new TermStatistics[termStates.size()];
     int termUpTo = 0;
-    for (Term term : termStates.keySet()) {
-      TermStatistics termStatistics = searcher.termStatistics(term, termStates.get(term));
+    for (Map.Entry<Term, TermStates> entry : termStates.entrySet()) {
+      TermStatistics termStatistics = searcher.termStatistics(entry.getKey(), entry.getValue());
       if (termStatistics != null) {
         termStats[termUpTo++] = termStatistics;
       }

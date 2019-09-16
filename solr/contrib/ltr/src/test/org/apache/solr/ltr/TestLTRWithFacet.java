@@ -20,14 +20,14 @@ package org.apache.solr.ltr;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.model.LinearModel;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestLTRWithFacet extends TestRerankBase {
 
-  @BeforeClass
-  public static void before() throws Exception {
+  @Before
+  public void before() throws Exception {
     setuptest(false);
 
     assertU(adoc("id", "1", "title", "a1", "description", "E", "popularity",
@@ -48,6 +48,12 @@ public class TestLTRWithFacet extends TestRerankBase {
         "D", "popularity", "8"));
     assertU(commit());
   }
+  
+  @After
+  public void after() throws Exception {
+    aftertest();
+  }
+
 
   @Test
   public void testRankingSolrFacet() throws Exception {
@@ -91,13 +97,6 @@ public class TestLTRWithFacet extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), ""
         + "/facet_counts/facet_fields/description=="
         + "['b', 4, 'e', 2, 'c', 1, 'd', 1]");
-    // aftertest();
-
-  }
-
-  @AfterClass
-  public static void after() throws Exception {
-    aftertest();
   }
 
 }
