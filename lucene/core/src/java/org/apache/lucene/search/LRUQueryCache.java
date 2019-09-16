@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -115,7 +116,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
   // This is used primarily to ensure that multiple threads do not trigger loading
   // of the same query in the same cache. We use a set because it is an invariant that
   // the entries of this data structure be unique.
-  private final Set<Query> inFlightAsyncLoadQueries = Collections.newSetFromMap(new ConcurrentHashMap<Query,Boolean>());
+  private final Set<Query> inFlightAsyncLoadQueries = Collections.newSetFromMap(new ConcurrentHashMap());
   // The contract between this set and the per-leaf caches is that per-leaf caches
   // are only allowed to store sub-sets of the queries that are contained in
   // mostRecentlyUsedQueries. This is why write operations are performed under a lock
@@ -807,16 +808,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
           // If asynchronous caching is requested, perform the same and return
           // the uncached iterator
           if (executor != null) {
-            FutureTask<Void> task = new FutureTask<>(() -> {
-              DocIdSet localDocIdSet = cache(context);
-              putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
-
-              //remove the key from inflight -- the key is loaded now
-              inFlightAsyncLoadQueries.remove(in.getQuery());
-              return null;
-            });
-            inFlightAsyncLoadQueries.add(in.getQuery());
-            executor.execute(task);
+            cacheAsynchronously(context, cacheHelper);
             return in.scorerSupplier(context);
           }
           else {
@@ -909,19 +901,9 @@ public class LRUQueryCache implements QueryCache, Accountable {
           // If asynchronous caching is requested, perform the same and return
           // the uncached iterator
           if (executor != null) {
-            FutureTask<Void> task = new FutureTask<>(() -> {
-              DocIdSet localDocIdSet = cache(context);
-              putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
-
-              //remove the key from inflight -- the key is loaded now
-              inFlightAsyncLoadQueries.remove(in.getQuery());
-              return null;
-            });
-            inFlightAsyncLoadQueries.add(in.getQuery());
-            executor.execute(task);
+            cacheAsynchronously(context, cacheHelper);
             return in.bulkScorer(context);
-          }
-          else {
+          } else {
             docIdSet = cache(context);
             putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
           }
@@ -942,5 +924,20 @@ public class LRUQueryCache implements QueryCache, Accountable {
       return new DefaultBulkScorer(new ConstantScoreScorer(this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi));
     }
 
+    // Perform a cache load asynchronously
+    // NOTE: Potentially, two threads can trigger a load for the same query concurrently as the check for presence of the query
+    // done upstream and the lock is not he
+    private void cacheAsynchronously(LeafReaderContext context, IndexReader.CacheHelper cacheHelper) throws IOException {
+      FutureTask<Void> task = new FutureTask<>(() -> {
+        DocIdSet localDocIdSet = cache(context);
+        putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
+
+        //remove the key from inflight -- the key is loaded now
+        inFlightAsyncLoadQueries.remove(in.getQuery());
+        return null;
+      });
+      inFlightAsyncLoadQueries.add(in.getQuery());
+      executor.execute(task);
+    }
   }
 }
