@@ -102,6 +102,8 @@ Improvements
 
 * SOLR-13739: Optimized large managed schema modifications; Internal O(n^2) problem.  (Thomas Wöckinger via David Smiley)
 
+* SOLR-9658: Max idle time support for SolrCache implementations. (hoss, ab)
+
 Bug Fixes
 ----------------------
 
