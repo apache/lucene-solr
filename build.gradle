@@ -25,6 +25,7 @@ import org.apache.lucene.gradle.deps.ListDeps
 import org.apache.lucene.gradle.deps.JdepsReport
 import org.apache.lucene.gradle.TopHints
 import org.apache.lucene.gradle.PristineClean
+import org.apache.lucene.gradle.SetDefaultUserConfig
 import org.gradle.api.Project
 import org.apache.commons.io.FilenameUtils
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
@@ -220,6 +221,11 @@ configure(rootProject) {
   }
   
   task pristineClean(type: PristineClean) {}
+  
+  task defaultUserConfig(type: SetDefaultUserConfig) {
+    group = 'Build'
+    description = "Sets recommended starting build property values in ~/.gradle/gradle.properties. Use --agressive for better build performance"
+  }
   
   ext.testsResults = [] // test result summaries
   
