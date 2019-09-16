@@ -231,6 +231,8 @@ Other Changes
 
 * SOLR-13658: Precommit fail Java "var" until 9x. Fail "var...<>" constructs entirely (Erick Erickson)
 
+* SOLR-13767: Upgrade jackson to 2.9.9 (janhoy)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
