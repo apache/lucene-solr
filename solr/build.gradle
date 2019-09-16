@@ -28,16 +28,6 @@ tasks.create("checkLicenses", LicenseCheckTask, file("licenses"))
 
 tasks.create("jarChecksums", JarChecksum, file('solr'), file('licenses'))
 
-task getStartJar(type: Copy) {
-  from {project("solr-server").configurations.startJar.files} {
-    include 'jetty-start*'
-  }
-  into file('server')
-  rename { String fileName ->
-    'start.jar'
-  }
-}
-
 task packageDist(type: org.apache.lucene.gradle.dist.PackageLuceneSolrDist) {
   group = 'Dist'
   description = 'Generates the Lucene and Solr distribution.'
@@ -45,5 +35,5 @@ task packageDist(type: org.apache.lucene.gradle.dist.PackageLuceneSolrDist) {
   // additional includes for solr-server
   includeArtifacts '**/server/solr/**', '**/server/resources/**', '**/server/etc/**', '**/server/modules/**', '**/server/scripts/**', '**/server/contexts/**', '**/server/start.jar'
   
-  dependsOn getStartJar
+  dependsOn project("solr-server").getStartJar
 }
