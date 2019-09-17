@@ -48,7 +48,6 @@ import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.*;
@@ -324,15 +323,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
      * Override these two methods to provide a way to use global collection stats.
      */
   @Override
-  public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
+  public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
     final SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
     if (reqInfo != null) {
       final StatsSource statsSrc = (StatsSource) reqInfo.getReq().getContext().get(STATS_SOURCE);
       if (statsSrc != null) {
-        return statsSrc.termStatistics(this, term, context);
+        return statsSrc.termStatistics(this, term, docFreq, totalTermFreq);
       }
     }
-    return localTermStatistics(term, context);
+    return localTermStatistics(term, docFreq, totalTermFreq);
   }
 
   @Override
@@ -347,8 +346,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return localCollectionStatistics(field);
   }
 
-  public TermStatistics localTermStatistics(Term term, TermStates context) throws IOException {
-    return super.termStatistics(term, context);
+  public TermStatistics localTermStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
+    return super.termStatistics(term, docFreq, totalTermFreq);
   }
 
   public CollectionStatistics localCollectionStatistics(String field) throws IOException {
