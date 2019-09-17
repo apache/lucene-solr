@@ -223,8 +223,8 @@ configure(rootProject) {
   task pristineClean(type: PristineClean) {}
   
   task defaultUserConfig(type: SetDefaultUserConfig) {
-    group = 'Build'
-    description = "Sets recommended starting build property values in ~/.gradle/gradle.properties. Use --agressive for better build performance"
+    group = 'Build Setup'
+    description = "Sets recommended starting build property values in ~/.gradle/gradle.properties. Use --agressive for better build performance. WARNING! This WILL modify your gradle.properties file."
   }
   
   ext.testsResults = [] // test result summaries

@@ -24,6 +24,8 @@ test {
   group = 'Tests'
   description = "Runs project tests."
   
+  outputs.upToDateWhen { false }
+  
   def rootProjectDir = project.rootProject.projectDir;
   
   useJUnit()
@@ -66,7 +68,7 @@ test {
     }
   }
   
-  minHeapSize = "256m"
+  minHeapSize = "128m"
   maxHeapSize = "512m"
   // Enable assertions
   jvmArgs += "-ea"
@@ -74,8 +76,12 @@ test {
   jvmArgs += "-esa"
   
   jvmArgs +=  "-XX:+UseG1GC"
-  jvmArgs += "-Xss2m"
-  jvmArgs +=  "-XX:+UseStringDeduplication"
+  jvmArgs +=  "-XX:MaxGCPauseMillis=500" 
+  jvmArgs +=  "-XX:+UnlockExperimentalVMOptions"
+  jvmArgs +=  "-XX:G1MaxNewSizePercent=30"
+  jvmArgs +=  "-XX:G1NewSizePercent=5"
+  jvmArgs +=  "-XX:G1HeapRegionSize=32M"
+  jvmArgs +=  "-XX:InitiatingHeapOccupancyPercent=70"
   
   def commonDir
   if (project.ext.getTopLvlProject(project).equals(rootProject.project(":lucene"))) {
