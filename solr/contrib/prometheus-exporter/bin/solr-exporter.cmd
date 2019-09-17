@@ -63,6 +63,9 @@ set BASEDIR=%~dp0..
 
 :repoSetup
 
+IF NOT "%SOLR_HEAP%"=="" set SOLR_JAVA_MEM=-Xms%SOLR_HEAP% -Xmx%SOLR_HEAP%
+IF "%SOLR_JAVA_MEM%"=="" set SOLR_JAVA_MEM=-Xms512m -Xmx512m
+IF "%GC_TUNE%"=="" set GC_TUNE=-XX:+UseG1GC
 
 if "%JAVACMD%"=="" set JAVACMD=java
 
@@ -75,7 +78,7 @@ goto endInit
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit
 
-%JAVACMD% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% -classpath "%CLASSPATH_PREFIX%;%CLASSPATH%" -Dapp.name="solr-exporter" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" org.apache.solr.prometheus.exporter.SolrExporter %CMD_LINE_ARGS%
+%JAVACMD% %SOLR_JAVA_MEM% %GC_TUNE% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% -classpath "%CLASSPATH_PREFIX%;%CLASSPATH%" -Dapp.name="solr-exporter" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" org.apache.solr.prometheus.exporter.SolrExporter %CMD_LINE_ARGS%
 if ERRORLEVEL 1 goto error
 goto end
 
