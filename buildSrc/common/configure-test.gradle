@@ -47,6 +47,10 @@ test {
 
   afterSuite { desc, result ->
     if (desc.parent) return // Only summarize results for whole modules
+      if (result.testCount == 0 && result.successfulTestCount == 0 && result.failedTestCount == 0 && result.skippedTestCount == 0) {
+        return
+      }
+    
       String summary = "results: ${result.resultType} " +
           "(" +
           "${result.testCount} tests, " +
@@ -57,9 +61,9 @@ test {
           "in ${TimeCategory.minus(new Date(result.endTime), new Date(result.startTime))}" +
           "\n" +
           "Report file: ${project.tasks.test.reports.html.entryPoint}"
-    
+
     TestResultObj testResult = new TestResultObj("${project.name}:${project.tasks.test.name}", summary, result.resultType == TestResult.ResultType.SUCCESS)
-    
+
     // Add reports in `testsResults`, keep failed suites at the end
     if (result.resultType == TestResult.ResultType.SUCCESS) {
       rootProject.testsResults.add(0, testResult)
