@@ -138,6 +138,59 @@ public class Polygon2D extends EdgeTree {
     return relateIndexedTriangle(ax, ay, bx, by, cx, cy);
   }
 
+  @Override
+  protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    // short cut, lines and points cannot contain this type of shape
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      return WithinRelation.DISJOINT;
+    }
+
+    // if any of the points is inside the polygon, the polygon cannot be within this indexed
+    // shape because points belong to the original indexed shape.
+    if (contains(ay, ax) || contains(by, bx) || contains(cy, cx)) {
+      return WithinRelation.NOTWITHIN;
+    }
+
+    WithinRelation relation = WithinRelation.DISJOINT;
+    // if any of the edges intersects an the edge belongs to the shape then it cannot be within.
+    // if it only intersects edges that do not belong to the shape, then it is a candidate
+    // we skip edges at the dateline to support shapes crossing it
+    if (tree.crossesLine(ax, ay, bx, by)) {
+      if (ab == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+
+    if (tree.crossesLine(bx, by, cx, cy)) {
+      if (bc == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (tree.crossesLine(cx, cy, ax, ay)) {
+      if (ca == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+
+    // if any of the edges crosses and edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
+    }
+
+    // Check if shape is within the triangle
+    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+      return WithinRelation.CANDIDATE;
+    }
+    return relation;
+  }
+
   /** relates an indexed line segment (a "flat triangle") with the polygon */
   private Relation relateIndexedLineSegment(double a2x, double a2y, double b2x, double b2y) {
     // check endpoints of the line segment

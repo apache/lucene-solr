@@ -125,6 +125,14 @@ public abstract class EdgeTree {
     return Relation.CELL_OUTSIDE_QUERY;
   }
 
+  /** Returns the Within relation to the provided triangle */
+  public WithinRelation withinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    if (left != null || right != null) {
+      throw new IllegalArgumentException("withinTriangle is not supported for shapes with more than one component");
+    }
+    return internalComponentWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+  }
+
   // TODO: This should be move to ShapeQuery when moved out of sandbox
   /** Used by withinTriangle to check the within relationship between a triangle and the query shape
    * (e.g. if the query shape is within the triangle). */
@@ -139,19 +147,14 @@ public abstract class EdgeTree {
     DISJOINT
   }
 
-  /** Returns the Within relation to the provided triangle */
-  public WithinRelation withinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-    if (left != null || right != null) {
-      throw new IllegalArgumentException("withinTriangle is not supported for shapes with more than one component");
-    }
-    return componentRelateWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
-  }
-
   /** Returns relation to the provided rectangle for this component */
   protected abstract Relation componentRelate(double minLat, double maxLat, double minLon, double maxLon);
 
   /** Returns relation to the provided triangle for this component */
   protected abstract Relation componentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy);
+
+  /** Returns within relation to the provided triangle for this component */
+  protected abstract WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
 
 
   private Relation internalComponentRelateTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
@@ -183,63 +186,17 @@ public abstract class EdgeTree {
     return componentRelate(minLat, maxLat, minLon, maxLon);
   }
 
-  /** Returns the Within relation to the provided triangle for this component */
-  protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-    // short cut, lines and points cannot contain this type of shape
-    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
-      return WithinRelation.DISJOINT;
-    }
-
+  private WithinRelation internalComponentWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
     double minLat = StrictMath.min(StrictMath.min(ay, by), cy);
     double minLon = StrictMath.min(StrictMath.min(ax, bx), cx);
     double maxLat = StrictMath.max(StrictMath.max(ay, by), cy);
     double maxLon = StrictMath.max(StrictMath.max(ax, bx), cx);
-
-    // check that triangle bounding box not inside shape bounding box
-    if (minLon > this.minLon || maxLon < this.maxLon || minLat > this.minLat || maxLat < this.maxLat) {
+    // check if bounding boxes are disjoint
+    if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
       return WithinRelation.DISJOINT;
     }
-
-    WithinRelation relation = WithinRelation.DISJOINT;
-    // if any of the edges intersects an the edge belongs to the shape then it cannot be within.
-    // if it only intersects edges that do not belong to the shape, then it is a candidate
-    // we skip edges at the dateline to support shapes crossing it
-    if (tree.crossesLine(ax, ay, bx, by)) {
-      if (ab == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-
-    if (tree.crossesLine(bx, by, cx, cy)) {
-      if (bc == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-    if (tree.crossesLine(cx, cy, ax, ay)) {
-      if (ca == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-
-    // if any of the edges crosses and edge that does not belong to the shape
-    // then it is a candidate for within
-    if (relation == WithinRelation.CANDIDATE) {
-      return WithinRelation.CANDIDATE;
-    }
-
-    // Check if shape is within the triangle
-    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
-      return WithinRelation.CANDIDATE;
-    }
-    return relation;
+    return componentRelateWithinTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
   }
-
 
   /** Creates tree from sorted components (with range low and high inclusive) */
   protected static EdgeTree createTree(EdgeTree components[], int low, int high, boolean splitX) {

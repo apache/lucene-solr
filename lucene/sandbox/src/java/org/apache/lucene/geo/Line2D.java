@@ -84,6 +84,53 @@ public final class Line2D extends EdgeTree {
     return Relation.CELL_OUTSIDE_QUERY;
   }
 
+  @Override
+  protected WithinRelation componentRelateWithinTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    // short cut, lines and points cannot contain this type of shape
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      return WithinRelation.DISJOINT;
+    }
+
+    WithinRelation relation = WithinRelation.DISJOINT;
+    // if any of the edges intersects an the edge belongs to the shape then it cannot be within.
+    // if it only intersects edges that do not belong to the shape, then it is a candidate
+    // we skip edges at the dateline to support shapes crossing it
+    if (tree.crossesLine(ax, ay, bx, by)) {
+      if (ab == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+
+    if (tree.crossesLine(bx, by, cx, cy)) {
+      if (bc == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (tree.crossesLine(cx, cy, ax, ay)) {
+      if (ca == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+
+    // if any of the edges crosses and edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
+    }
+
+    // Check if shape is within the triangle
+    if (pointInTriangle(tree.lon1, tree.lat1, ax, ay, bx, by, cx, cy) == true) {
+      return WithinRelation.CANDIDATE;
+    }
+    return relation;
+  }
+
   /** returns true if the provided x, y point lies on the line */
   private boolean isPointOnLine(Edge tree, double x, double y) {
     if (y <= tree.max) {
