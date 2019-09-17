@@ -17,10 +17,10 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -55,6 +55,14 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(LFUCache.class);
 
+  public static final String TIME_DECAY_PARAM = "timeDecay";
+  public static final String CLEANUP_THREAD_PARAM = "cleanupThread";
+  public static final String INITIAL_SIZE_PARAM = "initialSize";
+  public static final String MIN_SIZE_PARAM = "minSize";
+  public static final String ACCEPTABLE_SIZE_PARAM = "acceptableSize";
+  public static final String AUTOWARM_COUNT_PARAM = "autowarmCount";
+  public static final String SHOW_ITEMS_PARAM = "showItems";
+
   // contains the statistics objects for all open caches of the same type
   private List<ConcurrentLFUCache.Stats> statsList;
 
@@ -68,60 +76,65 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private ConcurrentLFUCache<K, V> cache;
   private int showItems = 0;
   private Boolean timeDecay = true;
+  private int maxIdleTimeSec;
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
+
+  private int maxSize;
+  private int minSizeLimit;
+  private int initialSize;
+  private int acceptableSize;
+  private boolean cleanupThread;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     state = State.CREATED;
     this.regenerator = regenerator;
     name = (String) args.get(NAME);
-    String str = (String) args.get("size");
-    int limit = str == null ? 1024 : Integer.parseInt(str);
-    int minLimit;
-    str = (String) args.get("minSize");
+    String str = (String) args.get(SIZE_PARAM);
+    maxSize = str == null ? 1024 : Integer.parseInt(str);
+    str = (String) args.get(MIN_SIZE_PARAM);
     if (str == null) {
-      minLimit = (int) (limit * 0.9);
+      minSizeLimit = (int) (maxSize * 0.9);
     } else {
-      minLimit = Integer.parseInt(str);
+      minSizeLimit = Integer.parseInt(str);
     }
-    if (minLimit == 0) minLimit = 1;
-    if (limit <= minLimit) limit = minLimit + 1;
+    checkAndAdjustLimits();
 
-    int acceptableSize;
-    str = (String) args.get("acceptableSize");
+    str = (String) args.get(ACCEPTABLE_SIZE_PARAM);
     if (str == null) {
-      acceptableSize = (int) (limit * 0.95);
+      acceptableSize = (int) (maxSize * 0.95);
     } else {
       acceptableSize = Integer.parseInt(str);
     }
     // acceptable limit should be somewhere between minLimit and limit
-    acceptableSize = Math.max(minLimit, acceptableSize);
+    acceptableSize = Math.max(minSizeLimit, acceptableSize);
 
-    str = (String) args.get("initialSize");
-    final int initialSize = str == null ? limit : Integer.parseInt(str);
-    str = (String) args.get("autowarmCount");
+    str = (String) args.get(INITIAL_SIZE_PARAM);
+    initialSize = str == null ? maxSize : Integer.parseInt(str);
+    str = (String) args.get(AUTOWARM_COUNT_PARAM);
     autowarmCount = str == null ? 0 : Integer.parseInt(str);
-    str = (String) args.get("cleanupThread");
-    boolean newThread = str == null ? false : Boolean.parseBoolean(str);
+    str = (String) args.get(CLEANUP_THREAD_PARAM);
+    cleanupThread = str != null && Boolean.parseBoolean(str);
 
-    str = (String) args.get("showItems");
+    str = (String) args.get(SHOW_ITEMS_PARAM);
     showItems = str == null ? 0 : Integer.parseInt(str);
 
     // Don't make this "efficient" by removing the test, default is true and omitting the param will make it false.
-    str = (String) args.get("timeDecay");
-    timeDecay = (str == null) ? true : Boolean.parseBoolean(str);
+    str = (String) args.get(TIME_DECAY_PARAM);
+    timeDecay = (str == null) || Boolean.parseBoolean(str);
 
-    description = "Concurrent LFU Cache(maxSize=" + limit + ", initialSize=" + initialSize +
-        ", minSize=" + minLimit + ", acceptableSize=" + acceptableSize + ", cleanupThread=" + newThread +
-        ", timeDecay=" + Boolean.toString(timeDecay);
-    if (autowarmCount > 0) {
-      description += ", autowarmCount=" + autowarmCount + ", regenerator=" + regenerator;
+    str = (String) args.get(MAX_IDLE_TIME_PARAM);
+    if (str == null) {
+      maxIdleTimeSec = -1;
+    } else {
+      maxIdleTimeSec = Integer.parseInt(str);
     }
-    description += ')';
+    description = generateDescription();
 
-    cache = new ConcurrentLFUCache<>(limit, minLimit, acceptableSize, initialSize, newThread, false, null, timeDecay);
+    cache = new ConcurrentLFUCache<>(maxSize, minSizeLimit, acceptableSize, initialSize,
+        cleanupThread, false, null, timeDecay, maxIdleTimeSec);
     cache.setAlive(false);
 
     statsList = (List<ConcurrentLFUCache.Stats>) persistence;
@@ -136,6 +149,18 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     }
     statsList.add(cache.getStats());
     return statsList;
+  }
+
+  private String generateDescription() {
+    String descr = "Concurrent LFU Cache(maxSize=" + maxSize + ", initialSize=" + initialSize +
+        ", minSize=" + minSizeLimit + ", acceptableSize=" + acceptableSize + ", cleanupThread=" + cleanupThread +
+        ", timeDecay=" + timeDecay +
+        ", maxIdleTime=" + maxIdleTimeSec;
+    if (autowarmCount > 0) {
+      descr += ", autowarmCount=" + autowarmCount + ", regenerator=" + regenerator;
+    }
+    descr += ')';
+    return descr;
   }
 
   @Override
@@ -247,22 +272,33 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
         long hits = stats.getCumulativeHits();
         long inserts = stats.getCumulativePuts();
         long evictions = stats.getCumulativeEvictions();
+        long idleEvictions = stats.getCumulativeIdleEvictions();
         long size = stats.getCurrentSize();
 
-        map.put("lookups", lookups);
-        map.put("hits", hits);
-        map.put("hitratio", calcHitRatio(lookups, hits));
-        map.put("inserts", inserts);
-        map.put("evictions", evictions);
-        map.put("size", size);
+        map.put(LOOKUPS_PARAM, lookups);
+        map.put(HITS_PARAM, hits);
+        map.put(HIT_RATIO_PARAM, calcHitRatio(lookups, hits));
+        map.put(INSERTS_PARAM, inserts);
+        map.put(EVICTIONS_PARAM, evictions);
+        map.put(SIZE_PARAM, size);
+        map.put(MAX_SIZE_PARAM, maxSize);
+        map.put(MIN_SIZE_PARAM, minSizeLimit);
+        map.put(ACCEPTABLE_SIZE_PARAM, acceptableSize);
+        map.put(AUTOWARM_COUNT_PARAM, autowarmCount);
+        map.put(CLEANUP_THREAD_PARAM, cleanupThread);
+        map.put(SHOW_ITEMS_PARAM, showItems);
+        map.put(TIME_DECAY_PARAM, timeDecay);
+        map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
+        map.put(MAX_IDLE_TIME_PARAM, maxIdleTimeSec);
+        map.put("idleEvictions", idleEvictions);
 
         map.put("warmupTime", warmupTime);
-        map.put("timeDecay", timeDecay);
 
         long clookups = 0;
         long chits = 0;
         long cinserts = 0;
         long cevictions = 0;
+        long cidleEvictions = 0;
 
         // NOTE: It is safe to iterate on a CopyOnWriteArrayList
         for (ConcurrentLFUCache.Stats statistics : statsList) {
@@ -270,12 +306,14 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
           chits += statistics.getCumulativeHits();
           cinserts += statistics.getCumulativePuts();
           cevictions += statistics.getCumulativeEvictions();
+          cidleEvictions += statistics.getCumulativeIdleEvictions();
         }
         map.put("cumulative_lookups", clookups);
         map.put("cumulative_hits", chits);
         map.put("cumulative_hitratio", calcHitRatio(clookups, chits));
         map.put("cumulative_inserts", cinserts);
         map.put("cumulative_evictions", cevictions);
+        map.put("cumulative_idleEvictions", cidleEvictions);
 
         if (detailed && showItems != 0) {
           Map items = cache.getMostUsedItems(showItems == -1 ? Integer.MAX_VALUE : showItems);
@@ -323,6 +361,45 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
           RamUsageEstimator.sizeOfObject(metricNames) +
           RamUsageEstimator.sizeOfObject(statsList) +
           RamUsageEstimator.sizeOfObject(cache);
+    }
+  }
+
+  @Override
+  public int getMaxSize() {
+    return maxSize != Integer.MAX_VALUE ? maxSize : -1;
+  }
+
+  @Override
+  public void setMaxSize(int maxSize) {
+    if (maxSize > 0) {
+      this.maxSize = maxSize;
+    } else {
+      this.maxSize = Integer.MAX_VALUE;
+    }
+    checkAndAdjustLimits();
+    cache.setUpperWaterMark(maxSize);
+    cache.setLowerWaterMark(minSizeLimit);
+    description = generateDescription();
+  }
+
+  @Override
+  public int getMaxRamMB() {
+    return -1;
+  }
+
+  @Override
+  public void setMaxRamMB(int maxRamMB) {
+    // no-op
+  }
+
+  private void checkAndAdjustLimits() {
+    if (minSizeLimit <= 0) minSizeLimit = 1;
+    if (maxSize <= minSizeLimit) {
+      if (maxSize > 1) {
+        minSizeLimit = maxSize - 1;
+      } else {
+        maxSize = minSizeLimit + 1;
+      }
     }
   }
 }

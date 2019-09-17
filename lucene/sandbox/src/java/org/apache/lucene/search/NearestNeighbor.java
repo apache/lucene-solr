@@ -28,9 +28,9 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SloppyMath;
+import org.apache.lucene.util.bkd.BKDReader;
 import org.apache.lucene.util.bkd.BKDReader.IndexTree;
 import org.apache.lucene.util.bkd.BKDReader.IntersectState;
-import org.apache.lucene.util.bkd.BKDReader;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -48,19 +48,23 @@ class NearestNeighbor {
     final byte[] maxPacked;
     final IndexTree index;
 
-    /** The closest possible distance of all points in this cell */
-    final double distanceMeters;
+    /**
+     * The closest distance from a point in this cell to the query point, computed as a sort key through
+     * {@link SloppyMath#haversinSortKey}. Note that this is an approximation to the closest distance,
+     * and there could be a point in the cell that is closer.
+     */
+    final double distanceSortKey;
 
-    public Cell(IndexTree index, int readerIndex, byte[] minPacked, byte[] maxPacked, double distanceMeters) {
+    public Cell(IndexTree index, int readerIndex, byte[] minPacked, byte[] maxPacked, double distanceSortKey) {
       this.index = index;
       this.readerIndex = readerIndex;
       this.minPacked = minPacked.clone();
       this.maxPacked = maxPacked.clone();
-      this.distanceMeters = distanceMeters;
+      this.distanceSortKey = distanceSortKey;
     }
 
     public int compareTo(Cell other) {
-      return Double.compare(distanceMeters, other.distanceMeters);
+      return Double.compare(distanceSortKey, other.distanceSortKey);
     }
 
     @Override
@@ -69,7 +73,7 @@ class NearestNeighbor {
       double minLon = decodeLongitude(minPacked, Integer.BYTES);
       double maxLat = decodeLatitude(maxPacked, 0);
       double maxLon = decodeLongitude(maxPacked, Integer.BYTES);
-      return "Cell(readerIndex=" + readerIndex + " nodeID=" + index.getNodeID() + " isLeaf=" + index.isLeafNode() + " lat=" + minLat + " TO " + maxLat + ", lon=" + minLon + " TO " + maxLon + "; distanceMeters=" + distanceMeters + ")";
+      return "Cell(readerIndex=" + readerIndex + " nodeID=" + index.getNodeID() + " isLeaf=" + index.isLeafNode() + " lat=" + minLat + " TO " + maxLat + ", lon=" + minLon + " TO " + maxLon + "; distanceSortKey=" + distanceSortKey + ")";
     }
   }
 
@@ -106,7 +110,8 @@ class NearestNeighbor {
     private void maybeUpdateBBox() {
       if (setBottomCounter < 1024 || (setBottomCounter & 0x3F) == 0x3F) {
         NearestHit hit = hitQueue.peek();
-        Rectangle box = Rectangle.fromPointDistance(pointLat, pointLon, hit.distanceMeters);
+        Rectangle box = Rectangle.fromPointDistance(pointLat, pointLon,
+            SloppyMath.haversinMeters(hit.distanceSortKey));
         //System.out.println("    update bbox to " + box);
         minLat = box.minLat;
         maxLat = box.maxLat;
@@ -134,8 +139,6 @@ class NearestNeighbor {
         return;
       }
 
-      // TODO: work in int space, use haversinSortKey
-
       double docLatitude = decodeLatitude(packedValue, 0);
       double docLongitude = decodeLongitude(packedValue, Integer.BYTES);
 
@@ -147,21 +150,22 @@ class NearestNeighbor {
         return;
       }
 
-      double distanceMeters = SloppyMath.haversinMeters(pointLat, pointLon, docLatitude, docLongitude);
+      // Use the haversin sort key when comparing hits, as it is faster to compute than the true distance.
+      double distanceSortKey = SloppyMath.haversinSortKey(pointLat, pointLon, docLatitude, docLongitude);
 
-      //System.out.println("    visit docID=" + docID + " distanceMeters=" + distanceMeters + " docLat=" + docLatitude + " docLon=" + docLongitude);
+      //System.out.println("    visit docID=" + docID + " distanceSortKey=" + distanceSortKey + " docLat=" + docLatitude + " docLon=" + docLongitude);
 
       int fullDocID = curDocBase + docID;
 
       if (hitQueue.size() == topN) {
         // queue already full
         NearestHit hit = hitQueue.peek();
-        //System.out.println("      bottom distanceMeters=" + hit.distanceMeters);
+        //System.out.println("      bottom distanceSortKey=" + hit.distanceSortKey);
         // we don't collect docs in order here, so we must also test the tie-break case ourselves:
-        if (distanceMeters < hit.distanceMeters || (distanceMeters == hit.distanceMeters && fullDocID < hit.docID)) {
+        if (distanceSortKey < hit.distanceSortKey || (distanceSortKey == hit.distanceSortKey && fullDocID < hit.docID)) {
           hitQueue.poll();
           hit.docID = fullDocID;
-          hit.distanceMeters = distanceMeters;
+          hit.distanceSortKey = distanceSortKey;
           hitQueue.offer(hit);
           //System.out.println("      ** keep2, now bottom=" + hit);
           maybeUpdateBBox();
@@ -170,7 +174,7 @@ class NearestNeighbor {
       } else {
         NearestHit hit = new NearestHit();
         hit.docID = fullDocID;
-        hit.distanceMeters = distanceMeters;
+        hit.distanceSortKey = distanceSortKey;
         hitQueue.offer(hit);
         //System.out.println("      ** keep1, now bottom=" + hit);
       }
@@ -178,18 +182,31 @@ class NearestNeighbor {
 
     @Override
     public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+      double cellMinLat = decodeLatitude(minPackedValue, 0);
+      double cellMinLon = decodeLongitude(minPackedValue, Integer.BYTES);
+      double cellMaxLat = decodeLatitude(maxPackedValue, 0);
+      double cellMaxLon = decodeLongitude(maxPackedValue, Integer.BYTES);
+
+      if (cellMaxLat < minLat || maxLat < cellMinLat || ((cellMaxLon < minLon || maxLon < cellMinLon) && cellMaxLon < minLon2)) {
+        // this cell is outside our search bbox; don't bother exploring any more
+        return Relation.CELL_OUTSIDE_QUERY;
+      }
       return Relation.CELL_CROSSES_QUERY;
     }
   }
 
-  /** Holds one hit from {@link LatLonPointPrototypeQueries#nearest} */
+  /** Holds one hit from {@link NearestNeighbor#nearest} */
   static class NearestHit {
     public int docID;
-    public double distanceMeters;
+
+    /**
+     * The distance from the hit to the query point, computed as a sort key through {@link SloppyMath#haversinSortKey}.
+     */
+    public double distanceSortKey;
 
     @Override
     public String toString() {
-      return "NearestHit(docID=" + docID + " distanceMeters=" + distanceMeters + ")";
+      return "NearestHit(docID=" + docID + " distanceSortKey=" + distanceSortKey + ")";
     }
   }
 
@@ -204,8 +221,8 @@ class NearestNeighbor {
     final PriorityQueue<NearestHit> hitQueue = new PriorityQueue<>(n, new Comparator<NearestHit>() {
         @Override
         public int compare(NearestHit a, NearestHit b) {
-          // sort by opposite distanceMeters natural order
-          int cmp = Double.compare(a.distanceMeters, b.distanceMeters);
+          // sort by opposite distanceSortKey natural order
+          int cmp = Double.compare(a.distanceSortKey, b.distanceSortKey);
           if (cmp != 0) {
             return -cmp;
           }
@@ -258,13 +275,7 @@ class NearestNeighbor {
         //System.out.println("    non-leaf");
         // Non-leaf block: split into two cells and put them back into the queue:
 
-        double cellMinLat = decodeLatitude(cell.minPacked, 0);
-        double cellMinLon = decodeLongitude(cell.minPacked, Integer.BYTES);
-        double cellMaxLat = decodeLatitude(cell.maxPacked, 0);
-        double cellMaxLon = decodeLongitude(cell.maxPacked, Integer.BYTES);
-
-        if (cellMaxLat < visitor.minLat || visitor.maxLat < cellMinLat || ((cellMaxLon < visitor.minLon || visitor.maxLon < cellMinLon) && cellMaxLon < visitor.minLon2)) {
-          // this cell is outside our search bbox; don't bother exploring any more
+        if (visitor.compare(cell.minPacked, cell.maxPacked) == Relation.CELL_OUTSIDE_QUERY) {
           continue;
         }
         
@@ -319,10 +330,10 @@ class NearestNeighbor {
       return 0.0;
     }
 
-    double d1 = SloppyMath.haversinMeters(pointLat, pointLon, minLat, minLon);
-    double d2 = SloppyMath.haversinMeters(pointLat, pointLon, minLat, maxLon);
-    double d3 = SloppyMath.haversinMeters(pointLat, pointLon, maxLat, maxLon);
-    double d4 = SloppyMath.haversinMeters(pointLat, pointLon, maxLat, minLon);
+    double d1 = SloppyMath.haversinSortKey(pointLat, pointLon, minLat, minLon);
+    double d2 = SloppyMath.haversinSortKey(pointLat, pointLon, minLat, maxLon);
+    double d3 = SloppyMath.haversinSortKey(pointLat, pointLon, maxLat, maxLon);
+    double d4 = SloppyMath.haversinSortKey(pointLat, pointLon, maxLat, minLon);
     return Math.min(Math.min(d1, d2), Math.min(d3, d4));
   }
 

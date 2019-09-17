@@ -102,10 +102,10 @@ public abstract class SpanWeight extends Weight {
       return null;
     TermStatistics[] termStats = new TermStatistics[termStates.size()];
     int termUpTo = 0;
-    for (Map.Entry<Term, TermStates> termStatesEntry : termStates.entrySet()) {
-      TermStates ts = termStatesEntry.getValue();
+    for (Map.Entry<Term, TermStates> entry : termStates.entrySet()) {
+      TermStates ts = entry.getValue();
       if (ts.docFreq() > 0) {
-        termStats[termUpTo++] = searcher.termStatistics(termStatesEntry.getKey(), ts.docFreq(), ts.totalTermFreq());
+        termStats[termUpTo++] = searcher.termStatistics(entry.getKey(), ts.docFreq(), ts.totalTermFreq());
       }
     }
     CollectionStatistics collectionStats = searcher.collectionStatistics(query.getField());

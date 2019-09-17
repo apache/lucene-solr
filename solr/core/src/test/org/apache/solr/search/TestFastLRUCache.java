@@ -19,9 +19,11 @@ package org.apache.solr.search;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLRUCache;
@@ -31,6 +33,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -279,7 +283,7 @@ public class TestFastLRUCache extends SolrTestCase {
     int upperWaterMark = (int)(lowerWaterMark * 1.1);
 
     Random r = random();
-    ConcurrentLRUCache cache = new ConcurrentLRUCache(upperWaterMark, lowerWaterMark, (upperWaterMark+lowerWaterMark)/2, upperWaterMark, false, false, null);
+    ConcurrentLRUCache cache = new ConcurrentLRUCache(upperWaterMark, lowerWaterMark, (upperWaterMark+lowerWaterMark)/2, upperWaterMark, false, false, null, -1);
     boolean getSize=false;
     int minSize=0,maxSize=0;
     for (int i=0; i<iter; i++) {
@@ -324,6 +328,111 @@ public class TestFastLRUCache extends SolrTestCase {
     } finally {
       sc.close();
     }
+  }
+
+  public void testSetLimits() throws Exception {
+    FastLRUCache<String, Accountable> cache = new FastLRUCache<>();
+    cache.initializeMetrics(metricManager, registry, "foo", scope);
+    Map<String, String> params = new HashMap<>();
+    params.put("size", "6");
+    params.put("maxRamMB", "8");
+    CacheRegenerator cr = new NoOpRegenerator();
+    Object o = cache.init(params, null, cr);
+    for (int i = 0; i < 6; i++) {
+      cache.put("" + i, new Accountable() {
+        @Override
+        public long ramBytesUsed() {
+          return 1024 * 1024;
+        }
+      });
+    }
+    // no evictions yet
+    assertEquals(6, cache.size());
+    // this also sets minLimit = 4
+    cache.setMaxSize(5);
+    // should not happen yet - evictions are triggered by put
+    assertEquals(6, cache.size());
+    cache.put("6", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 1024 * 1024;
+      }
+    });
+    // should evict to minLimit
+    assertEquals(4, cache.size());
+
+    // modify ram limit
+    cache.setMaxRamMB(3);
+    // should not happen yet - evictions are triggered by put
+    assertEquals(4, cache.size());
+    // this evicts down to 3MB * 0.8, ie. ramLowerWaterMark
+    cache.put("7", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 0;
+      }
+    });
+    assertEquals(3, cache.size());
+    assertNotNull("5", cache.get("5"));
+    assertNotNull("6", cache.get("6"));
+    assertNotNull("7", cache.get("7"));
+
+    // scale up
+
+    cache.setMaxRamMB(4);
+    cache.put("8", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 1024 * 1024;
+      }
+    });
+    assertEquals(4, cache.size());
+
+    cache.setMaxSize(10);
+    for (int i = 0; i < 6; i++) {
+      cache.put("new" + i, new Accountable() {
+        @Override
+        public long ramBytesUsed() {
+          return 0;
+        }
+      });
+    }
+    assertEquals(10, cache.size());
+  }
+
+  public void testMaxIdleTime() throws Exception {
+    int IDLE_TIME_SEC = 600;
+    long IDLE_TIME_NS = TimeUnit.NANOSECONDS.convert(IDLE_TIME_SEC, TimeUnit.SECONDS);
+    CountDownLatch sweepFinished = new CountDownLatch(1);
+    ConcurrentLRUCache<String, Accountable> cache = new ConcurrentLRUCache<>(6, 5, 5, 6, false, false, null, IDLE_TIME_SEC) {
+      @Override
+      public void markAndSweep() {
+        super.markAndSweep();
+        sweepFinished.countDown();
+      }
+    };
+    long currentTime = TimeSource.NANO_TIME.getEpochTimeNs();
+    for (int i = 0; i < 4; i++) {
+      cache.putCacheEntry(new ConcurrentLRUCache.CacheEntry<>("" + i, new Accountable() {
+        @Override
+        public long ramBytesUsed() {
+          return 1024 * 1024;
+        }
+      }, currentTime, 0));
+    }
+    // no evictions yet
+    assertEquals(4, cache.size());
+    assertEquals("markAndSweep spurious run", 1, sweepFinished.getCount());
+    cache.putCacheEntry(new ConcurrentLRUCache.CacheEntry<>("4", new Accountable() {
+      @Override
+      public long ramBytesUsed() {
+        return 0;
+      }
+    }, currentTime - IDLE_TIME_NS * 2, 0));
+    boolean await = sweepFinished.await(10, TimeUnit.SECONDS);
+    assertTrue("did not evict entries in time", await);
+    assertEquals(4, cache.size());
+    assertNull(cache.get("4"));
   }
 
   /***

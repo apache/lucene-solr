@@ -25,7 +25,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class NoFacetTest extends SolrAnalyticsTestCase {
-  
+
   @BeforeClass
   public static void populate() throws Exception {
     for (int j = 0; j < NUM_LOOPS; ++j) {
@@ -38,37 +38,37 @@ public class NoFacetTest extends SolrAnalyticsTestCase {
       String s = "str" + (j%STRING);
       List<String> fields = new ArrayList<>();
       fields.add("id"); fields.add("1000"+j);
-      
+
       if ( i != 0 ) {
         fields.add("int_i"); fields.add("" + i);
         fields.add("int_im"); fields.add("" + i);
         fields.add("int_im"); fields.add("" + (i+10));
       }
-      
+
       if ( l != 0l ) {
         fields.add("long_l"); fields.add("" + l);
         fields.add("long_lm"); fields.add("" + l);
         fields.add("long_lm"); fields.add("" + (l+10));
       }
-      
+
       if ( f != 0.0f ) {
         fields.add("float_f"); fields.add("" + f);
         fields.add("float_fm"); fields.add("" + f);
         fields.add("float_fm"); fields.add("" + (f+10));
       }
-      
+
       if ( d != 0.0d ) {
         fields.add("double_d"); fields.add("" + d);
         fields.add("double_dm"); fields.add("" + d);
         fields.add("double_dm"); fields.add("" + (d+10));
       }
-      
+
       if ( (j%DATE) != 0 ) {
         fields.add("date_dt"); fields.add(dt);
         fields.add("date_dtm"); fields.add(dt);
         fields.add("date_dtm"); fields.add(dtm);
       }
-      
+
       if ( (j%STRING) != 0 ) {
         fields.add("string_s"); fields.add(s);
         fields.add("string_sm"); fields.add(s);
@@ -79,7 +79,7 @@ public class NoFacetTest extends SolrAnalyticsTestCase {
     }
     commitDocs();
   }
-  
+
   static public final int INT = 7;
   static public final int LONG = 2;
   static public final int FLOAT = 6;
@@ -93,28 +93,28 @@ public class NoFacetTest extends SolrAnalyticsTestCase {
     Map<String, ETP> expressions = new HashMap<>();
     expressions.put("single", new ETP("count(long_l)", 10L));
     expressions.put("multi", new ETP("count(string_sm)", 30L));
-    
+
     testExpressions(expressions);
   }
-  
+
   @Test
   public void docCountTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
     expressions.put("single", new ETP("doc_count(date_dt)", 13L));
     expressions.put("multi", new ETP("doc_count(float_fm)", 16L));
-    
+
     testExpressions(expressions);
   }
-      
+
   @Test
   public void missingTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
     expressions.put("single", new ETP("missing(string_s)", 5L));
     expressions.put("multi", new ETP("missing(date_dtm)", 7L));
-    
+
     testExpressions(expressions);
   }
-  
+
   @Test
   public void uniqueTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
@@ -127,7 +127,7 @@ public class NoFacetTest extends SolrAnalyticsTestCase {
 
     testExpressions(expressions);
   }
-  
+
   @Test
   public void minTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
@@ -140,7 +140,7 @@ public class NoFacetTest extends SolrAnalyticsTestCase {
 
     testExpressions(expressions);
   }
-  
+
   @Test
   public void maxTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
@@ -153,61 +153,61 @@ public class NoFacetTest extends SolrAnalyticsTestCase {
 
     testExpressions(expressions);
   }
-  
+
   @Test
   public void sumTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
     expressions.put("single", new ETP("sum(int_i)", 57.0));
     expressions.put("multi", new ETP("sum(long_lm)", 120.0));
-    
+
     testExpressions(expressions);
   }
-  
+
   @Test
   public void meanTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
     expressions.put("single", new ETP("mean(int_i)", 3.3529411764));
     expressions.put("multi", new ETP("mean(long_lm)", 6.0));
-    
+
     testExpressions(expressions);
   }
-  
+
   @Test
   public void weightedMeanTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
     expressions.put("single", new ETP("wmean(int_i, long_l)", 3.33333333333));
     expressions.put("multi", new ETP("wmean(double_d, float_f)", 2.470588235));
-    
+
     testExpressions(expressions);
   }
-  
+
   @Test
   public void sumOfSquaresTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
     expressions.put("single", new ETP("sumofsquares(int_i)", 237.0));
     expressions.put("multi", new ETP("sumofsquares(long_lm)", 1220.0));
-    
+
     testExpressions(expressions);
   }
-  
+
   @Test
   public void varianceTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
     expressions.put("single", new ETP("variance(int_i)", 2.6989619377162));
     expressions.put("multi", new ETP("variance(long_lm)", 25.0));
-    
+
     testExpressions(expressions);
   }
-  
+
   @Test
   public void standardDeviationTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
     expressions.put("single", new ETP("stddev(int_i)", 1.6428517698551));
     expressions.put("multi", new ETP("stddev(long_lm)", 5.0));
-    
+
     testExpressions(expressions);
   }
-  
+
   @Test
   public void medianTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
@@ -219,7 +219,7 @@ public class NoFacetTest extends SolrAnalyticsTestCase {
 
     testExpressions(expressions);
   }
-  
+
   @Test
   public void percentileTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();
@@ -232,7 +232,7 @@ public class NoFacetTest extends SolrAnalyticsTestCase {
 
     testExpressions(expressions);
   }
-  
+
   @Test
   public void ordinalTest() throws Exception {
     Map<String, ETP> expressions = new HashMap<>();

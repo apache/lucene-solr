@@ -16,6 +16,14 @@
  */
 package org.apache.solr.search;
 
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+
 import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -25,14 +33,6 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 
 /**
  * SolrCache based on ConcurrentLRUCache implementation.
@@ -47,10 +47,16 @@ import java.util.concurrent.TimeUnit;
  * @see org.apache.solr.search.SolrCache
  * @since solr 1.4
  */
-public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>, Accountable {
+public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>, Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FastLRUCache.class);
+
+  public static final String MIN_SIZE_PARAM = "minSize";
+  public static final String ACCEPTABLE_SIZE_PARAM = "acceptableSize";
+  public static final String INITIAL_SIZE_PARAM = "initialSize";
+  public static final String CLEANUP_THREAD_PARAM = "cleanupThread";
+  public static final String SHOW_ITEMS_PARAM = "showItems";
 
   // contains the statistics objects for all open caches of the same type
   private List<ConcurrentLRUCache.Stats> statsList;
@@ -58,10 +64,17 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   private long warmupTime = 0;
 
   private String description = "Concurrent LRU Cache";
-  private ConcurrentLRUCache<K,V> cache;
+  private ConcurrentLRUCache<K, V> cache;
   private int showItems = 0;
 
   private long maxRamBytes;
+  private int maxSize;
+  private int minSizeLimit;
+  private int initialSize;
+  private int acceptableSize;
+  private boolean cleanupThread;
+  private int maxIdleTimeSec;
+  private long ramLowerWatermark;
 
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
@@ -70,45 +83,51 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     super.init(args, regenerator);
-    String str = (String) args.get("size");
-    int limit = str == null ? 1024 : Integer.parseInt(str);
-    int minLimit;
-    str = (String) args.get("minSize");
+    String str = (String) args.get(SIZE_PARAM);
+    maxSize = str == null ? 1024 : Integer.parseInt(str);
+    str = (String) args.get(MIN_SIZE_PARAM);
     if (str == null) {
-      minLimit = (int) (limit * 0.9);
+      minSizeLimit = (int) (maxSize * 0.9);
     } else {
-      minLimit = Integer.parseInt(str);
+      minSizeLimit = Integer.parseInt(str);
     }
-    if (minLimit <= 0) minLimit = 1;
-    if (limit <= minLimit) limit=minLimit+1;
+    checkAndAdjustLimits();
 
-    int acceptableLimit;
-    str = (String) args.get("acceptableSize");
+    str = (String) args.get(ACCEPTABLE_SIZE_PARAM);
     if (str == null) {
-      acceptableLimit = (int) (limit * 0.95);
+      acceptableSize = (int) (maxSize * 0.95);
     } else {
-      acceptableLimit = Integer.parseInt(str);
+      acceptableSize = Integer.parseInt(str);
     }
     // acceptable limit should be somewhere between minLimit and limit
-    acceptableLimit = Math.max(minLimit, acceptableLimit);
+    acceptableSize = Math.max(minSizeLimit, acceptableSize);
 
-    str = (String) args.get("initialSize");
-    final int initialSize = str == null ? limit : Integer.parseInt(str);
-    str = (String) args.get("cleanupThread");
-    boolean newThread = str == null ? false : Boolean.parseBoolean(str);
+    str = (String) args.get(INITIAL_SIZE_PARAM);
+    initialSize = str == null ? maxSize : Integer.parseInt(str);
+    str = (String) args.get(CLEANUP_THREAD_PARAM);
+    cleanupThread = str != null && Boolean.parseBoolean(str);
 
-    str = (String) args.get("showItems");
+    str = (String) args.get(SHOW_ITEMS_PARAM);
     showItems = str == null ? 0 : Integer.parseInt(str);
 
-    str = (String) args.get("maxRamMB");
-    this.maxRamBytes = str == null ? Long.MAX_VALUE : (long) (Double.parseDouble(str) * 1024L * 1024L);
-    if (maxRamBytes != Long.MAX_VALUE)  {
-      long ramLowerWatermark = Math.round(maxRamBytes * 0.8);
-      description = generateDescription(maxRamBytes, ramLowerWatermark, newThread);
-      cache = new ConcurrentLRUCache<K, V>(ramLowerWatermark, maxRamBytes, newThread, null);
-    } else  {
-      description = generateDescription(limit, initialSize, minLimit, acceptableLimit, newThread);
-      cache = new ConcurrentLRUCache<>(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
+    str = (String) args.get(MAX_IDLE_TIME_PARAM);
+    if (str == null) {
+      maxIdleTimeSec = -1;
+    } else {
+      maxIdleTimeSec = Integer.parseInt(str);
+    }
+
+    str = (String) args.get(MAX_RAM_MB_PARAM);
+    long maxRamMB = str == null ? -1 : (long) Double.parseDouble(str);
+    this.maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
+    if (maxRamBytes != Long.MAX_VALUE) {
+      ramLowerWatermark = Math.round(maxRamBytes * 0.8);
+      description = generateDescription(maxRamBytes, ramLowerWatermark, cleanupThread);
+      cache = new ConcurrentLRUCache<>(ramLowerWatermark, maxRamBytes, cleanupThread, null, maxIdleTimeSec);
+    } else {
+      ramLowerWatermark = -1L;
+      description = generateDescription(maxSize, initialSize, minSizeLimit, acceptableSize, cleanupThread);
+      cache = new ConcurrentLRUCache<>(maxSize, minSizeLimit, acceptableSize, initialSize, cleanupThread, false, null, maxIdleTimeSec);
     }
 
     cache.setAlive(false);
@@ -126,13 +145,21 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
     statsList.add(cache.getStats());
     return statsList;
   }
-  
+
+  protected String generateDescription() {
+    if (maxRamBytes != Long.MAX_VALUE) {
+      return generateDescription(maxRamBytes, ramLowerWatermark, cleanupThread);
+    } else {
+      return generateDescription(maxSize, initialSize, minSizeLimit, acceptableSize, cleanupThread);
+    }
+  }
+
   /**
    * @return Returns the description of this Cache.
    */
   protected String generateDescription(int limit, int initialSize, int minLimit, int acceptableLimit, boolean newThread) {
     String description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize +
-        ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+", cleanupThread="+newThread;
+        ", minSize=" + minLimit + ", acceptableSize=" + acceptableLimit + ", cleanupThread=" + newThread;
     if (isAutowarmingOn()) {
       description += ", " + getAutowarmDescription();
     }
@@ -193,10 +220,9 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
       for (int i = itemsArr.length - 1; i >= 0; i--) {
         try {
           boolean continueRegen = regenerator.regenerateItem(searcher,
-                  this, old, itemsArr[i].getKey(), itemsArr[i].getValue());
+              this, old, itemsArr[i].getKey(), itemsArr[i].getValue());
           if (!continueRegen) break;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
           SolrException.log(log, "Error during auto-warming of key:" + itemsArr[i].getKey(), e);
         }
       }
@@ -239,11 +265,13 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
         long hits = stats.getCumulativeHits();
         long inserts = stats.getCumulativePuts();
         long evictions = stats.getCumulativeEvictions();
+        long idleEvictions = stats.getCumulativeIdleEvictions();
         long size = stats.getCurrentSize();
         long clookups = 0;
         long chits = 0;
         long cinserts = 0;
         long cevictions = 0;
+        long cIdleEvictions = 0;
 
         // NOTE: It is safe to iterate on a CopyOnWriteArrayList
         for (ConcurrentLRUCache.Stats statistiscs : statsList) {
@@ -251,14 +279,19 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
           chits += statistiscs.getCumulativeHits();
           cinserts += statistiscs.getCumulativePuts();
           cevictions += statistiscs.getCumulativeEvictions();
+          cIdleEvictions += statistiscs.getCumulativeIdleEvictions();
         }
 
-        map.put("lookups", lookups);
-        map.put("hits", hits);
-        map.put("hitratio", calcHitRatio(lookups, hits));
-        map.put("inserts", inserts);
-        map.put("evictions", evictions);
-        map.put("size", size);
+        map.put(LOOKUPS_PARAM, lookups);
+        map.put(HITS_PARAM, hits);
+        map.put(HIT_RATIO_PARAM, calcHitRatio(lookups, hits));
+        map.put(INSERTS_PARAM, inserts);
+        map.put(EVICTIONS_PARAM, evictions);
+        map.put(SIZE_PARAM, size);
+        map.put("cleanupThread", cleanupThread);
+        map.put("idleEvictions", idleEvictions);
+        map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
+        map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
 
         map.put("warmupTime", warmupTime);
         map.put("cumulative_lookups", clookups);
@@ -266,16 +299,17 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
         map.put("cumulative_hitratio", calcHitRatio(clookups, chits));
         map.put("cumulative_inserts", cinserts);
         map.put("cumulative_evictions", cevictions);
+        map.put("cumulative_idleEvictions", cIdleEvictions);
 
         if (detailed && showItems != 0) {
-          Map items = cache.getLatestAccessedItems( showItems == -1 ? Integer.MAX_VALUE : showItems );
-          for (Map.Entry e : (Set <Map.Entry>)items.entrySet()) {
+          Map items = cache.getLatestAccessedItems(showItems == -1 ? Integer.MAX_VALUE : showItems);
+          for (Map.Entry e : (Set<Map.Entry>) items.entrySet()) {
             Object k = e.getKey();
             Object v = e.getValue();
 
             String ks = "item_" + k;
             String vs = v.toString();
-            map.put(ks,vs);
+            map.put(ks, vs);
           }
 
         }
@@ -305,6 +339,53 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
     return BASE_RAM_BYTES_USED +
         RamUsageEstimator.sizeOfObject(cache) +
         RamUsageEstimator.sizeOfObject(statsList);
+  }
+
+  @Override
+  public int getMaxSize() {
+    return maxSize != Integer.MAX_VALUE ? maxSize : -1;
+  }
+
+  @Override
+  public void setMaxSize(int maxSize) {
+    if (maxSize > 0) {
+      this.maxSize = maxSize;
+    } else {
+      this.maxSize = Integer.MAX_VALUE;
+    }
+    checkAndAdjustLimits();
+    cache.setUpperWaterMark(maxSize);
+    cache.setLowerWaterMark(minSizeLimit);
+    description = generateDescription();
+  }
+
+  @Override
+  public int getMaxRamMB() {
+    return maxRamBytes != Long.MAX_VALUE ? (int) (maxRamBytes / 1024L / 1024L) : -1;
+  }
+
+  @Override
+  public void setMaxRamMB(int maxRamMB) {
+    maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
+    if (maxRamMB < 0) {
+      ramLowerWatermark = Long.MIN_VALUE;
+    } else {
+      ramLowerWatermark = Math.round(maxRamBytes * 0.8);
+    }
+    cache.setRamUpperWatermark(maxRamBytes);
+    cache.setRamLowerWatermark(ramLowerWatermark);
+    description = generateDescription();
+  }
+
+  private void checkAndAdjustLimits() {
+    if (minSizeLimit <= 0) minSizeLimit = 1;
+    if (maxSize <= minSizeLimit) {
+      if (maxSize > 1) {
+        minSizeLimit = maxSize - 1;
+      } else {
+        maxSize = minSizeLimit + 1;
+      }
+    }
   }
 }
 

@@ -49,7 +49,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     val2.setExists(false);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     val1.setExists(false);
     val2.setValue(false).setExists(true);
     func.getBoolean();
@@ -86,7 +86,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     val2.setExists(false);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     val1.setExists(false);
     val2.setValue(3.3).setExists(true);
     func.getBoolean();
@@ -123,7 +123,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     val2.setExists(false);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     val1.setExists(false);
     val2.setValue("1800-01-02T10:20:30Z").setExists(true);
     func.getBoolean();
@@ -160,7 +160,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     val2.setExists(false);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     val1.setExists(false);
     val2.setValue("abcdefghi").setExists(true);
     func.getBoolean();
@@ -187,7 +187,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
   public void oneSingleOneMultiValueBooleanParameterTest() {
     TestBooleanValueStream val1 = new TestBooleanValueStream();
     TestBooleanValue val2 = new TestBooleanValue();
-    
+
     AnalyticsValueStream uncasted = EqualFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -204,7 +204,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val1.setValues(false);
     val2.setValue(false).setExists(true);
@@ -214,7 +214,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val1.setValues(false, true, true, false, false);
     val2.setValue(false).setExists(true);
@@ -230,7 +230,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiOneSingleValueBooleanParameterTest() {
     TestBooleanValueStream val1 = new TestBooleanValueStream();
     TestBooleanValue val2 = new TestBooleanValue();
-    
+
     AnalyticsValueStream uncasted = EqualFunction.creatorFunction.apply(new AnalyticsValueStream[] {val2, val1});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -247,7 +247,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val1.setValues(false);
     val2.setValue(false).setExists(true);
@@ -257,7 +257,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val1.setValues(false, true, true, false, false);
     val2.setValue(false).setExists(true);
@@ -273,7 +273,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
   public void oneSingleOneMultiValueNumericParameterTest() {
     TestDoubleValueStream val1 = new TestDoubleValueStream();
     TestDoubleValue val2 = new TestDoubleValue();
-    
+
     AnalyticsValueStream uncasted = EqualFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -290,7 +290,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val1.setValues(-4.2);
     val2.setValue(-4.2).setExists(true);
@@ -300,7 +300,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val1.setValues(4, -10, 4, -74, 4.0001);
     val2.setValue(4).setExists(true);
@@ -316,7 +316,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiOneSingleValueNumericParameterTest() {
     TestDoubleValueStream val1 = new TestDoubleValueStream();
     TestDoubleValue val2 = new TestDoubleValue();
-    
+
     AnalyticsValueStream uncasted = EqualFunction.creatorFunction.apply(new AnalyticsValueStream[] {val2, val1});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -333,7 +333,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val1.setValues(-4.2);
     val2.setValue(-4.2).setExists(true);
@@ -343,7 +343,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val1.setValues(4, -10, 4, -74, 4.0001);
     val2.setValue(4).setExists(true);
@@ -359,7 +359,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
   public void oneSingleOneMultiValueDateParameterTest() {
     TestDateValueStream val1 = new TestDateValueStream();
     TestDateValue val2 = new TestDateValue();
-    
+
     AnalyticsValueStream uncasted = EqualFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -376,7 +376,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val1.setValues("1800-01-02T10:20:30Z");
     val2.setValue("1800-01-02T10:20:30Z").setExists(true);
@@ -386,7 +386,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val1.setValues("1800-01-02T10:20:30Z", "1800-01-02T10:20:31Z", "1800-01-02T10:20:30Z", "1801-01-02T10:20:30Z");
     val2.setValue("1800-01-02T10:20:30Z").setExists(true);
@@ -402,7 +402,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiOneSingleValueDateParameterTest() {
     TestDateValueStream val1 = new TestDateValueStream();
     TestDateValue val2 = new TestDateValue();
-    
+
     AnalyticsValueStream uncasted = EqualFunction.creatorFunction.apply(new AnalyticsValueStream[] {val2, val1});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -419,7 +419,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val1.setValues("1800-01-02T10:20:30Z");
     val2.setValue("1800-01-02T10:20:30Z").setExists(true);
@@ -429,7 +429,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val1.setValues("1800-01-02T10:20:30Z", "1800-01-02T10:20:31Z", "1800-01-02T10:20:30Z", "9999-01-02T10:20:30Z");
     val2.setValue("1800-01-02T10:20:30Z").setExists(true);
@@ -445,7 +445,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
   public void oneSingleOneMultiValueStringParameterTest() {
     TestStringValueStream val1 = new TestStringValueStream();
     TestStringValue val2 = new TestStringValue();
-    
+
     AnalyticsValueStream uncasted = EqualFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -462,7 +462,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val1.setValues("abcdefghi");
     val2.setValue("abcdefghi").setExists(true);
@@ -472,7 +472,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val1.setValues("abcdefghi", "abcdefghi1", "sbcdefghi", "abcdefghi");
     val2.setValue("abcdefghi").setExists(true);
@@ -488,7 +488,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiOneSingleValueStringParameterTest() {
     TestStringValueStream val1 = new TestStringValueStream();
     TestStringValue val2 = new TestStringValue();
-    
+
     AnalyticsValueStream uncasted = EqualFunction.creatorFunction.apply(new AnalyticsValueStream[] {val2, val1});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -505,7 +505,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val1.setValues("abcdefghi");
     val2.setValue("abcdefghi").setExists(true);
@@ -515,7 +515,7 @@ public class EqualFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val1.setValues("abcdefghi", "abcdefghi1", "sbcdefghi", "abcdefghi");
     val2.setValue("abcdefghi").setExists(true);

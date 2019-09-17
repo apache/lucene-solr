@@ -25,16 +25,16 @@ import java.util.function.IntSupplier;
  */
 public abstract class ReductionDataArrayWriter<C> extends ReductionDataWriter<C> {
   private final IntSupplier sizeSupplier;
-  
+
   public ReductionDataArrayWriter(DataOutput output, C extractor, IntSupplier sizeSupplier) {
     super(output, extractor);
-    
+
     this.sizeSupplier = sizeSupplier;
   }
-  
+
   /**
    * Write an array of data, retrieved from the extractor, and its size, received from the sizeSupplier, to the output stream.
-   * 
+   *
    * @throws IOException if an exception occurs while writing to the output stream
    */
   @Override
@@ -43,10 +43,10 @@ public abstract class ReductionDataArrayWriter<C> extends ReductionDataWriter<C>
     output.writeInt(size);
     write(size);
   }
-  
+
   /**
    * Write an array of data, retrieved from the extractor, with the given size to the output stream.
-   * 
+   *
    * @throws IOException if an exception occurs while writing to the output stream
    */
   protected abstract void write(int size) throws IOException;

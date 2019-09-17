@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.util.ResourceLoader;
 
 /** Fake resource loader for tests: works if you want to fake reading a single file */
 class StringMockResourceLoader implements ResourceLoader {
-  String text;
+  private String text;
 
   public StringMockResourceLoader(String text) {
     this.text = text;

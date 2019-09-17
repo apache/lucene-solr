@@ -1974,6 +1974,17 @@ public class IndexSchema {
     return nestPathType instanceof NestPathField;
   }
 
+  /**
+   * Does this schema supports partial updates (aka atomic updates) and child docs as well.
+   */
+  public boolean supportsPartialUpdatesOfChildDocs() {
+    if (savesChildDocRelations() == false) {
+      return false;
+    }
+    SchemaField rootField = getField(IndexSchema.ROOT_FIELD_NAME);
+    return rootField.stored() || rootField.hasDocValues();
+  }
+
   public PayloadDecoder getPayloadDecoder(String field) {
     FieldType ft = getFieldType(field);
     if (ft == null)

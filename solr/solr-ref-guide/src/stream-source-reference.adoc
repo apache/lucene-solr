@@ -216,6 +216,33 @@ features(collection1,
          numTerms=250)
 ----
 
+== cat
+
+The `cat` function reads the specified files or directories and emits each line in the file(s) as a tuple.
+
+Each emitted tuple contains two fields: `file` and `line`.  `file` contains the path to the file being read from relative to the `userfiles` chroot (directly under `$SOLR_HOME`), and `line` contains a line in that file.
+
+`cat` is ideally used with the `update` stream to index data from the specified documents, or with the `analyze` stream to further split the lines into individual tokens for statistical processing or visualization.
+
+=== cat Parameters
+
+* `filePaths`: (Mandatory) a comma separated list of filepaths to read lines from.  If the specified path is a directory, it will be crawled recursively and all contained files will be read.  To prevent malicious users from reading arbitrary files from Solr nodes, `filePaths` must be a relative path measured from a chroot of `$SOLR_HOME/userfiles` on the node running the streaming expression.
+* `maxLines`: (defaults to -1) The maximum number of lines to read (and tuples to emit).  If a negative value is specified, all lines in the specified files will be emitted as tuples.  Files are read in the order that they appear in the comma-separated `filePaths` argument.  If the line-limit is hit, it will be these later files that are partially emitted or not read at all.
+
+=== cat Examples
+
+The following example emits all lines from a single text file located at `$SOLR_HOME/userfiles/authors.txt`:
+[source,text]
+----
+cat("authors.txt")
+----
+
+This example will read lines from `$SOLR_HOME/userfiles/authors.txt`, as well as all files (recursively) found under `$SOLR_HOME/userfiles/fiction/scifi`.  Only 500 lines will be emitted, meaning that some files may be partially emitted or not read at all:
+[source,text]
+----
+cat("authors.txt,fiction/scifi/", maxLines=500)
+----
+
 == nodes
 
 The `nodes` function provides breadth-first graph traversal. For details, see the section <<graph-traversal.adoc#graph-traversal,Graph Traversal>>.

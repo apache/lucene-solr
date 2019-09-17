@@ -20,6 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -37,6 +41,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.search.SortField.FIELD_SCORE;
@@ -106,6 +111,37 @@ public class TestTopFieldCollector extends LuceneTestCase {
         assertTrue(Float.isNaN(sd[j].score));
       }
     }
+  }
+
+  public void testSharedHitcountCollector() throws Exception {
+
+    ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestTopFieldCollector"));
+
+    IndexSearcher concurrentSearcher = new IndexSearcher(ir, service);
+
+    // Two Sort criteria to instantiate the multi/single comparators.
+    Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
+    for(int i = 0; i < sort.length; i++) {
+      Query q = new MatchAllDocsQuery();
+      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, Integer.MAX_VALUE);
+
+      is.search(q, tdc);
+
+      CollectorManager tsdc = TopFieldCollector.createSharedManager(sort[i], 10, null, Integer.MAX_VALUE);
+
+      TopDocs td = tdc.topDocs();
+      TopDocs td2 = (TopDocs) concurrentSearcher.search(q, tsdc);
+      ScoreDoc[] sd = td.scoreDocs;
+      for(int j = 0; j < sd.length; j++) {
+        assertTrue(Float.isNaN(sd[j].score));
+      }
+
+      CheckHits.checkEqual(q, td.scoreDocs, td2.scoreDocs);
+    }
+
+    service.shutdown();
   }
 
   public void testSortWithoutTotalHitTracking() throws Exception {

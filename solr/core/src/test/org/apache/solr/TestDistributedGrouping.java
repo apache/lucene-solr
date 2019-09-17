@@ -27,9 +27,12 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.containsString;
 
 /**
  * TODO? perhaps use:
@@ -65,6 +68,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     handle.clear();
     handle.put("timestamp", SKIPVAL);
+    handle.put("_version_", SKIP);
     handle.put("grouped", UNORDERED);   // distrib grouping doesn't guarantee order of top level group commands
 
     // Test distributed grouping with empty indices
@@ -186,6 +190,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     query("q", "*:*", "fl", "id," + i1dv, "group", "true", "group.field", i1dv, "group.limit", 10, "sort", i1 + " asc, id asc");
 
+    
     // SOLR-4150: what if group.query has no matches, 
     // or only matches on one shard
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true",
@@ -221,12 +226,14 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "fl", "id", "group.format", "grouped", "group.limit", "-12",
         "sort", i1 + " asc, id asc");
 
+    ignoreException("'group.offset' parameter cannot be negative");
     SolrException exception = expectThrows(SolrException.class, () -> query("q", "*:*",
         "group", "true",
         "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.offset", "-1")
     );
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
-    assertTrue(exception.getMessage().contains("'group.offset' parameter cannot be negative"));
+    assertThat(exception.getMessage(), containsString("'group.offset' parameter cannot be negative"));
+    resetExceptionIgnores();
 
     query("q", "*:*",
         "group", "true",
@@ -314,6 +321,39 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "score desc, _docid_ asc, id asc");
     query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1);
 
+    // grouping shouldn't care if there are multiple fl params, or what order the fl field names are in
+    variantQuery(params("q", "*:*",
+                        "group", "true", "group.field", i1dv, "group.limit", "10",
+                        "sort", i1 + " asc, id asc")
+                 , params("fl", "id," + i1dv)
+                 , params("fl", i1dv + ",id")
+                 , params("fl", "id", "fl", i1dv)
+                 , params("fl", i1dv, "fl", "id")
+                 );
+    variantQuery(params("q", "*:*", "rows", "100",
+                        "group", "true", "group.field", s1dv, "group.limit", "-1", 
+                        "sort", b1dv + " asc, id asc",
+                        "group.sort", "id desc")
+                 , params("fl", "id," + s1dv + "," + tdate_a)
+                 , params("fl", "id", "fl", s1dv, "fl", tdate_a)
+                 , params("fl", tdate_a, "fl", s1dv, "fl", "id")
+                 );
+    variantQuery(params("q", "*:*", "rows", "100",
+                        "group", "true", "group.field", s1dv, "group.limit", "-1", 
+                        "sort", b1dv + " asc, id asc",
+                        "group.sort", "id desc")
+                 , params("fl", s1dv + "," + tdate_a)
+                 , params("fl", s1dv, "fl", tdate_a)
+                 , params("fl", tdate_a, "fl", s1dv)
+                 );
+    variantQuery(params("q", "{!func}id_i1", "rows", "100",
+                        "group", "true", "group.field", i1, "group.limit", "-1",
+                        "sort", tlong+" asc, id desc")
+                 , params("fl", t1 + ",score," + i1dv)
+                 , params("fl", t1, "fl", "score", "fl", i1dv)
+                 , params("fl", "score", "fl", t1, "fl", i1dv)
+                 );
+                             
     // some explicit checks of non default sorting, and sort/group.sort with diff clauses
     query("q", "{!func}id_i1", "rows", 100, "fl", tlong + ",id," + i1, "group", "true",
           "group.field", i1, "group.limit", -1,
@@ -326,22 +366,48 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           "group.field", i1, "group.limit", -1,
           "sort", tlong+" asc, id desc",
           "group.sort", "id asc");
-    rsp = query("q", "{!func}id_i1", "fq", oddField+":[* TO *]",
-                "rows", 100, "fl", tlong + ",id," + i1, "group", "true",
-                "group.field", i1, "group.limit", -1,
-                "sort", tlong+" asc",
-                "group.sort", oddField+" asc");
-    nl = (NamedList<?>) rsp.getResponse().get("grouped");
-    nl = (NamedList<?>) nl.get(i1);
-    assertEquals(rsp.toString(), 6, nl.get("matches"));
-    assertEquals(rsp.toString(), 2, ((List<NamedList<?>>)nl.get("groups")).size());
-    nl = ((List<NamedList<?>>)nl.get("groups")).get(0);
-    assertEquals(rsp.toString(), 232, nl.get("groupValue"));
-    SolrDocumentList docs = (SolrDocumentList) nl.get("doclist");
-    assertEquals(docs.toString(), 5, docs.getNumFound());
-    assertEquals(docs.toString(), "22", docs.get(0).getFirstValue("id"));
-    assertEquals(docs.toString(), "21", docs.get(4).getFirstValue("id"));
-
+    for (boolean withFL : new boolean[] {true, false}) {
+      if (withFL) {
+        rsp = variantQuery(params("q", "{!func}id_i1", "fq", oddField+":[* TO *]",
+                                  "rows", "100",
+                                  "group", "true", "group.field", i1, "group.limit", "-1",
+                                  "sort", tlong+" asc", "group.sort", oddField+" asc")
+                           , params("fl", tlong + ",id," + i1)
+                           , params("fl", tlong, "fl", "id", "fl", i1)
+                           , params("fl", "id", "fl", i1, "fl", tlong)
+                           );
+      } else {
+        // special check: same query, but empty fl...
+        rsp = query("q", "{!func}id_i1", "fq", oddField+":[* TO *]",
+                    "rows", "100",
+                    "group", "true", "group.field", i1, "group.limit", "-1",
+                    "sort", tlong+" asc", "group.sort", oddField+" asc");
+      }
+      nl = (NamedList<?>) rsp.getResponse().get("grouped");
+      nl = (NamedList<?>) nl.get(i1);
+      assertEquals(rsp.toString(), 6, nl.get("matches"));
+      assertEquals(rsp.toString(), 2, ((List<NamedList<?>>)nl.get("groups")).size());
+      nl = ((List<NamedList<?>>)nl.get("groups")).get(0);
+      assertEquals(rsp.toString(), 232, nl.get("groupValue"));
+      SolrDocumentList docs = (SolrDocumentList) nl.get("doclist");
+      assertEquals(docs.toString(), 5, docs.getNumFound());
+      //
+      assertEquals(docs.toString(), "22", docs.get(0).getFirstValue("id"));
+      assertEquals(docs.toString(), 732L, docs.get(0).getFirstValue(tlong));
+      assertEquals(docs.toString(), 232,  docs.get(0).getFirstValue(i1));
+      //
+      assertEquals(docs.toString(), "21", docs.get(4).getFirstValue("id"));
+      assertEquals(docs.toString(), 632L, docs.get(4).getFirstValue(tlong));
+      assertEquals(docs.toString(), 232,  docs.get(4).getFirstValue(i1));
+      //
+      if (withFL == false) {
+        // exact number varies based on test randomization, but there should always be at least the 8
+        // explicitly indexed in these 2 docs...
+        assertTrue(docs.toString(), 8 <= docs.get(0).getFieldNames().size());
+        assertTrue(docs.toString(), 8 <= docs.get(4).getFieldNames().size());
+      }
+    }
+    
     // grouping on boolean non-stored docValued enabled field
     rsp = query("q", b1dv + ":*", "fl", "id," + b1dv, "group", "true", "group.field",
         b1dv, "group.limit", 10, "sort", b1dv + " asc, id asc");
@@ -351,9 +417,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     assertEquals(rsp.toString(), 2, ((List<NamedList<?>>)nl.get("groups")).size());
     nl = ((List<NamedList<?>>)nl.get("groups")).get(0);
     assertEquals(rsp.toString(), false, nl.get("groupValue"));
-    docs = (SolrDocumentList) nl.get("doclist");
+    SolrDocumentList docs = (SolrDocumentList) nl.get("doclist");
     assertEquals(docs.toString(), 4, docs.getNumFound());
-
+    
     // Can't validate the response, but can check if no errors occur.
     simpleQuery("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", 10, "sort", i1 + " asc, id asc", CommonParams.TIME_ALLOWED, 1);
     
@@ -370,4 +436,28 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     queryServer(params);
   }
 
+  /**
+   * Special helper method for verifying that multiple queries behave the same as each other, 
+   * both in distributed and single node queries
+   *
+   * @param commonParams params that are common to all queries
+   * @param variantParams params that will be appended to the common params to create a variant query
+   * @return the last response returned by the last variant
+   * @see #query
+   * @see #compareResponses
+   * @see SolrParams#wrapAppended
+   */
+  protected QueryResponse variantQuery(final SolrParams commonParams,
+                                       final SolrParams... variantParams) throws Exception {
+    QueryResponse lastResponse = null;
+    for (SolrParams extra : variantParams) {
+      final QueryResponse rsp = query(SolrParams.wrapAppended(commonParams, extra));
+      if (null != lastResponse) {
+        compareResponses(rsp, lastResponse);
+      }
+      lastResponse = rsp;
+    }
+    return lastResponse;
+  }
+  
 }

@@ -89,14 +89,18 @@ public class ClusterProperties {
     return value;
   }
 
+  public Map<String, Object> getClusterProperties() throws IOException {
+    return getClusterProperties(new Stat());
+
+  }
   /**
    * Return the cluster properties
    * @throws IOException if there is an error reading properties from the cluster
    */
   @SuppressWarnings("unchecked")
-  public Map<String, Object> getClusterProperties() throws IOException {
+  public Map<String, Object> getClusterProperties(Stat stat) throws IOException {
     try {
-      Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+      Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, stat, true));
       return convertCollectionDefaultsToNestedFormat(properties);
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyMap();
@@ -105,6 +109,12 @@ public class ClusterProperties {
     }
   }
 
+  /**This applies the new map over the existing map. it's a merge operation, not an overwrite
+   * This applies the changes atomically over an existing object tree even if multiple nodes are
+   * trying to update this simultaneously
+   *
+   * @param properties The partial Object tree that needs to be applied
+   */
   public void setClusterProperties(Map<String, Object> properties) throws IOException, KeeperException, InterruptedException {
     client.atomicUpdate(ZkStateReader.CLUSTER_PROPS, zkData -> {
       if (zkData == null) return Utils.toJSON(convertCollectionDefaultsToNestedFormat(properties));

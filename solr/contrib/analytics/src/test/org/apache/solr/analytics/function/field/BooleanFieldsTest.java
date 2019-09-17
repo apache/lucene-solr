@@ -25,7 +25,7 @@ import org.apache.solr.analytics.ExpressionFactory;
 import org.junit.Test;
 
 public class BooleanFieldsTest extends AbstractAnalyticsFieldTest {
-  
+
   @Test
   public void expressionFactoryCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
@@ -38,7 +38,7 @@ public class BooleanFieldsTest extends AbstractAnalyticsFieldTest {
   public void singleValuedBooleanTest() throws IOException {
     BooleanField valueField = new BooleanField("boolean_b");
     Map<String,Boolean> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       boolean value = valueField.getBoolean();
       if (valueField.exists()) {
@@ -46,7 +46,7 @@ public class BooleanFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return valueField.exists();
     });
-    
+
     checkSingleFieldValues(singleBooleans, values, missing);
   }
 
@@ -54,7 +54,7 @@ public class BooleanFieldsTest extends AbstractAnalyticsFieldTest {
   public void multiValuedBooleanTest() throws IOException {
     BooleanMultiField valueField = new BooleanMultiField("boolean_bm");
     Map<String,Map<Boolean,Integer>> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       Map<Boolean, Integer> doc = new HashMap<>();
       valueField.streamBooleans( value -> {
@@ -65,7 +65,7 @@ public class BooleanFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return doc.size() > 0;
     });
-    
+
     checkMultiFieldValues(multiBooleans, values, missing, true);
   }
 }

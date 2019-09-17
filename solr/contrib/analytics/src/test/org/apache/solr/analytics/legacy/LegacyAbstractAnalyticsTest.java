@@ -50,7 +50,7 @@ import org.xml.sax.SAXException;
 import com.google.common.collect.ObjectArrays;
 
 public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
-  
+
   protected static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };
   protected static final HashMap<String,Object> defaults = new HashMap<>();
 
@@ -78,12 +78,12 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
   static private XPathFactory xPathFact;
 
   static private String rawResponse;
-  
+
   @BeforeClass
   public static void beforeClassAbstractAnalysis() {
     xPathFact = XPathFactory.newInstance();
   }
-  
+
   @AfterClass
   public static void afterClassAbstractAnalysis() {
     xPathFact = null;
@@ -204,7 +204,7 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
     }
     return Long.valueOf(miss);
   }
-  
+
   public static SolrQueryRequest request(String...args){
     return SolrTestCaseJ4.req( ObjectArrays.concat(BASEPARMS, args,String.class) );
   }
@@ -213,7 +213,7 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
     InputStream in = clazz.getResourceAsStream("/solr/analytics/legacy/" + fileName);
     if (in == null) throw new FileNotFoundException("Resource not found: " + fileName);
     Scanner file = new Scanner(in, "UTF-8");
-    try { 
+    try {
       ArrayList<String> strList = new ArrayList<>();
       while (file.hasNextLine()) {
         String line = file.nextLine();
@@ -230,5 +230,5 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
       IOUtils.closeWhileHandlingException(file, in);
     }
   }
-  
+
 }

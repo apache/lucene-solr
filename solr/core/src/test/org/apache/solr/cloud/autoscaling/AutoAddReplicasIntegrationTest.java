@@ -18,6 +18,7 @@ package org.apache.solr.cloud.autoscaling;
 
 import static org.apache.solr.common.util.Utils.makeMap;
 
+import java.lang.invoke.MethodHandles;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +46,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   private static final String COLLECTION1 =  "testSimple1";
   private static final String COLLECTION2 =  "testSimple2";
 
@@ -220,6 +226,7 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   }
 
   private void waitForNodeLeave(String lostNodeName) throws InterruptedException {
+    log.info("waitForNodeLeave: {}", lostNodeName);
     ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
     TimeOut timeOut = new TimeOut(20, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (reader.getClusterState().getLiveNodes().contains(lostNodeName)) {

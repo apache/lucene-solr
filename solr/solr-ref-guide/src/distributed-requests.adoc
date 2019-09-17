@@ -74,18 +74,18 @@ http://localhost:8983/solr/gettingstarted/select?q=*:*&shards=shard1,localhost:7
 
 For finer-grained control, you can directly configure and tune aspects of the concurrency and thread-pooling used within distributed search in Solr. The default configuration favors throughput over latency.
 
-This is done by defining a `shardHandler` in the configuration for your search handler.
+This is done by defining a `shardHandlerFactory` in the configuration for your search handler.
 
-To add a `shardHandler` to the standard search handler, provide a configuration in `solrconfig.xml`, as in this example:
+To add a `shardHandlerFactory` to the standard search handler, provide a configuration in `solrconfig.xml`, as in this example:
 
 [source,xml]
 ----
 <requestHandler name="/select" class="solr.SearchHandler">
   <!-- other params go here -->
-  <shardHandler class="HttpShardHandlerFactory">
+  <shardHandlerFactory class="HttpShardHandlerFactory">
     <int name="socketTimeOut">1000</int>
     <int name="connTimeOut">5000</int>
-  </shardHandler>
+  </shardHandlerFactory>
 </requestHandler>
 ----
 
@@ -180,7 +180,19 @@ In other words, this feature is mostly useful for optimizing queries directed to
 +
 Also, this option should only be used if you are load balancing requests across all nodes that host replicas for the collection you are querying, as Solr's `CloudSolrClient` will do. If not load-balancing, this feature can introduce a hotspot in the cluster since queries won't be evenly distributed across the cluster.
 
+`replica.base`::
+Applied after sorting by inherent replica attributes, this property defines a fallback ordering among sets of preference-equivalent replicas; if specified, only one value may be specified for this property, and it must be specified last.
++
+`random`, the default, randomly shuffles replicas for each request. This distributes requests evenly, but can result in sub-optimal cache usage for shards with replication factor > 1.
++
+`stable:dividend:_paramName_` parses an integer from the value associated with the given param name; this integer is used as the dividend (mod equivalent replica count) to determine (via list rotation) order of preference among equivalent replicas.
++
+`stable[:hash[:_paramName_]]` the string value associated with the given param name is hashed to a dividend that is used to determine replica preference order (analogous to the explicit `dividend` property above); `_paramName_` defaults to `q` if not specified, providing stable routing keyed to the string value of the "main query". Note that this may be inappropriate for some use cases (e.g., static main queries that leverage parameter substitution)
+
 Examples:
+
+* Prefer stable routing (keyed to client "sessionId" param) among otherwise equivalent replicas:
+   `shards.preference=replica.base:stable:hash:sessionId&sessionId=abc123`
 
 * Prefer PULL replicas:
    `shards.preference=replica.type:PULL`
