@@ -44,5 +44,3 @@ A thorough review of the list in Major Changes in Earlier 8.x Versions as well a
 === Authentication & Security Changes in Solr 9
 
 * BasicAuthPlugin property 'blockUnknown' now defaults to 'true'. This change is backward incompatible. If you need the pre-9.0 default behavior, you need to explicitly set 'blockUnknown':'false' in security.json.
-
-* JWTAuthPlugin configuration option `requireSub` is no longer needed and will cause an error if used.

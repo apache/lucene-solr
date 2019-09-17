@@ -66,8 +66,6 @@ Upgrade Notes
 
 * SOLR-13593 SOLR-13690 SOLR-13691: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
 
-* SOLR-13734: JWTAuthPlugin configuration option `requireSub` is no longer needed and will cause an error if used (janhoy)
-
 Other Changes
 ----------------------
 
