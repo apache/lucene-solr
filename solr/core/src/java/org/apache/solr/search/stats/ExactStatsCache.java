@@ -28,7 +28,6 @@ import java.util.Set;
 
 import com.google.common.collect.Lists;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -170,11 +169,8 @@ public class ExactStatsCache extends StatsCache {
         }
 
         @Override
-        public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
-          TermStatistics ts = super.termStatistics(term, context);
-          if (ts == null) {
-            return null;
-          }
+        public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
+          TermStatistics ts = super.termStatistics(term, docFreq, totalTermFreq);
           terms.add(term);
           statsMap.put(term.toString(), new TermStats(term.field(), ts));
           return ts;
@@ -328,7 +324,7 @@ public class ExactStatsCache extends StatsCache {
       this.colStatsCache = colStatsCache;
     }
 
-    public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, TermStates context)
+    public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, int docFreq, long totalTermFreq)
         throws IOException {
       TermStats termStats = termStatsCache.get(term.toString());
       // TermStats == null is also true if term has no docFreq anyway,
@@ -336,7 +332,7 @@ public class ExactStatsCache extends StatsCache {
       // Not sure we need a warning here
       if (termStats == null) {
         log.debug("Missing global termStats info for term={}, using local stats", term);
-        return localSearcher.localTermStatistics(term, context);
+        return localSearcher.localTermStatistics(term, docFreq, totalTermFreq);
       } else {
         return termStats.toTermStatistics();
       }

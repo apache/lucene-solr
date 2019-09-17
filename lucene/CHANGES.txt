@@ -18,6 +18,10 @@ API Changes
 * LUCENE-8956: QueryRescorer now only sorts the first topN hits instead of all
   initial hits. (Paul Sanwald via Adrien Grand)
 
+* LUCENE-8921: IndexSearcher.termStatistics() no longer takes a TermStates; it takes the docFreq and totalTermFreq.
+  And don't call if docFreq <= 0.  The previous implementation survives as deprecated and final.  It's removed in 9.0.
+  (Bruno Roustant, David Smiley, Alan Woodward)
+
 New Features
 
 * LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)

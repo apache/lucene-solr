@@ -756,21 +756,35 @@ public class IndexSearcher {
   public String toString() {
     return "IndexSearcher(" + reader + "; executor=" + executor + ")";
   }
-  
+
   /**
    * Returns {@link TermStatistics} for a term, or {@code null} if
    * the term does not exist.
-   * 
-   * This can be overridden for example, to return a term's statistics
-   * across a distributed collection.
-   * @lucene.experimental
+   * @deprecated in favor of {@link #termStatistics(Term, int, long)}.
    */
-  public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
+  @Deprecated
+  public final TermStatistics termStatistics(Term term, TermStates context) throws IOException {
     if (context.docFreq() == 0) {
       return null;
     } else {
-      return new TermStatistics(term.bytes(), context.docFreq(), context.totalTermFreq());
+      return termStatistics(term, context.docFreq(), context.totalTermFreq());
     }
+  }
+
+  /**
+   * Returns {@link TermStatistics} for a term.
+   * <p>
+   * This can be overridden for example, to return a term's statistics
+   * across a distributed collection.
+   *
+   * @param docFreq       The document frequency of the term. It must be greater or equal to 1.
+   * @param totalTermFreq The total term frequency.
+   * @return A {@link TermStatistics} (never null).
+   * @lucene.experimental
+   */
+  public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
+    // This constructor will throw an exception if docFreq <= 0.
+    return new TermStatistics(term.bytes(), docFreq, totalTermFreq);
   }
   
   /**
