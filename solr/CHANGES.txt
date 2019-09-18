@@ -104,6 +104,8 @@ Improvements
 
 * SOLR-9658: Max idle time support for SolrCache implementations. (hoss, ab)
 
+* SOLR-13763: Improve the tracking of "freedisk" in autoscaling simulations. (ab)
+
 Bug Fixes
 ----------------------
 
