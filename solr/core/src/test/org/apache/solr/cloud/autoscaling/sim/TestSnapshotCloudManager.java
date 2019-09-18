@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -152,7 +153,7 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     SnapshotCloudManager snapshotCloudManager1 = SnapshotCloudManager.readSnapshot(tmpDir);
     try (SimCloudManager simCloudManager = SimCloudManager.createCluster(snapshotCloudManager1, null, TimeSource.get("simTime:50"))) {
       SimSolrCloudTestCase.assertClusterStateEquals(snapshotCloudManager.getClusterStateProvider().getClusterState(), simCloudManager.getClusterStateProvider().getClusterState());
-      assertNodeStateProvider(snapshotCloudManager, simCloudManager);
+      assertNodeStateProvider(snapshotCloudManager, simCloudManager, "freedisk");
       assertDistribStateManager(snapshotCloudManager.getDistribStateManager(), simCloudManager.getDistribStateManager());
       ClusterState state = simCloudManager.getClusterStateProvider().getClusterState();
       Replica r = state.getCollection(CollectionAdminParams.SYSTEM_COLL).getReplicas().get(0);
@@ -174,14 +175,20 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     }
   }
 
-  private static void assertNodeStateProvider(SolrCloudManager oneMgr, SolrCloudManager twoMgr) throws Exception {
+  private static void assertNodeStateProvider(SolrCloudManager oneMgr, SolrCloudManager twoMgr, String... ignorableNodeValues) throws Exception {
     NodeStateProvider one = oneMgr.getNodeStateProvider();
     NodeStateProvider two = twoMgr.getNodeStateProvider();
     for (String node : oneMgr.getClusterStateProvider().getLiveNodes()) {
       Map<String, Object> oneVals = one.getNodeValues(node, SimUtils.COMMON_NODE_TAGS);
       Map<String, Object> twoVals = two.getNodeValues(node, SimUtils.COMMON_NODE_TAGS);
-      oneVals = Utils.getDeepCopy(oneVals, 10, false, true);
-      twoVals = Utils.getDeepCopy(twoVals, 10, false, true);
+      oneVals = new TreeMap<>(Utils.getDeepCopy(oneVals, 10, false, true));
+      twoVals = new TreeMap<>(Utils.getDeepCopy(twoVals, 10, false, true));
+      if (ignorableNodeValues != null) {
+        for (String key : ignorableNodeValues) {
+          oneVals.remove(key);
+          twoVals.remove(key);
+        }
+      }
       assertEquals(Utils.toJSONString(oneVals), Utils.toJSONString(twoVals));
       Map<String, Map<String, List<ReplicaInfo>>> oneInfos = one.getReplicaInfo(node, SimUtils.COMMON_REPLICA_TAGS);
       Map<String, Map<String, List<ReplicaInfo>>> twoInfos = two.getReplicaInfo(node, SimUtils.COMMON_REPLICA_TAGS);
