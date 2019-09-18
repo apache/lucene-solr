@@ -82,119 +82,23 @@ The `loess` function is passed *`x`*- and *`y`*-axes and fits a smooth curve to 
 If only a single array is provided it is treated as the *`y`*-axis and a sequence is generated
 for the *`x`*-axis.
 
-The example below uses the `loess` function to fit a curve to a set of *`y`* values in an array.
-The `bandwidth` parameter defines the percent of data to use for the local
-regression. The lower the percent the smaller the neighborhood used for the local
-regression and the closer the curve will be to the original data.
+The example below shows the `loess` function being used to model a monthly
+time series. In the example the `timeseries` function is used generate
+a monthly time series of average closing prices for the stock ticker
+*amzn*. The *date_dt* and *avg(close_d)* fields from the time series
+are then vectorized and stored in variables *x* and *y*. The `loess`
+function is then applied to the *y* vector containing the average closing
+prices. The *bandwidth* named parameter specifies the percentage
+of the data set used to compute the local regression. The `loess` function
+returns the fitted model of smoothed data points.
 
-[source,text]
-----
-let(echo="residuals, sumSqError",
-    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 7, 7,6, 7, 7, 7, 6, 5, 5, 3, 2, 1, 0),
-    curve=loess(y, bandwidth=.3),
-    residuals=ebeSubtract(y, curve),
-    sumSqError=sumSq(residuals))
-----
+The `zplot` function is then used to plot the *x*, *y* and *y1*
+variables.
 
-In the example the fitted curve is subtracted from the original curve using the
-`ebeSubtract` function. The output shows the error between the
-fitted curve and the original curve, known as the residuals. The output also includes
-the sum-of-squares of the residuals which provides a measure
-of how large the error is:
+image::images/math-expressions/loess.png[]
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "residuals": [
-          0,
-          0,
-          0,
-          -0.040524802275866634,
-          -0.10531988096456502,
-          0.5906115002526198,
-          0.004215074334896762,
-          0.4201374330912433,
-          0.09618315578013803,
-          0.012107948556718817,
-          -0.9892939034492398,
-          0.012014364143757561,
-          0.1093830927709325,
-          0.523166271893805,
-          0.09658362075164639,
-          -0.011433819306139625,
-          0.9899403519886416,
-          -0.011707983372932773,
-          -0.004223284004140737,
-          -0.00021462867928434548,
-          0.0018723112875456138
-        ],
-        "sumSqError": 2.8016013870800616
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
 
-In the next example the curve is fit using a `bandwidth` of `.25`:
 
-[source,text]
-----
-let(echo="residuals, sumSqError",
-    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 6, 5, 5, 3, 2, 1, 0),
-    curve=loess(y, .25),
-    residuals=ebeSubtract(y, curve),
-    sumSqError=sumSq(residuals))
-----
-
-Notice that the curve is a closer fit, shown by the smaller `residuals` and lower value for the sum-of-squares of the
-residuals:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "residuals": [
-          0,
-          0,
-          0,
-          0,
-          -0.19117650587715396,
-          0.442863451538809,
-          -0.18553845993358564,
-          0.29990769020356645,
-          0,
-          0.23761890236245709,
-          -0.7344358765888117,
-          0.2376189023624491,
-          0,
-          0.30373119215254984,
-          -3.552713678800501e-15,
-          -0.23761890236245264,
-          0.7344358765888046,
-          -0.2376189023625095,
-          0,
-          2.842170943040401e-14,
-          -2.4868995751603507e-14
-        ],
-        "sumSqError": 1.7539413576337557
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
 
 == Derivatives
 
