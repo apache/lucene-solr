@@ -106,11 +106,11 @@ done
 
 # Memory settings
 JAVA_MEM_OPTS=
-if [ -z "$SOLR_HEAP" ] && [ -n "$SOLR_JAVA_MEM" ]; then
-  JAVA_MEM_OPTS="$SOLR_JAVA_MEM"
+if [ -z "$JAVA_HEAP" ] && [ -n "$JAVA_MEM" ]; then
+  JAVA_MEM_OPTS="$JAVA_MEM"
 else
-  SOLR_HEAP="${SOLR_HEAP:-512m}"
-  JAVA_MEM_OPTS="-Xms$SOLR_HEAP -Xmx$SOLR_HEAP"
+  JAVA_HEAP="${JAVA_HEAP:-512m}"
+  JAVA_MEM_OPTS="-Xms$JAVA_HEAP -Xmx$JAVA_HEAP"
 fi
 
 # define default GC_TUNE
