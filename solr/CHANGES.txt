@@ -106,6 +106,8 @@ Improvements
 
 * SOLR-13763: Improve the tracking of "freedisk" in autoscaling simulations. (ab)
 
+* SOLR-13773: Add Prometheus Exporter GC and Heap options. (Houston Putman via Anshum Gupta, David Smiley)
+
 Bug Fixes
 ----------------------
 
