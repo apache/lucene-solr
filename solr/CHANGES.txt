@@ -161,7 +161,7 @@ Improvements
 
 * SOLR-9658: Max idle time support for SolrCache implementations. (hoss, ab)
 
-* SOLR-13773: Add Prometheus Exporter GC and Heap options. (Houston Putman)
+* SOLR-13773: Add Prometheus Exporter GC and Heap options. (Houston Putman via Anshum Gupta, David Smiley)
 
 Bug Fixes
 ----------------------
