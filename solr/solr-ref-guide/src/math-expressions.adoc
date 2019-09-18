@@ -51,7 +51,7 @@ image::images/math-expressions/searchiris.png[]
 *<<regression.adoc#regression,Linear Regression>>*: Simple and multivariate linear regression.
 
 *<<numerical-analysis.adoc#numerical-analysis,Interpolation and Numerical Calculus>>*: Computation and
-visualization functions for interpolation, derivatives and integrals.
+visualization of interpolation, derivatives and integrals.
 
 *<<curve-fitting.adoc#curve-fitting,Curve Fitting>>*: Polynomial, Harmonic and Gaussian curve fitting.
 
