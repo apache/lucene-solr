@@ -79,6 +79,8 @@ Other
 
 * LUCENE-9046: Fix wrong example in Javadoc of TermInSetQuery (Namgyu Kim)
 
+* LUCENE-8983: Add sandbox PhraseWildcardQuery to control multi-terms expansions in a phrase. (Bruno Roustant)
+
 Build
 
 * Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
