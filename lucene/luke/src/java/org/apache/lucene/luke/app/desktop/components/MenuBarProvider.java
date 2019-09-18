@@ -269,7 +269,7 @@ public final class MenuBarProvider {
     }
 
     void showExportTermsDialog(ActionEvent e) {
-      new DialogOpener<>(exportTermsDialogFactory).open("Export terms", 600, 400,
+      new DialogOpener<>(exportTermsDialogFactory).open("Export terms", 600, 450,
           factory -> {
           });
     }
