@@ -50,11 +50,11 @@ image::images/math-expressions/searchiris.png[]
 
 *<<regression.adoc#regression,Linear Regression>>*: Simple and multivariate linear regression.
 
-*<<numerical-analysis.adoc#numerical-analysis,Interpolation and Numerical Calculus>>*: Interpolation, derivatives and integrals.
-
 *<<curve-fitting.adoc#curve-fitting,Curve Fitting>>*: Polynomial, Harmonic and Gaussian curve fitting.
 
 *<<time-series.adoc#time-series,Time Series>>*: Time series aggregation, visualization, smoothing, differencing, anomaly detection and forecasting.
+
+*<<numerical-analysis.adoc#numerical-analysis,Interpolation and Numerical Calculus>>*: Interpolation, derivatives and integrals.
 
 *<<dsp.adoc#dsp,Signal Processing>>*: Functions commonly used with digital signal processing.
 
