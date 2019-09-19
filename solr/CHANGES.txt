@@ -95,6 +95,9 @@ Upgrade Notes
   is now deprecated, and users are encouraged to use SolrTestCaseJ4.initAndGetDataDir() in it's place.
   See SOLR-13664 for more details.
 
+* For JWTAuthPlugin, the 'jwkUrl' configuration key is deprecated and may be removed later, please use 'jwksUrl'
+  instead. See SOLR-13734.
+
 New Features
 ----------------------
 
@@ -129,6 +132,9 @@ New Features
 * SOLR-13122: Ability to query aliases in Solr Admin UI (janhoy)
 
 * SOLR-13713: JWTAuthPlugin to support multiple JWKS endpoints (janhoy)
+
+* SOLR-13734: JWTAuthPlugin now supports multiple IdP issuers through configuring a new 'issuers' configuration key.
+  Access tokens issued and signed by any of the configured issuers will be validated (janhoy)
 
 Improvements
 ----------------------
