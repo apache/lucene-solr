@@ -223,6 +223,8 @@ Bug Fixes
 Other Changes
 ----------------------
 
+* SOLR-13779: Use the safe fork of simple-xml for clustering contrib. (Dawid Weiss)
+
 * SOLR-13585: Factor out SearchGroupsResultTransformer.[de]serializeOneSearchGroup methods. (Christine Poerschke, Diego Ceccarelli)
 
 * SOLR-12870: Use StandardCharsets instead of String values (Peter Somogyi via Munendra S N)
