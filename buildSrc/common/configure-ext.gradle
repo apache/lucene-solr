@@ -19,17 +19,14 @@ import org.gradle.internal.logging.text.StyledTextOutput;
 import org.gradle.internal.logging.text.StyledTextOutputFactory;
 import static org.gradle.internal.logging.text.StyledTextOutput.Style;
 
-
-public static String formatSeed(long seed) {
-  char [] HEX = "0123456789ABCDEF".toCharArray();
-  StringBuilder b = new StringBuilder();
-  while(true) {
-    b.append(HEX[(int) (seed & 0xF)]);
-    seed = seed >>> 4;
-    if (seed == 0) break
+def initialRandomSeed = {
+  def seedProperty = 'tests.seed'
+  if (rootProject.hasProperty(seedProperty)) {
+    return rootProject.getProperty(seedProperty)
+  } else {
+    return String.format("%08X", new Random().nextLong());
   }
-  return b.reverse().toString();
-}
+}();
 
 // setup some basics - for other allproject work see below
 allprojects {
@@ -49,20 +46,9 @@ allprojects {
     }
     return topLvlProject
   }
-  
-  ext.pickRandomSeed = {
-    def propertyName = 'tests.seed'
-    def seedValue = null
-    if (project.hasProperty(propertyName))  seedValue = project.getProperty(propertyName)
-    if (seedValue == null) {
-      seedValue = formatSeed(new Random().nextLong());
-      // println("Picking master seed for property '" + propertyName + "': " + seedValue);
-      return seedValue
-    } else {
-      // println("Seed property '" + propertyName + "' already defined: " + seedValue);
-      return seedValue
-    }
-  }
+
+  // keep the random seed constant for each subproject.
+  ext.randomSeed = initialRandomSeed
 
   ext.printResults = {results ->
     

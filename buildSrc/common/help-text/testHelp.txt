@@ -1,0 +1,88 @@
+
+
+Testing
+=======
+
+Unless stated otherwise examples below assume current working directory
+and gradlew script in the top directory of the project's checkout.
+
+
+Generic test/ checkup commands
+------------------------------
+
+Run all unit tests.
+
+gradlew test
+
+Run all precommit checks, including tests.
+
+gradlew check
+
+Run all precommit checks, excluding tests (-x is gradle's generic task 
+exclusion mechanism).
+
+gradlew check -x test
+
+Run a given task for the selected module only.
+
+gradlew :lucene:lucene-core:check  # By full gradle project path
+gradlew -p lucene/core check       # By folder designation + task
+(cd lucene/core; gw check)         # Works if 'gdub' is installed.
+
+
+Randomization
+-------------
+
+Run tests with the given starting seed:
+
+gradlew :lucene:lucene-misc:test -Ptests.seed=DEADBEEF
+
+
+Filtering
+---------
+
+Run tests of lucene-core module only.
+
+gradlew :lucene:lucene-core:test
+
+Run a single test case (from a single module). Uses gradle's built-in
+filtering: 
+https://docs.gradle.org/current/userguide/java_testing.html#test_filtering
+
+gradlew :lucene:lucene-core:test --tests TestDemo 
+
+Run all tests in a package.
+
+gradlew :lucene:lucene-core:test --tests org.apache.lucene.document.*
+
+Run all test classes/ methods that match this pattern.
+
+gradlew :lucene:lucene-core:test --tests *testFeatureMissing*
+
+
+Test groups
+-----------
+
+Tests can be filtered by an annotation they're marked with.
+Some test group annotations include: @AwaitsFix, @Nightly, @Slow
+
+This uses filtering infrastructure on the *runner* (randomizedtesting), 
+not gradle's. This filtering can be combined with "--tests".
+
+For example, run all lucene-core tests annotated as @Slow.
+
+gradlew :lucene:lucene-core:test -Ptests.filter=@Slow
+
+# Test group filters can be combined into Boolean expressions:
+
+gradlew :lucene:lucene-core:test "@nightly and not(@awaitsfix or @slow)"
+
+
+Reiteration
+-----------
+
+Multiply each test case (this works by repeating the same test 
+within the same JVM):
+
+gradlew :lucene:lucene-core:test --tests TestDemo -Ptests.iters=3
+
