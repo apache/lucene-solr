@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -92,19 +91,6 @@ import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_U
  * @lucene.experimental
  */
 public class LRUQueryCache implements QueryCache, Accountable {
-
-  /** Throw this error when a query is asynchronously being loaded in the cache
-   *  and a read for the same is requested
-   */
-  private static final class AsyncQueryLoadInProgressException extends RuntimeException {
-
-    /**
-     * Sole constructor.
-     */
-    public AsyncQueryLoadInProgressException(String query) {
-      super(query);
-    }
-  }
 
   private final int maxSize;
   private final long maxRamBytesUsed;
@@ -284,14 +270,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
     assert lock.isHeldByCurrentThread();
     assert key instanceof BoostQuery == false;
     assert key instanceof ConstantScoreQuery == false;
-
-    /*
-     * If the current query is already being asynchronously cached,
-     * do not trigger another cache operation
-     */
-    if (inFlightAsyncLoadQueries.contains(key)) {
-      throw new AsyncQueryLoadInProgressException(key.toString());
-    }
 
     final IndexReader.CacheKey readerKey = cacheHelper.getKey();
     final LeafCache leafCache = cache.get(readerKey);
@@ -795,10 +773,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
       DocIdSet docIdSet;
       try {
         docIdSet = get(in.getQuery(), cacheHelper);
-      } catch (AsyncQueryLoadInProgressException e) {
-        // Query is being loaded asynchronously. Use uncached version but
-        // do not do a new load of the same query into the cache
-        return in.scorerSupplier(context);
       } finally {
         lock.unlock();
       }
@@ -888,10 +862,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
       DocIdSet docIdSet;
       try {
         docIdSet = get(in.getQuery(), cacheHelper);
-      } catch (AsyncQueryLoadInProgressException e) {
-        // Query is being loaded asynchronously. Use uncached version but
-        // do not do a new load of the same query into the cache
-        return in.bulkScorer(context);
       } finally {
         lock.unlock();
       }
@@ -925,8 +895,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     // Perform a cache load asynchronously
-    // NOTE: Potentially, two threads can trigger a load for the same query concurrently as the check for presence of the query
-    // done upstream and the lock is not he
     private void cacheAsynchronously(LeafReaderContext context, IndexReader.CacheHelper cacheHelper) throws IOException {
       FutureTask<Void> task = new FutureTask<>(() -> {
         DocIdSet localDocIdSet = cache(context);
@@ -936,6 +904,13 @@ public class LRUQueryCache implements QueryCache, Accountable {
         inFlightAsyncLoadQueries.remove(in.getQuery());
         return null;
       });
+      /*
+       * If the current query is already being asynchronously cached,
+       * do not trigger another cache operation
+       */
+      if (inFlightAsyncLoadQueries.contains(in.getQuery())) {
+        return;
+      }
       inFlightAsyncLoadQueries.add(in.getQuery());
       executor.execute(task);
     }

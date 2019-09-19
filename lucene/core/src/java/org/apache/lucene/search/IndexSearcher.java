@@ -843,8 +843,7 @@ public class IndexSearcher {
     if (scoreMode.needsScores() == false && queryCache != null) {
       if (executor != null) {
         weight = queryCache.doCache(weight, queryCachingPolicy, executor);
-      }
-      else {
+      } else {
         weight = queryCache.doCache(weight, queryCachingPolicy);
       }
     }

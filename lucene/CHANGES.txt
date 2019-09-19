@@ -55,7 +55,7 @@ Improvements
   
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
-* LUCENE-8213: LRUQueryCache#doCache can now use IndexSearcher's Executor(if present)
+* LUCENE-8213: LRUQueryCache#doCache can now use IndexSearcher's Executor (if present)
   to asynchronously cache heavy queries (Atri Sharma)
 
 Bug fixes
