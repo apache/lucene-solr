@@ -98,67 +98,59 @@ variables.
 image::images/math-expressions/loess.png[]
 
 
-
-
 == Derivatives
 
 The derivative of a function measures the rate of change of the *`y`* value in respects to the
 rate of change of the *`x`* value.
 
-The `derivative` function can compute the derivative of any interpolation function.
-It can also compute the derivative of a derivative.
+The `derivative` function can compute the derivative of any of the interpolation functions.
+Each interpolation function will produce different derivatives that match the characteristics
+of the interpolation function.
 
-The example below computes the derivative for a `loess` interpolation function.
+A simple example shows how the `derivative` function is used with interpolation functions.
 
-[source,text]
-----
-let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20),
-    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 7, 7,6, 7, 7, 7, 6, 5, 5, 3, 2, 1, 0),
-    curve=loess(x, y, bandwidth=.3),
-    derivative=derivative(curve))
-----
+In the example two vectors are created, one representing hours and one representing
+miles traveled. The `lerp` function function is then used to create a linear interpolation
+of the *hours* and *miles* vectors. The `derivatve` function is then applied to the
+linear interpolation function. Finally `zplot` is used to plot the *hours* on the *x* axis and
+*miles* on *y* axis, as well as the derivative at each *x* axis point.
 
-When this expression is sent to the `/stream` handler it
-responds with:
+Notice that miles traveled line has a slope of 10 until the 5th hour where
+it abrubtly changes to a a slope of 50. The derivative line visualizes the
+changes in slope. Notice that the derivative are calculated along
+straight lines showing immediate change from one point to the next. This
+is because linear intepolation (`lerp`) is used as the interpolation
+function. If `spline` or `akima` had been used it would have produced
+a derivative with rounded curves.
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "derivative": [
-          1.0022002675659012,
-          0.9955994648681976,
-          1.0154018729613081,
-          1.0643674501141696,
-          1.0430879694757085,
-          0.9698717643975381,
-          0.7488201070357539,
-          0.44627000894357516,
-          0.19019561285422165,
-          0.01703599324311178,
-          -0.001908408138535126,
-          -0.009121607450087499,
-          -0.2576361507216319,
-          -0.49378951291352746,
-          -0.7288073815664,
-          -0.9871806872210384,
-          -1.0025400632604322,
-          -1.001836567536853,
-          -1.0076227586138085,
-          -1.0021524620888589,
-          -1.0020541789058157
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
+image::images/math-expressions/derivative1.png[]
+
+
+The example below shows how to plot the derivative for a time series generated
+by the `timeseries` function. In the example a monthly time series is
+generated for the average closing price for the stock ticker `amzn`.
+The *avg(close)* column is vectorized and interpolated using linear
+interpolation (`lerp`).  The `zplot` function is the used to plot the derivative
+of the time series.
+
+image::images/math-expressions/derivative2.png[]
+
+
+The `derivative` function can also be applied to other functions
+such as the `oscillate` function and the `derivative` function itself.
+In the example below the `oscillate` function is used to produce a sine wave.
+The `derivative` function is then used to create a derivative of the sine
+wave which is set to variable y1. Then the `derivative` function operates
+over the first derivative to take the derivative of the derivative. This
+is known as the second derivative, which is used to show the acceration of
+the rate of the change.
+
+The `zplot` function is then used to plot the sine wave (blue), the first derivative
+(yellow) and the second derivative (green).
+
+image::images/math-expressions/derivatives.png[]
+
+
 
 == Integrals
 
