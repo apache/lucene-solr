@@ -23,20 +23,18 @@
 test {
   group = 'Tests'
   description = "Runs project tests."
-  
+
   outputs.upToDateWhen { false }
-  
-  def rootProjectDir = project.rootProject.projectDir;
-  
+
   useJUnit()
   
   filter {
     includeTestsMatching "*.Test*"
     includeTestsMatching "*.*Test"
-    // so we can run with --tests wildcards from higher lvl dirs
+    // So we can run with --tests wildcards from higher level dirs.
     setFailOnNoMatchingTests(false)
   }
-  
+
   testLogging {
     events TestLogEvent.FAILED
     exceptionFormat TestExceptionFormat.FULL
@@ -46,21 +44,25 @@ test {
   }
 
   afterSuite { desc, result ->
-    if (desc.parent) return // Only summarize results for whole modules
-      if (result.testCount == 0 && result.successfulTestCount == 0 && result.failedTestCount == 0 && result.skippedTestCount == 0) {
-        return
-      }
-    
-      String summary = "results: ${result.resultType} " +
-          "(" +
-          "${result.testCount} tests, " +
-          "${result.successfulTestCount} successes, " +
-          "${result.failedTestCount} failures, " +
-          "${result.skippedTestCount} skipped" +
-          ") " +
-          "in ${TimeCategory.minus(new Date(result.endTime), new Date(result.startTime))}" +
-          "\n" +
-          "Report file: ${project.tasks.test.reports.html.entryPoint}"
+    // Only summarize results for whole modules.
+    if (desc.parent)  {
+      return
+    }
+
+    if (result.testCount == 0 && result.successfulTestCount == 0 && result.failedTestCount == 0 && result.skippedTestCount == 0) {
+      return
+    }
+  
+    String summary = "results: ${result.resultType} " +
+        "(" +
+        "${result.testCount} tests, " +
+        "${result.successfulTestCount} successes, " +
+        "${result.failedTestCount} failures, " +
+        "${result.skippedTestCount} skipped" +
+        ") " +
+        "in ${TimeCategory.minus(new Date(result.endTime), new Date(result.startTime))}" +
+        "\n" +
+        "Report file: ${project.tasks.test.reports.html.entryPoint}"
 
     TestResultObj testResult = new TestResultObj("${project.name}:${project.tasks.test.name}", summary, result.resultType == TestResult.ResultType.SUCCESS)
 
@@ -71,14 +73,10 @@ test {
       rootProject.testsResults += testResult
     }
   }
-  
+
   minHeapSize = "128m"
   maxHeapSize = "512m"
-  // Enable assertions
-  jvmArgs += "-ea"
-  // Enable assertions in system classes
-  jvmArgs += "-esa"
-  
+
   jvmArgs +=  "-XX:+UseG1GC"
   jvmArgs +=  "-XX:MaxGCPauseMillis=500" 
   jvmArgs +=  "-XX:+UnlockExperimentalVMOptions"
@@ -86,69 +84,86 @@ test {
   jvmArgs +=  "-XX:G1NewSizePercent=5"
   jvmArgs +=  "-XX:G1HeapRegionSize=32M"
   jvmArgs +=  "-XX:InitiatingHeapOccupancyPercent=70"
-  
+
+  // TODO: move this to a property in subprojects{} configuration under each respective lucene/ solr/ build.
+  // OR REMOVE IT ENTIRELY (we don't seem to need it anywhere in tests!)
   def commonDir
   if (project.ext.getTopLvlProject(project).equals(rootProject.project(":lucene"))) {
     commonDir = rootProject.project(":lucene").projectDir
   } else {
     commonDir = rootProject.project(":solr").projectDir
   }
-  
-  workingDir = project.mfile(project.projectDir, 'build/tests')
-  
-  def tmpDir = project.mfile(workingDir, 'temp')
-  
+  systemProperty 'common.dir', "${commonDir}"
+
+  def workingDir = file("${projectDir}/build/tests")
+  def tmpDir = file("${workingDir}/build/tests")
+
   doFirst {
-    def success = workingDir.mkdirs()
+    workingDir.mkdirs()
     tmpDir.mkdirs()
   }
-  
-  systemProperty 'common.dir', "${commonDir}"
+
+  // TODO: there is only one Solr class that needs this (ExternalPaths). Seems odd
+  // to point at user.dir.
+  systemProperty 'tests.src.home', System.getenv('user.dir')
+
   systemProperty 'build.dir', project.buildDir
-  systemProperty 'tests.multiplier', '1'
-  systemProperty 'tests.codec', 'random'
-  systemProperty 'tests.postingsformat', 'random'
-  systemProperty 'tests.docvaluesformat', 'random'
-  systemProperty 'tests.locale', 'random'
-  systemProperty 'tests.timezone', 'random'
-  systemProperty 'tests.directory', 'random'
-  systemProperty 'tests.linedocsfile', 'europarl.lines.txt.gz'
-  systemProperty 'tests.nightly', 'false'
-  systemProperty 'tests.weekly', 'false'
-  systemProperty 'tests.monster', 'false'
-  systemProperty 'tests.slow', 'true'
-  systemProperty 'tests.cleanthreads.sysprop', 'perMethod'
-  systemProperty 'tests.verbose', 'false'
-  systemProperty 'tests.filterstacks', 'true'
-  systemProperty 'tests.asserts', 'true'
   systemProperty 'tempDir', tmpDir
   systemProperty 'java.io.tmpdir', tmpDir
   systemProperty 'java.awt.headless', 'true'
   systemProperty 'jetty.testMode', '1'
   systemProperty 'jetty.insecurerandom', '1'
   systemProperty 'jdk.map.althashing.threshold', '0'
-  systemProperty 'tests.src.home', System.getenv('user.dir')
   systemProperty 'solr.directoryFactory', 'org.apache.solr.core.MockDirectoryFactory'
-  
-  systemProperty 'tests.seed', project.ext.pickRandomSeed()
+
+  systemProperty 'tests.seed', randomSeed
+
+  // Allow overriding these properties with -Pkey=value. A null value means property not set unless overridden.
+  [
+    'tests.multiplier': '1',
+    'tests.codec': 'random',
+    'tests.postingsformat': 'random',
+    'tests.docvaluesformat': 'random',
+    'tests.locale': 'random',
+    'tests.timezone': 'random',
+    'tests.directory': 'random',
+    'tests.linedocsfile': 'europarl.lines.txt.gz',
+    'tests.nightly': 'false',
+    'tests.weekly': 'false',
+    'tests.monster': 'false',
+    'tests.slow': 'true',
+    'tests.cleanthreads.sysprop': 'perMethod',
+    'tests.verbose': 'false',
+    'tests.filterstacks': 'true',
+    'tests.asserts': 'true',
+    'tests.iters': null,
+    'tests.filter': null
+  ].each { prop, defValue ->
+    def value = project.hasProperty(prop) ? project.getProperty(prop) : defValue
+    if (value != null) {
+      systemProperty prop, value
+    }
+  }
+
+  // Enable assertions depending on tests.asserts.
+  enableAssertions Boolean.parseBoolean(systemProperties['tests.asserts'])
 
   // replaces default random source to the nonblocking variant 
   systemProperty 'java.security.egd', 'file:/dev/./urandom'
   systemProperty 'java.security.manager', 'org.apache.lucene.util.TestSecurityManager'
-  systemProperty 'java.security.policy', "${mfile(rootProjectDir, project.ext.testsPolicy)}"
-  
+  systemProperty 'java.security.policy', file("${rootDir}/${testsPolicy}")
+
   if (project.ext.properties.containsKey('tests_jvms')) {
     def testsJvms = project.ext.properties.tests_jvms
     maxParallelForks = Integer.parseInt(testsJvms)
   } else {
     maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
   }
-  
+
   def testsFailFast = project.ext.properties.tests_failfast
-  if (testsFailFast)    {
+  if (testsFailFast) {
     failFast = true
   }
-
 }
 
 // Some test resources and files are stored along the test sources
@@ -160,4 +175,3 @@ task copyTestResources(type: Copy) {
   into sourceSets.test.java.outputDir
 }
 processTestResources.dependsOn copyTestResources
-
