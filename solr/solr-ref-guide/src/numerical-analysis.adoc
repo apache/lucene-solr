@@ -243,7 +243,10 @@ of the time series.
 image::images/math-expressions/integral.png[]
 
 Notice that the plot *quantifies* and *visualizes* the volume under the curve as the *amzn* stock
-price changes over time. From this we can see how the *percentage* of the value creation has accrued over time.
+price changes over time. As the slope of the curve increases volume under curve is being
+added at an increasing rate, which signifies rising prices. As the slope of the curve decreases
+it signifies decreasing rate of volume added to the curve, or falling prices.
+
 
 == Bicubic Spline
 
