@@ -237,7 +237,7 @@ image::images/math-expressions/sterms.png[]
 === nodes
 
 The `nodes` function performs aggregations of nodes during a breadth first search of a graph.
-The `nodes` function is covered in detail in the link:graph-traversal.adoc[Graph Traversal]
+The `nodes` function is covered in detail in the <<graph-traversal.adoc#graph-traversal,Graph Traversal>>
 documentation. In this example the focus will be on finding correlated nodes in a time series
 graph using the `nodes` expressions.
 
@@ -272,4 +272,3 @@ number of days with a change greater then .25 on the same days that *jpm* had a 
 then .25.
 
 image::images/math-expressions/nodestab.png[]
-

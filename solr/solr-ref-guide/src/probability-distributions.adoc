@@ -22,8 +22,8 @@ framework included in the math expressions library.
 == Probability Distribution Framework
 
 The probability distribution framework includes many commonly used <<Real Distributions,real>>
-and <<Discrete,discrete>> probability distributions, including support for <<Empirical Distribution,empirical>>
-and <<Enumerated Distributions,enumerated>> distributions that model real world data.
+and <<Discrete,discrete>> probability distributions, including support for <<empiricaldistribution,empirical>>
+and <<enumerateddistribution,enumerated>> distributions that model real world data.
 
 The probability distribution framework also includes a set of functions that use the probability distributions
 to support probability calculations and sampling.

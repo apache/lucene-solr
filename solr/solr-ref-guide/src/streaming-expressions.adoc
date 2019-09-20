@@ -1,5 +1,5 @@
 = Streaming Expressions
-:page-children: visualization, stream-source-reference, stream-decorator-reference, stream-evaluator-reference, math-expressions, graph-traversal
+:page-children: stream-source-reference, stream-decorator-reference, stream-evaluator-reference, math-expressions, graph-traversal
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -114,7 +114,6 @@ A full reference to all available evaluator expressions is available in <<stream
 
 Visualization of both Streaming Expressions and Math Expressions is done using Apache Zeppelin and the Zeppelin-Solr Interpreter.
 
-Visualizing Streaming expressions and setting up of Apache Zeppeling is documented in<<>>
+Visualizing Streaming expressions and setting up of Apache Zeppelin is documented in<<>>
 
 The Math Expressions user guide has in depth coverage of visualization techniques.
-
