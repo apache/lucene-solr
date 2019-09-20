@@ -75,17 +75,26 @@ public final class ICUTransformFilter extends TokenFilter {
    */
   public ICUTransformFilter(TokenStream input, Transliterator transform) {
     super(input);
-    this.transform = transform;
+    this.transform = optimizeForCommonCase(transform);
+  }
 
-    /* 
-     * This is cheating, but speeds things up a lot.
-     * If we wanted to use pkg-private APIs we could probably do better.
-     */
+  /**
+   * Configures the specified {@link Transliterator} to optimize common use case when the input
+   * doesn't match the filter anyway.
+   *
+   * This is cheating, but speeds things up a lot.
+   * If we wanted to use pkg-private APIs we could probably do better.
+   * 
+   * @param transform {@link Transliterator} to be optimized
+   * @return the input argument, optionally configured to optimize common case.
+   */
+  static Transliterator optimizeForCommonCase(Transliterator transform) {
     if (transform.getFilter() == null && transform instanceof com.ibm.icu.text.RuleBasedTransliterator) {
       final UnicodeSet sourceSet = transform.getSourceSet();
       if (sourceSet != null && !sourceSet.isEmpty())
         transform.setFilter(sourceSet);
     }
+    return transform;
   }
 
   @Override

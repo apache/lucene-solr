@@ -100,6 +100,8 @@ New Features
   extensibility.  New STUniformSplitPostingsFormat (name "SharedTermsUniformSplit") that shares a single internal
   term dictionary across fields.  (Bruno Roustant, Juan Rodriguez, David Smiley)
 
+* LUCENE-8972: Add ICUTransformCharFilter, to support pre-tokenizer ICU text transformation (Michael Gibney)
+
 Improvements
 
 * LUCENE-8874: Show SPI names instead of class names in Luke Analysis tab. (Tomoko Uchida)

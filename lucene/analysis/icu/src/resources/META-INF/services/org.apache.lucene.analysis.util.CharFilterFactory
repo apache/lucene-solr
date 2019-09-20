@@ -14,3 +14,4 @@
 #  limitations under the License.
 
 org.apache.lucene.analysis.icu.ICUNormalizer2CharFilterFactory
+org.apache.lucene.analysis.icu.ICUTransformCharFilterFactory

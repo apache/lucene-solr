@@ -190,6 +190,32 @@ Example:
 ====
 --
 
+== solr.ICUTransformCharFilterFactory
+
+This filter applies pre-tokenization http://userguide.icu-project.org/transforms/general[ICU Tranforms] to text. This filter supports only ICU System Transforms. Custom rule sets are not supported.
+
+This filter is intended for use where ICU transliteration is required _pre-tokenization_, such as to support dictionary-based tokenization schemes. If post-tokenization transliteration would suffice, it is recommended to use the existing `ICUTranformFilter` class (and associated factory).
+
+
+Arguments:
+
+`id`:: (string) The identifier for the ICU System Transform you wish to apply with this filter. For a full list of ICU System Transforms, see http://demo.icu-project.org/icu-bin/translit?TEMPLATE_FILE=data/translit_rule_main.html.
+
+`direction`:: Either `forward` or `backward`. Default is `forward`.
+
+`maxRollbackBufferCapacity`:: In order to support streaming operation over compound transliterators, this filter implements rollback functionality, after the pattern established in http://www.icu-project.org/apiref/icu4j/com/ibm/icu/text/Transliterator.html[Transliterator] source code. This argument may be used to adjust the maximum allowed rollback buffer capacity. Specifying a negative value allows the rollback buffer to grow indefinitely (equivalent to specifying `Integer.MAX_VALUE`). Specifying `0` (or `1`, in practice) disables rollback. Larger values can in some cases yield more accurate transliteration, at the cost of performance and resolution/accuracy of offset correction. This cap is intended primarily as a failsafe, with a relatively large default value of `8192` that should be appropriate for most use cases. Note that the enforced cap will actually be "the greatest power of 2 (excluding `1`) less than or equal to the specified value".
+
+Example:
+
+[source,xml]
+----
+<analyzer>
+  <charFilter class="solr.ICUTransformCharFilterFactory"/>
+  <tokenizer ...>
+  [...]
+</analyzer>
+----
+
 == solr.PatternReplaceCharFilterFactory
 
 This filter uses http://www.regular-expressions.info/reference.html[regular expressions] to replace or change character patterns.
