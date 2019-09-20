@@ -30,9 +30,18 @@ public class BlobProcessUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private volatile CorePullerFeeder runningFeeder = null;
   
+  /*
+   * Start the Blob store async core pull machinery
+   */
   public BlobProcessUtil(CoreContainer coreContainer) {
-    // Start the Blob store sync core push and async core pull machinery
-    runningFeeder = initializeCorePullerFeeder(coreContainer);
+    this(coreContainer, new CorePullerFeeder(coreContainer));
+  }
+  
+  /*
+   * Start the Blob store async core pull machinery
+   */
+  public BlobProcessUtil(CoreContainer coreContainer, CorePullerFeeder cpf) {    
+    runningFeeder = initializeCorePullerFeeder(cpf);
   }
   
   /**
@@ -44,11 +53,10 @@ public class BlobProcessUtil {
   
   /**
    * Initializes the CorePullerFeeder and starts running thread
-   * @param cores CoreContainer
+   * @param cpf CorePullerFeeder
    * @return CorePullerFeeder 
    */
-  private CorePullerFeeder initializeCorePullerFeeder(CoreContainer cores) {
-    CorePullerFeeder cpf = new CorePullerFeeder(cores);
+  private CorePullerFeeder initializeCorePullerFeeder(CorePullerFeeder cpf) {
     Thread t = new Thread(cpf);
     t.setName("blobPullerFeeder-" + t.getName());
     t.start();

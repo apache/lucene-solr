@@ -446,7 +446,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
      * @param message
      *            Human readable message explaining a failure, or <code>null</code> if no message available.
      */
-    void finishedPull(CorePullTask pullTask, BlobCoreMetadata blobMetadata, CoreSyncStatus status, String message)
+    public void finishedPull(CorePullTask pullTask, BlobCoreMetadata blobMetadata, CoreSyncStatus status, String message)
         throws InterruptedException;
   }
 }

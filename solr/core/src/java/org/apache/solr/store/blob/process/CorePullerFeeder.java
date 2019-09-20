@@ -57,6 +57,10 @@ public class CorePullerFeeder extends CoreSyncFeeder {
   String getMonsterThreadName() {
     return PULLER_THREAD_PREFIX;
   }
+  
+  protected CorePullTask.PullCoreCallback getCorePullTaskCallback() {
+    return callback;
+  }
 
   @Override
   void feedTheMonsters() throws InterruptedException {
@@ -69,7 +73,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
       PullCoreInfo pci = tracker.getCoreToPull();
 
       // Add the core to the list consumed by the thread doing the actual work
-      CorePullTask pt = new CorePullTask(cores, pci, callback);
+      CorePullTask pt = new CorePullTask(cores, pci, getCorePullTaskCallback());
       pullTaskQueue.addDeduplicated(pt, /* isReenqueue */ false);
       syncsEnqueuedSinceLastLog++;
 

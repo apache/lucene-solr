@@ -24,6 +24,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.client.LocalStorageClient;
+import org.apache.solr.store.blob.process.BlobProcessUtil;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
 
 /**
@@ -69,11 +70,19 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
   }
   
   /**
-   * adds the test harness to each solr process in the MiniSolrCluster
+   * Configures the Solr process with the given BlobStorageProvider
    */
-  protected static void setupTestSharedClientForNode(BlobStorageProvider providerTestHarness, JettySolrRunner solrRunner) {
+  protected static void setupTestSharedClientForNode(BlobStorageProvider testBlobStorageProvider, JettySolrRunner solrRunner) {
     SharedStoreManager manager = solrRunner.getCoreContainer().getSharedStoreManager();
-    manager.initBlobStorageProvider(providerTestHarness);
+    manager.initBlobStorageProvider(testBlobStorageProvider);
+  }
+  
+  /**
+   * Configures the Solr process with the given BlobProcessUtil
+   */
+  protected static void setupTestBlobProcessUtilForNode(BlobProcessUtil testBlobProcessUtil, JettySolrRunner solrRunner) {
+    SharedStoreManager manager = solrRunner.getCoreContainer().getSharedStoreManager();
+    manager.initBlobProcessUtil(testBlobProcessUtil);
   }
   
   /**
@@ -86,13 +95,13 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
   }
   
   protected static BlobStorageProvider getBlobStorageProviderTestInstance(CoreStorageClient client) {
-    BlobStorageProvider providerTestHarness = new BlobStorageProvider() {
+    BlobStorageProvider testBlobStorageProvider = new BlobStorageProvider() {
       @Override
       public CoreStorageClient getClient() {
         return client;
       }
     };
-    return providerTestHarness;
+    return testBlobStorageProvider;
   }
 
 }

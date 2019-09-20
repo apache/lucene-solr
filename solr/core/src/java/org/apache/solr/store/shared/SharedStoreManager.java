@@ -50,6 +50,14 @@ public class SharedStoreManager {
     this.blobStorageProvider = blobStorageProvider;
   }
   
+  @VisibleForTesting
+  public void initBlobProcessUtil(BlobProcessUtil processUtil) {
+    if (blobProcessUtil != null) {
+      blobProcessUtil.shutdown();
+    }
+    blobProcessUtil = processUtil;
+  }
+  
   /*
    * Initiates a SharedShardMetadataController if it doesn't exist and returns one 
    */
