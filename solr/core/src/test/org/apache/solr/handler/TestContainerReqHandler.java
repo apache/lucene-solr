@@ -140,6 +140,7 @@ public class TestContainerReqHandler extends SolrCloudTestCase {
         .build().process(solrClient);
   }
 
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13781")
   @Test
   public void testPackageAPI() throws Exception {
     Map<String, Object> jars = Utils.makeMap(
