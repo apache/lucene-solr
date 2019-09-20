@@ -103,28 +103,58 @@ image::images/math-expressions/loess.png[]
 The derivative of a function measures the rate of change of the *`y`* value in respects to the
 rate of change of the *`x`* value.
 
-The `derivative` function can compute the derivative of any of the interpolation functions.
-Each interpolation function will produce different derivatives that match the characteristics
-of the interpolation function.
+The `derivative` function can compute the derivative for any of the
+interpolation functions described above. Each interpolation function
+will produce different derivatives that match the characteristics
+of the function.
 
-A simple example shows how the `derivative` function is used with interpolation functions.
+=== The First Derivative (Velocity)
 
-In the example two vectors are created, one representing hours and one representing
-miles traveled. The `lerp` function function is then used to create a linear interpolation
-of the *hours* and *miles* vectors. The `derivatve` function is then applied to the
-linear interpolation function. Finally `zplot` is used to plot the *hours* on the *x* axis and
-*miles* on *y* axis, as well as the derivative at each *x* axis point.
+A simple example shows how the `derivative` function is used to calculate
+rate of change or *velocity*.
 
-Notice that miles traveled line has a slope of 10 until the 5th hour where
-it abrubtly changes to a a slope of 50. The derivative line visualizes the
-changes in slope. Notice that the derivative are calculated along
+In the example two vectors are created, one representing hours and
+one representing miles traveled. The `lerp` function is then used to
+create a linear interpolation of the *hours* and *miles* vectors.
+The `derivative` function is then applied to the
+linear interpolation. `zplot` is then used to plot the *hours*
+on the *x* axis and *miles* on *y* axis, and the *derivative* as *mph*,
+at each *x* axis point.
+
+Notice that the *miles_traveled* line has a slope of 10 until the
+5th hour where
+it changes to a slope of 50. The *mph* line create by
+ the derivative, visualizes the *velocity* of the
+ *miles_traveled* line.
+
+
+image::images/math-expressions/derivative.png[]
+
+Also notice that the derivative is calculated along
 straight lines showing immediate change from one point to the next. This
-is because linear intepolation (`lerp`) is used as the interpolation
+is because linear interpolation (`lerp`) is used as the interpolation
 function. If `spline` or `akima` had been used it would have produced
 a derivative with rounded curves.
 
-image::images/math-expressions/derivative1.png[]
 
+=== The Second Derivative (Acceleration)
+
+While the first derivative represents velocity, the second derivative
+represents *acceleration*. The second the derivative is the derivative
+of the first derivative.
+
+The example below builds on the first example and adds the second derivative.
+Notice that the second derivative *d2*, is taken by applying the
+derivative function to a linear interpolation of the first derivative.
+
+The second derivative is plotted as *acceleration* on the chart. Notice
+that the second derivative shows the rate of change of firs
+
+image::images/math-expressions/derivatives.png[]
+
+
+
+=== Price Velocity
 
 The example below shows how to plot the derivative for a time series generated
 by the `timeseries` function. In the example a monthly time series is
@@ -136,19 +166,6 @@ of the time series.
 image::images/math-expressions/derivative2.png[]
 
 
-The `derivative` function can also be applied to other functions
-such as the `oscillate` function and the `derivative` function itself.
-In the example below the `oscillate` function is used to produce a sine wave.
-The `derivative` function is then used to create a derivative of the sine
-wave which is set to variable y1. Then the `derivative` function operates
-over the first derivative to take the derivative of the derivative. This
-is known as the second derivative, which is used to show the acceration of
-the rate of the change.
-
-The `zplot` function is then used to plot the sine wave (blue), the first derivative
-(yellow) and the second derivative (green).
-
-image::images/math-expressions/derivatives.png[]
 
 
 
