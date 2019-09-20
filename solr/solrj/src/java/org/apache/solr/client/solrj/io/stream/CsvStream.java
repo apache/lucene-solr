@@ -123,7 +123,7 @@ public class CsvStream extends TupleStream implements Expressible {
     if(tuple.EOF) {
       return tuple;
     } else {
-      String file = tuple.getString("file");
+      String file = formatFile(tuple.getString("file"));
       String line = tuple.getString("line");
       if (file.equals(currentFile)) {
         String[] fields = split(line);
@@ -144,6 +144,15 @@ public class CsvStream extends TupleStream implements Expressible {
         this.lineNumber = 1; //New file so reset the lineNumber
         return read();
       }
+    }
+  }
+
+  private String formatFile(String file) {
+    //We don't want the ./ which carries no information but can lead to problems in creating the id for the field.
+    if(file.startsWith("./")) {
+      return file.substring(2);
+    } else {
+      return file;
     }
   }
 

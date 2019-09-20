@@ -21,12 +21,19 @@ import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
+import org.apache.solr.core.MemClassLoader;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.DOMUtil;
@@ -36,21 +43,23 @@ import org.w3c.dom.NodeList;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class CacheConfig implements MapWriter {
-  final Map<String, String> args;
+  final PluginInfo args;
   private CacheRegenerator defRegen;
   private final String name;
   private String cacheImpl, regenImpl;
-  private Object[] persistence = new Object[1];
+  Object[] persistence = new Object[1];
 
 
-  public CacheConfig(Map<String, String> args) {
-    this.args = copyValsAsString(args);
+  public CacheConfig(Map<String, String> args, String path) {
+    this.args = new PluginInfo(SolrCache.TYPE, (Map) copyValsAsString(args));
     this.name = args.get(NAME);
     this.cacheImpl = args.getOrDefault("class", "solr.LRUCache");
     this.regenImpl = args.get("regenerator");
+    this.args.pathInConfig = StrUtils.splitSmart(path, '/', true);
   }
-  static Map<String,String> copyValsAsString(Map m){
-    Map<String,String> copy = new LinkedHashMap(m.size());
+
+  static Map<String, String> copyValsAsString(Map m) {
+    Map<String, String> copy = new LinkedHashMap(m.size());
     m.forEach((k, v) -> copy.put(String.valueOf(k), String.valueOf(v)));
     return copy;
   }
@@ -60,11 +69,15 @@ public class CacheConfig implements MapWriter {
     if (node == null || !"true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
       Map<String, String> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
       if (m == null) return null;
-      return new CacheConfig(m);
+      List<String> pieces = StrUtils.splitSmart(xpath, '/');
+      String name = pieces.get(pieces.size() - 1);
+      m = Utils.getDeepCopy(m, 2);
+      m.put(NAME, name);
+      return new CacheConfig(m, xpath);
     } else {
       Map<String, String> attrs = DOMUtil.toMap(node.getAttributes());
       attrs.put(NAME, node.getNodeName());
-      return new CacheConfig(applyOverlay(xpath, solrConfig.getOverlay(), attrs));
+      return new CacheConfig(applyOverlay(xpath, solrConfig.getOverlay(), attrs), xpath);
 
     }
 
@@ -89,7 +102,7 @@ public class CacheConfig implements MapWriter {
     Map<String, CacheConfig> result = new HashMap<>(nodes.getLength());
     for (int i = 0; i < nodes.getLength(); i++) {
       Map<String, String> args = DOMUtil.toMap(nodes.item(i).getAttributes());
-      result.put(args.get(NAME), new CacheConfig(args));
+      result.put(args.get(NAME), new CacheConfig(args, configPath+"/"+args.get(NAME)));
     }
     return result;
   }
@@ -100,27 +113,44 @@ public class CacheConfig implements MapWriter {
 
 
   public <K, V> SolrCacheHolder<K, V> newInstance(SolrCore core) {
-    ResourceLoader loader = core.getResourceLoader();
+    return new SolrCacheHolder(new CacheInfo(this, core));
+  }
 
-    SolrCache inst = null;
+  static class CacheInfo {
+    final CacheConfig cfg;
+    SolrCore core;
+    SolrCache cache = null;
+    String pkg;
+    RuntimeLib runtimeLib;
     CacheRegenerator regen = null;
-    try {
-      inst = loader.findClass(cacheImpl, SolrCache.class).getConstructor().newInstance();
-      regen = null;
-      if (regenImpl != null) {
-        regen = loader.findClass(regenImpl, CacheRegenerator.class).getConstructor().newInstance();
+
+
+    CacheInfo(CacheConfig cfg, SolrCore core) {
+      this.core = core;
+      this.cfg = cfg;
+      pkg = cfg.args.attributes.get(CommonParams.PACKAGE);
+      ResourceLoader loader = pkg == null ? core.getResourceLoader() :
+          core.getCoreContainer().getPackageManager().getResourceLoader(pkg);
+
+      try {
+        cache = loader.findClass(cfg.cacheImpl, SolrCache.class).getConstructor().newInstance();
+        regen = null;
+        if (cfg.regenImpl != null) {
+          regen = loader.findClass(cfg.regenImpl, CacheRegenerator.class).getConstructor().newInstance();
+        }
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error loading cache " + cfg.jsonStr(), e);
       }
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error loading cache " + jsonStr(), e);
+      if (regen == null && cfg.defRegen != null) regen = cfg.defRegen;
+      cfg.persistence[0] = cache.init(cfg.args.attributes, cfg.persistence[0], regen);
+      if (pkg!=null && loader instanceof MemClassLoader) {
+        MemClassLoader memClassLoader = (MemClassLoader) loader;
+        runtimeLib = core.getCoreContainer().getPackageManager().getLib(pkg);
+      }
 
     }
-    if (regen == null && defRegen != null) regen = defRegen;
-
-    persistence[0] =  inst.init(args, persistence[0], regen);
-
-    return new SolrCacheHolder<>(inst, this);
-
   }
+
 
   public void setDefaultRegenerator(CacheRegenerator regen) {
     this.defRegen = regen;
@@ -128,6 +158,6 @@ public class CacheConfig implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    args.forEach(ew.getBiConsumer());
+    args.attributes.forEach(ew.getBiConsumer());
   }
 }

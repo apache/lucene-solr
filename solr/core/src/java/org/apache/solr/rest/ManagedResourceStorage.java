@@ -496,17 +496,9 @@ public abstract class ManagedResourceStorage {
     if (inputStream == null) {
       return null;
     }
-    Object parsed = null;
-    InputStreamReader reader = null;
-    try {
-      reader = new InputStreamReader(inputStream, UTF_8);
+    Object parsed;
+    try (InputStreamReader reader = new InputStreamReader(inputStream, UTF_8)) {
       parsed = parseText(reader, resourceId);
-    } finally {
-      if (reader != null) {
-        try {
-          reader.close();
-        } catch (Exception ignore){}
-      }
     }
     
     String objectType = (parsed != null) ? parsed.getClass().getSimpleName() : "null"; 

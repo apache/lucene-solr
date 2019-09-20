@@ -40,13 +40,23 @@ limitations under the License.
 
 #content #collections #navigation
 {
-  padding-top: 50px;
   width: 12%;
 }
 
 #content #collections #navigation a
 {
   padding-left: 5px;
+}
+
+#content #collections #navigation ul
+{
+  padding-top: 20px;
+}
+
+#content #collections #navigation hr
+{
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 #content #collections #frame .actions
@@ -129,23 +139,24 @@ limitations under the License.
   background-image: url( ../../img/ico/cross.png );
 }
 
-#content #collections .actions #add
-{
-  left: 0;
-  position: absolute;
-}
-
-#content #collections .actions #add span
+#content #collections #navigation #add span
 {
   background-image: url( ../../img/ico/plus-button.png );
 }
 
-#content #collections .actions #delete
+#content #collections #navigation #create-alias span
+{
+  background-image: url( ../../img/ico/arrow-switch.png );
+}
+
+
+#content #collections .actions #delete-collection,
+#content #collections .actions #delete-alias
 {
   margin-right: 20px;
 }
 
-#content #collections .actions #delete span
+#content #collections .actions #delete-collection span
 {
   background-image: url( ../../img/ico/cross.png );
 }
@@ -158,11 +169,6 @@ limitations under the License.
 #content #collections .actions #rename span
 {
   background-image: url( ../../img/ico/ui-text-field-select.png );
-}
-
-#content #collections .actions #create-alias span
-{
-  background-image: url( ../../img/ico/arrow-switch.png );
 }
 
 #content #collections .actions #delete-alias span
@@ -215,6 +221,7 @@ limitations under the License.
   background-position: 0% 50%;
 }
 
+#content #collections #data #alias-data h2 { background-image: url( ../../img/ico/box.png ); }
 #content #collections #data #collection-data h2 { background-image: url( ../../img/ico/box.png ); }
 #content #collections #data #shard-data h2 { background-image: url( ../../img/ico/sitemap.png ); }
 #content #collections #data #shard-data .replica h2 { background-image: url( ../../img/ico/node-slave.png ); }
@@ -353,6 +360,11 @@ limitations under the License.
 #content #collections #node-name .chosen-container
 {
     width: 100% !important;
+}
+
+#content #collections #alias-data {
+  float: left;
+  width: 35%;
 }
 
 #content #collections #collection-data {

@@ -16,19 +16,18 @@
  */
 package org.apache.solr.ltr.model;
 
-import static org.hamcrest.core.StringContains.containsString;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.core.StringContains.containsString;
 
 public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
-
-  @BeforeClass
-  public static void before() throws Exception {
+  @Before
+  public void before() throws Exception {
     setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity","1"));
@@ -39,8 +38,8 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     assertU(commit());
   }
 
-  @AfterClass
-  public static void after() throws Exception {
+  @After
+  public void after() throws Exception {
     aftertest();
   }
 
@@ -123,124 +122,107 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   public void multipleAdditiveTreesTestNoParams() throws Exception {
     final ModelException expectedException =
         new ModelException("no trees declared for model multipleadditivetreesmodel_no_params");
-    try {
-        createModelFromFiles("multipleadditivetreesmodel_no_params.json",
-              "multipleadditivetreesmodel_features.json");
-        fail("multipleAdditiveTreesTestNoParams failed to throw exception: "+expectedException);
-    } catch (Exception actualException) {
-      Throwable rootError = getRootCause(actualException);
-      assertEquals(expectedException.toString(), rootError.toString());
-    }
-
+    Exception ex = expectThrows(Exception.class, () -> {
+      createModelFromFiles("multipleadditivetreesmodel_no_params.json",
+          "multipleadditivetreesmodel_features.json");
+    });
+    Throwable rootError = getRootCause(ex);
+    assertEquals(expectedException.toString(), rootError.toString());
   }
 
   @Test
   public void multipleAdditiveTreesTestEmptyParams() throws Exception {
     final ModelException expectedException =
         new ModelException("no trees declared for model multipleadditivetreesmodel_no_trees");
-    try {
-        createModelFromFiles("multipleadditivetreesmodel_no_trees.json",
-            "multipleadditivetreesmodel_features.json");
-        fail("multipleAdditiveTreesTestEmptyParams failed to throw exception: "+expectedException);
-    } catch (Exception actualException) {
-      Throwable rootError = getRootCause(actualException);
-      assertEquals(expectedException.toString(), rootError.toString());
-    }
+    Exception ex = expectThrows(Exception.class, () -> {
+      createModelFromFiles("multipleadditivetreesmodel_no_trees.json",
+          "multipleadditivetreesmodel_features.json");
+    });
+    Throwable rootError = getRootCause(ex);
+    assertEquals(expectedException.toString(), rootError.toString());
   }
 
   @Test
   public void multipleAdditiveTreesTestNoWeight() throws Exception {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree doesn't contain a weight");
-    try {
-        createModelFromFiles("multipleadditivetreesmodel_no_weight.json",
-            "multipleadditivetreesmodel_features.json");
-        fail("multipleAdditiveTreesTestNoWeight failed to throw exception: "+expectedException);
-    } catch (Exception actualException) {
-      Throwable rootError = getRootCause(actualException);
-      assertEquals(expectedException.toString(), rootError.toString());
-    }
+    Exception ex = expectThrows(Exception.class, () -> {
+      createModelFromFiles("multipleadditivetreesmodel_no_weight.json",
+          "multipleadditivetreesmodel_features.json");
+    });
+    Throwable rootError = getRootCause(ex);
+    assertEquals(expectedException.toString(), rootError.toString());
   }
 
   @Test
   public void multipleAdditiveTreesTestTreesParamDoesNotContatinTree() throws Exception {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree doesn't contain a tree");
-    try {
-        createModelFromFiles("multipleadditivetreesmodel_no_tree.json",
-            "multipleadditivetreesmodel_features.json");
-        fail("multipleAdditiveTreesTestTreesParamDoesNotContatinTree failed to throw exception: "+expectedException);
-    } catch (Exception actualException) {
-      Throwable rootError = getRootCause(actualException);
-      assertEquals(expectedException.toString(), rootError.toString());
-    }
+    Exception ex = expectThrows(Exception.class, () -> {
+      createModelFromFiles("multipleadditivetreesmodel_no_tree.json",
+          "multipleadditivetreesmodel_features.json");
+    });
+    Throwable rootError = getRootCause(ex);
+    assertEquals(expectedException.toString(), rootError.toString());
   }
 
   @Test
   public void multipleAdditiveTreesTestNoFeaturesSpecified() throws Exception {
     final ModelException expectedException =
         new ModelException("no features declared for model multipleadditivetreesmodel_no_features");
-    try {
-        createModelFromFiles("multipleadditivetreesmodel_no_features.json",
-            "multipleadditivetreesmodel_features.json");
-        fail("multipleAdditiveTreesTestNoFeaturesSpecified failed to throw exception: "+expectedException);
-    } catch (ModelException actualException) {
-      assertEquals(expectedException.toString(), actualException.toString());
-    }
+    Exception ex = expectThrows(Exception.class, () -> {
+      createModelFromFiles("multipleadditivetreesmodel_no_features.json",
+          "multipleadditivetreesmodel_features.json");
+    });
+    Throwable rootError = getRootCause(ex);
+    assertEquals(expectedException.toString(), rootError.toString());
   }
 
   @Test
   public void multipleAdditiveTreesTestNoRight() throws Exception {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree node is missing right");
-    try {
-        createModelFromFiles("multipleadditivetreesmodel_no_right.json",
-            "multipleadditivetreesmodel_features.json");
-        fail("multipleAdditiveTreesTestNoRight failed to throw exception: "+expectedException);
-    } catch (Exception actualException) {
-      Throwable rootError = getRootCause(actualException);
-      assertEquals(expectedException.toString(), rootError.toString());
-    }
+    Exception ex = expectThrows(Exception.class, () -> {
+      createModelFromFiles("multipleadditivetreesmodel_no_right.json",
+          "multipleadditivetreesmodel_features.json");
+    });
+    Throwable rootError = getRootCause(ex);
+    assertEquals(expectedException.toString(), rootError.toString());
   }
 
   @Test
   public void multipleAdditiveTreesTestNoLeft() throws Exception {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree node is missing left");
-    try {
-        createModelFromFiles("multipleadditivetreesmodel_no_left.json",
-            "multipleadditivetreesmodel_features.json");
-        fail("multipleAdditiveTreesTestNoLeft failed to throw exception: "+expectedException);
-    } catch (Exception actualException) {
-      Throwable rootError = getRootCause(actualException);
-      assertEquals(expectedException.toString(), rootError.toString());
-    }
+    Exception ex = expectThrows(Exception.class, () -> {
+      createModelFromFiles("multipleadditivetreesmodel_no_left.json",
+          "multipleadditivetreesmodel_features.json");
+    });
+    Throwable rootError = getRootCause(ex);
+    assertEquals(expectedException.toString(), rootError.toString());
   }
 
   @Test
   public void multipleAdditiveTreesTestNoThreshold() throws Exception {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
-    try {
-        createModelFromFiles("multipleadditivetreesmodel_no_threshold.json",
-            "multipleadditivetreesmodel_features.json");
-        fail("multipleAdditiveTreesTestNoThreshold failed to throw exception: "+expectedException);
-    } catch (Exception actualException) {
-      Throwable rootError = getRootCause(actualException);
-      assertEquals(expectedException.toString(), rootError.toString());
-    }
+    Exception ex = expectThrows(Exception.class, () -> {
+      createModelFromFiles("multipleadditivetreesmodel_no_threshold.json",
+          "multipleadditivetreesmodel_features.json");
+    });
+    Throwable rootError = getRootCause(ex);
+    assertEquals(expectedException.toString(), rootError.toString());
   }
 
   @Test
   public void multipleAdditiveTreesTestMissingTreeFeature() throws Exception {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree node is leaf with left=-100.0 and right=75.0");
-    try {
-        createModelFromFiles("multipleadditivetreesmodel_no_feature.json",
-              "multipleadditivetreesmodel_features.json");
-        fail("multipleAdditiveTreesTestMissingTreeFeature failed to throw exception: "+expectedException);
-    } catch (ModelException actualException) {
-      assertEquals(expectedException.toString(), actualException.toString());
-    }
+
+    ModelException ex = expectThrows(ModelException.class, () -> {
+      createModelFromFiles("multipleadditivetreesmodel_no_feature.json",
+          "multipleadditivetreesmodel_features.json");
+    });
+    assertEquals(expectedException.toString(), ex.toString());
   }
 }

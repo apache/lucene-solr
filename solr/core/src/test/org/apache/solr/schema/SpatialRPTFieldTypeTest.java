@@ -110,13 +110,8 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   }
   
   public void testJunkValuesForDistanceUnits() throws Exception {
-    try {
-      setupRPTField("rose", "true");
-      fail("Expected exception for bad value of distanceUnits.");
-    } catch (Exception ex) {
-      if(!ex.getMessage().startsWith("Must specify distanceUnits as one of"))
-        throw ex;
-    }
+    Exception ex = expectThrows(Exception.class, () -> setupRPTField("rose", "true"));
+    assertTrue(ex.getMessage().startsWith("Must specify distanceUnits as one of"));
   }
 
   public void testMaxDistErrConversion() throws Exception {
@@ -217,12 +212,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     assertEquals(wkt, out);
 
     //assert fails GeoJSON
-    try {
-      ftype.parseShape("{\"type\":\"Point\",\"coordinates\":[1,2]}");
-      fail("Should not parse GeoJSON if told format is WKT");
-    } catch (SolrException e) {// expected
-      System.out.println(e);
-    }
+    expectThrows(SolrException.class, () -> ftype.parseShape("{\"type\":\"Point\",\"coordinates\":[1,2]}"));
 
   }
 

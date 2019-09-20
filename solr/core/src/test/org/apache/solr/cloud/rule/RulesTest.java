@@ -19,8 +19,11 @@ package org.apache.solr.cloud.rule;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -74,6 +77,10 @@ public class RulesTest extends SolrCloudTestCase {
 
   @Test
   public void doIntegrationTest() throws Exception {
+    assertEquals("Sanity Check: someone changed the cluster; " +
+                 "test logic requires specific number of jetty nodes",
+                 5, cluster.getJettySolrRunners().size());
+    
     final long minGB = (random().nextBoolean() ? 1 : 0);
     assumeTrue("doIntegrationTest needs minGB="+minGB+" usable disk space",
         ImplicitSnitch.getUsableSpaceInGB(Paths.get("/")) > minGB);
@@ -107,6 +114,7 @@ public class RulesTest extends SolrCloudTestCase {
                    if (null == collection || 2 != collection.getSlices().size()) {
                      return false;
                    }
+                   final Set<String> replicaNodes = new HashSet<>();
                    for (Slice slice : collection.getSlices()) {
                      // short circut if our slice isn't active
                      if (Slice.State.ACTIVE != slice.getState()) {
@@ -119,20 +127,33 @@ public class RulesTest extends SolrCloudTestCase {
                        if (2 != liveReplicas.size()) {
                          return false;
                        }
+                       replicaNodes.addAll(liveReplicas.stream().map
+                                           (Replica::getNodeName).collect(Collectors.toList()));
                      } else if (slice.getName().equals("shard2")) {
-                       // for shard2, we should have 1 fully live replicas
+                       // for shard2, we should have 3 fully live replicas
                        final List<Replica> liveReplicas = slice.getReplicas
                          ((r) -> r.isActive(liveNodes));
-                       if (1 != liveReplicas.size()) {
+                       if (3 != liveReplicas.size()) {
                          return false;
                        }
+                       replicaNodes.addAll(liveReplicas.stream().map
+                                           (Replica::getNodeName).collect(Collectors.toList()));
                      } else {
                        // WTF?
                        return false;
                      }
                    }
-                   return true;
+                   // now sanity check that the rules were *obeyed* and
+                   // each replica is on a unique node
+                   return 5 == replicaNodes.size();
                  });
+
+    // adding an additional replica should fail since our rule says at most one replica
+    // per node, and we know every node already has one replica
+    expectedException.expect(HttpSolrClient.RemoteSolrException.class);
+    expectedException.expectMessage(containsString("current number of eligible live nodes 0"));
+    CollectionAdminRequest.addReplicaToShard(rulesColl, "shard2").process(cluster.getSolrClient());
+    
   }
 
   @Test

@@ -156,15 +156,9 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     params.remove(CommonParams.Q);
     params.remove(AnalysisParams.QUERY);
     params.remove(AnalysisParams.FIELD_VALUE);
-    try {
-      request = handler.resolveAnalysisRequest(req);
-      fail("Analysis request must fail if all of q, analysis.query or analysis.value are absent");
-    } catch (SolrException e) {
-      if (e.code() != SolrException.ErrorCode.BAD_REQUEST.code)  {
-        fail("Unexpected exception");
-      }
-    } catch (Exception e) {
-      fail("Unexpected exception");
+    try (SolrQueryRequest solrQueryRequest = new LocalSolrQueryRequest(h.getCore(), params)) {
+      SolrException ex = expectThrows(SolrException.class, () -> handler.resolveAnalysisRequest(solrQueryRequest));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     }
 
     req.close();

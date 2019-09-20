@@ -230,6 +230,73 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testUpperLowerSingle() throws Exception {
+    String expr = " select(list(tuple(field1=\"a\", field2=\"C\")), upper(field1) as field3, lower(field2) as field4)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  1);
+    String s1 = tuples.get(0).getString("field3");
+    assertEquals(s1, "A");
+    String s2 = tuples.get(0).getString("field4");
+    assertEquals(s2, "c");
+  }
+
+  @Test
+  public void testUpperLowerArray() throws Exception {
+    String expr = " select(list(tuple(field1=array(\"a\",\"b\",\"c\"), field2=array(\"X\",\"Y\",\"Z\"))), upper(field1) as field3, lower(field2) as field4)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  1);
+    List<String> l1 = (List<String>)tuples.get(0).get("field3");
+    assertEquals(l1.get(0), "A");
+    assertEquals(l1.get(1), "B");
+    assertEquals(l1.get(2), "C");
+
+    List<String> l2 = (List<String>)tuples.get(0).get("field4");
+    assertEquals(l2.get(0), "x");
+    assertEquals(l2.get(1), "y");
+    assertEquals(l2.get(2), "z");
+  }
+
+
+  @Test
+  public void testSplitTrim() throws Exception {
+    String expr = " select(list(tuple(field1=\"a, b, c\")), trim(split(field1, \",\")) as field2)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  1);
+    List<String> l1 = (List<String>)tuples.get(0).get("field2");
+    assertEquals(l1.get(0), "a");
+    assertEquals(l1.get(1), "b");
+    assertEquals(l1.get(2), "c");
+  }
+
+
+  @Test
   public void testMemset() throws Exception {
     String expr = "let(echo=\"b, c\"," +
         "              a=memset(list(tuple(field1=val(1), field2=val(10)), tuple(field1=val(2), field2=val(20))), " +
@@ -1365,7 +1432,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String cexpr = "let(echo=true," +
         "               a=setColumnLabels(matrix(array(1, 2, 3), " +
         "                                        rev(array(4,5,6)))," +
-        "                                        array(col1, col2, col3))," +
+        "                                        array(\"col1\", \"col2\", \"col3\"))," +
         "               b=rowAt(a, 1)," +
         "               c=colAt(a, 2)," +
         "               d=getColumnLabels(a)," +
@@ -1373,7 +1440,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "               f=rowCount(a)," +
         "               g=columnCount(a)," +
         "               h=indexOf(d, \"col2\")," +
-        "               i=indexOf(d, col3))";
+        "               i=indexOf(d, \"col3\"))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -2058,7 +2125,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testMatches() throws Exception {
-    String cexpr = "having(list(tuple(a=\"Hello World\"), tuple(a=\"Good bye\")), matches(a, Hello))";
+    String cexpr = "having(list(tuple(a=\"Hello World\"), tuple(a=\"Good bye\")), matches(a, \"Hello\"))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -2272,7 +2339,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
                    "    b=termVectors(a, minDocFreq=0, maxDocFreq=1)," +
         "               c=getRowLabels(b)," +
         "               d=getColumnLabels(b)," +
-        "               e=getAttribute(b, docFreqs))";
+        "               e=getAttribute(b, \"docFreqs\"))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -2351,7 +2418,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
             "    b=termVectors(a, minTermLength=4, minDocFreq=0, maxDocFreq=1)," +
             "    c=getRowLabels(b)," +
             "    d=getColumnLabels(b)," +
-            "    e=getAttribute(b, docFreqs))";
+            "    e=getAttribute(b, \"docFreqs\"))";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -2423,7 +2490,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "        b=termVectors(a, exclude=jim, minDocFreq=0, maxDocFreq=1)," +
         "        c=getRowLabels(b)," +
         "        d=getColumnLabels(b)," +
-        "        e=getAttribute(b, docFreqs))";
+        "        e=getAttribute(b, \"docFreqs\"))";
 
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -2495,7 +2562,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "    b=termVectors(a, minDocFreq=.5, maxDocFreq=1)," +
         "    c=getRowLabels(b)," +
         "    d=getColumnLabels(b)," +
-        "    e=getAttribute(b, docFreqs))";
+        "    e=getAttribute(b, \"docFreqs\"))";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -2549,7 +2616,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "    b=termVectors(a, maxDocFreq=0)," +
         "    c=getRowLabels(b)," +
         "    d=getColumnLabels(b)," +
-        "    e=getAttribute(b, docFreqs))";
+        "    e=getAttribute(b, \"docFreqs\"))";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -2571,7 +2638,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "                      tuple(fx=x2, fy=f1, fv=add(1,7)), " +
         "                      tuple(fx=x3, fy=f1, fv=add(1,4))," +
         "                      tuple(fx=x3, fy=f3, fv=add(1,7)))," +
-                   "    b=pivot(a, fx, fy, fv)," +
+                   "    b=pivot(a, \"fx\", \"fy\", \"fv\")," +
         "               c=getRowLabels(b)," +
         "               d=getColumnLabels(b))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -2741,7 +2808,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "               c=array(0,0,0,1,1,1)," +
         "               d=array(0,0,0,1,1,1)," +
         "               e=setRowLabels(matrix(a,b,c,d), " +
-        "                              array(doc1, doc2, doc3, doc4))," +
+        "                              array(\"doc1\", \"doc2\", \"doc3\", \"doc4\"))," +
         "               f=kmeans(e, 2)," +
         "               g=getCluster(f, 0)," +
         "               h=getCluster(f, 1)," +
@@ -2820,7 +2887,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "               c=array(0,0,0,1,1,1)," +
         "               d=array(0,0,0,1,1,1)," +
         "               e=setRowLabels(matrix(a,b,c,d), " +
-        "                              array(doc1, doc2, doc3, doc4))," +
+        "                              array(\"doc1\", \"doc2\", \"doc3\", \"doc4\"))," +
         "               f=multiKmeans(e, 2, 5)," +
         "               g=getCluster(f, 0)," +
         "               h=getCluster(f, 1)," +
@@ -2899,7 +2966,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         "               c=array(0,0,0,1,1,1)," +
         "               d=array(0,0,0,1,1,1)," +
         "               e=setRowLabels(matrix(a,b,c,d), " +
-        "                              array(doc1, doc2, doc3, doc4))," +
+        "                              array(\"doc1\", \"doc2\", \"doc3\", \"doc4\"))," +
         "               f=fuzzyKmeans(e, 2)," +
         "               g=getCluster(f, 0)," +
         "               h=getCluster(f, 1)," +
@@ -3022,8 +3089,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String cexpr = "let(echo=true," +
         "               a=oscillate(10, .3, 2.9)," +
         "               b=describe(a)," +
-        "               c=getValue(b, min)," +
-        "               d=getValue(b, max)," +
+        "               c=getValue(b, \"min\")," +
+        "               d=getValue(b, \"max\")," +
         "               e=harmfit(a)," +
         "               f=getAmplitude(e)," +
         "               g=getAngularFrequency(e)," +
@@ -3119,10 +3186,10 @@ public class MathExpressionTest extends SolrCloudTestCase {
   public void testSetAndGetValue() throws Exception {
     String cexpr = "let(echo=true," +
         "               a=describe(array(1,2,3,4,5,6,7))," +
-        "               b=getValue(a, geometricMean)," +
+        "               b=getValue(a, \"geometricMean\")," +
         "               c=setValue(a, \"test\", add(b, 1))," +
-        "               d=getValue(c, test)," +
-        "               e=setValue(c, blah, array(8.11,9.55,10.1))," +
+        "               d=getValue(c, \"test\")," +
+        "               e=setValue(c, \"blah\", array(8.11,9.55,10.1))," +
         "               f=getValue(e, \"blah\"))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -3576,7 +3643,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testCache() throws Exception {
-    String cexpr = "putCache(space1, key1, dotProduct(array(2,4,6,8,10,12),array(1,2,3,4,5,6)))";
+    String cexpr = "putCache(\"space1\", \"key1\", dotProduct(array(2,4,6,8,10,12),array(1,2,3,4,5,6)))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -3590,7 +3657,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(dotProduct.doubleValue() == 182);
 
 
-    cexpr = "getCache(space1, key1)";
+    cexpr = "getCache(\"space1\", \"key1\")";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -3602,7 +3669,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     dotProduct = (Number)tuples.get(0).get("return-value");
     assertTrue(dotProduct.doubleValue() == 182);
 
-    cexpr = "listCache(space1)";
+    cexpr = "listCache(\"space1\")";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -3628,7 +3695,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(keys.size(), 1);
     assertEquals(keys.get(0), "space1");
 
-    cexpr = "removeCache(space1, key1)";
+    cexpr = "removeCache(\"space1\", \"key1\")";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -3641,7 +3708,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(dotProduct.doubleValue() == 182);
 
 
-    cexpr = "listCache(space1)";
+    cexpr = "listCache(\"space1\")";
     paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -3652,11 +3719,6 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     keys = (List<String>)tuples.get(0).get("return-value");
     assertEquals(keys.size(), 0);
-
-
-
-
-
   }
 
   @Test
@@ -3961,7 +4023,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String cexpr = "let(echo=true," +
         "               a=setRowLabels(matrix(array(1,1,1,0,0,0),"+
         "                                     array(1,0,0,0,1,1),"+
-        "                                     array(0,0,0,1,1,1)), array(row1,row2,row3)),"+
+        "                                     array(0,0,0,1,1,1)), array(\"row1\",\"row2\",\"row3\")),"+
         "               b=array(0,0,0,1,1,1),"+
         "               c=knn(a, b, 2),"+
         "               d=getRowLabels(c),"+
@@ -4483,7 +4545,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testDateTime() throws Exception {
-    String expr = "select(list(tuple(a=20001011:10:11:01), tuple(a=20071011:14:30:20)), dateTime(a, yyyyMMdd:kk:mm:ss) as date)";
+    String expr = "select(list(tuple(a=20001011:10:11:01), tuple(a=20071011:14:30:20)), dateTime(a, \"yyyyMMdd:kk:mm:ss\") as date)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
     paramsLoc.set("qt", "/stream");
@@ -4502,7 +4564,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testDateTimeTZ() throws Exception {
-    String expr = "select(list(tuple(a=20001011), tuple(a=20071011)), dateTime(a, yyyyMMdd, UTC) as date, dateTime(a, yyyyMMdd, EST) as date1, dateTime(a, yyyyMMdd) as date2)";
+    String expr = "select(list(tuple(a=20001011), tuple(a=20071011)), dateTime(a, \"yyyyMMdd\", \"UTC\") as date, dateTime(a, \"yyyyMMdd\", \"EST\") as date1, dateTime(a, \"yyyyMMdd\") as date2)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", expr);
     paramsLoc.set("qt", "/stream");

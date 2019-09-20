@@ -36,6 +36,10 @@ public class NotNullEvaluator extends RecursiveBooleanEvaluator implements ManyV
 
   public Object doWork(Object ... values) throws IOException {
 
+    if(values[0] == null) {
+      return false;
+    }
+
     if(values[0] instanceof String) {
       //Check to see if the this tuple had a null value for that string.
       Map tupleContext = getStreamContext().getTupleContext();

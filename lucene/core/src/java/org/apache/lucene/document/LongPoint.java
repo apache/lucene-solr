@@ -20,12 +20,12 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
@@ -47,7 +47,6 @@ import org.apache.lucene.util.NumericUtils;
  * @see PointValues
  */
 public final class LongPoint extends Field {
-
   private static FieldType getType(int numDims) {
     FieldType type = new FieldType();
     type.setDimensions(numDims, Long.BYTES);
@@ -83,7 +82,13 @@ public final class LongPoint extends Field {
     return decodeDimension(bytes.bytes, bytes.offset);
   }
 
-  private static BytesRef pack(long... point) {
+  /**
+   *  Pack a long point into a BytesRef
+   *
+   * @param point long[] value
+   * @throws IllegalArgumentException is the value is null or of zero length
+   */
+  public static BytesRef pack(long... point) {
     if (point == null) {
       throw new IllegalArgumentException("point must not be null");
     }

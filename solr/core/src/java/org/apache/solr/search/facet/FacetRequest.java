@@ -367,12 +367,12 @@ public abstract class FacetRequest {
   @Override
   public String toString() {
     Map<String, Object> descr = getFacetDescription();
-    String s = "facet request: { ";
-    for (String key : descr.keySet()) {
-      s += key + ":" + descr.get(key) + ",";
+    StringBuilder s = new StringBuilder("facet request: { ");
+    for (Map.Entry<String, Object> entry : descr.entrySet()) {
+      s.append(entry.getKey()).append(':').append(entry.getValue()).append(',');
     }
-    s += "}";
-    return s;
+    s.append('}');
+    return s.toString();
   }
 
   /**

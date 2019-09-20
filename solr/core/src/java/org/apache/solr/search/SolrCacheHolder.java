@@ -22,7 +22,12 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.RuntimeLib;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,12 +35,53 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  private final CacheConfig factory;
+  private CacheConfig.CacheInfo info;
   protected volatile SolrCache<K, V> delegate;
 
-  public SolrCacheHolder(SolrCache<K, V> delegate, CacheConfig factory) {
-    this.delegate = delegate;
-    this.factory = factory;
+
+
+  public SolrCacheHolder(CacheConfig.CacheInfo cacheInfo) {
+    this.info = cacheInfo;
+    this.delegate = cacheInfo.cache;
+
+    if(info.pkg != null) {
+      info.core.addPackageListener(new SolrCore.PkgListener() {
+        @Override
+        public String packageName() {
+          return info.pkg;
+        }
+
+        @Override
+        public PluginInfo pluginInfo() {
+          return info.cfg.args;
+        }
+
+        @Override
+        public MapWriter lib() {
+          return info.runtimeLib;
+        }
+
+        @Override
+        public void changed(RuntimeLib lib) {
+          reloadCache(lib);
+        }
+      });
+    }
+  }
+
+  private void reloadCache(RuntimeLib lib) {
+    int znodeVersion = info.runtimeLib == null ? -1 : info.runtimeLib.getZnodeVersion();
+    if (lib.getZnodeVersion() > znodeVersion) {
+      log.info("Cache {} being reloaded, package: {} loaded from: {} ", delegate.getClass().getSimpleName(), info.pkg, lib.getUrl());
+      info = new CacheConfig.CacheInfo(info.cfg, info.core);
+      delegate.close();
+      delegate = info.cache;
+      if(metricsInfo != null){
+        metricsInfo.init(delegate);
+
+      }
+
+    }
   }
 
   public int size() {
@@ -81,16 +127,24 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   }
 
   @Override
-  public Map<String, Object> getResourceLimits() {
-    return delegate.getResourceLimits();
+  public int getMaxSize() {
+    return delegate.getMaxSize();
   }
 
   @Override
-  public void setResourceLimit(String limitName, Object value) throws Exception {
-    delegate.setResourceLimit(limitName, value);
-
+  public void setMaxSize(int maxSize) {
+    delegate.setMaxSize(maxSize);
   }
 
+  @Override
+  public int getMaxRamMB() {
+    return delegate.getMaxRamMB();
+  }
+
+  @Override
+  public void setMaxRamMB(int maxRamMB) {
+    delegate.setMaxRamMB(maxRamMB);
+  }
 
   public void warm(SolrIndexSearcher searcher, SolrCacheHolder src) {
     delegate.warm(searcher, src.get());
@@ -132,11 +186,31 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
     return delegate.getCategory();
   }
 
-  @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
 
-    delegate.initializeMetrics(manager, registry, tag,scope);
+  private MetricsInfo metricsInfo;
 
+  public static class MetricsInfo {
+    final SolrMetricManager manager;
+    final String registry;
+    final String tag;
+    final String scope;
+
+    MetricsInfo(SolrMetricManager manager, String registry, String tag, String scope) {
+      this.manager = manager;
+      this.registry = registry;
+      this.tag = tag;
+      this.scope = scope;
+    }
+
+    public void init(SolrMetricProducer metricProducer) {
+      metricProducer.initializeMetrics(manager,registry,tag,scope);
+    }
   }
 
+  @Override
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    this.metricsInfo = new MetricsInfo(manager, registry, tag, scope);
+    delegate.initializeMetrics(manager, registry, tag, scope);
+
+  }
 }

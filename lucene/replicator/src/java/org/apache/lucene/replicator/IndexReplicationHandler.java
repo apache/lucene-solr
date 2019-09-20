@@ -108,7 +108,7 @@ public class IndexReplicationHandler implements ReplicationHandler {
     }
     
     String segmentsFile = files.remove(files.size() - 1);
-    if (!segmentsFile.startsWith(IndexFileNames.SEGMENTS) || segmentsFile.equals(IndexFileNames.OLD_SEGMENTS_GEN)) {
+    if (!segmentsFile.startsWith(IndexFileNames.SEGMENTS)) {
       throw new IllegalStateException("last file to copy+sync must be segments_N but got " + segmentsFile
           + "; check your Revision implementation!");
     }

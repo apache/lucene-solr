@@ -16,20 +16,16 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.impl.PreferenceRule;
@@ -39,11 +35,21 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HttpShardHandlerFactory.WhitelistHostChecker;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 
 /**
  * Tests specifying a custom ShardHandlerFactory
@@ -116,7 +122,97 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings("unchecked")
-  public void testNodePreferenceRulesComparator() throws Exception {
+  public void testNodePreferenceRulesBase() throws Exception {
+    SolrCore testCore = null;
+    HttpShardHandlerFactory fac = new HttpShardHandlerFactory();
+    fac.init(new PluginInfo(null, Collections.EMPTY_MAP));
+    SolrQueryRequestBase req;
+    NamedList<String> params = new NamedList<>();
+    List<Replica> replicas = getBasicReplicaList();
+
+    String rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
+
+    params.add("routingPreference", "0");
+    params.add(ShardParams.SHARDS_PREFERENCE, rulesParam);
+
+    req = new SolrQueryRequestBase(testCore, params.toSolrParams()) {};
+    ReplicaListTransformer rlt = fac.getReplicaListTransformer(req);
+    rlt.transform(replicas);
+    assertEquals("node1", replicas.get(0).getNodeName());
+    assertEquals("node2", replicas.get(1).getNodeName());
+    assertEquals("node3", replicas.get(2).getNodeName());
+    req.close();
+
+    params.setVal(0, "1");
+    req = new SolrQueryRequestBase(testCore, params.toSolrParams()) {};
+    rlt = fac.getReplicaListTransformer(req);
+    rlt.transform(replicas);
+    assertEquals("node2", replicas.get(0).getNodeName());
+    assertEquals("node3", replicas.get(1).getNodeName());
+    assertEquals("node1", replicas.get(2).getNodeName());
+    req.close();
+
+    params.setVal(0, "2");
+    req = new SolrQueryRequestBase(testCore, params.toSolrParams()) {};
+    rlt = fac.getReplicaListTransformer(req);
+    rlt.transform(replicas);
+    assertEquals("node3", replicas.get(0).getNodeName());
+    assertEquals("node1", replicas.get(1).getNodeName());
+    assertEquals("node2", replicas.get(2).getNodeName());
+    req.close();
+
+    params.setVal(0, "3");
+    req = new SolrQueryRequestBase(testCore, params.toSolrParams()) {};
+    rlt = fac.getReplicaListTransformer(req);
+    rlt.transform(replicas);
+    assertEquals("node1", replicas.get(0).getNodeName());
+    assertEquals("node2", replicas.get(1).getNodeName());
+    assertEquals("node3", replicas.get(2).getNodeName());
+    req.close();
+
+    // Add a replica so that sorting by replicaType:TLOG can cause a tie
+    replicas.add(
+      new Replica(
+        "node4",
+        map(
+          ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
+          ZkStateReader.NODE_NAME_PROP, "node4",
+          ZkStateReader.CORE_NAME_PROP, "collection1",
+          ZkStateReader.REPLICA_TYPE, "TLOG"
+        )
+      )
+    );
+
+    // replicaType and replicaBase combined rule param
+    rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," + 
+      ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," + 
+      ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
+
+    params.setVal(0, "0");
+    params.setVal(1, rulesParam);
+    req = new SolrQueryRequestBase(testCore, params.toSolrParams()) {};
+    rlt = fac.getReplicaListTransformer(req);
+    rlt.transform(replicas);
+    assertEquals("node1", replicas.get(0).getNodeName());
+    assertEquals("node2", replicas.get(1).getNodeName());
+    assertEquals("node4", replicas.get(2).getNodeName());
+    assertEquals("node3", replicas.get(3).getNodeName());
+    req.close();
+
+    params.setVal(0, "1");
+    req = new SolrQueryRequestBase(testCore, params.toSolrParams()) {};
+    rlt = fac.getReplicaListTransformer(req);
+    rlt.transform(replicas);
+    assertEquals("node1", replicas.get(0).getNodeName());
+    assertEquals("node4", replicas.get(1).getNodeName());
+    assertEquals("node2", replicas.get(2).getNodeName());
+    assertEquals("node3", replicas.get(3).getNodeName());
+    req.close();
+    fac.close();
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<Replica> getBasicReplicaList() {
     List<Replica> replicas = new ArrayList<Replica>();
     replicas.add(
       new Replica(
@@ -151,6 +247,12 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
         )
       )
     );
+    return replicas;
+  }
+
+  @SuppressWarnings("unchecked")
+  public void testNodePreferenceRulesComparator() throws Exception {
+    List<Replica> replicas = getBasicReplicaList();
 
     // Simple replica type rule
     List<PreferenceRule> rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
@@ -262,14 +364,12 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   public void testWhitelistHostCheckerDisabled() throws Exception {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://cde:8983", false);
     checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"abc-1.com:8983/solr"}));
-    
-    try {
-      checker = new WhitelistHostChecker("http://cde:8983", true);
-      checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"http://abc-1.com:8983/solr"}));
-      fail("Expecting exception");
-    } catch (SolrException se) {
-      assertThat(se.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-    }
+
+    WhitelistHostChecker whitelistHostChecker = new WhitelistHostChecker("http://cde:8983", true);
+    SolrException e = expectThrows(SolrException.class, () -> {
+      whitelistHostChecker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList("http://abc-1.com:8983/solr"));
+    });
+    assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
   }
   
   @Test
@@ -283,67 +383,60 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   @Test
   public void testWhitelistHostCheckerSingleHost() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983/solr", true);
-    checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"http://abc-1.com:8983/solr"}));
+    checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList("http://abc-1.com:8983/solr"));
   }
   
   @Test
   public void testWhitelistHostCheckerMultipleHost() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"http://abc-1.com:8983/solr"}));
+    checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList("http://abc-1.com:8983/solr"));
   }
   
   @Test
   public void testWhitelistHostCheckerMultipleHost2() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"http://abc-1.com:8983/solr", "http://abc-2.com:8983/solr"}));
+    checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList("http://abc-1.com:8983/solr", "http://abc-2.com:8983/solr"));
   }
   
   @Test
   public void testWhitelistHostCheckerNoProtocolInParameter() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    checker.checkWhitelist("abc-1.com:8983/solr", Arrays.asList(new String[]{"abc-1.com:8983/solr"}));
+    checker.checkWhitelist("abc-1.com:8983/solr", Arrays.asList("abc-1.com:8983/solr"));
   }
   
   @Test
   public void testWhitelistHostCheckerNonWhitelistedHost1() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    try {
-      checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"http://abc-4.com:8983/solr"}));
-      fail("Expected exception");
-    } catch (SolrException e) {
-      assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-      assertThat(e.getMessage(), containsString("not on the shards whitelist"));
-    }
+    SolrException e = expectThrows(SolrException.class, () -> {
+      checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList("http://abc-4.com:8983/solr"));
+    });
+    assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+    assertThat(e.getMessage(), containsString("not on the shards whitelist"));
   }
   
   @Test
   public void testWhitelistHostCheckerNonWhitelistedHost2() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    try {
-      checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList(new String[]{"http://abc-1.com:8983/solr", "http://abc-4.com:8983/solr"}));
-      fail("Expected exception");
-    } catch (SolrException e) {
-      assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-      assertThat(e.getMessage(), containsString("not on the shards whitelist"));
-    }
+    SolrException e = expectThrows(SolrException.class, () -> {
+      checker.checkWhitelist("http://abc-1.com:8983/solr", Arrays.asList("http://abc-1.com:8983/solr", "http://abc-4.com:8983/solr"));
+    });
+    assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+    assertThat(e.getMessage(), containsString("not on the shards whitelist"));
+
   }
   
   @Test
   public void testWhitelistHostCheckerNonWhitelistedHostHttps() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    checker.checkWhitelist("https://abc-1.com:8983/solr", Arrays.asList(new String[]{"https://abc-1.com:8983/solr"}));
+    checker.checkWhitelist("https://abc-1.com:8983/solr", Arrays.asList("https://abc-1.com:8983/solr"));
   }
   
   @Test
   public void testWhitelistHostCheckerInvalidUrl() {
     WhitelistHostChecker checker = new WhitelistHostChecker("http://abc-1.com:8983, http://abc-2.com:8983, http://abc-3.com:8983", true);
-    try {
-      checker.checkWhitelist("abc_1", Arrays.asList(new String[]{"abc_1"}));
-      fail("Expected exception");
-    } catch (SolrException e) {
-      assertThat(e.code(), is(SolrException.ErrorCode.BAD_REQUEST.code));
-      assertThat(e.getMessage(), containsString("Invalid URL syntax"));
-    }
+    SolrException e = expectThrows(SolrException.class, () -> checker.checkWhitelist("abc_1", Arrays.asList("abc_1")));
+    assertThat(e.code(), is(SolrException.ErrorCode.BAD_REQUEST.code));
+    assertThat(e.getMessage(), containsString("Invalid URL syntax"));
   }
   
   @Test

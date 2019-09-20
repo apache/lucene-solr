@@ -576,8 +576,8 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       }
     }
   }
-  
-  static final String empty[] = new String[0];
+
+  static final String[] empty = new String[0];
   
   @Override
   public <T> T newInstance(String name, Class<T> expectedType) {
@@ -808,6 +808,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
    * manipulated using select Solr features (e.g. streaming expressions).
    */
   public static final String USER_FILES_DIRECTORY = "userfiles";
+  public static final String BLOBS_DIRECTORY = "blobs";
   public static void ensureUserFilesDataDir(Path solrHome) {
     final Path userFilesPath = getUserFilesPath(solrHome);
     final File userFilesDirectory = new File(userFilesPath.toString());
@@ -823,10 +824,28 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     }
   }
 
+  public static void ensureBlobsDir(Path solrHome) {
+    final Path blobsDir = getBlobsDirPath(solrHome);
+    final File blobsFilesDirectory = new File(blobsDir.toString());
+    if (! blobsFilesDirectory.exists()) {
+      try {
+        final boolean created = blobsFilesDirectory.mkdir();
+        if (! created) {
+          log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", BLOBS_DIRECTORY, solrHome);
+        }
+      } catch (Exception e) {
+          log.warn("Unable to create [" + BLOBS_DIRECTORY + "] directory in SOLR_HOME [" + solrHome + "].  Features requiring this directory may fail.", e);
+      }
+    }
+  }
+
+  public static Path getBlobsDirPath(Path solrHome) {
+    return Paths.get(solrHome.toAbsolutePath().toString(), BLOBS_DIRECTORY).toAbsolutePath();
+  }
+
   public static Path getUserFilesPath(Path solrHome) {
     return Paths.get(solrHome.toAbsolutePath().toString(), USER_FILES_DIRECTORY).toAbsolutePath();
   }
-
   // Logs a message only once per startup
   private static void logOnceInfo(String key, String msg) {
     if (!loggedOnce.contains(key)) {
@@ -923,7 +942,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
         }
       }
-      try (OutputStream out = new FileOutputStream(confFile);) {
+      try (OutputStream out = new FileOutputStream(confFile)) {
         out.write(content);
       }
       log.info("Written confile " + resourceName);

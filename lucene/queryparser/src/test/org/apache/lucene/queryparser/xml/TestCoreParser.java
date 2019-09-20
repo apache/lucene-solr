@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -31,9 +34,6 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.xml.sax.SAXException;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 public class TestCoreParser extends LuceneTestCase {
 
@@ -132,6 +132,15 @@ public class TestCoreParser extends LuceneTestCase {
     dumpResults("Span Query", q, 5);
     SpanQuery sq = parseAsSpan("SpanQuery.xml");
     dumpResults("Span Query", sq, 5);
+    assertEquals(q, sq);
+  }
+
+  public void testSpanPositionRangeQueryXML() throws Exception {
+    Query q = parse("SpanPositionRangeQuery.xml");
+    long h = searcher().search(q, 10).totalHits.value;
+    assertEquals("SpanPositionRangeQuery should produce 2 result ", 2, h);
+    SpanQuery sq = parseAsSpan("SpanPositionRangeQuery.xml");
+    dumpResults("SpanPositionRangeQuery", sq, 5);
     assertEquals(q, sq);
   }
 

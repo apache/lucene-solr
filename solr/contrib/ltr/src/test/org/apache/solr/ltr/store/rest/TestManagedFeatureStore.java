@@ -25,18 +25,25 @@ import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.store.FeatureStore;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestManagedFeatureStore extends SolrTestCaseJ4 {
 
-  private static ManagedFeatureStore fstore = null;
+  private ManagedFeatureStore fstore = null;
 
-  @BeforeClass
-  public static void setup() throws Exception {
+  @Before
+  public void setup() throws Exception {
     initCore("solrconfig-ltr.xml", "schema.xml");
     fstore = ManagedFeatureStore.getManagedFeatureStore(h.getCore());
   }
+  @After
+  public void cleanup() throws Exception {
+    fstore = null;
+    deleteCore();
+  }
+    
 
   private static Map<String,Object> createMap(String name, String className, Map<String,Object> params) {
     final Map<String,Object> map = new HashMap<String,Object>();
@@ -129,20 +136,15 @@ public class TestManagedFeatureStore extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void getInvalidInstanceTest()
-  {
+  public void getInvalidInstanceTest() {
     final String nonExistingClassName = "org.apache.solr.ltr.feature.LOLFeature";
     final ClassNotFoundException expectedException =
         new ClassNotFoundException(nonExistingClassName);
-    try {
-      fstore.addFeature(createMap("test",
-          nonExistingClassName, null),
-          "testFstore2");
-      fail("getInvalidInstanceTest failed to throw exception: "+expectedException);
-    } catch (Exception actualException) {
-      Throwable rootError = getRootCause(actualException);
-      assertEquals(expectedException.toString(), rootError.toString());
-    }
+    Exception ex = expectThrows(Exception.class, () -> {
+      fstore.addFeature(createMap("test", nonExistingClassName, null), "testFstore2");
+    });
+    Throwable rootError = getRootCause(ex);
+    assertEquals(expectedException.toString(), rootError.toString());
   }
 
 }

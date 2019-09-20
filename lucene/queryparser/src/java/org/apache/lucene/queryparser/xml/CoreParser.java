@@ -16,9 +16,34 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.InputStream;
+import java.util.Locale;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.queryparser.xml.builders.*;
+import org.apache.lucene.queryparser.xml.builders.BooleanQueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.BoostingTermBuilder;
+import org.apache.lucene.queryparser.xml.builders.ConstantScoreQueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.DisjunctionMaxQueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.MatchAllDocsQueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.PointRangeQueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.RangeQueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanFirstBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanNearBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanNotBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanOrBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanOrTermsBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanPositionRangeBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanQueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanQueryBuilderFactory;
+import org.apache.lucene.queryparser.xml.builders.SpanTermBuilder;
+import org.apache.lucene.queryparser.xml.builders.TermQueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.TermsQueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.UserInputQueryBuilder;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.w3c.dom.Document;
@@ -26,14 +51,6 @@ import org.w3c.dom.Element;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
-
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import java.io.InputStream;
-import java.util.Locale;
 
 /**
  * Assembles a QueryBuilder which uses only core Lucene Query objects
@@ -111,6 +128,10 @@ public class CoreParser implements QueryBuilder, SpanQueryBuilder {
     SpanFirstBuilder sft = new SpanFirstBuilder(spanFactory);
     spanFactory.addBuilder("SpanFirst", sft);
     queryFactory.addBuilder("SpanFirst", sft);
+
+    SpanPositionRangeBuilder sprt = new SpanPositionRangeBuilder(spanFactory);
+    spanFactory.addBuilder("SpanPositionRange", sprt);
+    queryFactory.addBuilder("SpanPositionRange", sprt);
 
     SpanNotBuilder snot = new SpanNotBuilder(spanFactory);
     spanFactory.addBuilder("SpanNot", snot);

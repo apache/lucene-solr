@@ -18,11 +18,17 @@ package org.apache.solr.handler.admin;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.api.collections.SplitByPrefixTest;
+import org.apache.solr.cloud.api.collections.SplitByPrefixTest.Prefix;
+import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.request.SolrQueryRequest;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 // test low level splitByPrefix range recommendations.
@@ -30,6 +36,11 @@ import org.junit.Test;
 // See SplitByPrefixTest for cloud level tests of SPLITSHARD that use this by passing getRanges with the SPLIT command
 public class SplitHandlerTest extends SolrTestCaseJ4 {
 
+  @BeforeClass
+  public static void beforeTests() throws Exception {
+    System.setProperty("managed.schema.mutable", "true");  // needed by cloud-managed config set
+    initCore("solrconfig.xml","schema_latest.xml");
+  }
 
   void verifyContiguous(Collection<DocRouter.Range> results, DocRouter.Range currentRange) {
     if (results == null) return;
@@ -213,6 +224,69 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
     results = SplitOp.getSplits(counts, curr);
     assertEquals(19, results.iterator().next().max);
     verifyContiguous(results, curr);
+  }
+
+  @Test
+  public void testHistogramBuilding() throws Exception {
+    List<Prefix> prefixes = SplitByPrefixTest.findPrefixes(20, 0, 0x00ffffff);
+    List<Prefix> uniquePrefixes = SplitByPrefixTest.removeDups(prefixes);
+    assertTrue(prefixes.size() > uniquePrefixes.size());  // make sure we have some duplicates to test hash collisions
+
+    String prefixField = "id_prefix_s";
+    String idField = "id";
+    DocRouter router = new CompositeIdRouter();
+
+
+    for (int i=0; i<100; i++) {
+      SolrQueryRequest req = req("myquery");
+      try {
+        // the first time through the loop we do this before adding docs to test an empty index
+        Collection<SplitOp.RangeCount> counts1 = SplitOp.getHashHistogram(req.getSearcher(), prefixField, router, null);
+        Collection<SplitOp.RangeCount> counts2 = SplitOp.getHashHistogramFromId(req.getSearcher(), idField, router, null);
+        assertTrue(eqCount(counts1, counts2));
+
+        if (i>0) {
+          assertTrue(counts1.size() > 0);  // make sure we are testing something
+        }
+
+
+        // index a few random documents
+        int ndocs = random().nextInt(10) + 1;
+        for (int j=0; j<ndocs; j++) {
+          String prefix = prefixes.get( random().nextInt(prefixes.size()) ).key;
+          if (random().nextBoolean()) {
+            prefix = prefix + Integer.toString(random().nextInt(3)) + "!";
+          }
+          String id = prefix + "doc" + i + "_" + j;
+          updateJ(jsonAdd(sdoc(idField, id, prefixField, prefix)), null);
+        }
+
+        assertU(commit());
+
+
+      } finally {
+        req.close();
+      }
+
+    }
+
+  }
+
+  private boolean eqCount(Collection<SplitOp.RangeCount> a, Collection<SplitOp.RangeCount> b) {
+    if (a.size() != b.size()) {
+      return false;
+    }
+    
+    Iterator<SplitOp.RangeCount> it1 = a.iterator();
+    Iterator<SplitOp.RangeCount> it2 = b.iterator();
+    while (it1.hasNext()) {
+      SplitOp.RangeCount r1 = it1.next();
+      SplitOp.RangeCount r2 = it2.next();
+      if (!r1.range.equals(r2.range) || r1.count != r2.count) {
+        return false;
+      }
+    }
+    return true;
   }
 
 }

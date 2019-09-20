@@ -29,6 +29,10 @@ import org.apache.lucene.util.automaton.RegExp;
  * Factory for {@link MockTokenFilter} for testing purposes.
  */
 public class MockTokenFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "mock";
+
   final CharacterRunAutomaton filter;
 
   /** Creates a new MockTokenizerFactory */
