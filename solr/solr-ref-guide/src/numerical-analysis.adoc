@@ -244,10 +244,12 @@ image::images/math-expressions/integral.png[]
 
 Notice that the plot *visualizes* the volume under the curve as the *amzn* stock
 price changes over time.  Because this plot is cumulative, the volume under
-a stock price time line which stays the same over time will
-have a *linear* slope. A stock that has rising prices will have a *concave* shape and
+a stock price time series which stays the same over time, will
+have a positive *linear* slope. A stock that has rising prices will have a *concave* shape and
 a stock with falling prices will have a *convex* shape.
 
+In this particular example the integral plot becomes more *concave* over time
+showing accelerating increases in stock price.
 
 == Bicubic Spline
 
