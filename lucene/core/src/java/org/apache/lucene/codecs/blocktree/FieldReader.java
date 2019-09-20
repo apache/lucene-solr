@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataInput;
-import org.apache.lucene.store.ByteBufferIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -98,7 +97,7 @@ public final class FieldReader extends Terms implements Accountable {
           isFSTOffHeap = ((this.docCount != this.sumDocFreq) || openedFromWriter == false);
           break;
         case AUTO:
-          isFSTOffHeap = ((this.docCount != this.sumDocFreq) || openedFromWriter == false) && indexIn instanceof ByteBufferIndexInput;
+          isFSTOffHeap = ((this.docCount != this.sumDocFreq) || openedFromWriter == false) && indexIn.load();
           break;
         default:
           throw new IllegalStateException("unknown enum constant: " + fstLoadMode);

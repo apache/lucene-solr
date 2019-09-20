@@ -40,7 +40,16 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
 
   @Override
   protected Directory getDirectory(Path path) throws IOException {
-    return new MMapDirectory(path, 1<<TestUtil.nextInt(random(), 10, 28));
+    return new MMapDirectory(path, 1<<TestUtil.nextInt(random(), 10, 28)) {
+      @Override
+      public IndexInput openInput(String name, IOContext context) throws IOException {
+        IndexInput indexInput = super.openInput(name, context);
+        if (random().nextBoolean()) {
+          assert indexInput.load();
+        }
+        return indexInput;
+      }
+    };
   }
   
   @Override
@@ -299,6 +308,9 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
   private void assertSlice(byte[] bytes, IndexInput slicer, int outerSliceStart, int sliceStart, int sliceLength) throws IOException {
     byte slice[] = new byte[sliceLength];
     IndexInput input = slicer.slice("bytesSlice", sliceStart, slice.length);
+    if (random().nextBoolean()) {
+      assertTrue(input.load());
+    }
     input.readBytes(slice, 0, slice.length);
     input.close();
     assertEquals(new BytesRef(bytes, outerSliceStart + sliceStart, sliceLength), new BytesRef(slice));

@@ -157,4 +157,13 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
       };
     }
   }
+
+  /**
+   * Tries to load the {@link IndexInput} content into physical memory and returns <code>true</code> if the operation
+   * was successful.
+   * This method is optional and will return <code>false</code> by default.
+   */
+  public boolean load() {
+    return false;
+  }
 }

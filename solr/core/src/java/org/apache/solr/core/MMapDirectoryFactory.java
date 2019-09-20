@@ -21,6 +21,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockFactory; // javadocs
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.solr.common.params.SolrParams;
@@ -35,7 +37,8 @@ import org.slf4j.LoggerFactory;
  * Can set the following parameters:
  * <ul>
  *  <li>unmap -- See {@link MMapDirectory#setUseUnmap(boolean)}</li>
- *  <li>preload -- See {@link MMapDirectory#setPreload(boolean)}</li>
+ *  <li>preload -- Set to {@code true} to ask mapped pages to be loaded into physical memory on init.
+ *  The behavior is best-effort and operating system dependent.</li>
  *  <li>maxChunkSize -- The Max chunk size.  See {@link MMapDirectory#MMapDirectory(Path, LockFactory, int)}</li>
  * </ul>
  *
@@ -61,13 +64,23 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
   @Override
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
     // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
-    MMapDirectory mapDirectory = new MMapDirectory(new File(path).toPath(), lockFactory, maxChunk);
+    final boolean preloadIndexInput = this.preload;
+    MMapDirectory mapDirectory = new MMapDirectory(new File(path).toPath(), lockFactory, maxChunk) {
+      @Override
+      public IndexInput openInput(String name, IOContext context) throws IOException {
+        IndexInput indexInput = super.openInput(name, context);
+        if (preloadIndexInput) {
+          boolean load = indexInput.load();
+          assert load;
+        }
+        return indexInput;
+      }
+    };
     try {
       mapDirectory.setUseUnmap(unmapHack);
     } catch (IllegalArgumentException e) {
       log.warn("Unmap not supported on this JVM, continuing on without setting unmap", e);
     }
-    mapDirectory.setPreload(preload);
     return mapDirectory;
   }
   

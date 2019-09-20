@@ -179,53 +179,58 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     // Simply extends IndexInput in a way that we are able to count the number
     // of invocations of seek()
     class SeeksCountingStream extends IndexInput {
-          private IndexInput input;      
-          
-          
-          SeeksCountingStream(IndexInput input) {
-              super("SeekCountingStream(" + input + ")");
-              this.input = input;
-          }      
-                
-          @Override
-          public byte readByte() throws IOException {
-              return this.input.readByte();
-          }
-    
-          @Override
-          public void readBytes(byte[] b, int offset, int len) throws IOException {
-              this.input.readBytes(b, offset, len);        
-          }
-    
-          @Override
-          public void close() throws IOException {
-              this.input.close();
-          }
-    
-          @Override
-          public long getFilePointer() {
-              return this.input.getFilePointer();
-          }
-    
-          @Override
-          public void seek(long pos) throws IOException {
-              TestLazyProxSkipping.this.seeksCounter++;
-              this.input.seek(pos);
-          }
-    
-          @Override
-          public long length() {
-              return this.input.length();
-          }
-          
-          @Override
-          public SeeksCountingStream clone() {
-              return new SeeksCountingStream(this.input.clone());
-          }
+        private IndexInput input;
 
-          @Override
-          public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
-            return new SeeksCountingStream(this.input.slice(sliceDescription, offset, length));
-          }
+
+        SeeksCountingStream(IndexInput input) {
+            super("SeekCountingStream(" + input + ")");
+            this.input = input;
+        }
+
+        @Override
+        public byte readByte() throws IOException {
+            return this.input.readByte();
+        }
+
+        @Override
+        public void readBytes(byte[] b, int offset, int len) throws IOException {
+            this.input.readBytes(b, offset, len);
+        }
+
+        @Override
+        public void close() throws IOException {
+            this.input.close();
+        }
+
+        @Override
+        public long getFilePointer() {
+            return this.input.getFilePointer();
+        }
+
+        @Override
+        public void seek(long pos) throws IOException {
+            TestLazyProxSkipping.this.seeksCounter++;
+            this.input.seek(pos);
+        }
+
+        @Override
+        public long length() {
+            return this.input.length();
+        }
+
+        @Override
+        public SeeksCountingStream clone() {
+            return new SeeksCountingStream(this.input.clone());
+        }
+
+        @Override
+        public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+          return new SeeksCountingStream(this.input.slice(sliceDescription, offset, length));
+        }
+
+        @Override
+        public boolean load() {
+          return this.input.load();
+        }
     }
 }

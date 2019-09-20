@@ -21,6 +21,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 
 /**
  * Base IndexInput implementation that uses an array
@@ -287,8 +288,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   @SuppressWarnings("resource")
   protected ByteBufferIndexInput newCloneInstance(String newResourceDescription, ByteBuffer[] newBuffers, int offset, long length) {
     if (newBuffers.length == 1) {
-      newBuffers[0].position(offset);
-      return new SingleBufferImpl(newResourceDescription, newBuffers[0].slice(), length, chunkSizePower, this.guard);
+      return new SingleBufferImpl(newResourceDescription, newBuffers[0], length, chunkSizePower, this.guard);
     } else {
       return new MultiBufferImpl(newResourceDescription, newBuffers, offset, length, chunkSizePower, guard);
     }
@@ -312,6 +312,13 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
 
     // set the last buffer's limit for the sliced view.
     slices[slices.length - 1].limit((int) (sliceEnd & chunkSizeMask));
+    if (slices.length == 1) {
+      slices[0].position((int) (offset & chunkSizeMask));
+      slices[0] = slices[0].slice();
+    } else {
+      slices[slices.length - 1].position(0);
+      slices[slices.length - 1] = slices[slices.length - 1].slice();
+    }
     
     return slices;
   }
@@ -490,5 +497,37 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     protected ByteBufferIndexInput buildSlice(String sliceDescription, long ofs, long length) {
       return super.buildSlice(sliceDescription, this.offset + ofs, length);
     }
+
+    @Override
+    public boolean load() {
+      long loaded = 0;
+      for (int i = 0; i < buffers.length; i++) {
+        ByteBuffer buffer = buffers[i];
+        if (buffer instanceof MappedByteBuffer) {
+          MappedByteBuffer slice;
+          if (i == 0) {
+            ByteBuffer duplicate = buffer.duplicate();
+            duplicate.position(offset);
+            slice = (MappedByteBuffer) duplicate.slice();
+          } else {
+            slice = ((MappedByteBuffer) buffer);
+          }
+          loaded += slice.limit();
+          slice.load();
+        }
+      }
+      assert loaded == length : " loaded != length (" + loaded +" != " + length + ")";
+      return true;
+    }
+  }
+
+  @Override
+  public boolean load() {
+    for (ByteBuffer buffer : buffers) {
+      if (buffer instanceof MappedByteBuffer) {
+        ((MappedByteBuffer) buffer).load();
+      }
+    }
+    return true;
   }
 }
