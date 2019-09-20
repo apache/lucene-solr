@@ -171,6 +171,8 @@ Improvements
 
 * SOLR-13773: Add Prometheus Exporter GC and Heap options. (Houston Putman via Anshum Gupta, David Smiley)
 
+* SOLR-13638: Add debug, trace logging to RuleBasedAuthorizationPlugin (Jason Gerlowski)
+
 Bug Fixes
 ----------------------
 
