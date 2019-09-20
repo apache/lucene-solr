@@ -99,7 +99,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
   // cache does not store several copies of the same query
   private final Map<Query, Query> uniqueQueries;
   // Marks the inflight queries that are being asynchronously loaded into the cache
-  // This is used primarily to ensure that multiple threads do not trigger loading
+  // This is used to ensure that multiple threads do not trigger loading
   // of the same query in the same cache. We use a set because it is an invariant that
   // the entries of this data structure be unique.
   private final Set<Query> inFlightAsyncLoadQueries = Collections.newSetFromMap(new ConcurrentHashMap());
@@ -462,12 +462,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
   // pkg-private for testing
   // return the list of queries being loaded asynchronously
   List<Query> inFlightQueries() {
-    lock.lock();
-    try {
-      return new ArrayList<>(inFlightAsyncLoadQueries);
-    } finally {
-      lock.unlock();
-    }
+    return new ArrayList<>(inFlightAsyncLoadQueries);
   }
 
   @Override
@@ -895,7 +890,15 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     // Perform a cache load asynchronously
-    private void cacheAsynchronously(LeafReaderContext context, IndexReader.CacheHelper cacheHelper) throws IOException {
+    private void cacheAsynchronously(LeafReaderContext context, IndexReader.CacheHelper cacheHelper) {
+      /*
+       * If the current query is already being asynchronously cached,
+       * do not trigger another cache operation
+       */
+      if (inFlightAsyncLoadQueries.add(in.getQuery()) == false) {
+        return;
+      }
+
       FutureTask<Void> task = new FutureTask<>(() -> {
         DocIdSet localDocIdSet = cache(context);
         putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
@@ -904,14 +907,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
         inFlightAsyncLoadQueries.remove(in.getQuery());
         return null;
       });
-      /*
-       * If the current query is already being asynchronously cached,
-       * do not trigger another cache operation
-       */
-      if (inFlightAsyncLoadQueries.contains(in.getQuery())) {
-        return;
-      }
-      inFlightAsyncLoadQueries.add(in.getQuery());
       executor.execute(task);
     }
   }
