@@ -483,7 +483,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     assertSimpleQueryThrows("q", "{!func}id", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 5);
     assertSimpleQueryThrows("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 0);
 
-//  query("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 1, "sort", i1+" desc");
+    // if group.sort fields list is a prefix of sort fields list, the query should succeed
+    // fails ant test  -Dtestcase=TestDistributedGrouping -Dtests.method=test -Dtests.seed=4CC06F4E3FC18607 -Dtests.slow=true -Dtests.badapples=true -Dtests.locale=ccp-IN -Dtests.timezone=America/Rosario -Dtests.asserts=true -Dtests.file.encoding=UTF-8
+    query("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 1, "sort", i1+" desc","group.sort", i1+" desc");
 //  query("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 1, "sort", i1+" desc", "group.sort", i1+" desc");
 
     // group sorted in a different way should fail

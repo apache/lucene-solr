@@ -993,6 +993,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected void compareSolrResponses(SolrResponse a, SolrResponse b) {
+    System.out.println("specific "+a );
+    System.out.println("control "+a );
+
     // SOLR-3345: Checking QTime value can be skipped as there is no guarantee that the numbers will match.
     handle.put("QTime", SKIPVAL);
     // rf will be different since the control collection doesn't usually have multiple replicas
@@ -1004,6 +1007,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
   }
   protected void compareResponses(QueryResponse a, QueryResponse b) {
+    System.out.println()
     if (System.getProperty("remove.version.field") != null) {
       // we don't care if one has a version and the other doesnt -
       // control vs distrib
