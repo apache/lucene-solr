@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Interpolation, derivatives and integrals are three interrelated topics which are part of the field of mathematics called numerical analysis. This section explores the math expressions available for numerical anlysis.
+This section explores the interrelated Math Expressions for Interpolation and Numerical Calculus.
 
 == Interpolation
 
@@ -74,7 +74,7 @@ The `loess` function is a smoothing interpolator which means it doesn't derive
 a function that passes through the original control points. Instead the `loess` function
 returns a function that smooths the original control points.
 
-A technique known as local regression is used to compute the smoothed curve.  The size of the
+A technique known as local regression is used to compute the smoothed curve. The size of the
 neighborhood of the local regression can be adjusted
 to control how close the new curve conforms to the original control points.
 
@@ -83,7 +83,7 @@ If only a single array is provided it is treated as the *`y`*-axis and a sequenc
 for the *`x`*-axis.
 
 The example below shows the `loess` function being used to model a monthly
-time series. In the example the `timeseries` function is used generate
+time series. In the example the `timeseries` function is used to generate
 a monthly time series of average closing prices for the stock ticker
 *amzn*. The *date_dt* and *avg(close_d)* fields from the time series
 are then vectorized and stored in variables *x* and *y*. The `loess`
@@ -100,8 +100,8 @@ image::images/math-expressions/loess.png[]
 
 == Derivatives
 
-The derivative of a function measures the rate of change of the *`y`* value in respects to the
-rate of change of the *`x`* value.
+The derivative of a function measures the rate of change of the *y* value in respects to the
+rate of change of the *x* value.
 
 The `derivative` function can compute the derivative for any of the
 interpolation functions described above. Each interpolation function
@@ -111,29 +111,29 @@ of the function.
 === The First Derivative (Velocity)
 
 A simple example shows how the `derivative` function is used to calculate
-rate of change or *velocity*.
+the rate of change or *velocity*.
 
 In the example two vectors are created, one representing hours and
 one representing miles traveled. The `lerp` function is then used to
 create a linear interpolation of the *hours* and *miles* vectors.
 The `derivative` function is then applied to the
 linear interpolation. `zplot` is then used to plot the *hours*
-on the *x* axis and *miles* on *y* axis, and the *derivative* as *mph*,
+on the *x* axis and *miles* on the *y* axis, and the *derivative* as *mph*,
 at each *x* axis point.
-
-Notice that the *miles_traveled* line has a slope of 10 until the
-5th hour where
-it changes to a slope of 50. The *mph* line create by
- the derivative, visualizes the *velocity* of the
- *miles_traveled* line.
 
 
 image::images/math-expressions/derivative.png[]
 
+Notice that the *miles_traveled* line has a slope of 10 until the
+5th hour where
+it changes to a slope of 50. The *mph* line, which is
+ the derivative, visualizes the *velocity* of the
+ *miles_traveled* line.
+
 Also notice that the derivative is calculated along
 straight lines showing immediate change from one point to the next. This
 is because linear interpolation (`lerp`) is used as the interpolation
-function. If `spline` or `akima` had been used it would have produced
+function. If the `spline` or `akima` functions had been used it would have produced
 a derivative with rounded curves.
 
 
@@ -147,73 +147,50 @@ The example below builds on the first example and adds the second derivative.
 Notice that the second derivative *d2*, is taken by applying the
 derivative function to a linear interpolation of the first derivative.
 
-The second derivative is plotted as *acceleration* on the chart. Notice
-that the second derivative shows the rate of change of firs
+The second derivative is plotted as *acceleration* on the chart.
 
 image::images/math-expressions/derivatives.png[]
 
-
+Notice that the acceleration line is 0 until the *mph* line increases from 10 to 50. At this
+point the *acceleration* line moves to 40. As the *mph* line stays at 50, the acceleration
+line drops to 0.
 
 === Price Velocity
 
-The example below shows how to plot the derivative for a time series generated
+The example below shows how to plot the `derivative` for a time series generated
 by the `timeseries` function. In the example a monthly time series is
 generated for the average closing price for the stock ticker `amzn`.
 The *avg(close)* column is vectorized and interpolated using linear
-interpolation (`lerp`).  The `zplot` function is the used to plot the derivative
+interpolation (`lerp`).  The `zplot` function is then used to plot the derivative
 of the time series.
 
 image::images/math-expressions/derivative2.png[]
 
-
-
+Notice that the derivative plot clearly shows the rates of change in the stock price over time.
 
 
 == Integrals
 
 An integral is a measure of the volume underneath a curve.
-The `integrate` function computes an integral for a specific
-range of an interpolated curve.
+The `integral` function computes the cumulative integrals for a curve or the integral for a specific
+range of an interpolated curve. Like the `derivative` function the `integral` function operates
+over interpolation functions.
 
-In the example below the `integrate` function computes an
-integral for the entire range of the curve, 0 through 20.
+=== Single Integral
 
-[source,text]
-----
-let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20),
-    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 7, 7,6, 7, 7, 7, 6, 5, 5, 3, 2, 1, 0),
-    curve=loess(x, y, bandwidth=.3),
-    integral=integrate(curve,  0, 20))
-----
+If the `integral` function is passed a *start* and *end* range it will compute the volume under the
+curve within that specific range.
 
-When this expression is sent to the `/stream` handler it
-responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "integral": 90.17446104846645
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
-
-In the next example an integral is computed for the range of 0 through 10.
+In the example below the `integral` function computes an
+integral for the entire range of the curve, 0 through 10. Notice  that the `integral` function is passed
+the interpolated curve and the start and end range, and returns the integral for the range.
 
 [source,text]
 ----
 let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20),
     y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 7, 7,6, 7, 7, 7, 6, 5, 5, 3, 2, 1, 0),
     curve=loess(x, y, bandwidth=.3),
-    integral=integrate(curve,  0, 10))
+    integral=integral(curve,  0, 10))
 ----
 
 When this expression is sent to the `/stream` handler it
@@ -235,6 +212,38 @@ responds with:
   }
 }
 ----
+
+=== Cumulative Integral Plot
+
+If the `integral` function is passed a single interpolated curve it returns a vector of the cumulative
+integrals for the curve. The cumulative integrals vector contains a cumulative integral calculation
+for each *x* axis point. The cumulative integral is calculated by taking the
+integral of the range between each *x* axis point and the *first* *x* axis point. In the example above this would
+mean calculating a vector of integrals as such:
+
+[source,text]
+----
+let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20),
+    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 7, 7,6, 7, 7, 7, 6, 5, 5, 3, 2, 1, 0),
+    curve=loess(x, y, bandwidth=.3),
+    integrals=array(0, integral(curve, 0, 1), integral(curve, 0, 2), integral(curve, 0, 3), ...)
+----
+
+The plot of cumulative integrals visualizes how much cumulative volume of the curve is added at each point
+along the *x* axis.
+
+The example below shows the cumulative integral plot for a time series generated by
+the `timeseries` function. In the example a monthly time series is
+generated for the average closing price for the stock ticker `amzn`.
+The *avg(close)* column is vectorized and interpolated using a `spline`.
+
+The `zplot` function is then used to plot the cumulative integral
+of the time series.
+
+image::images/math-expressions/integral.png[]
+
+Notice that the plot *quantifies* and *visualizes* the volume under the curve as Amazons stock
+price changes over time. From this we can see how the *percentage* of the value creation has accrued over time.
 
 == Bicubic Spline
 
