@@ -75,6 +75,7 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
   private int outputCursor = 0;
   private boolean inputFinished = false;
   private int charCount = 0;
+  private int offsetDiffAdjust = 0;
 
   static final int DEFAULT_MAX_ROLLBACK_BUFFER_CAPACITY = 8192;
   private final int maxRollbackBufferCapacity;
@@ -151,11 +152,23 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
         return outputFromResultBuffer(cbuf, off, len);
       }
 
-      if (!readInputToBuffer() && position.start < buffer.length()) {
+      if (!readInputToBuffer()) {
         final int preStart = position.start;
-        final int preLimit = position.contextLimit = position.limit = buffer.length();
-        transform.finishTransliteration(replaceable, position);
-        cursorAdvanced(preStart, preLimit);
+        final int preLimit;
+        final int bufferLength = buffer.length();
+        cursorUpdate:
+        {
+          if (preStart < bufferLength) {
+            // if last char is a lead surrogate, transform won't handle it properly anyway
+            preLimit = position.contextLimit = position.limit = UTF16.isLeadSurrogate(buffer.charAt(bufferLength - 1)) ? bufferLength - 1 : bufferLength;
+            transform.finishTransliteration(replaceable, position);
+          } else if (offsetDiffAdjust == 0) {
+            break cursorUpdate;
+          } else {
+            preLimit = bufferLength;
+          }
+          cursorAdvanced(preStart, preLimit);
+        }
       }
     }
 
@@ -259,11 +272,24 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
           if (!rollbackSizeWithinBounds) {
             // prepopulate newly cleared rollback buffer with all top-level uncommitted characters
             rollbackBufferSize = position.limit - preStart;
+            if (rollbackBuffer.length - rollbackBufferSize < 2) {
+              // even after flushing all committed text, there's not enough space in the rollback buffer.
+              // This is an edge case of an edge case, when the last char32 read into the rollback buffer
+              // is a surrogate pair (completely filling the rollback buffer), *and* the last
+              // transliteration pass advanced position.start by exactly one char16 (not a surrogate pair).
+              preStart = forceAdvance(preStart, preLimit);
+              rollbackBufferSize = position.limit - preStart;
+            }
             buffer.getChars(preStart, position.limit, rollbackBuffer, 0);
           }
         } else if (preLimit != position.limit) {
-          // cursor hasn't really advanced, but we need to register uncommitted length change anyway
-          cursorAdvanced(preStart, preLimit);
+          // cursor hasn't advanced; incoming characters have probably been deleted
+          offsetDiffAdjust += preLimit - position.limit;
+          // edge case of !rollbackSizeWithinBounds needs no special handling here, since input characters *are* being
+          // processed (deleted) -- we *are* progressing through the input stream, although the output stream hasn't changed.
+        } else if (!rollbackSizeWithinBounds) {
+          // cursor hasn't advanced, no incoming characters have been deleted, and the rollback buffer is full.
+          preStart = forceAdvance(preStart, preLimit);
         }
       }
     } while ((nextCharLength = pushRollbackBuffer(position.limit, buffer.length())) > 0);
@@ -271,14 +297,37 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
     return charCount - preCharCount;
   }
 
+  private static final int FORCE_THRESHOLD = 2; // conservative; the length of a surrogate pair
+
+  private int forceAdvance(int preStart, int preLimit) {
+    int shift;
+    if (maxRollbackBufferCapacity == 2) {
+      rollbackBufferSize = 0;
+      shift = 2;
+    } else {
+      shift = 0;
+      do {
+        shift += UTF16.isLeadSurrogate(rollbackBuffer[shift]) ? 2 : 1;
+      } while (shift < FORCE_THRESHOLD && shift < maxRollbackBufferCapacity);
+      rollbackBufferSize -= shift;
+      System.arraycopy(rollbackBuffer, shift, rollbackBuffer, 0, rollbackBufferSize);
+    }
+    position.start += shift; // mock transliterator advance
+    cursorAdvanced(preStart, preLimit);
+    position.contextStart = Math.max(position.start - transform.getMaximumContextLength(), preStart);
+    return position.start;
+  }
+
   private void cursorAdvanced(int preStart, int preLimit) {
     final int outputLength = position.start - preStart;
-    if (position.limit == preLimit) {
+    final int diff = preLimit - position.limit + offsetDiffAdjust;
+    offsetDiffAdjust = 0;
+    if (diff == 0) {
       // increment charCount; no offset correction necessary
       charCount += outputLength;
     } else {
       // limit change indicates change in length of replacement text; correct offsets accordingly
-      recordOffsetDiff(preLimit - position.limit, outputLength);
+      recordOffsetDiff(diff, outputLength);
     }
   }
 
