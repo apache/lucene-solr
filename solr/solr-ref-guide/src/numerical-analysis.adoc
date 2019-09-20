@@ -242,7 +242,7 @@ of the time series.
 
 image::images/math-expressions/integral.png[]
 
-Notice that the plot *quantifies* and *visualizes* the volume under the curve as Amazons stock
+Notice that the plot *quantifies* and *visualizes* the volume under the curve as the *amzn* stock
 price changes over time. From this we can see how the *percentage* of the value creation has accrued over time.
 
 == Bicubic Spline
