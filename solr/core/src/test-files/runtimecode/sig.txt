@@ -48,6 +48,15 @@ openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem runtimelibs_v3.jar.bin | 
 a400n4T7FT+2gM0SC6+MfSOExjud8MkhTSFylhvwNjtWwUgKdPFn434Wv7Qc4QEq
 DVLhQoL3WqYtQmLPti0G4Q==
 
+openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem cache.jar.bin | openssl enc -base64
+
+A2CDnReirpII005KRN1C3pvt4NM4kItsagQPNaa3ljj/5R3LKVgiPuNvqBsffU8n
+81LOAfr5VMyGFcb4QMHpyg==
+
+openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem cache_v2.jar.bin | openssl enc -base64
+
+SOrekHt+uup+z2z+nZU5indk2huRRfmbM+W+vQ0variHrcZEG9EXt5LuPFl8Ki9A
+hr6klMHdVP8nj4wuQhu/Hg==
 
 ====================sha512====================
 
