@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -28,12 +29,14 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.FlattenGraphFilter;
+import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -1268,13 +1271,20 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
 
   /** Appends FlattenGraphFilter too */
   private Analyzer getFlattenAnalyzer(SynonymMap.Builder b, boolean ignoreCase) throws IOException {
+    return getFlattenAnalyzer(b, ignoreCase, null);
+  }
+  private Analyzer getFlattenAnalyzer(SynonymMap.Builder b, boolean ignoreCase, List<String> stopWords) throws IOException {
     final SynonymMap map = b.build();
     return new Analyzer() {
         @Override
         protected TokenStreamComponents createComponents(String fieldName) {
           Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+          TokenStream stream = tokenizer;
           // Make a local variable so testRandomHuge doesn't share it across threads!
-          SynonymGraphFilter synFilter = new SynonymGraphFilter(tokenizer, map, ignoreCase);
+          if (stopWords != null){
+            stream = new StopFilter(stream, new CharArraySet(stopWords, true));
+          }
+          SynonymGraphFilter synFilter = new SynonymGraphFilter(stream, map, ignoreCase);
           FlattenGraphFilter flattenFilter = new FlattenGraphFilter(synFilter);
           TestSynonymGraphFilter.this.synFilter = synFilter;
           TestSynonymGraphFilter.this.flattenFilter = flattenFilter;
@@ -1850,6 +1860,47 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
                      new int[]      {1,     4,   1,        1,        1,   1,        1,        3,   2,    1,         1,    1,         1});
 
     analyzer.close();
+  }
+
+
+  /**
+   * verify that gaps from stopword removal gets preserved
+   */
+  public void testWithStopwordGaps() throws Exception {
+    String testFile = "hero, spiderman";
+    Analyzer analyzer = new MockAnalyzer(random());
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
+    parser.parse(new StringReader(testFile));
+    analyzer.close();
+
+    Analyzer analyzerWithoutStopFilter = getFlattenAnalyzer(parser, true);
+    Analyzer analyzerWithStopFilter = getFlattenAnalyzer(parser, true, Arrays.asList("a"));
+
+    assertAnalyzesToPositions(analyzerWithoutStopFilter, "a fish",
+        new String[]{"a", "fish"},
+        new String[]{"word", "word"},
+        new int[]{1, 1},
+        new int[]{1, 1});
+
+    assertAnalyzesToPositions(analyzerWithStopFilter, "a fish",
+        new String[]{"fish"},
+        new String[]{"word"},
+        new int[]{2},
+        new int[]{1});
+
+    assertAnalyzesToPositions(analyzerWithStopFilter, "hero",
+        new String[]{"spiderman", "hero"},
+        new String[]{"SYNONYM", "word"},
+        new int[]{1, 0},
+        new int[]{1, 1});
+
+    assertAnalyzesToPositions(analyzerWithStopFilter, "a hero",
+        new String[]{"spiderman", "hero"},
+        new String[]{"SYNONYM", "word"},
+        new int[]{2, 0},
+        new int[]{1, 1});
+
+    analyzerWithStopFilter.close();
   }
 
   public void testMultiwordOffsets() throws Exception {

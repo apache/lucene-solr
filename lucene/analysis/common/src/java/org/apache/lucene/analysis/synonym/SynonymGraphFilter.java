@@ -272,7 +272,9 @@ public final class SynonymGraphFilter extends TokenFilter {
 
     //System.out.println("    lastNodeOut=" + lastNodeOut);
     //System.out.println("    term=" + termAtt);
-
+    if (lastNodeOut == -1) {
+      lastNodeOut = 0;
+    }
     posIncrAtt.setPositionIncrement(token.startNode - lastNodeOut);
     lastNodeOut = token.startNode;
     posLenAtt.setPositionLength(token.endNode - token.startNode);
@@ -336,6 +338,9 @@ public final class SynonymGraphFilter extends TokenFilter {
           bufferLen = termAtt.length();
           if (matchStartOffset == -1) {
             matchStartOffset = offsetAtt.startOffset();
+          }
+          if (nextNodeOut == -1){
+            nextNodeOut = posIncrAtt.getPositionIncrement();
           }
           inputEndOffset = offsetAtt.endOffset();
 
@@ -573,7 +578,7 @@ public final class SynonymGraphFilter extends TokenFilter {
     lookaheadNextRead = 0;
     captureCount = 0;
     lastNodeOut = -1;
-    nextNodeOut = 0;
+    nextNodeOut = -1;
     matchStartOffset = -1;
     matchEndOffset = -1;
     finished = false;
