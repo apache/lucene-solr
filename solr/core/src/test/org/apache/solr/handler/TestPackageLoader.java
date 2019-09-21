@@ -86,7 +86,7 @@ import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 
 @SolrTestCaseJ4.SuppressSSL
 @LogLevel("org.apache.solr.common.cloud.ZkStateReader=DEBUG;org.apache.solr.handler.admin.CollectionHandlerApi=DEBUG;org.apache.solr.core.PackageManager=DEBUG;org.apache.solr.common.cloud.ClusterProperties=DEBUG")
-public class TestContainerReqHandler extends SolrCloudTestCase {
+public class TestPackageLoader extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
