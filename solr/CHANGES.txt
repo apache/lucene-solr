@@ -136,6 +136,9 @@ New Features
 * SOLR-13734: JWTAuthPlugin now supports multiple IdP issuers through configuring a new 'issuers' configuration key.
   Access tokens issued and signed by any of the configured issuers will be validated (janhoy)
 
+* SOLR-13272: Add support for arbitrary ranges in JSON facet's Range facets.
+  (Apoorv Bhawsar, Munendra S N, Mikhail Khludnev, Ishan Chattopadhyaya, Jan Høydahl)
+
 Improvements
 ----------------------
 
@@ -170,6 +173,8 @@ Improvements
 * SOLR-13763: Improve the tracking of "freedisk" in autoscaling simulations. (ab)
 
 * SOLR-13773: Add Prometheus Exporter GC and Heap options. (Houston Putman via Anshum Gupta, David Smiley)
+
+* SOLR-13638: Add debug, trace logging to RuleBasedAuthorizationPlugin (Jason Gerlowski)
 
 Bug Fixes
 ----------------------
@@ -220,8 +225,14 @@ Bug Fixes
 
 * SOLR-13238: BlobHandler generates non-padded md5 (Jeff Walraven via janhoy)
 
+* SOLR-13780: Fix ClassCastException in NestableJsonFacet (Tiago Martinho de Barros, Munendra S N)
+
+* SOLR-13725: Allow negative values for limit in TermsFacetMap (Richard Walker, Munendra S N)
+
 Other Changes
 ----------------------
+
+* SOLR-13779: Use the safe fork of simple-xml for clustering contrib. (Dawid Weiss)
 
 * SOLR-13585: Factor out SearchGroupsResultTransformer.[de]serializeOneSearchGroup methods. (Christine Poerschke, Diego Ceccarelli)
 
@@ -242,6 +253,8 @@ Other Changes
 * SOLR-13658: Precommit fail Java "var" until 9x. Fail "var...<>" constructs entirely (Erick Erickson)
 
 * SOLR-13767: Upgrade jackson to 2.9.9 (janhoy)
+
+* SOLR-11492: Clean up /solr/cloud-dev scripts and provide a single well documented script (Gus Heck, Robert Bunch)
 
 ==================  8.2.0 ==================
 
