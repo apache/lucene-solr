@@ -52,15 +52,17 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
@@ -501,6 +503,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     });
     conf.setMaxBufferedDocs(Math.max(3, conf.getMaxBufferedDocs()));
+    conf.setMergePolicy(NoMergePolicy.INSTANCE);
 
     IndexWriter writer = new IndexWriter(dir, conf);
 
@@ -534,7 +537,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         null,
         0);
 
-    final Bits liveDocs = MultiFields.getLiveDocs(reader);
+    final Bits liveDocs = MultiBits.getLiveDocs(reader);
     int count = 0;
     while(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       if (liveDocs == null || liveDocs.get(tdocs.docID())) {
@@ -669,7 +672,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         assertEquals(expected, reader.docFreq(new Term("contents", "here")));
         assertEquals(expected, reader.maxDoc());
         int numDel = 0;
-        final Bits liveDocs = MultiFields.getLiveDocs(reader);
+        final Bits liveDocs = MultiBits.getLiveDocs(reader);
         assertNotNull(liveDocs);
         for(int j=0;j<reader.maxDoc();j++) {
           if (!liveDocs.get(j))
@@ -697,7 +700,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
       int numDel = 0;
-      assertNull(MultiFields.getLiveDocs(reader));
+      assertNull(MultiBits.getLiveDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
         reader.getTermVectors(j);
@@ -706,6 +709,44 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertEquals(0, numDel);
 
       dir.close();
+    }
+  }
+
+  public void testDocumentsWriterExceptionFailOneDoc() throws Exception {
+    Analyzer analyzer = new Analyzer(Analyzer.PER_FIELD_REUSE_STRATEGY) {
+      @Override
+      public TokenStreamComponents createComponents(String fieldName) {
+        MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        tokenizer.setEnableChecks(false); // disable workflow checking as we forcefully close() in exceptional cases.
+        return new TokenStreamComponents(tokenizer, new CrashingFilter(fieldName, tokenizer));
+      }
+    };
+    for (int i = 0; i < 10; i++) {
+      try (Directory dir = newDirectory();
+           final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
+               .setMaxBufferedDocs(-1)
+               .setRAMBufferSizeMB(random().nextBoolean() ? 0.00001 : Integer.MAX_VALUE)
+               .setMergePolicy(new FilterMergePolicy(NoMergePolicy.INSTANCE) {
+                 @Override
+                 public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
+                   return true;
+                 }
+               }))) {
+        Document doc = new Document();
+        doc.add(newField("contents", "here are some contents", DocCopyIterator.custom5));
+        writer.addDocument(doc);
+        doc.add(newField("crash", "this should crash after 4 terms", DocCopyIterator.custom5));
+        doc.add(newField("other", "this will not get indexed", DocCopyIterator.custom5));
+        expectThrows(IOException.class, () -> {
+          writer.addDocument(doc);
+        });
+        writer.commit();
+        try (IndexReader reader = DirectoryReader.open(dir)) {
+            assertEquals(2, reader.docFreq(new Term("contents", "here")));
+            assertEquals(2, reader.maxDoc());
+            assertEquals(1, reader.numDocs());
+        }
+      }
     }
   }
 
@@ -724,12 +765,20 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     for(int i=0;i<2;i++) {
       Directory dir = newDirectory();
-
       {
         final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer)
-            .setMaxBufferedDocs(-1)
-            .setMergePolicy(NoMergePolicy.INSTANCE));
-        // don't use a merge policy here they depend on the DWPThreadPool and its max thread states etc.
+            .setMaxBufferedDocs(Integer.MAX_VALUE)
+            .setRAMBufferSizeMB(-1) // we don't want to flush automatically
+            .setMergePolicy(new FilterMergePolicy(NoMergePolicy.INSTANCE) {
+              // don't use a merge policy here they depend on the DWPThreadPool and its max thread states etc.
+              // we also need to keep fully deleted segments since otherwise we clean up fully deleted ones and if we
+              // flush the one that has only the failed document the docFreq checks will be off below.
+              @Override
+              public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
+                return true;
+              }
+            }));
+
         final int finalI = i;
 
         Thread[] threads = new Thread[NUM_THREAD];
@@ -779,7 +828,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertEquals("i=" + i, expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
       int numDel = 0;
-      final Bits liveDocs = MultiFields.getLiveDocs(reader);
+      final Bits liveDocs = MultiBits.getLiveDocs(reader);
       assertNotNull(liveDocs);
       for(int j=0;j<reader.maxDoc();j++) {
         if (!liveDocs.get(j))
@@ -806,7 +855,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       expected += 17-NUM_THREAD*NUM_ITER;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
-      assertNull(MultiFields.getLiveDocs(reader));
+      assertNull(MultiBits.getLiveDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
         reader.document(j);
         reader.getTermVectors(j);
@@ -1394,10 +1443,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     final IndexSearcher s = newSearcher(r);
     PhraseQuery pq = new PhraseQuery("content", "silly", "good");
-    assertEquals(0, s.search(pq, 1).totalHits);
+    assertEquals(0, s.count(pq));
 
     pq = new PhraseQuery("content", "good", "content");
-    assertEquals(numDocs1+numDocs2, s.search(pq, 1).totalHits);
+    assertEquals(numDocs1+numDocs2, s.count(pq));
     r.close();
     dir.close();
   }
@@ -1467,10 +1516,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     final IndexSearcher s = newSearcher(r);
     PhraseQuery pq = new PhraseQuery("content", "silly", "content");
-    assertEquals(numDocs2, s.search(pq, 1).totalHits);
+    assertEquals(numDocs2, s.count(pq));
 
     pq = new PhraseQuery("content", "good", "content");
-    assertEquals(numDocs1+numDocs3+numDocs4, s.search(pq, 1).totalHits);
+    assertEquals(numDocs1+numDocs3+numDocs4, s.count(pq));
     r.close();
     dir.close();
   }
@@ -1665,8 +1714,14 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   
   // TODO: we could also check isValid, to catch "broken" bytesref values, might be too much?
   
-  static class UOEDirectory extends RAMDirectory {
+  static class UOEDirectory extends FilterDirectory {
     boolean doFail = false;
+
+    /**
+     */
+    protected UOEDirectory() {
+      super(new ByteBuffersDirectory());
+    }
 
     @Override
     public IndexInput openInput(String name, IOContext context) throws IOException {
@@ -1836,9 +1891,14 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     Directory dir = newMockDirectory(); // we want to ensure we don't leak any locks or file handles
     IndexWriterConfig iwc = new IndexWriterConfig(null);
     iwc.setInfoStream(evilInfoStream);
-    IndexWriter iw = new IndexWriter(dir, iwc);
     // TODO: cutover to RandomIndexWriter.mockIndexWriter?
-    iw.enableTestPoints = true;
+    IndexWriter iw = new IndexWriter(dir, iwc) {
+      @Override
+      protected boolean isEnableTestPoints() {
+        return true;
+      }
+    };
+
     Document doc = new Document();
     for (int i = 0; i < 10; i++) {
       iw.addDocument(doc);

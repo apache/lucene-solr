@@ -1,6 +1,22 @@
 = Solr Tutorial
 :page-tocclass: right
 :experimental:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 This tutorial covers getting Solr up and running, ingesting a variety of data sources into Solr collections,
 and getting a feel for the Solr administrative and search interfaces.
@@ -18,7 +34,7 @@ Finally, we'll introduce <<Spatial Queries,spatial search>> and show you how to 
 To follow along with this tutorial, you will need...
 
 // TODO possibly remove this system requirements or only replace the link
-. To meet the {solr-javadocs}/solr/api/SYSTEM_REQUIREMENTS.html[system requirements]
+. To meet the {solr-javadocs}/SYSTEM_REQUIREMENTS.html[system requirements]
 . An Apache Solr release http://lucene.apache.org/solr/downloads.html[download]. This tutorial is designed for Apache Solr {solr-docs-version}.
 
 For best results, please run the browser showing this tutorial and the Solr server on the same machine so tutorial links will correctly point to your Solr server.
@@ -131,9 +147,9 @@ Please choose a configuration for the techproducts collection, available options
 _default or sample_techproducts_configs [_default]
 ----
 
-We've reached another point where we will deviate from the default option. Solr has two sample sets of configuration files (called a _configSet_) available out-of-the-box.
+We've reached another point where we will deviate from the default option. Solr has two sample sets of configuration files (called a configset) available out-of-the-box.
 
-A collection must have a configSet, which at a minimum includes the two main configuration files for Solr: the schema file (named either `managed-schema` or `schema.xml`), and `solrconfig.xml`. The question here is which configSet you would like to start with. The `_default` is a bare-bones option, but note there's one whose name includes "techproducts", the same as we named our collection. This configSet is specifically designed to support the sample data we want to use, so enter `sample_techproducts_configs` at the prompt and hit kbd:[enter].
+A collection must have a configset, which at a minimum includes the two main configuration files for Solr: the schema file (named either `managed-schema` or `schema.xml`), and `solrconfig.xml`. The question here is which configset you would like to start with. The `_default` is a bare-bones option, but note there's one whose name includes "techproducts", the same as we named our collection. This configset is specifically designed to support the sample data we want to use, so enter `sample_techproducts_configs` at the prompt and hit kbd:[enter].
 
 At this point, Solr will create the collection and again output to the screen the commands it issues.
 
@@ -306,7 +322,7 @@ The response indicates that there are 4 hits (`"numFound":4`). We've only includ
 
 Note the `responseHeader` before the documents. This header will include the parameters you have set for the search. By default it shows only the parameters _you_ have set for this query, which in this case is only your query term.
 
-The documents we got back include all the fields for each document that were indexed. This is, again, default behavior. If you want to restrict the fields in the response, you can use the `fl` param, which takes a comma-separated list of field names. This is one of the available fields on the query form in the Admin UI.
+The documents we got back include all the fields for each document that were indexed. This is, again, default behavior. If you want to restrict the fields in the response, you can use the `fl` parameter, which takes a comma-separated list of field names. This is one of the available fields on the query form in the Admin UI.
 
 Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] again. Or, to specify it with curl:
 
@@ -497,6 +513,8 @@ This starts the first node. When it's done start the second node, and tell it ho
 
 `./bin/solr start -c -p 7574 -s example/cloud/node2/solr -z localhost:9983`
 
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+
 === Create a New Collection
 
 We're going to use a whole new data set in this exercise, so it would be better to have a new collection instead of trying to reuse the one we had before.
@@ -511,13 +529,13 @@ Solr's schema is a single file (in XML) that stores the details about the fields
 Earlier in the tutorial we mentioned copy fields, which are fields made up of data that originated from other fields. You can also define dynamic fields, which use wildcards (such as `*_t` or `*_s`) to dynamically create fields of a specific field type. These types of rules are also defined in the schema.
 ****
 
-When you initially started Solr in the first exercise, we had a choice of a configSet to use. The one we chose had a schema that was pre-defined for the data we later indexed. This time, we're going to use a configSet that has a very minimal schema and let Solr figure out from the data what fields to add.
+When you initially started Solr in the first exercise, we had a choice of a configset to use. The one we chose had a schema that was pre-defined for the data we later indexed. This time, we're going to use a configset that has a very minimal schema and let Solr figure out from the data what fields to add.
 
-The data you're going to index is related to movies, so start by creating a collection named "films" that uses the `_default` configSet:
+The data you're going to index is related to movies, so start by creating a collection named "films" that uses the `_default` configset:
 
 `bin/solr create -c films -s 2 -rf 2`
 
-Whoa, wait. We didn't specify a configSet! That's fine, the `_default` is appropriately named, since it's the default and is used if you don't specify one at all.
+Whoa, wait. We didn't specify a configset! That's fine, the `_default` is appropriately named, since it's the default and is used if you don't specify one at all.
 
 We did, however, set two parameters `-s` and `-rf`. Those are the number of shards to split the collection across (2) and how many replicas to create (2). This is equivalent to the options we had during the interactive example from the first exercise.
 
@@ -529,7 +547,7 @@ WARNING: Using _default configset. Data driven schema functionality is enabled b
          NOT RECOMMENDED for production use.
 
          To turn it off:
-            curl http://localhost:7574/solr/films/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+            bin/solr config -c films -p 7574 -action set-user-property -property update.autoCreateFields -value false
 
 Connecting to ZooKeeper at localhost:9983 ...
 INFO  - 2017-07-27 15:07:46.191; org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider; Cluster at localhost:9983 ready
@@ -555,13 +573,13 @@ http://localhost:7574/solr/admin/collections?action=CREATE&name=films&numShards=
       "core":"films_shard1_replica_n2"}}}
 ----
 
-The first thing the command printed was a warning about not using this configSet in production. That's due to some of the limitations we'll cover shortly.
+The first thing the command printed was a warning about not using this configset in production. That's due to some of the limitations we'll cover shortly.
 
 Otherwise, though, the collection should be created. If we go to the Admin UI at http://localhost:8983/solr/#/films/collection-overview we should see the overview screen.
 
 ==== Preparing Schemaless for the Films Data
 
-There are two parallel things happening with the schema that comes with the `_default` configSet.
+There are two parallel things happening with the schema that comes with the `_default` configset.
 
 First, we are using a "managed schema", which is configured to only be modified by Solr's Schema API. That means we should not hand-edit it so there isn't confusion about which edits come from which source. Solr's Schema API allows us to make changes to fields, field types, and other types of schema rules.
 
@@ -688,7 +706,7 @@ On the Admin UI Query tab, if you check the `facet` checkbox, you'll see a few f
 .Facet options in the Query screen
 image::images/solr-tutorial/tutorial-admin-ui-facet-options.png[Solr Quick Start: Query tab facet options]
 
-To see facet counts from all documents (`q=\*:*`): turn on faceting (`facet=true`), and specify the field to facet on via the `facet.field` param. If you only want facets, and no document contents, specify `rows=0`. The `curl` command below will return facet counts for the `genre_str` field:
+To see facet counts from all documents (`q=\*:*`): turn on faceting (`facet=true`), and specify the field to facet on via the `facet.field` parameter. If you only want facets, and no document contents, specify `rows=0`. The `curl` command below will return facet counts for the `genre_str` field:
 
 `curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=true&facet.field=genre_str"`
 
@@ -878,7 +896,7 @@ Before you get started, create a new collection, named whatever you'd like. In t
 
 `./bin/solr create -c localDocs -s 2 -rf 2`
 
-Again, as we saw from Exercise 2 above, this will use the `_default` configSet and all the schemaless features it provides. As we noted previously, this may cause problems when we index our data. You may need to iterate on indexing a few times before you get the schema right.
+Again, as we saw from Exercise 2 above, this will use the `_default` configset and all the schemaless features it provides. As we noted previously, this may cause problems when we index our data. You may need to iterate on indexing a few times before you get the schema right.
 
 === Indexing Ideas
 
@@ -942,7 +960,7 @@ Jump ahead to the overall <<Wrapping Up,wrap up>> when you're ready to stop Solr
 
 Solr has sophisticated geospatial support, including searching within a specified distance range of a given location (or within a bounding box), sorting by distance, or even boosting results by the distance.
 
-Some of the example techproducts documents we indexed in Exercise 1 have locations associated with them to illustrate the spatial capabilities. To re-index this data, see <<index-the-techproducts-data,Exercise 1>>.
+Some of the example techproducts documents we indexed in Exercise 1 have locations associated with them to illustrate the spatial capabilities. To reindex this data, see <<index-the-techproducts-data,Exercise 1>>.
 
 Spatial queries can be combined with any other types of queries, such as in this example of querying for "ipod" within 10 kilometers from San Francisco:
 

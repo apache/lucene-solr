@@ -68,7 +68,7 @@ This attribute can be used to indicate that the original `HttpServletRequest` ob
                 addHttpRequestToContext="false" />
 ----
 
-The below command is an example of how to enable RemoteStreaming and BodyStreaming through the <<config-api.adoc#creating-and-updating-common-properties,Config API>>:
+The below command is an example of how to enable RemoteStreaming and BodyStreaming through the <<config-api.adoc#commands-for-common-properties,Config API>>:
 
 [.dynamic-tabs]
 --

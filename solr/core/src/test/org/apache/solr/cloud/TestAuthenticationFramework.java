@@ -29,6 +29,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -70,7 +71,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
   }
   
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testBasics() throws Exception {
     collectionCreateSearchDeleteTwice();
 
@@ -79,12 +79,9 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
     // Should fail with 401
     try {
-      collectionCreateSearchDeleteTwice();
-      fail("Should've returned a 401 error");
-    } catch (Exception ex) {
-      if (!ex.getMessage().contains("Error 401")) {
-        fail("Should've returned a 401 error");
-      }
+      HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class,
+          this::collectionCreateSearchDeleteTwice);
+      assertTrue("Should've returned a 401 error", e.getMessage().contains("Error 401"));
     } finally {
       MockAuthenticationPlugin.expectedUsername = null;
       MockAuthenticationPlugin.expectedPassword = null;
@@ -94,6 +91,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
   @Override
   public void tearDown() throws Exception {
     System.clearProperty("authenticationPlugin");
+    shutdownCluster();
     super.tearDown();
   }
 
@@ -103,14 +101,15 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
           .setMaxShardsPerNode(maxShardsPerNode)
           .processAndWait(cluster.getSolrClient(), 90);
+      cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
     }
     else {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
           .setMaxShardsPerNode(maxShardsPerNode)
           .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
     }
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish
-        (collectionName, cluster.getSolrClient().getZkStateReader(), true, true, 330);
+
   }
 
   public void collectionCreateSearchDeleteTwice() throws Exception {
@@ -124,14 +123,13 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
       assertEquals(0, client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound());
 
       // modify/query collection
+      Thread.sleep(100); // not everyone is up to date just because we waited to make sure one was - pause a moment
       new UpdateRequest().add("id", "1").commit(client, collectionName);
       QueryResponse rsp = client.query(collectionName, new SolrQuery("*:*"));
       assertEquals(1, rsp.getResults().getNumFound());
 
       // delete the collection
-      CollectionAdminRequest.deleteCollection(collectionName).process(client);
-      AbstractDistribZkTestBase.waitForCollectionToDisappear
-          (collectionName, client.getZkStateReader(), true, true, 330);
+     cluster.deleteAllCollections();
     }
   }
 

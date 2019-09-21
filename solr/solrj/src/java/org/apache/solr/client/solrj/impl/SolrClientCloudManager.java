@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 public class SolrClientCloudManager implements SolrCloudManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CloudSolrClient solrClient;
+  protected final CloudSolrClient solrClient;
   private final ZkDistribStateManager stateManager;
   private final DistributedQueueFactory queueFactory;
   private final ZkStateReader zkStateReader;

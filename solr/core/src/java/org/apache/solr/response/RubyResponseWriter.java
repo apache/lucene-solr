@@ -16,8 +16,8 @@
  */
 package org.apache.solr.response;
 
-import java.io.Writer;
 import java.io.IOException;
+import java.io.Writer;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -63,7 +63,7 @@ class RubyWriter extends NaNFloatWriter {
   }
 
   @Override
-  protected void writeKey(String fname, boolean needsEscaping) throws IOException {
+  public void writeKey(String fname, boolean needsEscaping) throws IOException {
     writeStr(null, fname, needsEscaping);
     writer.write('=');
     writer.write('>');

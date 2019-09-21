@@ -19,6 +19,7 @@ package org.apache.solr.util;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.Properties;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -189,8 +191,8 @@ public class TestHarness extends BaseTestHarness {
     if (System.getProperty("zkHost") == null)
       cloudConfig = null;
     UpdateShardHandlerConfig updateShardHandlerConfig = new UpdateShardHandlerConfig(
-        UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONS,
-        UpdateShardHandlerConfig.DEFAULT_MAXUPDATECONNECTIONSPERHOST,
+        HttpClientUtil.DEFAULT_MAXCONNECTIONS,
+        HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
         30000, 30000,
         UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
     // universal default metric reporter
@@ -343,7 +345,7 @@ public class TestHarness extends BaseTestHarness {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(32000);
         BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) responseWriter;
         writer.write(byteArrayOutputStream, req, rsp);
-        return new String(byteArrayOutputStream.toByteArray(), "UTF-8");
+        return new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
       } else {
         StringWriter sw = new StringWriter(32000);
         responseWriter.write(sw,req,rsp);
@@ -373,13 +375,6 @@ public class TestHarness extends BaseTestHarness {
    * Shuts down and frees any resources
    */
   public void close() {
-    if (container != null) {
-      for (SolrCore c : container.getCores()) {
-        if (c.getOpenCount() > 1)
-          throw new RuntimeException("SolrCore.getOpenCount()=="+c.getOpenCount());
-      }      
-    }
-
     if (container != null) {
       container.shutdown();
       container = null;

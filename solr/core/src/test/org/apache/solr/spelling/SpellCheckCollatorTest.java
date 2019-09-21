@@ -396,7 +396,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
       assertTrue(!usedcollations.contains(multipleCollation));
       usedcollations.add(multipleCollation);
 
-      assertEquals(new Long(1L), expandedCollation.get("hits"));
+      assertEquals(1L, expandedCollation.get("hits"));
 
       NamedList misspellingsAndCorrections = (NamedList) expandedCollation.get("misspellingsAndCorrections");
       assertTrue(misspellingsAndCorrections.size() == 3);

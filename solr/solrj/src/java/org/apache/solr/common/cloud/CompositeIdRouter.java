@@ -74,6 +74,22 @@ public class CompositeIdRouter extends HashBasedRouter {
   }
 
   @Override
+  public Range getSearchRangeSingle(String shardKey, SolrParams params, DocCollection collection) {
+    if (shardKey == null) {
+      // search across whole range
+      return fullRange();
+    }
+
+    if (shardKey.indexOf(SEPARATOR) < 0) {
+      // shardKey is a simple id, so don't do a range
+      int hash = Hash.murmurhash3_x86_32(shardKey, 0, shardKey.length(), 0);
+      return new Range(hash, hash);
+    }
+
+    return new KeyParser(shardKey).getRange();
+  }
+
+  @Override
   public Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection) {
     if (shardKey == null) {
       // search across whole collection
@@ -90,7 +106,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     Range completeRange = new KeyParser(id).getRange();
 
     List<Slice> targetSlices = new ArrayList<>(1);
-    for (Slice slice : collection.getActiveSlices()) {
+    for (Slice slice : collection.getActiveSlicesArr()) {
       Range range = slice.getRange();
       if (range != null && range.overlaps(completeRange)) {
         targetSlices.add(slice);
@@ -98,6 +114,11 @@ public class CompositeIdRouter extends HashBasedRouter {
     }
 
     return targetSlices;
+  }
+
+  @Override
+  public String getName() {
+    return NAME;
   }
 
   public List<Range> partitionRangeByKey(String key, Range range) {

@@ -28,7 +28,7 @@ import java.util.*;
 import java.lang.reflect.Constructor;
 
 /**
- * Create a new {@link org.apache.lucene.analysis.Analyzer} and set it it in the getRunData() for use by all future tasks.
+ * Create a new {@link org.apache.lucene.analysis.Analyzer} and set it in the getRunData() for use by all future tasks.
  *
  */
 public class NewAnalyzerTask extends PerfTask {
@@ -48,7 +48,7 @@ public class NewAnalyzerTask extends PerfTask {
       return cnstr.newInstance(Version.LATEST);
     } catch (NoSuchMethodException nsme) {
       // otherwise use default ctor
-      return clazz.newInstance();
+      return clazz.getConstructor().newInstance();
     }
   }
 

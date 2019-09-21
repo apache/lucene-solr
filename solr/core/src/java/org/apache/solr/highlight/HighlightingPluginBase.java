@@ -37,12 +37,14 @@ public abstract class HighlightingPluginBase implements SolrInfoBean, SolrMetric
   protected SolrParams defaults;
   protected Set<String> metricNames = ConcurrentHashMap.newKeySet(1);
   protected MetricRegistry registry;
+  protected SolrMetricManager metricManager;
+  protected String registryName;
 
   public void init(NamedList args) {
     if( args != null ) {
       Object o = args.get("defaults");
       if (o != null && o instanceof NamedList ) {
-        defaults = SolrParams.toSolrParams((NamedList)o);
+        defaults = ((NamedList) o).toSolrParams();
       }
     }
   }
@@ -74,7 +76,9 @@ public abstract class HighlightingPluginBase implements SolrInfoBean, SolrMetric
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    this.registryName = registryName;
+    this.metricManager = manager;
     registry = manager.registry(registryName);
     numRequests = manager.counter(this, registryName, "requests", getCategory().toString(), scope);
   }

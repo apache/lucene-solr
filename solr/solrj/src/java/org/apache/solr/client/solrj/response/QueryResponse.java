@@ -26,6 +26,7 @@ import java.util.TreeMap;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
+import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.util.NamedList;
@@ -48,6 +49,7 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<Object> _highlightingInfo = null;
   private NamedList<Object> _spellInfo = null;
   private List<NamedList<Object>> _clusterInfo = null;
+  private NamedList<Object> _jsonFacetingInfo = null;
   private Map<String,NamedList<Object>> _suggestInfo = null;
   private NamedList<Object> _statsInfo = null;
   private NamedList<NamedList<Object>> _termsInfo = null;
@@ -78,6 +80,9 @@ public class QueryResponse extends SolrResponseBase
 
   // Clustering Response
   private ClusteringResponse _clusterResponse = null;
+
+  // Json Faceting Response
+  private NestableJsonFacet _jsonFacetingResponse = null;
 
   // Suggester Response
   private SuggesterResponse _suggestResponse = null;
@@ -157,6 +162,10 @@ public class QueryResponse extends SolrResponseBase
         _clusterInfo = (ArrayList<NamedList<Object>>) res.getVal(i);
         extractClusteringInfo(_clusterInfo);
       }
+      else if ("facets".equals(n)) {
+        _jsonFacetingInfo = (NamedList<Object>) res.getVal(i);
+        // Don't call extractJsonFacetingInfo(_jsonFacetingInfo) here in an effort to do it lazily
+      }
       else if ( "suggest".equals( n ) )  {
         _suggestInfo = (Map<String,NamedList<Object>>) res.getVal( i );
         extractSuggesterInfo(_suggestInfo);
@@ -185,6 +194,10 @@ public class QueryResponse extends SolrResponseBase
 
   private void extractClusteringInfo(List<NamedList<Object>> clusterInfo) {
     _clusterResponse = new ClusteringResponse(clusterInfo);
+  }
+
+  private void extractJsonFacetingInfo(NamedList<Object> facetInfo) {
+    _jsonFacetingResponse = new NestableJsonFacet(facetInfo);
   }
 
   private void extractSuggesterInfo(Map<String, NamedList<Object>> suggestInfo) {
@@ -552,6 +565,11 @@ public class QueryResponse extends SolrResponseBase
 
   public ClusteringResponse getClusteringResponse() {
     return _clusterResponse;
+  }
+
+  public NestableJsonFacet getJsonFacetingResponse() {
+    if (_jsonFacetingInfo != null && _jsonFacetingResponse == null) extractJsonFacetingInfo(_jsonFacetingInfo);
+    return _jsonFacetingResponse;
   }
 
   public SuggesterResponse getSuggesterResponse() {

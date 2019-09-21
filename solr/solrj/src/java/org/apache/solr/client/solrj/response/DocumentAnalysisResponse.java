@@ -49,19 +49,19 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
         NamedList<Object> field = fieldEntry.getValue();
 
         @SuppressWarnings("unchecked")
-        NamedList<List<NamedList<Object>>> query 
-          = (NamedList<List<NamedList<Object>>>) field.get("query");
+        NamedList<Object> query
+          = (NamedList<Object>) field.get("query");
         if (query != null) {
           List<AnalysisPhase> phases = buildPhases(query);
           fieldAnalysis.setQueryPhases(phases);
         }
         
         @SuppressWarnings("unchecked")
-        NamedList<NamedList<List<NamedList<Object>>>> index 
-          = (NamedList<NamedList<List<NamedList<Object>>>>) field.get("index");
-        for (Map.Entry<String, NamedList<List<NamedList<Object>>>> valueEntry : index) {
+        NamedList<NamedList<Object>> index
+          = (NamedList<NamedList<Object>>) field.get("index");
+        for (Map.Entry<String, NamedList<Object>> valueEntry : index) {
           String fieldValue = valueEntry.getKey();
-          NamedList<List<NamedList<Object>>> valueNL = valueEntry.getValue();
+          NamedList<Object> valueNL = valueEntry.getValue();
           List<AnalysisPhase> phases = buildPhases(valueNL);
           fieldAnalysis.setIndexPhases(fieldValue, phases);
         }

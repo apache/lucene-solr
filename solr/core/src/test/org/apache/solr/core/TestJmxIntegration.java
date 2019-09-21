@@ -177,7 +177,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
     SolrMetricManager mgr = h.getCoreContainer().getMetricManager();
     String registryName = h.getCore().getCoreMetricManager().getRegistryName();
     String coreName = h.getCore().getName();
-    String coreHashCode = String.valueOf(h.getCore().hashCode());
+    String coreHashCode = Integer.toHexString(h.getCore().hashCode());
     Map<String, SolrMetricReporter> reporters = mgr.getReporters(registryName);
     // take first JMX reporter
     SolrJmxReporter reporter = null;
@@ -209,7 +209,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*"), "//result[@numFound='0']");
 
     reporters = mgr.getReporters(registryName);
-    coreHashCode = String.valueOf(h.getCore().hashCode());
+    coreHashCode = Integer.toHexString(h.getCore().hashCode());
     // take first JMX reporter
     reporter = null;
     for (Map.Entry<String, SolrMetricReporter> e : reporters.entrySet()) {

@@ -30,6 +30,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
@@ -37,6 +38,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.BackupManager;
@@ -44,10 +46,11 @@ import org.apache.solr.core.backup.repository.HdfsBackupRepository;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.core.backup.BackupManager.BACKUP_NAME_PROP;
 import static org.apache.solr.core.backup.BackupManager.BACKUP_PROPS_FILE;
 import static org.apache.solr.core.backup.BackupManager.COLLECTION_NAME_PROP;
@@ -90,6 +93,9 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
       "      <str name=\"solr.hdfs.home\">${solr.hdfs.home:}</str>\n" +
       "      <str name=\"solr.hdfs.confdir\">${solr.hdfs.confdir:}</str>\n" +
       "    </repository>\n" +
+      "    <repository  name=\"poisioned\" default=\"true\" "
+            + "class=\"org.apache.solr.cloud.api.collections.TestLocalFSCloudBackupRestore$PoinsionedRepository\"> \n" +
+      "    </repository>\n" +
       "  </backup>\n" +
       "  \n" +
       "</solr>\n";
@@ -106,7 +112,6 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     try {
       URI uri = new URI(hdfsUri);
       Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-      conf.setBoolean("fs.hdfs.impl.disable.cache", true);
       fs = FileSystem.get(uri, conf);
 
       if (fs instanceof DistributedFileSystem) {
@@ -133,24 +138,29 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
 
     configureCluster(NUM_SHARDS)// nodes
     .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+    .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
     .withSolrXml(SOLR_XML)
     .configure();
+    cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1, true);
   }
 
   @AfterClass
   public static void teardownClass() throws Exception {
-    System.clearProperty("solr.hdfs.home");
-    System.clearProperty("solr.hdfs.default.backup.path");
-    System.clearProperty("test.build.data");
-    System.clearProperty("test.cache.data");
     IOUtils.closeQuietly(fs);
     fs = null;
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+      System.clearProperty("solr.hdfs.home");
+      System.clearProperty("solr.hdfs.default.backup.path");
+      System.clearProperty("test.build.data");
+      System.clearProperty("test.cache.data");
+    }
   }
 
   @Override
-  public String getCollectionName() {
+  public String getCollectionNamePrefix() {
     return "hdfsbackuprestore";
   }
 
@@ -204,4 +214,9 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     }
   }
 
+  @Override
+  @Test
+  public void test() throws Exception {
+    super.test();
+  }
 }

@@ -114,6 +114,6 @@ public interface LeafFieldComparator {
    * 
    * @param scorer Scorer instance that you should use to
    * obtain the current hit's score, if necessary. */
-  void setScorer(Scorer scorer) throws IOException;
+  void setScorer(Scorable scorer) throws IOException;
 
 }

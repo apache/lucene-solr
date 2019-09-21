@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.codecs.lucene50;
 
-
-
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
@@ -353,6 +351,7 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 
 public final class Lucene50PostingsFormat extends PostingsFormat {
+
   /**
    * Filename extension for document number, frequencies, and skip data.
    * See chapter: <a href="#Frequencies">Frequencies and Skip Data</a>
@@ -370,8 +369,8 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
    * See chapter: <a href="#Payloads">Payloads and Offsets</a>
    */
   public static final String PAY_EXTENSION = "pay";
-  
-  /** 
+
+  /**
    * Expert: The maximum number of skip levels. Smaller values result in 
    * slightly smaller indexes, but slower skipping in big posting lists.
    */
@@ -396,22 +395,24 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
    */
   // NOTE: must be multiple of 64 because of PackedInts long-aligned encoding/decoding
   public final static int BLOCK_SIZE = 128;
+  private final BlockTreeTermsReader.FSTLoadMode fstLoadMode;
 
   /** Creates {@code Lucene50PostingsFormat} with default
    *  settings. */
   public Lucene50PostingsFormat() {
-    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, BlockTreeTermsReader.FSTLoadMode.AUTO);
   }
 
   /** Creates {@code Lucene50PostingsFormat} with custom
    *  values for {@code minBlockSize} and {@code
    *  maxBlockSize} passed to block terms dictionary.
    *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
-  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
+  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize, BlockTreeTermsReader.FSTLoadMode loadMode) {
     super("Lucene50");
     BlockTreeTermsWriter.validateSettings(minTermBlockSize, maxTermBlockSize);
     this.minTermBlockSize = minTermBlockSize;
     this.maxTermBlockSize = maxTermBlockSize;
+    this.fstLoadMode = loadMode;
   }
 
   @Override
@@ -422,7 +423,6 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     PostingsWriterBase postingsWriter = new Lucene50PostingsWriter(state);
-
     boolean success = false;
     try {
       FieldsConsumer ret = new BlockTreeTermsWriter(state, 
@@ -443,7 +443,7 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
     PostingsReaderBase postingsReader = new Lucene50PostingsReader(state);
     boolean success = false;
     try {
-      FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state);
+      FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state, fstLoadMode);
       success = true;
       return ret;
     } finally {
@@ -452,16 +452,36 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
       }
     }
   }
-  
-  final static class IntBlockTermState extends BlockTermState {
-    long docStartFP = 0;
-    long posStartFP = 0;
-    long payStartFP = 0;
-    long skipOffset = -1;
-    long lastPosBlockOffset = -1;
-    // docid when there is a single pulsed posting, otherwise -1
-    // freq is always implicitly totalTermFreq in this case.
-    int singletonDocID = -1;
+
+  /**
+   * Holds all state required for {@link Lucene50PostingsReader} to produce a
+   * {@link org.apache.lucene.index.PostingsEnum} without re-seeking the terms dict.
+   *
+   * @lucene.internal
+   */
+  public static final class IntBlockTermState extends BlockTermState {
+    /** file pointer to the start of the doc ids enumeration, in {@link #DOC_EXTENSION} file */
+    public long docStartFP;
+    /** file pointer to the start of the positions enumeration, in {@link #POS_EXTENSION} file */
+    public long posStartFP;
+    /** file pointer to the start of the payloads enumeration, in {@link #PAY_EXTENSION} file */
+    public long payStartFP;
+    /** file offset for the start of the skip list, relative to docStartFP, if there are more
+     * than {@link #BLOCK_SIZE} docs; otherwise -1 */
+    public long skipOffset;
+    /** file offset for the last position in the last block, if there are more than
+     * {@link #BLOCK_SIZE} positions; otherwise -1 */
+    public long lastPosBlockOffset;
+    /** docid when there is a single pulsed posting, otherwise -1.
+     * freq is always implicitly totalTermFreq in this case. */
+    public int singletonDocID;
+
+    /** Sole constructor. */
+    public IntBlockTermState() {
+      skipOffset = -1;
+      lastPosBlockOffset = -1;
+      singletonDocID = -1;
+    }
 
     @Override
     public IntBlockTermState clone() {

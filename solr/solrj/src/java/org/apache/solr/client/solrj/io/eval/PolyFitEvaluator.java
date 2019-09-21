@@ -96,6 +96,11 @@ public class PolyFitEvaluator extends RecursiveNumericEvaluator implements ManyV
       list.add(yvalue);
     }
 
-    return list;
+
+    VectorFunction vec = new VectorFunction(pf, list);
+    vec.addToContext("x", x);
+    vec.addToContext("y", y);
+
+    return vec;
   }
 }

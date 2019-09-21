@@ -78,7 +78,7 @@ public final class SolrMetricTestUtils {
   public static SolrMetricProducer getProducerOf(SolrMetricManager metricManager, SolrInfoBean.Category category, String scope, Map<String, Counter> metrics) {
     return new SolrMetricProducer() {
       @Override
-      public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+      public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
         if (category == null) {
           throw new IllegalArgumentException("null category");
         }

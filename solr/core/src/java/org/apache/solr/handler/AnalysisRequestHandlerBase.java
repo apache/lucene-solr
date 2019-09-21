@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -178,7 +178,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       tokenStream.end();
       return tokens;
     } catch (IOException ioe) {
-      throw new RuntimeException("Error occured while iterating over tokenstream", ioe);
+      throw new RuntimeException("Error occurred while iterating over tokenstream", ioe);
     }
   }
 
@@ -206,7 +206,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
       tokenStream.end(); // TODO should we capture?
     } catch (IOException ioe) {
-      throw new RuntimeException("Error occured while iterating over tokenstream", ioe);
+      throw new RuntimeException("Error occurred while iterating over tokenstream", ioe);
     } finally {
       IOUtils.closeWhileHandlingException(tokenStream);
     }

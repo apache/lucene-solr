@@ -76,6 +76,29 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
   }
 
   @Test
+  public void testEmptyRegexQuery() throws Exception {
+    Analyzer analyzer = new MockAnalyzer(random());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    Document document = new Document();
+    document.add(new SuggestField("suggest_field", "suggestion1", 1));
+    iw.addDocument(document);
+
+    if (rarely()) {
+      iw.commit();
+    }
+
+    DirectoryReader reader = iw.getReader();
+    SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
+    RegexCompletionQuery query = new RegexCompletionQuery(new Term("suggest_field", ""));
+
+    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
+    assertEquals(0, suggest.scoreDocs.length);
+
+    reader.close();
+    iw.close();
+  }
+
+  @Test
   public void testSimpleRegexContextQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
@@ -143,6 +166,30 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
         new Entry("sugdgestion", "type3", 3 * 7),
         new Entry("suggdestion", "type4", 2),
         new Entry("suggestion", "type4", 1));
+
+    reader.close();
+    iw.close();
+  }
+
+  @Test
+  public void testEmptyRegexContextQuery() throws Exception {
+    Analyzer analyzer = new MockAnalyzer(random());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    Document document = new Document();
+    document.add(new ContextSuggestField("suggest_field", "suggestion", 1, "type"));
+    iw.addDocument(document);
+
+    if (rarely()) {
+      iw.commit();
+    }
+
+    DirectoryReader reader = iw.getReader();
+    SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
+    ContextQuery query = new ContextQuery(new RegexCompletionQuery(new Term("suggest_field", "")));
+    query.addContext("type", 1);
+
+    TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
+    assertEquals(0, suggest.scoreDocs.length);
 
     reader.close();
     iw.close();

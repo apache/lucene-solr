@@ -63,7 +63,7 @@ public class SolrShardReporter extends SolrCoreReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final List<String> DEFAULT_FILTERS = new ArrayList(){{
-    add("TLOG.*");
+    add("Tlog.*");
     add("CORE\\.fs.*");
     add("REPLICATION.*");
     add("INDEX\\.flush.*");
@@ -154,7 +154,7 @@ public class SolrShardReporter extends SolrCoreReporter {
         .cloudClient(false) // we want to send reports specifically to a selected leader instance
         .skipAggregateValues(true) // we don't want to transport details of aggregates
         .skipHistograms(true) // we don't want to transport histograms
-        .build(core.getCoreContainer().getUpdateShardHandler().getHttpClient(), new LeaderUrlSupplier(core));
+        .build(core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient(), new LeaderUrlSupplier(core));
 
     reporter.start(period, TimeUnit.SECONDS);
   }

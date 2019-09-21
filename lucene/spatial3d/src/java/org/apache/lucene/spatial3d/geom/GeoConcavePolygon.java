@@ -235,15 +235,19 @@ class GeoConcavePolygon extends GeoBasePolygon {
       final SidedPlane edge = edges[edgeIndex];
       final SidedPlane invertedEdge = invertedEdges[edgeIndex];
       int bound1Index = legalIndex(edgeIndex+1);
-      while (invertedEdges[legalIndex(bound1Index)].isNumericallyIdentical(invertedEdge)) {
-        bound1Index++;
+      while (invertedEdges[bound1Index].isNumericallyIdentical(invertedEdge)) {
+        if (bound1Index == edgeIndex) {
+          throw new IllegalArgumentException("Constructed planes are all coplanar: "+points);
+        }
+        bound1Index = legalIndex(bound1Index + 1);
       }
       int bound2Index = legalIndex(edgeIndex-1);
-      while (invertedEdges[legalIndex(bound2Index)].isNumericallyIdentical(invertedEdge)) {
-        bound2Index--;
+      while (invertedEdges[bound2Index].isNumericallyIdentical(invertedEdge)) {
+        if (bound2Index == edgeIndex) {
+          throw new IllegalArgumentException("Constructed planes are all coplanar: "+points);
+        }
+        bound2Index = legalIndex(bound2Index - 1);
       }
-      bound1Index = legalIndex(bound1Index);
-      bound2Index = legalIndex(bound2Index);
       // Also confirm that all interior points are within the bounds
       int startingIndex = bound2Index;
       while (true) {

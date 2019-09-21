@@ -27,10 +27,15 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TimeZone;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -84,7 +89,10 @@ public class GenerateJflexTLDMacros {
   private final URL tldFileURL;
   private long tldFileLastModified = -1L;
   private final File outputFile;
-
+  private final SortedMap<String,Boolean> processedTLDsLongestFirst
+      = new TreeMap<>(Comparator.comparing(String::length).reversed().thenComparing(String::compareTo));
+  private final List<SortedSet<String>> TLDsBySuffixLength = new ArrayList<>(); // list position indicates suffix length
+  
   public GenerateJflexTLDMacros(String tldFileURL, String outputFile)
     throws Exception {
     this.tldFileURL = new URL(tldFileURL);
@@ -93,66 +101,101 @@ public class GenerateJflexTLDMacros {
 
   /**
    * Downloads the IANA Root Zone Database, extracts the ASCII TLDs, then
-   * writes a JFlex macro accepting any of them case-insensitively out to
-   * the specified output file.
+   * writes a set of JFlex macros accepting any of them case-insensitively
+   * out to the specified output file.
    * 
    * @throws IOException if there is a problem either downloading the database
    *  or writing out the output file.
    */
   public void execute() throws IOException {
-    final SortedSet<String> TLDs = getIANARootZoneDatabase();
-    writeOutput(TLDs);
-    System.err.println("Wrote " + TLDs.size() + " top level domains to '" 
-                       + outputFile + "'.");
+    getIANARootZoneDatabase();
+    partitionTLDprefixesBySuffixLength();
+    writeOutput();
+    System.out.println("Wrote TLD macros to '" + outputFile + "':");
+    int totalDomains = 0;
+    for (int suffixLength = 0 ; suffixLength < TLDsBySuffixLength.size() ; ++ suffixLength) {
+      int domainsAtThisSuffixLength = TLDsBySuffixLength.get(suffixLength).size();
+      totalDomains += domainsAtThisSuffixLength;
+      System.out.printf("%30s: %4d TLDs%n", getMacroName(suffixLength), domainsAtThisSuffixLength);
+    }
+    System.out.printf("%30s: %4d TLDs%n", "Total", totalDomains);
   }
   
   /**
    * Downloads the IANA Root Zone Database.
-   * @return downcased sorted set of ASCII TLDs
    * @throws java.io.IOException if there is a problem downloading the database 
    */
-  private SortedSet<String> getIANARootZoneDatabase() throws IOException {
-    final SortedSet<String> TLDs = new TreeSet<>();
+  private void getIANARootZoneDatabase() throws IOException {
     final URLConnection connection = tldFileURL.openConnection();
     connection.setUseCaches(false);
     connection.addRequestProperty("Cache-Control", "no-cache");
     connection.connect();
     tldFileLastModified = connection.getLastModified();
-    BufferedReader reader = new BufferedReader
-      (new InputStreamReader(connection.getInputStream(), StandardCharsets.US_ASCII));
-    try {
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader
+        (connection.getInputStream(), StandardCharsets.US_ASCII))) {
       String line;
       while (null != (line = reader.readLine())) {
         Matcher matcher = TLD_PATTERN_1.matcher(line);
         if (matcher.matches()) {
-          TLDs.add(matcher.group(1).toLowerCase(Locale.ROOT));
+          // System.out.println("Found: " + matcher.group(1).toLowerCase(Locale.ROOT));
+          processedTLDsLongestFirst.put(matcher.group(1).toLowerCase(Locale.ROOT), Boolean.FALSE);
         } else {
           matcher = TLD_PATTERN_2.matcher(line);
           if (matcher.matches()) {
-            TLDs.add(matcher.group(1).toLowerCase(Locale.ROOT));
+            // System.out.println("Found: " + matcher.group(1).toLowerCase(Locale.ROOT));
+            processedTLDsLongestFirst.put(matcher.group(1).toLowerCase(Locale.ROOT), Boolean.FALSE);
           }
         }
       }
-    } finally {
-      reader.close();
     }
-    return TLDs;
+    System.out.println("Found " + processedTLDsLongestFirst.size() + " TLDs in IANA Root Zone Database at " + tldFileURL);
   }
 
   /**
+   * Partition TLDs by whether they are prefixes of other TLDs and then by suffix length.
+   * We only care about TLDs that are prefixes and are exactly one character shorter than another TLD.
+   * See LUCENE-8278 and LUCENE-5391.
+   */
+  private void partitionTLDprefixesBySuffixLength() {
+    TLDsBySuffixLength.add(new TreeSet<>());            // initialize set for zero-suffix TLDs
+    for (SortedMap.Entry<String,Boolean> entry : processedTLDsLongestFirst.entrySet()) {
+      String TLD = entry.getKey();
+      if (entry.getValue()) {
+        // System.out.println("Skipping already processed: " + TLD);
+        continue;
+      }
+      // System.out.println("Adding zero-suffix TLD: " + TLD);
+      TLDsBySuffixLength.get(0).add(TLD);
+      for (int suffixLength = 1 ; (TLD.length() - suffixLength) >= 2 ; ++suffixLength) {
+        String TLDprefix = TLD.substring(0, TLD.length() - suffixLength);
+        if (false == processedTLDsLongestFirst.containsKey(TLDprefix)) {
+          // System.out.println("Ignoring non-TLD prefix: " + TLDprefix);
+          break;                                        // shorter prefixes can be ignored
+        }
+        if (processedTLDsLongestFirst.get(TLDprefix)) {
+          // System.out.println("Skipping already processed prefix: " + TLDprefix);
+          break;                                        // shorter prefixes have already been processed 
+        }
+
+        processedTLDsLongestFirst.put(TLDprefix, true); // mark as processed
+        if (TLDsBySuffixLength.size() == suffixLength)
+          TLDsBySuffixLength.add(new TreeSet<>());
+        SortedSet<String> TLDbucket = TLDsBySuffixLength.get(suffixLength);
+        TLDbucket.add(TLDprefix);
+        // System.out.println("Adding TLD prefix of " + TLD + " with suffix length " + suffixLength + ": " + TLDprefix);
+      }
+    }
+  }
+  
+  /**
    * Writes a file containing a JFlex macro that will accept any of the given
    * TLDs case-insensitively.
-   * 
-   * @param ASCIITLDs The downcased sorted set of top level domains to accept
-   * @throws IOException if there is an error writing the output file
    */
-  private void writeOutput(SortedSet<String> ASCIITLDs) throws IOException {
+  private void writeOutput() throws IOException {
     final DateFormat dateFormat = DateFormat.getDateTimeInstance
-      (DateFormat.FULL, DateFormat.FULL, Locale.ROOT);
+        (DateFormat.FULL, DateFormat.FULL, Locale.ROOT);
     dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-    final Writer writer = new OutputStreamWriter
-      (new FileOutputStream(outputFile), StandardCharsets.UTF_8);
-    try {
+    try (Writer writer = new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8)) {
       writer.write(APACHE_LICENSE);
       writer.write("// Generated from IANA Root Zone Database <");
       writer.write(tldFileURL.toString());
@@ -170,26 +213,49 @@ public class GenerateJflexTLDMacros {
       writer.write(this.getClass().getName());
       writer.write(NL);
       writer.write(NL);
-      writer.write("ASCIITLD = \".\" (");
-      writer.write(NL);
-      boolean isFirst = true;
-      for (String ASCIITLD : ASCIITLDs) {
-        writer.write("\t");
-        if (isFirst) {
-          isFirst = false;
-          writer.write("  "); 
+
+      for (int i = 0; i < TLDsBySuffixLength.size(); ++i) {
+        String macroName = getMacroName(i);
+        writer.write("// LUCENE-8278: ");
+        if (i == 0) {
+          writer.write("None of the TLDs in {" + macroName + "} is a 1-character-shorter prefix of another TLD");
         } else {
-          writer.write("| "); 
+          writer.write("Each TLD in {" + macroName + "} is a prefix of another TLD by");
+          writer.write(" " + i + " character");
+          if (i > 1) {
+            writer.write("s");
+          }
         }
-        writer.write(getCaseInsensitiveRegex(ASCIITLD));
         writer.write(NL);
+        writeTLDmacro(writer, macroName, TLDsBySuffixLength.get(i));
       }
-      writer.write("\t) \".\"?   // Accept trailing root (empty) domain");
-      writer.write(NL);
-      writer.write(NL);
-    } finally {
-      writer.close();
     }
+  }
+
+  private String getMacroName(int suffixLength) {
+    return "ASCIITLD" + (suffixLength > 0 ? "prefix_" + suffixLength + "CharSuffix" : "");
+  }
+  
+  private void writeTLDmacro(Writer writer, String macroName, SortedSet<String> TLDs) throws IOException {
+    writer.write(macroName);
+    writer.write(" = \".\" (");
+    writer.write(NL);
+
+    boolean isFirst = true;
+    for (String TLD : TLDs) {
+      writer.write("\t");
+      if (isFirst) {
+        isFirst = false;
+        writer.write("  "); 
+      } else {
+        writer.write("| "); 
+      }
+      writer.write(getCaseInsensitiveRegex(TLD));
+      writer.write(NL);
+    }
+    writer.write("\t) \".\"?   // Accept trailing root (empty) domain");
+    writer.write(NL);
+    writer.write(NL);
   }
 
   /**

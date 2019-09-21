@@ -84,6 +84,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     String collectionName = "SolrCloudSnapshots";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", NUM_SHARDS, NUM_REPLICAS);
     create.process(solrClient);
+    cluster.waitForActiveCollection(collectionName, NUM_SHARDS, NUM_SHARDS * NUM_REPLICAS);
 
     int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
     BackupRestoreUtils.verifyDocs(nDocs, solrClient, collectionName);

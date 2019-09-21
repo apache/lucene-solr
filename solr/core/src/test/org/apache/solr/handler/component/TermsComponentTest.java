@@ -329,6 +329,36 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testTermsWithJSON() throws Exception {
+    ModifiableSolrParams params = params(
+        "qt", "/terms", "terms", "true", "terms.fl", "standardfilt", "terms.lower", "a",
+        "terms.sort", "index", "wt", "json"
+    );
+
+    assertJQ(req(params), "/terms/standardfilt/[0]==a", "/terms/standardfilt/[1]==1");
+
+    // enable terms.ttf
+    params.set("terms.ttf", "true");
+    assertJQ(req(params), "/terms/standardfilt/[0]==a", "/terms/standardfilt/[1]/df==1",
+        "/terms/standardfilt/[1]/ttf==1");
+
+    // test the response with terms.list and terms.ttf=false
+    params.set("terms.list", "spider,snake,shark");
+    params.remove("terms.ttf");
+    assertJQ(req(params), "/terms/standardfilt/[0]==shark", "/terms/standardfilt/[1]==2",
+        "/terms/standardfilt/[2]==snake", "/terms/standardfilt/[3]==3",
+        "/terms/standardfilt/[4]==spider", "/terms/standardfilt/[5]==1"
+    );
+    // with terms.list and terms.ttf=true
+    params.set("terms.ttf", "true");
+    assertJQ(req(params),
+        "/terms/standardfilt/[0]==shark", "/terms/standardfilt/[1]/df==2", "/terms/standardfilt/[1]/ttf==2",
+        "/terms/standardfilt/[2]==snake", "/terms/standardfilt/[3]/df==3", "/terms/standardfilt/[3]/ttf==3",
+        "/terms/standardfilt/[4]==spider", "/terms/standardfilt/[5]/df==1", "/terms/standardfilt/[5]/ttf==1"
+    );
+  }
+
+  @Test
   public void testDocFreqAndTotalTermFreq() throws Exception {
     SolrQueryRequest req = req(
         "indent","true",
@@ -339,6 +369,27 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
         "terms.list", "snake,spider,shark,ddddd");
     assertQ(req,
         "count(//lst[@name='standardfilt']/*)=4",
+        "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='df'][.='4']",
+        "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='ttf'][.='4']",
+        "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='df'][.='2']",
+        "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='ttf'][.='2']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='df'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='snake']/long[@name='ttf'][.='3']",
+        "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='spider']/long[@name='ttf'][.='1']");
+
+    // terms.limit=-1 and terms.sort=count and NO terms.list
+    req = req(
+        "indent","true",
+        "qt", "/terms",
+        "terms", "true",
+        "terms.fl", "standardfilt",
+        "terms.ttf", "true",
+        "terms.limit", "-1",
+        "terms.sort", "count"
+        );
+    assertQ(req,
+        "count(//lst[@name='standardfilt']/*)>=4", // it would be at-least 4
         "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='df'][.='4']",
         "//lst[@name='standardfilt']/lst[@name='ddddd']/long[@name='ttf'][.='4']",
         "//lst[@name='standardfilt']/lst[@name='shark']/long[@name='df'][.='2']",
@@ -377,6 +428,33 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     assertQ(req,
         "count(//lst[@name='lowerfilt']/*)=3",
         "count(//lst[@name='standardfilt']/*)=3",
+        "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='df'][.='2']",
+        "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='ttf'][.='2']",
+        "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='df'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='ttf'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aaa']/long[@name='df'][.='1']",
+        "//lst[@name='lowerfilt']/lst[@name='aaa']/long[@name='ttf'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='a']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='a']/long[@name='ttf'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aa']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aa']/long[@name='ttf'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='df'][.='1']",
+        "//lst[@name='standardfilt']/lst[@name='aaa']/long[@name='ttf'][.='1']");
+
+    // terms.ttf=true, terms.sort=index and no terms list
+    req = req(
+        "indent","true",
+        "qt", "/terms",
+        "terms", "true",
+        "terms.fl", "lowerfilt",
+        "terms.fl", "standardfilt",
+        "terms.ttf", "true",
+        "terms.sort", "index",
+        "terms.limit", "10"
+        );
+    assertQ(req,
+        "count(//lst[@name='lowerfilt']/*)<=10",
+        "count(//lst[@name='standardfilt']/*)<=10",
         "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='df'][.='2']",
         "//lst[@name='lowerfilt']/lst[@name='a']/long[@name='ttf'][.='2']",
         "//lst[@name='lowerfilt']/lst[@name='aa']/long[@name='df'][.='1']",
@@ -510,5 +588,28 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
       assertU(delQ("foo_pi:[* TO *]"));
       assertU(commit());
     }
+  }
+
+  @Test
+  public void testTermsSortIndexDistribution() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_INDEX);
+    params.set(TermsParams.TERMS_LIMIT, "any-number");
+    assertEquals(params.toString(), createShardQueryParamsString(params));
+    params.set(TermsParams.TERMS_MINCOUNT, "0");
+    assertEquals(params.toString(), createShardQueryParamsString(params));
+    params.set(TermsParams.TERMS_MINCOUNT, "1");
+    assertEquals(params.toString(), createShardQueryParamsString(params));
+    // include all (also lower mincount) since 2 shards can have one each
+    params.set(TermsParams.TERMS_MINCOUNT, "2");
+    assertNotEquals(params.toString(), createShardQueryParamsString(params));
+    // "unlimited" since 2 shards can have 30 each, and term then should not be included
+    params.remove(TermsParams.TERMS_MINCOUNT);
+    params.set(TermsParams.TERMS_MAXCOUNT, "32");
+    assertNotEquals(params.toString(), createShardQueryParamsString(params));
+  }
+
+  private static String createShardQueryParamsString(ModifiableSolrParams params) {
+    return TermsComponent.createShardQuery(params).params.toString();
   }
 }

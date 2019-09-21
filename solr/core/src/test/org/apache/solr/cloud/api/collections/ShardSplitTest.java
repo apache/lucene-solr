@@ -25,12 +25,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -38,19 +41,16 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.BasicDistributedZkTest;
-import org.apache.solr.cloud.ChaosMonkey;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
@@ -61,8 +61,14 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.update.SolrIndexSplitter;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.TimeOut;
+import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,12 +78,13 @@ import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 @Slow
+@LogLevel("org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
 public class ShardSplitTest extends BasicDistributedZkTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String SHARD1_0 = SHARD1 + "_0";
-  public static final String SHARD1_1 = SHARD1 + "_1";
+  private static final String SHARD1_0 = SHARD1 + "_0";
+  private static final String SHARD1_1 = SHARD1 + "_1";
 
   public ShardSplitTest() {
     schemaString = "schema15.xml";      // we need a string id
@@ -90,7 +97,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  @Nightly
   public void test() throws Exception {
 
     waitForThingsToLevelOut(15);
@@ -115,18 +122,31 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   Creates a collection with replicationFactor=1, splits a shard. Restarts the sub-shard leader node.
   Add a replica. Ensure count matches in leader and replica.
    */
+  @Test
   public void testSplitStaticIndexReplication() throws Exception {
+    doSplitStaticIndexReplication(SolrIndexSplitter.SplitMethod.REWRITE);
+  }
+
+  @Test
+  public void testSplitStaticIndexReplicationLink() throws Exception {
+    doSplitStaticIndexReplication(SolrIndexSplitter.SplitMethod.LINK);
+  }
+
+  private void doSplitStaticIndexReplication(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
     waitForThingsToLevelOut(15);
 
     DocCollection defCol = cloudClient.getZkStateReader().getClusterState().getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
     Replica replica = defCol.getReplicas().get(0);
     String nodeName = replica.getNodeName();
 
-    String collectionName = "testSplitStaticIndexReplication";
+    String collectionName = "testSplitStaticIndexReplication_" + splitMethod.toLower();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
     create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
     create.setCreateNodeSet(nodeName); // we want to create the leader on a fixed node so that we know which one to restart later
     create.process(cloudClient);
+    
+    cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 1));
+    
     try (CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), true, cloudClient.getLbClient().getHttpClient())) {
       client.setDefaultCollection(collectionName);
       StoppableIndexingThread thread = new StoppableIndexingThread(controlClient, client, "i1", true);
@@ -140,27 +160,25 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
         CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName);
         splitShard.setShardName(SHARD1);
+        splitShard.setSplitMethod(splitMethod.toLower());
         String asyncId = splitShard.processAsync(client);
         RequestStatusState state = CollectionAdminRequest.requestStatus(asyncId).waitFor(client, 120);
         if (state == RequestStatusState.COMPLETED)  {
           waitForRecoveriesToFinish(collectionName, true);
           // let's wait to see parent shard become inactive
           CountDownLatch latch = new CountDownLatch(1);
-          client.getZkStateReader().registerCollectionStateWatcher(collectionName, new CollectionStateWatcher() {
-            @Override
-            public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
-              Slice parent = collectionState.getSlice(SHARD1);
-              Slice slice10 = collectionState.getSlice(SHARD1_0);
-              Slice slice11 = collectionState.getSlice(SHARD1_1);
-              if (slice10 != null && slice11 != null &&
-                  parent.getState() == Slice.State.INACTIVE &&
-                  slice10.getState() == Slice.State.ACTIVE &&
-                  slice11.getState() == Slice.State.ACTIVE) {
-                latch.countDown();
-                return true; // removes the watch
-              }
-              return false;
+          client.getZkStateReader().registerCollectionStateWatcher(collectionName, (liveNodes, collectionState) -> {
+            Slice parent = collectionState.getSlice(SHARD1);
+            Slice slice10 = collectionState.getSlice(SHARD1_0);
+            Slice slice11 = collectionState.getSlice(SHARD1_1);
+            if (slice10 != null && slice11 != null &&
+                parent.getState() == Slice.State.INACTIVE &&
+                slice10.getState() == Slice.State.ACTIVE &&
+                slice11.getState() == Slice.State.ACTIVE) {
+              latch.countDown();
+              return true; // removes the watch
             }
+            return false;
           });
           latch.await(1, TimeUnit.MINUTES);
           if (latch.getCount() != 0)  {
@@ -171,12 +189,14 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           int liveNodeCount = client.getZkStateReader().getClusterState().getLiveNodes().size();
 
           // restart the sub-shard leader node
+          String stoppedNodeName = null;
           boolean restarted = false;
           for (JettySolrRunner jetty : jettys) {
             int port = jetty.getBaseUrl().getPort();
             if (replica.getStr(BASE_URL_PROP).contains(":" + port))  {
-              ChaosMonkey.kill(jetty);
-              ChaosMonkey.start(jetty);
+              stoppedNodeName = jetty.getNodeName();
+              jetty.stop();
+              jetty.start();
               restarted = true;
               break;
             }
@@ -185,6 +205,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
             // sanity check
             fail("We could not find a jetty to kill for replica: " + replica.getCoreUrl());
           }
+          
+          cloudClient.getZkStateReader().waitForLiveNodes(30, TimeUnit.SECONDS, SolrCloudTestCase.containsLiveNode(stoppedNodeName));
 
           // add a new replica for the sub-shard
           CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collectionName, SHARD1_0);
@@ -194,24 +216,24 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           try (HttpSolrClient control = new HttpSolrClient.Builder(control_collection).withHttpClient(client.getLbClient().getHttpClient()).build())  {
             state = addReplica.processAndWait(control, 30);
           }
+          
+          cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 4));
+          
           if (state == RequestStatusState.COMPLETED)  {
             CountDownLatch newReplicaLatch = new CountDownLatch(1);
-            client.getZkStateReader().registerCollectionStateWatcher(collectionName, new CollectionStateWatcher() {
-              @Override
-              public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
-                if (liveNodes.size() != liveNodeCount)  {
-                  return false;
-                }
-                Slice slice = collectionState.getSlice(SHARD1_0);
-                if (slice.getReplicas().size() == 2)  {
-                  if (!slice.getReplicas().stream().anyMatch(r -> r.getState() == Replica.State.RECOVERING)) {
-                    // we see replicas and none of them are recovering
-                    newReplicaLatch.countDown();
-                    return true;
-                  }
-                }
+            client.getZkStateReader().registerCollectionStateWatcher(collectionName, (liveNodes, collectionState) -> {
+              if (liveNodes.size() != liveNodeCount)  {
                 return false;
               }
+              Slice slice = collectionState.getSlice(SHARD1_0);
+              if (slice.getReplicas().size() == 2)  {
+                if (slice.getReplicas().stream().noneMatch(r -> r.getState() == Replica.State.RECOVERING)) {
+                  // we see replicas and none of them are recovering
+                  newReplicaLatch.countDown();
+                  return true;
+                }
+              }
+              return false;
             });
             newReplicaLatch.await(30, TimeUnit.SECONDS);
             // check consistency of sub-shard replica explicitly because checkShardConsistency methods doesn't
@@ -258,56 +280,142 @@ public class ShardSplitTest extends BasicDistributedZkTest {
    * See SOLR-9439
    */
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //05-Jul-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testSplitAfterFailedSplit() throws Exception {
     waitForThingsToLevelOut(15);
 
     TestInjection.splitFailureBeforeReplicaCreation = "true:100"; // we definitely want split to fail
     try {
-      try {
-        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-        splitShard.setShardName(SHARD1);
-        splitShard.process(cloudClient);
-        fail("Shard split was not supposed to succeed after failure injection!");
-      } catch (Exception e) {
-        // expected
-      }
+      splitAfterFailedSplit();
+    } finally {
+      TestInjection.reset();
+    }
+  }
 
-      // assert that sub-shards cores exist and sub-shard is in construction state
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      zkStateReader.forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-      ClusterState state = zkStateReader.getClusterState();
-      DocCollection collection = state.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+  private void splitAfterFailedSplit() throws KeeperException, InterruptedException {
+    try {
+      CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+      splitShard.setShardName(SHARD1);
+      splitShard.process(cloudClient);
+      fail("Shard split was not supposed to succeed after failure injection!");
+    } catch (Exception e) {
+      // expected
+    }
 
-      Slice shard10 = collection.getSlice(SHARD1_0);
-      assertEquals(Slice.State.CONSTRUCTION, shard10.getState());
-      assertEquals(1, shard10.getReplicas().size());
+    // assert that sub-shards cores exist and sub-shard is in construction state
+    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    zkStateReader.forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+    ClusterState state = zkStateReader.getClusterState();
+    DocCollection collection = state.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
 
-      Slice shard11 = collection.getSlice(SHARD1_1);
-      assertEquals(Slice.State.CONSTRUCTION, shard11.getState());
-      assertEquals(1, shard11.getReplicas().size());
+    // should be cleaned up
+    Slice shard10 = collection.getSlice(SHARD1_0);
+    assertNull(shard10);
 
-      // lets retry the split
-      TestInjection.reset(); // let the split succeed
-      try {
-        CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-        splitShard.setShardName(SHARD1);
-        splitShard.process(cloudClient);
-        // Yay!
-      } catch (Exception e) {
-        log.error("Shard split failed", e);
-        fail("Shard split did not succeed after a previous failed split attempt left sub-shards in construction state");
-      }
+    Slice shard11 = collection.getSlice(SHARD1_1);
+    assertNull(shard11);
 
+    // lets retry the split
+    TestInjection.reset(); // let the split succeed
+    try {
+      CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+      splitShard.setShardName(SHARD1);
+      splitShard.process(cloudClient);
+      // Yay!
+    } catch (Exception e) {
+      log.error("Shard split failed", e);
+      fail("Shard split did not succeed after a previous failed split attempt left sub-shards in construction state");
+    }
+  }
+
+  @Test
+  @Nightly
+  public void testSplitAfterFailedSplit2() throws Exception {
+    waitForThingsToLevelOut(15);
+
+    TestInjection.splitFailureAfterReplicaCreation = "true:100"; // we definitely want split to fail
+    try {
+      splitAfterFailedSplit();
     } finally {
       TestInjection.reset();
     }
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
+  public void testSplitMixedReplicaTypes() throws Exception {
+    doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod.REWRITE);
+  }
+
+  @Test
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  public void testSplitMixedReplicaTypesLink() throws Exception {
+    doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod.LINK);
+  }
+
+  private void doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
+    waitForThingsToLevelOut(15);
+    String collectionName = "testSplitMixedReplicaTypes_" + splitMethod.toLower();
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2, 0, 2); // TODO tlog replicas disabled right now.
+    create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
+    create.process(cloudClient);
+    
+    cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 4));
+    
+    waitForRecoveriesToFinish(collectionName, false);
+
+    for (int i = 0; i < 100; i++) {
+      cloudClient.add(collectionName, getDoc("id", "id-" + i, "foo_s", "bar " + i));
+    }
+    cloudClient.commit(collectionName);
+
+    CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName);
+    splitShard.setShardName(SHARD1);
+    splitShard.setSplitMethod(splitMethod.toLower());
+    CollectionAdminResponse rsp = splitShard.process(cloudClient);
+    waitForThingsToLevelOut(30);
+   
+    cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 12));
+
+    cloudClient.getZkStateReader().forceUpdateCollection(collectionName);
+    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    DocCollection coll = clusterState.getCollection(collectionName);
+    log.info("coll: " + coll);
+
+    // verify the original shard
+    verifyShard(coll, SHARD1, Slice.State.INACTIVE, 2, 0, 2);
+    // verify new sub-shards
+    verifyShard(coll, SHARD1_0, Slice.State.ACTIVE, 2, 0, 2);
+    verifyShard(coll, SHARD1_1, Slice.State.ACTIVE, 2, 0, 2);
+  }
+
+  private void verifyShard(DocCollection coll, String shard, Slice.State expectedState, int numNrt, int numTlog, int numPull) throws Exception {
+    Slice s = coll.getSlice(shard);
+    assertEquals("unexpected shard state", expectedState, s.getState());
+    AtomicInteger actualNrt = new AtomicInteger();
+    AtomicInteger actualTlog = new AtomicInteger();
+    AtomicInteger actualPull = new AtomicInteger();
+    s.getReplicas().forEach(r -> {
+      switch (r.getType()) {
+        case NRT: actualNrt.incrementAndGet(); break;
+        case TLOG: actualTlog.incrementAndGet(); break;
+        case PULL: actualPull.incrementAndGet(); break;
+      }
+    });
+    assertEquals("actual NRT", numNrt, actualNrt.get());
+    assertEquals("actual TLOG", numTlog, actualTlog.get());
+    assertEquals("actual PULL", numPull, actualPull.get());
+  }
+
+  @Test
+  @Nightly
   public void testSplitWithChaosMonkey() throws Exception {
     waitForThingsToLevelOut(15);
+
+    log.info("Using legacyCloud=false for cluster");
+    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false")
+        .process(cloudClient);
 
     List<StoppableIndexingThread> indexers = new ArrayList<>();
     try {
@@ -331,41 +439,34 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     AtomicBoolean stop = new AtomicBoolean();
     AtomicBoolean killed = new AtomicBoolean(false);
-    Runnable monkey = new Runnable() {
-      @Override
-      public void run() {
-        ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-        zkStateReader.registerCollectionStateWatcher(AbstractDistribZkTestBase.DEFAULT_COLLECTION, new CollectionStateWatcher() {
-          @Override
-          public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
-            if (stop.get()) {
-              return true; // abort and remove the watch
+    Runnable monkey = () -> {
+      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+      zkStateReader.registerCollectionStateWatcher(AbstractDistribZkTestBase.DEFAULT_COLLECTION, (liveNodes, collectionState) -> {
+        if (stop.get()) {
+          return true; // abort and remove the watch
+        }
+        Slice slice = collectionState.getSlice(SHARD1_0);
+        if (slice != null && slice.getReplicas().size() > 1) {
+          // ensure that only one watcher invocation thread can kill!
+          if (killed.compareAndSet(false, true))  {
+            log.info("Monkey thread found 2 replicas for {} {}", AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
+            CloudJettyRunner cjetty = shardToLeaderJetty.get(SHARD1);
+            try {
+              Thread.sleep(1000 + random().nextInt(500));
+              cjetty.jetty.stop();
+              stop.set(true);
+              return true;
+            } catch (Exception e) {
+              log.error("Monkey unable to kill jetty at port " + cjetty.jetty.getLocalPort(), e);
             }
-            Slice slice = collectionState.getSlice(SHARD1_0);
-            if (slice != null && slice.getReplicas().size() > 1) {
-              // ensure that only one watcher invocation thread can kill!
-              if (killed.compareAndSet(false, true))  {
-                log.info("Monkey thread found 2 replicas for {} {}", AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
-                CloudJettyRunner cjetty = shardToLeaderJetty.get(SHARD1);
-                try {
-                  Thread.sleep(1000 + random().nextInt(500));
-                  ChaosMonkey.kill(cjetty);
-                  stop.set(true);
-                  return true;
-                } catch (Exception e) {
-                  log.error("Monkey unable to kill jetty at port " + cjetty.jetty.getLocalPort(), e);
-                }
-              }
-            }
-            log.info("Monkey thread found only one replica for {} {}", AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
-            return false;
           }
-        });
-      }
+        }
+        log.info("Monkey thread found only one replica for {} {}", AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1);
+        return false;
+      });
     };
 
-    Thread monkeyThread = null;
-    monkeyThread = new Thread(monkey);
+    Thread monkeyThread = new Thread(monkey);
     monkeyThread.start();
     try {
       CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
@@ -383,7 +484,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       // indexed are available in SolrCloud and if the split succeeded then all replicas of the sub-shard
       // must be consistent (i.e. have same numdocs)
 
-      log.info("Shard split request state is COMPLETED");
+      log.info("Shard split request state is {}", splitStatus == null ? "unknown" : splitStatus.getKey());
       stop.set(true);
       monkeyThread.join();
       Set<String> addFails = new HashSet<>();
@@ -395,68 +496,37 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
       CloudJettyRunner cjetty = shardToLeaderJetty.get(SHARD1);
       log.info("Starting shard1 leader jetty at port {}", cjetty.jetty.getLocalPort());
-      ChaosMonkey.start(cjetty.jetty);
+      cjetty.jetty.start();
       cloudClient.getZkStateReader().forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
       log.info("Current collection state: {}", printClusterStateInfo(AbstractDistribZkTestBase.DEFAULT_COLLECTION));
 
-      boolean replicaCreationsFailed = false;
-      if (splitStatus == RequestStatusState.FAILED)  {
-        // either one or more replica creation failed (because it may have been created on the same parent shard leader node)
-        // or the split may have failed while trying to soft-commit *after* all replicas have been created
-        // the latter counts as a successful switch even if the API doesn't say so
-        // so we must find a way to distinguish between the two
-        // an easy way to do that is to look at the sub-shard replicas and check if the replica core actually exists
-        // instead of existing solely inside the cluster state
-        DocCollection collectionState = cloudClient.getZkStateReader().getClusterState().getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-        Slice slice10 = collectionState.getSlice(SHARD1_0);
-        Slice slice11 = collectionState.getSlice(SHARD1_1);
-        if (slice10 != null && slice11 != null) {
-          for (Replica replica : slice10) {
-            if (!doesReplicaCoreExist(replica)) {
-              replicaCreationsFailed = true;
-              break;
-            }
-          }
-          for (Replica replica : slice11) {
-            if (!doesReplicaCoreExist(replica)) {
-              replicaCreationsFailed = true;
-              break;
-            }
-          }
-        }
-      }
-
       // true if sub-shard states switch to 'active' eventually
       AtomicBoolean areSubShardsActive = new AtomicBoolean(false);
-
-      if (!replicaCreationsFailed)  {
+      if (splitStatus == RequestStatusState.COMPLETED) {
         // all sub-shard replicas were created successfully so all cores must recover eventually
         waitForRecoveriesToFinish(AbstractDistribZkTestBase.DEFAULT_COLLECTION, true);
         // let's wait for the overseer to switch shard states
         CountDownLatch latch = new CountDownLatch(1);
-        cloudClient.getZkStateReader().registerCollectionStateWatcher(AbstractDistribZkTestBase.DEFAULT_COLLECTION, new CollectionStateWatcher() {
-          @Override
-          public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
-            Slice parent = collectionState.getSlice(SHARD1);
-            Slice slice10 = collectionState.getSlice(SHARD1_0);
-            Slice slice11 = collectionState.getSlice(SHARD1_1);
-            if (slice10 != null && slice11 != null &&
-                parent.getState() == Slice.State.INACTIVE &&
-                slice10.getState() == Slice.State.ACTIVE &&
-                slice11.getState() == Slice.State.ACTIVE) {
-              areSubShardsActive.set(true);
-              latch.countDown();
-              return true; // removes the watch
-            } else if (slice10 != null && slice11 != null &&
-                parent.getState() == Slice.State.ACTIVE &&
-                slice10.getState() == Slice.State.RECOVERY_FAILED &&
-                slice11.getState() == Slice.State.RECOVERY_FAILED) {
-              areSubShardsActive.set(false);
-              latch.countDown();
-              return true;
-            }
-            return false;
+        cloudClient.getZkStateReader().registerCollectionStateWatcher(AbstractDistribZkTestBase.DEFAULT_COLLECTION, (liveNodes, collectionState) -> {
+          Slice parent = collectionState.getSlice(SHARD1);
+          Slice slice10 = collectionState.getSlice(SHARD1_0);
+          Slice slice11 = collectionState.getSlice(SHARD1_1);
+          if (slice10 != null && slice11 != null &&
+              parent.getState() == Slice.State.INACTIVE &&
+              slice10.getState() == Slice.State.ACTIVE &&
+              slice11.getState() == Slice.State.ACTIVE) {
+            areSubShardsActive.set(true);
+            latch.countDown();
+            return true; // removes the watch
+          } else if (slice10 != null && slice11 != null &&
+              parent.getState() == Slice.State.ACTIVE &&
+              slice10.getState() == Slice.State.RECOVERY_FAILED &&
+              slice11.getState() == Slice.State.RECOVERY_FAILED) {
+            areSubShardsActive.set(false);
+            latch.countDown();
+            return true;
           }
+          return false;
         });
 
         latch.await(2, TimeUnit.MINUTES);
@@ -492,25 +562,78 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
   }
 
-  private boolean doesReplicaCoreExist(Replica replica) throws IOException {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getStr(BASE_URL_PROP))
-        .withHttpClient(cloudClient.getLbClient().getHttpClient()).build())  {
-      String coreName = replica.getCoreName();
-      try {
-        CoreAdminResponse status = CoreAdminRequest.getStatus(coreName, client);
-        if (status.getCoreStatus(coreName) == null || status.getCoreStatus(coreName).size() == 0) {
-          return false;
+  @Test
+  public void testSplitLocking() throws Exception {
+    waitForThingsToLevelOut(15);
+    String collectionName = "testSplitLocking";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2);
+    create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
+    create.process(cloudClient);
+    
+    cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 2));
+    
+    waitForRecoveriesToFinish(collectionName, false);
+
+    TestInjection.splitLatch = new CountDownLatch(1); // simulate a long split operation
+    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/" + SHARD1 + "-splitting";
+    final AtomicReference<Exception> exc = new AtomicReference<>();
+    try {
+      Runnable r = () -> {
+        try {
+          trySplit(collectionName, null, SHARD1, 1);
+        } catch (Exception e) {
+          exc.set(e);
         }
-      } catch (Exception e) {
-        log.warn("Error gettting core status of replica " + replica + ". Perhaps it does not exist!", e);
-        return false;
+      };
+      Thread t = new Thread(r);
+      t.start();
+      // wait for the split to start executing
+      TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      while (!timeOut.hasTimedOut()) {
+        timeOut.sleep(500);
+        if (cloudClient.getZkStateReader().getZkClient().exists(path, true)) {
+          log.info("=== found lock node");
+          break;
+        }
       }
+      assertFalse("timed out waiting for the lock znode to appear", timeOut.hasTimedOut());
+      assertNull("unexpected exception: " + exc.get(), exc.get());
+      log.info("=== trying second split");
+      try {
+        trySplit(collectionName, null, SHARD1, 1);
+        fail("expected to fail due to locking but succeeded");
+      } catch (Exception e) {
+        log.info("Expected failure: " + e.toString());
+      }
+
+      // make sure the lock still exists
+      assertTrue("lock znode expected but missing", cloudClient.getZkStateReader().getZkClient().exists(path, true));
+      // let the first split proceed
+      TestInjection.splitLatch.countDown();
+      timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      while (!timeOut.hasTimedOut()) {
+        timeOut.sleep(500);
+        if (!cloudClient.getZkStateReader().getZkClient().exists(path, true)) {
+          break;
+        }
+      }
+      assertFalse("timed out waiting for the lock znode to disappear", timeOut.hasTimedOut());
+    } finally {
+      TestInjection.reset();
     }
-    return true;
   }
 
   @Test
   public void testSplitShardWithRule() throws Exception {
+    doSplitShardWithRule(SolrIndexSplitter.SplitMethod.REWRITE);
+  }
+
+  @Test
+  public void testSplitShardWithRuleLink() throws Exception {
+    doSplitShardWithRule(SolrIndexSplitter.SplitMethod.LINK);
+  }
+
+  private void doSplitShardWithRule(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
     waitForThingsToLevelOut(15);
 
     if (usually()) {
@@ -520,14 +643,21 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
 
     log.info("Starting testSplitShardWithRule");
-    String collectionName = "shardSplitWithRule";
+    String collectionName = "shardSplitWithRule_" + splitMethod.toLower();
     CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2)
         .setRule("shard:*,replica:<2,node:*");
+
     CollectionAdminResponse response = createRequest.process(cloudClient);
     assertEquals(0, response.getStatus());
+    
+    try {
+      cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 2));
+    } catch (TimeoutException e) {
+      new RuntimeException("Timeout waiting for 1shards and 2 replicas.", e);
+    }
 
     CollectionAdminRequest.SplitShard splitShardRequest = CollectionAdminRequest.splitShard(collectionName)
-        .setShardName("shard1");
+        .setShardName("shard1").setSplitMethod(splitMethod.toLower());
     response = splitShardRequest.process(cloudClient);
     assertEquals(String.valueOf(response.getErrorMessages()), 0, response.getStatus());
   }
@@ -544,7 +674,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     // test with only one range
     subRanges.add(ranges.get(0));
     try {
-      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null);
+      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null, false);
       fail("Shard splitting with just one custom hash range should not succeed");
     } catch (HttpSolrClient.RemoteSolrException e) {
       log.info("Expected exception:", e);
@@ -555,7 +685,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     subRanges.add(ranges.get(3)); // order shouldn't matter
     subRanges.add(ranges.get(0));
     try {
-      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null);
+      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null, false);
       fail("Shard splitting with missing hashes in between given ranges should not succeed");
     } catch (HttpSolrClient.RemoteSolrException e) {
       log.info("Expected exception:", e);
@@ -568,7 +698,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     subRanges.add(ranges.get(2));
     subRanges.add(new DocRouter.Range(ranges.get(3).min - 15, ranges.get(3).max));
     try {
-      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null);
+      splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null, false);
       fail("Shard splitting with overlapping ranges should not succeed");
     } catch (HttpSolrClient.RemoteSolrException e) {
       log.info("Expected exception:", e);
@@ -590,53 +720,55 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     } else  {
       subRanges = router.partitionRange(2, shard1Range);
     }
+    final Set<String> documentIds = ConcurrentHashMap.newKeySet(1024);
     final List<DocRouter.Range> ranges = subRanges;
     final int[] docCounts = new int[ranges.size()];
     int numReplicas = shard1.getReplicas().size();
 
+    cloudClient.getZkStateReader().forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+    clusterState = cloudClient.getZkStateReader().getClusterState();
+    log.debug("-- COLLECTION: {}", clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION));
     del("*:*");
     for (int id = 0; id <= 100; id++) {
       String shardKey = "" + (char)('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution
-      indexAndUpdateCount(router, ranges, docCounts, shardKey + "!" + String.valueOf(id), id);
+      indexAndUpdateCount(router, ranges, docCounts, shardKey + "!" + String.valueOf(id), id, documentIds);
     }
     commit();
 
-    Thread indexThread = new Thread() {
-      @Override
-      public void run() {
-        Random random = random();
-        int max = atLeast(random, 401);
-        int sleep = atLeast(random, 25);
-        log.info("SHARDSPLITTEST: Going to add " + max + " number of docs at 1 doc per " + sleep + "ms");
-        Set<String> deleted = new HashSet<>();
-        for (int id = 101; id < max; id++) {
-          try {
-            indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id), id);
-            Thread.sleep(sleep);
-            if (usually(random))  {
-              String delId = String.valueOf(random.nextInt(id - 101 + 1) + 101);
-              if (deleted.contains(delId))  continue;
-              try {
-                deleteAndUpdateCount(router, ranges, docCounts, delId);
-                deleted.add(delId);
-              } catch (Exception e) {
-                log.error("Exception while deleting docs", e);
-              }
+    Thread indexThread = new Thread(() -> {
+      Random random = random();
+      int max = atLeast(random, 401);
+      int sleep = atLeast(random, 25);
+      log.info("SHARDSPLITTEST: Going to add " + max + " number of docs at 1 doc per " + sleep + "ms");
+      Set<String> deleted = new HashSet<>();
+      for (int id = 101; id < max; id++) {
+        try {
+          indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id), id, documentIds);
+          Thread.sleep(sleep);
+          if (usually(random))  {
+            String delId = String.valueOf(random.nextInt(id - 101 + 1) + 101);
+            if (deleted.contains(delId))  continue;
+            try {
+              deleteAndUpdateCount(router, ranges, docCounts, delId);
+              deleted.add(delId);
+              documentIds.remove(String.valueOf(delId));
+            } catch (Exception e) {
+              log.error("Exception while deleting docs", e);
             }
-          } catch (Exception e) {
-            log.error("Exception while adding doc id = " + id, e);
-            // do not select this id for deletion ever
-            deleted.add(String.valueOf(id));
           }
+        } catch (Exception e) {
+          log.error("Exception while adding doc id = " + id, e);
+          // do not select this id for deletion ever
+          deleted.add(String.valueOf(id));
         }
       }
-    };
+    });
     indexThread.start();
 
     try {
       for (int i = 0; i < 3; i++) {
         try {
-          splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null);
+          splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null, false);
           log.info("Layout after split: \n");
           printLayout();
           break;
@@ -659,7 +791,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
 
     waitForRecoveriesToFinish(true);
-    checkDocCountsAndShardStates(docCounts, numReplicas);
+    checkDocCountsAndShardStates(docCounts, numReplicas, documentIds);
   }
 
 
@@ -680,7 +812,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           OverseerCollectionMessageHandler.NUM_SLICES, numShards,
           "router.field", shard_fld);
 
-      createCollection(collectionInfos, collectionName,props,client);
+      createCollection(collectionInfos, collectionName, props, client);
     }
 
     List<Integer> list = collectionInfos.get(collectionName);
@@ -716,20 +848,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
       collectionClient.commit();
 
-      for (int i = 0; i < 3; i++) {
-        try {
-          splitShard(collectionName, SHARD1, null, null);
-          break;
-        } catch (HttpSolrClient.RemoteSolrException e) {
-          if (e.code() != 500) {
-            throw e;
-          }
-          log.error("SPLITSHARD failed. " + (i < 2 ? " Retring split" : ""), e);
-          if (i == 2) {
-            fail("SPLITSHARD was not successful even after three tries");
-          }
-        }
-      }
+      trySplit(collectionName, null, SHARD1, 3);
 
       waitForRecoveriesToFinish(collectionName, false);
 
@@ -798,20 +917,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
       collectionClient.commit();
 
-      for (int i = 0; i < 3; i++) {
-        try {
-          splitShard(collectionName, null, null, splitKey);
-          break;
-        } catch (HttpSolrClient.RemoteSolrException e) {
-          if (e.code() != 500) {
-            throw e;
-          }
-          log.error("SPLITSHARD failed. " + (i < 2 ? " Retring split" : ""), e);
-          if (i == 2) {
-            fail("SPLITSHARD was not successful even after three tries");
-          }
-        }
-      }
+      trySplit(collectionName, splitKey, null, 3);
 
       waitForRecoveriesToFinish(collectionName, false);
       SolrQuery solrQuery = new SolrQuery("*:*");
@@ -826,7 +932,24 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
   }
 
-  protected void checkDocCountsAndShardStates(int[] docCounts, int numReplicas) throws Exception {
+  private void trySplit(String collectionName, String splitKey, String shardId, int maxTries) throws SolrServerException, IOException {
+    for (int i = 0; i < maxTries; i++) {
+      try {
+        splitShard(collectionName, shardId, null, splitKey, false);
+        break;
+      } catch (HttpSolrClient.RemoteSolrException e) {
+        if (e.code() != 500) {
+          throw e;
+        }
+        log.error("SPLITSHARD failed. " + (i < maxTries - 1 ? " Retring split" : ""), e);
+        if (i == 2) {
+          fail("SPLITSHARD was not successful even after three tries");
+        }
+      }
+    }
+  }
+
+  protected void checkDocCountsAndShardStates(int[] docCounts, int numReplicas, Set<String> documentIds) throws Exception {
     ClusterState clusterState = null;
     Slice slice1_0 = null, slice1_1 = null;
     int i = 0;
@@ -874,7 +997,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
     long shard11Count = response2.getResults().getNumFound();
 
-    logDebugHelp(docCounts, response, shard10Count, response2, shard11Count);
+    logDebugHelp(docCounts, response, shard10Count, response2, shard11Count, documentIds);
 
     assertEquals("Wrong doc count on shard1_0. See SOLR-5309", docCounts[0], shard10Count);
     assertEquals("Wrong doc count on shard1_1. See SOLR-5309", docCounts[1], shard11Count);
@@ -903,9 +1026,11 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
   }
 
-  protected void splitShard(String collection, String shardId, List<DocRouter.Range> subRanges, String splitKey) throws SolrServerException, IOException {
+  protected void splitShard(String collection, String shardId, List<DocRouter.Range> subRanges, String splitKey, boolean offline) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.SPLITSHARD.toString());
+    params.set("timing", "true");
+    params.set("offline", String.valueOf(offline));
     params.set("collection", collection);
     if (shardId != null)  {
       params.set("shard", shardId);
@@ -930,16 +1055,18 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
     try (HttpSolrClient baseServer = getHttpSolrClient(baseUrl, 30000, 60000 * 5)) {
-      baseServer.request(request);
+      NamedList<Object> rsp = baseServer.request(request);
+      log.info("Shard split response: " + Utils.toJSONString(rsp));
     }
   }
 
-  protected void indexAndUpdateCount(DocRouter router, List<DocRouter.Range> ranges, int[] docCounts, String id, int n) throws Exception {
+  protected void indexAndUpdateCount(DocRouter router, List<DocRouter.Range> ranges, int[] docCounts, String id, int n, Set<String> documentIds) throws Exception {
     index("id", id, "n_ti", n);
 
     int idx = getHashRangeIdx(router, ranges, id);
     if (idx != -1)  {
       docCounts[idx]++;
+      documentIds.add(String.valueOf(id));
     }
   }
 
@@ -967,11 +1094,13 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     return -1;
   }
 
-  protected void logDebugHelp(int[] docCounts, QueryResponse response, long shard10Count, QueryResponse response2, long shard11Count) {
+  protected void logDebugHelp(int[] docCounts, QueryResponse response, long shard10Count, QueryResponse response2, long shard11Count, Set<String> documentIds) {
     for (int i = 0; i < docCounts.length; i++) {
       int docCount = docCounts[i];
       log.info("Expected docCount for shard1_{} = {}", i, docCount);
     }
+
+    Set<String> found = new HashSet<>(1024);
 
     log.info("Actual docCount for shard1_0 = {}", shard10Count);
     log.info("Actual docCount for shard1_1 = {}", shard11Count);
@@ -985,6 +1114,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       if (old != null) {
         log.error("EXTRA: ID: " + document.getFieldValue("id") + " on shard1_0. Old version: " + old.getFieldValue("_version_") + " new version: " + document.getFieldValue("_version_"));
       }
+      found.add(document.getFieldValue("id").toString());
     }
     for (int i = 0; i < response2.getResults().size(); i++) {
       SolrDocument document = response2.getResults().get(i);
@@ -997,24 +1127,15 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       if (old != null) {
         log.error("EXTRA: ID: " + document.getFieldValue("id") + " on shard1_1. Old version: " + old.getFieldValue("_version_") + " new version: " + document.getFieldValue("_version_"));
       }
+      found.add(document.getFieldValue("id").toString());
     }
-  }
 
-  @Override
-  protected SolrClient createNewSolrClient(String collection, String baseUrl) {
-    HttpSolrClient client = (HttpSolrClient) super.createNewSolrClient(collection, baseUrl, DEFAULT_CONNECTION_TIMEOUT, 5 * 60 * 1000);
-    return client;
-  }
-
-  @Override
-  protected SolrClient createNewSolrClient(int port) {
-    HttpSolrClient client = (HttpSolrClient) super.createNewSolrClient(port, DEFAULT_CONNECTION_TIMEOUT, 5 * 60 * 1000);
-    return client;
-  }
-
-  @Override
-  protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudSolrClient client = super.createCloudClient(defaultCollection);
-    return client;
+    if (found.size() < documentIds.size())  {
+      documentIds.removeAll(found);
+      log.error("MISSING: ID: " + documentIds);
+    } else if (found.size() > documentIds.size()) {
+      found.removeAll(documentIds);
+      log.error("EXTRA: ID: " + found);
+    }
   }
 }

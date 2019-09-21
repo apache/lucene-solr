@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.math3.stat.regression.SimpleRegression;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.RegressionEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -29,7 +29,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class RegressionEvaluatorTest extends LuceneTestCase {
+public class RegressionEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String,Object> values;

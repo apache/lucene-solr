@@ -56,7 +56,7 @@ If no "type" is specified (either explicitly or implicitly) then the <<the-stand
 
 `fq={!df=summary}solr rocks`
 
-is equivilent to:
+is equivalent to:
 
 `fq={!type=lucene df=summary}solr rocks`
 

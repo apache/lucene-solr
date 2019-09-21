@@ -39,29 +39,6 @@ public class FieldTermStack {
   private final String fieldName;
   LinkedList<TermInfo> termList = new LinkedList<>();
   
-  //public static void main( String[] args ) throws Exception {
-  //  Analyzer analyzer = new WhitespaceAnalyzer(Version.LATEST);
-  //  QueryParser parser = new QueryParser(Version.LATEST,  "f", analyzer );
-  //  Query query = parser.parse( "a x:b" );
-  //  FieldQuery fieldQuery = new FieldQuery( query, true, false );
-    
-  //  Directory dir = new RAMDirectory();
-  //  IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LATEST, analyzer));
-  //  Document doc = new Document();
-  //  FieldType ft = new FieldType(TextField.TYPE_STORED);
-  //  ft.setStoreTermVectors(true);
-  //  ft.setStoreTermVectorOffsets(true);
-  //  ft.setStoreTermVectorPositions(true);
-  //  doc.add( new Field( "f", ft, "a a a b b c a b b c d e f" ) );
-  //  doc.add( new Field( "f", ft, "b a b a f" ) );
-  //  writer.addDocument( doc );
-  //  writer.close();
-    
-  //  IndexReader reader = IndexReader.open(dir1);
-  //  new FieldTermStack( reader, 0, "f", fieldQuery );
-  //  reader.close();
-  //}
-
   /**
    * a constructor.
    * 
@@ -196,7 +173,7 @@ public class FieldTermStack {
     // this is a circular list, so with no syns, just points to itself
     private TermInfo next;
 
-    public TermInfo( String text, int startOffset, int endOffset, int position, float weight ){
+    TermInfo(String text, int startOffset, int endOffset, int position, float weight){
       this.text = text;
       this.startOffset = startOffset;
       this.endOffset = endOffset;
@@ -219,9 +196,7 @@ public class FieldTermStack {
     
     @Override
     public String toString(){
-      StringBuilder sb = new StringBuilder();
-      sb.append( text ).append( '(' ).append(startOffset).append( ',' ).append( endOffset ).append( ',' ).append( position ).append( ')' );
-      return sb.toString();
+      return text + '(' + startOffset + ',' + endOffset + ',' + position + ')';
     }
 
     @Override
@@ -248,10 +223,7 @@ public class FieldTermStack {
         return false;
       }
       TermInfo other = (TermInfo) obj;
-      if (position != other.position) {
-        return false;
-      }
-      return true;
+      return position == other.position;
     }
   }
 }

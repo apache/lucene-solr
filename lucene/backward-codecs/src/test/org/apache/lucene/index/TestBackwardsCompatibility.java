@@ -67,10 +67,10 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -287,16 +287,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   final static String[] oldNames = {
-    "7.0.0-cfs",
-    "7.0.0-nocfs",
-    "7.0.1-cfs",
-    "7.0.1-nocfs",
-    "7.1.0-cfs",
-    "7.1.0-nocfs",
-    "7.2.0-cfs",
-    "7.2.0-nocfs",
-    "7.2.1-cfs",
-    "7.2.1-nocfs"
+    "8.0.0-cfs",
+    "8.0.0-nocfs",
+    "8.1.0-cfs",
+    "8.1.0-nocfs",
+    "8.1.1-cfs",
+    "8.1.1-nocfs",
+    "8.2.0-cfs",
+    "8.2.0-nocfs"
   };
 
   public static String[] getOldNames() {
@@ -304,11 +302,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
   
   final static String[] oldSortedNames = {
-    "sorted.7.0.0",
-    "sorted.7.0.1",
-    "sorted.7.1.0",
-    "sorted.7.2.0",
-    "sorted.7.2.1"
+    "sorted.8.0.0",
+    "sorted.8.1.0",
+    "sorted.8.1.1",
+    "sorted.8.2.0"
   };
 
   public static String[] getOldSortedNames() {
@@ -364,6 +361,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "3.6.1-nocfs",
       "3.6.2-cfs",
       "3.6.2-nocfs",
+      "4.0.0-cfs",
       "4.0.0-cfs",
       "4.0.0-nocfs",
       "4.0.0.1-cfs",
@@ -477,7 +475,39 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "6.6.2-cfs",
       "6.6.2-nocfs",
       "6.6.3-cfs",
-      "6.6.3-nocfs"
+      "6.6.3-nocfs",
+      "6.6.4-cfs",
+      "6.6.4-nocfs",
+      "6.6.5-cfs",
+      "6.6.5-nocfs",
+      "6.6.6-cfs",
+      "6.6.6-nocfs",
+      "7.0.0-cfs",
+      "7.0.0-nocfs",
+      "7.0.1-cfs",
+      "7.0.1-nocfs",
+      "7.1.0-cfs",
+      "7.1.0-nocfs",
+      "7.2.0-cfs",
+      "7.2.0-nocfs",
+      "7.2.1-cfs",
+      "7.2.1-nocfs",
+      "7.3.0-cfs",
+      "7.3.0-nocfs",
+      "7.3.1-cfs",
+      "7.3.1-nocfs",
+      "7.4.0-cfs",
+      "7.4.0-nocfs",
+      "7.5.0-cfs",
+      "7.5.0-nocfs",
+      "7.6.0-cfs",
+      "7.6.0-nocfs",
+      "7.7.0-cfs",
+      "7.7.0-nocfs",
+      "7.7.1-cfs",
+      "7.7.1-nocfs",
+      "7.7.2-cfs",
+      "7.7.2-nocfs"
   };
 
   // TODO: on 6.0.0 release, gen the single segment indices and add here:
@@ -804,7 +834,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         Directory targetDir2 = newDirectory();
         IndexWriter w = new IndexWriter(targetDir2, newIndexWriterConfig(new MockAnalyzer(random())));
         IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> TestUtil.addIndexesSlowly(w, reader));
-        assertEquals(e.getMessage(), "Cannot merge a segment that has been created with major version 7 into this index which has been created by major version 8");
+        assertEquals(e.getMessage(), "Cannot merge a segment that has been created with major version 8 into this index which has been created by major version 9");
         w.close();
         targetDir2.close();
 
@@ -865,17 +895,17 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     TestUtil.checkIndex(dir);
     
     // true if this is a 4.0+ index
-    final boolean is40Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("content5") != null;
+    final boolean is40Index = FieldInfos.getMergedFieldInfos(reader).fieldInfo("content5") != null;
     // true if this is a 4.2+ index
-    final boolean is42Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("dvSortedSet") != null;
+    final boolean is42Index = FieldInfos.getMergedFieldInfos(reader).fieldInfo("dvSortedSet") != null;
     // true if this is a 4.9+ index
-    final boolean is49Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("dvSortedNumeric") != null;
+    final boolean is49Index = FieldInfos.getMergedFieldInfos(reader).fieldInfo("dvSortedNumeric") != null;
     // true if this index has points (>= 6.0)
-    final boolean hasPoints = MultiFields.getMergedFieldInfos(reader).fieldInfo("intPoint1d") != null;
+    final boolean hasPoints = FieldInfos.getMergedFieldInfos(reader).fieldInfo("intPoint1d") != null;
 
     assert is40Index;
 
-    final Bits liveDocs = MultiFields.getLiveDocs(reader);
+    final Bits liveDocs = MultiBits.getLiveDocs(reader);
 
     for(int i=0;i<35;i++) {
       if (liveDocs.get(i)) {
@@ -1052,7 +1082,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     // make sure writer sees right total -- writer seems not to know about deletes in .del?
     final int expected = 45;
-    assertEquals("wrong doc count", expected, writer.numDocs());
+    assertEquals("wrong doc count", expected, writer.getDocStats().numDocs);
     writer.close();
 
     // make sure searching sees right # hits
@@ -1120,7 +1150,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for(int i=0;i<35;i++) {
       addDoc(writer, i);
     }
-    assertEquals("wrong doc count", 35, writer.maxDoc());
+    assertEquals("wrong doc count", 35, writer.getDocStats().maxDoc);
     if (fullyMerged) {
       writer.forceMerge(1);
     }
@@ -1241,7 +1271,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (String name : oldNames) {
       Directory dir = oldIndexDirs.get(name);
       IndexReader r = DirectoryReader.open(dir);
-      TermsEnum terms = MultiFields.getTerms(r, "content").iterator();
+      TermsEnum terms = MultiTerms.getTerms(r, "content").iterator();
       BytesRef t = terms.next();
       assertNotNull(t);
 
@@ -1439,7 +1469,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       // create a bunch of dummy segments
       int id = 40;
-      RAMDirectory ramDir = new RAMDirectory();
+      Directory ramDir = new ByteBuffersDirectory();
       for (int i = 0; i < 3; i++) {
         // only use Log- or TieredMergePolicy, to make document addition predictable and not suddenly merge:
         MergePolicy mp = random().nextBoolean() ? newLogMergePolicy() : newTieredMergePolicy();
@@ -1485,7 +1515,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public static final String emptyIndex = "empty.7.0.0.zip";
+  public static final String emptyIndex = "empty.8.0.0.zip";
 
   public void testUpgradeEmptyOldIndex() throws Exception {
     Path oldIndexDir = createTempDir("emptyIndex");
@@ -1494,12 +1524,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     newIndexUpgrader(dir).upgrade();
 
-    checkAllSegmentsUpgraded(dir, 7);
+    checkAllSegmentsUpgraded(dir, 8);
     
     dir.close();
   }
 
-  public static final String moreTermsIndex = "moreterms.7.0.0.zip";
+  public static final String moreTermsIndex = "moreterms.8.0.0.zip";
 
   public void testMoreTerms() throws Exception {
     Path oldIndexDir = createTempDir("moreterms");
@@ -1511,7 +1541,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public static final String dvUpdatesIndex = "dvupdates.7.0.0.zip";
+  public static final String dvUpdatesIndex = "dvupdates.8.0.0.zip";
 
   private void assertNumericDocValues(LeafReader r, String f, String cf) throws IOException {
     NumericDocValues ndvf = r.getNumericDocValues(f);
@@ -1522,7 +1552,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals(ndvcf.longValue(), ndvf.longValue()*2);
     }
   }
-  
+
   private void assertBinaryDocValues(LeafReader r, String f, String cf) throws IOException {
     BinaryDocValues bdvf = r.getBinaryDocValues(f);
     BinaryDocValues bdvcf = r.getBinaryDocValues(cf);
@@ -1532,7 +1562,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals(getValue(bdvcf), getValue(bdvf)*2);
     }
   }
-  
+
   private void verifyDocValues(Directory dir) throws IOException {
     DirectoryReader reader = DirectoryReader.open(dir);
     for (LeafReaderContext context : reader.leaves()) {
@@ -1560,6 +1590,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     updateNumeric(writer, "1", "ndv2", "ndv2_c", 300L);
     updateBinary(writer, "1", "bdv1", "bdv1_c", 300L);
     updateBinary(writer, "1", "bdv2", "bdv2_c", 300L);
+
     writer.commit();
     verifyDocValues(dir);
     
@@ -1568,6 +1599,77 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.commit();
     verifyDocValues(dir);
     
+    writer.close();
+    dir.close();
+  }
+
+  public void testSoftDeletes() throws Exception {
+    Path oldIndexDir = createTempDir("dvupdates");
+    TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
+    Directory dir = newFSDirectory(oldIndexDir);
+    verifyUsesDefaultCodec(dir, dvUpdatesIndex);
+    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random())).setSoftDeletesField("__soft_delete");
+    IndexWriter writer = new IndexWriter(dir, conf);
+    int maxDoc = writer.getDocStats().maxDoc;
+    writer.updateDocValues(new Term("id", "1"),new NumericDocValuesField("__soft_delete", 1));
+
+    if (random().nextBoolean()) {
+      writer.commit();
+    }
+    writer.forceMerge(1);
+    writer.commit();
+    assertEquals(maxDoc-1, writer.getDocStats().maxDoc);
+    writer.close();
+    dir.close();
+  }
+
+  public void testDocValuesUpdatesWithNewField() throws Exception {
+    Path oldIndexDir = createTempDir("dvupdates");
+    TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
+    Directory dir = newFSDirectory(oldIndexDir);
+    verifyUsesDefaultCodec(dir, dvUpdatesIndex);
+
+    // update fields and verify index
+    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    // introduce a new field that we later update
+    writer.addDocument(Arrays.asList(new StringField("id", "" + Integer.MAX_VALUE, Field.Store.NO),
+        new NumericDocValuesField("new_numeric", 1),
+        new BinaryDocValuesField("new_binary", toBytes(1))));
+    writer.updateNumericDocValue(new Term("id", "1"), "new_numeric", 1);
+    writer.updateBinaryDocValue(new Term("id", "1"), "new_binary", toBytes(1));
+
+    writer.commit();
+    Runnable assertDV = () -> {
+      boolean found = false;
+      try (DirectoryReader reader = DirectoryReader.open(dir)) {
+        for (LeafReaderContext ctx : reader.leaves()) {
+          LeafReader leafReader = ctx.reader();
+          TermsEnum id = leafReader.terms("id").iterator();
+          if (id.seekExact(new BytesRef("1"))) {
+            PostingsEnum postings = id.postings(null, PostingsEnum.NONE);
+            NumericDocValues numericDocValues = leafReader.getNumericDocValues("new_numeric");
+            BinaryDocValues binaryDocValues = leafReader.getBinaryDocValues("new_binary");
+            int doc;
+            while ((doc = postings.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+              found = true;
+              assertTrue(binaryDocValues.advanceExact(doc));
+              assertTrue(numericDocValues.advanceExact(doc));
+              assertEquals(1, numericDocValues.longValue());
+              assertEquals(toBytes(1), binaryDocValues.binaryValue());
+            }
+          }
+        }
+      } catch (IOException e) {
+        throw new AssertionError(e);
+      }
+      assertTrue(found);
+    };
+    assertDV.run();
+    // merge all segments
+    writer.forceMerge(1);
+    writer.commit();
+    assertDV.run();
     writer.close();
     dir.close();
   }
@@ -1629,7 +1731,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       dir.close();
     }
   }
-  
+
   static long getValue(BinaryDocValues bdv) throws IOException {
     BytesRef term = bdv.binaryValue();
     int idx = term.offset;

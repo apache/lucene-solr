@@ -21,10 +21,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -94,7 +92,7 @@ public class SolrFeature extends Feature {
 
   @Override
   public LinkedHashMap<String,Object> paramsToMap() {
-    final LinkedHashMap<String,Object> params = new LinkedHashMap<>(3, 1.0f);
+    final LinkedHashMap<String,Object> params = defaultParamsToMap();
     if (df != null) {
       params.put("df", df);
     }
@@ -179,7 +177,7 @@ public class SolrFeature extends Feature {
         // leaving nothing for the phrase query to parse.
         if (query != null) {
           queryAndFilters.add(query);
-          solrQueryWeight = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
+          solrQueryWeight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
         } else {
           solrQueryWeight = null;
         }
@@ -206,13 +204,6 @@ public class SolrFeature extends Feature {
         return new LocalSolrQueryRequest(core, returnList);
       } else {
         return null;
-      }
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      if (solrQueryWeight != null) {
-        solrQueryWeight.extractTerms(terms);
       }
     }
 

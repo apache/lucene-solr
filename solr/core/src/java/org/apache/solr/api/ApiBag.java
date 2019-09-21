@@ -35,7 +35,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.PluginBag;
@@ -45,8 +47,6 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.JsonSchemaValidator;
-import org.apache.solr.common.util.PathTrie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -230,22 +230,28 @@ public class ApiBag {
   }
 
   public static class ReqHandlerToApi extends Api implements PermissionNameProvider {
-    SolrRequestHandler rh;
+     PluginBag.PluginHolder<SolrRequestHandler> rh;
 
     public ReqHandlerToApi(SolrRequestHandler rh, SpecProvider spec) {
+      super(spec);
+      this.rh = new PluginBag.PluginHolder(new PluginInfo(SolrRequestHandler.TYPE, Collections.emptyMap()),rh );
+    }
+
+    public ReqHandlerToApi(PluginBag.PluginHolder<SolrRequestHandler> rh, SpecProvider spec) {
       super(spec);
       this.rh = rh;
     }
 
     @Override
     public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-      rh.handleRequest(req, rsp);
+      rh.get().handleRequest(req, rsp);
     }
 
     @Override
     public Name getPermissionName(AuthorizationContext ctx) {
-      if (rh instanceof PermissionNameProvider) {
-        return ((PermissionNameProvider) rh).getPermissionName(ctx);
+      SolrRequestHandler handler = rh.get();
+      if (handler instanceof PermissionNameProvider) {
+        return ((PermissionNameProvider) handler).getPermissionName(ctx);
       }
       return null;
     }
@@ -288,7 +294,7 @@ public class ApiBag {
     try {
       parsedCommands = CommandOperation.readCommands(Collections.singleton(stream), new NamedList());
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse commands");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse commands",e);
     }
 
     if (validators == null || !validate) {    // no validation possible because we do not have a spec
@@ -339,21 +345,21 @@ public class ApiBag {
   }
 
   public static class LazyLoadedApi extends Api {
-
-    private final PluginBag.PluginHolder<SolrRequestHandler> holder;
     private Api delegate;
 
     protected LazyLoadedApi(SpecProvider specProvider, PluginBag.PluginHolder<SolrRequestHandler> lazyPluginHolder) {
       super(specProvider);
-      this.holder = lazyPluginHolder;
+      delegate =  new ReqHandlerToApi(lazyPluginHolder, spec);
     }
 
     @Override
     public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-      if (!holder.isLoaded()) {
-        delegate = new ReqHandlerToApi(holder.get(), ApiBag.EMPTY_SPEC);
-      }
       delegate.call(req, rsp);
+    }
+
+    @Override
+    public ValidatingJsonMap getSpec() {
+      return super.getSpec();
     }
   }
 

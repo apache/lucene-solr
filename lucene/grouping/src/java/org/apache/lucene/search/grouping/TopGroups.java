@@ -21,6 +21,8 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
+import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.search.TotalHits.Relation;
 
 /** Represents result returned by a grouping search.
  *
@@ -161,16 +163,20 @@ public class TopGroups<T> {
 
         if (docSort.equals(Sort.RELEVANCE)) {
           shardTopDocs[shardIDX] = new TopDocs(shardGroupDocs.totalHits,
-                                               shardGroupDocs.scoreDocs,
-                                               shardGroupDocs.maxScore);
+                                               shardGroupDocs.scoreDocs);
         } else {
           shardTopDocs[shardIDX] = new TopFieldDocs(shardGroupDocs.totalHits,
               shardGroupDocs.scoreDocs,
-              docSort.getSort(),
-              shardGroupDocs.maxScore);
+              docSort.getSort());
         }
+
+        for (int i = 0; i < shardTopDocs[shardIDX].scoreDocs.length; i++) {
+          shardTopDocs[shardIDX].scoreDocs[i].shardIndex = shardIDX;
+        }
+
         maxScore = Math.max(maxScore, shardGroupDocs.maxScore);
-        totalHits += shardGroupDocs.totalHits;
+        assert shardGroupDocs.totalHits.relation == Relation.EQUAL_TO;
+        totalHits += shardGroupDocs.totalHits.value;
         scoreSum += shardGroupDocs.score;
       }
 
@@ -218,7 +224,7 @@ public class TopGroups<T> {
       //System.out.println("SHARDS=" + Arrays.toString(mergedTopDocs.shardIndex));
       mergedGroupDocs[groupIDX] = new GroupDocs<>(groupScore,
                                                    maxScore,
-                                                   totalHits,
+                                                   new TotalHits(totalHits, TotalHits.Relation.EQUAL_TO),
                                                    mergedScoreDocs,
                                                    groupValue,
                                                    shardGroups[0].groups[groupIDX].groupSortValues);

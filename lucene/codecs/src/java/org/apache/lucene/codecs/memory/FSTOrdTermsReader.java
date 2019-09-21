@@ -31,18 +31,17 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
@@ -66,7 +65,7 @@ import org.apache.lucene.util.fst.Util;
  * FST-based terms dictionary reader.
  *
  * The FST index maps each term and its ord, and during seek 
- * the ord is used fetch metadata from a single block.
+ * the ord is used to fetch metadata from a single block.
  * The term dictionary is fully memory resident.
  *
  * @lucene.experimental
@@ -306,7 +305,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
     }
 
     // Only wraps common operations for PBF interact
-    abstract class BaseTermsEnum extends TermsEnum {
+    abstract class BaseTermsEnum extends org.apache.lucene.index.BaseTermsEnum {
 
       /* Current term's ord, starts from 0 */
       long ord;
@@ -435,9 +434,9 @@ public class FSTOrdTermsReader extends FieldsProducer {
       }
 
       @Override
-      public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+      public ImpactsEnum impacts(int flags) throws IOException {
         decodeMetaData();
-        return postingsReader.impacts(fieldInfo, state, scorer, flags);
+        return postingsReader.impacts(fieldInfo, state, flags);
       }
 
       // TODO: this can be achieved by making use of Util.getByOutput()
@@ -564,6 +563,8 @@ public class FSTOrdTermsReader extends FieldsProducer {
         /* fst stats */
         FST.Arc<Long> arc;
 
+        Long output;
+
         /* automaton stats */
         int state;
 
@@ -621,9 +622,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
 
       @Override
       void decodeStats() throws IOException {
-        final FST.Arc<Long> arc = topFrame().arc;
-        assert arc.nextFinalOutput == fstOutputs.getNoOutput();
-        ord = arc.output;
+        ord = topFrame().output;
         super.decodeStats();
       }
 
@@ -676,7 +675,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
           frame = newFrame();
           label = target.bytes[upto] & 0xff;
           frame = loadCeilFrame(label, topFrame(), frame);
-          if (frame == null || frame.arc.label != label) {
+          if (frame == null || frame.arc.label() != label) {
             break;
           }
           assert isValid(frame);  // target must be fetched from automaton
@@ -704,16 +703,16 @@ public class FSTOrdTermsReader extends FieldsProducer {
       }
 
       /** Virtual frame, never pop */
-      Frame loadVirtualFrame(Frame frame) throws IOException {
-        frame.arc.output = fstOutputs.getNoOutput();
-        frame.arc.nextFinalOutput = fstOutputs.getNoOutput();
+      Frame loadVirtualFrame(Frame frame) {
+        frame.output = fstOutputs.getNoOutput();
         frame.state = -1;
         return frame;
       }
 
       /** Load frame for start arc(node) on fst */
-      Frame loadFirstFrame(Frame frame) throws IOException {
+      Frame loadFirstFrame(Frame frame) {
         frame.arc = fst.getFirstArc(frame.arc);
+        frame.output = frame.arc.output();
         frame.state = 0;
         return frame;
       }
@@ -723,8 +722,9 @@ public class FSTOrdTermsReader extends FieldsProducer {
         if (!canGrow(top)) {
           return null;
         }
-        frame.arc = fst.readFirstRealTargetArc(top.arc.target, frame.arc, fstReader);
-        frame.state = fsa.step(top.state, frame.arc.label);
+        frame.arc = fst.readFirstRealTargetArc(top.arc.target(), frame.arc, fstReader);
+        frame.state = fsa.step(top.state, frame.arc.label());
+        frame.output = frame.arc.output();
         //if (TEST) System.out.println(" loadExpand frame="+frame);
         if (frame.state == -1) {
           return loadNextFrame(top, frame);
@@ -739,7 +739,8 @@ public class FSTOrdTermsReader extends FieldsProducer {
         }
         while (!frame.arc.isLast()) {
           frame.arc = fst.readNextRealArc(frame.arc, fstReader);
-          frame.state = fsa.step(top.state, frame.arc.label);
+          frame.output = frame.arc.output();
+          frame.state = fsa.step(top.state, frame.arc.label());
           if (frame.state != -1) {
             break;
           }
@@ -759,11 +760,12 @@ public class FSTOrdTermsReader extends FieldsProducer {
         if (arc == null) {
           return null;
         }
-        frame.state = fsa.step(top.state, arc.label);
+        frame.state = fsa.step(top.state, arc.label());
         //if (TEST) System.out.println(" loadCeil frame="+frame);
         if (frame.state == -1) {
           return loadNextFrame(top, frame);
         }
+        frame.output = arc.output();
         return frame;
       }
 
@@ -782,8 +784,8 @@ public class FSTOrdTermsReader extends FieldsProducer {
 
       void pushFrame(Frame frame) {
         final FST.Arc<Long> arc = frame.arc;
-        arc.output = fstOutputs.add(topFrame().arc.output, arc.output);
-        term = grow(arc.label);
+        frame.output = fstOutputs.add(topFrame().output, frame.output);
+        term = grow(arc.label());
         level++;
         assert frame == stack[level];
       }
@@ -837,7 +839,7 @@ public class FSTOrdTermsReader extends FieldsProducer {
     queue.add(startArc);
     while (!queue.isEmpty()) {
       final FST.Arc<T> arc = queue.remove(0);
-      final long node = arc.target;
+      final long node = arc.target();
       //System.out.println(arc);
       if (FST.targetHasArcs(arc) && !seen.get((int) node)) {
         seen.set((int) node);

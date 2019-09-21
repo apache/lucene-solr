@@ -30,6 +30,8 @@ import org.apache.lucene.analysis.core.DecimalDigitFilter;
 
 /**
  * {@link Analyzer} for Thai language. It uses {@link java.text.BreakIterator} to break words.
+ *
+ * @since 3.1
  */
 public final class ThaiAnalyzer extends StopwordAnalyzerBase {
   

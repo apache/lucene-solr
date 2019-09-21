@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -86,7 +87,7 @@ public class TestContextSuggestField extends LuceneTestCase {
       IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
         document.add(new ContextSuggestField("name", charsRefBuilder.toString(), 1, "sugg"));
         iw.addDocument(document);
-        iw.commit();
+        iw.commit(false);
       });
       assertTrue(expected.getMessage().contains("[0x1d]"));
     }
@@ -109,21 +110,21 @@ public class TestContextSuggestField extends LuceneTestCase {
     CharsRefBuilder builder = new CharsRefBuilder();
     builder.append("context1");
     builder.append(((char) ContextSuggestField.CONTEXT_SEPARATOR));
-    builder.append(((char) CompletionAnalyzer.SEP_LABEL));
+    builder.append((char) ConcatenateGraphFilter.SEP_LABEL);
     builder.append("input");
     expectedOutputs[0] = builder.toCharsRef().toString();
     builder.clear();
     builder.append("context2");
     builder.append(((char) ContextSuggestField.CONTEXT_SEPARATOR));
-    builder.append(((char) CompletionAnalyzer.SEP_LABEL));
+    builder.append((char) ConcatenateGraphFilter.SEP_LABEL);
     builder.append("input");
     expectedOutputs[1] = builder.toCharsRef().toString();
-    TokenStream stream = new CompletionTokenStreamTest.PayloadAttrToTypeAttrFilter(field.tokenStream(analyzer, null));
-    assertTokenStreamContents(stream, expectedOutputs, null, null, new String[]{payload.utf8ToString(), payload.utf8ToString()}, new int[]{1, 1}, null, null);
+    TokenStream stream = new TestSuggestField.PayloadAttrToTypeAttrFilter(field.tokenStream(analyzer, null));
+    assertTokenStreamContents(stream, expectedOutputs, null, null, new String[]{payload.utf8ToString(), payload.utf8ToString()}, new int[]{1, 0}, null, null);
 
     CompletionAnalyzer completionAnalyzer = new CompletionAnalyzer(analyzer);
-    stream = new CompletionTokenStreamTest.PayloadAttrToTypeAttrFilter(field.tokenStream(completionAnalyzer, null));
-    assertTokenStreamContents(stream, expectedOutputs, null, null, new String[]{payload.utf8ToString(), payload.utf8ToString()}, new int[]{1, 1}, null, null);
+    stream = new TestSuggestField.PayloadAttrToTypeAttrFilter(field.tokenStream(completionAnalyzer, null));
+    assertTokenStreamContents(stream, expectedOutputs, null, null, new String[]{payload.utf8ToString(), payload.utf8ToString()}, new int[]{1, 0}, null, null);
   }
 
   @Test
@@ -138,7 +139,7 @@ public class TestContextSuggestField extends LuceneTestCase {
       // mixing suggest field types for same field name should error out
       IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
         iw.addDocument(document);
-        iw.commit();
+        iw.commit(false);
       });
       assertTrue(expected.getMessage().contains("mixed types"));
     }

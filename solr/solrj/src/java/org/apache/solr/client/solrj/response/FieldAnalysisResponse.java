@@ -39,30 +39,30 @@ public class FieldAnalysisResponse extends AnalysisResponseBase {
     super.setResponse(response);
 
     @SuppressWarnings("unchecked")
-    NamedList<NamedList<NamedList<NamedList<List<NamedList<Object>>>>>> analysisNL 
-      = (NamedList<NamedList<NamedList<NamedList<List<NamedList<Object>>>>>>) response.get("analysis");
+    NamedList<NamedList<NamedList<NamedList<Object>>>> analysisNL
+      = (NamedList<NamedList<NamedList<NamedList<Object>>>>) response.get("analysis");
 
-    for (Map.Entry<String, NamedList<NamedList<List<NamedList<Object>>>>> entry 
+    for (Map.Entry<String, NamedList<NamedList<Object>>> entry
            : analysisNL.get("field_types")) {
 
       analysisByFieldTypeName.put(entry.getKey(), buildAnalysis(entry.getValue()));
     }
 
-    for (Map.Entry<String, NamedList<NamedList<List<NamedList<Object>>>>> entry 
+    for (Map.Entry<String, NamedList<NamedList<Object>>> entry
            : analysisNL.get("field_names")) {
 
       analysisByFieldName.put(entry.getKey(), buildAnalysis(entry.getValue()));
     }
   }
 
-  private Analysis buildAnalysis(NamedList<NamedList<List<NamedList<Object>>>> value) {
+  private Analysis buildAnalysis(NamedList<NamedList<Object>> value) {
       Analysis analysis = new Analysis();
       
-      NamedList<List<NamedList<Object>>> queryNL = value.get("query");
+      NamedList<Object> queryNL = value.get("query");
       List<AnalysisPhase> phases = (queryNL == null) ? null : buildPhases(queryNL);
       analysis.setQueryPhases(phases);
 
-      NamedList<List<NamedList<Object>>> indexNL = value.get("index");
+      NamedList<Object> indexNL = value.get("index");
       phases = buildPhases(indexNL);
       analysis.setIndexPhases(phases);
       

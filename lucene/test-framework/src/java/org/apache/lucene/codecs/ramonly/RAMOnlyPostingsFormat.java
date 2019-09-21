@@ -34,6 +34,7 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
@@ -45,7 +46,6 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Accountable;
@@ -404,7 +404,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
   }
 
-  static class RAMTermsEnum extends TermsEnum {
+  static class RAMTermsEnum extends BaseTermsEnum {
     Iterator<String> it;
     String current;
     private final RAMField ramField;
@@ -444,7 +444,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
         }
       }
     }
-
+    
     @Override
     public void seekExact(long ord) {
       throw new UnsupportedOperationException();
@@ -477,8 +477,8 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
-      return new SlowImpactsEnum(postings(null, PostingsEnum.FREQS), scorer.score(Float.MAX_VALUE, 1));
+    public ImpactsEnum impacts(int flags) throws IOException {
+      return new SlowImpactsEnum(postings(null, PostingsEnum.FREQS));
     }
   }
 

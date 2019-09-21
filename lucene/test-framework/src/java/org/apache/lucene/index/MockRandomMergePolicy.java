@@ -49,14 +49,12 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer) {
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) {
     MergeSpecification mergeSpec = null;
     //System.out.println("MRMP: findMerges sis=" + segmentInfos);
 
-    int numSegments = segmentInfos.size();
-
     List<SegmentCommitInfo> segments = new ArrayList<>();
-    final Set<SegmentCommitInfo> merging = writer.getMergingSegments();
+    final Set<SegmentCommitInfo> merging = mergeContext.getMergingSegments();
 
     for(SegmentCommitInfo sipc : segmentInfos) {
       if (!merging.contains(sipc)) {
@@ -64,7 +62,7 @@ public class MockRandomMergePolicy extends MergePolicy {
       }
     }
 
-    numSegments = segments.size();
+    int numSegments = segments.size();
 
     if (numSegments > 1 && (numSegments > 30 || random.nextInt(5) == 3)) {
 
@@ -85,7 +83,7 @@ public class MockRandomMergePolicy extends MergePolicy {
 
   @Override
   public MergeSpecification findForcedMerges(
-       SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer)
+      SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext)
     throws IOException {
 
     final List<SegmentCommitInfo> eligibleSegments = new ArrayList<>();
@@ -97,7 +95,7 @@ public class MockRandomMergePolicy extends MergePolicy {
 
     //System.out.println("MRMP: findMerges sis=" + segmentInfos + " eligible=" + eligibleSegments);
     MergeSpecification mergeSpec = null;
-    if (eligibleSegments.size() > 1 || (eligibleSegments.size() == 1 && isMerged(segmentInfos, eligibleSegments.get(0), writer) == false)) {
+    if (eligibleSegments.size() > 1 || (eligibleSegments.size() == 1 && isMerged(segmentInfos, eligibleSegments.get(0), mergeContext) == false)) {
       mergeSpec = new MergeSpecification();
       // Already shuffled having come out of a set but
       // shuffle again for good measure:
@@ -126,12 +124,12 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
-    return findMerges(null, segmentInfos, writer);
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+    return findMerges(null, segmentInfos, mergeContext);
   }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo, IndexWriter writer) throws IOException {
+  public boolean useCompoundFile(SegmentInfos infos, SegmentCommitInfo mergedInfo, MergeContext mergeContext) throws IOException {
     // 80% of the time we create CFS:
     return random.nextInt(5) != 1;
   }

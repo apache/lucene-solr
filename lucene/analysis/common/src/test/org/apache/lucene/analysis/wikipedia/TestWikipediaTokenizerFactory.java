@@ -48,7 +48,7 @@ public class TestWikipediaTokenizerFactory extends BaseTokenStreamFactoryTestCas
 
   public void testTokenizerTokensOnly() throws Exception {
     String text = "This is a [[Category:foo]]";
-    Tokenizer tf = tokenizerFactory(WIKIPEDIA, TOKEN_OUTPUT, new Integer( WikipediaTokenizer.TOKENS_ONLY).toString()).create(newAttributeFactory());
+    Tokenizer tf = tokenizerFactory(WIKIPEDIA, TOKEN_OUTPUT, Integer.toString(WikipediaTokenizer.TOKENS_ONLY)).create(newAttributeFactory());
     tf.setReader(new StringReader(text));
     assertTokenStreamContents(tf,
                               new String[] { "This", "is", "a", "foo" },
@@ -64,7 +64,7 @@ public class TestWikipediaTokenizerFactory extends BaseTokenStreamFactoryTestCas
       Set<String> untoks = new HashSet<>();
       untoks.add(WikipediaTokenizer.CATEGORY);
       untoks.add(WikipediaTokenizer.ITALICS);
-      Tokenizer tf = tokenizerFactory(WIKIPEDIA, TOKEN_OUTPUT, new Integer(WikipediaTokenizer.UNTOKENIZED_ONLY).toString(), UNTOKENIZED_TYPES, WikipediaTokenizer.CATEGORY + ", " + WikipediaTokenizer.ITALICS).create(newAttributeFactory());
+      Tokenizer tf = tokenizerFactory(WIKIPEDIA, TOKEN_OUTPUT, Integer.toString(WikipediaTokenizer.UNTOKENIZED_ONLY), UNTOKENIZED_TYPES, WikipediaTokenizer.CATEGORY + ", " + WikipediaTokenizer.ITALICS).create(newAttributeFactory());
       tf.setReader(new StringReader(test));
       assertTokenStreamContents(tf,
                                 new String[] { "a b c d", "e f g", "link", "here", "link",
@@ -77,7 +77,7 @@ public class TestWikipediaTokenizerFactory extends BaseTokenStreamFactoryTestCas
 
     public void testTokenizerBoth() throws Exception {
       String test = "[[Category:a b c d]] [[Category:e f g]] [[link here]] [[link there]] ''italics here'' something ''more italics'' [[Category:h   i   j]]";
-      Tokenizer tf = tokenizerFactory(WIKIPEDIA, TOKEN_OUTPUT, new Integer(WikipediaTokenizer.BOTH).toString(), UNTOKENIZED_TYPES, WikipediaTokenizer.CATEGORY + ", " + WikipediaTokenizer.ITALICS).create(newAttributeFactory());
+      Tokenizer tf = tokenizerFactory(WIKIPEDIA, TOKEN_OUTPUT, Integer.toString(WikipediaTokenizer.BOTH), UNTOKENIZED_TYPES, WikipediaTokenizer.CATEGORY + ", " + WikipediaTokenizer.ITALICS).create(newAttributeFactory());
       tf.setReader(new StringReader(test));
       assertTokenStreamContents(tf,
                                 new String[] { "a b c d", "a", "b", "c", "d", "e f g", "e", "f", "g",

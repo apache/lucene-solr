@@ -32,13 +32,14 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.ElisionFilter;
 import org.apache.lucene.util.IOUtils;
 
 /**
  * {@link Analyzer} for Italian.
+ *
+ * @since 3.1
  */
 public final class ItalianAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
@@ -117,15 +118,14 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
    * @return A
    *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link ElisionFilter}, {@link LowerCaseFilter}, {@link StopFilter}
+   *         {@link ElisionFilter}, {@link LowerCaseFilter}, {@link StopFilter}
    *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link ItalianLightStemFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
-    result = new ElisionFilter(result, DEFAULT_ARTICLES);
+    TokenStream result = new ElisionFilter(source, DEFAULT_ARTICLES);
     result = new LowerCaseFilter(result);
     result = new StopFilter(result, stopwords);
     if(!stemExclusionSet.isEmpty())
@@ -136,8 +136,7 @@ public final class ItalianAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
-    TokenStream result = new StandardFilter(in);
-    result = new ElisionFilter(result, DEFAULT_ARTICLES);
+    TokenStream result = new ElisionFilter(in, DEFAULT_ARTICLES);
     result = new LowerCaseFilter(result);
     return result;
   }

@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 
 public class ExactSharedStatsCache extends ExactStatsCache {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // local stats obtained from shard servers
   private final Map<String,Map<String,TermStats>> perShardTermStats = new ConcurrentHashMap<>();
@@ -40,7 +40,7 @@ public class ExactSharedStatsCache extends ExactStatsCache {
 
   @Override
   public StatsSource get(SolrQueryRequest req) {
-    LOG.debug("total={}, cache {}", currentGlobalColStats, currentGlobalTermStats.size());
+    log.debug("total={}, cache {}", currentGlobalColStats, currentGlobalTermStats.size());
     return new ExactStatsSource(currentGlobalTermStats, currentGlobalColStats);
   }
   
@@ -55,7 +55,7 @@ public class ExactSharedStatsCache extends ExactStatsCache {
 
   @Override
   protected void printStats(SolrQueryRequest req) {
-    LOG.debug("perShardColStats={}, perShardTermStats={}", perShardColStats, perShardTermStats);
+    log.debug("perShardColStats={}, perShardTermStats={}", perShardColStats, perShardTermStats);
   }
 
   @Override

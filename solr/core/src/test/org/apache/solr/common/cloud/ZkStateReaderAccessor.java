@@ -28,7 +28,7 @@ public class ZkStateReaderAccessor {
     this.zkStateReader = zkStateReader;
   }
 
-  public Set<CollectionStateWatcher> getStateWatchers(String collection) {
+  public Set<DocCollectionWatcher> getStateWatchers(String collection) {
     return zkStateReader.getStateWatchers(collection);
   }
 

@@ -33,7 +33,10 @@ import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
+import org.apache.lucene.analysis.ja.dict.BinaryDictionary.ResourceScheme;
 import org.apache.lucene.analysis.ja.dict.ConnectionCosts;
+import org.apache.lucene.analysis.ja.dict.TokenInfoDictionary;
+import org.apache.lucene.analysis.ja.dict.UnknownDictionary;
 import org.apache.lucene.analysis.ja.dict.UserDictionary;
 import org.apache.lucene.analysis.ja.tokenattributes.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -399,14 +402,14 @@ public class
         new String[] { "これ", "は", "本", "で", "は", "ない" },
         new int[] { 0, 2, 3, 4, 5, 6 },
         new int[] { 2, 3, 4, 5, 6, 8 },
-        new Integer(8)
+        8
     );
 
     assertTokenStreamContents(analyzerNoPunct.tokenStream("foo", "これは本ではない    "),
         new String[] { "これ", "は", "本", "で", "は", "ない"  },
         new int[] { 0, 2, 3, 4, 5, 6, 8 },
         new int[] { 2, 3, 4, 5, 6, 8, 9 },
-        new Integer(12)
+        12
     );
   }
 
@@ -417,7 +420,7 @@ public class
                               new String[] { "関西", "国際", "空港", "に", "行っ", "た"  },
                               new int[] { 0, 2, 4, 6, 7, 9 },
                               new int[] { 2, 4, 6, 7, 9, 10 },
-                              new Integer(10)
+                              10
     );
   }
 
@@ -427,7 +430,7 @@ public class
                               new String[] { "朝青龍"  },
                               new int[] { 0 },
                               new int[] { 3 },
-                              new Integer(3)
+                              3
     );
   }
 
@@ -437,8 +440,25 @@ public class
                               new String[] { "a", "b", "cd"  },
                               new int[] { 0, 1, 2 },
                               new int[] { 1, 2, 4 },
-                              new Integer(4)
+                              4
     );
+  }
+
+  // Make sure loading custom dictionaries from classpath works:
+  public void testCustomDictionary() throws Exception {
+    Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(),
+        new TokenInfoDictionary(ResourceScheme.CLASSPATH, "org/apache/lucene/analysis/ja/dict/TokenInfoDictionary"),
+        new UnknownDictionary(ResourceScheme.CLASSPATH, "org/apache/lucene/analysis/ja/dict/UnknownDictionary"),
+        new ConnectionCosts(ResourceScheme.CLASSPATH, "org/apache/lucene/analysis/ja/dict/ConnectionCosts"),
+        readDict(), true, Mode.SEARCH);
+    try (Analyzer a = makeAnalyzer(tokenizer)) {
+      assertTokenStreamContents(a.tokenStream("foo", "abcd"),
+                                new String[] { "a", "b", "cd"  },
+                                new int[] { 0, 1, 2 },
+                                new int[] { 1, 2, 4 },
+                                4
+                                );
+    }
   }
 
   // HMM: fails (segments as a/b/cd/efghij)... because the
@@ -453,7 +473,7 @@ public class
                               new String[] { "ab", "cd", "efg", "hij"  },
                               new int[] { 0, 2, 4, 7 },
                               new int[] { 2, 4, 7, 10 },
-                              new Integer(10)
+                              10
     );
   }
   */
@@ -835,5 +855,17 @@ public class
     tokenizer.setReader(new StringReader(doc));
     tokenizer.reset();
     while (tokenizer.incrementToken());
+  }
+
+  public void testPatchedSystemDict() throws Exception {
+    assertAnalyzesTo(analyzer, "令和元年",
+        new String[]{"令和", "元年"},
+        new int[]{0, 2},
+        new int[]{2, 4});
+
+    assertAnalyzesTo(analyzerNormal, "令和元年",
+        new String[]{"令和", "元年"},
+        new int[]{0, 2},
+        new int[]{2, 4});
   }
 }

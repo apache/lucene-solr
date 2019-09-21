@@ -25,8 +25,8 @@ import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -115,7 +115,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
        *  terms could be collected. If {@code false} is returned, the enum is
        *  left positioned on the next term. */
       private boolean collectTerms(LeafReaderContext context, TermsEnum termsEnum, List<TermAndState> terms) throws IOException {
-        final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, BooleanQuery.getMaxClauseCount());
+        final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
         for (int i = 0; i < threshold; ++i) {
           final BytesRef term = termsEnum.next();
           if (term == null) {
@@ -185,7 +185,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
         if (disi == null) {
           return null;
         }
-        return new ConstantScoreScorer(this, score(), disi);
+        return new ConstantScoreScorer(this, score(), scoreMode, disi);
       }
 
       @Override
@@ -200,6 +200,18 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
           }
           return new DefaultBulkScorer(scorer);
         }
+      }
+
+      @Override
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        final Terms terms = context.reader().terms(query.field);
+        if (terms == null) {
+          return null;
+        }
+        if (terms.hasPositions() == false) {
+          return super.matches(context, doc);
+        }
+        return MatchesUtils.forField(query.field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, query, query.field, query.getTermsEnum(terms)));
       }
 
       @Override
@@ -218,5 +230,12 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
       }
 
     };
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(getField())) {
+      query.visit(visitor.getSubVisitor(Occur.FILTER, this));
+    }
   }
 }

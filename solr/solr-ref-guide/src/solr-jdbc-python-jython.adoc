@@ -29,7 +29,7 @@ Python supports accessing JDBC using the https://pypi.python.org/pypi/JayDeBeApi
 [source,bash]
 ----
 #!/usr/bin/env bash
-# Java 8 must already be installed
+# Java must already be installed
 
 pip install JayDeBeApi
 
@@ -70,7 +70,7 @@ Jython supports accessing JDBC natively with Java interfaces or with the zxJDBC 
 [source,bash]
 ----
 #!/usr/bin/env bash
-# Java 8 and Jython must already be installed
+# Java and Jython must already be installed
 
 export CLASSPATH="$(echo $(ls /opt/solr/dist/solr-solrj* /opt/solr/dist/solrj-lib/*) | tr ' ' ':')"
 

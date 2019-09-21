@@ -19,16 +19,16 @@ package org.apache.lucene.store;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.store.RAMDirectory;      // javadocs
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 
 // TODO
@@ -36,8 +36,7 @@ import org.apache.lucene.util.IOUtils;
 //   - rename to MergeCacheingDir?  NRTCachingDir
 
 /**
- * Wraps a {@link RAMDirectory}
- * around any provided delegate directory, to
+ * Wraps a RAM-resident directory around any provided delegate directory, to
  * be used during NRT search.
  *
  * <p>This class is likely only useful in a near-real-time
@@ -68,9 +67,24 @@ import org.apache.lucene.util.IOUtils;
  */
 
 public class NRTCachingDirectory extends FilterDirectory implements Accountable {
+  private final AtomicBoolean closed = new AtomicBoolean(false);
 
-  private final RAMDirectory cache = new RAMDirectory();
+  /**
+   * Current total size of files in the cache is maintained separately for faster access.
+   */
+  private final AtomicLong cacheSize = new AtomicLong();
 
+  /**
+   * RAM-resident directory that updates {@link #cacheSize} when files are successfully closed.
+   */
+  private final ByteBuffersDirectory cacheDirectory = new ByteBuffersDirectory(
+      new SingleInstanceLockFactory(),
+      ByteBuffersDataOutput::new,
+      (fileName, content) -> {
+        cacheSize.addAndGet(content.size());
+        return ByteBuffersDirectory.OUTPUT_AS_MANY_BUFFERS_LUCENE.apply(fileName, content);
+      }
+  );
 
   private final long maxMergeSizeBytes;
   private final long maxCachedBytes;
@@ -84,8 +98,8 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
    *  {@code <= maxCachedMB} */
   public NRTCachingDirectory(Directory delegate, double maxMergeSizeMB, double maxCachedMB) {
     super(delegate);
-    maxMergeSizeBytes = (long) (maxMergeSizeMB*1024*1024);
-    maxCachedBytes = (long) (maxCachedMB*1024*1024);
+    maxMergeSizeBytes = (long) (maxMergeSizeMB * 1024 * 1024);
+    maxCachedBytes = (long) (maxCachedMB * 1024 * 1024);
   }
 
 
@@ -97,10 +111,10 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
   @Override
   public synchronized String[] listAll() throws IOException {
     final Set<String> files = new HashSet<>();
-    for(String f : cache.listAll()) {
+    for (String f : cacheDirectory.listAll()) {
       files.add(f);
     }
-    for(String f : in.listAll()) {
+    for (String f : in.listAll()) {
       files.add(f);
     }
     String[] result = files.toArray(new String[files.size()]);
@@ -113,8 +127,8 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     if (VERBOSE) {
       System.out.println("nrtdir.deleteFile name=" + name);
     }
-    if (cache.fileNameExists(name)) {
-      cache.deleteFile(name);
+    if (cacheDirectory.fileExists(name)) {
+      cacheDirectory.deleteFile(name);
     } else {
       in.deleteFile(name);
     }
@@ -122,15 +136,19 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
 
   @Override
   public synchronized long fileLength(String name) throws IOException {
-    if (cache.fileNameExists(name)) {
-      return cache.fileLength(name);
+    if (cacheDirectory.fileExists(name)) {
+      return cacheDirectory.fileLength(name);
     } else {
       return in.fileLength(name);
     }
   }
 
   public String[] listCachedFiles() {
-    return cache.listAll();
+    try {
+      return cacheDirectory.listAll();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   @Override
@@ -142,7 +160,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
       if (VERBOSE) {
         System.out.println("  to cache");
       }
-      return cache.createOutput(name, context);
+      return cacheDirectory.createOutput(name, context);
     } else {
       return in.createOutput(name, context);
     }
@@ -162,7 +180,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
   @Override
   public void rename(String source, String dest) throws IOException {
     unCache(source);
-    if (cache.fileNameExists(dest)) {
+    if (cacheDirectory.fileExists(dest)) {
       throw new IllegalArgumentException("target file " + dest + " already exists");
     }
     in.rename(source, dest);
@@ -173,11 +191,11 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     if (VERBOSE) {
       System.out.println("nrtdir.openInput name=" + name);
     }
-    if (cache.fileNameExists(name)) {
+    if (cacheDirectory.fileExists(name)) {
       if (VERBOSE) {
         System.out.println("  from cache");
       }
-      return cache.openInput(name, context);
+      return cacheDirectory.openInput(name, context);
     } else {
       return in.openInput(name, context);
     }
@@ -192,25 +210,20 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     // it for defensive reasons... or in case the app is
     // doing something custom (creating outputs directly w/o
     // using IndexWriter):
-    boolean success = false;
-    try {
-      if (cache.isOpen) {
-        for(String fileName : cache.listAll()) {
-          unCache(fileName);
-        }
-      }
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(cache, in);
-      } else {
-        IOUtils.closeWhileHandlingException(cache, in);
-      }
-    }
+    IOUtils.close(
+        () -> {
+          if (!closed.getAndSet(true)) {
+            for(String fileName : cacheDirectory.listAll()) {
+              unCache(fileName);
+            }
+          }
+        },
+        cacheDirectory,
+        in);
   }
 
   /** Subclass can override this to customize logic; return
-   *  true if this file should be written to the RAMDirectory. */
+   *  true if this file should be written to the RAM-based cache first. */
   protected boolean doCacheWrite(String name, IOContext context) {
     //System.out.println(Thread.currentThread().getName() + ": CACHE check merge=" + merge + " size=" + (merge==null ? 0 : merge.estimatedMergeBytes));
 
@@ -221,7 +234,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
       bytes = context.flushInfo.estimatedSegmentSize;
     }
 
-    return (bytes <= maxMergeSizeBytes) && (bytes + cache.ramBytesUsed()) <= maxCachedBytes;
+    return (bytes <= maxMergeSizeBytes) && (bytes + cacheSize.get()) <= maxCachedBytes;
   }
 
   @Override
@@ -237,11 +250,11 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     Directory first;
     Directory second;
     if (doCacheWrite(prefix, context)) {
-      first = cache;
+      first = cacheDirectory;
       second = in;
     } else {
       first = in;
-      second = cache;
+      second = cacheDirectory;
     }
 
     IndexOutput out = null;
@@ -276,54 +289,34 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
    *  there's some unexpected error. */
   static boolean slowFileExists(Directory dir, String fileName) throws IOException {
     try {
-      dir.openInput(fileName, IOContext.DEFAULT).close();
+      dir.fileLength(fileName);
       return true;
     } catch (NoSuchFileException | FileNotFoundException e) {
       return false;
     }
   }
 
-  private final Object uncacheLock = new Object();
-
   private void unCache(String fileName) throws IOException {
-    // Only let one thread uncache at a time; this only
-    // happens during commit() or close():
-    synchronized(uncacheLock) {
+    // Must sync here because other sync methods have
+    // if (cache.fileNameExists(name)) { ... } else { ... }:
+    synchronized (this) {
       if (VERBOSE) {
         System.out.println("nrtdir.unCache name=" + fileName);
       }
-      if (!cache.fileNameExists(fileName)) {
+      if (!cacheDirectory.fileExists(fileName)) {
         // Another thread beat us...
         return;
       }
       assert slowFileExists(in, fileName) == false: "fileName=" + fileName + " exists both in cache and in delegate";
 
-      final IOContext context = IOContext.DEFAULT;
-      final IndexOutput out = in.createOutput(fileName, context);
-      IndexInput in = null;
-      try {
-        in = cache.openInput(fileName, context);
-        out.copyBytes(in, in.length());
-      } finally {
-        IOUtils.close(in, out);
-      }
-
-      // Lock order: uncacheLock -> this
-      synchronized(this) {
-        // Must sync here because other sync methods have
-        // if (cache.fileNameExists(name)) { ... } else { ... }:
-        cache.deleteFile(fileName);
-      }
+      in.copyFrom(cacheDirectory, fileName, fileName, IOContext.DEFAULT);
+      cacheSize.addAndGet(-cacheDirectory.fileLength(fileName));
+      cacheDirectory.deleteFile(fileName);
     }
   }
 
   @Override
   public long ramBytesUsed() {
-    return cache.ramBytesUsed();
-  }
-  
-  @Override
-  public Collection<Accountable> getChildResources() {
-    return Collections.singleton(Accountables.namedAccountable("cache", cache));
+    return cacheSize.get();
   }
 }

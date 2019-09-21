@@ -34,7 +34,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
 
 public class TestSolrXml extends SolrTestCaseJ4 {
 
@@ -68,12 +68,14 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     CloudConfig ccfg = cfg.getCloudConfig();
     UpdateShardHandlerConfig ucfg = cfg.getUpdateShardHandlerConfig();
     PluginInfo[] backupRepoConfigs = cfg.getBackupRepositoryPlugins();
-    
+
+    assertEquals("maxBooleanClauses", (Integer) 42, cfg.getBooleanQueryMaxClauseCount());
     assertEquals("core admin handler class", "testAdminHandler", cfg.getCoreAdminHandlerClass());
     assertEquals("collection handler class", "testCollectionsHandler", cfg.getCollectionsHandlerClass());
     assertEquals("info handler class", "testInfoHandler", cfg.getInfoHandlerClass());
     assertEquals("config set handler class", "testConfigSetsHandler", cfg.getConfigSetsHandlerClass());
     assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount(false));
+    assertEquals("replay update threads", 100, cfg.getReplayUpdatesThreads());
     assertThat("core root dir", cfg.getCoreRootDirectory().toString(), containsString("testCoreRootDirectory"));
     assertEquals("distrib conn timeout", 22, cfg.getUpdateShardHandlerConfig().getDistributedConnectionTimeout());
     assertEquals("distrib socket timeout", 33, cfg.getUpdateShardHandlerConfig().getDistributedSocketTimeout());
@@ -126,6 +128,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   public void testExplicitNullGivesDefaults() throws IOException {
     String solrXml = "<solr>" +
+        "<null name=\"maxBooleanClauses\"/>" +
         "<solrcloud>" +
         "<str name=\"host\">host</str>" +
         "<int name=\"hostPort\">8983</int>" +
@@ -134,6 +137,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
         "</solrcloud></solr>";
 
     NodeConfig cfg = SolrXmlConfig.fromString(loader, solrXml);
+    assertNull("maxBooleanClauses", cfg.getBooleanQueryMaxClauseCount()); // default is null
     assertEquals("leaderVoteWait", 180000, cfg.getCloudConfig().getLeaderVoteWait());
   }
 

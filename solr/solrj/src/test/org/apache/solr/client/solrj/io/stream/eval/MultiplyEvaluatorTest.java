@@ -16,11 +16,10 @@
  */
 package org.apache.solr.client.solrj.io.stream.eval;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.MultiplyEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -29,7 +28,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class MultiplyEvaluatorTest extends LuceneTestCase {
+public class MultiplyEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
@@ -87,7 +86,7 @@ public class MultiplyEvaluatorTest extends LuceneTestCase {
     Assert.assertEquals(6.5D, result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void multTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;
@@ -97,7 +96,7 @@ public class MultiplyEvaluatorTest extends LuceneTestCase {
     Assert.assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void multTwoFieldsWithNull() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;
@@ -121,7 +120,7 @@ public class MultiplyEvaluatorTest extends LuceneTestCase {
     Assert.assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void multTwoFieldsWithMissingField() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;

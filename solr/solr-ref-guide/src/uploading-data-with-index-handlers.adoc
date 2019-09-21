@@ -87,22 +87,22 @@ The `<commit>` operation writes all documents loaded since the last commit to on
 
 Commits may be issued explicitly with a `<commit/>` message, and can also be triggered from `<autocommit>` parameters in `solrconfig.xml`.
 
-The `<optimize>` operation requests Solr to merge internal data structures. For a large index, optimization will take some time to complete, but by merging many small segment files into a larger one, search performance may improve. If you are using Solr's replication mechanism to distribute searches across many systems, be aware that after an optimize, a complete index will need to be transferred.
+The `<optimize>` operation requests Solr to merge internal data structures. For a large index, optimization will take some time to complete, but by merging many small segment files into larger segments, search performance may improve. If you are using Solr's replication mechanism to distribute searches across many systems, be aware that after an optimize, a complete index will need to be transferred.
 
-WARNING: You should only consider using optimize on static indexes, i.e., indexes that can be optimized as part of the regular update process (say once-a-day updates). Applications requiring NRT functionalty are discouraged from using optimize.
+WARNING: You should only consider using optimize on static indexes, i.e., indexes that can be optimized as part of the regular update process (say once-a-day updates). Applications requiring NRT functionality should not use optimize.
 
 The `<commit>` and `<optimize>` elements accept these optional attributes:
 
 `waitSearcher`::
 Default is `true`. Blocks until a new searcher is opened and registered as the main query searcher, making the changes visible.
 
-`expungeDeletes`:: (commit only) Default is `false`. Merges segments that have more than 10% deleted docs, expunging them in the process.
-
+`expungeDeletes`:: (commit only) Default is `false`. Merges segments that have more than 10% deleted docs, expunging the deleted documents in the process. Resulting segments will respect `maxMergedSegmentMB`.
++
 WARNING: expungeDeletes is "less expensive" than optimize, but the same warnings apply.
 
-`maxSegments`:: (optimize only) Default is `1`. Merges the segments down to no more than this number of segments.
+`maxSegments`:: (optimize only) Default is unlimited, resulting segments respect the `maxMergedSegmentMB` setting. Makes a best effort attempt to merge the segments down to no more than this number of segments but does not guarantee that the goal will be achieved. Unless there is tangible evidence that optimizing to a small number of segments is beneficial, this parameter should be omitted and the default behavior accepted.
 
-Here are examples of <commit> and <optimize> using optional attributes:
+Here are examples of `<commit>` and `<optimize>` using optional attributes:
 
 [source,xml]
 ----
@@ -113,7 +113,10 @@ Here are examples of <commit> and <optimize> using optional attributes:
 
 ==== Delete Operations
 
-Documents can be deleted from the index in two ways. "Delete by ID" deletes the document with the specified ID, and can be used only if a UniqueID field has been defined in the schema. "Delete by Query" deletes all documents matching a specified query, although `commitWithin` is ignored for a Delete by Query. A single delete message can contain multiple delete operations.
+Documents can be deleted from the index in two ways.
+"Delete by ID" deletes the document with the specified ID, and can be used only if a UniqueID field has been defined in the schema.
+It doesn't work for child/nested docs.
+"Delete by Query" deletes all documents matching a specified query, although `commitWithin` is ignored for a Delete by Query. A single delete message can contain multiple delete operations.
 
 [source,xml]
 ----
@@ -212,7 +215,7 @@ The status field will be non-zero in case of failure.
 
 === Using XSLT to Transform XML Index Updates
 
-The UpdateRequestHandler allows you to index any arbitrary XML using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation]. You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#config-sets,config set>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
+The UpdateRequestHandler allows you to index any arbitrary XML using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation]. You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#config-sets,configset>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
 
 Here is an example XSLT stylesheet:
 
@@ -378,7 +381,7 @@ Or a list of document IDs:
 { "delete":["id1","id2"] }
 ----
 
-The value of a "delete" can be an array which contains a list of zero or more id's to be deleted. It is not a range (start and end).
+Note: Delete-by-id doesn't work for child/nested docs.
 
 You can also specify `\_version_` with each "delete":
 
@@ -538,79 +541,3 @@ In addition to the `/update` handler, there is an additional CSV specific reques
 |===
 
 The `/update/csv` path may be useful for clients sending in CSV formatted update commands from applications where setting the Content-Type proves difficult.
-
-== Nested Child Documents
-
-Solr indexes nested documents in blocks as a way to model documents containing other documents, such as a blog post parent document and comments as child documents -- or products as parent documents and sizes, colors, or other variations as child documents. At query time, the <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> can search these relationships. In terms of performance, indexing the relationships between documents may be more efficient than attempting to do joins only at query time, since the relationships are already stored in the index and do not need to be computed.
-
-Nested documents may be indexed via either the XML or JSON data syntax (or using <<using-solrj.adoc#using-solrj,SolrJ)>> - but regardless of syntax, you must include a field that identifies the parent document as a parent; it can be any field that suits this purpose, and it will be used as input for the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>>.
-
-To support nested documents, the schema must include an indexed/non-stored field `\_root_`. The value of that field is populated automatically and is the same for all documents in the block, regardless of the inheritance depth.
-
-=== XML Examples
-
-For example, here are two documents and their child documents:
-
-[source,xml]
-----
-<add>
-  <doc>
-  <field name="id">1</field>
-  <field name="title">Solr adds block join support</field>
-  <field name="content_type">parentDocument</field>
-    <doc>
-      <field name="id">2</field>
-      <field name="comments">SolrCloud supports it too!</field>
-    </doc>
-  </doc>
-  <doc>
-    <field name="id">3</field>
-    <field name="title">New Lucene and Solr release is out</field>
-    <field name="content_type">parentDocument</field>
-    <doc>
-      <field name="id">4</field>
-      <field name="comments">Lots of new features</field>
-    </doc>
-  </doc>
-</add>
-----
-
-In this example, we have indexed the parent documents with the field `content_type`, which has the value "parentDocument". We could have also used a boolean field, such as `isParent`, with a value of "true", or any other similar approach.
-
-=== JSON Examples
-
-This example is equivalent to the XML example above, note the special `\_childDocuments_` key need to indicate the nested documents in JSON.
-
-[source,json]
-----
-[
-  {
-    "id": "1",
-    "title": "Solr adds block join support",
-    "content_type": "parentDocument",
-    "_childDocuments_": [
-      {
-        "id": "2",
-        "comments": "SolrCloud supports it too!"
-      }
-    ]
-  },
-  {
-    "id": "3",
-    "title": "New Lucene and Solr release is out",
-    "content_type": "parentDocument",
-    "_childDocuments_": [
-      {
-        "id": "4",
-        "comments": "Lots of new features"
-      }
-    ]
-  }
-]
-----
-
-.Note
-[NOTE]
-====
-One limitation of indexing nested documents is that the whole block of parent-children documents must be updated together whenever any changes are required. In other words, even if a single child document or the parent document is changed, the whole block of parent-child documents must be indexed together.
-====

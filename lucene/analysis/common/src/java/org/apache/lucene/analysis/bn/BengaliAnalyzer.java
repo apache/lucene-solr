@@ -17,18 +17,24 @@
 package org.apache.lucene.analysis.bn;
 
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.core.DecimalDigitFilter;
-import org.apache.lucene.analysis.in.IndicNormalizationFilter;
-import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
-import org.apache.lucene.analysis.standard.StandardFilter;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
-
 import java.io.IOException;
 import java.io.Reader;
 
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.StopwordAnalyzerBase;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.DecimalDigitFilter;
+import org.apache.lucene.analysis.in.IndicNormalizationFilter;
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
+
 /**
  * Analyzer for Bengali.
+ *
+ * @since 7.1.0
  */
 public final class BengaliAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
@@ -122,8 +128,7 @@ public final class BengaliAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
-    TokenStream result = new StandardFilter(in);
-    result = new LowerCaseFilter(result);
+    TokenStream result = new LowerCaseFilter(in);
     result = new DecimalDigitFilter(result);
     result = new IndicNormalizationFilter(result);
     result = new BengaliNormalizationFilter(result);

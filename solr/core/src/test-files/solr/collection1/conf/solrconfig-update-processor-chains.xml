@@ -482,7 +482,7 @@
         <str name="replacement">key_feat$1</str>
       </lst>
     </processor>
-    <!-- equivilent sugar syntax to above, with slightly diff destination name -->
+    <!-- equivalent sugar syntax to above, with slightly diff destination name -->
     <processor class="solr.processor.CloneFieldUpdateProcessorFactory">
       <str name="pattern">^feat(.*)s$</str>
       <str name="replacement">best_feat$1</str>

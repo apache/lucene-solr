@@ -16,11 +16,13 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.not;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -30,7 +32,6 @@ import java.util.TreeMap;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -58,12 +59,15 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static final int NUM_SHARDS = 2;//granted we sometimes shard split to get more
+  protected static final int NUM_SPLIT_SHARDS = 3; //We always split shard1 so total shards post split will be 3
+  protected static final String BACKUPNAME_PREFIX = "mytestbackup";
 
   int replFactor;
   int numTlogReplicas;
   int numPullReplicas;
 
   private static long docsSeed; // see indexDocs()
+  protected String testSuffix = "test1";
 
   @BeforeClass
   public static void createCluster() throws Exception {
@@ -73,7 +77,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   /**
    * @return The name of the collection to use.
    */
-  public abstract String getCollectionName();
+  public abstract String getCollectionNamePrefix();
 
   /**
    * @return The name of the backup repository to use.
@@ -86,25 +90,38 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
    */
   public abstract String getBackupLocation();
 
+
+  public String getCollectionName(){
+    return getCollectionNamePrefix() + "_" + testSuffix;
+  }
+
+  public void setTestSuffix(String testSuffix) {
+    this.testSuffix = testSuffix;
+  }
+
   @Test
   public void test() throws Exception {
+    setTestSuffix("testok");
     boolean isImplicit = random().nextBoolean();
     boolean doSplitShardOperation = !isImplicit && random().nextBoolean();
     replFactor = TestUtil.nextInt(random(), 1, 2);
     numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
     numPullReplicas = TestUtil.nextInt(random(), 0, 1);
-    
+    int backupReplFactor = replFactor + numPullReplicas + numTlogReplicas;
+
     CollectionAdminRequest.Create create = isImplicit ?
-      // NOTE: use shard list with same # of shards as NUM_SHARDS; we assume this later
-      CollectionAdminRequest.createCollectionWithImplicitRouter(getCollectionName(), "conf1", "shard1,shard2", replFactor, numTlogReplicas, numPullReplicas) :
-      CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
-    
-    if (NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
-      create.setMaxShardsPerNode((int)Math.ceil(NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) / cluster.getJettySolrRunners().size()));//just to assert it survives the restoration
-      if (doSplitShardOperation) {
-        create.setMaxShardsPerNode(create.getMaxShardsPerNode() * 2);
-      }
+        // NOTE: use shard list with same # of shards as NUM_SHARDS; we assume this later
+        CollectionAdminRequest.createCollectionWithImplicitRouter(getCollectionName(), "conf1", "shard1,shard2", replFactor, numTlogReplicas, numPullReplicas) :
+        CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
+
+    if (random().nextBoolean()) {
+      create.setMaxShardsPerNode(-1);
+    } else if (doSplitShardOperation) {
+      create.setMaxShardsPerNode((int) Math.ceil(NUM_SPLIT_SHARDS * backupReplFactor / (double) cluster.getJettySolrRunners().size()));
+    } else if (NUM_SHARDS * (backupReplFactor) > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
+      create.setMaxShardsPerNode((int) Math.ceil(NUM_SHARDS * backupReplFactor / (double) cluster.getJettySolrRunners().size()));//just to assert it survives the restoration
     }
+
     if (random().nextBoolean()) {
       create.setAutoAddReplicas(true);//just to assert it survives the restoration
     }
@@ -122,7 +139,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     CloudSolrClient solrClient = cluster.getSolrClient();
     create.process(solrClient);
 
-    indexDocs(getCollectionName());
+    indexDocs(getCollectionName(), false);
 
     if (doSplitShardOperation) {
       // shard split the first shard
@@ -139,9 +156,61 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       solrClient.commit(getCollectionName());
     }
 
-    testBackupAndRestore(getCollectionName());
+    testBackupAndRestore(getCollectionName(), backupReplFactor);
     testConfigBackupOnly("conf1", getCollectionName());
     testInvalidPath(getCollectionName());
+  }
+
+  @Test
+  public void testRestoreFailure() throws Exception {
+    setTestSuffix("testfailure");
+    replFactor = TestUtil.nextInt(random(), 1, 2);
+    numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
+    numPullReplicas = TestUtil.nextInt(random(), 0, 1);
+
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
+
+    if (NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) > cluster.getJettySolrRunners().size()) {
+      create.setMaxShardsPerNode((int)Math.ceil(NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) / cluster.getJettySolrRunners().size())); //just to assert it survives the restoration
+    }
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    create.process(solrClient);
+
+    indexDocs(getCollectionName(), false);
+
+
+    String backupLocation = getBackupLocation();
+    String backupName = BACKUPNAME_PREFIX + testSuffix;
+
+    DocCollection backupCollection = solrClient.getZkStateReader().getClusterState().getCollection(getCollectionName());
+
+    log.info("Triggering Backup command");
+
+    {
+      CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(getCollectionName(), backupName)
+          .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
+      assertEquals(0, backup.process(solrClient).getStatus());
+    }
+
+    log.info("Triggering Restore command");
+
+    String restoreCollectionName = getCollectionName() + "_restored";
+
+    {
+      CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+          .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
+      if (backupCollection.getReplicas().size() > cluster.getJettySolrRunners().size()) {
+        // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
+        restore.setMaxShardsPerNode((int)Math.ceil(backupCollection.getReplicas().size()/cluster.getJettySolrRunners().size()));
+      }
+
+      restore.setConfigName("confFaulty");
+      assertEquals(RequestStatusState.FAILED, restore.processAndWait(solrClient, 30));
+      assertThat("Failed collection is still in the clusterstate: " + cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollectionOrNull(restoreCollectionName), 
+          CollectionAdminRequest.listCollections(solrClient), not(hasItem(restoreCollectionName)));
+    }
   }
 
   /**
@@ -197,28 +266,34 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     return cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices().size();
   }
 
-  private void indexDocs(String collectionName) throws Exception {
+  private int indexDocs(String collectionName, boolean useUUID) throws Exception {
     Random random = new Random(docsSeed);// use a constant seed for the whole test run so that we can easily re-index.
     int numDocs = random.nextInt(100);
     if (numDocs == 0) {
       log.info("Indexing ZERO test docs");
-      return;
+      return 0;
     }
+
     List<SolrInputDocument> docs = new ArrayList<>(numDocs);
     for (int i=0; i<numDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", i);
+      doc.addField("id", ((useUUID == true) ? java.util.UUID.randomUUID().toString() : i));
       doc.addField("shard_s", "shard" + (1 + random.nextInt(NUM_SHARDS))); // for implicit router
       docs.add(doc);
     }
+
     CloudSolrClient client = cluster.getSolrClient();
-    client.add(collectionName, docs);// batch
+    client.add(collectionName, docs); //batch
     client.commit(collectionName);
+
+    log.info("Indexed {} docs to collection: {}", numDocs, collectionName);
+
+    return numDocs;
   }
 
-  private void testBackupAndRestore(String collectionName) throws Exception {
+  private void testBackupAndRestore(String collectionName, int backupReplFactor) throws Exception {
     String backupLocation = getBackupLocation();
-    String backupName = "mytestbackup";
+    String backupName = BACKUPNAME_PREFIX + testSuffix;
 
     CloudSolrClient client = cluster.getSolrClient();
     DocCollection backupCollection = client.getZkStateReader().getClusterState().getCollection(collectionName);
@@ -243,54 +318,71 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     String restoreCollectionName = collectionName + "_restored";
     boolean sameConfig = random().nextBoolean();
 
-    {
-      CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
-          .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
-
-
-      //explicitly specify the replicationFactor/pullReplicas/nrtReplicas/tlogReplicas .
-      //Value is still the same as the original. maybe test with different values that the original for better test coverage
-      if (random().nextBoolean())  {
-        restore.setReplicationFactor(replFactor);
-      }
-      if (backupCollection.getReplicas().size() > cluster.getJettySolrRunners().size()) {
-        // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
-        restore.setMaxShardsPerNode((int)Math.ceil(backupCollection.getReplicas().size()/cluster.getJettySolrRunners().size()));
-      }
-      
-
-      if (rarely()) { // Try with createNodeSet configuration
-        int nodeSetSize = cluster.getJettySolrRunners().size() / 2;
-        List<String> nodeStrs = new ArrayList<>(nodeSetSize);
-        Iterator<JettySolrRunner> iter = cluster.getJettySolrRunners().iterator();
-        for (int i = 0; i < nodeSetSize ; i++) {
-          nodeStrs.add(iter.next().getNodeName());
-        }
-        restore.setCreateNodeSet(String.join(",", nodeStrs));
-        restore.setCreateNodeSetShuffle(usually());
-        // we need to double maxShardsPerNode value since we reduced number of available nodes by half.
-        if (restore.getMaxShardsPerNode() != null) {
-          restore.setMaxShardsPerNode(restore.getMaxShardsPerNode() * 2);
-        } else {
-          restore.setMaxShardsPerNode(origShardToDocCount.size() * 2);
-        }
-      }
-
-      Properties props = new Properties();
-      props.setProperty("customKey", "customVal");
-      restore.setProperties(props);
-
-      if (sameConfig==false) {
-        restore.setConfigName("customConfigName");
-      }
-      if (random().nextBoolean()) {
-        assertEquals(0, restore.process(client).getStatus());
-      } else {
-        assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(client, 30));//async
-      }
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-          restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
+    int restoreReplcationFactor = replFactor;
+    int restoreTlogReplicas = numTlogReplicas;
+    int restorePullReplicas = numPullReplicas;
+    boolean setExternalReplicationFactor = false;
+    if (random().nextBoolean()) { //Override replicationFactor / tLogReplicas / pullReplicas
+      setExternalReplicationFactor = true;
+      restoreTlogReplicas = TestUtil.nextInt(random(), 0, 1);
+      restoreReplcationFactor = TestUtil.nextInt(random(), 1, 2);
+      restorePullReplicas = TestUtil.nextInt(random(), 0, 1);
     }
+    int numShards = backupCollection.getActiveSlices().size();
+
+    int restoreReplFactor = restoreReplcationFactor + restoreTlogReplicas + restorePullReplicas;
+
+    boolean isMaxShardsPerNodeExternal = false;
+    boolean isMaxShardsUnlimited = false;
+    CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+        .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
+
+    //explicitly specify the replicationFactor/pullReplicas/nrtReplicas/tlogReplicas.
+    if (setExternalReplicationFactor)  {
+      restore.setReplicationFactor(restoreReplcationFactor);
+      restore.setTlogReplicas(restoreTlogReplicas);
+      restore.setPullReplicas(restorePullReplicas);
+    }
+    int computeRestoreMaxShardsPerNode = (int) Math.ceil((restoreReplFactor * numShards/(double) cluster.getJettySolrRunners().size()));
+
+    if (restoreReplFactor > backupReplFactor) { //else the backup maxShardsPerNode should be enough
+      log.info("numShards={} restoreReplFactor={} maxShardsPerNode={} totalNodes={}",
+          numShards, restoreReplFactor, computeRestoreMaxShardsPerNode, cluster.getJettySolrRunners().size());
+
+      if (random().nextBoolean()) { //set it to -1
+        isMaxShardsUnlimited = true;
+        restore.setMaxShardsPerNode(-1);
+      } else {
+        isMaxShardsPerNodeExternal = true;
+        restore.setMaxShardsPerNode(computeRestoreMaxShardsPerNode);
+      }
+    }
+
+    if (rarely()) { // Try with createNodeSet configuration
+      //Always 1 as cluster.getJettySolrRunners().size()=NUM_SHARDS=2
+      restore.setCreateNodeSet(cluster.getJettySolrRunners().get(0).getNodeName());
+      // we need to double maxShardsPerNode value since we reduced number of available nodes by half.
+      isMaxShardsPerNodeExternal = true;
+      computeRestoreMaxShardsPerNode = origShardToDocCount.size() * restoreReplFactor;
+      restore.setMaxShardsPerNode(computeRestoreMaxShardsPerNode);
+    }
+
+    final int restoreMaxShardsPerNode = computeRestoreMaxShardsPerNode;
+
+    Properties props = new Properties();
+    props.setProperty("customKey", "customVal");
+    restore.setProperties(props);
+
+    if (sameConfig==false) {
+      restore.setConfigName("customConfigName");
+    }
+    if (random().nextBoolean()) {
+      assertEquals(0, restore.process(client).getStatus());
+    } else {
+      assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(client, 60));//async
+    }
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
 
     //Check the number of results are the same
     DocCollection restoreCollection = client.getZkStateReader().getClusterState().getCollection(restoreCollectionName);
@@ -298,14 +390,11 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     //Re-index same docs (should be identical docs given same random seed) and test we have the same result.  Helps
     //  test we reconstituted the hash ranges / doc router.
     if (!(restoreCollection.getRouter() instanceof ImplicitDocRouter) && random().nextBoolean()) {
-      indexDocs(restoreCollectionName);
+      indexDocs(restoreCollectionName, false);
       assertEquals(origShardToDocCount, getShardToDocCountMap(client, restoreCollection));
     }
 
-    assertEquals(backupCollection.getReplicationFactor(), restoreCollection.getReplicationFactor());
     assertEquals(backupCollection.getAutoAddReplicas(), restoreCollection.getAutoAddReplicas());
-    assertEquals(backupCollection.getActiveSlices().iterator().next().getReplicas().size(),
-        restoreCollection.getActiveSlices().iterator().next().getReplicas().size());
     assertEquals(sameConfig ? "conf1" : "customConfigName",
         cluster.getSolrClient().getZkStateReader().readConfigName(restoreCollectionName));
 
@@ -314,19 +403,36 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       numReplicasByNodeName.put(x.getNodeName(), numReplicasByNodeName.getOrDefault(x.getNodeName(), 0) + 1);
     });
     numReplicasByNodeName.forEach((k, v) -> {
-      assertTrue("Node " + k + " has " + v + " replicas. Expected num replicas : " + restoreCollection.getMaxShardsPerNode() ,
-          v <= restoreCollection.getMaxShardsPerNode());
+      assertTrue("Node " + k + " has " + v + " replicas. Expected num replicas : " + restoreMaxShardsPerNode
+              + ". state: \n" + restoreCollection, v <= restoreMaxShardsPerNode);
     });
 
-    assertEquals("Different count of nrtReplicas. Backup collection state=" + backupCollection + "\nRestore " +
-        "collection state=" + restoreCollection, replFactor, restoreCollection.getNumNrtReplicas().intValue());
-    assertEquals("Different count of pullReplicas. Backup collection state=" + backupCollection + "\nRestore" +
-        " collection state=" + restoreCollection, numPullReplicas, restoreCollection.getNumPullReplicas().intValue());
-    assertEquals("Different count of TlogReplica. Backup collection state=" + backupCollection + "\nRestore" +
-        " collection state=" + restoreCollection, numTlogReplicas, restoreCollection.getNumTlogReplicas().intValue());
+    assertEquals(restoreCollection.toString(), restoreReplcationFactor, restoreCollection.getReplicationFactor().intValue());
+    assertEquals(restoreCollection.toString(), restoreReplcationFactor, restoreCollection.getNumNrtReplicas().intValue());
+    assertEquals(restoreCollection.toString(), restorePullReplicas, restoreCollection.getNumPullReplicas().intValue());
+    assertEquals(restoreCollection.toString(), restoreTlogReplicas, restoreCollection.getNumTlogReplicas().intValue());
+    if (isMaxShardsPerNodeExternal) {
+      assertEquals(restoreCollectionName, restoreMaxShardsPerNode, restoreCollection.getMaxShardsPerNode());
+    } else if (isMaxShardsUnlimited){
+      assertEquals(restoreCollectionName, -1, restoreCollection.getMaxShardsPerNode());
+    } else {
+      assertEquals(restoreCollectionName, backupCollection.getMaxShardsPerNode(), restoreCollection.getMaxShardsPerNode());
+    }
 
     assertEquals("Restore collection should use stateFormat=2", 2, restoreCollection.getStateFormat());
 
+    //SOLR-12605: Add more docs after restore is complete to see if they are getting added fine
+    //explicitly querying the leaders. If we use CloudSolrClient there is no guarantee that we'll hit a nrtReplica
+    {
+      Map<String, Integer> restoredCollectionPerShardCount =  getShardToDocCountMap(client, restoreCollection);
+      long restoredCollectionDocCount = restoredCollectionPerShardCount.values().stream().mapToInt(Number::intValue).sum();
+      int numberNewDocsIndexed = indexDocs(restoreCollectionName, true);
+      Map<String, Integer> restoredCollectionPerShardCountAfterIndexing = getShardToDocCountMap(client, restoreCollection);
+      int restoredCollectionFinalDocCount = restoredCollectionPerShardCountAfterIndexing.values().stream().mapToInt(Number::intValue).sum();
+
+      log.info("Original doc count in restored collection:" + restoredCollectionDocCount + ", number of newly added documents to the restored collection: " + numberNewDocsIndexed + ", after indexing: " + restoredCollectionFinalDocCount);
+      assertEquals((restoredCollectionDocCount + numberNewDocsIndexed), restoredCollectionFinalDocCount);
+    }
 
     // assert added core properties:
     // DWS: did via manual inspection.

@@ -92,7 +92,7 @@ public class TestWANDScorer extends LuceneTestCase {
         .build();
 
     Scorer scorer = searcher
-        .createNormalizedWeight(query, ScoreMode.TOP_SCORES)
+        .createWeight(searcher.rewrite(query), ScoreMode.TOP_SCORES, 1)
         .scorer(searcher.getIndexReader().leaves().get(0));
 
     assertEquals(0, scorer.iterator().nextDoc());
@@ -113,7 +113,7 @@ public class TestWANDScorer extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, scorer.iterator().nextDoc());
 
     scorer = searcher
-        .createNormalizedWeight(query, ScoreMode.TOP_SCORES)
+        .createWeight(searcher.rewrite(query), ScoreMode.TOP_SCORES, 1)
         .scorer(searcher.getIndexReader().leaves().get(0));
     scorer.setMinCompetitiveScore(4);
 
@@ -126,7 +126,7 @@ public class TestWANDScorer extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, scorer.iterator().nextDoc());
 
     scorer = searcher
-        .createNormalizedWeight(query, ScoreMode.TOP_SCORES)
+        .createWeight(searcher.rewrite(query), ScoreMode.TOP_SCORES, 1)
         .scorer(searcher.getIndexReader().leaves().get(0));
 
     assertEquals(0, scorer.iterator().nextDoc());
@@ -147,7 +147,7 @@ public class TestWANDScorer extends LuceneTestCase {
         .build();
 
     scorer = searcher
-        .createNormalizedWeight(query, ScoreMode.TOP_SCORES)
+        .createWeight(searcher.rewrite(query), ScoreMode.TOP_SCORES, 1)
         .scorer(searcher.getIndexReader().leaves().get(0));
 
     assertEquals(3, scorer.iterator().nextDoc());
@@ -159,7 +159,7 @@ public class TestWANDScorer extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, scorer.iterator().nextDoc());
 
     scorer = searcher
-        .createNormalizedWeight(query, ScoreMode.TOP_SCORES)
+        .createWeight(searcher.rewrite(query), ScoreMode.TOP_SCORES, 1)
         .scorer(searcher.getIndexReader().leaves().get(0));
 
     scorer.setMinCompetitiveScore(2);
@@ -177,7 +177,7 @@ public class TestWANDScorer extends LuceneTestCase {
         .build();
 
     scorer = searcher
-        .createNormalizedWeight(query, ScoreMode.TOP_SCORES)
+        .createWeight(searcher.rewrite(query), ScoreMode.TOP_SCORES, 1)
         .scorer(searcher.getIndexReader().leaves().get(0));
 
     assertEquals(0, scorer.iterator().nextDoc());
@@ -192,7 +192,7 @@ public class TestWANDScorer extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, scorer.iterator().nextDoc());
 
     scorer = searcher
-        .createNormalizedWeight(query, ScoreMode.TOP_SCORES)
+        .createWeight(searcher.rewrite(query), ScoreMode.TOP_SCORES, 1)
         .scorer(searcher.getIndexReader().leaves().get(0));
 
     scorer.setMinCompetitiveScore(3);
@@ -225,7 +225,7 @@ public class TestWANDScorer extends LuceneTestCase {
 
     for (int iter = 0; iter < 100; ++iter) {
       int start = random().nextInt(10);
-      int numClauses = 2;//random().nextInt(1 << random().nextInt(5));
+      int numClauses = random().nextInt(1 << random().nextInt(5));
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       for (int i = 0; i < numClauses; ++i) {
         builder.add(maybeWrap(new TermQuery(new Term("foo", Integer.toString(start + i)))), Occur.SHOULD);
@@ -270,7 +270,7 @@ public class TestWANDScorer extends LuceneTestCase {
       for (int i = 0; i < numClauses; ++i) {
         Query query = new TermQuery(new Term("foo", Integer.toString(start + i)));
         if (random().nextBoolean()) {
-          query = new InfiniteMaxScoreWrapperQuery(query);
+          query = new InfiniteMaxScoreWrapperQuery(query, numDocs / TestUtil.nextInt(random(), 1, 100));
         }
         builder.add(query, Occur.SHOULD);
       }
@@ -292,13 +292,26 @@ public class TestWANDScorer extends LuceneTestCase {
 
   private static class InfiniteMaxScoreWrapperScorer extends FilterScorer {
 
-    InfiniteMaxScoreWrapperScorer(Scorer scorer) {
+    private final int maxRange;
+    private int lastShallowTarget = -1;
+
+    InfiniteMaxScoreWrapperScorer(Scorer scorer, int maxRange) {
       super(scorer);
+      this.maxRange = maxRange;
+    }
+
+    @Override
+    public int advanceShallow(int target) throws IOException {
+      lastShallowTarget = target;
+      return in.advanceShallow(target);
     }
 
     @Override
     public float getMaxScore(int upTo) throws IOException {
-      return Float.POSITIVE_INFINITY;
+      if (upTo - Math.max(docID(), lastShallowTarget) >= maxRange) {
+        return Float.POSITIVE_INFINITY;
+      }
+      return in.getMaxScore(upTo);
     }
 
   }
@@ -306,9 +319,15 @@ public class TestWANDScorer extends LuceneTestCase {
   private static class InfiniteMaxScoreWrapperQuery extends Query {
 
     private final Query query;
+    private final int maxRange;
     
-    InfiniteMaxScoreWrapperQuery(Query query) {
+    /**
+     * If asked for the maximum score over a range of doc IDs that is greater
+     * than or equal to maxRange, this query will return a maximum score of +Infty
+     */
+    InfiniteMaxScoreWrapperQuery(Query query, int maxRange) {
       this.query = query;
+      this.maxRange = maxRange;
     }
     
     @Override
@@ -330,9 +349,14 @@ public class TestWANDScorer extends LuceneTestCase {
     public Query rewrite(IndexReader reader) throws IOException {
       Query rewritten = query.rewrite(reader);
       if (rewritten != query) {
-        return new InfiniteMaxScoreWrapperQuery(rewritten);
+        return new InfiniteMaxScoreWrapperQuery(rewritten, maxRange);
       }
       return super.rewrite(reader);
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override
@@ -344,7 +368,7 @@ public class TestWANDScorer extends LuceneTestCase {
           if (scorer == null) {
             return null;
           } else {
-            return new InfiniteMaxScoreWrapperScorer(scorer);
+            return new InfiniteMaxScoreWrapperScorer(scorer, maxRange);
           }
         }
 
@@ -358,7 +382,7 @@ public class TestWANDScorer extends LuceneTestCase {
               
               @Override
               public Scorer get(long leadCost) throws IOException {
-                return new InfiniteMaxScoreWrapperScorer(supplier.get(leadCost));
+                return new InfiniteMaxScoreWrapperScorer(supplier.get(leadCost), maxRange);
               }
               
               @Override

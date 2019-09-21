@@ -142,12 +142,134 @@ However, since the first node in the first example had more than 1 replica for a
 
 In the above example the node with port 8983 has two replicas for `shard1` in violation of our policy.
 
+=== Inline Policy Configuration
+
+If there is no autoscaling policy configured or if you wish to use a configuration other than the default, it is possible to send the autoscaling policy JSON as an inline payload as follows:
+
+[source,bash]
+----
+ curl -X POST -H 'Content-type:application/json'  -d '{
+ "cluster-policy": [
+   {"replica": 0, "put" : "on-each", "nodeset": {"port" : "7574"}}]
+ }' http://localhost:8983/api/cluster/autoscaling/diagnostics?omitHeader=true
+----
+
+*Output*
+[source,json]
+----
+{
+  "diagnostics":{
+    "sortedNodes":[{
+        "node":"10.0.0.80:7574_solr",
+        "isLive":true,
+        "cores":2.0,
+        "freedisk":567.4989128112793,
+        "port":7574,
+        "totaldisk":1044.122688293457,
+        "replicas":{"mycoll":{
+            "shard2":[{
+                "core_node7":{
+                  "core":"mycoll_shard2_replica_n4",
+                  "shard":"shard2",
+                  "collection":"mycoll",
+                  "node_name":"10.0.0.80:7574_solr",
+                  "type":"NRT",
+                  "base_url":"http://10.0.0.80:7574/solr",
+                  "state":"active",
+                  "force_set_state":"false",
+                  "INDEX.sizeInGB":6.426125764846802E-8}}],
+            "shard1":[{
+                "core_node3":{
+                  "core":"mycoll_shard1_replica_n1",
+                  "shard":"shard1",
+                  "collection":"mycoll",
+                  "node_name":"10.0.0.80:7574_solr",
+                  "type":"NRT",
+                  "base_url":"http://10.0.0.80:7574/solr",
+                  "state":"active",
+                  "force_set_state":"false",
+                  "INDEX.sizeInGB":6.426125764846802E-8}}]}}}
+      ,{
+        "node":"10.0.0.80:8983_solr",
+        "isLive":true,
+        "cores":2.0,
+        "freedisk":567.498908996582,
+        "port":8983,
+        "totaldisk":1044.122688293457,
+        "replicas":{"mycoll":{
+            "shard2":[{
+                "core_node8":{
+                  "core":"mycoll_shard2_replica_n6",
+                  "shard":"shard2",
+                  "collection":"mycoll",
+                  "node_name":"10.0.0.80:8983_solr",
+                  "type":"NRT",
+                  "leader":"true",
+                  "base_url":"http://10.0.0.80:8983/solr",
+                  "state":"active",
+                  "force_set_state":"false",
+                  "INDEX.sizeInGB":6.426125764846802E-8}}],
+            "shard1":[{
+                "core_node5":{
+                  "core":"mycoll_shard1_replica_n2",
+                  "shard":"shard1",
+                  "collection":"mycoll",
+                  "node_name":"10.0.0.80:8983_solr",
+                  "type":"NRT",
+                  "leader":"true",
+                  "base_url":"http://10.0.0.80:8983/solr",
+                  "state":"active",
+                  "force_set_state":"false",
+                  "INDEX.sizeInGB":6.426125764846802E-8}}]}}}],
+    "liveNodes":["10.0.0.80:7574_solr",
+      "10.0.0.80:8983_solr"],
+    "violations":[{
+        "collection":"mycoll",
+        "tagKey":7574,
+        "violation":{
+          "replica":{
+            "NRT":2,
+            "count":2},
+          "delta":2.0},
+        "clause":{
+          "replica":0,
+          "port":"7574",
+          "collection":"mycoll"},
+        "violatingReplicas":[{
+            "core_node7":{
+              "core":"mycoll_shard2_replica_n4",
+              "shard":"shard2",
+              "collection":"mycoll",
+              "node_name":"10.0.0.80:7574_solr",
+              "type":"NRT",
+              "base_url":"http://10.0.0.80:7574/solr",
+              "state":"active",
+              "force_set_state":"false",
+              "INDEX.sizeInGB":6.426125764846802E-8}}
+          ,{
+            "core_node3":{
+              "core":"mycoll_shard1_replica_n1",
+              "shard":"shard1",
+              "collection":"mycoll",
+              "node_name":"10.0.0.80:7574_solr",
+              "type":"NRT",
+              "base_url":"http://10.0.0.80:7574/solr",
+              "state":"active",
+              "force_set_state":"false",
+              "INDEX.sizeInGB":6.426125764846802E-8}}]}],
+    "config":{
+      "cluster-policy":[{
+          "replica":0,
+          "port":"7574"}]}},
+  "WARNING":"This response format is experimental.  It is likely to change in the future."}
+----
+
 == Suggestions API
 Suggestions are operations recommended by the system according to the policies and preferences the user has set.
 
 Suggestions are made only if there are `violations` to active policies. The `operation` section of the response uses the defined preferences to identify the target node.
 
-The API is available at `/admin/autoscaling/suggestion`. Here is an example output from a suggestion request:
+The API is available at `/admin/autoscaling/suggestions`. Here is an example output from a suggestion request:
 
 [source,json]
 ----
@@ -195,6 +317,76 @@ The API is available at `/admin/autoscaling/suggestion`. Here is an example outp
 ----
 
 The suggested `operation` is an API call that can be invoked to remedy the current violation.
+
+The types of suggestions available are
+
+* `violation` : Fixes a violation to one or more policy rules
+* `repair` : Add missing replicas
+* `improvement` : move replicas around so that the load is more evenly balanced according to the autoscaling preferences
+
+By default, the suggestions API return all of the above , in that order. However it is possible to fetch only certain types by adding a request parameter `type`. e.g: `type=violation&type=repair`
+
+=== Inline Policy Configuration
+
+If there is no autoscaling policy configured or if you wish to use a configuration other than the default, it is possible to send the autoscaling policy JSON as an inline payload as follows:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json'  -d '{
+ "cluster-policy": [
+    {"replica": 0, "put" : "on-each-node", "nodeset": {"port" : "7574"}}
+   ]
+}' http://localhost:8983/solr/admin/autoscaling/suggestions?omitHeader=true
+----
+
+*Output*
+[source,json]
+----
+{
+  "suggestions":[{
+      "type":"violation",
+      "violation":{
+        "collection":"mycoll",
+        "tagKey":7574,
+        "violation":{
+          "replica":{
+            "NRT":2,
+            "count":2},
+          "delta":2.0},
+        "clause":{
+          "replica":0,
+          "port":"7574",
+          "collection":"mycoll"}},
+      "operation":{
+        "method":"POST",
+        "path":"/c/mycoll",
+        "command":{"move-replica":{
+            "targetNode":"10.0.0.80:8983_solr",
+            "inPlaceMove":"true",
+            "replica":"core_node8"}}}},
+    {
+      "type":"violation",
+      "violation":{
+        "collection":"mycoll",
+        "tagKey":7574,
+        "violation":{
+          "replica":{
+            "NRT":2,
+            "count":2},
+          "delta":2.0},
+        "clause":{
+          "replica":0,
+          "port":"7574",
+          "collection":"mycoll"}},
+      "operation":{
+        "method":"POST",
+        "path":"/c/mycoll",
+        "command":{"move-replica":{
+            "targetNode":"10.0.0.80:8983_solr",
+            "inPlaceMove":"true",
+            "replica":"core_node5"}}}}],
+  "WARNING":"This response format is experimental.  It is likely to change in the future."}
+----
 
 == History API
 
@@ -303,12 +495,6 @@ An `afterAction` stage.
 }
 ----
 
-.Broken v2 API support
-[WARNING]
-====
-Due to a bug in Solr 7.1.0, the History API is available only at the path `/admin/autoscaling/history`. Using the `/api/cluster/autoscaling/history` endpoint returns an error.
-====
-
 == Write API
 
 The Write API is available at the same `/admin/autoscaling` and `/api/cluster/autoscaling` endpoints as the Read API but can only be used with the *POST* HTTP verb.
@@ -387,7 +573,7 @@ We can remove all cluster preferences by setting preferences to an empty list.
   "set-cluster-preferences": []
 }
 ----
-
+[[cluster-specific-policies]]
 === Create and Modify Cluster Policies
 
 Cluster policies are set using the `set-cluster-policy` command.
@@ -443,7 +629,7 @@ Refer to the <<solrcloud-autoscaling-policy-preferences.adoc#policy-specificatio
 {
 "set-policy": {
   "policy1": [
-    {"replica": "1", "shard": "#EACH", "port": "8983"}
+    {"replica": "1", "shard": "#EACH", "nodeset":{"port": "8983"}}
     ]
   }
 }

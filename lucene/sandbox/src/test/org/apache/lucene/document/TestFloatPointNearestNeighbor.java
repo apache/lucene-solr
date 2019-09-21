@@ -28,6 +28,7 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LatLonPointPrototypeQueries;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -59,7 +60,7 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
     r = w.getReader();
     // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
     s = newSearcher(r, false);
-    hit = (FieldDoc)LatLonPoint.nearest(s, "point", 40.0, 50.0, 1).scoreDocs[0];
+    hit = (FieldDoc) LatLonPointPrototypeQueries.nearest(s, "point", 40.0, 50.0, 1).scoreDocs[0];
     assertEquals("1", r.document(hit.doc).getField("id").stringValue());
     r.close();
     w.close();
@@ -187,7 +188,7 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
       FloatPointNearestNeighbor.NearestHit[] expectedHits = new FloatPointNearestNeighbor.NearestHit[numPoints];
       for (int id = 0 ; id < numPoints ; ++id) {
         FloatPointNearestNeighbor.NearestHit hit = new FloatPointNearestNeighbor.NearestHit();
-        hit.distanceSquared = FloatPointNearestNeighbor.euclideanDistanceSquared(origin, values[id]);
+        hit.distanceSquared = euclideanDistanceSquared(origin, values[id]);
         hit.docID = id;
         expectedHits[id] = hit;
       }
@@ -231,9 +232,18 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
     dir.close();
   }
 
+  private static double euclideanDistanceSquared(float[] a, float[] b) {
+    double sumOfSquaredDifferences = 0.0d;
+    for (int d = 0 ; d < a.length ; ++d) {
+      double diff = (double)a[d] - (double)b[d];
+      sumOfSquaredDifferences += diff * diff;
+    }
+    return sumOfSquaredDifferences;
+  }
+
   private IndexWriterConfig getIndexWriterConfig() {
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setCodec(Codec.forName("Lucene70"));
+    iwc.setCodec(Codec.forName("Lucene80"));
     return iwc;
   }
 }

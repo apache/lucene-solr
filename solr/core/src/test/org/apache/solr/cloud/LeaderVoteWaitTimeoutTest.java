@@ -25,21 +25,22 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.CollectionStatePredicate;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.util.NamedList;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -47,7 +48,8 @@ import org.slf4j.LoggerFactory;
 
 public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final int NODE_COUNT = 4;
 
   private static Map<JettySolrRunner, SocketProxy> proxies;
   private static Map<URI, JettySolrRunner> jettys;
@@ -57,45 +59,63 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
     System.setProperty("leaderVoteWait", "2000");
+    System.setProperty("distribUpdateSoTimeout", "5000");
+    System.setProperty("distribUpdateConnTimeout", "5000");
+    System.setProperty("solr.httpclient.retries", "0");
+    System.setProperty("solr.retries.on.forward", "0");
+    System.setProperty("solr.retries.to.followers", "0"); 
+  }
 
-    configureCluster(4)
+  @AfterClass
+  public static void tearDownCluster() throws Exception {
+    proxies = null;
+    jettys = null;
+    System.clearProperty("solr.directoryFactory");
+    System.clearProperty("solr.ulog.numRecordsToKeep");
+    System.clearProperty("leaderVoteWait");
+    System.clearProperty("distribUpdateSoTimeout");
+    System.clearProperty("distribUpdateConnTimeout");
+  }
+
+  @Before
+  public void setupTest() throws Exception {
+    configureCluster(NODE_COUNT)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
 
     // Add proxies
     proxies = new HashMap<>(cluster.getJettySolrRunners().size());
     jettys = new HashMap<>();
-    for (JettySolrRunner jetty:cluster.getJettySolrRunners()) {
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       SocketProxy proxy = new SocketProxy();
       jetty.setProxyPort(proxy.getListenPort());
-      cluster.stopJettySolrRunner(jetty);//TODO: Can we avoid this restart
+      cluster.stopJettySolrRunner(jetty);// TODO: Can we avoid this restart
       cluster.startJettySolrRunner(jetty);
       proxy.open(jetty.getBaseUrl().toURI());
-      LOG.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
+      log.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
       proxies.put(jetty, proxy);
       jettys.put(proxy.getUrl(), jetty);
     }
   }
-
-  @AfterClass
-  public static void tearDownCluster() throws Exception {
-    for (SocketProxy proxy:proxies.values()) {
-      proxy.close();
+  
+  @After
+  public void tearDown() throws Exception {
+    if (null != proxies) {
+      for (SocketProxy proxy : proxies.values()) {
+        proxy.close();
+      }
     }
-    proxies = null;
-    jettys = null;
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("leaderVoteWait");
+    shutdownCluster();
+    super.tearDown();
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
   public void basicTest() throws Exception {
     final String collectionName = "basicTest";
     CollectionAdminRequest.createCollection(collectionName, 1, 1)
         .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
         .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 1, 1);
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1"));
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2"));
     cluster.getSolrClient().commit(collectionName);
@@ -105,7 +125,13 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       assertEquals(1L, zkShardTerms.getHighestTerm());
     }
 
-    cluster.getJettySolrRunner(0).stop();
+    String nodeName = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getNodeName();
+    
+    JettySolrRunner j = cluster.getJettySolrRunner(0);
+    j.stop();
+    cluster.waitForJettyToStop(j);
+    
+    cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> !liveNodes.contains(nodeName));
 
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(cluster.getJettySolrRunner(1).getNodeName())
@@ -113,6 +139,9 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
     waitForState("Timeout waiting for replica win the election", collectionName, (liveNodes, collectionState) -> {
       Replica newLeader = collectionState.getSlice("shard1").getLeader();
+      if (newLeader == null) {
+        return false;
+      }
       return newLeader.getNodeName().equals(cluster.getJettySolrRunner(1).getNodeName());
     });
 
@@ -123,11 +152,12 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     }
 
     cluster.getJettySolrRunner(0).start();
+    
+    cluster.waitForAllNodes(30);
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
   public void testMostInSyncReplicasCanWinElection() throws Exception {
     final String collectionName = "collection1";
     CollectionAdminRequest.createCollection(collectionName, 1, 3)
@@ -136,6 +166,9 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(cluster.getJettySolrRunner(0).getNodeName())
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(collectionName, 1, 1);
+    
     waitForState("Timeout waiting for shard leader", collectionName, clusterShape(1, 1));
     Replica leader = getCollectionState(collectionName).getSlice("shard1").getLeader();
 
@@ -143,6 +176,9 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(collectionName, 1, 2);
+    
     waitForState("Timeout waiting for 1x2 collection", collectionName, clusterShape(1, 2));
     Replica replica1 = getCollectionState(collectionName).getSlice("shard1")
         .getReplicas(replica -> replica.getNodeName().equals(cluster.getJettySolrRunner(1).getNodeName())).get(0);
@@ -150,6 +186,9 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(cluster.getJettySolrRunner(2).getNodeName())
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(collectionName, 1, 3);
+    
     waitForState("Timeout waiting for 1x3 collection", collectionName, clusterShape(1, 3));
     Replica replica2 = getCollectionState(collectionName).getSlice("shard1")
         .getReplicas(replica -> replica.getNodeName().equals(cluster.getJettySolrRunner(2).getNodeName())).get(0);
@@ -185,17 +224,27 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
     proxies.get(cluster.getJettySolrRunner(1)).reopen();
     proxies.get(cluster.getJettySolrRunner(2)).reopen();
-    cluster.getJettySolrRunner(0).stop();
+    
+    
+    JettySolrRunner j = cluster.getJettySolrRunner(0);
+    j.stop();
+    cluster.waitForJettyToStop(j);
 
-    // even replica2 joined election at the end of the queue, but it is the one with highest term
-    waitForState("Timeout waiting for new leader", collectionName, new CollectionStatePredicate() {
-      @Override
-      public boolean matches(Set<String> liveNodes, DocCollection collectionState) {
+    try {
+      // even replica2 joined election at the end of the queue, but it is the one with highest term
+      waitForState("Timeout waiting for new leader", collectionName, (liveNodes, collectionState) -> {
         Replica newLeader = collectionState.getSlice("shard1").getLeader();
+        if (newLeader == null) {
+          return false;
+        }
         return newLeader.getName().equals(replica2.getName());
-      }
-    });
-
+      });
+    } catch (Exception e) {
+      List<String> children = zkClient().getChildren("/collections/"+collectionName+"/leader_elect/shard1/election",
+          null, true);
+      log.info("{} election nodes:{}", collectionName, children);
+      throw e;
+    }
     cluster.getJettySolrRunner(0).start();
     proxies.get(cluster.getJettySolrRunner(0)).reopen();
 

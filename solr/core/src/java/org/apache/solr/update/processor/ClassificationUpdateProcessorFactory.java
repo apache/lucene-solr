@@ -65,7 +65,7 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
   @Override
   public void init(final NamedList args) {
     if (args != null) {
-      params = SolrParams.toSolrParams(args);
+      params = args.toSolrParams();
       classificationParams = new ClassificationUpdateProcessorParams();
 
       String fieldNames = params.get(INPUT_FIELDS_PARAM);// must be a comma separated list of fields

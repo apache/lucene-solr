@@ -80,7 +80,7 @@ Here is an example of a minimal OpenNLP `langid` configuration in `solrconfig.xm
 ==== OpenNLP-specific Parameters
 
 `langid.model`::
-An OpenNLP language detection model. The OpenNLP project provides a pre-trained 103 language model on the http://opennlp.apache.org/models.html[OpenNLP site's model dowload page]. Model training instructions are provided on the http://opennlp.apache.org/docs/{ivy-opennlp-version}/manual/opennlp.html#tools.langdetect[OpenNLP website]. This parameter is required.
+An OpenNLP language detection model. The OpenNLP project provides a pre-trained 103 language model on the http://opennlp.apache.org/models.html[OpenNLP site's model dowload page]. Model training instructions are provided on the http://opennlp.apache.org/docs/{ivy-opennlp-version}/manual/opennlp.html#tools.langdetect[OpenNLP website]. This parameter is required.  See <<resource-and-plugin-loading.adoc#resource-and-plugin-loading,Resource and Plugin Loading>> for information on where to put the model.
 
 ==== OpenNLP Language Codes
 

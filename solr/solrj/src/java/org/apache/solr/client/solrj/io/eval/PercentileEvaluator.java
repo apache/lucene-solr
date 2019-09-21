@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -39,16 +40,26 @@ public class PercentileEvaluator extends RecursiveNumericEvaluator implements Tw
     if(null == second){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
     }
-    if(!(first instanceof List<?>)){
+    if(!(first instanceof List<?>)) {
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a List",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
-    if(!(second instanceof Number)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a Number",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    if((second instanceof Number)) {
+      Percentile percentile = new Percentile();
+      percentile.setData(((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
+      return percentile.evaluate(((Number) second).doubleValue());
+    } else if(second instanceof List){
+      Percentile percentile = new Percentile();
+      percentile.setData(((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
+      List<Number> values = (List<Number>) second;
+      List<Number> percentiles = new ArrayList();
+      for(Number value : values) {
+        percentiles.add(percentile.evaluate(value.doubleValue()));
+      }
+
+      return percentiles;
+    } else {
+      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a number or a numeric array",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
-    
-    Percentile percentile = new Percentile();
-    percentile.setData(((List<?>)first).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray());
-    return percentile.evaluate(((Number)second).doubleValue());    
   }
   
 }

@@ -25,8 +25,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.junit.After;
@@ -37,29 +36,30 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.security.TestAuthorizationFramework.verifySecurityStatus;
 
-public class PKIAuthenticationIntegrationTest extends SolrCloudTestCase {
+public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
+  private static final String COLLECTION = "pkiCollection";
+  
   @BeforeClass
   public static void setupCluster() throws Exception {
+    final String SECURITY_CONF = Utils.toJSONString
+      (makeMap("authorization", singletonMap("class", MockAuthorizationPlugin.class.getName()),
+               "authentication", singletonMap("class", MockAuthenticationPlugin.class.getName())));
+    
     configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+      .addConfig("conf", configset("cloud-minimal"))
+      .withSecurityJson(SECURITY_CONF)
+      .configure();
+
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
   }
 
   @Test
   public void testPkiAuth() throws Exception {
-
-    CollectionAdminRequest.createCollection("collection", "conf", 2, 1).process(cluster.getSolrClient());
-
-    // TODO make a SolrJ helper class for this
-    byte[] bytes = Utils.toJSON(makeMap("authorization", singletonMap("class", MockAuthorizationPlugin.class.getName()),
-        "authentication", singletonMap("class", MockAuthenticationPlugin.class.getName())));
-    zkClient().setData(ZkStateReader.SOLR_SECURITY_CONF_PATH, bytes, true);
-
     HttpClient httpClient = cluster.getSolrClient().getHttpClient();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       String baseUrl = jetty.getBaseUrl().toString();
@@ -94,9 +94,9 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudTestCase {
         return true;
     };
     QueryRequest query = new QueryRequest(params);
-    query.process(cluster.getSolrClient(), "collection");
+    query.process(cluster.getSolrClient(), COLLECTION);
     assertTrue("all nodes must get the user solr , no:of nodes got solr : " + count.get(), count.get() > 2);
-
+    assertPkiAuthMetricsMinimums(2, 2, 0, 0, 0, 0);
   }
 
   @After

@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  */
 public class TemplateTransformer extends Transformer {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private Map<String ,List<String>> templateVsVars = new HashMap<>();
 
   @Override
@@ -76,7 +76,7 @@ public class TemplateTransformer extends Transformer {
       }
       for (String v : variables) {
         if (resolver.resolve(v) == null) {
-          LOG.warn("Unable to resolve variable: " + v
+          log.warn("Unable to resolve variable: " + v
                   + " while parsing expression: " + expr);
           resolvable = false;
         }

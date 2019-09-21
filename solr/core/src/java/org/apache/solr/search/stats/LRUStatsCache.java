@@ -24,7 +24,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.solr.core.PluginInfo;
@@ -49,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * that is updated with the global statistics on every request.
  */
 public class LRUStatsCache extends ExactStatsCache {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // local stats obtained from shard servers
   private final Map<String,SolrCache<String,TermStats>> perShardTermStats = new ConcurrentHashMap<>();
@@ -65,7 +64,7 @@ public class LRUStatsCache extends ExactStatsCache {
   
   @Override
   public StatsSource get(SolrQueryRequest req) {
-    LOG.debug("## GET total={}, cache {}", currentGlobalColStats , currentGlobalTermStats.size());
+    log.debug("## GET total={}, cache {}", currentGlobalColStats , currentGlobalTermStats.size());
     return new LRUStatsSource(currentGlobalTermStats, currentGlobalColStats);
   }
   
@@ -120,7 +119,7 @@ public class LRUStatsCache extends ExactStatsCache {
 
   @Override
   protected void printStats(SolrQueryRequest req) {
-    LOG.debug("## MERGED: perShardColStats={}, perShardTermStats={}", perShardColStats, perShardTermStats);
+    log.debug("## MERGED: perShardColStats={}, perShardTermStats={}", perShardColStats, perShardTermStats);
   }
   
   static class LRUStatsSource extends StatsSource {
@@ -132,12 +131,12 @@ public class LRUStatsCache extends ExactStatsCache {
       this.colStatsCache = colStatsCache;
     }
     @Override
-    public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, TermStates context)
+    public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, int docFreq, long totalTermFreq)
         throws IOException {
       TermStats termStats = termStatsCache.get(term.toString());
       if (termStats == null) {
-        LOG.debug("## Missing global termStats info: {}, using local", term);
-        return localSearcher.localTermStatistics(term, context);
+        log.debug("## Missing global termStats info: {}, using local", term);
+        return localSearcher.localTermStatistics(term, docFreq, totalTermFreq);
       } else {
         return termStats.toTermStatistics();
       }
@@ -148,7 +147,7 @@ public class LRUStatsCache extends ExactStatsCache {
         throws IOException {
       CollectionStats colStats = colStatsCache.get(field);
       if (colStats == null) {
-        LOG.debug("## Missing global colStats info: {}, using local", field);
+        log.debug("## Missing global colStats info: {}, using local", field);
         return localSearcher.localCollectionStatistics(field);
       } else {
         return colStats.toCollectionStatistics();

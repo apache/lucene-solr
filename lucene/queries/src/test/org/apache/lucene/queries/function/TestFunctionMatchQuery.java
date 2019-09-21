@@ -50,7 +50,7 @@ public class TestFunctionMatchQuery extends FunctionTestSetup {
     FunctionMatchQuery fmq = new FunctionMatchQuery(in, d -> d >= 2 && d < 4);
     TopDocs docs = searcher.search(fmq, 10);
 
-    assertEquals(2, docs.totalHits);
+    assertEquals(2, docs.totalHits.value);
     assertEquals(9, docs.scoreDocs[0].doc);
     assertEquals(13, docs.scoreDocs[1].doc);
 

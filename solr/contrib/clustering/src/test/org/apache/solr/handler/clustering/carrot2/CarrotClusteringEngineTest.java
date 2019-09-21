@@ -40,8 +40,6 @@ import org.apache.solr.handler.clustering.ClusteringEngine;
 import org.apache.solr.handler.clustering.SearchClusteringEngine;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.DocList;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
 import org.carrot2.clustering.lingo.LingoClusteringAlgorithm;
 import org.carrot2.core.LanguageCode;
 import org.carrot2.util.attribute.AttributeUtils;
@@ -449,13 +447,9 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   private List<NamedList<Object>> checkEngine(CarrotClusteringEngine engine, int expectedNumDocs,
                            int expectedNumClusters, Query query, SolrParams clusteringParams) throws IOException {
     // Get all documents to cluster
-    RefCounted<SolrIndexSearcher> ref = h.getCore().getSearcher();
-
-    DocList docList;
-    try {
-      SolrIndexSearcher searcher = ref.get();
-      docList = searcher.getDocList(query, (Query) null, new Sort(), 0,
-              numberOfDocs);
+    return h.getCore().withSearcher(searcher -> {
+      DocList docList = searcher.getDocList(query, (Query) null, new Sort(), 0,
+          numberOfDocs);
       assertEquals("docList size", expectedNumDocs, docList.matches());
 
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
@@ -472,9 +466,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
       assertEquals("number of clusters: " + results, expectedNumClusters, results.size());
       checkClusters(results, false);
       return results;
-    } finally {
-      ref.decref();
-    }
+    });
   }
 
   private void checkClusters(List<NamedList<Object>> results, int expectedDocCount,

@@ -21,15 +21,17 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pl.PolishAnalyzer;
-import org.apache.lucene.analysis.stempel.StempelFilter;
-import org.apache.lucene.analysis.stempel.StempelStemmer;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link StempelFilter} using a Polish stemming table.
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
-public class StempelPolishStemFilterFactory extends TokenFilterFactory {  
+public class StempelPolishStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "stempelPolishStem";
   
   /** Creates a new StempelPolishStemFilterFactory */
   public StempelPolishStemFilterFactory(Map<String,String> args) {

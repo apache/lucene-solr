@@ -17,21 +17,23 @@
 package org.apache.solr.search;
 
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.*;
 
 public class TestFiltering extends SolrTestCaseJ4 {
 
@@ -73,7 +75,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
         // System.out.println("getting set for " + q);
         DocSet set = searcher.getDocSet(q);
         if (live == null) {
-          live = searcher.getLiveDocs();
+          live = searcher.getLiveDocSet();
         }
         assertTrue( set == live);
 

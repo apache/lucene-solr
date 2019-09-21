@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.text.ParseException;
-import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 
@@ -59,10 +59,7 @@ public class WordnetSynonymParser extends SynonymMap.Parser {
           synsetSize = 0;
         }
 
-        if (synset.length <= synsetSize+1) {
-          synset = Arrays.copyOf(synset, synset.length * 2);
-        }
-        
+        synset = ArrayUtil.grow(synset, synsetSize + 1);
         synset[synsetSize] = parseSynonym(line, new CharsRefBuilder());
         synsetSize++;
         lastSynSetID = synSetID;

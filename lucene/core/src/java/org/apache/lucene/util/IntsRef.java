@@ -18,7 +18,6 @@ package org.apache.lucene.util;
 
 import java.util.Arrays;
 
-
 /** Represents int[], as a slice (offset + length) into an
  *  existing int[].  The {@link #ints} member should never be null; use
  *  {@link #EMPTY_INTS} if necessary.
@@ -93,14 +92,14 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
   }
 
   public boolean intsEquals(IntsRef other) {
-    return FutureArrays.equals(this.ints, this.offset, this.offset + this.length, 
+    return Arrays.equals(this.ints, this.offset, this.offset + this.length, 
                                other.ints, other.offset, other.offset + other.length);
   }
 
   /** Signed int order comparison */
   @Override
   public int compareTo(IntsRef other) {
-    return FutureArrays.compare(this.ints, this.offset, this.offset + this.length, 
+    return Arrays.compare(this.ints, this.offset, this.offset + this.length, 
                                 other.ints, other.offset, other.offset + other.length);
   }
 
@@ -118,7 +117,7 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
     sb.append(']');
     return sb.toString();
   }
-  
+
   /**
    * Creates a new IntsRef that points to a copy of the ints from 
    * <code>other</code>
@@ -127,7 +126,7 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
    * and an offset of zero.
    */
   public static IntsRef deepCopyOf(IntsRef other) {
-    return new IntsRef(Arrays.copyOfRange(other.ints, other.offset, other.offset + other.length), 0, other.length);
+    return new IntsRef(ArrayUtil.copyOfSubArray(other.ints, other.offset, other.offset + other.length), 0, other.length);
   }
   
   /** 

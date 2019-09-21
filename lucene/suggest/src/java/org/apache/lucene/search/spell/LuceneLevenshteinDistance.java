@@ -114,4 +114,12 @@ public final class LuceneLevenshteinDistance implements StringDistance {
     }
     return ref;
   }
+  
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (null == obj) return false;
+    return (getClass() == obj.getClass());
+  }
+  
 }

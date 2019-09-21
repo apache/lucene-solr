@@ -342,7 +342,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       // scorer is not needed
     }
     

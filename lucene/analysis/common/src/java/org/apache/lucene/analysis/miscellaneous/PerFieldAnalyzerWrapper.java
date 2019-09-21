@@ -47,6 +47,8 @@ import java.util.Map;
  * 
  * <p>A PerFieldAnalyzerWrapper can be used like any other analyzer, for both indexing
  * and query parsing.
+ *
+ * @since 3.1
  */
 public final class PerFieldAnalyzerWrapper extends DelegatingAnalyzerWrapper {
   private final Analyzer defaultAnalyzer;

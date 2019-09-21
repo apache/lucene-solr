@@ -16,13 +16,14 @@
  */
 package org.apache.lucene.search.spans;
 
+import java.io.IOException;
+import java.util.Objects;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
-
-import java.io.IOException;
-import java.util.Objects;
 
 /** Wraps a span query with asserts */
 public class AssertingSpanQuery extends SpanQuery {
@@ -58,6 +59,11 @@ public class AssertingSpanQuery extends SpanQuery {
     } else {
       return q;
     }
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    in.visit(visitor);
   }
 
   @Override

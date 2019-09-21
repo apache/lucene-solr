@@ -17,14 +17,19 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.sameInstance;
 
 public class TestFieldInfos extends LuceneTestCase {
 
@@ -89,4 +94,97 @@ public class TestFieldInfos extends LuceneTestCase {
     dir.close();
   }
 
+  public void testFieldAttributes() throws Exception{
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(NoMergePolicy.INSTANCE));
+
+    FieldType type1 = new FieldType();
+    type1.setStored(true);
+    type1.putAttribute("testKey1", "testValue1");
+
+    Document d1 = new Document();
+    d1.add(new Field("f1", "v1", type1));
+    FieldType type2 = new FieldType(type1);
+    //changing the value after copying shouldn't impact the original type1
+    type2.putAttribute("testKey1", "testValue2");
+    writer.addDocument(d1);
+    writer.commit();
+
+    Document d2 = new Document();
+    type1.putAttribute("testKey1", "testValueX");
+    type1.putAttribute("testKey2", "testValue2");
+    d2.add(new Field("f1", "v2", type1));
+    d2.add(new Field("f2", "v2", type2));
+    writer.addDocument(d2);
+    writer.commit();
+    writer.forceMerge(1);
+
+    IndexReader reader = writer.getReader();
+    FieldInfos fis = FieldInfos.getMergedFieldInfos(reader);
+    assertEquals(fis.size(), 2);
+    Iterator<FieldInfo>  it = fis.iterator();
+    while(it.hasNext()) {
+      FieldInfo fi = it.next();
+      switch (fi.name) {
+        case "f1":
+          // testKey1 can point to either testValue1 or testValueX based on the order
+          // of merge, but we see textValueX winning here since segment_2 is merged on segment_1.
+          assertEquals("testValueX", fi.getAttribute("testKey1"));
+          assertEquals("testValue2", fi.getAttribute("testKey2"));
+          break;
+        case "f2":
+          assertEquals("testValue2", fi.getAttribute("testKey1"));
+          break;
+        default:
+          assertFalse("Unknown field", true);
+      }
+    }
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+
+  public void testMergedFieldInfos_empty() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+
+    IndexReader reader = writer.getReader();
+    FieldInfos actual = FieldInfos.getMergedFieldInfos(reader);
+    FieldInfos expected = FieldInfos.EMPTY;
+
+    assertThat(actual, sameInstance(expected));
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+
+  public void testMergedFieldInfos_singleLeaf() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+
+    Document d1 = new Document();
+    d1.add(new StringField("f1", "v1", Field.Store.YES));
+    writer.addDocument(d1);
+    writer.commit();
+
+    Document d2 = new Document();
+    d2.add(new StringField("f2", "v2", Field.Store.YES));
+    writer.addDocument(d2);
+    writer.commit();
+
+    writer.forceMerge(1);
+
+    IndexReader reader = writer.getReader();
+    FieldInfos actual = FieldInfos.getMergedFieldInfos(reader);
+    FieldInfos expected = reader.leaves().get(0).reader().getFieldInfos();
+
+    assertThat(reader.leaves().size(), equalTo(1));
+    assertThat(actual, sameInstance(expected));
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
 }

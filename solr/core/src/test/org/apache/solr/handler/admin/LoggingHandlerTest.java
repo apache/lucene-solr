@@ -25,12 +25,11 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 
-@SuppressForbidden(reason = "test uses log4j because it tests output at a specific level")
+@SuppressForbidden(reason = "test uses log4j2 because it tests output at a specific level")
 public class LoggingHandlerTest extends SolrTestCaseJ4 {
 
   // TODO: This only tests Log4j at the moment, as that's what's defined

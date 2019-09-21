@@ -16,13 +16,16 @@
  */
 package org.apache.lucene.analysis.cn.smart;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.IOUtils;
 
 public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
-  
+
   public void testChineseStopWordsDefault() throws Exception {
     Analyzer ca = new SmartChineseAnalyzer(); /* will load stopwords */
     String sentence = "我购买了道具和服装。";
@@ -46,7 +49,37 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(ca, sentence, result);
     ca.close();
   }
-  
+
+  /*
+   * This test is for test smartcn HHMMSegmenter should correctly handle surrogate character.
+   */
+  public void testSurrogatePairCharacter() throws Exception {
+    Analyzer ca = new SmartChineseAnalyzer(); /* will load stopwords */
+    String sentence =
+        Stream.of(
+                "\uD872\uDF3B",
+                "\uD872\uDF4A",
+                "\uD872\uDF73",
+                "\uD872\uDF5B",
+                "\u9FCF",
+                "\uD86D\uDFFC",
+                "\uD872\uDF2D",
+                "\u9FD4")
+            .collect(Collectors.joining());
+    String result[] = {
+      "\uD872\uDF3B",
+      "\uD872\uDF4A",
+      "\uD872\uDF73",
+      "\uD872\uDF5B",
+      "\u9FCF",
+      "\uD86D\uDFFC",
+      "\uD872\uDF2D",
+      "\u9FD4"
+    };
+    assertAnalyzesTo(ca, sentence, result);
+    ca.close();
+  }
+
   /*
    * This test is the same as the above, except using an ideographic space as a separator.
    * This tests to ensure the stopwords are working correctly.
@@ -166,7 +199,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
       new String[] { "优", "素", "福", "拉", "扎", "吉", "拉", "尼" });
     analyzer.close();
   }
-  
+
   public void testOffsets() throws Exception {
     Analyzer analyzer = new SmartChineseAnalyzer(true);
     assertAnalyzesTo(analyzer, "我购买了道具和服装",
@@ -175,10 +208,10 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 1, 3, 4, 6, 7, 9 });
     analyzer.close();
   }
-  
+
   public void testReusableTokenStream() throws Exception {
     Analyzer a = new SmartChineseAnalyzer();
-    assertAnalyzesTo(a, "我购买 Tests 了道具和服装", 
+    assertAnalyzesTo(a, "我购买 Tests 了道具和服装",
         new String[] { "我", "购买", "test", "了", "道具", "和", "服装"},
         new int[] { 0, 1, 4, 10, 11, 13, 14 },
         new int[] { 1, 3, 9, 11, 13, 14, 16 });
@@ -188,7 +221,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 1, 3, 4, 6, 7, 9 });
     a.close();
   }
-  
+
   // LUCENE-3026
   public void testLargeDocument() throws Exception {
     StringBuilder sb = new StringBuilder();
@@ -203,7 +236,7 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
       stream.end();
     }
   }
-  
+
   // LUCENE-3026
   public void testLargeSentence() throws Exception {
     StringBuilder sb = new StringBuilder();
@@ -218,14 +251,14 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
       stream.end();
     }
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new SmartChineseAnalyzer();
     checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
     analyzer.close();
   }
-  
+
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Analyzer analyzer = new SmartChineseAnalyzer();

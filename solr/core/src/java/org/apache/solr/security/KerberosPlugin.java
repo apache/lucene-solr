@@ -16,8 +16,6 @@
  */
 package org.apache.solr.security;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -30,19 +28,23 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
+import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationHandler;
+import org.apache.http.HttpRequest;
+import org.apache.http.protocol.HttpContext;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +74,8 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   public static final String DELEGATION_TOKEN_TYPE_DEFAULT = "solr-dt";
   public static final String IMPERSONATOR_DO_AS_HTTP_PARAM = "doAs";
   public static final String IMPERSONATOR_USER_NAME = "solr.impersonator.user.name";
+
+  public static final String ORIGINAL_USER_PRINCIPAL_HEADER = "originalUserPrincipal";
 
   static final String DELEGATION_TOKEN_ZK_CLIENT =
       "solr.kerberos.delegation.token.zk.client";
@@ -165,6 +169,11 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
         params.put(key, System.getProperty(key));
       }
     }
+
+    // Needed to work around HADOOP-13346
+    params.put(DelegationTokenAuthenticationHandler.JSON_MAPPER_PREFIX + JsonGenerator.Feature.AUTO_CLOSE_TARGET,
+        "false");
+
     final ServletContext servletContext = new AttributeOnlyServletContext();
     if (controller != null) {
       servletContext.setAttribute(DELEGATION_TOKEN_ZK_CLIENT, controller.getZkClient());
@@ -174,7 +183,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
       // pass an attribute-enabled context in order to pass the zkClient
       // and because the filter may pass a curator instance.
     } else {
-      kerberosFilter = new KerberosFilter();
+      kerberosFilter = new KerberosFilter(coreContainer);
     }
     log.info("Params: "+params);
 
@@ -222,25 +231,8 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   public boolean doAuthenticate(ServletRequest req, ServletResponse rsp,
       FilterChain chain) throws Exception {
     log.debug("Request to authenticate using kerberos: "+req);
+    kerberosFilter.doFilter(req, rsp, chain);
 
-    final HttpServletResponse frsp = (HttpServletResponse)rsp;
-
-    // kerberosFilter may close the stream and write to closed streams,
-    // see HADOOP-13346.  To work around, pass a PrintWriter that ignores
-    // closes
-    HttpServletResponse rspCloseShield = new HttpServletResponseWrapper(frsp) {
-      @SuppressForbidden(reason = "Hadoop DelegationTokenAuthenticationFilter uses response writer, this" +
-          "is providing a CloseShield on top of that")
-      @Override
-      public PrintWriter getWriter() throws IOException {
-        final PrintWriter pw = new PrintWriterWrapper(frsp.getWriter()) {
-          @Override
-          public void close() {};
-        };
-        return pw;
-      }
-    };
-    kerberosFilter.doFilter(req, rspCloseShield, chain);
     String requestContinuesAttr = (String)req.getAttribute(RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);
     if (requestContinuesAttr == null) {
       log.warn("Could not find " + RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);
@@ -251,8 +243,27 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   }
 
   @Override
+  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
+    SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+    if (info != null && (info.getAction() == SolrDispatchFilter.Action.FORWARD ||
+        info.getAction() == SolrDispatchFilter.Action.REMOTEQUERY)) {
+      if (info.getUserPrincipal() != null) {
+        log.info("Setting original user principal: {}", info.getUserPrincipal().getName());
+        httpRequest.setHeader(ORIGINAL_USER_PRINCIPAL_HEADER, info.getUserPrincipal().getName());
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
     return kerberosBuilder.getBuilder(builder);
+  }
+
+  @Override
+  public void setup(Http2SolrClient client) {
+    kerberosBuilder.setup(client);
   }
 
   @Override

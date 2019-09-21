@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -29,6 +30,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.Version;
 
 /**
  * Holds all the configuration used by {@link IndexWriter} with few setters for
@@ -56,6 +58,9 @@ public class LiveIndexWriterConfig {
   /** {@link OpenMode} that {@link IndexWriter} is opened
    *  with. */
   protected volatile OpenMode openMode;
+
+  /** Compatibility version to use for this index. */
+  protected int createdVersionMajor = Version.LATEST.major;
 
   /** {@link Similarity} to use when encoding norms. */
   protected volatile Similarity similarity;
@@ -105,6 +110,13 @@ public class LiveIndexWriterConfig {
 
   /** if an indexing thread should check for pending flushes on update in order to help out on a full flush*/
   protected volatile boolean checkPendingFlushOnUpdate = true;
+
+  /** soft deletes field */
+  protected String softDeletesField = null;
+
+  /** the attributes for the NRT readers */
+  protected Map<String, String> readerAttributes = Collections.emptyMap();
+
 
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
@@ -282,7 +294,15 @@ public class LiveIndexWriterConfig {
   public OpenMode getOpenMode() {
     return openMode;
   }
-  
+
+  /**
+   * Return the compatibility version to use for this index.
+   * @see IndexWriterConfig#setIndexCreatedVersionMajor
+   */
+  public int getIndexCreatedVersionMajor() {
+    return createdVersionMajor;
+  }
+
   /**
    * Returns the {@link IndexDeletionPolicy} specified in
    * {@link IndexWriterConfig#setIndexDeletionPolicy(IndexDeletionPolicy)} or
@@ -452,6 +472,14 @@ public class LiveIndexWriterConfig {
     return this;
   }
 
+  /**
+   * Returns the soft deletes field or <code>null</code> if soft-deletes are disabled.
+   * See {@link IndexWriterConfig#setSoftDeletesField(String)} for details.
+   */
+  public String getSoftDeletesField() {
+    return softDeletesField;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -475,6 +503,15 @@ public class LiveIndexWriterConfig {
     sb.append("commitOnClose=").append(getCommitOnClose()).append("\n");
     sb.append("indexSort=").append(getIndexSort()).append("\n");
     sb.append("checkPendingFlushOnUpdate=").append(isCheckPendingFlushOnUpdate()).append("\n");
+    sb.append("softDeletesField=").append(getSoftDeletesField()).append("\n");
+    sb.append("readerAttributes=").append(getReaderAttributes()).append("\n");
     return sb.toString();
+  }
+
+  /**
+   * Returns the reader attributes passed to all published readers opened on or within the IndexWriter
+   */
+  public Map<String, String> getReaderAttributes() {
+    return this.readerAttributes;
   }
 }

@@ -77,10 +77,10 @@ class BytesStore extends DataOutput implements Accountable {
 
   /** Absolute write byte; you must ensure dest is &lt; max
    *  position written so far. */
-  public void writeByte(int dest, byte b) {
-    int blockIndex = dest >> blockBits;
+  public void writeByte(long dest, byte b) {
+    int blockIndex = (int) (dest >> blockBits);
     byte[] block = blocks.get(blockIndex);
-    block[dest & blockMask] = b;
+    block[(int) (dest & blockMask)] = b;
   }
 
   @Override

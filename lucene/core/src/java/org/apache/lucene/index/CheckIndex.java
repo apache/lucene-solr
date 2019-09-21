@@ -25,9 +25,9 @@ import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,21 +39,21 @@ import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.Bits;
@@ -105,12 +105,6 @@ public final class CheckIndex implements Closeable {
 
     /** True if we were unable to locate and load the segments_N file. */
     public boolean missingSegments;
-
-    /** True if we were unable to open the segments_N file. */
-    public boolean cantOpenSegments;
-
-    /** True if we were unable to read the version number from segments_N file. */
-    public boolean missingSegmentVersion;
 
     /** Name of latest segments_N file in the index. */
     public String segmentsFileName;
@@ -411,7 +405,7 @@ public final class CheckIndex implements Closeable {
    * that would otherwise be more complicated to debug if they had to close the writer
    * for each check.
    */
-  public CheckIndex(Directory dir, Lock writeLock) throws IOException {
+  public CheckIndex(Directory dir, Lock writeLock) {
     this.dir = dir;
     this.writeLock = writeLock;
     this.infoStream = null;
@@ -538,6 +532,19 @@ public final class CheckIndex implements Closeable {
       return result;
     }
 
+    if (infoStream != null) {
+      int maxDoc = 0;
+      int delCount = 0;
+      for (SegmentCommitInfo info : sis) {
+        maxDoc += info.info.maxDoc();
+        delCount += info.getDelCount();
+      }
+      infoStream.println(String.format(Locale.ROOT, "%.2f%% total deletions; %d documents; %d deleteions",
+                                       100.*delCount/maxDoc,
+                                       maxDoc,
+                                       delCount));
+    }
+    
     // find the oldest and newest segment versions
     Version oldest = null;
     Version newest = null;
@@ -559,38 +566,6 @@ public final class CheckIndex implements Closeable {
 
     final int numSegments = sis.size();
     final String segmentsFileName = sis.getSegmentsFileName();
-    // note: we only read the format byte (required preamble) here!
-    IndexInput input = null;
-    try {
-      input = dir.openInput(segmentsFileName, IOContext.READONCE);
-    } catch (Throwable t) {
-      if (failFast) {
-        throw IOUtils.rethrowAlways(t);
-      }
-      msg(infoStream, "ERROR: could not open segments file in directory");
-      if (infoStream != null) {
-        t.printStackTrace(infoStream);
-      }
-      result.cantOpenSegments = true;
-      return result;
-    }
-    try {
-      /*int format =*/ input.readInt();
-    } catch (Throwable t) {
-      if (failFast) {
-        throw IOUtils.rethrowAlways(t);
-      }
-      msg(infoStream, "ERROR: could not read segment file version in directory");
-      if (infoStream != null) {
-        t.printStackTrace(infoStream);
-      }
-      result.missingSegmentVersion = true;
-      return result;
-    } finally {
-      if (input != null)
-        input.close();
-    }
-
     result.segmentsFileName = segmentsFileName;
     result.numSegments = numSegments;
     result.userData = sis.getUserData();
@@ -699,7 +674,8 @@ public final class CheckIndex implements Closeable {
         long startOpenReaderNS = System.nanoTime();
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
-        reader = new SegmentReader(info, sis.getIndexCreatedVersionMajor(), IOContext.DEFAULT);
+        reader = new SegmentReader(info, sis.getIndexCreatedVersionMajor(), false, IOContext.DEFAULT,
+            Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.OFF_HEAP.name())); // lets keep stuff on disk for check-index
         msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", nsToSec(System.nanoTime()-startOpenReaderNS)));
 
         segInfoStat.openReaderPassed = true;
@@ -739,7 +715,7 @@ public final class CheckIndex implements Closeable {
 
           // Test Fieldinfos
           segInfoStat.fieldInfoStatus = testFieldInfos(reader, infoStream, failFast);
-        
+
           // Test Field Norms
           segInfoStat.fieldNormStatus = testFieldNorms(reader, infoStream, failFast);
 
@@ -781,7 +757,10 @@ public final class CheckIndex implements Closeable {
             throw new RuntimeException("Points test failed");
           }
         }
-
+        final String softDeletesField = reader.getFieldInfos().getSoftDeletesField();
+        if (softDeletesField != null) {
+          checkSoftDeletes(softDeletesField, info, reader, infoStream, failFast);
+        }
         msg(infoStream, "");
         
         if (verbose) {
@@ -1007,7 +986,7 @@ public final class CheckIndex implements Closeable {
       }
       for (FieldInfo info : reader.getFieldInfos()) {
         if (info.hasNorms()) {
-          checkNumericDocValues(info.name, normsReader.getNorms(info));
+          checkNumericDocValues(info.name, normsReader.getNorms(info), normsReader.getNorms(info));
           ++status.totFields;
         }
       }
@@ -1138,78 +1117,12 @@ public final class CheckIndex implements Closeable {
     return intersectTermCount != normalTermCount;
   }
 
-  /** Make an effort to visit "fake" (e.g. auto-prefix) terms.  We do this by running term range intersections across an initially wide
-   *  interval of terms, at different boundaries, and then gradually decrease the interval.  This is not guaranteed to hit all non-real
-   *  terms (doing that in general is non-trivial), but it should hit many of them, and validate their postings against the postings for the
-   *  real terms. */
-  private static void checkTermRanges(String field, int maxDoc, Terms terms, long numTerms) throws IOException {
-
-    // We'll target this many terms in our interval for the current level:
-    double currentInterval = numTerms;
-
-    FixedBitSet normalDocs = new FixedBitSet(maxDoc);
-    FixedBitSet intersectDocs = new FixedBitSet(maxDoc);
-
-    //System.out.println("CI.checkTermRanges field=" + field + " numTerms=" + numTerms);
-
-    while (currentInterval >= 10.0) {
-      //System.out.println("  cycle interval=" + currentInterval);
-
-      // We iterate this terms enum to locate min/max term for each sliding/overlapping interval we test at the current level:
-      TermsEnum termsEnum = terms.iterator();
-
-      long termCount = 0;
-
-      Deque<BytesRef> termBounds = new LinkedList<>();
-
-      long lastTermAdded = Long.MIN_VALUE;
-
-      BytesRefBuilder lastTerm = null;
-
-      while (true) {
-        BytesRef term = termsEnum.next();
-        if (term == null) {
-          break;
-        }
-        //System.out.println("  top: term=" + term.utf8ToString());
-        if (termCount >= lastTermAdded + currentInterval/4) {
-          termBounds.add(BytesRef.deepCopyOf(term));
-          lastTermAdded = termCount;
-          if (termBounds.size() == 5) {
-            BytesRef minTerm = termBounds.removeFirst();
-            BytesRef maxTerm = termBounds.getLast();
-            checkSingleTermRange(field, maxDoc, terms, minTerm, maxTerm, normalDocs, intersectDocs);
-          }
-        }
-        termCount++;
-
-        if (lastTerm == null) {
-          lastTerm = new BytesRefBuilder();
-          lastTerm.copyBytes(term);
-        } else {
-          if (lastTerm.get().compareTo(term) >= 0) {
-            throw new RuntimeException("terms out of order: lastTerm=" + lastTerm.get() + " term=" + term);
-          }
-          lastTerm.copyBytes(term);
-        }
-      }
-      //System.out.println("    count=" + termCount);
-
-      if (lastTerm != null && termBounds.isEmpty() == false) {
-        BytesRef minTerm = termBounds.removeFirst();
-        BytesRef maxTerm = lastTerm.get();
-        checkSingleTermRange(field, maxDoc, terms, minTerm, maxTerm, normalDocs, intersectDocs);
-      }
-
-      currentInterval *= .75;
-    }
-  }
-
   /**
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
    */
-  private static Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint, boolean isVectors, PrintStream infoStream, boolean verbose, boolean doSlowChecks) throws IOException {
+  private static Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos,
+      NormsProducer normsProducer, boolean doPrint, boolean isVectors, PrintStream infoStream, boolean verbose, boolean doSlowChecks) throws IOException {
     // TODO: we should probably return our own stats thing...?!
     long startNS;
     if (doPrint) {
@@ -1602,58 +1515,45 @@ public final class CheckIndex implements Closeable {
         // Checking score blocks is heavy, we only do it on long postings lists, on every 1024th term
         // or if slow checks are enabled.
         if (doSlowChecks || docFreq > 1024 || (status.termCount + status.delTermCount) % 1024 == 0) {
-          // Test score blocks
-          // We only score on freq to keep things simple and not pull norms
-          SimScorer scorer = new SimScorer(field) {
-            @Override
-            public float score(float freq, long norm) {
-              return freq;
-            }
-          };
-
           // First check max scores and block uptos
           // But only if slok checks are enabled since we visit all docs
           if (doSlowChecks) {
             int max = -1;
-            float maxScore = 0;
-            ImpactsEnum impacts = termsEnum.impacts(scorer, PostingsEnum.FREQS);
+            int maxFreq = 0;
+            ImpactsEnum impactsEnum = termsEnum.impacts(PostingsEnum.FREQS);
             postings = termsEnum.postings(postings, PostingsEnum.FREQS);
-            for (int doc = impacts.nextDoc(); ; doc = impacts.nextDoc()) {
+            for (int doc = impactsEnum.nextDoc(); ; doc = impactsEnum.nextDoc()) {
               if (postings.nextDoc() != doc) {
                 throw new RuntimeException("Wrong next doc: " + doc + ", expected " + postings.docID());
               }
               if (doc == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               }
-              if (postings.freq() != impacts.freq()) {
-                throw new RuntimeException("Wrong freq, expected " + postings.freq() + ", but got " + impacts.freq());
+              if (postings.freq() != impactsEnum.freq()) {
+                throw new RuntimeException("Wrong freq, expected " + postings.freq() + ", but got " + impactsEnum.freq());
               }
               if (doc > max) {
-                max = impacts.advanceShallow(doc);
-                if (max < doc) {
-                  throw new RuntimeException("max block doc id " + max + " must be greater than the target: " + doc);
-                }
-                maxScore = impacts.getMaxScore(max);
+                impactsEnum.advanceShallow(doc);
+                Impacts impacts = impactsEnum.getImpacts();
+                checkImpacts(impacts, doc);
+                max = impacts.getDocIdUpTo(0);
+                List<Impact> impacts0 = impacts.getImpacts(0);
+                maxFreq = impacts0.get(impacts0.size() - 1).freq;
               }
-              int max2 = impacts.advanceShallow(doc);
-              if (max != max2) {
-                throw new RuntimeException("max is not stable, initially had " + max + " but now " + max2);
-              }
-              float score = scorer.score(impacts.freq(), 1);
-              if (score > maxScore) {
-                throw new RuntimeException("score " + score + " is greater than the max score " + maxScore);
+              if (impactsEnum.freq() > maxFreq) {
+                throw new RuntimeException("freq " + impactsEnum.freq() + " is greater than the max freq according to impacts " + maxFreq);
               }
             }
           }
 
           // Now check advancing
-          ImpactsEnum impacts = termsEnum.impacts(scorer, PostingsEnum.FREQS);
+          ImpactsEnum impactsEnum = termsEnum.impacts(PostingsEnum.FREQS);
           postings = termsEnum.postings(postings, PostingsEnum.FREQS);
 
           int max = -1;
-          float maxScore = 0;
+          int maxFreq = 0;
           while (true) {
-            int doc = impacts.docID();
+            int doc = impactsEnum.docID();
             boolean advance;
             int target;
             if (((field.hashCode() + doc) & 1) == 1) {
@@ -1662,23 +1562,29 @@ public final class CheckIndex implements Closeable {
             } else {
               advance = true;
               int delta = Math.min(1 + ((31 * field.hashCode() + doc) & 0x1ff), DocIdSetIterator.NO_MORE_DOCS - doc);
-              target = impacts.docID() + delta;
+              target = impactsEnum.docID() + delta;
             }
 
             if (target > max && target % 2 == 1) {
               int delta = Math.min((31 * field.hashCode() + target) & 0x1ff, DocIdSetIterator.NO_MORE_DOCS - target);
               max = target + delta;
-              int m = impacts.advanceShallow(target);
-              if (m < target) {
-                throw new RuntimeException("Block max doc: " + m + " is less than the target " + target);
+              impactsEnum.advanceShallow(target);
+              Impacts impacts = impactsEnum.getImpacts();
+              checkImpacts(impacts, doc);
+              maxFreq = Integer.MAX_VALUE;
+              for (int level = 0; level < impacts.numLevels(); ++level) {
+                if (impacts.getDocIdUpTo(level) >= max) {
+                  List<Impact> perLevelImpacts = impacts.getImpacts(level);
+                  maxFreq = perLevelImpacts.get(perLevelImpacts.size() - 1).freq;
+                  break;
+                }
               }
-              maxScore = impacts.getMaxScore(max);
             }
 
             if (advance) {
-              doc = impacts.advance(target);
+              doc = impactsEnum.advance(target);
             } else {
-              doc = impacts.nextDoc();
+              doc = impactsEnum.nextDoc();
             }
 
             if (postings.advance(target) != doc) {
@@ -1687,23 +1593,28 @@ public final class CheckIndex implements Closeable {
             if (doc == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
-            if (postings.freq() != impacts.freq()) {
-              throw new RuntimeException("Wrong freq, expected " + postings.freq() + ", but got " + impacts.freq());
+            if (postings.freq() != impactsEnum.freq()) {
+              throw new RuntimeException("Wrong freq, expected " + postings.freq() + ", but got " + impactsEnum.freq());
             }
   
             if (doc >= max) {
               int delta = Math.min((31 * field.hashCode() + target & 0x1ff), DocIdSetIterator.NO_MORE_DOCS - doc);
               max = doc + delta;
-              int m = impacts.advanceShallow(doc);
-              if (m < doc) {
-                throw new RuntimeException("Block max doc: " + m + " is less than the target " + doc);
+              impactsEnum.advanceShallow(doc);
+              Impacts impacts = impactsEnum.getImpacts();
+              checkImpacts(impacts, doc);
+              maxFreq = Integer.MAX_VALUE;
+              for (int level = 0; level < impacts.numLevels(); ++level) {
+                if (impacts.getDocIdUpTo(level) >= max) {
+                  List<Impact> perLevelImpacts = impacts.getImpacts(level);
+                  maxFreq = perLevelImpacts.get(perLevelImpacts.size() - 1).freq;
+                  break;
+                }
               }
-              maxScore = impacts.getMaxScore(max);
             }
 
-            float score = scorer.score(impacts.freq(), 1);
-            if (score > maxScore) {
-              throw new RuntimeException("score " + score + " is greater than the max score " + maxScore);
+            if (impactsEnum.freq() > maxFreq) {
+              throw new RuntimeException("Term frequency " + impactsEnum.freq() + " is greater than the max freq according to impacts " + maxFreq);
             }
           }
         }
@@ -1724,12 +1635,6 @@ public final class CheckIndex implements Closeable {
       } else {
 
         long fieldTermCount = (status.delTermCount+status.termCount)-termCountStart;
-
-        // LUCENE-5879: this is just too slow for now:
-        if (false && hasFreqs == false) {
-          // For DOCS_ONLY fields we recursively test term ranges:
-          checkTermRanges(field, maxDoc, fieldTerms, fieldTermCount);
-        }
 
         final Object stats = fieldTerms.getStats();
         assert stats != null;
@@ -1756,7 +1661,26 @@ public final class CheckIndex implements Closeable {
         if (visitedDocs.cardinality() != v) {
           throw new RuntimeException("docCount for field " + field + "=" + v + " != recomputed docCount=" + visitedDocs.cardinality());
         }
-        
+
+        if (fieldInfo.hasNorms() && isVectors == false) {
+          final NumericDocValues norms = normsProducer.getNorms(fieldInfo);
+          // Cross-check terms with norms
+          for (int doc = norms.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = norms.nextDoc()) {
+            if (liveDocs != null && liveDocs.get(doc) == false) {
+              // Norms may only be out of sync with terms on deleted documents.
+              // This happens when a document fails indexing and in that case it
+              // should be immediately marked as deleted by the IndexWriter.
+              continue;
+            }
+            final long norm = norms.longValue();
+            if (norm != 0 && visitedDocs.get(doc) == false) {
+              throw new RuntimeException("Document " + doc + " doesn't have terms according to postings but has a norm value that is not zero: " + norm);
+            } else if (norm == 0 && visitedDocs.get(doc)) {
+              throw new RuntimeException("Document " + doc + " has terms according to postings but its norm value is 0, which may only be used on documents that have no terms");
+            }
+          }
+        }
+
         // Test seek to last term:
         if (lastTerm != null) {
           if (termsEnum.seekCeil(lastTerm.get()) != TermsEnum.SeekStatus.FOUND) { 
@@ -1850,6 +1774,68 @@ public final class CheckIndex implements Closeable {
     return status;
   }
 
+  static void checkImpacts(Impacts impacts, int lastTarget) {
+    final int numLevels = impacts.numLevels();
+    if (numLevels < 1) {
+      throw new RuntimeException("The number of levels must be >= 1, got " + numLevels);
+    }
+
+    int docIdUpTo0 = impacts.getDocIdUpTo(0);
+    if (docIdUpTo0 < lastTarget) {
+      throw new RuntimeException("getDocIdUpTo returned " + docIdUpTo0 + " on level 0, which is less than the target " + lastTarget);
+    }
+
+    for (int level = 1; level < numLevels; ++level) {
+      int docIdUpTo = impacts.getDocIdUpTo(level);
+      int previousDocIdUpTo = impacts.getDocIdUpTo(level - 1);
+      if (docIdUpTo < previousDocIdUpTo) {
+        throw new RuntimeException("Decreasing return for getDocIdUpTo: level " + (level-1) + " returned " + previousDocIdUpTo
+            + " but level " + level + " returned " + docIdUpTo + " for target " + lastTarget);
+      }
+    }
+
+    for (int level = 0; level < numLevels; ++level) {
+      List<Impact> perLevelImpacts = impacts.getImpacts(level);
+      if (perLevelImpacts.isEmpty()) {
+        throw new RuntimeException("Got empty list of impacts on level " + level);
+      }
+      Impact first = perLevelImpacts.get(0);
+      if (first.freq < 1) {
+        throw new RuntimeException("First impact had a freq <= 0: " + first);
+      }
+      if (first.norm == 0) {
+        throw new RuntimeException("First impact had a norm == 0: " + first);
+      }
+      // Impacts must be in increasing order of norm AND freq
+      Impact previous = first;
+      for (int i = 1; i < perLevelImpacts.size(); ++i) {
+        Impact impact = perLevelImpacts.get(i);
+        if (impact.freq <= previous.freq || Long.compareUnsigned(impact.norm, previous.norm) <= 0) {
+          throw new RuntimeException("Impacts are not ordered or contain dups, got " + previous + " then " + impact);
+        }
+      }
+      if (level > 0) {
+        // Make sure that impacts at level N trigger better scores than an level N-1
+        Iterator<Impact> previousIt = impacts.getImpacts(level-1).iterator();
+        previous = previousIt.next();
+        Iterator<Impact> it = perLevelImpacts.iterator();
+        Impact impact = it.next();
+        while (previousIt.hasNext()) {
+          previous = previousIt.next();
+          if (previous.freq <= impact.freq && Long.compareUnsigned(previous.norm, impact.norm) >= 0) {
+            // previous triggers a lower score than the current impact, all good
+            continue;
+          }
+          if (it.hasNext() == false) {
+            throw new RuntimeException("Found impact " + previous + " on level " + (level-1) + " but no impact on level "
+                + level + " triggers a better score: " + perLevelImpacts);
+          }
+          impact = it.next();
+        }
+      }
+    }
+  }
+
   /**
    * Test the term index.
    * @lucene.experimental
@@ -1877,7 +1863,11 @@ public final class CheckIndex implements Closeable {
 
       final Fields fields = reader.getPostingsReader().getMergeInstance();
       final FieldInfos fieldInfos = reader.getFieldInfos();
-      status = checkFields(fields, reader.getLiveDocs(), maxDoc, fieldInfos, true, false, infoStream, verbose, doSlowChecks);
+      NormsProducer normsProducer = reader.getNormsReader();
+      if (normsProducer != null) {
+        normsProducer = normsProducer.getMergeInstance();
+      }
+      status = checkFields(fields, reader.getLiveDocs(), maxDoc, fieldInfos, normsProducer, true, false, infoStream, verbose, doSlowChecks);
     } catch (Throwable e) {
       if (failFast) {
         throw IOUtils.rethrowAlways(e);
@@ -1912,7 +1902,7 @@ public final class CheckIndex implements Closeable {
           throw new RuntimeException("there are fields with points, but reader.getPointsReader() is null");
         }
         for (FieldInfo fieldInfo : fieldInfos) {
-          if (fieldInfo.getPointDimensionCount() > 0) {
+          if (fieldInfo.getPointDataDimensionCount() > 0) {
             PointValues values = pointsReader.getValues(fieldInfo.name);
             if (values == null) {
               continue;
@@ -1982,7 +1972,9 @@ public final class CheckIndex implements Closeable {
     private final byte[] globalMinPackedValue;
     private final byte[] globalMaxPackedValue;
     private final int packedBytesCount;
-    private final int numDims;
+    private final int packedIndexBytesCount;
+    private final int numDataDims;
+    private final int numIndexDims;
     private final int bytesPerDim;
     private final String fieldName;
 
@@ -1990,14 +1982,16 @@ public final class CheckIndex implements Closeable {
     public VerifyPointsVisitor(String fieldName, int maxDoc, PointValues values) throws IOException {
       this.maxDoc = maxDoc;
       this.fieldName = fieldName;
-      numDims = values.getNumDimensions();
+      numDataDims = values.getNumDataDimensions();
+      numIndexDims = values.getNumIndexDimensions();
       bytesPerDim = values.getBytesPerDimension();
-      packedBytesCount = numDims * bytesPerDim;
+      packedBytesCount = numDataDims * bytesPerDim;
+      packedIndexBytesCount = numIndexDims * bytesPerDim;
       globalMinPackedValue = values.getMinPackedValue();
       globalMaxPackedValue = values.getMaxPackedValue();
       docsSeen = new FixedBitSet(maxDoc);
-      lastMinPackedValue = new byte[packedBytesCount];
-      lastMaxPackedValue = new byte[packedBytesCount];
+      lastMinPackedValue = new byte[packedIndexBytesCount];
+      lastMaxPackedValue = new byte[packedIndexBytesCount];
       lastPackedValue = new byte[packedBytesCount];
 
       if (values.getDocCount() > values.size()) {
@@ -2012,14 +2006,14 @@ public final class CheckIndex implements Closeable {
         if (values.size() != 0) {
           throw new RuntimeException("getMinPackedValue is null points for field \"" + fieldName + "\" yet size=" + values.size());
         }
-      } else if (globalMinPackedValue.length != packedBytesCount) {
+      } else if (globalMinPackedValue.length != packedIndexBytesCount) {
         throw new RuntimeException("getMinPackedValue for field \"" + fieldName + "\" return length=" + globalMinPackedValue.length + " array, but should be " + packedBytesCount);
       }
       if (globalMaxPackedValue == null) {
         if (values.size() != 0) {
           throw new RuntimeException("getMaxPackedValue is null points for field \"" + fieldName + "\" yet size=" + values.size());
         }
-      } else if (globalMaxPackedValue.length != packedBytesCount) {
+      } else if (globalMaxPackedValue.length != packedIndexBytesCount) {
         throw new RuntimeException("getMaxPackedValue for field \"" + fieldName + "\" return length=" + globalMaxPackedValue.length + " array, but should be " + packedBytesCount);
       }
     }
@@ -2045,25 +2039,26 @@ public final class CheckIndex implements Closeable {
       pointCountSeen++;
       docsSeen.set(docID);
 
-      for(int dim=0;dim<numDims;dim++) {
+      for(int dim=0;dim<numIndexDims;dim++) {
         int offset = bytesPerDim * dim;
 
         // Compare to last cell:
-        if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMinPackedValue, offset) < 0) {
+        if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lastMinPackedValue, offset, offset + bytesPerDim) < 0) {
           // This doc's point, in this dimension, is lower than the minimum value of the last cell checked:
           throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
         }
 
-        if (StringHelper.compare(bytesPerDim, packedValue, offset, lastMaxPackedValue, offset) > 0) {
+        if (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, lastMaxPackedValue, offset, offset + bytesPerDim) > 0) {
           // This doc's point, in this dimension, is greater than the maximum value of the last cell checked:
           throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
         }
       }
 
-      // In the 1D case, PointValues must make a single in-order sweep through all values, and tie-break by
+      // In the 1D data case, PointValues must make a single in-order sweep through all values, and tie-break by
       // increasing docID:
-      if (numDims == 1) {
-        int cmp = StringHelper.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0);
+      // for data dimension > 1, leaves are sorted by the dimension with the lowest cardinality to improve block compression
+      if (numDataDims == 1) {
+        int cmp = Arrays.compareUnsigned(lastPackedValue, 0, bytesPerDim, packedValue, 0, bytesPerDim);
         if (cmp > 0) {
           throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for field=\"" + fieldName + "\", for docID=" + docID + " is out-of-order vs the previous document's value " + Arrays.toString(lastPackedValue));
         } else if (cmp == 0) {
@@ -2079,34 +2074,34 @@ public final class CheckIndex implements Closeable {
     @Override
     public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
       checkPackedValue("min packed value", minPackedValue, -1);
-      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, packedBytesCount);
+      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, packedIndexBytesCount);
       checkPackedValue("max packed value", maxPackedValue, -1);
-      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, packedBytesCount);
+      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, packedIndexBytesCount);
 
-      for(int dim=0;dim<numDims;dim++) {
+      for(int dim=0;dim<numIndexDims;dim++) {
         int offset = bytesPerDim * dim;
 
-        if (StringHelper.compare(bytesPerDim, minPackedValue, offset, maxPackedValue, offset) > 0) {
+        if (Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, maxPackedValue, offset, offset + bytesPerDim) > 0) {
           throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
                                      " is out-of-bounds of the cell's maxPackedValue " + Arrays.toString(maxPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
         }
 
         // Make sure this cell is not outside of the global min/max:
-        if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMinPackedValue, offset) < 0) {
+        if (Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, globalMinPackedValue, offset, offset + bytesPerDim) < 0) {
           throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
                                      " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
         }
 
-        if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMinPackedValue, offset) < 0) {
+        if (Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, globalMinPackedValue, offset, offset + bytesPerDim) < 0) {
           throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
                                      " is out-of-bounds of the global minimum " + Arrays.toString(globalMinPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
         }
 
-        if (StringHelper.compare(bytesPerDim, minPackedValue, offset, globalMaxPackedValue, offset) > 0) {
+        if (Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, globalMaxPackedValue, offset, offset + bytesPerDim) > 0) {
           throw new RuntimeException("packed points cell minPackedValue " + Arrays.toString(minPackedValue) +
                                      " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
         }
-        if (StringHelper.compare(bytesPerDim, maxPackedValue, offset, globalMaxPackedValue, offset) > 0) {
+        if (Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, globalMaxPackedValue, offset, offset + bytesPerDim) > 0) {
           throw new RuntimeException("packed points cell maxPackedValue " + Arrays.toString(maxPackedValue) +
                                      " is out-of-bounds of the global maximum " + Arrays.toString(globalMaxPackedValue) + " dim=" + dim + " field=\"" + fieldName + "\"");
         }
@@ -2122,8 +2117,8 @@ public final class CheckIndex implements Closeable {
         throw new RuntimeException(desc + " is null for docID=" + docID + " field=\"" + fieldName + "\"");
       }
 
-      if (packedValue.length != packedBytesCount) {
-        throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedBytesCount + " for docID=" + docID + " field=\"" + fieldName + "\"");
+      if (packedValue.length != (docID < 0 ? packedIndexBytesCount : packedBytesCount)) {
+        throw new RuntimeException(desc + " has incorrect length=" + packedValue.length + " vs expected=" + packedIndexBytesCount + " for docID=" + docID + " field=\"" + fieldName + "\"");
       }
     }
   }
@@ -2319,27 +2314,33 @@ public final class CheckIndex implements Closeable {
     }
   }
 
-  private static void checkBinaryDocValues(String fieldName, int maxDoc, BinaryDocValues bdv) throws IOException {
-    int doc;
+  private static void checkBinaryDocValues(String fieldName, int maxDoc, BinaryDocValues bdv, BinaryDocValues bdv2) throws IOException {
     if (bdv.docID() != -1) {
       throw new RuntimeException("binary dv iterator for field: " + fieldName + " should start at docID=-1, but got " + bdv.docID());
     }
     // TODO: we could add stats to DVs, e.g. total doc count w/ a value for this field
-    while ((doc = bdv.nextDoc()) != NO_MORE_DOCS) {
+    for (int doc = bdv.nextDoc(); doc != NO_MORE_DOCS; doc = bdv.nextDoc()) {
       BytesRef value = bdv.binaryValue();
       value.isValid();
+
+      if (bdv2.advanceExact(doc) == false) {
+        throw new RuntimeException("advanceExact did not find matching doc ID: " + doc);
+      }
+      BytesRef value2 = bdv2.binaryValue();
+      if (value.equals(value2) == false) {
+        throw new RuntimeException("nextDoc and advanceExact report different values: " + value + " != " + value2);
+      }
     }
   }
 
-  private static void checkSortedDocValues(String fieldName, int maxDoc, SortedDocValues dv) throws IOException {
+  private static void checkSortedDocValues(String fieldName, int maxDoc, SortedDocValues dv, SortedDocValues dv2) throws IOException {
     if (dv.docID() != -1) {
       throw new RuntimeException("sorted dv iterator for field: " + fieldName + " should start at docID=-1, but got " + dv.docID());
     }
     final int maxOrd = dv.getValueCount()-1;
     FixedBitSet seenOrds = new FixedBitSet(dv.getValueCount());
     int maxOrd2 = -1;
-    int docID;
-    while ((docID = dv.nextDoc()) != NO_MORE_DOCS) {
+    for (int doc = dv.nextDoc(); doc != NO_MORE_DOCS; doc = dv.nextDoc()) {
       int ord = dv.ordValue();
       if (ord == -1) {
         throw new RuntimeException("dv for field: " + fieldName + " has -1 ord");
@@ -2348,6 +2349,14 @@ public final class CheckIndex implements Closeable {
       } else {
         maxOrd2 = Math.max(maxOrd2, ord);
         seenOrds.set(ord);
+      }
+
+      if (dv2.advanceExact(doc) == false) {
+        throw new RuntimeException("advanceExact did not find matching doc ID: " + doc);
+      }
+      int ord2 = dv2.ordValue();
+      if (ord != ord2) {
+        throw new RuntimeException("nextDoc and advanceExact report different ords: " + ord + " != " + ord2);
       }
     }
     if (maxOrd != maxOrd2) {
@@ -2369,16 +2378,22 @@ public final class CheckIndex implements Closeable {
     }
   }
   
-  private static void checkSortedSetDocValues(String fieldName, int maxDoc, SortedSetDocValues dv) throws IOException {
+  private static void checkSortedSetDocValues(String fieldName, int maxDoc, SortedSetDocValues dv, SortedSetDocValues dv2) throws IOException {
     final long maxOrd = dv.getValueCount()-1;
     LongBitSet seenOrds = new LongBitSet(dv.getValueCount());
     long maxOrd2 = -1;
-    int docID;
-    while ((docID = dv.nextDoc()) != NO_MORE_DOCS) {
+    for (int docID = dv.nextDoc(); docID != NO_MORE_DOCS; docID = dv.nextDoc()) {
+      if (dv2.advanceExact(docID) == false) {
+        throw new RuntimeException("advanceExact did not find matching doc ID: " + docID);
+      }
       long lastOrd = -1;
       long ord;
       int ordCount = 0;
       while ((ord = dv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        long ord2 = dv2.nextOrd();
+        if (ord != ord2) {
+          throw new RuntimeException("nextDoc and advanceExact report different ords: " + ord + " != " + ord2);
+        }
         if (ord <= lastOrd) {
           throw new RuntimeException("ords out of order: " + ord + " <= " + lastOrd + " for doc: " + docID);
         }
@@ -2392,6 +2407,10 @@ public final class CheckIndex implements Closeable {
       }
       if (ordCount == 0) {
         throw new RuntimeException("dv for field: " + fieldName + " returned docID=" + docID + " yet has no ordinals");
+      }
+      long ord2 = dv2.nextOrd();
+      if (ord != ord2) {
+        throw new RuntimeException("nextDoc and advanceExact report different ords: " + ord + " != " + ord2);
       }
     }
     if (maxOrd != maxOrd2) {
@@ -2414,18 +2433,21 @@ public final class CheckIndex implements Closeable {
     }
   }
   
-  private static void checkSortedNumericDocValues(String fieldName, int maxDoc, SortedNumericDocValues ndv) throws IOException {
+  private static void checkSortedNumericDocValues(String fieldName, int maxDoc, SortedNumericDocValues ndv, SortedNumericDocValues ndv2) throws IOException {
     if (ndv.docID() != -1) {
       throw new RuntimeException("dv iterator for field: " + fieldName + " should start at docID=-1, but got " + ndv.docID());
     }
-    while (true) {
-      int docID = ndv.nextDoc();
-      if (docID == NO_MORE_DOCS) {
-        break;
-      }
+    for (int docID = ndv.nextDoc(); docID != NO_MORE_DOCS; docID = ndv.nextDoc()) {
       int count = ndv.docValueCount();
       if (count == 0) {
         throw new RuntimeException("sorted numeric dv for field: " + fieldName + " returned docValueCount=0 for docID=" + docID);
+      }
+      if (ndv2.advanceExact(docID) == false) {
+        throw new RuntimeException("advanceExact did not find matching doc ID: " + docID);
+      }
+      int count2 = ndv2.docValueCount();
+      if (count != count2) {
+        throw new RuntimeException("advanceExact reports different value count: " + count + " != " + count2);
       }
       long previous = Long.MIN_VALUE;
       for (int j = 0; j < count; j++) {
@@ -2434,18 +2456,30 @@ public final class CheckIndex implements Closeable {
           throw new RuntimeException("values out of order: " + value + " < " + previous + " for doc: " + docID);
         }
         previous = value;
+
+        long value2 = ndv2.nextValue();
+        if (value != value2) {
+          throw new RuntimeException("advanceExact reports different value: " + value + " != " + value2);
+        }
       }
     }
   }
 
-  private static void checkNumericDocValues(String fieldName, NumericDocValues ndv) throws IOException {
-    int doc;
+  private static void checkNumericDocValues(String fieldName, NumericDocValues ndv, NumericDocValues ndv2) throws IOException {
     if (ndv.docID() != -1) {
       throw new RuntimeException("dv iterator for field: " + fieldName + " should start at docID=-1, but got " + ndv.docID());
     }
     // TODO: we could add stats to DVs, e.g. total doc count w/ a value for this field
-    while ((doc = ndv.nextDoc()) != NO_MORE_DOCS) {
-      ndv.longValue();
+    for (int doc = ndv.nextDoc(); doc != NO_MORE_DOCS; doc = ndv.nextDoc()) {
+      long value = ndv.longValue();
+
+      if (ndv2.advanceExact(doc) == false) {
+        throw new RuntimeException("advanceExact did not find matching doc ID: " + doc);
+      }
+      long value2 = ndv2.longValue();
+      if (value != value2) {
+        throw new RuntimeException("advanceExact reports different value: " + value + " != " + value2);
+      }
     }
   }
   
@@ -2454,28 +2488,28 @@ public final class CheckIndex implements Closeable {
       case SORTED:
         status.totalSortedFields++;
         checkDVIterator(fi, maxDoc, dvReader::getSorted);
-        checkBinaryDocValues(fi.name, maxDoc, dvReader.getSorted(fi));
-        checkSortedDocValues(fi.name, maxDoc, dvReader.getSorted(fi));
+        checkBinaryDocValues(fi.name, maxDoc, dvReader.getSorted(fi), dvReader.getSorted(fi));
+        checkSortedDocValues(fi.name, maxDoc, dvReader.getSorted(fi), dvReader.getSorted(fi));
         break;
       case SORTED_NUMERIC:
         status.totalSortedNumericFields++;
         checkDVIterator(fi, maxDoc, dvReader::getSortedNumeric);
-        checkSortedNumericDocValues(fi.name, maxDoc, dvReader.getSortedNumeric(fi));
+        checkSortedNumericDocValues(fi.name, maxDoc, dvReader.getSortedNumeric(fi), dvReader.getSortedNumeric(fi));
         break;
       case SORTED_SET:
         status.totalSortedSetFields++;
         checkDVIterator(fi, maxDoc, dvReader::getSortedSet);
-        checkSortedSetDocValues(fi.name, maxDoc, dvReader.getSortedSet(fi));
+        checkSortedSetDocValues(fi.name, maxDoc, dvReader.getSortedSet(fi), dvReader.getSortedSet(fi));
         break;
       case BINARY:
         status.totalBinaryFields++;
         checkDVIterator(fi, maxDoc, dvReader::getBinary);
-        checkBinaryDocValues(fi.name, maxDoc, dvReader.getBinary(fi));
+        checkBinaryDocValues(fi.name, maxDoc, dvReader.getBinary(fi), dvReader.getBinary(fi));
         break;
       case NUMERIC:
         status.totalNumericFields++;
         checkDVIterator(fi, maxDoc, dvReader::getNumeric);
-        checkNumericDocValues(fi.name, dvReader.getNumeric(fi));
+        checkNumericDocValues(fi.name, dvReader.getNumeric(fi), dvReader.getNumeric(fi));
         break;
       default:
         throw new AssertionError();
@@ -2534,7 +2568,7 @@ public final class CheckIndex implements Closeable {
           
           if (tfv != null) {
             // First run with no deletions:
-            checkFields(tfv, null, 1, fieldInfos, false, true, infoStream, verbose, doSlowChecks);
+            checkFields(tfv, null, 1, fieldInfos, null, false, true, infoStream, verbose, doSlowChecks);
             
             // Only agg stats if the doc is live:
             final boolean doStats = liveDocs == null || liveDocs.get(j);
@@ -2962,6 +2996,25 @@ public final class CheckIndex implements Closeable {
       return 0;
     } else {
       return 1;
+    }
+  }
+
+  private static void checkSoftDeletes(String softDeletesField, SegmentCommitInfo info, SegmentReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    if (infoStream != null)
+      infoStream.print("    test: check soft deletes.....");
+    try {
+      int softDeletes = PendingSoftDeletes.countSoftDeletes(DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(softDeletesField, reader), reader.getLiveDocs());
+      if (softDeletes != info.getSoftDelCount()) {
+        throw new RuntimeException("actual soft deletes: " + softDeletes + " but expected: " +info.getSoftDelCount());
+      }
+    } catch (Exception e) {
+      if (failFast) {
+        throw IOUtils.rethrowAlways(e);
+      }
+      msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
     }
   }
 

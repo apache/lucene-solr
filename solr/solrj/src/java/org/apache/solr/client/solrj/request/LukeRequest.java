@@ -36,6 +36,7 @@ public class LukeRequest extends SolrRequest<LukeResponse> {
   private List<String> fields;
   private int numTerms = -1;
   private boolean showSchema = false;
+  private Boolean includeIndexFieldFlags = null;
   
   public LukeRequest()
   {
@@ -87,7 +88,22 @@ public class LukeRequest extends SolrRequest<LukeResponse> {
 
   //---------------------------------------------------------------------------------
   //---------------------------------------------------------------------------------
-  
+
+  /**
+   * Choose whether /luke should return the index-flags for each field
+   *
+   * Fetching and returning the index-flags for each field in your index has non-zero cost, and can slow down requests to
+   * /luke.  Users who do not care about these values can tell Solr to avoid generating them by setting the
+   * 'includeIndexFieldFlags' flag to false, saving their requests some processing.
+   */
+  public void setIncludeIndexFieldFlags(boolean shouldInclude) {
+    includeIndexFieldFlags = shouldInclude;
+  }
+
+  public boolean getIncludeIndexFieldFlags() { return includeIndexFieldFlags; }
+
+  //---------------------------------------------------------------------------------
+  //---------------------------------------------------------------------------------
 
   @Override
   protected LukeResponse createResponse(SolrClient client) {
@@ -106,6 +122,10 @@ public class LukeRequest extends SolrRequest<LukeResponse> {
     if (showSchema) {
       params.add("show", "schema");
     }
+    if (includeIndexFieldFlags != null) {
+      params.add("includeIndexFieldFlags", includeIndexFieldFlags.toString());
+    }
+
     return params;
   }
 

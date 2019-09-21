@@ -17,9 +17,14 @@
 package org.apache.solr.cloud.autoscaling;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Base class for implementations of {@link TriggerListener}.
@@ -28,16 +33,61 @@ public abstract class TriggerListenerBase implements TriggerListener {
 
   protected AutoScalingConfig.TriggerListenerConfig config;
   protected SolrCloudManager cloudManager;
+  protected SolrResourceLoader loader;
+  protected boolean enabled;
+  /**
+   * Set of valid property names. Subclasses may add to this set
+   * using {@link TriggerUtils#validProperties(Set, String...)}
+   */
+  protected final Set<String> validProperties = new HashSet<>();
+  /**
+   * Set of required property names. Subclasses may add to this set
+   * using {@link TriggerUtils#requiredProperties(Set, Set, String...)}
+   * (required properties are also valid properties).
+   */
+  protected final Set<String> requiredProperties = new HashSet<>();
+  /**
+   * Subclasses can add to this set if they want to allow arbitrary properties that
+   * start with one of valid prefixes.
+   */
+  protected final Set<String> validPropertyPrefixes = new HashSet<>();
+
+  protected TriggerListenerBase() {
+    TriggerUtils.requiredProperties(requiredProperties, validProperties, "trigger");
+    TriggerUtils.validProperties(validProperties, "name", "class", "stage", "beforeAction", "afterAction", "enabled");
+  }
 
   @Override
-  public void init(SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) {
+  public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException {
+    this.loader = loader;
     this.cloudManager = cloudManager;
     this.config = config;
+    this.enabled = Boolean.parseBoolean(String.valueOf(config.properties.getOrDefault("enabled", true)));
+    // validate the config
+    Map<String, String> results = new HashMap<>();
+    // prepare a copy to treat the prefix-based properties
+    Map<String, Object> propsToCheck = new HashMap<>(config.properties);
+    propsToCheck.keySet().removeIf(k ->
+      validPropertyPrefixes.stream().anyMatch(p -> k.startsWith(p)));
+    TriggerUtils.checkProperties(propsToCheck, results, requiredProperties, validProperties);
+    if (!results.isEmpty()) {
+      throw new TriggerValidationException(config.name, results);
+    }
   }
 
   @Override
   public AutoScalingConfig.TriggerListenerConfig getConfig() {
     return config;
+  }
+
+  @Override
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  @Override
+  public void init() throws Exception {
+
   }
 
   @Override

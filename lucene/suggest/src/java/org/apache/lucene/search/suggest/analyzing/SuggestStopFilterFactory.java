@@ -21,8 +21,8 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WordlistLoader; // jdocs
-import org.apache.lucene.analysis.core.StopAnalyzer;
+import org.apache.lucene.analysis.WordlistLoader;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -47,7 +47,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * <ul>
  *  <li><code>ignoreCase</code> defaults to <code>false</code></li>
  *  <li><code>words</code> should be the name of a stopwords file to parse, if not 
- *      specified the factory will use {@link StopAnalyzer#ENGLISH_STOP_WORDS_SET}
+ *      specified the factory will use {@link EnglishAnalyzer#ENGLISH_STOP_WORDS_SET}
  *  </li>
  *  <li><code>format</code> defines how the <code>words</code> file will be parsed, 
  *      and defaults to <code>wordset</code>.  If <code>words</code> is not specified, 
@@ -71,8 +71,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *  </li>
  * </ul>
  * @since 5.0.0
+ * @lucene.spi {@value #NAME}
  */
-  public class SuggestStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+public class SuggestStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "suggestStop";
+
   /** the default format, one word per line, whole line comments start with "#" */
   public static final String FORMAT_WORDSET = "wordset";
   /** multiple words may be specified on each line, trailing comments start with "&#124;" */
@@ -108,7 +113,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
       if (null != format) {
         throw new IllegalArgumentException("'format' can not be specified w/o an explicit 'words' file: " + format);
       }
-      stopWords = new CharArraySet(StopAnalyzer.ENGLISH_STOP_WORDS_SET, ignoreCase);
+      stopWords = new CharArraySet(EnglishAnalyzer.ENGLISH_STOP_WORDS_SET, ignoreCase);
     }
   }
 

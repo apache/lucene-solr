@@ -51,7 +51,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class JdbcDataSource extends
         DataSource<Iterator<Map<String, Object>>> {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected Callable<Connection> factory;
 
@@ -87,7 +87,7 @@ public class JdbcDataSource extends
         if (batchSize == -1)
           batchSize = Integer.MIN_VALUE;
       } catch (NumberFormatException e) {
-        LOG.warn("Invalid batch size: " + bsz);
+        log.warn("Invalid batch size: " + bsz);
       }
     }
 
@@ -172,7 +172,7 @@ public class JdbcDataSource extends
     return factory = new Callable<Connection>() {
       @Override
       public Connection call() throws Exception {
-        LOG.info("Creating a connection for entity "
+        log.info("Creating a connection for entity "
                 + context.getEntityAttribute(DataImporter.NAME) + " with URL: "
                 + url);
         long start = System.nanoTime();
@@ -188,7 +188,7 @@ public class JdbcDataSource extends
             // the class loader of the class which is trying to make the connection.
             // This is a workaround for cases where the user puts the driver jar in the
             // solr.home/lib or solr.home/core/lib directories.
-            Driver d = (Driver) DocBuilder.loadClass(driver, context.getSolrCore()).newInstance();
+            Driver d = (Driver) DocBuilder.loadClass(driver, context.getSolrCore()).getConstructor().newInstance();
             c = d.connect(url, initProps);
           }
         }
@@ -199,13 +199,13 @@ public class JdbcDataSource extends
             try {
               c.close();
             } catch (SQLException e2) {
-              LOG.warn("Exception closing connection during cleanup", e2);
+              log.warn("Exception closing connection during cleanup", e2);
             }
 
             throw new DataImportHandlerException(SEVERE, "Exception initializing SQL connection", e);
           }
         }
-        LOG.info("Time taken for getConnection(): "
+        log.info("Time taken for getConnection(): "
             + TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
         return c;
       }
@@ -289,7 +289,7 @@ public class JdbcDataSource extends
   }
 
   private void logError(String msg, Exception e) {
-    LOG.warn(msg, e);
+    log.warn(msg, e);
   }
 
   protected List<String> readFieldNames(ResultSetMetaData metaData)
@@ -316,10 +316,10 @@ public class JdbcDataSource extends
       try {
         Connection c = getConnection();
         stmt = createStatement(c, batchSize, maxRows);
-        LOG.debug("Executing SQL: " + query);
+        log.debug("Executing SQL: " + query);
         long start = System.nanoTime();
         resultSet = executeStatement(stmt, query);
-        LOG.trace("Time taken for sql :"
+        log.trace("Time taken for sql :"
                 + TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
         setColNames(resultSet);
       } catch (Exception e) {
@@ -537,18 +537,6 @@ public class JdbcDataSource extends
     }
   }
 
-  @Override
-  protected void finalize() throws Throwable {
-    try {
-      if(!isClosed){
-        LOG.error("JdbcDataSource was not closed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
-        close();
-      }
-    } finally {
-      super.finalize();
-    }
-  }
-
   private boolean isClosed = false;
 
   @Override
@@ -575,7 +563,7 @@ public class JdbcDataSource extends
         conn.close();
       }
     } catch (Exception e) {
-      LOG.error("Ignoring Error when closing connection", e);
+      log.error("Ignoring Error when closing connection", e);
     }
   }
 

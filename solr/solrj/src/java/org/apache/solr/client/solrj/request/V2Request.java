@@ -42,6 +42,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   private SolrParams solrParams;
   public final boolean useBinary;
   private String collection;
+  private boolean forceV2 = false;
   private boolean isPerCollectionRequest = false;
 
   private V2Request(METHOD m, String resource, boolean useBinary) {
@@ -55,6 +56,10 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
   }
 
+  public boolean isForceV2(){
+    return forceV2;
+  }
+
   @Override
   public SolrParams getParams() {
     return solrParams;
@@ -66,7 +71,6 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     if (payload == null) return null;
     if (payload instanceof String) {
       return new RequestWriter.StringPayloadContentWriter((String) payload, JSON_MIME);
-
     }
     return new RequestWriter.ContentWriter() {
       @Override
@@ -74,8 +78,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
         if (useBinary) {
           new JavaBinCodec().marshal(payload, os);
         } else {
-          byte[] b = Utils.toJSON(payload);
-          os.write(b);
+          Utils.writeJson(payload, os, false);
         }
       }
 
@@ -115,6 +118,8 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     private SolrParams params;
     private boolean useBinary = false;
 
+    private boolean forceV2EndPoint = false;
+
     /**
      * Create a Builder object based on the provided resource.
      * The default method is GET.
@@ -132,7 +137,16 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     }
 
     /**
+     * Only for testing. It's always true otherwise
+     */
+    public Builder forceV2(boolean flag) {
+      forceV2EndPoint = flag;
+      return this;
+    }
+
+    /**
      * Set payload for request.
+     *
      * @param payload as UTF-8 String
      * @return builder object
      */
@@ -163,6 +177,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
       V2Request v2Request = new V2Request(method, resource, useBinary);
       v2Request.solrParams = params;
       v2Request.payload = payload;
+      v2Request.forceV2 = forceV2EndPoint;
       return v2Request;
     }
   }

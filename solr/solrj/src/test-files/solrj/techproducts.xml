@@ -1,0 +1,421 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<add>
+  <doc>
+    <field name="id">TWINX2048-3200PRO</field>
+    <field name="name">CORSAIR  XMS 2GB (2 x 1GB) 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) Dual Channel Kit System Memory - Retail</field>
+    <field name="manu">Corsair Microsystems Inc.</field>
+    <!-- Join -->
+    <field name="manu_id_s">corsair</field>
+    <field name="cat">electronics</field>
+    <field name="cat">memory</field>
+    <field name="features">CAS latency 2,  2-3-3-6 timing, 2.75v, unbuffered, heat-spreader</field>
+    <field name="price">185.00</field>
+    <field name="popularity">5</field>
+    <field name="inStock">true</field>
+    <!-- San Francisco store -->
+    <field name="store">37.7752,-122.4232</field>
+    <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
+    <!-- a field for testing payload tagged text via DelimitedPayloadTokenFilter -->
+    <field name="payloads">electronics|6.0 memory|3.0</field>
+  </doc>
+  <doc>
+    <field name="id">VS1GB400C3</field>
+    <field name="name">CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail</field>
+    <field name="manu">Corsair Microsystems Inc.</field>
+    <!-- Join -->
+    <field name="manu_id_s">corsair</field>
+    <field name="cat">electronics</field>
+    <field name="cat">memory</field>
+    <field name="price">74.99</field>
+    <field name="popularity">7</field>
+    <field name="inStock">true</field>
+    <!-- Dodge City store -->
+    <field name="store">37.7752,-100.0232</field>
+    <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
+    <field name="payloads">electronics|4.0 memory|2.0</field>
+  </doc>
+  <doc>
+    <field name="id">VDBDB1A16</field>
+    <field name="name">A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM</field>
+    <field name="manu">A-DATA Technology Inc.</field>
+    <!-- Join -->
+    <field name="manu_id_s">corsair</field>
+    <field name="cat">electronics</field>
+    <field name="cat">memory</field>
+    <field name="features">CAS latency 3,   2.7v</field>
+    <!-- note: price & popularity is missing on this one -->
+    <field name="popularity">0</field>
+    <field name="inStock">true</field>
+    <!-- Buffalo store -->
+    <field name="store">45.18414,-93.88141</field>
+    <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
+    <field name="payloads">electronics|0.9 memory|0.1</field>
+  </doc>
+  <doc>
+    <field name="id">MA147LL/A</field>
+    <field name="name">Apple 60 GB iPod with Video Playback Black</field>
+    <field name="manu">Apple Computer Inc.</field>
+    <!-- Join -->
+    <field name="manu_id_s">apple</field>
+    <field name="cat">electronics</field>
+    <field name="cat">music</field>
+    <field name="features">iTunes, Podcasts, Audiobooks</field>
+    <field name="features">Stores up to 15,000 songs, 25,000 photos, or 150 hours of video</field>
+    <field name="features">2.5-inch, 320x240 color TFT LCD display with LED backlight</field>
+    <field name="features">Up to 20 hours of battery life</field>
+    <field name="features">Plays AAC, MP3, WAV, AIFF, Audible, Apple Lossless, H.264 video</field>
+    <field name="features">Notes, Calendar, Phone book, Hold button, Date display, Photo wallet, Built-in games, JPEG photo playback, Upgradeable firmware, USB 2.0 compatibility, Playback speed control, Rechargeable capability, Battery level indication</field>
+    <field name="includes">earbud headphones, USB cable</field>
+    <field name="weight">5.5</field>
+    <field name="price">399.00</field>
+    <field name="popularity">10</field>
+    <field name="inStock">true</field>
+    <!-- Dodge City store -->
+    <field name="store">37.7752,-100.0232</field>
+    <field name="manufacturedate_dt">2005-10-12T08:00:00Z</field>
+  </doc>
+  <doc>
+    <field name="id">F8V7067-APL-KIT</field>
+    <field name="name">Belkin Mobile Power Cord for iPod w/ Dock</field>
+    <field name="manu">Belkin</field>
+    <!-- Join -->
+    <field name="manu_id_s">belkin</field>
+    <field name="cat">electronics</field>
+    <field name="cat">connector</field>
+    <field name="features">car power adapter, white</field>
+    <field name="weight">4.0</field>
+    <field name="price">19.95</field>
+    <field name="popularity">1</field>
+    <field name="inStock">false</field>
+    <!-- Buffalo store -->
+    <field name="store">45.18014,-93.87741</field>
+    <field name="manufacturedate_dt">2005-08-01T16:30:25Z</field>
+  </doc>
+  <doc>
+    <field name="id">IW-02</field>
+    <field name="name">iPod &amp; iPod Mini USB 2.0 Cable</field>
+    <field name="manu">Belkin</field>
+    <!-- Join -->
+    <field name="manu_id_s">belkin</field>
+    <field name="cat">electronics</field>
+    <field name="cat">connector</field>
+    <field name="features">car power adapter for iPod, white</field>
+    <field name="weight">2.0</field>
+    <field name="price">11.50</field>
+    <field name="popularity">1</field>
+    <field name="inStock">false</field>
+    <!-- San Francisco store -->
+    <field name="store">37.7752,-122.4232</field>
+    <field name="manufacturedate_dt">2006-02-14T23:55:59Z</field>
+  </doc>
+  <doc>
+    <field name="id">9885A004</field>
+    <field name="name">Canon PowerShot SD500</field>
+    <field name="manu">Canon Inc.</field>
+    <!-- Join -->
+    <field name="manu_id_s">canon</field>
+    <field name="cat">electronics</field>
+    <field name="cat">camera</field>
+    <field name="features">3x zoop, 7.1 megapixel Digital ELPH</field>
+    <field name="features">movie clips up to 640x480 @30 fps</field>
+    <field name="features">2.0" TFT LCD, 118,000 pixels</field>
+    <field name="features">built in flash, red-eye reduction</field>
+    <field name="includes">32MB SD card, USB cable, AV cable, battery</field>
+    <field name="weight">6.4</field>
+    <field name="price">329.95</field>
+    <field name="popularity">7</field>
+    <field name="inStock">true</field>
+    <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
+    <!-- Buffalo store -->
+    <field name="store">45.19614,-93.90341</field>
+  </doc>
+  <doc>
+    <field name="id">VA902B</field>
+    <field name="name">ViewSonic VA902B - flat panel display - TFT - 19"</field>
+    <field name="manu">ViewSonic Corp.</field>
+    <!-- Join -->
+    <field name="manu_id_s">viewsonic</field>
+    <field name="cat">electronics and stuff2</field>
+    <field name="features">19" TFT active matrix LCD, 8ms response time, 1280 x 1024 native resolution</field>
+    <field name="weight">190.4</field>
+    <field name="price">279.95</field>
+    <field name="popularity">6</field>
+    <field name="inStock">true</field>
+    <!-- Buffalo store -->
+    <field name="store">45.18814,-93.88541</field>
+  </doc>
+  <doc>
+    <field name="id">EN7800GTX/2DHTV/256M</field>
+    <field name="name">ASUS Extreme N7800GTX/2DHTV (256 MB)</field>
+    <!-- Denormalized -->
+    <field name="manu">ASUS Computer Inc.</field>
+    <!-- Join -->
+    <field name="manu_id_s">asus</field>
+    <field name="cat">electronics</field>
+    <field name="cat">graphics card</field>
+    <field name="features">NVIDIA GeForce 7800 GTX GPU/VPU clocked at 486MHz</field>
+    <field name="features">256MB GDDR3 Memory clocked at 1.35GHz</field>
+    <field name="features">PCI Express x16</field>
+    <field name="features">Dual DVI connectors, HDTV out, video input</field>
+    <field name="features">OpenGL 2.0, DirectX 9.0</field>
+    <field name="weight">16.0</field>
+    <field name="price">479.95</field>
+    <field name="popularity">7</field>
+    <field name="store">40.7143,-74.006</field>
+    <field name="inStock">false</field>
+    <field name="manufacturedate_dt">2006-02-13T15:26:37Z/DAY</field>
+  </doc>
+  <!-- yes, you can add more than one document at a time -->
+  <doc>
+    <field name="id">100-435805</field>
+    <field name="name">ATI Radeon X1900 XTX 512 MB PCIE Video Card</field>
+    <field name="manu">ATI Technologies</field>
+    <!-- Join -->
+    <field name="manu_id_s">ati</field>
+    <field name="cat">electronics</field>
+    <field name="cat">graphics card</field>
+    <field name="features">ATI RADEON X1900 GPU/VPU clocked at 650MHz</field>
+    <field name="features">512MB GDDR3 SDRAM clocked at 1.55GHz</field>
+    <field name="features">PCI Express x16</field>
+    <field name="features">dual DVI, HDTV, svideo, composite out</field>
+    <field name="features">OpenGL 2.0, DirectX 9.0</field>
+    <field name="weight">48.0</field>
+    <field name="price">649.99</field>
+    <field name="popularity">7</field>
+    <field name="inStock">false</field>
+    <field name="manufacturedate_dt">2006-02-13T15:26:37Z/DAY</field>
+    <!-- NYC store -->
+    <field name="store">40.7143,-74.006</field>
+  </doc>
+  <doc>
+    <field name="id">0579B002</field>
+    <field name="name">Canon PIXMA MP500 All-In-One Photo Printer</field>
+    <field name="manu">Canon Inc.</field>
+    <!-- Join -->
+    <field name="manu_id_s">canon</field>
+    <field name="cat">electronics</field>
+    <field name="cat">multifunction printer</field>
+    <field name="cat">printer</field>
+    <field name="cat">scanner</field>
+    <field name="cat">copier</field>
+    <field name="features">Multifunction ink-jet color photo printer</field>
+    <field name="features">Flatbed scanner, optical scan resolution of 1,200 x 2,400 dpi</field>
+    <field name="features">2.5" color LCD preview screen</field>
+    <field name="features">Duplex Copying</field>
+    <field name="features">Printing speed up to 29ppm black, 19ppm color</field>
+    <field name="features">Hi-Speed USB</field>
+    <field name="features">memory card: CompactFlash, Micro Drive, SmartMedia, Memory Stick, Memory Stick Pro, SD Card, and MultiMediaCard</field>
+    <field name="weight">352.0</field>
+    <field name="price">179.99</field>
+    <field name="popularity">6</field>
+    <field name="inStock">true</field>
+    <!-- Buffalo store -->
+    <field name="store">45.19214,-93.89941</field>
+  </doc>
+  <doc>
+    <field name="id">3007WFP</field>
+    <field name="name">Dell Widescreen UltraSharp 3007WFP</field>
+    <field name="manu">Dell, Inc.</field>
+    <!-- Join -->
+    <field name="manu_id_s">dell</field>
+    <field name="cat">electronics and computer1</field>
+    <field name="features">30" TFT active matrix LCD, 2560 x 1600, .25mm dot pitch, 700:1 contrast</field>
+    <field name="includes">USB cable</field>
+    <field name="weight">401.6</field>
+    <field name="price">2199.0</field>
+    <field name="popularity">6</field>
+    <field name="inStock">true</field>
+    <!-- Buffalo store -->
+    <field name="store">43.17614,-90.57341</field>
+  </doc>
+  <doc>
+    <field name="id">adata</field>
+    <field name="compName_s">A-Data Technology</field>
+    <field name="address_s">46221 Landing Parkway Fremont, CA 94538</field>
+  </doc>
+  <doc>
+    <field name="id">apple</field>
+    <field name="compName_s">Apple</field>
+    <field name="address_s">1 Infinite Way, Cupertino CA</field>
+  </doc>
+  <doc>
+    <field name="id">asus</field>
+    <field name="compName_s">ASUS Computer</field>
+    <field name="address_s">800 Corporate Way Fremont, CA 94539</field>
+  </doc>
+  <doc>
+    <field name="id">ati</field>
+    <field name="compName_s">ATI Technologies</field>
+    <field name="address_s">33 Commerce Valley Drive East Thornhill, ON L3T 7N6 Canada</field>
+  </doc>
+  <doc>
+    <field name="id">belkin</field>
+    <field name="compName_s">Belkin</field>
+    <field name="address_s">12045 E. Waterfront Drive Playa Vista, CA 90094</field>
+  </doc>
+  <doc>
+    <field name="id">canon</field>
+    <field name="compName_s">Canon, Inc.</field>
+    <field name="address_s">One Canon Plaza Lake Success, NY 11042</field>
+  </doc>
+  <doc>
+    <field name="id">corsair</field>
+    <field name="compName_s">Corsair Microsystems</field>
+    <field name="address_s">46221 Landing Parkway Fremont, CA 94538</field>
+  </doc>
+  <doc>
+    <field name="id">dell</field>
+    <field name="compName_s">Dell, Inc.</field>
+    <field name="address_s">One Dell Way Round Rock, Texas 78682</field>
+  </doc>
+  <doc>
+    <field name="id">maxtor</field>
+    <field name="compName_s">Maxtor Corporation</field>
+    <field name="address_s">920 Disc Drive Scotts Valley, CA 95066</field>
+  </doc>
+  <doc>
+    <field name="id">samsung</field>
+    <field name="compName_s">Samsung Electronics Co. Ltd.</field>
+    <field name="address_s">105 Challenger Rd. Ridgefield Park, NJ 07660-0511</field>
+  </doc>
+  <doc>
+    <field name="id">viewsonic</field>
+    <field name="compName_s">ViewSonic Corp</field>
+    <field name="address_s">381 Brea Canyon Road Walnut, CA 91789-0708</field>
+  </doc>
+  <doc>
+    <field name="id">SP2514N</field>
+    <field name="name">Samsung SpinPoint P120 SP2514N - hard drive - 250 GB - ATA-133</field>
+    <field name="manu">Samsung Electronics Co. Ltd.</field>
+    <!-- Join -->
+    <field name="manu_id_s">samsung</field>
+    <field name="cat">electronics</field>
+    <field name="cat">hard drive</field>
+    <field name="features">7200RPM, 8MB cache, IDE Ultra ATA-133</field>
+    <field name="features">NoiseGuard, SilentSeek technology, Fluid Dynamic Bearing (FDB) motor</field>
+    <field name="price">92.0</field>
+    <field name="popularity">6</field>
+    <field name="inStock">true</field>
+    <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
+    <!-- Near Oklahoma city -->
+    <field name="store">35.0752,-97.032</field>
+  </doc>
+  <doc>
+    <field name="id">6H500F0</field>
+    <field name="name">Maxtor DiamondMax 11 - hard drive - 500 GB - SATA-300</field>
+    <field name="manu">Maxtor Corp.</field>
+    <!-- Join -->
+    <field name="manu_id_s">maxtor</field>
+    <field name="cat">electronics</field>
+    <field name="cat">hard drive</field>
+    <field name="features">SATA 3.0Gb/s, NCQ</field>
+    <field name="features">8.5ms seek</field>
+    <field name="features">16MB cache</field>
+    <field name="price">350.0</field>
+    <field name="popularity">6</field>
+    <field name="inStock">true</field>
+    <!-- Buffalo store -->
+    <field name="store">45.17614,-93.87341</field>
+    <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
+  </doc>
+  <doc>
+    <field name="id">USD</field>
+    <field name="name">One Dollar</field>
+    <field name="manu">Bank of America</field>
+    <field name="manu_id_s">boa</field>
+    <field name="cat">currency</field>
+    <field name="features">Coins and notes</field>
+    <field name="price_c">1,USD</field>
+    <field name="inStock">true</field>
+  </doc>
+  <doc>
+    <field name="id">EUR</field>
+    <field name="name">One Euro</field>
+    <field name="manu">European Union</field>
+    <field name="manu_id_s">eu</field>
+    <field name="cat">currency</field>
+    <field name="features">Coins and notes</field>
+    <field name="price_c">1,EUR</field>
+    <field name="inStock">true</field>
+  </doc>
+  <doc>
+    <field name="id">GBP</field>
+    <field name="name">One British Pound</field>
+    <field name="manu">U.K.</field>
+    <field name="manu_id_s">uk</field>
+    <field name="cat">currency</field>
+    <field name="features">Coins and notes</field>
+    <field name="price_c">1,GBP</field>
+    <field name="inStock">true</field>
+  </doc>
+  <doc>
+    <field name="id">NOK</field>
+    <field name="name">One Krone</field>
+    <field name="manu">Bank of Norway</field>
+    <field name="manu_id_s">nor</field>
+    <field name="cat">currency</field>
+    <field name="features">Coins and notes</field>
+    <field name="price_c">1,NOK</field>
+    <field name="inStock">true</field>
+  </doc>
+  <doc>
+    <field name="id">UTF8TEST</field>
+    <field name="name">Test with some UTF-8 encoded characters</field>
+    <field name="manu">Apache Software Foundation</field>
+    <field name="cat">software</field>
+    <field name="cat">search</field>
+    <field name="features">No accents here</field>
+    <field name="features">This is an e acute: &#xE9;</field>
+    <field name="features">eaiou with circumflexes: &#xEA;&#xE2;&#xEE;&#xF4;&#xFB;</field>
+    <field name="features">eaiou with umlauts: &#xEB;&#xE4;&#xEF;&#xF6;&#xFC;</field>
+    <field name="features">tag with escaped chars: &lt;nicetag/&gt;</field>
+    <field name="features">escaped ampersand: Bonnie &amp; Clyde</field>
+    <field name="features">Outside the BMP:&#x10308; codepoint=10308, a circle with an x inside. UTF8=f0908c88 UTF16=d800 df08</field>
+    <field name="price">0.0</field>
+    <field name="inStock">true</field>
+  </doc>
+  <doc>
+    <field name="id">GB18030TEST</field>
+    <field name="name">Test with some GB18030 encoded characters</field>
+    <field name="features">No accents here</field>
+    <field name="features">&#xD5;&#xE2;&#xCA;&#xC7;&#xD2;&#xBB;&#xB8;&#xF6;&#xB9;&#xA6;&#xC4;&#xDC;</field>
+    <field name="features">This is a feature (translated)</field>
+    <field name="features">&#xD5;&#xE2;&#xB7;&#xDD;&#xCE;&#xC4;&#xBC;&#xFE;&#xCA;&#xC7;&#xBA;&#xDC;&#xD3;&#xD0;&#xB9;&#xE2;&#xD4;&#xF3;</field>
+    <field name="features">This document is very shiny (translated)</field>
+    <field name="price">0.0</field>
+    <field name="inStock">true</field>
+  </doc>
+  <doc>
+    <field name="id">SOLR1000</field>
+    <field name="name">Solr, the Enterprise Search Server</field>
+    <field name="manu">Apache Software Foundation</field>
+    <field name="cat">software</field>
+    <field name="cat">search</field>
+    <field name="features">Advanced Full-Text Search Capabilities using Lucene</field>
+    <field name="features">Optimized for High Volume Web Traffic</field>
+    <field name="features">Standards Based Open Interfaces - XML and HTTP</field>
+    <field name="features">Comprehensive HTML Administration Interfaces</field>
+    <field name="features">Scalability - Efficient Replication to other Solr Search Servers</field>
+    <field name="features">Flexible and Adaptable with XML configuration and Schema</field>
+    <field name="features">Good unicode support: h&#xE9;llo (hello with an accent over the e)</field>
+    <field name="price">0.0</field>
+    <field name="popularity">10</field>
+    <field name="inStock">true</field>
+    <field name="incubationdate_dt">2006-01-17T00:00:00.000Z</field>
+  </doc>
+</add>

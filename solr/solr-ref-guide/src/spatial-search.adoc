@@ -109,7 +109,12 @@ When used with `BBoxField`, additional options are supported:
 
 === geofilt
 
-The `geofilt` filter allows you to retrieve results based on the geospatial distance (AKA the "great circle distance") from a given point. Another way of looking at it is that it creates a circular shape filter. For example, to find all documents within five kilometers of a given lat/lon point, you could enter `&q=*:*&fq={!geofilt sfield=store}&pt=45.15,-93.85&d=5`. This filter returns all results within a circle of the given radius around the initial point:
+The `geofilt` filter allows you to retrieve results based on the geospatial distance (AKA the "great circle distance") from a given point. Another way of looking at it is that it creates a circular shape filter. For example, to find all documents within five kilometers of a given lat/lon point, you could enter:
+
+[source,text]
+&q=*:*&fq={!geofilt sfield=store}&pt=45.15,-93.85&d=5
+
+This filter returns all results within a circle of the given radius around the initial point:
 
 image::images/spatial-search/circle.png[5KM radius]
 
@@ -244,7 +249,9 @@ The name of the field type.
 This should be `solr.SpatialRecursivePrefixTreeFieldType`. But be aware that the Lucene spatial module includes some other so-called "spatial strategies" other than RPT, notably TermQueryPT*, BBox, PointVector*, and SerializedDV. Solr requires a field type to parallel these in order to use them. The asterisked ones have them.
 
 `spatialContextFactory`::
-This is a Java class name to an internal extension point governing support for shape definitions & parsing. If you require polygon support, set this to `JTS` – an alias for `org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory`; otherwise it can be omitted. See important info below about JTS. (note: prior to Solr 6, the "org.locationtech.spatial4j" part was "com.spatial4j.core" and there used to be no convenience JTS alias)
+This is a Java class name to an internal extension point governing support for shape definitions & parsing.
+There are two built-in aliases for known implementations: `Geo3D` and `JTS`.
+The default blank value does not support polygons.
 
 `geo`::
 If `true`, the default, latitude and longitude coordinates will be used and the mathematical model will generally be a sphere. If `false`, the coordinates will be generic X & Y on a 2D plane using Euclidean/Cartesian geometry.
@@ -296,11 +303,9 @@ Underlying Solr is the Spatial4j library which implements them.  To support othe
 The https://github.com/locationtech/jts[JTS Topology Suite] is a popular computational geometry library with a Euclidean/cartesian (flat 2D) model.
 It supports a variety of shapes including polygons, buffering shapes, and some invalid polygon repair fall-backs.
 With the help of Spatial4j, included with Solr, the polygons support dateline (anti-meridian) crossing.
-Unfortunately Solr cannot include JTS due to its LGPL license.
 You must download it (a JAR file) and put that in a special location internal to Solr:  `SOLR_INSTALL/server/solr-webapp/webapp/WEB-INF/lib/`.
-You can readily download it here: https://repo1.maven.org/maven2/com/vividsolutions/jts-core/.
+You can readily download it here: http://central.maven.org/maven2/org/locationtech/jts/jts-core/1.15.0/.
 _It will not work if placed in other more typical Solr lib directories, unfortunately._
-JTS's license is expected to be transitioned to BSD by the end of 2017.
 
 Set the `spatialContextFactory` attribute on the field type to `JTS`.
 
@@ -335,7 +340,7 @@ Beyond this Reference Guide and Spatila4j's docs, there are some details that re
 
 Geo3D is the colloquial name of the Lucene spatial-3d module, included with Solr.
 It's a computational geometry library implementing a variety of shapes (including polygons) on a sphere or WGS84 ellipsoid.
-Geo3D is particularly suited for spatial applications where the geometries cover large distances across the globe.
+Geo3D is particularly suited for spatial applications where the geometries cover large distances across the globe or are near the poles.
 Geo3D is named as-such due to its internal implementation that uses geocentric coordinates (X,Y,Z),
   *not* for 3-dimensional geometry, which it does not support.
 Despite these internal details, you still supply latitude and longitude as you would normally in Solr.
@@ -344,11 +349,21 @@ Set the `spatialContextFactory` attribute on the field type to `Geo3D`.
 
 [source,xml]
 ----
-<fieldType name="geom" class="solr.SpatialRecursivePrefixTreeFieldType"
-             spatialContextFactory="Geo3D" planetModel="WGS84"/><!-- or "sphere" -->
+<fieldType name="geom"
+  class="solr.SpatialRecursivePrefixTreeFieldType"
+  spatialContextFactory="Geo3D"
+  prefixTree="s2"
+  planetModel="WGS84"/><!-- or "sphere" -->
 ----
 
 Once the field type has been defined, define a field that uses it.
+
+The `prefixTree="s2"` setting is optional and only possible with Geo3D.
+It was developed with Geo3D in mind to be more efficient than the other grids.
+
+IMPORTANT: When using Geo3D, the order of polygon points matters!
+You must follow the so-called "right hand rule": the exterior ring must be counter-clockwise order and the interior holes must be clockwise.
+If the order is wrong then the interpretation is inverted, thus the polygon will be interpreted as encompassing most of the globe.
 
 === RptWithGeometrySpatialField
 
@@ -372,10 +387,13 @@ When using this field type, you will likely _not_ want to mark the field as stor
 
 The RPT field supports generating a 2D grid of facet counts for documents having spatial data in each grid cell. For high-detail grids, this can be used to plot points, and for lesser detail it can be used for heatmap generation. The grid cells are determined at index-time based on RPT's configuration. At facet counting time, the indexed cells in the region of interest are traversed and a grid of counters corresponding to each cell are incremented. Solr can return the data in a straight-forward 2D array of integers or in a PNG which compresses better for larger data sets but must be decoded.
 
-The heatmap feature is accessed from Solr's faceting feature. As a part of faceting, it supports the `key` local parameter as well as excluding tagged filter queries, just like other types of faceting do. This allows multiple heatmaps to be returned on the same field with different filters.
+The heatmap feature is accessible both from Solr's standard faceting feature, plus the newer more flexible <<json-facet-api.adoc#heatmap-facet,JSON Facet API>>.
+We'll proceed now with standard faceting.
+As a part of faceting, it supports the `key` local parameter as well as excluding tagged filter queries, just like other types of faceting do.
+This allows multiple heatmaps to be returned on the same field with different filters.
 
 `facet`::
-Set to `true` to enable faceting.
+Set to `true` to enable standard faceting.
 
 `facet.heatmap`::
 The field name of type RPT.

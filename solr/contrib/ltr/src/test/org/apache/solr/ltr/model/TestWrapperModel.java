@@ -63,31 +63,19 @@ public class TestWrapperModel extends TestRerankBase {
   @Test
   public void testValidate() throws Exception {
     WrapperModel wrapperModel = new StubWrapperModel("testModel");
-    try {
-      wrapperModel.validate();
-    } catch (ModelException e) {
-      fail("Validation must succeed if no wrapped model is set");
-    }
+    wrapperModel.validate();
 
     // wrapper model with features
     WrapperModel wrapperModelWithFeatures = new StubWrapperModel("testModel",
         Collections.singletonList(new ValueFeature("val", Collections.emptyMap())), Collections.emptyList());
-    try {
-      wrapperModelWithFeatures.validate();
-      fail("Validation must fail if features of the wrapper model isn't empty");
-    } catch (ModelException e) {
-      assertEquals("features must be empty for the wrapper model testModel", e.getMessage());
-    }
+    ModelException e = expectThrows(ModelException.class, wrapperModelWithFeatures::validate);
+    assertEquals("features must be empty for the wrapper model testModel", e.getMessage());
 
     // wrapper model with norms
     WrapperModel wrapperModelWithNorms = new StubWrapperModel("testModel",
         Collections.emptyList(), Collections.singletonList(IdentityNormalizer.INSTANCE));
-    try {
-      wrapperModelWithNorms.validate();
-      fail("Validation must fail if norms of the wrapper model isn't empty");
-    } catch (ModelException e) {
-      assertEquals("norms must be empty for the wrapper model testModel", e.getMessage());
-    }
+    e = expectThrows(ModelException.class, wrapperModelWithNorms::validate);
+    assertEquals("norms must be empty for the wrapper model testModel", e.getMessage());
 
     assumeWorkingMockito();
 
@@ -102,11 +90,7 @@ public class TestWrapperModel extends TestRerankBase {
                   IdentityNormalizer.INSTANCE,
                   IdentityNormalizer.INSTANCE)
               );
-      try {
-        wrapperModel.updateModel(wrappedModel);
-      } catch (ModelException e) {
-        fail("Validation must succeed if the wrapped model is valid");
-      }
+      wrapperModel.updateModel(wrappedModel);
     }
 
     // update invalid model (feature store mismatch)
@@ -120,12 +104,8 @@ public class TestWrapperModel extends TestRerankBase {
                   IdentityNormalizer.INSTANCE,
                   IdentityNormalizer.INSTANCE)
               );
-      try {
-        wrapperModel.updateModel(wrappedModel);
-        fail("Validation must fail if wrapped model feature store differs from wrapper model feature store");
-      } catch (ModelException e) {
-        assertEquals("wrapper feature store name (_DEFAULT_) must match the wrapped feature store name (wrappedFeatureStore)", e.getMessage());
-      }
+      e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
+      assertEquals("wrapper feature store name (_DEFAULT_) must match the wrapped feature store name (wrappedFeatureStore)", e.getMessage());
     }
 
     // update invalid model (no features)
@@ -137,12 +117,8 @@ public class TestWrapperModel extends TestRerankBase {
                   IdentityNormalizer.INSTANCE,
                   IdentityNormalizer.INSTANCE)
               );
-      try {
-        wrapperModel.updateModel(wrappedModel);
-        fail("Validation must fail if the wrapped model is invalid");
-      } catch (ModelException e) {
-        assertEquals("no features declared for model testModel", e.getMessage());
-      }
+      e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
+      assertEquals("no features declared for model testModel", e.getMessage());
     }
 
     // update invalid model (no norms)
@@ -154,12 +130,8 @@ public class TestWrapperModel extends TestRerankBase {
                   new ValueFeature("v2", Collections.emptyMap())),
               Collections.emptyList()
               );
-      try {
-        wrapperModel.updateModel(wrappedModel);
-        fail("Validation must fail if the wrapped model is invalid");
-      } catch (ModelException e) {
-        assertEquals("counted 2 features and 0 norms in model testModel", e.getMessage());
-      }
+      e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
+      assertEquals("counted 2 features and 0 norms in model testModel", e.getMessage());
     }
   }
 
@@ -248,6 +220,12 @@ public class TestWrapperModel extends TestRerankBase {
     wrapperModel.getNorms();
     ++methodCount;
     Mockito.verify(wrappedModel, Mockito.times(1)).getNorms();
+
+    // ramBytesUseD() : delegate
+    Mockito.reset(wrappedModel);
+    wrapperModel.ramBytesUsed();
+    ++methodCount;
+    Mockito.verify(wrappedModel, Mockito.times(1)).ramBytesUsed();
 
     // getFeatures : delegate
     Mockito.reset(wrappedModel);

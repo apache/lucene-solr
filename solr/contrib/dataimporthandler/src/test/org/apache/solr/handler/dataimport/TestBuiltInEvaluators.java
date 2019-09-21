@@ -89,7 +89,7 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
         return null;
       }
     }).parseParams(" 1 , a.b, 'hello!', 'ds,o,u\'za',",vr);
-    assertEquals(new Double(1),l.get(0));
+    assertEquals(1d,l.get(0));
     assertEquals("B",((Evaluator.VariableWrapper)l.get(1)).resolve());
     assertEquals("hello!",l.get(2));
     assertEquals("ds,o,u'za",l.get(3));

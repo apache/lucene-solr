@@ -16,18 +16,6 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
-import org.apache.lucene.spatial3d.geom.PlanetModel;
-import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
-import org.apache.lucene.spatial3d.geom.GeoPathFactory;
-import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
-import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
-import org.apache.lucene.spatial3d.geom.GeoPath;
-import org.apache.lucene.spatial3d.geom.GeoPolygon;
-import org.apache.lucene.spatial3d.geom.GeoCircle;
-import org.apache.lucene.spatial3d.geom.GeoBBox;
-import org.apache.lucene.spatial3d.geom.GeoCompositePolygon;
-import org.apache.lucene.spatial3d.geom.GeoPoint;
-
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.GeoUtils;
 
@@ -40,6 +28,8 @@ class Geo3DUtil {
   final static double RADIANS_PER_METER = 1.0 / PlanetModel.WGS84_MEAN;
   /** How many radians are in one degree */
   final static double RADIANS_PER_DEGREE = Math.PI / 180.0;
+  /** How many degrees in a radian */
+  final static double DEGREES_PER_RADIAN = 180.0 / Math.PI;
   
   private static final double MAX_VALUE = PlanetModel.WGS84.getMaximumMagnitude();
   private static final int BITS = 32;
@@ -112,6 +102,11 @@ class Geo3DUtil {
   /** Converts degress to radians */
   static double fromDegrees(final double degrees) {
     return degrees * RADIANS_PER_DEGREE;
+  }
+
+  /** Converts radians to degrees */
+  static double toDegrees(final double radians) {
+    return radians * DEGREES_PER_RADIAN;
   }
   
   /** Converts earth-surface meters to radians */

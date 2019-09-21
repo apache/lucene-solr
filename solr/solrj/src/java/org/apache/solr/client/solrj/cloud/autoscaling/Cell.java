@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.cloud.autoscaling;
 import java.io.IOException;
 import java.util.HashMap;
 
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 
@@ -28,12 +29,12 @@ import org.apache.solr.common.util.Utils;
  */
 public class Cell implements MapWriter {
   final int index;
-  final Suggestion.ConditionType type;
+  final Type type;
   final String name;
   Object val, approxVal;
   Row row;
 
-  public Cell(int index, String name, Object val, Object approxVal, Suggestion.ConditionType type, Row row) {
+  public Cell(int index, String name, Object val, Object approxVal, Type type, Row row) {
     this.index = index;
     this.name = name;
     this.val = val;

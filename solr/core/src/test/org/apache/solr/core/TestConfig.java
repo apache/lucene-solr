@@ -30,6 +30,7 @@ import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.update.SolrIndexConfig;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Node;
@@ -153,6 +154,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     ++numDefaultsTested; assertEquals("default maxBufferedDocs", -1, sic.maxBufferedDocs);
 
     ++numDefaultsTested; assertEquals("default ramBufferSizeMB", 100.0D, sic.ramBufferSizeMB, 0.0D);
+    ++numDefaultsTested; assertEquals("default ramPerThreadHardLimitMB", -1, sic.ramPerThreadHardLimitMB);
     ++numDefaultsTested; assertEquals("default writeLockTimeout", -1, sic.writeLockTimeout);
     ++numDefaultsTested; assertEquals("default LockType", DirectoryFactory.LOCK_TYPE_NATIVE, sic.lockType);
 
@@ -181,8 +183,40 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals("numDefaultsTested vs. numDefaultsMapped+numNullDefaults ="+sic.toMap(new LinkedHashMap<>()).keySet(), numDefaultsTested, numDefaultsMapped+numNullDefaults);
   }
 
+  @Test
+  public void testConvertAutoCommitMaxSizeStringToBytes() {
 
-  // sanity check that sys propertis are working as expected
+    // Valid values
+    Assert.assertEquals(300, SolrConfig.convertHeapOptionStyleConfigStringToBytes("300"));
+    Assert.assertEquals(307200, SolrConfig.convertHeapOptionStyleConfigStringToBytes("300k"));
+    Assert.assertEquals(307200, SolrConfig.convertHeapOptionStyleConfigStringToBytes("300K"));
+    Assert.assertEquals(314572800, SolrConfig.convertHeapOptionStyleConfigStringToBytes("300m"));
+    Assert.assertEquals(314572800, SolrConfig.convertHeapOptionStyleConfigStringToBytes("300M"));
+    Assert.assertEquals(322122547200L, SolrConfig.convertHeapOptionStyleConfigStringToBytes("300g"));
+    Assert.assertEquals(322122547200L, SolrConfig.convertHeapOptionStyleConfigStringToBytes("300G"));
+    Assert.assertEquals(-1, SolrConfig.convertHeapOptionStyleConfigStringToBytes(""));
+
+    // Invalid values
+    RuntimeException thrown = expectThrows(RuntimeException.class, () -> {
+      SolrConfig.convertHeapOptionStyleConfigStringToBytes("3jbk32k"); // valid suffix but non-numeric prefix
+    });
+    assertTrue(thrown.getMessage().contains("Invalid"));
+
+    thrown = expectThrows(RuntimeException.class, () -> {
+      SolrConfig.convertHeapOptionStyleConfigStringToBytes("300x"); // valid prefix but invalid suffix
+    });
+    assertTrue(thrown.getMessage().contains("Invalid"));
+  }
+
+  @Test
+  public void testMaxSizeSettingWithoutAutoCommit() throws Exception {
+    SolrConfig solrConfig = new SolrConfig(new SolrResourceLoader(TEST_PATH().resolve("collection1")), "bad-solrconfig-no-autocommit-tag.xml", null);
+    Assert.assertEquals(-1, solrConfig.getUpdateHandlerInfo().autoCommitMaxSizeBytes);
+    Assert.assertEquals(-1, solrConfig.getUpdateHandlerInfo().autoCommmitMaxDocs);
+    Assert.assertEquals(-1, solrConfig.getUpdateHandlerInfo().autoCommmitMaxTime);
+  }
+
+  // sanity check that sys properties are working as expected
   public void testSanityCheckTestSysPropsAreUsed() throws Exception {
 
     SolrConfig sc = new SolrConfig(new SolrResourceLoader(TEST_PATH().resolve("collection1")), "solrconfig-basic.xml", null);
@@ -191,10 +225,10 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals("ramBufferSizeMB sysprop", 
                  Double.parseDouble(System.getProperty("solr.tests.ramBufferSizeMB")), 
                                     sic.ramBufferSizeMB, 0.0D);
+    assertEquals("ramPerThreadHardLimitMB sysprop",
+        Integer.parseInt(System.getProperty("solr.tests.ramPerThreadHardLimitMB")), sic.ramPerThreadHardLimitMB);
     assertEquals("useCompoundFile sysprop", 
                  Boolean.parseBoolean(System.getProperty("useCompoundFile")), sic.useCompoundFile);
   }
 
 }
-
-

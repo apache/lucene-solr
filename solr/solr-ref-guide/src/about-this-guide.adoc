@@ -60,6 +60,8 @@ Throughout this Guide, we have added examples of both styles with sections label
 
 The section <<v2-api.adoc#v2-api,V2 API>> provides more information about how to work with the new API structure, including how to disable it if you choose to do so.
 
+All APIs return a response header that includes the status of the request and the time to process it. Some APIs will also include the parameters used for the request. Many of the examples in this Guide omit this header information, which you can do locally by adding the parameter `omitHeader=true` to any request.
+
 == Special Inline Notes
 
 Special notes are included throughout these pages. There are several types of notes:

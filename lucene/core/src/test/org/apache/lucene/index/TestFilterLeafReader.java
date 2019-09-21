@@ -29,6 +29,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestFilterLeafReader extends LuceneTestCase {
@@ -97,6 +98,27 @@ public class TestFilterLeafReader extends LuceneTestCase {
     }
 
     @Override
+    public NumericDocValues getNormValues(String field) throws IOException {
+      NumericDocValues ndv = super.getNormValues(field);
+      if (ndv == null) {
+        return null;
+      }
+      FixedBitSet docsWithTerms = new FixedBitSet(maxDoc());
+      TermsEnum termsEnum = terms(field).iterator();
+      PostingsEnum postings = null;
+      while (termsEnum.next() != null) {
+        postings = termsEnum.postings(postings, PostingsEnum.NONE);
+        docsWithTerms.or(postings);
+      }
+      return new FilterNumericDocValues(ndv) {
+        @Override
+        public long longValue() throws IOException {
+          return docsWithTerms.get(docID()) ? super.longValue() : 0L;
+        }
+      };
+    }
+
+    @Override
     public CacheHelper getCoreCacheHelper() {
       return null;
     }
@@ -142,7 +164,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     writer.close();
     IndexReader reader = DirectoryReader.open(target);
     
-    TermsEnum terms = MultiFields.getTerms(reader, "default").iterator();
+    TermsEnum terms = MultiTerms.getTerms(reader, "default").iterator();
     while (terms.next() != null) {
       assertTrue(terms.term().utf8ToString().indexOf('e') != -1);
     }

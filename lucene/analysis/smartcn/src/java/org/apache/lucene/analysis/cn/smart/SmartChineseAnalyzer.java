@@ -49,6 +49,8 @@ import org.apache.lucene.util.IOUtils;
  * Thanks to ICTCLAS for their hard work, and for contributing the data under the Apache 2 License!
  * </p>
  * @lucene.experimental
+ *
+ * @since 3.1
  */
 public final class SmartChineseAnalyzer extends Analyzer {
 

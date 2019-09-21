@@ -49,10 +49,10 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                      "XXXX", "Adam", "Sam"),
                    f("all_authors_s1",
                      "XXXX", "Adam", "Sam"),
-                   f("foo_is", countMe, new Integer(42)),
-                   f("first_foo_l", countMe, new Integer(-34)),
-                   f("max_foo_l", countMe, new Integer(-34)),
-                   f("min_foo_l", countMe, new Integer(-34))));
+                   f("foo_is", countMe, 42),
+                   f("first_foo_l", countMe, -34),
+                   f("max_foo_l", countMe, -34),
+                   f("min_foo_l", countMe, -34)));
 
     assertU(commit());
 
@@ -74,7 +74,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                    doc(f("id", "1111"),
                        f("name", " Hoss ", new StringBuilder(" Man")),
                        f("foo_t", " some text ", "other Text\t"),
-                       f("foo_d", new Integer(42)),
+                       f("foo_d", 42),
                        field("foo_s", " string ")));
 
     assertNotNull(d);
@@ -88,7 +88,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     // slightly more interesting
     assertEquals("processor borked non string value", 
-                 new Integer(42), d.getFieldValue("foo_d"));
+                 42, d.getFieldValue("foo_d"));
   }
 
   public void testUniqValues() throws Exception {
@@ -281,7 +281,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                        f("foo_s", "string1", ""),
                        f("bar_dt", "string2", "", "string3"),
                        f("yak_t", ""),
-                       f("foo_d", new Integer(42))));
+                       f("foo_d", 42)));
 
     assertNotNull(d);
 
@@ -292,7 +292,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertFalse("shouldn't be any values for yak_t",
                 d.containsKey("yak_t"));
     assertEquals("processor borked non string value", 
-                 new Integer(42), d.getFieldValue("foo_d"));
+                 42, d.getFieldValue("foo_d"));
    
   }
 
@@ -303,7 +303,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                        f("foo_s", "string1", "string222"),
                        f("bar_dt", "string3"),
                        f("yak_t", ""),
-                       f("foo_d", new Integer(42))));
+                       f("foo_d", 42)));
 
     assertNotNull(d);
 
@@ -312,23 +312,23 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("string3", d.getFieldValue("bar_dt"));
     assertEquals("", d.getFieldValue("yak_t"));
     assertEquals("processor borked non string value", 
-                 new Integer(42), d.getFieldValue("foo_d"));
+                 42, d.getFieldValue("foo_d"));
    
     d = processAdd("length-some", 
                    doc(f("id", "1111"),
                        f("foo_s", "string1", "string222"),
                        f("bar_dt", "string3"),
                        f("yak_t", ""),
-                       f("foo_d", new Integer(42))));
+                       f("foo_d", 42)));
 
     assertNotNull(d);
 
-    assertEquals(Arrays.asList(new Integer(7), new Integer(9)),
+    assertEquals(Arrays.asList(7, 9),
                                d.getFieldValues("foo_s"));
     assertEquals("string3", d.getFieldValue("bar_dt"));
-    assertEquals(new Integer(0), d.getFieldValue("yak_t"));
+    assertEquals(0, d.getFieldValue("yak_t"));
     assertEquals("processor borked non string value", 
-                 new Integer(42), d.getFieldValue("foo_d"));
+                 42, d.getFieldValue("foo_d"));
   }
 
   public void testRegexReplace() throws Exception {
@@ -515,7 +515,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
       ignoreException(".*Unable to mutate field.*");
       d = processAdd("min-value", 
                      doc(f("id", "1111"),
-                         f("foo_s", "zzz", new Integer(42), "bbb"),
+                         f("foo_s", "zzz", 42, "bbb"),
                          f("bar_s", "aaa"),
                          f("yak_t", "aaa", "bbb")));
     } catch (SolrException e) {
@@ -556,7 +556,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
       ignoreException(".*Unable to mutate field.*");
       d = processAdd("min-value", 
                      doc(f("id", "1111"),
-                         f("foo_s", "zzz", new Integer(42), "bbb"),
+                         f("foo_s", "zzz", 42, "bbb"),
                          f("bar_s", "aaa"),
                          f("yak_t", "aaa", "bbb")));
     } catch (SolrException e) {
@@ -786,7 +786,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                        f("foo_s1", "string3", "string4"),
                        f("bar_dt", "string5", "string6"),
                        f("bar_HOSS_s", "string7", "string8"),
-                       f("foo_d", new Integer(42))));
+                       f("foo_d", 42)));
 
     assertNotNull(d);
 
@@ -799,7 +799,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals(Arrays.asList("string7","string8"),
                  d.getFieldValues("bar_HOSS_s"));
     assertEquals("processor borked non string value", 
-                 new Integer(42), d.getFieldValue("foo_d"));
+                 42, d.getFieldValue("foo_d"));
    
   }
 
@@ -816,7 +816,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     d = processAdd(chain, 
                    doc(f("id", "1111"),
                        f("foo_t", "string1", "string2"),
-                       f("foo_d", new Integer(42)),
+                       f("foo_d", 42),
                        field("foo_s", "string3", "string4")));
 
     assertNotNull(d);
@@ -827,7 +827,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     // slightly more interesting
     assertEquals("processor borked non string value", 
-                 new Integer(42), d.getFieldValue("foo_d"));
+                 42, d.getFieldValue("foo_d"));
   }
 
 }

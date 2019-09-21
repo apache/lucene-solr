@@ -359,8 +359,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
                 : "no need \"textgrams\" when minPrefixChars="+minPrefixChars;
         if (fieldName.equals(TEXTGRAMS_FIELD_NAME) && minPrefixChars > 0) {
           // TODO: should use an EdgeNGramTokenFilterFactory here
-          TokenFilter filter = new EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars);
-          return new TokenStreamComponents(components.getTokenizer(), filter);
+          TokenFilter filter = new EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars, false);
+          return new TokenStreamComponents(components.getSource(), filter);
         } else {
           return components;
         }
@@ -647,7 +647,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     //System.out.println("finalQuery=" + finalQuery);
 
     // Sort by weight, descending:
-    TopFieldCollector c = TopFieldCollector.create(SORT, num, true, false, false, false);
+    TopFieldCollector c = TopFieldCollector.create(SORT, num, 1);
     List<LookupResult> results = null;
     SearcherManager mgr;
     IndexSearcher searcher;
@@ -677,7 +677,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   /**
    * Create the results based on the search hits.
    * Can be overridden by subclass to add particular behavior (e.g. weight transformation).
-   * Note that there is no prefix toke (the {@code prefixToken} argument will
+   * Note that there is no prefix token (the {@code prefixToken} argument will
    * be null) whenever the final token in the incoming request was in fact finished
    * (had trailing characters, such as white-space).
    *

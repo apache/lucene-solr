@@ -23,7 +23,7 @@ Please be sure to review the <<solr-system-requirements.adoc#solr-system-require
 
 == Available Solr Packages
 
-Solr is available from the Solr website. Download the latest release https://lucene.apache.org/solr/mirrors-solr-latest-redir.html.
+Solr is available from the Solr website. Download the latest release https://lucene.apache.org/solr/downloads.html.
 
 There are three separate packages:
 
@@ -154,7 +154,7 @@ bin/solr -e techproducts
 Currently, the available examples you can run are: techproducts, dih, schemaless, and cloud. See the section <<solr-control-script-reference.adoc#running-with-example-configurations,Running with Example Configurations>> for details on each example.
 
 .Getting Started with SolrCloud
-NOTE: Running the `cloud` example starts Solr in <<solrcloud.adoc#solrcloud,SolrCloud>> mode. For more information on starting Solr in cloud mode, see the section <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,Getting Started with SolrCloud>>.
+NOTE: Running the `cloud` example starts Solr in <<solrcloud.adoc#solrcloud,SolrCloud>> mode. For more information on starting Solr in SolrCloud mode, see the section <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,Getting Started with SolrCloud>>.
 
 === Check if Solr is Running
 

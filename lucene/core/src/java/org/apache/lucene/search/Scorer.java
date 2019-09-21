@@ -18,8 +18,7 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Objects;
 
 /**
  * Expert: Common scoring functionality for different types of queries.
@@ -39,9 +38,9 @@ import java.util.Collections;
  * TopScoreDocCollector}) will not properly collect hits
  * with these scores.
  */
-public abstract class Scorer {
-  /** the Scorer's parent Weight. in some cases this may be null */
-  // TODO can we clean this up?
+public abstract class Scorer extends Scorable {
+
+  /** the Scorer's parent Weight */
   protected final Weight weight;
 
   /**
@@ -49,67 +48,14 @@ public abstract class Scorer {
    * @param weight The scorers <code>Weight</code>.
    */
   protected Scorer(Weight weight) {
-    this.weight = weight;
+    this.weight = Objects.requireNonNull(weight);
   }
-
-  /**
-   * Returns the doc ID that is currently being scored.
-   * This will return {@code -1} if the {@link #iterator()} is not positioned
-   * or {@link DocIdSetIterator#NO_MORE_DOCS} if it has been entirely consumed.
-   * @see DocIdSetIterator#docID()
-   */
-  public abstract int docID();
-
-  /** Returns the score of the current document matching the query.
-   * Initially invalid, until {@link DocIdSetIterator#nextDoc()} or
-   * {@link DocIdSetIterator#advance(int)} is called on the {@link #iterator()}
-   * the first time, or when called from within {@link LeafCollector#collect}.
-   */
-  public abstract float score() throws IOException;
 
   /** returns parent Weight
    * @lucene.experimental
    */
   public Weight getWeight() {
     return weight;
-  }
-  
-  /**
-   * Returns child sub-scorers positioned on the current document
-   *
-   * Note that this method should not be called on Scorers passed to {@link LeafCollector#setScorer(Scorer)},
-   * as these may be synthetic Scorers produced by {@link BulkScorer} which will throw an Exception.
-   *
-   * @lucene.experimental
-   */
-  public Collection<ChildScorer> getChildren() throws IOException {
-    return Collections.emptyList();
-  }
-  
-  /** A child Scorer and its relationship to its parent.
-   * the meaning of the relationship depends upon the parent query. 
-   * @lucene.experimental */
-  public static class ChildScorer {
-    /**
-     * Child Scorer. (note this is typically a direct child, and may
-     * itself also have children).
-     */
-    public final Scorer child;
-    /**
-     * An arbitrary string relating this scorer to the parent.
-     */
-    public final String relationship;
-    
-    /**
-     * Creates a new ChildScorer node with the specified relationship.
-     * <p>
-     * The relationship can be any be any string that makes sense to 
-     * the parent Scorer. 
-     */
-    public ChildScorer(Scorer child, String relationship) {
-      this.child = child;
-      this.relationship = relationship;
-    }
   }
 
   /**
@@ -145,24 +91,11 @@ public abstract class Scorer {
   }
 
   /**
-   * Optional method: Tell the scorer that its iterator may safely ignore all
-   * documents whose score is less than the given {@code minScore}. This is a
-   * no-op by default.
-   *
-   * This method may only be called from collectors that use
-   * {@link ScoreMode#TOP_SCORES}, and successive calls may only set increasing
-   * values of {@code minScore}.
-   */
-  public void setMinCompetitiveScore(float minScore) {
-    // no-op by default
-  }
-
-  /**
    * Advance to the block of documents that contains {@code target} in order to
    * get scoring information about this block. This method is implicitly called
    * by {@link DocIdSetIterator#advance(int)} and
-   * {@link DocIdSetIterator#nextDoc()}. Calling this method doesn't modify the
-   * current {@link DocIdSetIterator#docID()}.
+   * {@link DocIdSetIterator#nextDoc()} on the returned doc ID. Calling this
+   * method doesn't modify the current {@link DocIdSetIterator#docID()}.
    * It returns a number that is greater than or equal to all documents
    * contained in the current block, but less than any doc IDS of the next block.
    * {@code target} must be &gt;= {@link #docID()} as well as all targets that

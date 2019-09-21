@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.lang.Thread.State;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Date;
@@ -25,11 +26,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -51,7 +56,7 @@ public class DaemonStream extends TupleStream implements Expressible {
   private ArrayBlockingQueue<Tuple> queue;
   private int queueSize;
   private boolean eatTuples;
-  private long iterations;
+  private AtomicLong iterations = new AtomicLong();
   private long startTime;
   private long stopTime;
   private Exception exception;
@@ -60,7 +65,7 @@ public class DaemonStream extends TupleStream implements Expressible {
   private Map<String, DaemonStream> daemons;
   private boolean terminate;
   private boolean closed = false;
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DaemonStream(StreamExpression expression, StreamFactory factory) throws IOException{
 
@@ -194,9 +199,20 @@ public class DaemonStream extends TupleStream implements Expressible {
     return id;
   }
 
-  public void open() {
+  public void open() throws IOException {
+    if (this.streamRunner != null && this.closed == false) {
+      log.error("There is already a running daemon named '{}', no action taken", id);
+      throw new IOException("There is already an open daemon named '" + id + "', no action taken.");
+    }
+    this.closed = false;
     this.streamRunner = new StreamRunner(runInterval, id);
-    this.streamRunner.start();
+    ExecutorService service = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory("DaemonStream-" + id));
+    try {
+      service.submit(this.streamRunner);
+    }
+    finally {
+      service.shutdown();
+    }
   }
 
   public Tuple read() throws IOException {
@@ -240,7 +256,7 @@ public class DaemonStream extends TupleStream implements Expressible {
     tuple.put(ID, id);
     tuple.put("startTime", startTime);
     tuple.put("stopTime", stopTime);
-    tuple.put("iterations", iterations);
+    tuple.put("iterations", iterations.get());
     tuple.put("state", streamRunner.getState().toString());
     if(exception != null) {
       tuple.put("exception", exception.getMessage());
@@ -253,10 +269,6 @@ public class DaemonStream extends TupleStream implements Expressible {
     this.daemons = daemons;
   }
 
-  private synchronized void incrementIterations() {
-    ++iterations;
-  }
-
   private synchronized void setStartTime(long startTime) {
     this.startTime = startTime;
   }
@@ -265,13 +277,15 @@ public class DaemonStream extends TupleStream implements Expressible {
     this.stopTime = stopTime;
   }
 
-  private class StreamRunner extends Thread {
+  private class StreamRunner implements Runnable {
 
     private long sleepMillis = 1000;
     private long runInterval;
     private long lastRun;
     private String id;
 
+    // a reference to the Thread that is executing the stream to track its state
+    private volatile Thread executingThread;
     private boolean shutdown;
 
     public StreamRunner(long runInterval, String id) {
@@ -287,7 +301,29 @@ public class DaemonStream extends TupleStream implements Expressible {
       return shutdown;
     }
 
+    public State getState() {
+      if (executingThread == null) {
+        if (shutdown) {
+          return Thread.State.TERMINATED;
+        } else {
+          return Thread.State.NEW;
+        }
+      } else {
+        return executingThread.getState();
+      }
+    }
+
     public void run() {
+      executingThread = Thread.currentThread();
+      try {
+        stream();
+      } finally {
+        setShutdown(true);
+        executingThread = null;
+      }
+    }
+
+    private void stream() {
       int errors = 0;
       setStartTime(new Date().getTime());
       OUTER:
@@ -329,14 +365,14 @@ public class DaemonStream extends TupleStream implements Expressible {
             }
           } catch (IOException e) {
             exception = e;
-            logger.error("Error in DaemonStream:" + id, e);
+            log.error("Error in DaemonStream:" + id, e);
             ++errors;
             if (errors > 100) {
-              logger.error("Too many consectutive errors. Stopping DaemonStream:" + id);
+              log.error("Too many consecutive errors. Stopping DaemonStream:" + id);
               break OUTER;
             }
           } catch (Throwable t) {
-            logger.error("Fatal Error in DaemonStream:" + id, t);
+            log.error("Fatal Error in DaemonStream:" + id, t);
             //For anything other then IOException break out of the loop and shutdown the thread.
             break OUTER;
           } finally {
@@ -345,19 +381,19 @@ public class DaemonStream extends TupleStream implements Expressible {
             } catch (IOException e1) {
               if (exception == null) {
                 exception = e1;
-                logger.error("Error in DaemonStream:" + id, e1);
+                log.error("Error in DaemonStream:" + id, e1);
                 break OUTER;
               }
             }
           }
         }
-        incrementIterations();
+        iterations.incrementAndGet();
 
         if (sleepMillis > 0) {
           try {
             Thread.sleep(sleepMillis);
           } catch (InterruptedException e) {
-            logger.error("Error in DaemonStream:" + id, e);
+            log.error("Error in DaemonStream:" + id, e);
             break OUTER;
           }
         }
@@ -370,7 +406,7 @@ public class DaemonStream extends TupleStream implements Expressible {
         try {
           queue.put(tuple);
         } catch (InterruptedException e) {
-          logger.error("Error in DaemonStream:"+id, e);
+          log.error("Error in DaemonStream:"+id, e);
         }
       }
       setStopTime(new Date().getTime());

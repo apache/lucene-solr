@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * @since 3.1
  */
 public class FieldStreamDataSource extends DataSource<InputStream> {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected VariableResolver vr;
   protected String dataField;
   private EntityProcessorWrapper wrapper;
@@ -67,7 +67,7 @@ public class FieldStreamDataSource extends DataSource<InputStream> {
       try {
         return blob.getBinaryStream();
       } catch (SQLException sqle) {
-        LOG.info("Unable to get data from BLOB");
+        log.info("Unable to get data from BLOB");
         return null;
       }
     } else if (o instanceof byte[]) {

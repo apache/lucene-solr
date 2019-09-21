@@ -45,7 +45,7 @@ import org.apache.lucene.util.IOUtils;
  * could be left when the JVM exits abnormally.</p>
  *
  * <p>The primary benefit of {@link NativeFSLockFactory} is
- * that locks (not the lock file itsself) will be properly
+ * that locks (not the lock file itself) will be properly
  * removed (by the OS) if the JVM has an abnormal exit.</p>
  * 
  * <p>Note that, unlike {@link SimpleFSLockFactory}, the existence of

@@ -24,7 +24,6 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -72,7 +71,7 @@ public abstract class PostingsReaderBase implements Closeable, Accountable {
    * Return a {@link ImpactsEnum} that computes impacts with {@code scorer}.
    * @see #postings(FieldInfo, BlockTermState, PostingsEnum, int)
    */
-  public abstract ImpactsEnum impacts(FieldInfo fieldInfo, BlockTermState state, Similarity.SimScorer scorer, int flags) throws IOException;
+  public abstract ImpactsEnum impacts(FieldInfo fieldInfo, BlockTermState state, int flags) throws IOException;
 
   /** 
    * Checks consistency of this reader.

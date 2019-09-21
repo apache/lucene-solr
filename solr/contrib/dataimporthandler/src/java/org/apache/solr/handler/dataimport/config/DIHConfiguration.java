@@ -47,7 +47,7 @@ import org.w3c.dom.Element;
  * @since solr 1.3
  */
 public class DIHConfiguration {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // TODO - remove from here and add it to entity
   private final String deleteQuery;
@@ -106,7 +106,7 @@ public class DIHConfiguration {
       SchemaField sf = entry.getValue();
       if (!fields.containsKey(sf.getName())) {
         if (sf.isRequired()) {
-          LOG.info(sf.getName() + " is a required field in SolrSchema . But not found in DataConfig");
+          log.info(sf.getName() + " is a required field in SolrSchema . But not found in DataConfig");
         }
       }
     }
@@ -114,7 +114,7 @@ public class DIHConfiguration {
       EntityField fld = entry.getValue();
       SchemaField field = getSchemaField(fld.getName());
       if (field == null && !isSpecialCommand(fld.getName())) {
-        LOG.info("The field :" + fld.getName() + " present in DataConfig does not have a counterpart in Solr Schema");
+        log.info("The field :" + fld.getName() + " present in DataConfig does not have a counterpart in Solr Schema");
       }
     }
   }

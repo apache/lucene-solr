@@ -93,7 +93,7 @@ public class TestBooleanRewrites extends LuceneTestCase {
     BooleanQuery.Builder query2 = new BooleanQuery.Builder();
     query2.add(new TermQuery(new Term("field", "a")), Occur.FILTER);
     query2.add(new TermQuery(new Term("field", "b")), Occur.SHOULD);
-    final Weight weight = searcher.createNormalizedWeight(query2.build(), ScoreMode.COMPLETE);
+    final Weight weight = searcher.createWeight(searcher.rewrite(query2.build()), ScoreMode.COMPLETE, 1);
     final Scorer scorer = weight.scorer(reader.leaves().get(0));
     assertEquals(0, scorer.iterator().nextDoc());
     assertTrue(scorer.getClass().getName(), scorer instanceof FilterScorer);
@@ -413,7 +413,7 @@ public class TestBooleanRewrites extends LuceneTestCase {
   }
 
   private void assertEquals(TopDocs td1, TopDocs td2) {
-    assertEquals(td1.totalHits, td2.totalHits);
+    assertEquals(td1.totalHits.value, td2.totalHits.value);
     assertEquals(td1.scoreDocs.length, td2.scoreDocs.length);
     Map<Integer, Float> expectedScores = Arrays.stream(td1.scoreDocs).collect(Collectors.toMap(sd -> sd.doc, sd -> sd.score));
     Set<Integer> actualResultSet = Arrays.stream(td2.scoreDocs).map(sd -> sd.doc).collect(Collectors.toSet());
@@ -479,5 +479,123 @@ public class TestBooleanRewrites extends LuceneTestCase {
         .add(new TermQuery(new Term("foo", "quux")), Occur.MUST)
         .build();
     assertEquals(expected, searcher.rewrite(query));
+  }
+
+  public void testFlattenInnerDisjunctions() throws IOException {
+    IndexSearcher searcher = newSearcher(new MultiReader());
+
+    Query inner = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "quux")), Occur.SHOULD)
+        .build();
+    Query query = new BooleanQuery.Builder()
+        .add(inner, Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)
+        .build();
+    Query expectedRewritten = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "quux")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)
+        .build();
+    assertEquals(expectedRewritten, searcher.rewrite(query));
+
+    query = new BooleanQuery.Builder()
+        .setMinimumNumberShouldMatch(0)
+        .add(inner, Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.MUST)
+        .build();
+    expectedRewritten = new BooleanQuery.Builder()
+        .setMinimumNumberShouldMatch(0)
+        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "quux")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.MUST)
+        .build();
+    assertEquals(expectedRewritten, searcher.rewrite(query));
+
+    query = new BooleanQuery.Builder()
+        .setMinimumNumberShouldMatch(1)
+        .add(inner, Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.MUST)
+        .build();
+    expectedRewritten = new BooleanQuery.Builder()
+        .setMinimumNumberShouldMatch(1)
+        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "quux")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.MUST)
+        .build();
+    assertEquals(expectedRewritten, searcher.rewrite(query));
+
+    query = new BooleanQuery.Builder()
+        .setMinimumNumberShouldMatch(2)
+        .add(inner, Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.MUST)
+        .build();
+    assertSame(query, searcher.rewrite(query));
+
+    inner = new BooleanQuery.Builder()
+        .add(new TermQuery(new Term("foo", "bar")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "quux")), Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)
+        .setMinimumNumberShouldMatch(2)
+        .build();
+    query = new BooleanQuery.Builder()
+        .add(inner, Occur.SHOULD)
+        .add(new TermQuery(new Term("foo", "baz")), Occur.SHOULD)
+        .build();
+    assertSame(query, searcher.rewrite(query));
+  }
+
+  public void testDiscardShouldClauses() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    Field f = newTextField("field", "a", Field.Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    w.commit();
+
+    DirectoryReader reader = w.getReader();
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    BooleanQuery.Builder query1 = new BooleanQuery.Builder();
+    query1.add(new TermQuery(new Term("field", "a")), Occur.MUST);
+    query1.add(new TermQuery(new Term("field", "b")), Occur.SHOULD);
+
+    query1.setMinimumNumberShouldMatch(0);
+
+    Weight weight = searcher.createWeight(searcher.rewrite(query1.build()), ScoreMode.COMPLETE_NO_SCORES, 1);
+
+    Query rewrittenQuery1 = weight.getQuery();
+
+    assertTrue(rewrittenQuery1 instanceof BooleanQuery);
+
+    BooleanQuery booleanRewrittenQuery1 = (BooleanQuery) rewrittenQuery1;
+
+    for (BooleanClause clause : booleanRewrittenQuery1.clauses()) {
+      assertNotEquals(clause.getOccur(), Occur.SHOULD);
+    }
+
+    BooleanQuery.Builder query2 = new BooleanQuery.Builder();
+    query2.add(new TermQuery(new Term("field", "a")), Occur.MUST);
+    query2.add(new TermQuery(new Term("field", "b")), Occur.SHOULD);
+    query2.add(new TermQuery(new Term("field", "c")), Occur.FILTER);
+
+    query2.setMinimumNumberShouldMatch(0);
+
+    weight = searcher.createWeight(searcher.rewrite(query2.build()), ScoreMode.COMPLETE_NO_SCORES, 1);
+
+    Query rewrittenQuery2 = weight.getQuery();
+
+    assertTrue(rewrittenQuery2 instanceof BooleanQuery);
+
+    BooleanQuery booleanRewrittenQuery2 = (BooleanQuery) rewrittenQuery1;
+
+    for (BooleanClause clause : booleanRewrittenQuery2.clauses()) {
+      assertNotEquals(clause.getOccur(), Occur.SHOULD);
+    }
+
+    reader.close();
+    w.close();
+    dir.close();
   }
 }

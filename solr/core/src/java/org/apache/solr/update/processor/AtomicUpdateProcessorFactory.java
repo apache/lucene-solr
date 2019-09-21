@@ -183,6 +183,7 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory 
           // modified fields. We don't want those absolute values because they are out-of-date due to the conflict
           // so we restore the original document created in processAdd method and set the right version on it
           cmd.solrDoc = clonedOriginalDoc;
+          clonedOriginalDoc = clonedOriginalDoc.deepCopy(); // copy again because the old cloned ref will be modified during processAdd
           cmd.solrDoc.setField(VERSION, lastVersion);
 
           processAddWithRetry(cmd, attempts, clonedOriginalDoc);

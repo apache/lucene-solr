@@ -85,32 +85,28 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         ,"/spellcheck/suggestions/[0]=='brwn'"
         ,"/spellcheck/suggestions/[1]/numFound==1"
      );
-    try {
-      assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-          SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "6")
-          ,"/spellcheck/suggestions/[1]/numFound==1"
-       );
-      fail("there should have been no suggestions (6<7)");
-    } catch(Exception e) {
-      //correctly threw exception
-    }
+
+   expectThrows(Exception.class, () -> {
+     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
+         SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "6")
+         ,"/spellcheck/suggestions/[1]/numFound==1"
+     );
+   });
+
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
         "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq", "lowerfilt:th*", /* returns 8, most selective */
         SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".90")
         ,"/spellcheck/suggestions/[0]=='brwn'"
         ,"/spellcheck/suggestions/[1]/numFound==1"
      );
-    try {
+
+    expectThrows(Exception.class, () -> {
       assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
           "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq", "lowerfilt:th*", /* returns 8, most selective */
           SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".80")
           ,"/spellcheck/suggestions/[1]/numFound==1"
-       );
-      fail("there should have been no suggestions ((.8 * 8)<7)");
-    } catch(Exception e) {
-      //correctly threw exception
-    }
-    
+      );
+    });
     
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
         "fq", "id:[0 TO 9]", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "id:[0 TO 9]", 
@@ -118,16 +114,14 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         ,"/spellcheck/suggestions/[0]=='brwn'"
         ,"/spellcheck/suggestions/[1]/numFound==1"
      );
-    try {
+
+    expectThrows(Exception.class, () -> {
       assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-          "fq", "id:[0 TO 9]", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "lowerfilt:th*", 
+          "fq", "id:[0 TO 9]", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "lowerfilt:th*",
           SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".64")
           ,"/spellcheck/suggestions/[1]/numFound==1"
-       );
-      fail("there should have been no suggestions ((.64 * 10)<7)");
-    } catch(Exception e) {
-      //correctly threw exception
-    }
+      );
+    });
   } 
   
   @Test
@@ -160,7 +154,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testPerDictionary() throws Exception {
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","documemt"
-        , SpellingParams.SPELLCHECK_DICT, "perDict", SpellingParams.SPELLCHECK_PREFIX + ".perDict.foo", "bar", SpellingParams.SPELLCHECK_PREFIX + ".perDict.bar", "foo")
+        , SpellingParams.SPELLCHECK_DICT, "perDict", SpellingParams.SPELLCHECK_PREFIX + "perDict.foo", "bar", SpellingParams.SPELLCHECK_PREFIX + "perDict.bar", "foo")
        ,"/spellcheck/suggestions/bar=={'numFound':1, 'startOffset':0, 'endOffset':1, 'suggestion':['foo']}"
        ,"/spellcheck/suggestions/foo=={'numFound':1, 'startOffset':2, 'endOffset':3, 'suggestion':['bar']}"        
     );

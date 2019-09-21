@@ -24,11 +24,13 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocValuesTermsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.automaton.Automata;
@@ -61,35 +63,36 @@ public class TermsQParserPlugin extends QParserPlugin {
   private static enum Method {
     termsFilter {
       @Override
-      Filter makeFilter(String fname, BytesRef[] bytesRefs) {
-        return new QueryWrapperFilter(new TermInSetQuery(fname, bytesRefs));
+      Query makeFilter(String fname, BytesRef[] bytesRefs) {
+        return new TermInSetQuery(fname, bytesRefs);// constant scores
       }
     },
     booleanQuery {
       @Override
-      Filter makeFilter(String fname, BytesRef[] byteRefs) {
+      Query makeFilter(String fname, BytesRef[] byteRefs) {
         BooleanQuery.Builder bq = new BooleanQuery.Builder();
         for (BytesRef byteRef : byteRefs) {
           bq.add(new TermQuery(new Term(fname, byteRef)), BooleanClause.Occur.SHOULD);
         }
-        return new QueryWrapperFilter(bq.build());
+        return new ConstantScoreQuery(bq.build());
       }
     },
     automaton {
       @Override
-      Filter makeFilter(String fname, BytesRef[] byteRefs) {
-        Automaton union = Automata.makeStringUnion(Arrays.asList(byteRefs));
-        return new QueryWrapperFilter(new AutomatonQuery(new Term(fname), union));
+      Query makeFilter(String fname, BytesRef[] byteRefs) {
+        ArrayUtil.timSort(byteRefs); // same sort algo as TermInSetQuery's choice
+        Automaton union = Automata.makeStringUnion(Arrays.asList(byteRefs)); // input must be sorted
+        return new AutomatonQuery(new Term(fname), union);//constant scores
       }
     },
     docValuesTermsFilter {//on 4x this is FieldCacheTermsFilter but we use the 5x name any way
       @Override
-      Filter makeFilter(String fname, BytesRef[] byteRefs) {
-        return new QueryWrapperFilter(new DocValuesTermsQuery(fname, byteRefs));
+      Query makeFilter(String fname, BytesRef[] byteRefs) {
+        return new DocValuesTermsQuery(fname, byteRefs);//constant scores
       }
     };
 
-    abstract Filter makeFilter(String fname, BytesRef[] byteRefs);
+    abstract Query makeFilter(String fname, BytesRef[] byteRefs);
   }
 
   @Override
@@ -103,6 +106,7 @@ public class TermsQParserPlugin extends QParserPlugin {
         String qstr = localParams.get(QueryParsing.V);//never null
         Method method = Method.valueOf(localParams.get(METHOD, Method.termsFilter.name()));
         //TODO pick the default method based on various heuristics from benchmarks
+        //TODO pick the default using FieldType.getSetQuery
 
         //if space then split on all whitespace & trim, otherwise strictly interpret
         final boolean sepIsSpace = separator.equals(" ");
@@ -134,7 +138,7 @@ public class TermsQParserPlugin extends QParserPlugin {
           bytesRefs[i] = term.toBytesRef();
         }
 
-        return new SolrConstantScoreQuery(method.makeFilter(fname, bytesRefs));
+        return method.makeFilter(fname, bytesRefs);
       }
     };
   }

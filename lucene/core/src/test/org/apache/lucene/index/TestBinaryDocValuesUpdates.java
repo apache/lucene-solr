@@ -88,7 +88,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     return doc;
   }
   
-  public void testUpdatesAreFlushed() throws IOException {
+  public void testUpdatesAreFlushed() throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
                                                 .setRAMBufferSizeMB(0.00000001));
@@ -266,7 +266,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       writer.close();
     }
     
-    Bits liveDocs = MultiFields.getLiveDocs(reader);
+    Bits liveDocs = MultiBits.getLiveDocs(reader);
     boolean[] expectedLiveDocs = new boolean[] { true, false, false, true, true, true };
     for (int i = 0; i < expectedLiveDocs.length; i++) {
       assertEquals(expectedLiveDocs[i], liveDocs.get(i));
@@ -286,7 +286,8 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
   public void testUpdatesWithDeletes() throws Exception {
     // update and delete different documents in the same commit session
     Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(NoMergePolicy.INSTANCE); // otherwise the delete might force a merge
     conf.setMaxBufferedDocs(10); // control segment flushing
     IndexWriter writer = new IndexWriter(dir, conf);
     

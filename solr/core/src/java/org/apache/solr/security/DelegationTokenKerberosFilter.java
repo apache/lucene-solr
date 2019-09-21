@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -28,7 +29,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.AuthInfo;
@@ -61,6 +61,7 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private CuratorFramework curatorFramework;
+  private final Locale defaultLocale = Locale.getDefault();
 
   @Override
   public void init(FilterConfig conf) throws ServletException {
@@ -101,23 +102,12 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
   @Override
   public void doFilter(ServletRequest request, ServletResponse response,
       FilterChain filterChain) throws IOException, ServletException {
-    // HttpClient 4.4.x throws NPE if query string is null and parsed through URLEncodedUtils.
-    // See HTTPCLIENT-1746 and HADOOP-12767
-    HttpServletRequest httpRequest = (HttpServletRequest)request;
-    String queryString = httpRequest.getQueryString();
-    final String nonNullQueryString = queryString == null ? "" : queryString;
-    HttpServletRequest requestNonNullQueryString = new HttpServletRequestWrapper(httpRequest){
-      @Override
-      public String getQueryString() {
-        return nonNullQueryString;
-      }
-    };
-
     // include Impersonator User Name in case someone (e.g. logger) wants it
     FilterChain filterChainWrapper = new FilterChain() {
       @Override
       public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse)
           throws IOException, ServletException {
+        Locale.setDefault(defaultLocale);
         HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
 
         UserGroupInformation ugi = HttpUserGroupInformation.get();
@@ -131,7 +121,9 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
       }
     };
 
-    super.doFilter(requestNonNullQueryString, response, filterChainWrapper);
+    // A hack until HADOOP-15681 get committed
+    Locale.setDefault(Locale.US);
+    super.doFilter(request, response, filterChainWrapper);
   }
 
   @Override

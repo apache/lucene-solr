@@ -24,7 +24,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
-import org.apache.lucene.codecs.lucene70.Lucene70Codec;
+import org.apache.lucene.codecs.lucene80.Lucene80Codec;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -91,7 +91,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
       compressionMode = SOLR_DEFAULT_COMPRESSION_MODE;
       log.debug("Using default compressionMode: " + compressionMode);
     }
-    codec = new Lucene70Codec(compressionMode) {
+    codec = new Lucene80Codec(compressionMode) {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);

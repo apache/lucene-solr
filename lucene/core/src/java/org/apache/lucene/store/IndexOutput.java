@@ -20,17 +20,16 @@ package org.apache.lucene.store;
 import java.io.Closeable;
 import java.io.IOException;
 
-/** Abstract base class for output to a file in a Directory.  A random-access
- * output stream.  Used for all Lucene index output operations.
- 
- * <p>{@code IndexOutput} may only be used from one thread, because it is not
- * thread safe (it keeps internal state like file position).
- 
+/**
+ * A {@link DataOutput} for appending data to a file in a {@link Directory}.
+ *
+ * Instances of this class are <b>not</b> thread-safe.
+ *
  * @see Directory
  * @see IndexInput
  */
 public abstract class IndexOutput extends DataOutput implements Closeable {
-
+  
   /** Full description of this output, e.g. which class such as {@code FSIndexOutput}, and the full path to the file */
   private final String resourceDescription;
 

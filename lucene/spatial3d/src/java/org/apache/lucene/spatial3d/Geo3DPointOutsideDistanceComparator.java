@@ -25,7 +25,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.spatial3d.geom.DistanceStyle;
 import org.apache.lucene.spatial3d.geom.GeoOutsideDistance;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
@@ -50,7 +50,7 @@ class Geo3DPointOutsideDistanceComparator extends FieldComparator<Double> implem
   }
   
   @Override
-  public void setScorer(Scorer scorer) {}
+  public void setScorer(Scorable scorer) {}
 
   @Override
   public int compare(int slot1, int slot2) {

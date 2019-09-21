@@ -62,8 +62,14 @@ public class SumMetric extends Metric {
   public void update(Tuple tuple) {
     Object o = tuple.get(columnName);
     if(o instanceof Double) {
-      Double d = (Double)o;
+      Double d = (Double) o;
       doubleSum += d;
+    } else if(o instanceof Float) {
+      Float f = (Float) o;
+      doubleSum += f.doubleValue();
+    } else if(o instanceof Integer) {
+      Integer i = (Integer)o;
+      longSum += i.longValue();
     } else {
       Long l = (Long)o;
       longSum += l;

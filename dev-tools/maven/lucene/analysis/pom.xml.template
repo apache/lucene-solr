@@ -35,11 +35,11 @@
     <module>icu</module>
     <module>kuromoji</module>
     <module>morfologik</module>
+    <module>nori</module>
     <module>opennlp</module>
     <module>phonetic</module>
     <module>smartcn</module>
     <module>stempel</module>
-    <module>uima</module>
   </modules>
   <build>
     <plugins>

@@ -22,13 +22,17 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
@@ -74,12 +78,16 @@ import org.apache.lucene.util.fst.Util;
  *
  * @lucene.experimental
  */
-public class ContextQuery extends CompletionQuery {
+public class ContextQuery extends CompletionQuery implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(ContextQuery.class);
+
   private IntsRefBuilder scratch = new IntsRefBuilder();
   private Map<IntsRef, ContextMetaData> contexts;
   private boolean matchAllContexts = false;
   /** Inner completion query */
   protected CompletionQuery innerQuery;
+
+  private long ramBytesUsed;
 
   /**
    * Constructs a context completion query that matches
@@ -96,6 +104,13 @@ public class ContextQuery extends CompletionQuery {
     }
     this.innerQuery = query;
     contexts = new HashMap<>();
+    updateRamBytesUsed();
+  }
+
+  private void updateRamBytesUsed() {
+    ramBytesUsed = BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(contexts) +
+        RamUsageEstimator.sizeOfObject(innerQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   /**
@@ -127,6 +142,7 @@ public class ContextQuery extends CompletionQuery {
       }
     }
     contexts.put(IntsRef.deepCopyOf(Util.toIntsRef(new BytesRef(context), scratch)), new ContextMetaData(boost, exact));
+    updateRamBytesUsed();
   }
 
   /**
@@ -167,11 +183,19 @@ public class ContextQuery extends CompletionQuery {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final CompletionWeight innerWeight = ((CompletionWeight) innerQuery.createWeight(searcher, scoreMode, boost));
+    final Automaton innerAutomaton = innerWeight.getAutomaton();
+
+    // If the inner automaton matches nothing, then we return an empty weight to avoid
+    // traversing all contexts during scoring.
+    if (innerAutomaton.getNumStates() == 0) {
+      return new CompletionWeight(this, innerAutomaton);
+    }
+
     // if separators are preserved the fst contains a SEP_LABEL
     // behind each gap. To have a matching automaton, we need to
     // include the SEP_LABEL in the query as well
-    Automaton optionalSepLabel = Operations.optional(Automata.makeChar(CompletionAnalyzer.SEP_LABEL));
-    Automaton prefixAutomaton = Operations.concatenate(optionalSepLabel, innerWeight.getAutomaton());
+    Automaton optionalSepLabel = Operations.optional(Automata.makeChar(ConcatenateGraphFilter.SEP_LABEL));
+    Automaton prefixAutomaton = Operations.concatenate(optionalSepLabel, innerAutomaton);
     Automaton contextsAutomaton = Operations.concatenate(toContextAutomaton(contexts, matchAllContexts), prefixAutomaton);
     contextsAutomaton = Operations.determinize(contextsAutomaton, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
 
@@ -294,7 +318,7 @@ public class ContextQuery extends CompletionQuery {
           }
           ref.offset = ++i;
           assert ref.offset < ref.length : "input should not end with the context separator";
-          if (ref.ints[i] == CompletionAnalyzer.SEP_LABEL) {
+          if (ref.ints[i] == ConcatenateGraphFilter.SEP_LABEL) {
             ref.offset++;
             assert ref.offset < ref.length : "input should not end with a context separator followed by SEP_LABEL";
           }
@@ -327,4 +351,13 @@ public class ContextQuery extends CompletionQuery {
     throw new UnsupportedOperationException();
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed;
+  }
 }

@@ -304,12 +304,12 @@ public class GeoTestUtil {
 
   /** returns next pseudorandom box: can cross the 180th meridian */
   public static Rectangle nextBox() {
-    return nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), true);
+    return nextBoxInternal(true);
   }
 
   /** returns next pseudorandom box: does not cross the 180th meridian */
   public static Rectangle nextBoxNotCrossingDateline() {
-    return nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), false);
+    return nextBoxInternal( false);
   }
 
   /** Makes an n-gon, centered at the provided lat/lon, and each vertex approximately
@@ -402,7 +402,7 @@ public class GeoTestUtil {
       }
     }
 
-    Rectangle box = nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), false);
+    Rectangle box = nextBoxInternal(false);
     if (random().nextBoolean()) {
       // box
       return boxPolygon(box);
@@ -412,7 +412,20 @@ public class GeoTestUtil {
     }
   }
 
-  private static Rectangle nextBoxInternal(double lat0, double lat1, double lon0, double lon1, boolean canCrossDateLine) {
+  private static Rectangle nextBoxInternal(boolean canCrossDateLine) {
+    // prevent lines instead of boxes
+    double lat0 = nextLatitude();
+    double lat1 = nextLatitude();
+    while (lat0 == lat1) {
+      lat1 = nextLatitude();
+    }
+    // prevent lines instead of boxes
+    double lon0 = nextLongitude();
+    double lon1 = nextLongitude();
+    while (lon0 == lon1) {
+      lon1 = nextLongitude();
+    }
+
     if (lat1 < lat0) {
       double x = lat0;
       lat0 = lat1;
@@ -483,21 +496,9 @@ public class GeoTestUtil {
         //System.out.println("    len=" + len);
         double lat = centerLat + len * Math.cos(SloppyMath.toRadians(angle));
         double lon = centerLon + len * Math.sin(SloppyMath.toRadians(angle));
-        if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL) {
-          // cannot cross dateline: try again!
-          continue newPoly;
-        }
-        if (lat > 90) {
-          // cross the north pole
-          lat = 180 - lat;
-          lon = 180 - lon;
-        } else if (lat < -90) {
-          // cross the south pole
-          lat = -180 - lat;
-          lon = 180 - lon;
-        }
-        if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL) {
-          // cannot cross dateline: try again!
+        if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL ||
+            lat > 90 || lat < -90) {
+          // cannot cross dateline or pole: try again!
           continue newPoly;
         }
         lats.add(lat);
@@ -589,10 +590,10 @@ public class GeoTestUtil {
       if (o instanceof double[]) {
         double point[] = (double[]) o;
         sb.append("<!-- point: ");
-        sb.append(point[0] + "," + point[1]);
+        sb.append(point[0]).append(',').append(point[1]);
         sb.append(" -->\n");
       } else {
-        sb.append("<!-- " + o.getClass().getSimpleName() + ": \n");
+        sb.append("<!-- ").append(o.getClass().getSimpleName()).append(": \n");
         sb.append(o.toString());
         sb.append("\n-->\n");
       }
@@ -619,7 +620,7 @@ public class GeoTestUtil {
       // polygon
       double polyLats[] = gon.getPolyLats();
       double polyLons[] = gon.getPolyLons();
-      sb.append("<polygon fill-opacity=\"" + opacity + "\" points=\"");
+      sb.append("<polygon fill-opacity=\"").append(opacity).append("\" points=\"");
       for (int i = 0; i < polyLats.length; i++) {
         if (i > 0) {
           sb.append(" ");
@@ -628,7 +629,7 @@ public class GeoTestUtil {
         .append(",")
         .append(90 - polyLats[i]);
       }
-      sb.append("\" style=\"" + style + "\"/>\n");
+      sb.append("\" style=\"").append(style).append("\"/>\n");
       for (Polygon hole : gon.getHoles()) {
         double holeLats[] = hole.getPolyLats();
         double holeLons[] = hole.getPolyLons();
@@ -694,10 +695,19 @@ public class GeoTestUtil {
     double vertx[] = polyLons;
     double testy = latitude;
     double testx = longitude;
-    for (i = 0, j = nvert-1; i < nvert; j = i++) {
-      if ( ((verty[i]>testy) != (verty[j]>testy)) &&
-     (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
-         c = !c;
+    for (i = 0, j = 1; j < nvert; ++i, ++j) {
+      if (testy == verty[j] && testy == verty[i] ||
+          ((testy <= verty[j] && testy >= verty[i]) != (testy >= verty[j] && testy <= verty[i]))) {
+        if ((testx == vertx[j] && testx == vertx[i]) ||
+            ((testx <= vertx[j] && testx >= vertx[i]) != (testx >= vertx[j] && testx <= vertx[i]) &&
+            GeoUtils.orient(vertx[i], verty[i], vertx[j], verty[j], testx, testy) == 0)) {
+          // return true if point is on boundary
+          return true;
+        } else if ( ((verty[i] > testy) != (verty[j] > testy)) &&
+            (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) ) {
+          c = !c;
+        }
+      }
     }
     return c;
   }

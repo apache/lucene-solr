@@ -45,7 +45,7 @@ public abstract class TopTermsRewrite<B> extends TermCollectingRewrite<B> {
    * Create a TopTermsBooleanQueryRewrite for 
    * at most <code>size</code> terms.
    * <p>
-   * NOTE: if {@link BooleanQuery#getMaxClauseCount} is smaller than 
+   * NOTE: if {@link IndexSearcher#getMaxClauseCount} is smaller than
    * <code>size</code>, then it will be used instead. 
    */
   public TopTermsRewrite(int size) {

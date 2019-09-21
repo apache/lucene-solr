@@ -103,7 +103,7 @@ public class TestBlockJoinValidation extends LuceneTestCase {
     ToChildBlockJoinQuery blockJoinQuery = new ToChildBlockJoinQuery(parentQuery, parentsFilter);
 
     final LeafReaderContext context = indexSearcher.getIndexReader().leaves().get(0);
-    Weight weight = indexSearcher.createNormalizedWeight(blockJoinQuery, org.apache.lucene.search.ScoreMode.COMPLETE);
+    Weight weight = indexSearcher.createWeight(indexSearcher.rewrite(blockJoinQuery), org.apache.lucene.search.ScoreMode.COMPLETE, 1);
     Scorer scorer = weight.scorer(context);
     final Bits parentDocs = parentsFilter.getBitSet(context);
 

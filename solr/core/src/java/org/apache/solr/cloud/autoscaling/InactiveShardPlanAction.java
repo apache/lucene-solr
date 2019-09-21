@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -29,6 +31,8 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,19 +52,22 @@ public class InactiveShardPlanAction extends TriggerActionBase {
 
   private int cleanupTTL;
 
+  public InactiveShardPlanAction() {
+    super();
+    TriggerUtils.validProperties(validProperties, TTL_PROP);
+  }
+
   @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    String cleanupStr = args.getOrDefault(TTL_PROP, String.valueOf(DEFAULT_TTL_SECONDS));
+  public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException {
+    super.configure(loader, cloudManager, properties);
+    String cleanupStr = String.valueOf(properties.getOrDefault(TTL_PROP, String.valueOf(DEFAULT_TTL_SECONDS)));
     try {
       cleanupTTL = Integer.parseInt(cleanupStr);
     } catch (Exception e) {
-      log.warn("Invalid " + TTL_PROP + " value: '" + cleanupStr + "', using default " + DEFAULT_TTL_SECONDS);
-      cleanupTTL = DEFAULT_TTL_SECONDS;
+      throw new TriggerValidationException(getName(), TTL_PROP, "invalid value '" + cleanupStr + "': " + e.toString());
     }
     if (cleanupTTL < 0) {
-      log.warn("Invalid " + TTL_PROP + " value: '" + cleanupStr + "', using default " + DEFAULT_TTL_SECONDS);
-      cleanupTTL = DEFAULT_TTL_SECONDS;
+      throw new TriggerValidationException(getName(), TTL_PROP, "invalid value '" + cleanupStr + "', should be > 0. ");
     }
   }
 
@@ -70,6 +77,7 @@ public class InactiveShardPlanAction extends TriggerActionBase {
     ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
     Map<String, List<String>> cleanup = new LinkedHashMap<>();
     Map<String, List<String>> inactive = new LinkedHashMap<>();
+    Map<String, Map<String, Object>> staleLocks = new LinkedHashMap<>();
     state.forEachCollection(coll ->
       coll.getSlices().forEach(s -> {
         if (Slice.State.INACTIVE.equals(s.getState())) {
@@ -90,12 +98,54 @@ public class InactiveShardPlanAction extends TriggerActionBase {
             cleanup.computeIfAbsent(coll.getName(), c -> new ArrayList<>()).add(s.getName());
           }
         }
+        // check for stale shard split locks
+        String parentPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll.getName();
+        List<String> locks;
+        try {
+          locks = cloudManager.getDistribStateManager().listData(parentPath).stream()
+              .filter(name -> name.endsWith("-splitting"))
+              .collect(Collectors.toList());
+          for (String lock : locks) {
+            try {
+              String lockPath = parentPath + "/" + lock;
+              Map<String, Object> lockData = Utils.getJson(cloudManager.getDistribStateManager(), lockPath);
+              String tstampStr = (String)lockData.get(ZkStateReader.STATE_TIMESTAMP_PROP);
+              if (tstampStr == null || tstampStr.isEmpty()) {
+                return;
+              }
+              long timestamp = Long.parseLong(tstampStr);
+              // this timestamp uses epoch time
+              long currentTime = cloudManager.getTimeSource().getEpochTimeNs();
+              long delta = TimeUnit.NANOSECONDS.toSeconds(currentTime - timestamp);
+              log.debug("{}/{}: locktstamp={}, time={}, delta={}", coll.getName(), lock, timestamp, currentTime, delta);
+              if (delta > cleanupTTL) {
+                log.debug("-- delete inactive split lock for {}/{}, delta={}", coll.getName(), lock, delta);
+                cloudManager.getDistribStateManager().removeData(lockPath, -1);
+                lockData.put("currentTimeNs", currentTime);
+                lockData.put("deltaSec", delta);
+                lockData.put("ttlSec", cleanupTTL);
+                staleLocks.put(coll.getName() + "/" + lock, lockData);
+              } else {
+                log.debug("-- lock " + coll.getName() + "/" + lock + " still active (delta=" + delta + ")");
+              }
+            } catch (NoSuchElementException nse) {
+              // already removed by someone else - ignore
+            }
+          }
+        } catch (Exception e) {
+          log.warn("Exception checking for inactive shard split locks in " + parentPath, e);
+        }
       })
     );
+    Map<String, Object> results = new LinkedHashMap<>();
     if (!cleanup.isEmpty()) {
-      Map<String, Object> results = new LinkedHashMap<>();
       results.put("inactive", inactive);
       results.put("cleanup", cleanup);
+    }
+    if (!staleLocks.isEmpty()) {
+      results.put("staleLocks", staleLocks);
+    }
+    if (!results.isEmpty()) {
       context.getProperties().put(getName(), results);
     }
   }

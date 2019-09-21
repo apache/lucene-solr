@@ -19,14 +19,13 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
 /** Implements a {@link TermsEnum} wrapping a provided
  * {@link SortedDocValues}. */
 
-class SortedDocValuesTermsEnum extends TermsEnum {
+class SortedDocValuesTermsEnum extends BaseTermsEnum {
   private final SortedDocValues values;
   private int currentOrd = -1;
   private final BytesRefBuilder scratch;
@@ -111,7 +110,7 @@ class SortedDocValuesTermsEnum extends TermsEnum {
   }
 
   @Override
-  public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
+  public ImpactsEnum impacts(int flags) throws IOException {
     throw new UnsupportedOperationException();
   }
 

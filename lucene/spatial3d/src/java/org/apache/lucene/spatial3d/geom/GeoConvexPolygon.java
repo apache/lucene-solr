@@ -218,7 +218,6 @@ class GeoConvexPolygon extends GeoBasePolygon {
       }
       final GeoPoint check = points.get(endPointIndex);
       final SidedPlane sp = new SidedPlane(check, start, end);
-      //System.out.println("Created edge "+sp+" using start="+start+" end="+end+" check="+check);
       edges[i] = sp;
       notableEdgePoints[i] = new GeoPoint[]{start, end};
     }
@@ -230,16 +229,20 @@ class GeoConvexPolygon extends GeoBasePolygon {
     for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
       final SidedPlane edge = edges[edgeIndex];
       int bound1Index = legalIndex(edgeIndex+1);
-      while (edges[legalIndex(bound1Index)].isNumericallyIdentical(edge)) {
-        bound1Index++;
+      while (edges[bound1Index].isNumericallyIdentical(edge)) {
+        if (bound1Index == edgeIndex) {
+          throw new IllegalArgumentException("Constructed planes are all coplanar: "+points);
+        }
+        bound1Index = legalIndex(bound1Index + 1);
       }
       int bound2Index = legalIndex(edgeIndex-1);
       // Look for bound2
-      while (edges[legalIndex(bound2Index)].isNumericallyIdentical(edge)) {
-        bound2Index--;
+      while (edges[bound2Index].isNumericallyIdentical(edge)) {
+        if (bound2Index == edgeIndex) {
+          throw new IllegalArgumentException("Constructed planes are all coplanar: "+points);
+        }
+        bound2Index = legalIndex(bound2Index - 1);
       }
-      bound1Index = legalIndex(bound1Index);
-      bound2Index = legalIndex(bound2Index);
       // Also confirm that all interior points are within the bounds
       int startingIndex = bound2Index;
       while (true) {
@@ -305,8 +308,9 @@ class GeoConvexPolygon extends GeoBasePolygon {
    *@return the normalized index.
    */
   protected int legalIndex(int index) {
-    while (index >= points.size())
+    while (index >= points.size()) {
       index -= points.size();
+    }
     while (index < 0) {
       index += points.size();
     }

@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
+import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
+
 /**
  *
  * @since solr 1.3
@@ -87,8 +89,8 @@ public class SolrInputField implements Iterable<Object>, Serializable
       value = vals;
     }
     
-    // Add the new values to a collection
-    if( v instanceof Iterable ) {
+    // Add the new values to a collection, if childDoc add as is without iteration
+    if( v instanceof Iterable && !(v instanceof SolrDocumentBase)) {
       for( Object o : (Iterable<Object>)v ) {
         vals.add( o );
       }
@@ -111,11 +113,11 @@ public class SolrInputField implements Iterable<Object>, Serializable
     if( value instanceof Collection ) {
       Collection c = (Collection<Object>)value;
       if( c.size() > 0 ) {
-        return c.iterator().next();
+        return convertCharSeq(c.iterator().next());
       }
       return null;
     }
-    return value;
+    return convertCharSeq(value);
   }
 
   /**
@@ -123,6 +125,28 @@ public class SolrInputField implements Iterable<Object>, Serializable
    * will be a collection.
    */
   public Object getValue() {
+    return convertCharSeq(value);
+  }
+
+
+  /**
+   * Return a value as is without converting and CharSequence Objects
+   */
+  public Object getRawValue() {
+    return value;
+  }
+
+  /**
+   * Return the first value as is without converting and CharSequence Objects
+   */
+  public Object getFirstRawValue() {
+    if (value instanceof Collection) {
+      Collection c = (Collection<Object>) value;
+      if (c.size() > 0) {
+        return c.iterator().next();
+      }
+      return null;
+    }
     return value;
   }
 
@@ -132,12 +156,12 @@ public class SolrInputField implements Iterable<Object>, Serializable
    */
   @SuppressWarnings("unchecked")
   public Collection<Object> getValues() {
-    if( value instanceof Collection ) {
-      return (Collection<Object>)value;
+    if (value instanceof Collection) {
+      return convertCharSeq((Collection<Object>) value);
     }
     if( value != null ) {
       Collection<Object> vals = new ArrayList<>(1);
-      vals.add( value );
+      vals.add(convertCharSeq(value));
       return vals;
     }
     return null;
@@ -165,8 +189,33 @@ public class SolrInputField implements Iterable<Object>, Serializable
   }
 
   @Override
+  public Iterator<Object> iterator(){
+    if( value instanceof Collection ) {
+      return (convertCharSeq ((Collection)value)).iterator();
+    }
+    return new Iterator<Object>() {
+      boolean nxt = (value!=null);
+
+      @Override
+      public boolean hasNext() {
+        return nxt;
+      }
+
+      @Override
+      public Object next() {
+        nxt = false;
+        return convertCharSeq(value);
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
+    };
+
+  }
   @SuppressWarnings("unchecked")
-  public Iterator<Object> iterator() {
+  public Iterator<Object> getRawIterator() {
     if( value instanceof Collection ) {
       return ((Collection)value).iterator();
     }

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -17,10 +19,11 @@ import argparse
 import datetime
 import re
 import time
-import shutil
 import os
 import sys
 import subprocess
+from subprocess import TimeoutExpired
+from scriptutil import check_ant
 import textwrap
 import urllib.request, urllib.error, urllib.parse
 import xml.etree.ElementTree as ET
@@ -64,12 +67,12 @@ def runAndSendGPGPassword(command, password):
     print(msg)
     raise RuntimeError(msg)
 
-def load(urlString):
+def load(urlString, encoding="utf-8"):
   try:
-    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+    content = urllib.request.urlopen(urlString).read().decode(encoding)
   except Exception as e:
     print('Retrying download of url %s after exception: %s' % (urlString, e))
-    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+    content = urllib.request.urlopen(urlString).read().decode(encoding)
   return content
 
 def getGitRev():
@@ -78,9 +81,12 @@ def getGitRev():
     raise RuntimeError('git clone is dirty:\n\n%s' % status)
   branch = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
   command = 'git log origin/%s..' % branch
-  unpushedCommits = os.popen(command).read().strip()
-  if len(unpushedCommits) > 0:
-    raise RuntimeError('There are unpushed commits - "%s" output is:\n\n%s' % (command, unpushedCommits))
+  p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  stdout, stderr = p.communicate()
+  if len(stdout.strip()) > 0:
+    raise RuntimeError('There are unpushed commits - "%s" output is:\n\n%s' % (command, stdout.decode('utf-8')))
+  if len(stderr.strip()) > 0:
+    raise RuntimeError('Command "%s" failed:\n\n%s' % (command, stderr.decode('utf-8')))
 
   print('  git clone is clean')
   return os.popen('git rev-parse HEAD').read().strip()
@@ -102,8 +108,8 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   print('  Check DOAP files')
   checkDOAPfiles(version)
 
-  print('  ant clean test validate documentation-lint')
-  run('ant clean test validate documentation-lint')
+  print('  ant -Dtests.badapples=false clean test validate documentation-lint')
+  run('ant -Dtests.badapples=false clean test validate documentation-lint')
 
   open('rev.txt', mode='wb').write(rev.encode('UTF-8'))
   
@@ -218,12 +224,6 @@ def pushLocal(version, root, rev, rcNum, localDir):
   run('tar xjf "%s/solr/package/solr.tar.bz2"' % root)
   os.remove('%s/solr/package/solr.tar.bz2' % root)
 
-  print('  KEYS')
-  run('wget http://home.apache.org/keys/group/lucene.asc')
-  os.rename('lucene.asc', 'KEYS')
-  run('chmod a+r-w KEYS')
-  run('cp KEYS ../lucene')
-
   print('  chmod...')
   os.chdir('..')
   run('chmod -R a+rX-w .')
@@ -245,6 +245,8 @@ def parse_config():
                                    formatter_class=argparse.RawDescriptionHelpFormatter)
   parser.add_argument('--no-prepare', dest='prepare', default=True, action='store_false',
                       help='Use the already built release in the provided checkout')
+  parser.add_argument('--local-keys', metavar='PATH',
+                      help='Uses local KEYS file to validate presence of RM\'s gpg key')
   parser.add_argument('--push-local', metavar='PATH',
                       help='Push the release to the local path')
   parser.add_argument('--sign', metavar='KEYID',
@@ -253,6 +255,8 @@ def parse_config():
                       help='Release Candidate number.  Default: 1')
   parser.add_argument('--root', metavar='PATH', default='.',
                       help='Root of Git working tree for lucene-solr.  Default: "." (the current directory)')
+  parser.add_argument('--logfile', metavar='PATH',
+                      help='Specify log file path (default /tmp/release.log)')
   config = parser.parse_args()
 
   if not config.prepare and config.sign:
@@ -263,23 +267,20 @@ def parse_config():
     parser.error('Release Candidate number must be a positive integer')
   if not os.path.isdir(config.root):
     parser.error('Root path "%s" is not a directory' % config.root)
+  if config.local_keys is not None and not os.path.exists(config.local_keys):
+    parser.error('Local KEYS file "%s" not found' % config.local_keys)
   cwd = os.getcwd()
   os.chdir(config.root)
   config.root = os.getcwd() # Absolutize root dir
   if os.system('git rev-parse') or 3 != len([d for d in ('dev-tools','lucene','solr') if os.path.isdir(d)]):
     parser.error('Root path "%s" is not a valid lucene-solr checkout' % config.root)
   os.chdir(cwd)
+  global LOG
+  if config.logfile:
+    LOG = config.logfile
 
   config.version = read_version(config.root)
   print('Building version: %s' % config.version)
-
-  if config.sign:
-    sys.stdout.flush()
-    import getpass
-    config.key_id = config.sign
-    config.key_password = getpass.getpass('Enter GPG keystore password: ')
-  else:
-    config.gpg_password = None
 
   return config
 
@@ -288,21 +289,57 @@ def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
     raise RuntimeError('"git --version" returned a non-zero exit code.')
   check_ant()
 
-def check_ant():
-  antVersion = os.popen('ant -version').read().strip()
-  if (antVersion.startswith('Apache Ant(TM) version 1.8')):
-    return
-  if (antVersion.startswith('Apache Ant(TM) version 1.9')):
-    return
-  if (antVersion.startswith('Apache Ant(TM) version 1.10')):
-    return
-  raise RuntimeError('Unsupported ant version (must be 1.8 - 1.10): "%s"' % antVersion)
-  
+def check_key_in_keys(gpgKeyID, local_keys):
+  if gpgKeyID is not None:
+    print('  Verify your gpg key is in the main KEYS file')
+    if local_keys is not None:
+      print("    Using local KEYS file %s" % local_keys)
+      keysFileText = open(local_keys, encoding='iso-8859-1').read()
+      keysFileLocation = local_keys
+    else:
+      keysFileURL = "https://archive.apache.org/dist/lucene/KEYS"
+      keysFileLocation = keysFileURL
+      print("    Using online KEYS file %s" % keysFileURL)
+      keysFileText = load(keysFileURL, encoding='iso-8859-1')
+    if len(gpgKeyID) > 2 and gpgKeyID[0:2] == '0x':
+      gpgKeyID = gpgKeyID[2:]
+    if len(gpgKeyID) > 40:
+      gpgKeyID = gpgKeyID.replace(" ", "")
+    if len(gpgKeyID) == 8:
+      gpgKeyID8Char = "%s %s" % (gpgKeyID[0:4], gpgKeyID[4:8])
+      re_to_match = r"^pub .*\n\s+\w{4} \w{4} \w{4} \w{4} \w{4}  \w{4} \w{4} \w{4} %s" % gpgKeyID8Char
+    elif len(gpgKeyID) == 40:
+      gpgKeyID40Char = "%s %s %s %s %s  %s %s %s %s %s" % \
+                       (gpgKeyID[0:4], gpgKeyID[4:8], gpgKeyID[8:12], gpgKeyID[12:16], gpgKeyID[16:20],
+                       gpgKeyID[20:24], gpgKeyID[24:28], gpgKeyID[28:32], gpgKeyID[32:36], gpgKeyID[36:])
+      re_to_match = r"^pub .*\n\s+(%s|%s)" % (gpgKeyID40Char, gpgKeyID)
+    else:
+      print('Invalid gpg key id format. Must be 8 byte short ID or 40 byte fingerprint, with or without 0x prefix, no spaces.')
+      exit(2)
+    if re.search(re_to_match, keysFileText, re.MULTILINE):
+      print('    Found key %s in KEYS file at %s' % (gpgKeyID, keysFileLocation))
+    else:
+      print('    ERROR: Did not find your key %s in KEYS file at %s. Please add it and try again.' % (gpgKeyID, keysFileLocation))
+      if local_keys is not None:
+        print('           You are using a local KEYS file. Make sure it is up to date or validate against the online version')
+      exit(2)
+
+
 def main():
   check_cmdline_tools()
 
   c = parse_config()
 
+  if c.sign:
+    sys.stdout.flush()
+    c.key_id = c.sign
+    check_key_in_keys(c.key_id, c.local_keys)
+    import getpass
+    c.key_password = getpass.getpass('Enter GPG keystore password: ')
+  else:
+    c.key_id = None
+    c.key_password = None
+  
   if c.prepare:
     rev = prepare(c.root, c.version, c.key_id, c.key_password)
   else:

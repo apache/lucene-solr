@@ -34,10 +34,10 @@ public class CastingDateValueStreamTest extends SolrTestCaseJ4 {
     Date date2 = Date.from(Instant.parse("1920-04-15T18:15:45Z"));
     Date date3 = Date.from(Instant.parse("2012-11-30T20:30:15Z"));
     TestDateValueStream val = new TestDateValueStream();
-    
+
     assertTrue(val instanceof DateValueStream);
     DateValueStream casted = (DateValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamDates( value -> {
@@ -57,10 +57,10 @@ public class CastingDateValueStreamTest extends SolrTestCaseJ4 {
   @Test
   public void stringStreamCastingTest() {
     TestDateValueStream val = new TestDateValueStream();
-    
+
     assertTrue(val instanceof StringValueStream);
     StringValueStream casted = (StringValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamStrings( value -> {
@@ -83,10 +83,10 @@ public class CastingDateValueStreamTest extends SolrTestCaseJ4 {
     Date date2 = Date.from(Instant.parse("1920-04-15T18:15:45Z"));
     Date date3 = Date.from(Instant.parse("2012-11-30T20:30:15Z"));
     TestDateValueStream val = new TestDateValueStream();
-    
+
     assertTrue(val instanceof AnalyticsValueStream);
     AnalyticsValueStream casted = (AnalyticsValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamObjects( value -> {
@@ -102,7 +102,7 @@ public class CastingDateValueStreamTest extends SolrTestCaseJ4 {
     });
     assertFalse(values.hasNext());
   }
-  
+
   @Test
   public void constantConversionTest() {
     AnalyticsValueStream val = new TestDateValueStream();

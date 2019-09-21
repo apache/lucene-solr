@@ -34,6 +34,8 @@ import org.apache.lucene.analysis.ja.dict.UserDictionary;
 /**
  * Analyzer for Japanese that uses morphological analysis.
  * @see JapaneseTokenizer
+ *
+ * @since 3.6.0
  */
 public class JapaneseAnalyzer extends StopwordAnalyzerBase {
   private final Mode mode;

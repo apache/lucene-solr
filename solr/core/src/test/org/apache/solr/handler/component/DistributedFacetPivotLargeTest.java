@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -90,25 +91,23 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     }
 
     // sanity check limit=0 w/ mincount=0 & missing=true
-    //
-    // SOLR-6328: doesn't work for single node, so can't work for distrib either (yet)
-    //
-    // PivotFacetField's init of needRefinementAtThisLevel as needing potential change
-    // 
-    // rsp = query( "q", "*:*",
-    //              "rows", "0",
-    //              "facet","true",
-    //              "f.company_t.facet.limit", "10",
-    //              "facet.pivot","special_s,bogus_s,company_t",
-    //              "facet.missing", "true",
-    //              FacetParams.FACET_LIMIT, "0",
-    //              FacetParams.FACET_PIVOT_MINCOUNT,"0"); 
-    // pivots = rsp.getFacetPivot().get("special_s,bogus_s,company_t");
-    // assertEquals(1, pivots.size()); // only the missing
-    // assertPivot("special_s", null, docNumber - 5, pivots.get(0)); // 5 docs w/special_s
-    // assertEquals(pivots.toString(), 1, pivots.get(0).getPivot());
-    // assertPivot("bogus_s", null, docNumber, pivots.get(0).getPivot().get(0));
-    // // TODO: some asserts on company results
+    rsp = query( "q", "*:*",
+                  "rows", "0",
+                  "facet","true",
+                  "f.company_t.facet.limit", "10",
+                  "facet.pivot","special_s,bogus_s,company_t",
+                  "facet.missing", "true",
+                  FacetParams.FACET_LIMIT, "0",
+                  FacetParams.FACET_PIVOT_MINCOUNT,"0");
+    pivots = rsp.getFacetPivot().get("special_s,bogus_s,company_t");
+    assertEquals(1, pivots.size()); // only the missing
+    assertPivot("special_s", null, docNumber - 5, pivots.get(0)); // 5 docs w/special_s
+    assertEquals(pivots.toString(), 1, pivots.get(0).getPivot().size());
+    assertPivot("bogus_s", null, docNumber - 5 , pivots.get(0).getPivot().get(0)); // 5 docs w/special_s
+    PivotField bogus = pivots.get(0).getPivot().get(0);
+    assertEquals(bogus.toString(), 11, bogus.getPivot().size());
+    // last value would always be missing docs
+    assertPivot("company_t", null, 2, bogus.getPivot().get(10)); // 2 docs w/company_t
 
     // basic check w/ default sort, limit, & mincount==0
     rsp = query( "q", "*:*",
@@ -264,6 +263,93 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
       }
     }
 
+    // check of a single level pivot using sort=index w/mincount big enough
+    // to triggers per-shard mincount > num docs on one shard
+    // (beefed up test of same with nested pivot below)
+    for (int limit : Arrays.asList(4, 444444, -1)) {
+      SolrParams p = params("q", "*:*",
+                            "rows", "0",
+                            // skip place_s:Nplaceholder buckets
+                            "fq","-hiredate_dt:\"2012-10-01T12:30:00Z\"", 
+                            // skip company_t:compHolderN buckets from twoShard
+                            "fq","-(+company_t:compHolder* +real_b:true)",
+                            "facet","true",
+                            "facet.pivot","place_s",
+                            FacetParams.FACET_PIVOT_MINCOUNT, "50",
+                            FacetParams.FACET_LIMIT, ""+limit,
+                            "facet.sort", "index");
+      rsp = null;
+      try {
+        rsp = query( p );
+        assertPivot("place_s", "cardiff", 107, rsp.getFacetPivot().get("place_s").get(0));
+        // - zeroShard  = 50 ... above per-shard min of 50/(numShards=4)
+        // - oneShard   =  5 ... below per-shard min of 50/(numShards=4) .. should be refined
+        // - twoShard   = 52 ... above per-shard min of 50/(numShards=4)
+        // = threeShard =  0 ... should be refined and still match nothing
+      } catch (AssertionError ae) {
+        throw new AssertionError(ae.getMessage() + ": " + p.toString() + " ==> " + rsp, ae);
+      }
+    }
+    
+    // test permutations of mincount & limit with sort=index
+    // (there is a per-shard optimization on mincount when sort=index is used)
+    for (int limit : Arrays.asList(4, 444444, -1)) {
+      SolrParams p = params("q", "*:*",
+                            "rows", "0",
+                            // skip place_s:Nplaceholder buckets
+                            "fq","-hiredate_dt:\"2012-10-01T12:30:00Z\"", 
+                            // skip company_t:compHolderN buckets from twoShard
+                            "fq","-(+company_t:compHolder* +real_b:true)",
+                            "facet","true",
+                            "facet.pivot","place_s,company_t",
+                            FacetParams.FACET_PIVOT_MINCOUNT, "50",
+                            FacetParams.FACET_LIMIT, ""+limit,
+                            "facet.sort", "index");
+      rsp = null;
+      try {
+        rsp = query( p );
+        pivots = rsp.getFacetPivot().get("place_s,company_t");
+        firstPlace = pivots.get(0);
+        assertPivot("place_s", "cardiff", 107, firstPlace);
+        //
+        assertPivot("company_t", "bbc",      101, firstPlace.getPivot().get(0)); 
+        assertPivot("company_t", "honda",     50, firstPlace.getPivot().get(1)); 
+        assertPivot("company_t", "microsoft", 56, firstPlace.getPivot().get(2)); 
+        assertPivot("company_t", "polecat",   52, firstPlace.getPivot().get(3)); 
+      } catch (AssertionError ae) {
+        throw new AssertionError(ae.getMessage() + ": " + p.toString() + " ==> " + rsp, ae);
+      }
+    }
+
+    { // similar to the test above, but now force a restriction on the over request and allow
+      // terms that are early in index sort -- but don't meet the mincount overall -- to be considered
+      // in the first phase. (SOLR-12954)
+      SolrParams p = params("q", "*:*",
+                            "rows", "0",
+                            // skip company_t:compHolderN buckets from twoShard
+                            "fq","-(+company_t:compHolder* +real_b:true)",
+                            "facet","true",
+                            "facet.pivot","place_s,company_t",
+                            // the (50) Nplaceholder place_s values exist in 6 each on oneShard
+                            FacetParams.FACET_PIVOT_MINCOUNT, ""+(6 * shardsArr.length),
+                            FacetParams.FACET_LIMIT, "4",
+                            "facet.sort", "index");
+      rsp = null;
+      try {
+        rsp = query( p ); 
+        pivots = rsp.getFacetPivot().get("place_s,company_t");
+        firstPlace = pivots.get(0);
+        assertPivot("place_s", "cardiff", 107, firstPlace);
+        //
+        assertPivot("company_t", "bbc",      101, firstPlace.getPivot().get(0)); 
+        assertPivot("company_t", "honda",     50, firstPlace.getPivot().get(1)); 
+        assertPivot("company_t", "microsoft", 56, firstPlace.getPivot().get(2)); 
+        assertPivot("company_t", "polecat",   52, firstPlace.getPivot().get(3)); 
+      } catch (AssertionError ae) {
+        throw new AssertionError(ae.getMessage() + ": " + p.toString() + " ==> " + rsp, ae);
+      }
+    }
+    
     // Pivot Faceting (combined wtih Field Faceting)
     for (SolrParams facetParams : 
            // with and w/o an excluded fq

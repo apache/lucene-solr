@@ -46,7 +46,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  *  <li>{@link ArabicStemFilter}: Arabic light stemming
  *  <li>Arabic stop words file: a set of default Arabic stop words.
  * </ul>
- * 
+ *
+ * @since 3.1
  */
 public final class ArabicAnalyzer extends StopwordAnalyzerBase {
 

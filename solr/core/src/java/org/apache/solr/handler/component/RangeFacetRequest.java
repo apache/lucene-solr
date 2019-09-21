@@ -666,7 +666,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     @Override
     public Float parseAndAddGap(Float value, String gap) {
-      return new Float(value.floatValue() + Float.parseFloat(gap));
+      return value.floatValue() + Float.parseFloat(gap);
     }
   }
 
@@ -684,7 +684,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     @Override
     public Double parseAndAddGap(Double value, String gap) {
-      return new Double(value.doubleValue() + Double.parseDouble(gap));
+      return value.doubleValue() + Double.parseDouble(gap);
     }
   }
 
@@ -702,7 +702,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     @Override
     public Integer parseAndAddGap(Integer value, String gap) {
-      return new Integer(value.intValue() + Integer.parseInt(gap));
+      return value.intValue() + Integer.parseInt(gap);
     }
   }
 
@@ -720,7 +720,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
     @Override
     public Long parseAndAddGap(Long value, String gap) {
-      return new Long(value.longValue() + Long.parseLong(gap));
+      return value.longValue() + Long.parseLong(gap);
     }
   }
 

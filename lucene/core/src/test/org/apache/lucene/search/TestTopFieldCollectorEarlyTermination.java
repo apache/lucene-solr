@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -38,8 +39,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
 
@@ -136,11 +135,8 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         } else {
           after = null;
         }
-        final boolean fillFields = random().nextBoolean();
-        final boolean trackDocScores = random().nextBoolean();
-        final boolean trackMaxScore = random().nextBoolean();
-        final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, after, fillFields, trackDocScores, trackMaxScore, true);
-        final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, after, fillFields, trackDocScores, trackMaxScore, false);
+        final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, after, Integer.MAX_VALUE);
+        final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, after, 1);
 
         final Query query;
         if (random().nextBoolean()) {
@@ -154,23 +150,57 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         TopDocs td2 = collector2.topDocs();
 
         assertFalse(collector1.isEarlyTerminated());
-        if (trackMaxScore == false && paging == false && maxSegmentSize > numHits && query instanceof MatchAllDocsQuery) {
+        if (paging == false && maxSegmentSize > numHits && query instanceof MatchAllDocsQuery) {
           // Make sure that we sometimes early terminate
           assertTrue(collector2.isEarlyTerminated());
         }
         if (collector2.isEarlyTerminated()) {
-          assertTrue(td2.totalHits >= td1.scoreDocs.length);
-          assertTrue(td2.totalHits <= reader.maxDoc());
+          assertTrue(td2.totalHits.value >= td1.scoreDocs.length);
+          assertTrue(td2.totalHits.value <= reader.maxDoc());
         } else {
-          assertEquals(td2.totalHits, td1.totalHits);
+          assertEquals(td2.totalHits.value, td1.totalHits.value);
         }
-        assertTopDocsEquals(td1.scoreDocs, td2.scoreDocs);
+        CheckHits.checkEqual(query, td1.scoreDocs, td2.scoreDocs);
       }
       closeIndex();
     }
   }
   
-  public void testCanEarlyTerminate() {
+  public void testCanEarlyTerminateOnDocId() {
+    assertTrue(TopFieldCollector.canEarlyTerminate(
+        new Sort(SortField.FIELD_DOC),
+        new Sort(SortField.FIELD_DOC)));
+    
+    assertTrue(TopFieldCollector.canEarlyTerminate(
+        new Sort(SortField.FIELD_DOC),
+        null));
+
+    assertFalse(TopFieldCollector.canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG)),
+        null));
+
+    assertFalse(TopFieldCollector.canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG)),
+        new Sort(new SortField("b", SortField.Type.LONG))));
+
+    assertTrue(TopFieldCollector.canEarlyTerminate(
+        new Sort(SortField.FIELD_DOC),
+        new Sort(new SortField("b", SortField.Type.LONG))));
+
+    assertTrue(TopFieldCollector.canEarlyTerminate(
+        new Sort(SortField.FIELD_DOC),
+        new Sort(new SortField("b", SortField.Type.LONG), SortField.FIELD_DOC)));
+
+    assertFalse(TopFieldCollector.canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG)),
+        new Sort(SortField.FIELD_DOC)));
+
+    assertFalse(TopFieldCollector.canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG), SortField.FIELD_DOC),
+        new Sort(SortField.FIELD_DOC)));
+  }
+
+  public void testCanEarlyTerminateOnPrefix() {
     assertTrue(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG)),
         new Sort(new SortField("a", SortField.Type.LONG))));
@@ -183,6 +213,10 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         new Sort(new SortField("a", SortField.Type.LONG)),
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
 
+    assertFalse(TopFieldCollector.canEarlyTerminate(
+        new Sort(new SortField("a", SortField.Type.LONG, true)),
+        null));
+    
     assertFalse(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG, true)),
         new Sort(new SortField("a", SortField.Type.LONG, false))));
@@ -198,15 +232,5 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
     assertFalse(TopFieldCollector.canEarlyTerminate(
         new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
         new Sort(new SortField("c", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
-  }
-
-  private static void assertTopDocsEquals(ScoreDoc[] scoreDocs1, ScoreDoc[] scoreDocs2) {
-    assertEquals(scoreDocs1.length, scoreDocs2.length);
-    for (int i = 0; i < scoreDocs1.length; ++i) {
-      final ScoreDoc scoreDoc1 = scoreDocs1[i];
-      final ScoreDoc scoreDoc2 = scoreDocs2[i];
-      assertEquals(scoreDoc1.doc, scoreDoc2.doc);
-      assertEquals(scoreDoc1.score, scoreDoc2.score, 0f);
-    }
   }
 }

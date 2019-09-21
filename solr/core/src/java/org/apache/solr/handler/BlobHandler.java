@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.util.Collection;
@@ -28,6 +27,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -114,10 +114,10 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         }
         MessageDigest m = MessageDigest.getInstance("MD5");
         m.update(payload.array(), payload.position(), payload.limit());
-        String md5 = new BigInteger(1, m.digest()).toString(16);
+        String md5 = new String(Hex.encodeHex(m.digest()));
 
-        TopDocs duplicate = req.getSearcher().search(new TermQuery(new Term("md5", md5)), 1);
-        if (duplicate.totalHits > 0) {
+        int duplicateCount = req.getSearcher().count(new TermQuery(new Term("md5", md5)));
+        if (duplicateCount > 0) {
           rsp.add("error", "duplicate entry");
           forward(req, null,
               new MapSolrParams((Map) makeMap(
@@ -132,7 +132,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
             1, new Sort(new SortField("version", SortField.Type.LONG, true)));
 
         long version = 0;
-        if (docs.totalHits > 0) {
+        if (docs.totalHits.value > 0) {
           Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
           Number n = doc.getField("version").numericValue();
           version = n.longValue();
@@ -175,7 +175,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
           if (version != -1) q = "id:{0}/{1}";
           QParser qparser = QParser.getParser(StrUtils.formatString(q, blobName, version), req);
           final TopDocs docs = req.getSearcher().search(qparser.parse(), 1, new Sort(new SortField("version", SortField.Type.LONG, true)));
-          if (docs.totalHits > 0) {
+          if (docs.totalHits.value > 0) {
             rsp.add(ReplicationHandler.FILE_STREAM, new SolrCore.RawWriter() {
 
               @Override

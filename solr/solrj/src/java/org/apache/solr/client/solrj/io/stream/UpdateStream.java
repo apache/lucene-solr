@@ -50,7 +50,7 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
  * @since 6.0.0
  */
 public class UpdateStream extends TupleStream implements Expressible {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static String BATCH_INDEXED_FIELD_NAME = "batchIndexed"; // field name in summary tuple for #docs updated in batch
   private String collection;
@@ -281,7 +281,7 @@ public class UpdateStream extends TupleStream implements Expressible {
         }
       }
     }
-    LOG.debug("Tuple [{}] was converted into SolrInputDocument [{}].", tuple, doc);
+    log.debug("Tuple [{}] was converted into SolrInputDocument [{}].", tuple, doc);
     
     return doc;
   }
@@ -300,7 +300,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     try {
       cloudSolrClient.add(collection, documentBatch);
     } catch (SolrServerException | IOException e) {
-      LOG.warn("Unable to add documents to collection due to unexpected error.", e);
+      log.warn("Unable to add documents to collection due to unexpected error.", e);
       String className = e.getClass().getName();
       String message = e.getMessage();
       throw new IOException(String.format(Locale.ROOT,"Unexpected error when adding documents to collection %s- %s:%s", collection, className, message));

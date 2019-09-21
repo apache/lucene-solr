@@ -115,10 +115,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     IndexSearcher isearcher = new IndexSearcher(ireader);
 
-    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    assertEquals(1, isearcher.count(new TermQuery(new Term("fieldname", longTerm))));
     Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, 1);
-    assertEquals(1, hits.totalHits);
+    assertEquals(1, hits.totalHits.value);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
@@ -149,10 +149,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     IndexSearcher isearcher = new IndexSearcher(ireader);
 
-    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    assertEquals(1, isearcher.count(new TermQuery(new Term("fieldname", longTerm))));
     Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, 1);
-    assertEquals(1, hits.totalHits);
+    assertEquals(1, hits.totalHits.value);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       int docID = hits.scoreDocs[i].doc;
@@ -185,10 +185,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     IndexSearcher isearcher = new IndexSearcher(ireader);
 
-    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    assertEquals(1, isearcher.count(new TermQuery(new Term("fieldname", longTerm))));
     Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, 1);
-    assertEquals(1, hits.totalHits);
+    assertEquals(1, hits.totalHits.value);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       int docID = hits.scoreDocs[i].doc;
@@ -223,10 +223,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     IndexSearcher isearcher = new IndexSearcher(ireader);
 
-    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    assertEquals(1, isearcher.count(new TermQuery(new Term("fieldname", longTerm))));
     Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, 1);
-    assertEquals(1, hits.totalHits);
+    assertEquals(1, hits.totalHits.value);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       int hitDocID = hits.scoreDocs[i].doc;
@@ -263,10 +263,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     IndexSearcher isearcher = new IndexSearcher(ireader);
 
-    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    assertEquals(1, isearcher.count(new TermQuery(new Term("fieldname", longTerm))));
     Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, 1);
-    assertEquals(1, hits.totalHits);
+    assertEquals(1, hits.totalHits.value);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       int docID = hits.scoreDocs[i].doc;
@@ -302,10 +302,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     IndexSearcher isearcher = new IndexSearcher(ireader);
 
-    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    assertEquals(1, isearcher.count(new TermQuery(new Term("fieldname", longTerm))));
     Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, 1);
-    assertEquals(1, hits.totalHits);
+    assertEquals(1, hits.totalHits.value);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       int docID = hits.scoreDocs[i].doc;
@@ -346,10 +346,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     IndexSearcher isearcher = new IndexSearcher(ireader);
 
-    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    assertEquals(1, isearcher.count(new TermQuery(new Term("fieldname", longTerm))));
     Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, 1);
-    assertEquals(1, hits.totalHits);
+    assertEquals(1, hits.totalHits.value);
     BytesRef scratch = new BytesRef();
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
@@ -518,10 +518,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     IndexSearcher isearcher = new IndexSearcher(ireader);
 
-    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    assertEquals(1, isearcher.count(new TermQuery(new Term("fieldname", longTerm))));
     Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, 1);
-    assertEquals(1, hits.totalHits);
+    assertEquals(1, hits.totalHits.value);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       int hitDocID = hits.scoreDocs[i].doc;
@@ -622,10 +622,10 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     IndexSearcher isearcher = new IndexSearcher(ireader);
 
-    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    assertEquals(1, isearcher.count(new TermQuery(new Term("fieldname", longTerm))));
     Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, 1);
-    assertEquals(1, hits.totalHits);
+    assertEquals(1, hits.totalHits.value);
     BytesRef scratch = new BytesRef();
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
@@ -1119,7 +1119,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     query.add(new TermQuery(new Term("docId", "4")), BooleanClause.Occur.SHOULD);
 
     TopDocs search = searcher.search(query.build(), 10);
-    assertEquals(5, search.totalHits);
+    assertEquals(5, search.totalHits.value);
     ScoreDoc[] scoreDocs = search.scoreDocs;
     NumericDocValues docValues = getOnlyLeafReader(reader).getNumericDocValues("docId");
     for (int i = 0; i < scoreDocs.length; i++) {
@@ -1204,6 +1204,9 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
 
   private void doTestNumericsVsStoredFields(double density, LongSupplier longs) throws Exception {
+    doTestNumericsVsStoredFields(density, longs, 256);
+  }
+  private void doTestNumericsVsStoredFields(double density, LongSupplier longs, int minDocs) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
@@ -1216,7 +1219,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     doc.add(dvField);
     
     // index some docs
-    int numDocs = atLeast(300);
+    int numDocs = atLeast((int) (minDocs*1.172));
     // numDocs should be always > 256 so that in case of a codec that optimizes
     // for numbers of values <= 256, all storage layouts are tested
     assert numDocs > 256;
@@ -1243,12 +1246,17 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     }
 
     // merge some segments and ensure that at least one of them has more than
-    // 256 values
-    writer.forceMerge(numDocs / 256);
+    // max(256, minDocs) values
+    writer.forceMerge(numDocs / Math.max(256, minDocs));
 
     writer.close();
-    
     // compare
+    assertDVIterate(dir);
+    dir.close();
+  }
+
+  // Asserts equality of stored value vs. DocValue by iterating DocValues one at a time
+  protected void assertDVIterate(Directory dir) throws IOException {
     DirectoryReader ir = DirectoryReader.open(dir);
     TestUtil.checkReader(ir);
     for (LeafReaderContext context : ir.leaves()) {
@@ -1268,9 +1276,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, docValues.docID());
     }
     ir.close();
-    dir.close();
   }
-  
+
   private void doTestSortedNumericsVsStoredFields(LongSupplier counts, LongSupplier values) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));

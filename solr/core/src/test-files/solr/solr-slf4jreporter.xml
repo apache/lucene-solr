@@ -31,5 +31,12 @@
     <str name="filter">CONTAINER.cores</str>
     <str name="logger">foobar</str>
   </reporter>
+   <reporter name="test2" group="core" class="org.apache.solr.metrics.reporters.SolrSlf4jReporter">
+     <!-- for unit tests this is set to 1 second - DO NOT USE THIS VALUE IN PRODUCTION! -->
+     <int name="period">1</int>
+     <str name="prefix">test</str>
+     <str name="filter">INDEX.sizeInBytes</str>
+     <str name="logger">foobar</str>
+   </reporter>
  </metrics>
 </solr>

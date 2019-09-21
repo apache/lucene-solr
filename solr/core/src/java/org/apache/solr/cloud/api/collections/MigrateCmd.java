@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -36,11 +37,13 @@ import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.update.SolrIndexSplitter;
@@ -51,6 +54,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
@@ -71,10 +75,21 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
-    String sourceCollectionName = message.getStr("collection");
+    String extSourceCollectionName = message.getStr("collection");
     String splitKey = message.getStr("split.key");
-    String targetCollectionName = message.getStr("target.collection");
+    String extTargetCollectionName = message.getStr("target.collection");
     int timeout = message.getInt("forward.timeout", 10 * 60) * 1000;
+
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String sourceCollectionName;
+    String targetCollectionName;
+    if (followAliases) {
+      sourceCollectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extSourceCollectionName);
+      targetCollectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extTargetCollectionName);
+    } else {
+      sourceCollectionName = extSourceCollectionName;
+      targetCollectionName = extTargetCollectionName;
+    }
 
     DocCollection sourceCollection = clusterState.getCollection(sourceCollectionName);
     if (sourceCollection == null) {
@@ -90,6 +105,11 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     if (!(targetCollection.getRouter() instanceof CompositeIdRouter)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Target collection must use a compositeId router");
     }
+
+    if (splitKey == null || splitKey.trim().length() == 0)  {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The split.key cannot be null or empty");
+    }
+
     CompositeIdRouter sourceRouter = (CompositeIdRouter) sourceCollection.getRouter();
     CompositeIdRouter targetRouter = (CompositeIdRouter) targetCollection.getRouter();
     Collection<Slice> sourceSlices = sourceRouter.getSearchSlicesSingle(splitKey, null, sourceCollection);
@@ -140,7 +160,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     DocRouter.Range keyHashRange = sourceRouter.keyHashRange(splitKey);
 
     ShardHandlerFactory shardHandlerFactory = ocmh.shardHandlerFactory;
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = ((HttpShardHandlerFactory)shardHandlerFactory).getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
 
     log.info("Hash range for split.key: {} is: {}", splitKey, keyHashRange);
     // intersect source range, keyHashRange and target range
@@ -153,8 +173,6 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     log.info("Common hash range between source shard: {} and target shard: {} = " + splitRange, sourceSlice.getName(), targetSlice.getName());
 
     Replica targetLeader = zkStateReader.getLeaderRetry(targetCollection.getName(), targetSlice.getName(), 10000);
-    // For tracking async calls.
-    Map<String, String> requestMap = new HashMap<>();
 
     log.info("Asking target leader node: " + targetLeader.getNodeName() + " core: "
         + targetLeader.getStr("core") + " to buffer updates");
@@ -162,10 +180,12 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTBUFFERUPDATES.toString());
     params.set(CoreAdminParams.NAME, targetLeader.getStr("core"));
 
-    ocmh.sendShardRequest(targetLeader.getNodeName(), params, shardHandler, asyncId, requestMap);
+    {
+      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+      shardRequestTracker.sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
 
-    ocmh.processResponses(results, shardHandler, true, "MIGRATE failed to request node to buffer updates", asyncId, requestMap);
-
+      shardRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to request node to buffer updates");
+    }
     ZkNodeProps m = new ZkNodeProps(
         Overseer.QUEUE_OPERATION, OverseerAction.ADDROUTINGRULE.toLower(),
         COLLECTION_PROP, sourceCollection.getName(),
@@ -175,7 +195,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
         "targetCollection", targetCollection.getName(),
         "expireAt", RoutingRule.makeExpiryAt(timeout));
     log.info("Adding routing rule: " + m);
-    Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+    ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
     // wait for a while until we see the new rule
     log.info("Waiting to see routing rule updated in clusterstate");
@@ -210,7 +230,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
         NAME, tempSourceCollectionName,
         NRT_REPLICAS, 1,
         OverseerCollectionMessageHandler.NUM_SLICES, 1,
-        OverseerCollectionMessageHandler.COLL_CONF, configName,
+        CollectionAdminParams.COLL_CONF, configName,
         OverseerCollectionMessageHandler.CREATE_NODE_SET, sourceLeader.getNodeName());
     if (asyncId != null) {
       String internalAsyncId = asyncId + Math.abs(System.nanoTime());
@@ -236,12 +256,17 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     cmd.setState(Replica.State.ACTIVE);
     cmd.setCheckLive(true);
     cmd.setOnlyIfLeader(true);
-    // we don't want this to happen asynchronously
-    ocmh.sendShardRequest(tempSourceLeader.getNodeName(), new ModifiableSolrParams(cmd.getParams()), shardHandler, null, null);
+    {
+      final ShardRequestTracker syncRequestTracker = ocmh.syncRequestTracker();
+      // we don't want this to happen asynchronously
+      syncRequestTracker.sendShardRequest(tempSourceLeader.getNodeName(), new ModifiableSolrParams(cmd.getParams()),
+          shardHandler);
 
-    ocmh.processResponses(results, shardHandler, true, "MIGRATE failed to create temp collection leader" +
-        " or timed out waiting for it to come up", asyncId, requestMap);
-
+      syncRequestTracker.processResponses(results, shardHandler, true,
+          "MIGRATE failed to create temp collection leader" +
+              " or timed out waiting for it to come up");
+    }
+    
     log.info("Asking source leader to split index");
     params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.SPLIT.toString());
@@ -252,9 +277,11 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
     String tempNodeName = sourceLeader.getNodeName();
 
-    ocmh.sendShardRequest(tempNodeName, params, shardHandler, asyncId, requestMap);
-    ocmh.processResponses(results, shardHandler, true, "MIGRATE failed to invoke SPLIT core admin command", asyncId, requestMap);
-
+    {
+      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+      shardRequestTracker.sendShardRequest(tempNodeName, params, shardHandler);
+      shardRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to invoke SPLIT core admin command");
+    }
     log.info("Creating a replica of temporary collection: {} on the target leader node: {}",
         tempSourceCollectionName, targetLeader.getNodeName());
     String tempCollectionReplica2 = Assign.buildSolrCoreName(ocmh.overseer.getSolrCloudManager().getDistribStateManager(),
@@ -277,9 +304,11 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     ((AddReplicaCmd)ocmh.commandMap.get(ADDREPLICA)).addReplica(clusterState, new ZkNodeProps(props), results, null);
 
-    ocmh.processResponses(results, shardHandler, true, "MIGRATE failed to create replica of " +
-        "temporary collection in target leader node.", asyncId, requestMap);
-
+    {
+      final ShardRequestTracker syncRequestTracker = ocmh.syncRequestTracker();
+      syncRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to create replica of " +
+        "temporary collection in target leader node.");
+    }
     coreNodeName = ocmh.waitForCoreNodeName(tempSourceCollectionName,
         targetLeader.getNodeName(), tempCollectionReplica2);
     // wait for the replicas to be seen as active on temp source leader
@@ -293,11 +322,13 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     cmd.setOnlyIfLeader(true);
     params = new ModifiableSolrParams(cmd.getParams());
 
-    ocmh.sendShardRequest(tempSourceLeader.getNodeName(), params, shardHandler, asyncId, requestMap);
+    {
+      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+      shardRequestTracker.sendShardRequest(tempSourceLeader.getNodeName(), params, shardHandler);
 
-    ocmh.processResponses(results, shardHandler, true, "MIGRATE failed to create temp collection" +
-        " replica or timed out waiting for them to come up", asyncId, requestMap);
-
+      shardRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to create temp collection" +
+        " replica or timed out waiting for them to come up");
+    }
     log.info("Successfully created replica of temp source collection on target leader node");
 
     log.info("Requesting merge of temp source collection replica to target leader");
@@ -306,20 +337,24 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     params.set(CoreAdminParams.CORE, targetLeader.getStr("core"));
     params.set(CoreAdminParams.SRC_CORE, tempCollectionReplica2);
 
-    ocmh.sendShardRequest(targetLeader.getNodeName(), params, shardHandler, asyncId, requestMap);
+    {
+      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+    
+      shardRequestTracker.sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
     String msg = "MIGRATE failed to merge " + tempCollectionReplica2 + " to "
         + targetLeader.getStr("core") + " on node: " + targetLeader.getNodeName();
-    ocmh.processResponses(results, shardHandler, true, msg, asyncId, requestMap);
-
+    shardRequestTracker.processResponses(results, shardHandler, true, msg);
+    }
     log.info("Asking target leader to apply buffered updates");
     params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
     params.set(CoreAdminParams.NAME, targetLeader.getStr("core"));
 
-    ocmh.sendShardRequest(targetLeader.getNodeName(), params, shardHandler, asyncId, requestMap);
-    ocmh.processResponses(results, shardHandler, true, "MIGRATE failed to request node to apply buffered updates",
-        asyncId, requestMap);
-
+    {
+      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+      shardRequestTracker.sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
+      shardRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to request node to apply buffered updates");
+    }
     try {
       log.info("Deleting temporary collection: " + tempSourceCollectionName);
       props = makeMap(

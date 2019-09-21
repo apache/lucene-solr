@@ -77,6 +77,11 @@ NOTE: If you setup Solr as a service on Linux using the steps outlined in <<taki
 .bin/solr.in.sh example SOLR_SSL_* configuration
 [source,bash]
 ----
+# Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
+# to enable https module with custom jetty configuration.
+SOLR_SSL_ENABLED=true
+# Uncomment to set SSL-related system properties
+# Be sure to update the paths to the correct keystore for your environment
 SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
 SOLR_SSL_KEY_STORE_PASSWORD=secret
 SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
@@ -85,7 +90,10 @@ SOLR_SSL_TRUST_STORE_PASSWORD=secret
 SOLR_SSL_NEED_CLIENT_AUTH=false
 # Enable clients to authenticate (but not require)
 SOLR_SSL_WANT_CLIENT_AUTH=false
-# Define Key Store type if necessary
+# SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
+# this to false can be useful to disable these checks when re-using a certificate on many hosts
+SOLR_SSL_CHECK_PEER_NAME=true
+# Override Key/Trust Store types if necessary
 SOLR_SSL_KEY_STORE_TYPE=JKS
 SOLR_SSL_TRUST_STORE_TYPE=JKS
 ----
@@ -100,6 +108,11 @@ Similarly, when you start Solr on Windows, the `bin\solr.cmd` script includes th
 .bin\solr.in.cmd example SOLR_SSL_* configuration
 [source,text]
 ----
+REM Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
+REM to enable https module with custom jetty configuration.
+set SOLR_SSL_ENABLED=true
+REM Uncomment to set SSL-related system properties
+REM Be sure to update the paths to the correct keystore for your environment
 set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
 set SOLR_SSL_KEY_STORE_PASSWORD=secret
 set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
@@ -108,23 +121,97 @@ REM Require clients to authenticate
 set SOLR_SSL_NEED_CLIENT_AUTH=false
 REM Enable clients to authenticate (but not require)
 set SOLR_SSL_WANT_CLIENT_AUTH=false
+REM SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
+REM this to false can be useful to disable these checks when re-using a certificate on many hosts
+set SOLR_SSL_CHECK_PEER_NAME=true
+REM Override Key/Trust Store types if necessary
+set SOLR_SSL_KEY_STORE_TYPE=JKS
+set SOLR_SSL_TRUST_STORE_TYPE=JKS
 ----
 
 === Run Single Node Solr using SSL
 
 Start Solr using the command shown below; by default clients will not be required to authenticate:
 
-.*nix command
+[.dynamic-tabs]
+--
+[example.tab-pane#single-unix]
+====
+[.tab-label]**nix Command*
 [source,bash]
 ----
 bin/solr -p 8984
 ----
+====
 
-.Windows command
+[example.tab-pane#single-windows]
+====
+[.tab-label]*Windows Command*
 [source,text]
 ----
 bin\solr.cmd -p 8984
 ----
+====
+--
+
+== Password Distribution via Hadoop Credential Store
+
+Solr supports reading keystore and truststore passwords from Hadoop credential store. This approach can be beneficial
+if password rotation and distribution is already handled by credential stores.
+
+Hadoop credential store can be used with Solr using the following two steps.
+
+=== Provide a Hadoop Credential Store
+Create a Hadoop credstore file and define the entries below with the actual keystore passwords.
+
+[source,text]
+----
+solr.jetty.keystore.password
+solr.jetty.truststore.password
+javax.net.ssl.keyStorePassword
+javax.net.ssl.trustStorePassword
+----
+
+Note that if the `javax.net.ssl.\*` configurations are not set, they will fallback to the corresponding `solr.jetty.*` configurations.
+
+=== Configure Solr to use Hadoop Credential Store
+
+Solr requires three parameters to be configured in order to use the credential store file for keystore passwords.
+
+`solr.ssl.credential.provider.chain`::
+The credential provider chain. This should be set to `hadoop`.
+
+`SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH`::
+The path to the credential store file.
+
+`HADOOP_CREDSTORE_PASSWORD`::
+The password to the credential store.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#credstore-unix]
+====
+[.tab-label]**nix Example*
+[source,text]
+----
+SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
+SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
+HADOOP_CREDSTORE_PASSWORD="credStorePass123"
+----
+====
+
+[example.tab-pane#credstore-windows]
+=====
+[.tab-label]*Windows Example*
+[source,text]
+----
+set SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
+set SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
+set HADOOP_CREDSTORE_PASSWORD="credStorePass123"
+----
+=====
+--
+
 
 == SSL with SolrCloud
 
@@ -155,6 +242,8 @@ server\scripts\cloud-scripts\zkcli.bat -zkhost localhost:2181 -cmd clusterprop -
 If you have set up your ZooKeeper cluster to use a <<taking-solr-to-production.adoc#zookeeper-chroot,chroot for Solr>>, make sure you use the correct `zkhost` string with `zkcli`, e.g., `-zkhost localhost:2181/solr`.
 
 === Run SolrCloud with SSL
+
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from all of the `bin/solr`/`bin\solr.cmd` commands below.
 
 ==== Create Solr Home Directories for Two Nodes
 
@@ -230,7 +319,7 @@ bin\solr.cmd -cloud -s cloud\node2 -z localhost:2181 -p 7574
 ====
 curl on OS X Mavericks (10.9) has degraded SSL support. For more information and workarounds to allow one-way SSL, see http://curl.haxx.se/mail/archive-2013-10/0036.html. curl on OS X Yosemite (10.10) is improved - 2-way SSL is possible - see http://curl.haxx.se/mail/archive-2014-10/0053.html.
 
-The curl commands in the following sections will not work with the system `curl` on OS X Yosemite (10.10). Instead, the certificate supplied with the `-E` parameter must be in PKCS12 format, and the file supplied with the `--cacert` parametr must contain only the CA certificate, and no key (see <<Convert the Certificate and Key to PEM Format for Use with curl,above>> for instructions on creating this file):
+The curl commands in the following sections will not work with the system `curl` on OS X Yosemite (10.10). Instead, the certificate supplied with the `-E` parameter must be in PKCS12 format, and the file supplied with the `--cacert` parameter must contain only the CA certificate, and no key (see <<Convert the Certificate and Key to PEM Format for Use with curl,above>> for instructions on creating this file):
 
 [source,bash]
 curl -E solr-ssl.keystore.p12:secret --cacert solr-ssl.cacert.pem ...

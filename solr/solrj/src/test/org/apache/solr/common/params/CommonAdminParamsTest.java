@@ -16,7 +16,7 @@
  */
 package org.apache.solr.common.params;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 
 /**
  * Unit test for {@link CommonAdminParams CommonAdminParams}
@@ -24,7 +24,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * This class tests backwards compatibility of CommonAdminParams parameter constants.
  * If someone accidentally changes those constants then this test will flag that up. 
  */
-public class CommonAdminParamsTest extends LuceneTestCase
+public class CommonAdminParamsTest extends SolrTestCase
 {
   public void testAsync() { assertEquals(CommonAdminParams.ASYNC, "async"); }
 }

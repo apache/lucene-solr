@@ -79,6 +79,10 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
   
   @After
   public void teardown() throws Exception {
+    if (null == leader) {
+      // test did not initialize, cleanup is No-Op;
+      return;
+    }
     System.clearProperty("CoreInitFailedAction");
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
   }
@@ -89,7 +93,7 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
   }
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testLeaderRecovery() throws Exception {
     System.setProperty("CoreInitFailedAction", "fromleader");
 

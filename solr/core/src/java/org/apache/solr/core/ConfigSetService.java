@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
@@ -33,8 +34,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +43,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class ConfigSetService {
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static ConfigSetService createConfigSetService(NodeConfig nodeConfig, SolrResourceLoader loader, ZkController zkController) {
     if (zkController != null)
       return new CloudConfigSetService(loader, zkController);
@@ -212,12 +211,10 @@ public abstract class ConfigSetService {
       super(loader, configSetBase);
     }
 
-    public static final DateTimeFormatter cacheKeyFormatter = DateTimeFormat.forPattern("yyyyMMddHHmmss");
-
     public static String cacheName(Path schemaFile) throws IOException {
       long lastModified = Files.getLastModifiedTime(schemaFile).toMillis();
       return String.format(Locale.ROOT, "%s:%s",
-                            schemaFile.toString(), cacheKeyFormatter.print(lastModified));
+                            schemaFile.toString(), Instant.ofEpochMilli(lastModified).toString());
     }
 
     @Override
@@ -228,15 +225,15 @@ public abstract class ConfigSetService {
         try {
           String cachedName = cacheName(schemaFile);
           return schemaCache.get(cachedName, () -> {
-            logger.info("Creating new index schema for core {}", cd.getName());
+            log.info("Creating new index schema for core {}", cd.getName());
             return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
           });
         } catch (ExecutionException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Error creating index schema for core " + cd.getName(), e);
         } catch (IOException e) {
-          logger.warn("Couldn't get last modified time for schema file {}: {}", schemaFile, e.getMessage());
-          logger.warn("Will not use schema cache");
+          log.warn("Couldn't get last modified time for schema file {}: {}", schemaFile, e.getMessage());
+          log.warn("Will not use schema cache");
         }
       }
       return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);

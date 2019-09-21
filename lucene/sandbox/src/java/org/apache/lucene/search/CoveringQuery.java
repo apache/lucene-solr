@@ -21,23 +21,25 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** A {@link Query} that allows to have a configurable number or required
  *  matches per document. This is typically useful in order to build queries
  *  whose query terms must all appear in documents.
  *  @lucene.experimental
  */
-public final class CoveringQuery extends Query {
+public final class CoveringQuery extends Query implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(CoveringQuery.class);
 
   private final Collection<Query> queries;
   private final LongValuesSource minimumNumberMatch;
   private final int hashCode;
+  private final long ramBytesUsed;
 
   /**
    * Sole constructor.
@@ -50,8 +52,8 @@ public final class CoveringQuery extends Query {
    *                           do not match.
    */
   public CoveringQuery(Collection<Query> queries, LongValuesSource minimumNumberMatch) {
-    if (queries.size() > BooleanQuery.getMaxClauseCount()) {
-      throw new BooleanQuery.TooManyClauses();
+    if (queries.size() > IndexSearcher.getMaxClauseCount()) {
+      throw new IndexSearcher.TooManyClauses();
     }
     if (minimumNumberMatch.needsScores()) {
       throw new IllegalArgumentException("The minimum number of matches may not depend on the score.");
@@ -60,6 +62,9 @@ public final class CoveringQuery extends Query {
     this.queries.addAll(queries);
     this.minimumNumberMatch = Objects.requireNonNull(minimumNumberMatch);
     this.hashCode = computeHashCode();
+
+    this.ramBytesUsed = BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(this.queries, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   @Override
@@ -95,6 +100,11 @@ public final class CoveringQuery extends Query {
   }
 
   @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed;
+  }
+
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     Multiset<Query> rewritten = new Multiset<>();
     boolean actuallyRewritten = false;
@@ -107,6 +117,14 @@ public final class CoveringQuery extends Query {
       return new CoveringQuery(rewritten, minimumNumberMatch);
     }
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+    for (Query query : queries) {
+      query.visit(v);
+    }
   }
 
   @Override
@@ -130,10 +148,25 @@ public final class CoveringQuery extends Query {
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {
-      for (Weight weight : weights) {
-        weight.extractTerms(terms);
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      LongValues minMatchValues = minimumNumberMatch.getValues(context, null);
+      if (minMatchValues.advanceExact(doc) == false) {
+        return null;
       }
+      final long minimumNumberMatch = Math.max(1, minMatchValues.longValue());
+      long matchCount = 0;
+      List<Matches> subMatches = new ArrayList<>();
+      for (Weight weight : weights) {
+        Matches matches = weight.matches(context, doc);
+        if (matches != null) {
+          matchCount++;
+          subMatches.add(matches);
+        }
+      }
+      if (matchCount < minimumNumberMatch) {
+        return null;
+      }
+      return MatchesUtils.fromSubMatches(subMatches);
     }
 
     @Override

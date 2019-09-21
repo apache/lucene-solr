@@ -118,7 +118,7 @@ Solr ships with many out-of-the-box request handlers that may only be configured
 
 === Viewing Expanded Paramsets and Effective Parameters with RequestHandlers
 
-To see the expanded paramset and the resulting effective parameters for a RequestHandler defined with `useParams`, use the `expandParams` request param. As an example, for the `/export` request handler:
+To see the expanded paramset and the resulting effective parameters for a RequestHandler defined with `useParams`, use the `expandParams` request parameter. As an example, for the `/export` request handler:
 
 [source,bash]
 ----
@@ -155,7 +155,7 @@ It is possible to pass more than one parameter set in the same request. For exam
 http://localhost/solr/techproducts/select?useParams=myFacets,myQueries
 ----
 
-In the above example the param set 'myQueries' is applied on top of 'myFacets'. So, values in 'myQueries' take precedence over values in 'myFacets'. Additionally, any values passed in the request take precedence over `useParams` parameters. This acts like the "defaults" specified in the `<requestHandler>` definition in `solrconfig.xml`.
+In the above example the parameter set 'myQueries' is applied on top of 'myFacets'. So, values in 'myQueries' take precedence over values in 'myFacets'. Additionally, any values passed in the request take precedence over `useParams` parameters. This acts like the "defaults" specified in the `<requestHandler>` definition in `solrconfig.xml`.
 
 The parameter sets can be used directly in a request handler definition as follows. Please note that the `useParams` specified is always applied even if the request contains `useParams`.
 

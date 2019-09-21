@@ -18,6 +18,7 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -70,7 +71,7 @@ class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slotNum) throws IOException {
+  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
     if (subDv.advanceExact(doc)) {
 
       int segOrd = (int) subDv.nextOrd();

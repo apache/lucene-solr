@@ -17,13 +17,13 @@
 package org.apache.lucene.analysis.tokenattributes;
 
 import java.nio.CharBuffer;
+import java.util.Objects;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.FutureObjects;
 
 /** Default implementation of {@link CharTermAttribute}. */
 public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttribute, TermToBytesRefAttribute, Cloneable {
@@ -72,7 +72,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
 
   @Override
   public final CharTermAttribute setLength(int length) {
-    FutureObjects.checkFromIndexSize(0, length, termBuffer.length);
+    Objects.checkFromIndexSize(0, length, termBuffer.length);
     termLength = length;
     return this;
   }
@@ -99,13 +99,13 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   
   @Override
   public final char charAt(int index) {
-    FutureObjects.checkIndex(index, termLength);
+    Objects.checkIndex(index, termLength);
     return termBuffer[index];
   }
   
   @Override
   public final CharSequence subSequence(final int start, final int end) {
-    FutureObjects.checkFromToIndex(start, end, termLength);
+    Objects.checkFromToIndex(start, end, termLength);
     return new String(termBuffer, start, end - start);
   }
   
@@ -123,7 +123,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     if (csq == null) // needed for Appendable compliance
       csq = "null";
     // TODO: the optimized cases (jdk methods) will already do such checks, maybe re-organize this?
-    FutureObjects.checkFromToIndex(start, end, csq.length());
+    Objects.checkFromToIndex(start, end, csq.length());
     final int len = end - start;
     if (len == 0)
       return this;

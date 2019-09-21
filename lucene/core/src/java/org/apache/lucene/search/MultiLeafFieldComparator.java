@@ -83,7 +83,7 @@ final class MultiLeafFieldComparator implements LeafFieldComparator {
   }
 
   @Override
-  public void setScorer(Scorer scorer) throws IOException {
+  public void setScorer(Scorable scorer) throws IOException {
     for (LeafFieldComparator comparator : comparators) {
       comparator.setScorer(scorer);
     }

@@ -246,7 +246,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
           System.out.println("1st pass collector class name=" + firstCollector.getClass().getName());
           System.out.println("2nd pass collector class name=" + distinctValuesCollector.getClass().getName());
           System.out.println("Search term=" + term);
-          System.out.println("1st pass groups=" + firstCollector.getTopGroups(0, false));
+          System.out.println("1st pass groups=" + firstCollector.getTopGroups(0));
           System.out.println("Expected:");      
           printGroups(expectedResult);
           System.out.println("Actual:");      
@@ -342,7 +342,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   @SuppressWarnings({"unchecked","rawtypes"})
   private <T extends Comparable<Object>, R extends Comparable<Object>> DistinctValuesCollector<T, R> createDistinctCountCollector(FirstPassGroupingCollector<T> firstPassGroupingCollector,
                                                                                          String countField) throws IOException {
-    Collection<SearchGroup<T>> searchGroups = firstPassGroupingCollector.getTopGroups(0, false);
+    Collection<SearchGroup<T>> searchGroups = firstPassGroupingCollector.getTopGroups(0);
     GroupSelector<T> selector = firstPassGroupingCollector.getGroupSelector();
     if (ValueSourceGroupSelector.class.isAssignableFrom(selector.getClass())) {
       GroupSelector gs = new ValueSourceGroupSelector(new BytesRefFieldSource(countField), new HashMap<>());

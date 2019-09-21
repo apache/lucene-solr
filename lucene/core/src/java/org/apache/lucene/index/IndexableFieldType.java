@@ -17,6 +17,8 @@
 package org.apache.lucene.index;
 
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.Analyzer; // javadocs
 
 /** 
@@ -98,12 +100,27 @@ public interface IndexableFieldType {
   public DocValuesType docValuesType();
 
   /**
-   * If this is positive, the field is indexed as a point.
+   * If this is positive (representing the number of point data dimensions), the field is indexed as a point.
    */
-  public int pointDimensionCount();
+  public int pointDataDimensionCount();
+
+  /**
+   * The number of dimensions used for the index key
+   */
+  public int pointIndexDimensionCount();
 
   /**
    * The number of bytes in each dimension's values.
    */
   public int pointNumBytes();
+
+  /**
+   * Attributes for the field type.
+   *
+   * Attributes are not thread-safe, user must not add attributes while other threads are indexing documents
+   * with this field type.
+   *
+   * @return Map
+   */
+  public Map<String, String> getAttributes();
 }

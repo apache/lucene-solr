@@ -52,30 +52,33 @@ goto Win9xApp
 :Win9xGetScriptDir
 set SAVEDIR=%CD%
 %0\
-cd %0\..\.. 
+cd %0\..\..
 set BASEDIR=%CD%
 cd %SAVEDIR%
 set SAVE_DIR=
 goto repoSetup
 
 :WinNTGetScriptDir
-set BASEDIR=%~dp0\..
+set BASEDIR=%~dp0..
 
 :repoSetup
 
+IF NOT "%JAVA_HEAP%"=="" set JAVA_MEM=-Xms%JAVA_HEAP% -Xmx%JAVA_HEAP%
+IF "%JAVA_MEM%"=="" set JAVA_MEM=-Xms512m -Xmx512m
+IF "%GC_TUNE%"=="" set GC_TUNE=-XX:+UseG1GC
 
 if "%JAVACMD%"=="" set JAVACMD=java
 
 if "%REPO%"=="" set REPO=%BASEDIR%\lib
 
-set CLASSPATH="%CLASSPATH%";"%REPO%\*;%BASEDIR%\..\..\dist\solrj-lib\*;%BASEDIR%\..\..\dist\solr-core-*;%BASEDIR%\..\..\dist\solr-solrj-*;%BASEDIR%\..\..\dist\solr-prometheus-exporter-*;%BASEDIR%\lib\*"
-set EXTRA_JVM_ARGUMENTS=-Xmx512m -Dlog4j.configurationFile=file:%BASEDIR%/conf/log4j2.xml
+set CLASSPATH=%REPO%\*;%BASEDIR%\..\..\dist\solrj-lib\*;%BASEDIR%\..\..\dist\*;%BASEDIR%\lucene-libs\*;%BASEDIR%\..\..\server\solr-webapp\webapp\WEB-INF\lib\*
+set EXTRA_JVM_ARGUMENTS=-Dlog4j.configurationFile=file:///%BASEDIR%\..\..\server\resources\log4j2-console.xml
 goto endInit
 
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit
 
-%JAVACMD% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% -classpath %CLASSPATH_PREFIX%;%CLASSPATH% -Dapp.name="solr-exporter" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" com.github.mosuka.solr.prometheus.exporter.SolrExporter %CMD_LINE_ARGS%
+%JAVACMD% %JAVA_MEM% %GC_TUNE% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% -classpath "%CLASSPATH_PREFIX%;%CLASSPATH%" -Dapp.name="solr-exporter" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" org.apache.solr.prometheus.exporter.SolrExporter %CMD_LINE_ARGS%
 if ERRORLEVEL 1 goto error
 goto end
 

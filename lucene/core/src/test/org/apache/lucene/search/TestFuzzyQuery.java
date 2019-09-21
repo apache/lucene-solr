@@ -367,7 +367,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(mr);
     FuzzyQuery fq = new FuzzyQuery(new Term("field", "z123456"), 1, 0, 2, false);
     TopDocs docs = searcher.search(fq, 2);
-    assertEquals(5, docs.totalHits); // 5 docs, from the a and b's
+    assertEquals(5, docs.totalHits.value); // 5 docs, from the a and b's
     mr.close();
     ir1.close();
     ir2.close();

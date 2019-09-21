@@ -67,7 +67,7 @@ public class SmileResponseWriter extends BinaryResponseWriter {
     }
 
     @Override
-    protected void writeNumber(String name, Number val) throws IOException {
+    public void writeNumber(String name, Number val) throws IOException {
       if (val instanceof Integer) {
         gen.writeNumber(val.intValue());
       } else if (val instanceof Long) {
@@ -156,7 +156,7 @@ public class SmileResponseWriter extends BinaryResponseWriter {
     }
 
     @Override
-    protected void writeKey(String fname, boolean needsEscaping) throws IOException {
+    public void writeKey(String fname, boolean needsEscaping) throws IOException {
       gen.writeFieldName(fname);
     }
 

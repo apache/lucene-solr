@@ -21,7 +21,7 @@ import org.apache.lucene.util.PriorityQueue;
 
 class SpanPositionQueue extends PriorityQueue<Spans> {
   SpanPositionQueue(int maxSize) {
-    super(maxSize, false); // do not prepopulate
+    super(maxSize); // do not prepopulate
   }
 
   protected boolean lessThan(Spans s1, Spans s2) {

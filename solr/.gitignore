@@ -23,6 +23,7 @@
 
 /server/logs/
 /server/solr/zoo_data/
+/server/solr/userfiles/
 /server/solr-webapp
 /server/start.jar
 

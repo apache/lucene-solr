@@ -48,7 +48,7 @@ import java.util.HashMap;
   * @lucene.experimental
   * @see IndexUpgrader
   */
-public class UpgradeIndexMergePolicy extends MergePolicyWrapper {
+public class UpgradeIndexMergePolicy extends FilterMergePolicy {
 
   /** Wrap the given {@link MergePolicy} and intercept forceMerge requests to
    * only upgrade segments written with previous Lucene versions. */
@@ -66,12 +66,12 @@ public class UpgradeIndexMergePolicy extends MergePolicyWrapper {
   }
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
-    return in.findMerges(null, segmentInfos, writer);
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+    return in.findMerges(null, segmentInfos, mergeContext);
   }
   
   @Override
-  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer) throws IOException {
+  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext) throws IOException {
     // first find all old segments
     final Map<SegmentCommitInfo,Boolean> oldSegments = new HashMap<>();
     for (final SegmentCommitInfo si : segmentInfos) {
@@ -81,14 +81,14 @@ public class UpgradeIndexMergePolicy extends MergePolicyWrapper {
       }
     }
     
-    if (verbose(writer)) {
-      message("findForcedMerges: segmentsToUpgrade=" + oldSegments, writer);
+    if (verbose(mergeContext)) {
+      message("findForcedMerges: segmentsToUpgrade=" + oldSegments, mergeContext);
     }
       
     if (oldSegments.isEmpty())
       return null;
 
-    MergeSpecification spec = in.findForcedMerges(segmentInfos, maxSegmentCount, oldSegments, writer);
+    MergeSpecification spec = in.findForcedMerges(segmentInfos, maxSegmentCount, oldSegments, mergeContext);
     
     if (spec != null) {
       // remove all segments that are in merge specification from oldSegments,
@@ -100,9 +100,9 @@ public class UpgradeIndexMergePolicy extends MergePolicyWrapper {
     }
 
     if (!oldSegments.isEmpty()) {
-      if (verbose(writer)) {
+      if (verbose(mergeContext)) {
         message("findForcedMerges: " +  in.getClass().getSimpleName() +
-        " does not want to merge all old segments, merge remaining ones into new segment: " + oldSegments, writer);
+        " does not want to merge all old segments, merge remaining ones into new segment: " + oldSegments, mergeContext);
       }
       final List<SegmentCommitInfo> newInfos = new ArrayList<>();
       for (final SegmentCommitInfo si : segmentInfos) {
@@ -120,11 +120,4 @@ public class UpgradeIndexMergePolicy extends MergePolicyWrapper {
     return spec;
   }
   
-  private boolean verbose(IndexWriter writer) {
-    return writer != null && writer.infoStream.isEnabled("UPGMP");
-  }
-
-  private void message(String message, IndexWriter writer) {
-    writer.infoStream.message("UPGMP", message);
-  }
 }

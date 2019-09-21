@@ -21,7 +21,8 @@ var solrAdminApp = angular.module("solrAdminApp", [
   "ngCookies",
   "ngtimeago",
   "solrAdminServices",
-  "localytics.directives"
+  "localytics.directives",
+  "ab-base64"
 ]);
 
 solrAdminApp.config([
@@ -30,6 +31,18 @@ solrAdminApp.config([
       when('/', {
         templateUrl: 'partials/index.html',
         controller: 'IndexController'
+      }).
+      when('/unknown', {
+        templateUrl: 'partials/unknown.html',
+        controller: 'UnknownController'
+      }).
+      when('/login', {
+        templateUrl: 'partials/login.html',
+        controller: 'LoginController'
+      }).
+      when('/login/:route', {
+        templateUrl: 'partials/login.html',
+        controller: 'LoginController'
       }).
       when('/~logging', {
         templateUrl: 'partials/logging.html',
@@ -71,13 +84,13 @@ solrAdminApp.config([
         templateUrl: 'partials/cluster_suggestions.html',
         controller: 'ClusterSuggestionsController'
       }).
-      when('/~pluginbundles', {
-        templateUrl: 'partials/plugin-bundles.html',
-        controller: 'PluginBundleController'
-      }).
-      when('/:core', {
+      when('/:core/core-overview', {
         templateUrl: 'partials/core_overview.html',
         controller: 'CoreOverviewController'
+      }).
+      when('/:core/alias-overview', {
+        templateUrl: 'partials/alias_overview.html',
+        controller: 'AliasOverviewController'
       }).
       when('/:core/collection-overview', {
         templateUrl: 'partials/collection_overview.html',
@@ -142,7 +155,8 @@ solrAdminApp.config([
         controller: 'SegmentsController'
       }).
       otherwise({
-        redirectTo: '/'
+        templateUrl: 'partials/unknown.html',
+        controller: 'UnknownController'
       });
 }])
 .constant('Constants', {
@@ -319,7 +333,7 @@ solrAdminApp.config([
     }
   };
 })
-.factory('httpInterceptor', function($q, $rootScope, $timeout, $injector) {
+.factory('httpInterceptor', function($q, $rootScope, $location, $timeout, $injector) {
   var activeRequests = 0;
 
   var started = function(config) {
@@ -330,6 +344,9 @@ solrAdminApp.config([
       delete $rootScope.exceptions[config.url];
     }
     activeRequests++;
+    if (sessionStorage.getItem("auth.header")) {
+      config.headers['Authorization'] = sessionStorage.getItem("auth.header");
+    }
     config.timeout = 10000;
     return config || $q.when(config);
   };
@@ -346,6 +363,11 @@ solrAdminApp.config([
         $rootScope.connectionRecovered=false;
         $rootScope.$broadcast('connectionStatusInactive');
       },2000);
+    }
+    if (!$location.path().startsWith('/login') && !$location.path().startsWith('/unknown')) {
+      sessionStorage.removeItem("http401");
+      sessionStorage.removeItem("auth.state");
+      sessionStorage.removeItem("auth.statusText");
     }
     return response || $q.when(response);
   };
@@ -365,16 +387,39 @@ solrAdminApp.config([
       var $http = $injector.get('$http');
       var result = $http(rejection.config);
       return result;
+    } else if (rejection.status === 401) {
+      // Authentication redirect
+      var headers = rejection.headers();
+      var wwwAuthHeader = headers['www-authenticate'];
+      sessionStorage.setItem("auth.wwwAuthHeader", wwwAuthHeader);
+      sessionStorage.setItem("auth.authDataHeader", headers['x-solr-authdata']);
+      sessionStorage.setItem("auth.statusText", rejection.statusText);
+      sessionStorage.setItem("http401", "true");
+      sessionStorage.removeItem("auth.scheme");
+      sessionStorage.removeItem("auth.realm");
+      sessionStorage.removeItem("auth.username");
+      sessionStorage.removeItem("auth.header");
+      sessionStorage.removeItem("auth.state");
+      if ($location.path().includes('/login')) {
+        if (!sessionStorage.getItem("auth.location")) {
+          sessionStorage.setItem("auth.location", "/");
+        }
+      } else {
+        sessionStorage.setItem("auth.location", $location.path());
+        $location.path('/login');
+      }
     } else {
       $rootScope.exceptions[rejection.config.url] = rejection.data.error;
     }
     return $q.reject(rejection);
-  }
+  };
 
   return {request: started, response: ended, responseError: failed};
 })
 .config(function($httpProvider) {
   $httpProvider.interceptors.push("httpInterceptor");
+  // Force BasicAuth plugin to serve us a 'Authorization: xBasic xxxx' header so browser will not pop up login dialogue
+  $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 })
 .directive('fileModel', function ($parse) {
     return {
@@ -403,6 +448,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   $scope.refresh = function() {
       $scope.cores = [];
       $scope.collections = [];
+      $scope.aliases = [];
   }
 
   $scope.refresh();
@@ -425,26 +471,64 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     System.get(function(data) {
       $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
 
+      var currentCollectionName = $route.current.params.core;
+      delete $scope.currentCollection;
       if ($scope.isCloudEnabled) {
-        Collections.list(function (data) {
-          $scope.collections = [];
-          var currentCollectionName = $route.current.params.core;
-          delete $scope.currentCollection;
-          for (key in data.collections) {
-            var collection = {name: data.collections[key]};
-            $scope.collections.push(collection);
-            if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
-              $scope.currentCollection = collection;
+        Collections.list(function (cdata) {
+          Collections.listaliases(function (adata) {
+            $scope.aliases = [];
+            for (var key in adata.aliases) {
+              props = {};
+              if (key in adata.properties) {
+                props = adata.properties[key];
+              }
+              var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
+              $scope.aliases.push(alias);
+              if (pageType == Constants.IS_COLLECTION_PAGE && alias.name == currentCollectionName) {
+                $scope.currentCollection = alias;
+              }
             }
-          }
-        })
+            $scope.collections = [];
+            for (key in cdata.collections) {
+              var collection = {name: cdata.collections[key], type: 'collection'};
+              $scope.collections.push(collection);
+              if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
+                $scope.currentCollection = collection;
+              }
+            }
+
+            $scope.aliases_and_collections = $scope.aliases;
+            if ($scope.aliases.length > 0) {
+              $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
+            }
+            $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+          });
+        });
       }
 
+      $scope.showEnvironment = data.environment !== undefined;
+      if (data.environment) {
+        $scope.environment = data.environment;
+        var env_labels = {'prod': 'Production', 'stage': 'Staging', 'test': 'Test', 'dev': 'Development'};
+        $scope.environment_label = env_labels[data.environment];
+        if (data.environment_label) {
+          $scope.environment_label = data.environment_label;
+        }
+        if (data.environment_color) {
+          $scope.environment_color = data.environment_color;
+        }
+      }
     });
 
     $scope.showingLogging = page.lastIndexOf("logging", 0) === 0;
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
+    $scope.currentUser = sessionStorage.getItem("auth.username");
+    $scope.http401 = sessionStorage.getItem("http401");
+  };
+
+  $scope.isMultiDestAlias = function(selectedColl) {
+    return selectedColl && selectedColl.type === 'alias' && selectedColl.collections.includes(',');
   };
 
   $scope.ping = function() {
@@ -460,12 +544,16 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
   }
 
   $scope.showCore = function(core) {
-    $location.url("/" + core.name);
+    $location.url("/" + core.name + "/core-overview");
   }
 
   $scope.showCollection = function(collection) {
-    $location.url("/" + collection.name + "/collection-overview")
-  }
+    if (collection.type === 'collection') {
+      $location.url("/" + collection.name + "/collection-overview")
+    } else if (collection.type === 'alias') {
+      $location.url("/" + collection.name + "/alias-overview")
+    }
+  };
 
   $scope.$on('$routeChangeStart', function() {
       $rootScope.exceptions = {};

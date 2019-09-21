@@ -38,7 +38,7 @@ public class TopOrdAndFloatQueue extends PriorityQueue<TopOrdAndFloatQueue.OrdAn
 
   /** Sole constructor. */
   public TopOrdAndFloatQueue(int topN) {
-    super(topN, false);
+    super(topN);
   }
 
   @Override

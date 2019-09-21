@@ -20,9 +20,9 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Arrays;
 
 import org.apache.lucene.analysis.CharacterUtils.CharacterBuffer;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
@@ -42,7 +42,7 @@ public class TestCharacterUtils extends LuceneTestCase {
     final int codePointCount = CharacterUtils.toCodePoints(orig, o1, orig.length - o1, buf, o2);
     final int charCount = CharacterUtils.toChars(buf, o2, codePointCount, restored, o3);
     assertEquals(orig.length - o1, charCount);
-    assertArrayEquals(Arrays.copyOfRange(orig, o1, o1 + charCount), Arrays.copyOfRange(restored, o3, o3 + charCount));
+    assertArrayEquals(ArrayUtil.copyOfSubArray(orig, o1, o1 + charCount), ArrayUtil.copyOfSubArray(restored, o3, o3 + charCount));
   }
 
   @Test

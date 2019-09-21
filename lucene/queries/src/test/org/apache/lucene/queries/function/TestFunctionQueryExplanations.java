@@ -35,7 +35,7 @@ public class TestFunctionQueryExplanations extends BaseExplanationTestCase {
   }
 
   public void testMapFunction() throws Exception {
-    ValueSource rff = new RangeMapFloatFunction(new ConstValueSource(3), 0, 1, 2, new Float(4));
+    ValueSource rff = new RangeMapFloatFunction(new ConstValueSource(3), 0, 1, 2, 4f);
     Query q = new FunctionQuery(rff);
     qtest(q, new int[] { 0,1,2,3 });
     assertEquals("map(const(3.0),0.0,1.0,const(2.0),const(4.0))", rff.description());

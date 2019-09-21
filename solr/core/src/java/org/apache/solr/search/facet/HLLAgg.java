@@ -17,6 +17,7 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -140,7 +141,7 @@ public class HLLAgg extends StrAggValueSource {
     }
 
     @Override
-    public void collect(int doc, int slot) throws IOException {
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
       int valuesDocID = docIdSetIterator().docID();
       if (valuesDocID < doc) {
         valuesDocID = docIdSetIterator().advance(doc);
@@ -236,7 +237,7 @@ public class HLLAgg extends StrAggValueSource {
 
     @Override
     protected void collectValues(int doc, HLL hll) throws IOException {
-      for (int i = 0; i < values.docValueCount(); i++) {
+      for (int i = 0, count = values.docValueCount(); i < count; i++) {
         // duplicates may be produced for a single doc, but won't matter here.
         long val = values.nextValue();
         long hash = Hash.fmix64(val);

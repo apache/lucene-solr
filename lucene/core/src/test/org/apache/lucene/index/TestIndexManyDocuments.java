@@ -61,7 +61,7 @@ public class TestIndexManyDocuments extends LuceneTestCase {
       thread.join();
     }
 
-    assertEquals("lost " + (numDocs - w.maxDoc()) + " documents; maxBufferedDocs=" + iwc.getMaxBufferedDocs(), numDocs, w.maxDoc());
+    assertEquals("lost " + (numDocs - w.getDocStats().maxDoc) + " documents; maxBufferedDocs=" + iwc.getMaxBufferedDocs(), numDocs, w.getDocStats().maxDoc);
     w.close();
              
     IndexReader r = DirectoryReader.open(dir);

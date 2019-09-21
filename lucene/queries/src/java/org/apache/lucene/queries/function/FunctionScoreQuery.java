@@ -19,17 +19,18 @@ package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterScorer;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -61,6 +62,13 @@ public final class FunctionScoreQuery extends Query {
    */
   public Query getWrappedQuery() {
     return in;
+  }
+
+  /**
+   * @return the underlying value source
+   */
+  public DoubleValuesSource getSource() {
+    return source;
   }
 
   /**
@@ -112,6 +120,11 @@ public final class FunctionScoreQuery extends Query {
   }
 
   @Override
+  public void visit(QueryVisitor visitor) {
+    in.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+  }
+
+  @Override
   public String toString(String field) {
     return "FunctionScoreQuery(" + in.toString(field) + ", scored by " + source.toString() + ")";
   }
@@ -144,8 +157,8 @@ public final class FunctionScoreQuery extends Query {
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {
-      this.inner.extractTerms(terms);
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      return inner.matches(context, doc);
     }
 
     @Override
@@ -222,9 +235,9 @@ public final class FunctionScoreQuery extends Query {
 
   }
 
-  private static class MultiplicativeBoostValuesSource extends DoubleValuesSource {
+  static class MultiplicativeBoostValuesSource extends DoubleValuesSource {
 
-    private final DoubleValuesSource boost;
+    final DoubleValuesSource boost;
 
     private MultiplicativeBoostValuesSource(DoubleValuesSource boost) {
       this.boost = boost;
@@ -262,6 +275,19 @@ public final class FunctionScoreQuery extends Query {
       if (o == null || getClass() != o.getClass()) return false;
       MultiplicativeBoostValuesSource that = (MultiplicativeBoostValuesSource) o;
       return Objects.equals(boost, that.boost);
+    }
+
+    @Override
+    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+      if (scoreExplanation.isMatch() == false) {
+        return scoreExplanation;
+      }
+      Explanation boostExpl = boost.explain(ctx, docId, scoreExplanation);
+      if (boostExpl.isMatch() == false) {
+        return scoreExplanation;
+      }
+      return Explanation.match(scoreExplanation.getValue().doubleValue() * boostExpl.getValue().doubleValue(),
+          "product of:", scoreExplanation, boostExpl);
     }
 
     @Override
@@ -338,6 +364,15 @@ public final class FunctionScoreQuery extends Query {
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
       return query.isCacheable(ctx);
+    }
+
+    @Override
+    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+      Explanation inner = query.explain(ctx, docId, scoreExplanation);
+      if (inner.isMatch() == false) {
+        return inner;
+      }
+      return Explanation.match(boost, "Matched boosting query " + query.toString());
     }
   }
 }

@@ -28,5 +28,6 @@ public enum TriggerEventType {
   SEARCHRATE,
   INDEXRATE,
   INVALID,
-  METRIC
+  METRIC,
+  INDEXSIZE
 }

@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
@@ -39,7 +40,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * work correctly when this filter is used in the search-time analyzer.  Unlike
  * the deprecated {@link WordDelimiterFilter}, this token filter produces a
  * correct token graph as output.  However, it cannot consume an input token
- * graph correctly.
+ * graph correctly. Processing is suppressed by {@link KeywordAttribute#isKeyword()}=true.
  *
  * <p>
  * Words are split into subwords with the following rules:
@@ -62,11 +63,14 @@ import org.apache.lucene.util.RamUsageEstimator;
  * </li>
  * </ul>
  * 
- * The <b>combinations</b> parameter affects how subwords are combined:
+ * The <b>GENERATE...</b> options affect how incoming tokens are broken into parts, and the
+ * various <b>CATENATE_...</b> parameters affect how those parts are combined.
+ *
  * <ul>
- * <li>combinations="0" causes no subword combinations: <code>"PowerShot"</code>
- * &#8594; <code>0:"Power", 1:"Shot"</code> (0 and 1 are the token positions)</li>
- * <li>combinations="1" means that in addition to the subwords, maximum runs of
+ * <li>If no CATENATE option is set, then no subword combinations are generated:
+ * <code>"PowerShot"</code> &#8594; <code>0:"Power", 1:"Shot"</code> (0 and 1 are the token
+ * positions)</li>
+ * <li>CATENATE_WORDS means that in addition to the subwords, maximum runs of
  * non-numeric subwords are catenated and produced at the same position of the
  * last subword in the run:
  * <ul>
@@ -79,12 +83,14 @@ import org.apache.lucene.util.RamUsageEstimator;
  * </li>
  * </ul>
  * </li>
+ * <li>CATENATE_NUMBERS works like CATENATE_WORDS, but for adjacent digit sequences.</li>
+ * <li>CATENATE_ALL smushes together all the token parts without distinguishing numbers and words.</li>
  * </ul>
  * One use for {@link WordDelimiterGraphFilter} is to help match words with different
  * subword delimiters. For example, if the source text contained "wi-fi" one may
  * want "wifi" "WiFi" "wi-fi" "wi+fi" queries to all match. One way of doing so
- * is to specify combinations="1" in the analyzer used for indexing, and
- * combinations="0" (the default) in the analyzer used for querying. Given that
+ * is to specify CATENATE options in the analyzer used for indexing, and not
+ * in the analyzer used for querying. Given that
  * the current {@link StandardTokenizer} immediately removes many intra-word
  * delimiters, it is recommended that this filter be used after a tokenizer that
  * does not do this (such as {@link WhitespaceTokenizer}).
@@ -151,7 +157,12 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
    * "O'Neil's" =&gt; "O", "Neil"
    */
   public static final int STEM_ENGLISH_POSSESSIVE = 256;
-  
+
+  /**
+   * Suppresses processing terms with {@link KeywordAttribute#isKeyword()}=true.
+   */
+  public static final int IGNORE_KEYWORDS = 512;
+
   /**
    * If not null is the set of tokens to protect from being delimited
    *
@@ -169,6 +180,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
   private char[][] bufferedTermParts = new char[4][];
   
   private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
+  private final KeywordAttribute keywordAttribute = addAttribute(KeywordAttribute.class);;
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLenAttribute = addAttribute(PositionLengthAttribute.class);
@@ -178,6 +190,8 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
 
   // used for concatenating runs of similar typed subwords (word,number)
   private final WordDelimiterConcatenation concat = new WordDelimiterConcatenation();
+
+  private final boolean adjustInternalOffsets;
 
   // number of subwords last output by concat.
   private int lastConcatCount;
@@ -194,10 +208,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
   private int savedEndOffset;
   private AttributeSource.State savedState;
   private int lastStartOffset;
-  
-  // if length by start + end offsets doesn't match the term text then assume
-  // this is a synonym and don't adjust the offsets.
-  private boolean hasIllegalOffsets;
+  private boolean adjustingOffsets;
 
   private int wordPos;
 
@@ -205,11 +216,12 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
    * Creates a new WordDelimiterGraphFilter
    *
    * @param in TokenStream to be filtered
+   * @param adjustInternalOffsets if the offsets of partial terms should be adjusted
    * @param charTypeTable table containing character types
    * @param configurationFlags Flags configuring the filter
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
-  public WordDelimiterGraphFilter(TokenStream in, byte[] charTypeTable, int configurationFlags, CharArraySet protWords) {
+  public WordDelimiterGraphFilter(TokenStream in, boolean adjustInternalOffsets, byte[] charTypeTable, int configurationFlags, CharArraySet protWords) {
     super(in);
     if ((configurationFlags &
         ~(GENERATE_WORD_PARTS |
@@ -220,13 +232,15 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
           PRESERVE_ORIGINAL |
           SPLIT_ON_CASE_CHANGE |
           SPLIT_ON_NUMERICS |
-          STEM_ENGLISH_POSSESSIVE)) != 0) {
+          STEM_ENGLISH_POSSESSIVE |
+          IGNORE_KEYWORDS)) != 0) {
       throw new IllegalArgumentException("flags contains unrecognized flag: " + configurationFlags);
     }
     this.flags = configurationFlags;
     this.protWords = protWords;
     this.iterator = new WordDelimiterIterator(
         charTypeTable, has(SPLIT_ON_CASE_CHANGE), has(SPLIT_ON_NUMERICS), has(STEM_ENGLISH_POSSESSIVE));
+    this.adjustInternalOffsets = adjustInternalOffsets;
   }
 
   /**
@@ -238,7 +252,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
   public WordDelimiterGraphFilter(TokenStream in, int configurationFlags, CharArraySet protWords) {
-    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, configurationFlags, protWords);
+    this(in, false, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, configurationFlags, protWords);
   }
 
   /** Iterates all words parts and concatenations, buffering up the term parts we should return. */
@@ -248,11 +262,17 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
 
     // if length by start + end offsets doesn't match the term's text then set offsets for all our word parts/concats to the incoming
     // offsets.  this can happen if WDGF is applied to an injected synonym, or to a stem'd form, etc:
-    hasIllegalOffsets = (savedEndOffset - savedStartOffset != savedTermLength);
+    adjustingOffsets = adjustInternalOffsets && savedEndOffset - savedStartOffset == savedTermLength;
 
     bufferedLen = 0;
     lastConcatCount = 0;
     wordPos = 0;
+
+    if (has(PRESERVE_ORIGINAL)) {
+      // add the original token now so that it is always emitted first
+      // we will edit the term length after all other parts have been buffered
+      buffer(0, 1, 0, savedTermLength);
+    }
 
     if (iterator.isSingleWord()) {
       buffer(wordPos, wordPos+1, iterator.current, iterator.end);
@@ -306,15 +326,16 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
     }
 
     if (has(PRESERVE_ORIGINAL)) {
+      // we now know how many tokens need to be injected, so we can set the original
+      // token's position length
       if (wordPos == 0) {
         // can happen w/ strange flag combos and inputs :)
         wordPos++;
       }
-      // add the original token now so that we can set the correct end position
-      buffer(0, wordPos, 0, savedTermLength);
+      bufferedParts[1] = wordPos;
     }
             
-    sorter.sort(0, bufferedLen);
+    sorter.sort(has(PRESERVE_ORIGINAL) ? 1 : 0, bufferedLen);
     wordPos = 0;
 
     // set back to 0 for iterating from the buffer
@@ -330,7 +351,9 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
         if (input.incrementToken() == false) {
           return false;
         }
-
+        if (has(IGNORE_KEYWORDS) && keywordAttribute.isKeyword()) {
+            return true;
+        }
         int termLength = termAttribute.length();
         char[] termBuffer = termAttribute.buffer();
 
@@ -353,6 +376,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
           if (has(PRESERVE_ORIGINAL) == false) {
             continue;
           } else {
+            accumPosInc = 0;
             return true;
           }
         }
@@ -375,7 +399,7 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
         int startOffset;
         int endOffset;
 
-        if (hasIllegalOffsets) {
+        if (adjustingOffsets == false) {
           startOffset = savedStartOffset;
           endOffset = savedEndOffset;
         } else {

@@ -28,8 +28,8 @@ import org.junit.Test;
 public class TestFilterDirectory extends BaseDirectoryTestCase {
 
   @Override
-  protected Directory getDirectory(Path path) throws IOException {
-    return new FilterDirectory(new RAMDirectory()) {};
+  protected Directory getDirectory(Path path) {
+    return new FilterDirectory(new ByteBuffersDirectory()) {};
   }
   
   @Test

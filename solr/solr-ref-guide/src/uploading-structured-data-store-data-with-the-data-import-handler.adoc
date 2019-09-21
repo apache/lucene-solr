@@ -116,7 +116,7 @@ This example shows how to extract fields from four tables defining a simple prod
 
 Datasources can still be specified in `solrconfig.xml`. These must be specified in the defaults section of the handler in `solrconfig.xml`. However, these are not parsed until the main configuration is loaded.
 
-The entire configuration itself can be passed as a request parameter using the `dataConfig` parameter rather than using a file. When configuration errors are encountered, the error message is returned in XML format.
+The entire configuration itself can be passed as a request parameter using the `dataConfig` parameter rather than using a file. When configuration errors are encountered, the error message is returned in XML format.  Due to security concerns, this only works if you start Solr with `-Denable.dih.dataConfigParam=true`.
 
 A `reload-config` command is also supported, which is useful for validating a new configuration file, or if you want to specify a file, load it, and not have it reloaded again on import. If there is an `xml` mistake in the configuration a user-friendly message is returned in `xml` format. You can then fix the problem and do a `reload-config`.
 
@@ -141,21 +141,34 @@ http://localhost:8983/solr/dih/dataimport?command=full-import&jdbcurl=jdbc:hsqld
 
 ==== Encrypting a Database Password
 
-The database password can be encrypted if necessary to avoid plaintext passwords being exposed in unsecured files. To do this, follow these steps:
+The database password can be encrypted if necessary to avoid plaintext passwords being exposed in unsecured files. To do this, we will replace the password in `data-config.xml` with an encrypted password. We will use the `openssl` tool for the encryption, and the encryption key will be stored in a file which is only readable to the `solr` process. Please follow these steps:
 
-. In a terminal window, run the command `openssl enc -aes-128-cbc -a -salt -in pwd.txt`.
-..This assumes the password is in a file named `pwd.txt`. If you don't have the password in this file yet, you can do `echo "mypassword" > pwd.txt`.
-.. The openssl session will ask for a password to use for the decryption. You will use this file with a `encryptKeyFile` parameter in `data-config.xml`.
-.. The output of the process will be a long string such as `U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o=`. This will be the password you put in your `data-config.xml` file.
-. Save the password you used as the decryption password in the previous step to a file, and determine the location of the file on the Solr server. You could use a command such as `echo myencrypfilepwd > /location/of/encryptionkey`. Replace "myencrypfilepwd" with the password you used while generating the key.
-. If the file is not yet on the Solr server, move it there. Also make sure the encryption key file permissions do not allow it to be read by unauthorized users. The `chmod 0600` command should set the permissions sufficiently.
+. Create a strong encryption password and store it in a file. Then make sure it is readable only for the `solr` user. Example commands:
++
+[source,text]
+echo -n "a-secret" > /var/solr/data/dih-encryptionkey
+chown solr:solr /var/solr/data/dih-encryptionkey
+chmod 600 /var/solr/data/dih-encryptionkey
++
+CAUTION: Note that we use the `-n` argument to `echo` to avoid including a newline character at the end of the password. If you use another method to generate the encrypted password, make sure to avoid newlines as well.
+
+. Encrypt the JDBC database password using `openssl` as follows:
++
+[source,text]
+echo -n "my-jdbc-password" | openssl enc -aes-128-cbc -a -salt -md md5 -pass file:/var/solr/data/dih-encryptionkey
++
+The output of the command will be a long string such as `U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o=`. You will use this as `password` in your `data-config.xml` file.
+
 . In your `data-config.xml`, you'll add the `password` and `encryptKeyFile` parameters to the `<datasource>` configuration, as in this example:
 +
 [source,xml]
 <dataSource driver="org.hsqldb.jdbcDriver"
     url="jdbc:hsqldb:./example-DIH/hsqldb/ex"
-    user="sa" password="U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o="
-    encryptKeyFile="/location/of/encryptionkey />
+    user="sa"
+    password="U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o="
+    encryptKeyFile="/var/solr/data/dih-encryptionkey" />
+
+
 
 == DataImportHandler Commands
 
@@ -306,7 +319,7 @@ For MySQL driver, which doesn't honor fetchSize and pulls whole resultSet, which
 +
 In this case, set `batchSize=-1` that pass setFetchSize(Integer.MIN_VALUE), and switch result set to pull row by row
 
-All of them substitute properties via `${placeholders}`.
+All of them substitute properties via `$\{placeholders}`.
 
 === URLDataSource
 
@@ -807,7 +820,7 @@ timeout::
 The query timeout in seconds. The default is 5 minutes (300 seconds).
 
 cursorMark="true"::
-Use this to enable cursor for efficient result set scrolling
+Use this to enable cursor for efficient result set scrolling.
 
 sort="id asc"::
 This should be used to specify a sort parameter referencing the uniqueKey field of the source Solr instance. See <<pagination-of-results.adoc#pagination-of-results,Pagination of Results>> for details.
@@ -868,7 +881,7 @@ DateFormatTransformer applies only on the fields with an attribute `dateTimeForm
 This transformer recognizes the following attributes:
 
 dateTimeFormat::
-The format used for parsing this field. This must comply with the syntax of the http://docs.oracle.com/javase/8/docs/api/java/text/SimpleDateFormat.html[Java SimpleDateFormat] class.
+The format used for parsing this field. This must comply with the syntax of the {java-javadocs}java/text/SimpleDateFormat.html[Java SimpleDateFormat] class.
 
 sourceColName::
 The column on which the dateFormat is to be applied. If this is absent source and target are same.
@@ -993,7 +1006,7 @@ Note that this transformer can be used to either split a string into tokens base
 
 === The ScriptTransformer
 
-The script transformer allows arbitrary transformer functions to be written in any scripting language supported by Java, such as Javascript, JRuby, Jython, Groovy, or BeanShell. Javascript is integrated into Java 8; you'll need to integrate other languages yourself.
+The script transformer allows arbitrary transformer functions to be written in any scripting language supported by Java, such as Javascript, JRuby, Jython, Groovy, or BeanShell. Javascript is integrated into Java by default; you'll need to integrate other languages yourself.
 
 Each function you write must accept a row variable (which corresponds to a `Java Map<String,Object>`, thus permitting `get,put,remove` operations). Thus you can modify the value of an existing field or add new fields. The return value of the function is the returned object.
 

@@ -63,7 +63,7 @@ public class PlaneTest {
     // [A=-0.6135342247741855, B=0.21504338363863665, C=0.28188192383666794, D=0.0, side=-1.0] internal? false;
     final Plane p = new Plane(-0.6135342247741855, 0.21504338363863665, 0.28188192383666794, 0.0);
 
-    final GeoPoint[] points = p.interpolate(start, end, new double[]{0.25, 0.50, 0.75});
+    final GeoPoint[] points = p.interpolate(PlanetModel.SPHERE, start, end, new double[]{0.25, 0.50, 0.75});
 
     for (GeoPoint point : points) {
       assertTrue(p.evaluateIsZero(point));

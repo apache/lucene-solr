@@ -116,7 +116,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       String reg = AutomatonTestUtil.randomRegexp(random());
       Automaton automaton = Operations.determinize(new RegExp(reg, RegExp.NONE).toAutomaton(),
         DEFAULT_MAX_DETERMINIZED_STATES);
-      TermsEnum te = MultiFields.getTerms(reader, "field").iterator();
+      TermsEnum te = MultiTerms.getTerms(reader, "field").iterator();
       ArrayList<BytesRef> unsortedTerms = new ArrayList<>(terms);
       Collections.shuffle(unsortedTerms, random());
 
@@ -139,7 +139,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
   /** mixes up seek and next for all terms */
   public void testSeekingAndNexting() throws Exception {
     for (int i = 0; i < numIterations; i++) {
-      TermsEnum te = MultiFields.getTerms(reader, "field").iterator();
+      TermsEnum te = MultiTerms.getTerms(reader, "field").iterator();
 
       for (BytesRef term : terms) {
         int c = random().nextInt(3);
@@ -161,7 +161,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       String reg = AutomatonTestUtil.randomRegexp(random());
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
       CompiledAutomaton ca = new CompiledAutomaton(automaton, Operations.isFinite(automaton), false);
-      TermsEnum te = MultiFields.getTerms(reader, "field").intersect(ca, null);
+      TermsEnum te = MultiTerms.getTerms(reader, "field").intersect(ca, null);
       Automaton expected = Operations.determinize(Operations.intersection(termsAutomaton, automaton),
         DEFAULT_MAX_DETERMINIZED_STATES);
       TreeSet<BytesRef> found = new TreeSet<>();

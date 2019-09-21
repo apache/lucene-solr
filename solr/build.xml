@@ -32,7 +32,6 @@
     <echo message="Use 'ant documentation' to build documentation." />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz for distribution." />
-    <!--<echo message="Use 'ant luke' to start luke.  see: http://luke.googlecode.com" />-->
     <echo message="Use 'ant test' to run unit tests." />
   </target>
 
@@ -49,6 +48,7 @@
     </ant>
     <jar destfile="${example}/exampledocs/post.jar">
       <fileset dir="${dest}/solr-core/classes/java">
+        <include name="org/apache/solr/util/CLIO.class"/>
         <include name="org/apache/solr/util/SimplePostTool*.class"/>
         <include name="org/apache/solr/util/RTimer.class"/>
         <include name="org/apache/solr/util/RTimer$*.class"/>
@@ -92,41 +92,6 @@
     <setproxy proxyhost="${proxy.host}" proxyport="${proxy.port}" proxyuser="${proxy.user}" proxypassword="${proxy.password}"/>
   </target>
 
-  <!--LUCENE-3286: Luke is incompatible with new XML QP location and target is not flexible
-  when it comes to incompatible changes.  Update when Luke has updated.
-  <target name="compile-xml-query-parser">
-    <ant dir="${common.dir}/queryparser" target="compile-core" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-
-  <property  name="luke.version" value="1.0.1"/>
-  <available file="luke/luke-${luke.version}.jar" property="luke.jar.exists" />
-  <target name="luke-download" unless="luke.jar.exists" depends="proxy.setup,compile-xml-query-parser">
-    <mkdir dir="luke"/>
-    <get src="http://luke.googlecode.com/files/luke-${luke.version}.jar"
-         dest="luke/luke-${luke.version}.jar"/>
-  </target>
-  <path id="luke.classpath">
-    <pathelement location="${common.dir}/build/core/classes/java" />
-    <pathelement location="${common.dir}/queryparser/build/classes/java" />
-  </path>
-  <target name="luke" depends="luke-download">
-    <java fork="true"
-          classname="org.getopt.luke.Luke"
-          logError="true"
-          failonerror="true">
-      <classpath>
-        <fileset dir="luke">
-          <include name="luke-${luke.version}.jar"/>
-        </fileset>
-        <path refid="classpath"/>
-        <path refid="luke.classpath"/>
-        <path refid="test.classpath"/>
-      </classpath>
-    </java>
-  </target>-->
-  
   <!-- ========================================================================= -->
   <!-- ========================== BUILD/TEST TASKS ============================= -->
   <!-- ========================================================================= -->
@@ -188,7 +153,12 @@
   <target name="javadocs" description="Calls javadocs-all, javadocs-solrj, and javadocs-test-framework"
           depends="define-lucene-javadoc-url,javadocs-solr-core,javadocs-solrj,javadocs-test-framework,javadocs-contrib"/>
   <target name="documentation" description="Generate all documentation"
-    depends="javadocs,changes-to-html,process-webpages"/>
+          depends="javadocs,changes-to-html,process-webpages">
+    <ant dir="solr-ref-guide" target="bare-bones-html-validation" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <property name="local.javadocs" value="true" />
+    </ant>
+  </target>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
 
   <target name="documentation-online" description="Generate a link to the online documentation"
@@ -442,10 +412,6 @@
   <!-- ===================== DISTRIBUTION-RELATED TASKS ======================== -->
   <!-- ========================================================================= -->
  
-  <target name="copy-to-stage">
-    <copy-to-stage-macro artifacts.dir="${package.dir}"/>
-  </target>
-  
   <target name="dist"
           description="Creates the Solr distribution files."
           depends="dist-solrj, dist-core, dist-test-framework, dist-contrib" />
@@ -475,7 +441,7 @@
   <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
  
   <!-- make a distribution -->
-  <target name="package" depends="package-src-tgz,create-package,documentation,-dist-changes,-dist-keys"/>
+  <target name="package" depends="package-src-tgz,create-package,documentation,-dist-changes"/>
 
   <!-- copy changes/ to the release folder -->
   <target name="-dist-changes">
@@ -484,12 +450,6 @@
    </copy>
   </target>
 
-  <!-- copy KEYS to the release folder -->
-  <target name="-dist-keys">
-   <get src="http://home.apache.org/keys/group/lucene.asc" 
-        dest="${package.dir}/KEYS"/>
-  </target>
- 
   <!-- Makes a tarball of the source.    -->
   <!-- Copies NOTICE.txt and LICENSE.txt from solr/ to the root level. -->
   <target name="package-src-tgz" depends="init-dist"

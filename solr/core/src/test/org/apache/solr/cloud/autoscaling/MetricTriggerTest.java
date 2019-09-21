@@ -53,6 +53,7 @@ public class MetricTriggerTest extends SolrCloudTestCase {
     CloudSolrClient solrClient = cluster.getSolrClient();
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
+    cluster.waitForActiveCollection(DEFAULT_TEST_COLLECTION_NAME, 1, 1);
   }
 
   @Test
@@ -72,7 +73,8 @@ public class MetricTriggerTest extends SolrCloudTestCase {
     SolrResourceLoader loader = cluster.getJettySolrRunner(0).getCoreContainer().getResourceLoader();
     SolrCloudManager cloudManager = new SolrClientCloudManager(new ZkDistributedQueueFactory(zkClient), cluster.getSolrClient());
 
-    try (MetricTrigger metricTrigger = new MetricTrigger("metricTrigger", props, loader, cloudManager)) {
+    try (MetricTrigger metricTrigger = new MetricTrigger("metricTrigger")) {
+      metricTrigger.configure(loader, cloudManager, props);
       metricTrigger.setProcessor(noFirstRunProcessor);
       metricTrigger.run();
       metricTrigger.setProcessor(event -> events.add(event));
@@ -85,7 +87,8 @@ public class MetricTriggerTest extends SolrCloudTestCase {
     events.clear();
     tag = "metrics:" + registry + ":ADMIN./admin/file.handlerStart";
     props = createTriggerProps(waitForSeconds, tag, null, 100.0d, DEFAULT_TEST_COLLECTION_NAME, null, null);
-    try (MetricTrigger metricTrigger = new MetricTrigger("metricTrigger", props, loader, cloudManager)) {
+    try (MetricTrigger metricTrigger = new MetricTrigger("metricTrigger")) {
+      metricTrigger.configure(loader, cloudManager, props);
       metricTrigger.setProcessor(noFirstRunProcessor);
       metricTrigger.run();
       metricTrigger.setProcessor(event -> events.add(event));

@@ -113,29 +113,6 @@ public final class DocValues {
   }
 
   /** 
-   * An empty SortedDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document 
-   */
-  public static final LegacySortedDocValues emptyLegacySorted() {
-    final BytesRef empty = new BytesRef();
-    return new LegacySortedDocValues() {
-      @Override
-      public int getOrd(int docID) {
-        return -1;
-      }
-
-      @Override
-      public BytesRef lookupOrd(int ord) {
-        return empty;
-      }
-
-      @Override
-      public int getValueCount() {
-        return 0;
-      }
-    };
-  }
-
-  /** 
    * An empty SortedDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document
    */
   public static final SortedDocValues emptySorted() {

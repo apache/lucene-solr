@@ -22,8 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,71 +37,62 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReaderAccessor;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.IdUtils;
-import org.apache.solr.util.LogLevel;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LogLevel("org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.autoscaling=DEBUG;")
 public class MoveReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static ZkStateReaderAccessor accessor;
-  private static int overseerLeaderIndex;
 
   // used by MoveReplicaHDFSTest
   protected boolean inPlaceMove = true;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  protected String getConfigSet() {
+    return "cloud-dynamic";
+  }
+
+  @Before
+  public void beforeTest() throws Exception {
+    inPlaceMove = true;
+
     configureCluster(4)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .addConfig("conf1", configset(getConfigSet()))
+        .addConfig("conf2", configset(getConfigSet()))
+        .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
+
     NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
     JettySolrRunner overseerJetty = null;
     String overseerLeader = (String) overSeerStatus.get("leader");
-    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
-      JettySolrRunner jetty = cluster.getJettySolrRunner(i);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       if (jetty.getNodeName().equals(overseerLeader)) {
         overseerJetty = jetty;
-        overseerLeaderIndex = i;
         break;
       }
     }
     if (overseerJetty == null) {
       fail("no overseer leader!");
     }
-    accessor = new ZkStateReaderAccessor(overseerJetty.getCoreContainer().getZkController().getZkStateReader());
   }
-
-  protected String getSolrXml() {
-    return "solr.xml";
-  }
-
-  @Before
-  public void beforeTest() throws Exception {
-    cluster.deleteAllCollections();
-    // restart any shut down nodes
-    for (int i = cluster.getJettySolrRunners().size(); i < 5; i++) {
-      cluster.startJettySolrRunner();
+  
+  @After
+  public void afterTest() throws Exception {
+    try {
+      shutdownCluster();
+    } finally {
+      super.tearDown();
     }
-    cluster.waitForAllNodes(5000);
-    inPlaceMove = true;
   }
 
   @Test
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     String coll = getTestClass().getSimpleName() + "_coll_" + inPlaceMove;
     log.info("total_jettys: " + cluster.getJettySolrRunners().size());
@@ -137,8 +126,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       }
     }
 
-    Set<CollectionStateWatcher> watchers = new HashSet<>(accessor.getStateWatchers(coll));
-
     int sourceNumCores = getNumOfCores(cloudClient, replica.getNodeName(), coll);
     int targetNumCores = getNumOfCores(cloudClient, targetNode, coll);
 
@@ -155,7 +142,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
         success = true;
         break;
       }
-      assertFalse(rsp.getRequestStatus() == RequestStatusState.FAILED);
+      assertNotSame(rsp.getRequestStatus(), RequestStatusState.FAILED);
       Thread.sleep(500);
     }
     assertTrue(success);
@@ -201,9 +188,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
 
-    Set<CollectionStateWatcher> newWatchers = new HashSet<>(accessor.getStateWatchers(coll));
-    assertEquals(watchers, newWatchers);
-
     moveReplica = createMoveReplicaRequest(coll, replica, targetNode, shardId);
     moveReplica.setInPlaceMove(inPlaceMove);
     moveReplica.process(cloudClient);
@@ -243,22 +227,20 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       }
     }
     assertTrue("replica never fully recovered", recovered);
-    newWatchers = new HashSet<>(accessor.getStateWatchers(coll));
-    assertEquals(watchers, newWatchers);
 
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
   //Commented out 5-Dec-2017
   // @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11458")
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018 This JIRA is fixed, but this test still fails
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018 This JIRA is fixed, but this test still fails
+  //17-Aug-2018 commented  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testFailedMove() throws Exception {
     String coll = getTestClass().getSimpleName() + "_failed_coll_" + inPlaceMove;
     int REPLICATION = 2;
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
-
-    Set<CollectionStateWatcher> watchers = new HashSet<>(accessor.getStateWatchers(coll));
 
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION);
     create.setAutoAddReplicas(false);
@@ -266,13 +248,22 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     addDocs(coll, 100);
 
-    Replica replica = getRandomReplica(coll, cloudClient);
+    NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
+    String overseerLeader = (String) overSeerStatus.get("leader");
+
+    // don't kill overseer in this test
+    Replica replica;
+    int count = 10;
+    do {
+      replica = getRandomReplica(coll, cloudClient);
+    } while (!replica.getNodeName().equals(overseerLeader) && count-- > 0);
+    assertNotNull("could not find non-overseer replica???", replica);
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String targetNode = null;
     for (String node : liveNodes) {
-      if (!replica.getNodeName().equals(node)) {
+      if (!replica.getNodeName().equals(node) && !overseerLeader.equals(node)) {
         targetNode = node;
         break;
       }
@@ -286,7 +277,9 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     // shut down target node
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       if (cluster.getJettySolrRunner(i).getNodeName().equals(targetNode)) {
-        cluster.stopJettySolrRunner(i);
+        JettySolrRunner j = cluster.stopJettySolrRunner(i);
+        cluster.waitForJettyToStop(j);
+        break;
       }
     }
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);
@@ -294,7 +287,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     boolean success = true;
     for (int i = 0; i < 200; i++) {
       CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
-      assertTrue(rsp.getRequestStatus().toString(), rsp.getRequestStatus() != RequestStatusState.COMPLETED);
+      assertNotSame(rsp.getRequestStatus().toString(), rsp.getRequestStatus(), RequestStatusState.COMPLETED);
       if (rsp.getRequestStatus() == RequestStatusState.FAILED) {
         success = false;
         break;
@@ -303,54 +296,16 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     }
     assertFalse(success);
 
-    Set<CollectionStateWatcher> newWatchers = new HashSet<>(accessor.getStateWatchers(coll));
-    assertEquals(watchers, newWatchers);
-
     log.info("--- current collection state: " + cloudClient.getZkStateReader().getClusterState().getCollection(coll));
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
 
   private CollectionAdminRequest.MoveReplica createMoveReplicaRequest(String coll, Replica replica, String targetNode, String shardId) {
-    if (random().nextBoolean()) {
-      return new CollectionAdminRequest.MoveReplica(coll, shardId, targetNode, replica.getNodeName());
-    } else  {
-      // for backcompat testing of SOLR-11068
-      // todo remove in solr 8.0
-      return new BackCompatMoveReplicaRequest(coll, shardId, targetNode, replica.getNodeName());
-    }
+    return new CollectionAdminRequest.MoveReplica(coll, shardId, targetNode, replica.getNodeName());
   }
 
   private CollectionAdminRequest.MoveReplica createMoveReplicaRequest(String coll, Replica replica, String targetNode) {
-    if (random().nextBoolean()) {
-      return new CollectionAdminRequest.MoveReplica(coll, replica.getName(), targetNode);
-    } else  {
-      // for backcompat testing of SOLR-11068
-      // todo remove in solr 8.0
-      return new BackCompatMoveReplicaRequest(coll, replica.getName(), targetNode);
-    }
-  }
-
-  /**
-   * Added for backcompat testing
-   * todo remove in solr 8.0
-   */
-  static class BackCompatMoveReplicaRequest extends CollectionAdminRequest.MoveReplica {
-    public BackCompatMoveReplicaRequest(String collection, String replica, String targetNode) {
-      super(collection, replica, targetNode);
-    }
-
-    public BackCompatMoveReplicaRequest(String collection, String shard, String sourceNode, String targetNode) {
-      super(collection, shard, sourceNode, targetNode);
-    }
-
-    @Override
-    public SolrParams getParams() {
-      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      if (randomlyMoveReplica) {
-        params.set(CollectionParams.FROM_NODE, sourceNode);
-      }
-      return params;
-    }
+    return new CollectionAdminRequest.MoveReplica(coll, replica.getName(), targetNode);
   }
 
   private Replica getRandomReplica(String coll, CloudSolrClient cloudClient) {
@@ -374,9 +329,8 @@ public class MoveReplicaTest extends SolrCloudTestCase {
         return status.getCoreStatus().size();
       } else {
         int size = 0;
-        Iterator<Map.Entry<String, NamedList<Object>>> it = status.getCoreStatus().iterator();
-        while (it.hasNext()) {
-          String coll = (String)it.next().getValue().findRecursive("cloud", "collection");
+        for (Map.Entry<String, NamedList<Object>> stringNamedListEntry : status.getCoreStatus()) {
+          String coll = (String) stringNamedListEntry.getValue().findRecursive("cloud", "collection");
           if (collectionName.equals(coll)) {
             size++;
           }

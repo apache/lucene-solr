@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.core;
 
 
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -60,7 +61,7 @@ public class TestStopFilterFactory extends BaseTokenStreamFactoryTestCase {
 
     // defaults
     factory = (StopFilterFactory) tokenFilterFactory("Stop");
-    assertEquals(StopAnalyzer.ENGLISH_STOP_WORDS_SET, factory.getStopWords());
+    assertEquals(EnglishAnalyzer.ENGLISH_STOP_WORDS_SET, factory.getStopWords());
     assertEquals(false, factory.isIgnoreCase());
   }
   

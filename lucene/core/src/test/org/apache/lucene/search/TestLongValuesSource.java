@@ -27,11 +27,14 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestLongValuesSource extends LuceneTestCase {
+
+  private static final long LEAST_LONG_VALUE = 45L;
 
   private Directory dir;
   private IndexReader reader;
@@ -43,6 +46,7 @@ public class TestLongValuesSource extends LuceneTestCase {
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     int numDocs = TestUtil.nextInt(random(), 2049, 4000);
+    int leastValue = 45;
     for (int i = 0; i < numDocs; i++) {
       Document document = new Document();
       document.add(newTextField("english", English.intToEnglish(i), Field.Store.NO));
@@ -50,7 +54,7 @@ public class TestLongValuesSource extends LuceneTestCase {
       document.add(new NumericDocValuesField("int", random().nextInt()));
       document.add(new NumericDocValuesField("long", random().nextLong()));
       if (i == 545)
-        document.add(new NumericDocValuesField("onefield", 45));
+        document.add(new NumericDocValuesField("onefield", LEAST_LONG_VALUE));
       iw.addDocument(document);
     }
     reader = iw.getReader();
@@ -65,11 +69,41 @@ public class TestLongValuesSource extends LuceneTestCase {
     super.tearDown();
   }
 
-  public void testSortMissing() throws Exception {
+  public void testSortMissingZeroDefault() throws Exception {
+    // docs w/no value get default missing value = 0
+
     LongValuesSource onefield = LongValuesSource.fromLongField("onefield");
+    // sort decreasing
     TopDocs results = searcher.search(new MatchAllDocsQuery(), 1, new Sort(onefield.getSortField(true)));
     FieldDoc first = (FieldDoc) results.scoreDocs[0];
-    assertEquals(45L, first.fields[0]);
+    assertEquals(LEAST_LONG_VALUE, first.fields[0]);
+
+    // sort increasing
+    results = searcher.search(new MatchAllDocsQuery(), 1, new Sort(onefield.getSortField(false)));
+    first = (FieldDoc) results.scoreDocs[0];
+    assertEquals(0L, first.fields[0]);
+  }
+
+  public void testSortMissingExplicit() throws Exception {
+    // docs w/no value get provided missing value
+
+    LongValuesSource onefield = LongValuesSource.fromLongField("onefield");
+
+    // sort decreasing, missing last
+    SortField oneFieldSort = onefield.getSortField(true);
+    oneFieldSort.setMissingValue(Long.MIN_VALUE);
+
+    TopDocs results = searcher.search(new MatchAllDocsQuery(), 1, new Sort(oneFieldSort));
+    FieldDoc first = (FieldDoc) results.scoreDocs[0];
+    assertEquals(LEAST_LONG_VALUE, first.fields[0]);
+
+    // sort increasing, missing last
+    oneFieldSort = onefield.getSortField(false);
+    oneFieldSort.setMissingValue(Long.MAX_VALUE);
+
+    results = searcher.search(new MatchAllDocsQuery(), 1, new Sort(oneFieldSort));
+    first = (FieldDoc) results.scoreDocs[0];
+    assertEquals(LEAST_LONG_VALUE, first.fields[0]);
   }
 
   public void testSimpleFieldEquivalences() throws Exception {
@@ -103,7 +137,7 @@ public class TestLongValuesSource extends LuceneTestCase {
     };
     Collections.shuffle(Arrays.asList(fields), random());
     int numSorts = TestUtil.nextInt(random(), 1, fields.length);
-    return new Sort(Arrays.copyOfRange(fields, 0, numSorts));
+    return new Sort(ArrayUtil.copyOfSubArray(fields, 0, numSorts));
   }
 
   // Take a Sort, and replace any field sorts with Sortables
@@ -135,12 +169,12 @@ public class TestLongValuesSource extends LuceneTestCase {
   void checkSorts(Query query, Sort sort) throws Exception {
     int size = TestUtil.nextInt(random(), 1, searcher.getIndexReader().maxDoc() / 5);
     Sort mutatedSort = convertSortToSortable(sort);
-    TopDocs actual = searcher.search(query, size, mutatedSort, random().nextBoolean(), random().nextBoolean());
-    TopDocs expected = searcher.search(query, size, sort, random().nextBoolean(), random().nextBoolean());
+    TopDocs actual = searcher.search(query, size, mutatedSort, random().nextBoolean());
+    TopDocs expected = searcher.search(query, size, sort, random().nextBoolean());
 
     CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);
 
-    if (size < actual.totalHits) {
+    if (size < actual.totalHits.value) {
       expected = searcher.searchAfter(expected.scoreDocs[size-1], query, size, sort);
       actual = searcher.searchAfter(actual.scoreDocs[size-1], query, size, mutatedSort);
       CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);

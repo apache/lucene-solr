@@ -19,10 +19,8 @@ package org.apache.solr.ltr.feature;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -49,7 +47,7 @@ public class OriginalScoreFeature extends Feature {
 
   @Override
   public LinkedHashMap<String,Object> paramsToMap() {
-    return null;
+    return defaultParamsToMap();
   }
 
   @Override
@@ -70,18 +68,13 @@ public class OriginalScoreFeature extends Feature {
     public OriginalScoreWeight(IndexSearcher searcher,
         SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException {
       super(OriginalScoreFeature.this, searcher, request, originalQuery, efi);
-      w = searcher.createNormalizedWeight(originalQuery, ScoreMode.COMPLETE);
+      w = searcher.createWeight(searcher.rewrite(originalQuery), ScoreMode.COMPLETE, 1);
     };
 
 
     @Override
     public String toString() {
       return "OriginalScoreFeature [query:" + originalQuery.toString() + "]";
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      w.extractTerms(terms);
     }
 
     @Override

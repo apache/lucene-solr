@@ -20,6 +20,9 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
@@ -44,7 +47,6 @@ import org.apache.lucene.util.NumericUtils;
  * @see PointValues
  */
 public final class LongPoint extends Field {
-
   private static FieldType getType(int numDims) {
     FieldType type = new FieldType();
     type.setDimensions(numDims, Long.BYTES);
@@ -59,8 +61,8 @@ public final class LongPoint extends Field {
 
   /** Change the values of this field */
   public void setLongValues(long... point) {
-    if (type.pointDimensionCount() != point.length) {
-      throw new IllegalArgumentException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot change to (incoming) " + point.length + " dimensions");
+    if (type.pointDataDimensionCount() != point.length) {
+      throw new IllegalArgumentException("this field (name=" + name + ") uses " + type.pointDataDimensionCount() + " dimensions; cannot change to (incoming) " + point.length + " dimensions");
     }
     fieldsData = pack(point);
   }
@@ -72,15 +74,21 @@ public final class LongPoint extends Field {
 
   @Override
   public Number numericValue() {
-    if (type.pointDimensionCount() != 1) {
-      throw new IllegalStateException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot convert to a single numeric value");
+    if (type.pointDataDimensionCount() != 1) {
+      throw new IllegalStateException("this field (name=" + name + ") uses " + type.pointDataDimensionCount() + " dimensions; cannot convert to a single numeric value");
     }
     BytesRef bytes = (BytesRef) fieldsData;
     assert bytes.length == Long.BYTES;
     return decodeDimension(bytes.bytes, bytes.offset);
   }
 
-  private static BytesRef pack(long... point) {
+  /**
+   *  Pack a long point into a BytesRef
+   *
+   * @param point long[] value
+   * @throws IllegalArgumentException is the value is null or of zero length
+   */
+  public static BytesRef pack(long... point) {
     if (point == null) {
       throw new IllegalArgumentException("point must not be null");
     }
@@ -116,7 +124,7 @@ public final class LongPoint extends Field {
     result.append(':');
 
     BytesRef bytes = (BytesRef) fieldsData;
-    for (int dim = 0; dim < type.pointDimensionCount(); dim++) {
+    for (int dim = 0; dim < type.pointDataDimensionCount(); dim++) {
       if (dim > 0) {
         result.append(',');
       }
@@ -255,5 +263,28 @@ public final class LongPoint extends Field {
       unboxed[i] = boxed[i];
     }
     return newSetQuery(field, unboxed);
+  }
+
+  /**
+   * Given a field that indexes the same long values into a {@link LongPoint}
+   * and doc values (either {@link NumericDocValuesField} or
+   * {@link SortedNumericDocValuesField}), this returns a query that scores
+   * documents based on their distance to {@code origin}:
+   * {@code score = weight * pivotDistance / (pivotDistance + distance)}, ie.
+   * score is in the {@code [0, weight]} range, is equal to {@code weight} when
+   * the document's value is equal to {@code origin} and is equal to
+   * {@code weight/2}  when the document's value is distant of
+   * {@code pivotDistance} from {@code origin}.
+   * In case of multi-valued fields, only the closest point to {@code origin}
+   * will be considered.
+   * This query is typically useful to boost results based on recency by adding
+   * this query to a {@link Occur#SHOULD} clause of a {@link BooleanQuery}.
+   */
+  public static Query newDistanceFeatureQuery(String field, float weight, long origin, long pivotDistance) {
+    Query query = new LongDistanceFeatureQuery(field, origin, pivotDistance);
+    if (weight != 1f) {
+      query = new BoostQuery(query, weight);
+    }
+    return query;
   }
 }

@@ -256,7 +256,7 @@ public final class WordDelimiterIterator {
    * Determines if the text at the given position indicates an English possessive which should be removed
    *
    * @param pos Position in the text to check if it indicates an English possessive
-   * @return {@code true} if the text at the position indicates an English posessive, {@code false} otherwise
+   * @return {@code true} if the text at the position indicates an English possessive, {@code false} otherwise
    */
   private boolean endsWithPossessive(int pos) {
     return (stemEnglishPossessive &&

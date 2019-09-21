@@ -38,8 +38,8 @@ public class Geo3dShapeWGS84ModelRectRelationTest extends ShapeRectRelationTestC
     Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
     factory.planetModel = planetModel;
     this.ctx = factory.newSpatialContext();
-    this.maxRadius = 178;
-    ((Geo3dShapeFactory)ctx.getShapeFactory()).setCircleAccuracy(1e-6);
+    this.maxRadius = 175;
+    ((Geo3dShapeFactory)ctx.getShapeFactory()).setCircleAccuracy(1e-12);
   }
 
   @Test

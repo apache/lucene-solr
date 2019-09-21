@@ -90,6 +90,7 @@ public class ContextSuggestField extends SuggestField {
     }
     CompletionTokenStream completionTokenStream;
     if (stream instanceof CompletionTokenStream) {
+      //TODO this is awkward; is there a better way avoiding re-creating the chain?
       completionTokenStream = (CompletionTokenStream) stream;
       PrefixTokenFilter prefixTokenFilter = new PrefixTokenFilter(completionTokenStream.inputTokenStream, (char) CONTEXT_SEPARATOR, contexts);
       completionTokenStream = new CompletionTokenStream(prefixTokenFilter,

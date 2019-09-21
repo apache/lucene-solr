@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,6 +34,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SpatialUtils;
 import org.apache.solr.util.TestUtils;
@@ -55,6 +58,14 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     clearIndex();
+    RetrievalCombo.idCounter = 0;
+  }
+
+  @Test
+  public void testQuadTreeRobustness() {
+    assertU(adoc("id", "0", "oslocation", "244502.06 639062.07"));
+    // old (pre 8.3.0) still works
+    assertU(adoc("id", "0", "oslocationold", "244502.06 639062.07"));
   }
 
   @Test
@@ -119,19 +130,27 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   @Test
   public void testRptWithGeometryField() throws Exception {
-    testRptWithGeometryField("srptgeom");//note: fails with "srpt_geohash" because it's not as precise
+    //note: fails with "srpt_geohash" because it's not as precise
+    final boolean testCache = true;
+    final boolean testHeatmap = true;
+    final boolean testPolygon = false; // default spatialContext doesn't handle this
+    testRptWithGeometryField("srptgeom", testCache, testHeatmap, testPolygon);
   }
 
   @Test
   public void testRptWithGeometryGeo3dField() throws Exception {
-    String fieldName = "srptgeom_geo3d";
-    testRptWithGeometryField(fieldName);
+    final boolean testCache = true;
+    final boolean testHeatmap = true;
+    final boolean testPolygon = true;
+    testRptWithGeometryField("srptgeom_geo3d", testCache, testHeatmap, testPolygon);
+  }
 
-    // show off that Geo3D supports polygons
-    String polygonWKT = "POLYGON((-11 12, 10.5 12, -11 11, -11 12))"; //right-angle triangle
-    assertJQ(req(
-        "q", "{!cache=false field f=" + fieldName + "}Intersects(" + polygonWKT + ")",
-        "sort", "id asc"), "/response/numFound==2");
+  @Test
+  public void testRptWithGeometryGeo3dS2Field() throws Exception {
+    final boolean testCache = false; // the test data is designed to provoke the cache for non-S2
+    final boolean testHeatmap = false; // incompatible
+    final boolean testPolygon = true;
+    testRptWithGeometryField("srptgeom_s2_geo3d", testCache, testHeatmap, testPolygon);
   }
 
   @Test @Repeat(iterations = 10)
@@ -144,12 +163,12 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     String ptOrig = GeoTestUtil.nextLatitude() + "," + GeoTestUtil.nextLongitude();
     assertU(adoc("id", "0", fld, ptOrig));
     assertU(commit());
-    // retrieve it (probably less precision
+    // retrieve it (probably less precision)
     String ptDecoded1 = (String) client.query(params("q", "id:0")).getResults().get(0).get(fld);
     // now write it back
     assertU(adoc("id", "0", fld, ptDecoded1));
     assertU(commit());
-    // retrieve it and hopefully the same
+    // retrieve it; assert that it's the same as written
     String ptDecoded2 = (String) client.query(params("q", "id:0")).getResults().get(0).get(fld);
     assertEquals("orig:" + ptOrig, ptDecoded1, ptDecoded2);
 
@@ -157,23 +176,31 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     final Point ptOrigObj = SpatialUtils.parsePoint(ptOrig, SpatialContext.GEO);
     final Point ptDecodedObj = SpatialUtils.parsePoint(ptDecoded1, SpatialContext.GEO);
     double deltaCentimeters = SpatialContext.GEO.calcDistance(ptOrigObj, ptDecodedObj) * DistanceUtils.DEG_TO_KM * 1000.0 * 100.0;
-//    //See javadocs of LatLonDocValuesField
-//    final Point absErrorPt = SpatialContext.GEO.getShapeFactory().pointXY(8.381903171539307E-8, 4.190951585769653E-8);
-//    double deltaCentimetersMax
-//        = SpatialContext.GEO.calcDistance(absErrorPt, 0,0) * DistanceUtils.DEG_TO_KM * 1000.0 * 100.0;
-//    //  equals 1.0420371840922256   which is a bit lower than what we're able to do
+    //See javadocs of LatLonDocValuesField for these constants
+    final Point absErrorPt = SpatialContext.GEO.getShapeFactory().pointXY(8.381903171539307E-8, 4.190951585769653E-8);
+    double deltaCentimetersMax
+        = SpatialContext.GEO.calcDistance(absErrorPt, 0,0) * DistanceUtils.DEG_TO_KM * 1000.0 * 100.0;
+    assertEquals(1.0420371840922256, deltaCentimetersMax, 0.0);// just so that we see it in black & white in the test
 
-    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.33);
+    //max found by trial & error.  If we used 8 decimal places then we could get down to 1.04cm accuracy but then we
+    // lose the ability to round-trip -- 40 would become 39.99999997  (ugh).
+    assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.41);
+    // Pt(x=105.29894270124083,y=-0.4371673760042398) to  Pt(x=105.2989428,y=-0.4371673) is 1.38568
   }
 
   @Test
   public void testLatLonRetrieval() throws Exception {
-    final String ptHighPrecision = "40.2996543270,-74.0824956673";
+    final String ptHighPrecision =   "40.2996543270,-74.0824956673";
     final String ptLossOfPrecision = "40.2996544,-74.0824957"; // rounded version of the one above, losing precision
 
     // "_1" is single, "_N" is multiValued
     // "_dv" is docValues (otherwise not),  "_dvasst" is useDocValuesAsStored (otherwise not)
     // "_st" is stored" (otherwise not)
+
+    // a random point using the number of decimal places we support for round-tripping.
+    String randPointStr =
+        new BigDecimal(GeoTestUtil.nextLatitude()).setScale(7, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString() +
+        "," + new BigDecimal(GeoTestUtil.nextLongitude()).setScale(7, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
 
     List<RetrievalCombo> combos = Arrays.asList(
         new RetrievalCombo("llp_1_dv_st", ptHighPrecision),
@@ -183,7 +210,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         new RetrievalCombo("llp_1_dv_dvasst", ptHighPrecision, ptLossOfPrecision),
         // this one comes back in a different order since it gets sorted low to high
         new RetrievalCombo("llp_N_dv_dvasst", Arrays.asList("-40,40", "-45,45"), Arrays.asList("-45,45", "-40,40")),
-        new RetrievalCombo("llp_N_dv_dvasst", Arrays.asList("-40,40")), // multiValued but 1 value
+        new RetrievalCombo("llp_N_dv_dvasst", Arrays.asList(randPointStr)), // multiValued but 1 value
         // edge cases.  (note we sorted it as Lucene will internally)
         new RetrievalCombo("llp_N_dv_dvasst", Arrays.asList(
             "-90,180", "-90,-180",
@@ -251,10 +278,10 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     }
   }
 
-  private void testRptWithGeometryField(String fieldName) throws Exception {
+  private void testRptWithGeometryField(String fieldName, boolean testCache, boolean testHeatmap, boolean testPolygon) throws Exception {
     assertU(adoc("id", "0", fieldName, "ENVELOPE(-10, 20, 15, 10)"));
     assertU(adoc("id", "1", fieldName, "BUFFER(POINT(-10 15), 5)"));//circle at top-left corner
-    assertU(optimize());// one segment.
+    assertU(optimize("maxSegments", "1"));// one segment.
     assertU(commit());
 
     // Search to the edge but not quite touching the indexed envelope of id=0.  It requires geom validation to
@@ -264,39 +291,60 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         "sort", "id asc");
     assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
 
-    // The tricky thing is verifying the cache works correctly...
+    if (testCache) {
+      // The tricky thing is verifying the cache works correctly...
 
-    MetricsMap cacheMetrics = (MetricsMap) h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
-    assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
-    assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
+      MetricsMap cacheMetrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName)).getGauge();
+      assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
+      assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
 
-    // Repeat the query earlier
-    assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
-    assertEquals("1", cacheMetrics.getValue().get("cumulative_hits").toString());
+      // Repeat the query earlier
+      assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
+      assertEquals("1", cacheMetrics.getValue().get("cumulative_hits").toString());
 
-    assertEquals("1 segment",
-        1, getSearcher().getRawReader().leaves().size());
-    // Get key of first leaf reader -- this one contains the match for sure.
-    Object leafKey1 = getFirstLeafReaderKey();
+      assertEquals("1 segment",
+          1, getSearcher().getRawReader().leaves().size());
+      // Get key of first leaf reader -- this one contains the match for sure.
+      Object leafKey1 = getFirstLeafReaderKey();
 
-    // add new segment
-    assertU(adoc("id", "3"));
+      // add new segment
+      assertU(adoc("id", "3"));
 
-    assertU(commit()); // sometimes merges (to one seg), sometimes won't
+      assertU(commit()); // sometimes merges (to one seg), sometimes won't
 
-    // can still find the same document
-    assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
+      // can still find the same document
+      assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
 
-    // When there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
-    // Checking equality for the first reader's cache key indicates whether the cache should still be valid.
-    Object leafKey2 = getFirstLeafReaderKey();
-    assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cacheMetrics.getValue().get("cumulative_hits").toString());
+      // When there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
+      // Checking equality for the first reader's cache key indicates whether the cache should still be valid.
+      Object leafKey2 = getFirstLeafReaderKey();
+      assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cacheMetrics.getValue().get("cumulative_hits").toString());
+    }
 
+    if (testHeatmap) {
+      // Now try to see if heatmaps work:
+      assertJQ(req("q", "*:*", "facet", "true", FacetParams.FACET_HEATMAP, fieldName, "json.nl", "map"),
+          "/facet_counts/facet_heatmaps/" + fieldName + "/minX==-180.0");
+    }
 
-    // Now try to see if heatmaps work:
-    assertJQ(req("q", "*:*", "facet", "true", FacetParams.FACET_HEATMAP, fieldName, "json.nl", "map"),
-        "/facet_counts/facet_heatmaps/" + fieldName + "/minX==-180.0");
+    if (testPolygon) {
+      String polygonWKT = "POLYGON((-11 12, -11 11, 10.5 12, -11 12))"; //right-angle triangle.  Counter-clockwise order
+      assertJQ(req(
+          "q", "{!cache=false field f=" + fieldName + "}Intersects(" + polygonWKT + ")",
+          "sort", "id asc"), "/response/numFound==2");
 
+      assertU(adoc("id", "9",
+          fieldName, "POLYGON((" + // rectangle. Counter-clockwise order.
+              "-118.080201721669 54.5864541583249," +
+              "-118.080078279314 54.5864541583249," +
+              "-118.080078279314 54.5865258517606," +
+              "-118.080201721669 54.5865258517606," +
+              "-118.080201721669 54.5864541583249))" ));
+      assertU(commit());
+      // should NOT match
+      assertJQ(req("q", fieldName+":[55.0260828,-115.5085624 TO 55.02646,-115.507337]"),
+          "/response/numFound==0");
+    }
   }
 
   protected SolrIndexSearcher getSearcher() {
@@ -322,4 +370,14 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     assertQ(req(params), "*[count(//doc)=1]", "count(//lst[@name='highlighting']/*)=1");
   }
 
+  @Test
+  public void testErrorHandlingGeodist() throws Exception{
+    assertU(adoc("id", "1", "llp", "32.7693246, -79.9289094"));
+    assertQEx("wrong test exception message","sort param could not be parsed as a query, " +
+            "and is not a field that exists in the index: geodist(llp,47.36667,8.55)",
+        req(
+            "q", "*:*",
+            "sort", "geodist(llp,47.36667,8.55) asc"
+        ), SolrException.ErrorCode.BAD_REQUEST);
+  }
 }

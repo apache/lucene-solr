@@ -69,7 +69,7 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
     while (loader.hasNext()) {
       final Class<? extends S> c = loader.next();
       try {
-        final S service = c.newInstance();
+        final S service = c.getConstructor().newInstance();
         final String name = service.getName();
         // only add the first one for each name, later services will be ignored
         // this allows to place services before others in classpath to make 

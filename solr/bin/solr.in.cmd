@@ -34,7 +34,20 @@ REM set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+Prin
 
 REM Various GC settings have shown to work well for a number of common Solr workloads.
 REM See solr.cmd GC_TUNE for the default list.
-REM set GC_TUNE=-XX:NewRatio=3 -XX:SurvivorRatio=4     etc.
+REM set GC_TUNE=-XX:SurvivorRatio=4
+REM set GC_TUNE=%GC_TUNE% -XX:TargetSurvivorRatio=90
+REM set GC_TUNE=%GC_TUNE% -XX:MaxTenuringThreshold=8
+REM set GC_TUNE=%GC_TUNE% -XX:+UseConcMarkSweepGC
+REM set GC_TUNE=%GC_TUNE% -XX:ConcGCThreads=4
+REM set GC_TUNE=%GC_TUNE% -XX:ParallelGCThreads=4
+REM set GC_TUNE=%GC_TUNE% -XX:+CMSScavengeBeforeRemark
+REM set GC_TUNE=%GC_TUNE% -XX:PretenureSizeThreshold=64m
+REM set GC_TUNE=%GC_TUNE% -XX:+UseCMSInitiatingOccupancyOnly
+REM set GC_TUNE=%GC_TUNE% -XX:CMSInitiatingOccupancyFraction=50
+REM set GC_TUNE=%GC_TUNE% -XX:CMSMaxAbortablePrecleanTime=6000
+REM set GC_TUNE=%GC_TUNE% -XX:+CMSParallelRemarkEnabled
+REM set GC_TUNE=%GC_TUNE% -XX:+ParallelRefProcEnabled
+REM set GC_TUNE=%GC_TUNE% -XX:-OmitStackTraceInFastThrow    etc.
 
 REM Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 REM e.g. host1:2181,host2:2181/chroot
@@ -84,10 +97,10 @@ REM set SOLR_LOG_LEVEL=INFO
 REM Location where Solr should write logs to. Absolute or relative to solr start dir
 REM set SOLR_LOGS_DIR=logs
 
-REM Enables log rotation, cleanup, and archiving before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=false will skip start
-REM time rotation of logs, and the archiving of the last GC and console log files. It does not affect Log4j configuration. This
-REM pre-startup rotation may need to be disabled depending how much you customize the default logging setup.
-REM set SOLR_LOG_PRESTART_ROTATION=true
+REM Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
+REM start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
+REM framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
+REM set SOLR_LOG_PRESTART_ROTATION=false
 
 REM Set the host interface to listen on. Jetty will listen on all interfaces (0.0.0.0) by default.
 REM This must be an IPv4 ("a.b.c.d") or bracketed IPv6 ("[x::y]") address, not a hostname!
@@ -103,21 +116,39 @@ REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
 REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
 REM set SOLR_SSL_KEY_STORE_PASSWORD=secret
-REM set SOLR_SSL_KEY_STORE_TYPE=JKS
 REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
 REM set SOLR_SSL_TRUST_STORE_PASSWORD=secret
-REM set SOLR_SSL_TRUST_STORE_TYPE=JKS
+REM Require clients to authenticate
 REM set SOLR_SSL_NEED_CLIENT_AUTH=false
+REM Enable clients to authenticate (but not require)
 REM set SOLR_SSL_WANT_CLIENT_AUTH=false
+REM SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
+REM this to false can be useful to disable these checks when re-using a certificate on many hosts
+REM set SOLR_SSL_CHECK_PEER_NAME=true
+REM Override Key/Trust Store types if necessary
+REM set SOLR_SSL_KEY_STORE_TYPE=JKS
+REM set SOLR_SSL_TRUST_STORE_TYPE=JKS
 
 REM Uncomment if you want to override previously defined SSL values for HTTP client
 REM otherwise keep them commented and the above values will automatically be set for HTTP clients
 REM set SOLR_SSL_CLIENT_KEY_STORE=
 REM set SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
-REM set SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 REM set SOLR_SSL_CLIENT_TRUST_STORE=
 REM set SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
+REM set SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 REM set SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
+
+REM Sets path of Hadoop credential provider (hadoop.security.credential.provider.path property) and
+REM enables usage of credential store.
+REM Credential provider should store the following keys:
+REM * solr.jetty.keystore.password
+REM * solr.jetty.truststore.password
+REM Set the two below if you want to set specific store passwords for HTTP client
+REM * javax.net.ssl.keyStorePassword
+REM * javax.net.ssl.trustStorePassword
+REM More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
+REM set SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
+REM set SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
 
 REM Settings for authentication
 REM Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
@@ -131,3 +162,14 @@ REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCrede
 REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
+
+REM When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
+REM list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can be configured in solr.xml,
+REM or if you are using the OOTB solr.xml, can be specified using the system property "solr.shardsWhitelist". Alternatively
+REM host checking can be disabled by using the system property "solr.disable.shardsWhitelist"
+REM set SOLR_OPTS="%SOLR_OPTS% -Dsolr.shardsWhitelist=http://localhost:8983,http://localhost:8984"
+
+REM For a visual indication in the Admin UI of what type of environment this cluster is, configure
+REM a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
+REM label or color, e.g. -Dsolr.environment=test,label=Functional+test,color=brown
+REM SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"

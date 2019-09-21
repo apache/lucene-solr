@@ -48,7 +48,7 @@ public abstract class DocRouter {
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown document router '"+ routerName + "'");
   }
 
-  protected String getRouteField(DocCollection coll) {
+  public String getRouteField(DocCollection coll) {
     if (coll == null) return null;
     Map m = (Map) coll.get(DOC_ROUTER);
     if (m == null) return null;
@@ -153,24 +153,53 @@ public abstract class DocRouter {
   }
 
   /**
-   * Returns the range for each partition
+   * Split the range into partitions.
+   * @param partitions number of partitions
+   * @param range range to split
    */
   public List<Range> partitionRange(int partitions, Range range) {
+    return partitionRange(partitions, range, 0.0f);
+  }
+
+  /**
+   * Split the range into partitions with inexact sizes.
+   * @param partitions number of partitions
+   * @param range range to split
+   * @param fuzz value between 0 (inclusive) and 0.5 (exclusive) indicating inexact split, i.e. percentage
+   *        of variation in resulting ranges - odd ranges will be larger and even ranges will be smaller
+   *        by up to that percentage.
+   */
+  public List<Range> partitionRange(int partitions, Range range, float fuzz) {
     int min = range.min;
     int max = range.max;
 
     assert max >= min;
+    if (fuzz > 0.5f) {
+      throw new IllegalArgumentException("'fuzz' parameter must be <= 0.5f but was " + fuzz);
+    } else if (fuzz < 0.0f) {
+      fuzz = 0.0f;
+    }
     if (partitions == 0) return Collections.EMPTY_LIST;
     long rangeSize = (long)max - (long)min;
     long rangeStep = Math.max(1, rangeSize / partitions);
+    long fuzzStep = Math.round(rangeStep * (double)fuzz / 2.0);
 
     List<Range> ranges = new ArrayList<>(partitions);
 
     long start = min;
     long end = start;
+    boolean odd = true;
 
     while (end < max) {
       end = start + rangeStep;
+      if (fuzzStep > 0) {
+        if (odd) {
+          end = end + fuzzStep;
+        } else {
+          end = end - fuzzStep;
+        }
+        odd = !odd;
+      }
       // make last range always end exactly on MAX_VALUE
       if (ranges.size() == partitions - 1) {
         end = max;
@@ -192,8 +221,17 @@ public abstract class DocRouter {
    **/
   public abstract Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection);
 
+  /** This method is consulted to determine what search range (the part of the hash ring) should be queried for a request when
+   *  an explicit shards parameter was not used.
+   *  This method only accepts a single shard key (or null).
+   */
+  public Range getSearchRangeSingle(String shardKey, SolrParams params, DocCollection collection) {
+    throw new UnsupportedOperationException();
+  }
+
   public abstract boolean isTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, String shardId, DocCollection collection);
 
+  public abstract String getName();
 
   /** This method is consulted to determine what slices should be queried for a request when
    *  an explicit shards parameter was not used.

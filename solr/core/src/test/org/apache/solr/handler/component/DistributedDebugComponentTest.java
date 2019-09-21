@@ -16,8 +16,18 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -33,17 +43,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
@@ -63,8 +62,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
   @BeforeClass
   public static void createThings() throws Exception {
+    systemSetPropertySolrDisableShardsWhitelist("true");
     solrHome = createSolrHome();
-    createJetty(solrHome.getAbsolutePath());
+    createAndStartJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
 
     collection1 = getHttpSolrClient(url + "/collection1");
@@ -98,13 +98,20 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
   @AfterClass
   public static void destroyThings() throws Exception {
-    collection1.close();
-    collection2.close();
-    collection1 = null;
-    collection2 = null;
-    jetty.stop();
-    jetty=null;
+    if (null != collection1) {
+      collection1.close();
+      collection1 = null;
+    }
+    if (null != collection2) {
+      collection2.close();
+      collection2 = null;
+    }
+    if (null != jetty) {
+      jetty.stop();
+      jetty=null;
+    }
     resetExceptionIgnores();
+    systemClearPropertySolrDisableShardsWhitelist();
   }
   
   @Test
@@ -116,6 +123,10 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.set("distrib", "true");
     query.setFields("id", "text");
     query.set("shards", shard1 + "," + shard2);
+    
+    if (random().nextBoolean()) {
+      query.add("omitHeader", Boolean.toString(random().nextBoolean()));
+    }
     QueryResponse response = collection1.query(query);
     NamedList<Object> track = (NamedList<Object>) response.getDebugMap().get("track");
     assertNotNull(track);
@@ -136,13 +147,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
         "QTime", "ElapsedTime", "RequestPurpose", "NumFound", "Response");
     assertElementsPresent((NamedList<String>)((NamedList<Object>)track.get("GET_FIELDS")).get(shard2), 
         "QTime", "ElapsedTime", "RequestPurpose", "NumFound", "Response");
-    
-    query.add("omitHeader", "true");
-    response = collection1.query(query);
-    assertNull("QTime is not included in the response when omitHeader is set to true", 
-        ((NamedList<Object>)response.getDebugMap().get("track")).findRecursive("EXECUTE_QUERY", shard1, "QTime"));
-    assertNull("QTime is not included in the response when omitHeader is set to true", 
-        ((NamedList<Object>)response.getDebugMap().get("track")).findRecursive("GET_FIELDS", shard2, "QTime"));
     
     query.setQuery("id:1");
     response = collection1.query(query);
@@ -185,7 +189,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       } else if (random().nextBoolean()) {
         shards.remove(shard2);
       }
-      q.set("shards", StringUtils.join(shards, ","));
+      q.set("shards", String.join(",", shards));
 
 
       List<String> debug = new ArrayList<String>(10);
@@ -342,7 +346,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     response = client.query(query);
     assertNull(response.getDebugMap());
   }
-  
+
+  @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testCompareWithNonDistributedRequest() throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery();
     query.setQuery("id:1 OR id:2");
@@ -389,14 +395,11 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.set("distrib", "true");
     query.setFields("id", "text");
     query.set("shards", shard1 + "," + shard2 + "," + badShard);
-    try {
-      ignoreException("Server refused connection");
-      // verify that the request would fail if shards.tolerant=false
-      collection1.query(query);
-      fail("Expecting exception");
-    } catch (SolrException e) {
-      //expected
-    }
+
+    // verify that the request would fail if shards.tolerant=false
+    ignoreException("Server refused connection");
+    expectThrows(SolrException.class, () -> collection1.query(query));
+
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);
     assertTrue((Boolean)response.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));

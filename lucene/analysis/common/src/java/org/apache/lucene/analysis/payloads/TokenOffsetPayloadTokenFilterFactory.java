@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.payloads;
 
 import java.util.Map;
 
-import org.apache.lucene.analysis.payloads.TokenOffsetPayloadTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -32,8 +31,14 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.TokenOffsetPayloadTokenFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class TokenOffsetPayloadTokenFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "tokenOffsetPayload";
   
   /** Creates a new TokenOffsetPayloadTokenFilterFactory */
   public TokenOffsetPayloadTokenFilterFactory(Map<String,String> args) {

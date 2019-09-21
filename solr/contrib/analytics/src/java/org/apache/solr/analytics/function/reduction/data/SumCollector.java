@@ -18,42 +18,41 @@ package org.apache.solr.analytics.function.reduction.data;
 
 import java.util.function.Consumer;
 
-import org.apache.solr.analytics.function.reduction.data.ReductionData;
 import org.apache.solr.analytics.stream.reservation.DoubleCheckedReservation;
 import org.apache.solr.analytics.stream.reservation.ReductionDataReservation;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.DoubleValueStream;
 
 /**
- * Collects the sum of the given {@link DoubleValueStream} parameter. 
+ * Collects the sum of the given {@link DoubleValueStream} parameter.
  */
 public class SumCollector extends ReductionDataCollector<SumCollector.SumData> {
   private final DoubleValueStream param;
   public static final String name = "sum";
   private final String exprStr;
-  
+
   public SumCollector(DoubleValueStream param) {
     this.param = param;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
   }
-  
+
   private double sum;
   private boolean exists;
 
   /**
    * Return the sum of the set data
-   * 
+   *
    * @return the sum
    */
   public double sum() {
     return sum;
   }
-  
+
   /**
    * Return whether a sum exists.
-   * A sum will always exist if there is at least one existing value for the parameter, 
+   * A sum will always exist if there is at least one existing value for the parameter,
    * otherwise the sum does not exist.
-   * 
+   *
    * @return whether a sum exists
    */
   public boolean exists() {
@@ -117,7 +116,7 @@ public class SumCollector extends ReductionDataCollector<SumCollector.SumData> {
   public String getExpressionStr() {
     return exprStr;
   }
-  
+
   public static class SumData extends ReductionData {
     double sum;
   }

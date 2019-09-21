@@ -16,19 +16,17 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.SolrException;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.junit.Assume;
 import org.junit.BeforeClass;
-
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptEngine;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Tests {@link StatelessScriptUpdateProcessorFactory}.
@@ -133,8 +131,8 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
       
       assertEquals(chain + " didn't add Double field", 
                    42.3d, d.getFieldValue("script_added_d"));
-      assertEquals(chain + " didn't add integer field", 
-                   new Integer(42), d.getFieldValue("script_added_i"));
+      assertEquals(chain + " didn't add integer field",
+          42, d.getFieldValue("script_added_i"));
       
       processCommit("run-no-scripts");
 
@@ -211,8 +209,8 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
                    "i went for it", d.getFieldValue("script_added_s"));
       assertEquals(chain +" didn't add Double field", 
                    42.3d, d.getFieldValue("script_added_d"));
-      assertEquals(chain + " didn't add integer field", 
-                   new Integer(42), d.getFieldValue("script_added_i"));
+      assertEquals(chain + " didn't add integer field",
+          42, d.getFieldValue("script_added_i"));
     }
   }
 
@@ -227,39 +225,28 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
       
     assertEquals(chain +" didn't add Double field", 
                  42.3d, d.getFieldValue("script_added_d"));
-    assertEquals(chain + " didn't add integer field", 
-                 new Integer(42), d.getFieldValue("script_added_i"));
+    assertEquals(chain + " didn't add integer field",
+        42, d.getFieldValue("script_added_i"));
   }
 
   public void testPropogatedException() throws Exception  {
     final String chain = "error-on-add";
-    try {
-      SolrInputDocument d = processAdd(chain,
-                                       doc(f("id", "5"),
-                                           f("name", " foo "),
-                                           f("subject", "bar")));
-    } catch (SolrException e) {
-      assertTrue("Exception doesn't contain script error string: " + e.getMessage(),
-                 0 < e.getMessage().indexOf("no-soup-fo-you"));
-      return;
-    }
-    fail("Did not get exception from script");
-
+    SolrException e = expectThrows(SolrException.class, () ->
+        processAdd(chain, doc(f("id", "5"), f("name", " foo "),
+            f("subject", "bar")))
+    );
+    assertTrue("Exception doesn't contain script error string: " + e.getMessage(),
+        0 < e.getMessage().indexOf("no-soup-fo-you"));
   }
 
   public void testMissingFunctions() throws Exception  {
     final String chain = "missing-functions";
-    try {
-      SolrInputDocument d = processAdd(chain,
-                                       doc(f("id", "5"),
-                                           f("name", " foo "),
-                                           f("subject", "bar")));
-    } catch (SolrException e) {
-      assertTrue("Exception doesn't contain expected error: " + e.getMessage(),
-                 0 < e.getMessage().indexOf("processAdd"));
-      return;
-    }
-    fail("Did not get exception from script");
+    SolrException e = expectThrows(SolrException.class, () ->
+        processAdd(chain, doc(f("id", "5"),
+            f("name", " foo "), f("subject", "bar")))
+    );
+    assertTrue("Exception doesn't contain expected error: " + e.getMessage(),
+        0 < e.getMessage().indexOf("processAdd"));
   }
 
   public void testJavaScriptCompatibility() throws Exception  {

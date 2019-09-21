@@ -62,7 +62,7 @@ public class TestEmptyTokenStream extends BaseTokenStreamTestCase {
     // this should not fail because we have no TermToBytesRefAttribute
     writer.addDocument(doc);
     
-    assertEquals(1, writer.numDocs());
+    assertEquals(1, writer.getDocStats().numDocs);
 
     writer.close();
     directory.close();

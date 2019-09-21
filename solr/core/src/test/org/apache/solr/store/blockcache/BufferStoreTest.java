@@ -19,14 +19,15 @@ package org.apache.solr.store.blockcache;
 import java.math.BigDecimal;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BufferStoreTest extends LuceneTestCase {
+public class BufferStoreTest extends SolrTestCase {
   private final static int blockSize = 1024;
 
   private Metrics metrics;
@@ -40,12 +41,17 @@ public class BufferStoreTest extends LuceneTestCase {
     SolrMetricManager metricManager = new SolrMetricManager();
     String registry = TestUtil.randomSimpleString(random(), 2, 10);
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
-    metrics.initializeMetrics(metricManager, registry, scope);
-    metricsMap = (MetricsMap) metricManager.registry(registry).getMetrics().get("CACHE." + scope + ".hdfsBlockCache");
+    metrics.initializeMetrics(metricManager, registry, "foo", scope);
+    metricsMap = (MetricsMap) ((SolrMetricManager.GaugeWrapper)metricManager.registry(registry).getMetrics().get("CACHE." + scope + ".hdfsBlockCache")).getGauge();
     BufferStore.initNewBuffer(blockSize, blockSize, metrics);
     store = BufferStore.instance(blockSize);
   }
 
+  @After
+  public void clearBufferStores() {
+    BufferStore.clearBufferStores();
+  }
+  
   @Test
   public void testBufferTakePut() {
     byte[] b1 = store.takeBuffer(blockSize);

@@ -57,7 +57,10 @@
   <fieldType name="srptgeom" class="solr.RptWithGeometrySpatialField"/>
 
   <fieldType name="srptgeom_geo3d" class="solr.RptWithGeometrySpatialField"
-             spatialContextFactory="Geo3D" planetModel="wgs84"/><!-- or sphere -->
+             spatialContextFactory="Geo3D" prefixTree="geohash" planetModel="wgs84"/><!-- or sphere -->
+
+  <fieldType name="srptgeom_s2_geo3d" class="solr.RptWithGeometrySpatialField"
+             spatialContextFactory="Geo3D" prefixTree="s2" planetModel="sphere"/>
 
   <fieldType name="bbox" class="solr.BBoxField"
              numberType="tdoubleDV" distanceUnits="degrees" storeSubFields="false"/>
@@ -69,9 +72,13 @@
              numberType="pdouble" distanceUnits="degrees" storeSubFields="false"/>
 
   <fieldType name="llp" class="solr.LatLonPointSpatialField" distanceUnits="degrees" multiValued="true" />
-
+  <fieldType name="oslocation" class="solr.SpatialRecursivePrefixTreeFieldType" geo="false" maxDistErr="0.000009"
+             worldBounds="ENVELOPE(0,700000,1300000,0)" distErrPct="0.15"/>
+  <fieldType name="oslocationold" class="solr.SpatialRecursivePrefixTreeFieldType" geo="false" maxDistErr="0.000009"
+             worldBounds="ENVELOPE(0,700000,1300000,0)" distErrPct="0.15" version="8.2.0"/>
   <field name="id" type="string" required="true"/>
-
+  <field name="oslocation" type="oslocation" />
+  <field name="oslocationold" type="oslocationold" />
   <field name="srpt_geohash" type="srpt_geohash" multiValued="true"/>
   <field name="srpt_quad" type="srpt_quad" multiValued="true"/>
   <field name="srpt_packedquad" type="srpt_packedquad" multiValued="true"/>
@@ -79,6 +86,7 @@
   <field name="pointvector" type="pointvector"/>
   <field name="srptgeom" type="srptgeom"/>
   <field name="srptgeom_geo3d" type="srptgeom_geo3d"/>
+  <field name="srptgeom_s2_geo3d" type="srptgeom_s2_geo3d"/>
   <field name="bbox" type="bbox"/>
   <field name="pbbox" type="pbbox"/>
   <field name="bbox_ndv" type="bbox_ndv"/>

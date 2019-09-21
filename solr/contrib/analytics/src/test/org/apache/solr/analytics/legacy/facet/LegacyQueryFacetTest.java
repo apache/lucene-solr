@@ -40,25 +40,25 @@ public class LegacyQueryFacetTest extends LegacyAbstractAnalyticsFacetTest {
 
   @SuppressWarnings("unchecked")
   @Test
-  public void queryTest() throws Exception { 
+  public void queryTest() throws Exception {
     h.update("<delete><query>*:*</query></delete>");
     //INT
     ArrayList<ArrayList<Integer>> int1TestStart = new ArrayList<>();
     int1TestStart.add(new ArrayList<Integer>());
     ArrayList<ArrayList<Integer>> int2TestStart = new ArrayList<>();
     int2TestStart.add(new ArrayList<Integer>());
-    
+
     //LONG
     ArrayList<ArrayList<Long>> longTestStart = new ArrayList<>();
     longTestStart.add(new ArrayList<Long>());
     longTestStart.add(new ArrayList<Long>());
-    
+
     //FLOAT
     ArrayList<ArrayList<Float>> floatTestStart = new ArrayList<>();
     floatTestStart.add(new ArrayList<Float>());
     floatTestStart.add(new ArrayList<Float>());
     floatTestStart.add(new ArrayList<Float>());
-    
+
     for (int j = 0; j < NUM_LOOPS; ++j) {
       int i = j%INT;
       long l = j%LONG;
@@ -66,8 +66,8 @@ public class LegacyQueryFacetTest extends LegacyAbstractAnalyticsFacetTest {
       double d = j%DOUBLE;
       int dt = j%DATE;
       int s = j%STRING;
-      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f, 
-          "double_dd", "" + d,  "date_dtd", (1800+dt) + "-12-31T23:59:59.999Z", "string_sd", "abc" + new Integer(s).toString().charAt(0)));
+      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f,
+          "double_dd", "" + d,  "date_dtd", (1800+dt) + "-12-31T23:59:59.999Z", "string_sd", "abc" + Integer.toString(s).charAt(0)));
 
       if (f<=50) {
         int1TestStart.get(0).add(i);
@@ -75,10 +75,10 @@ public class LegacyQueryFacetTest extends LegacyAbstractAnalyticsFacetTest {
       if (f<=30) {
         int2TestStart.get(0).add(i);
       }
-      if (new Integer(s).toString().charAt(0)=='1') {
+      if (Integer.toString(s).charAt(0)=='1') {
         longTestStart.get(0).add(l);
       }
-      if (new Integer(s).toString().charAt(0)=='2') {
+      if (Integer.toString(s).charAt(0)=='2') {
         longTestStart.get(1).add(l);
       }
       if (l>=30) {
@@ -90,14 +90,14 @@ public class LegacyQueryFacetTest extends LegacyAbstractAnalyticsFacetTest {
       if (l>=20) {
         floatTestStart.get(2).add(f);
       }
-      
+
       if (usually()) {
         assertU(commit()); // to have several segments
       }
     }
-    
-    assertU(commit()); 
-    
+
+    assertU(commit());
+
     //Query ascending tests
     setResponse(h.query(request(fileToStringArr(LegacyQueryFacetTest.class, fileName))));
 

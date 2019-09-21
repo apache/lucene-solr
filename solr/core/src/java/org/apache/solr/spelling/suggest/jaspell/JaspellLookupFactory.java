@@ -31,12 +31,12 @@ import org.slf4j.LoggerFactory;
  * <b>Note:</b> This Suggester is not very RAM efficient.
  */
 public class JaspellLookupFactory extends LookupFactory {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String FILENAME = "jaspell.dat";
 
   @Override
   public Lookup create(NamedList params, SolrCore core) {
-    LOG.info("init: " + params);
+    log.info("init: " + params);
     return new JaspellLookup();
   }
 

@@ -28,23 +28,13 @@ import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 
 /** 
  * Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}.
+ *
+ * @since 3.1
  */
 public final class StopAnalyzer extends StopwordAnalyzerBase {
-  
-  /** An unmodifiable set containing some common English words that are not usually useful
-  for searching.*/
-  public static final CharArraySet ENGLISH_STOP_WORDS_SET = StandardAnalyzer.ENGLISH_STOP_WORDS_SET;
-  
-  /** Builds an analyzer which removes words in
-   *  {@link #ENGLISH_STOP_WORDS_SET}.
-   */
-  public StopAnalyzer() {
-    this(ENGLISH_STOP_WORDS_SET);
-  }
 
   /** Builds an analyzer with the stop words from the given set.
    * @param stopWords Set of stop words */
@@ -72,13 +62,13 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
    * used to tokenize all the text in the provided {@link Reader}.
    * 
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   *         built from a {@link LowerCaseTokenizer} filtered with
+   *         built from a {@link LetterTokenizer} filtered with
    *         {@link StopFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    final Tokenizer source = new LowerCaseTokenizer();
-    return new TokenStreamComponents(source, new StopFilter(source, stopwords));
+    final Tokenizer source = new LetterTokenizer();
+    return new TokenStreamComponents(source, new StopFilter(new LowerCaseFilter(source), stopwords));
   }
 
   @Override

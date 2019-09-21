@@ -44,12 +44,9 @@ public class TestLeakFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     InputStream leak = Files.newInputStream(dir.resolve("stillopen"));
-    try {
-      dir.getFileSystem().close();
-      fail("should have gotten exception");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("file handle leaks"));
-    }
+
+    Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
+    assertTrue(e.getMessage().contains("file handle leaks"));
     leak.close();
   }
   
@@ -58,12 +55,8 @@ public class TestLeakFS extends MockFileSystemTestCase {
     Path dir = wrap(createTempDir());
     
     OutputStream leak = Files.newOutputStream(dir.resolve("leaky"));
-    try {
-      dir.getFileSystem().close();
-      fail("should have gotten exception");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("file handle leaks"));
-    }
+    Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
+    assertTrue(e.getMessage().contains("file handle leaks"));
     leak.close();
   }
   
@@ -75,12 +68,9 @@ public class TestLeakFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     FileChannel leak = FileChannel.open(dir.resolve("stillopen"));
-    try {
-      dir.getFileSystem().close();
-      fail("should have gotten exception");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("file handle leaks"));
-    }
+
+    Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
+    assertTrue(e.getMessage().contains("file handle leaks"));
     leak.close();
   }
   
@@ -92,12 +82,8 @@ public class TestLeakFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     AsynchronousFileChannel leak = AsynchronousFileChannel.open(dir.resolve("stillopen"));
-    try {
-      dir.getFileSystem().close();
-      fail("should have gotten exception");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("file handle leaks"));
-    }
+    Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
+    assertTrue(e.getMessage().contains("file handle leaks"));
     leak.close();
   }
   
@@ -109,12 +95,9 @@ public class TestLeakFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     SeekableByteChannel leak = Files.newByteChannel(dir.resolve("stillopen"));
-    try {
-      dir.getFileSystem().close();
-      fail("should have gotten exception");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("file handle leaks"));
-    }
+
+    Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
+    assertTrue(e.getMessage().contains("file handle leaks"));
     leak.close();
   }
 }

@@ -25,8 +25,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.InPlaceMergeSorter;
@@ -86,8 +86,8 @@ public final class BlendedTermQuery extends Query {
      * object constructed for the given term.
      */
     public Builder add(Term term, float boost, TermStates context) {
-      if (numTerms >= BooleanQuery.getMaxClauseCount()) {
-        throw new BooleanQuery.TooManyClauses();
+      if (numTerms >= IndexSearcher.getMaxClauseCount()) {
+        throw new IndexSearcher.TooManyClauses();
       }
       terms = ArrayUtil.grow(terms, numTerms + 1);
       boosts = ArrayUtil.grow(boosts, numTerms + 1);
@@ -102,9 +102,9 @@ public final class BlendedTermQuery extends Query {
     /** Build the {@link BlendedTermQuery}. */
     public BlendedTermQuery build() {
       return new BlendedTermQuery(
-          Arrays.copyOf(terms, numTerms),
-          Arrays.copyOf(boosts, numTerms),
-          Arrays.copyOf(contexts, numTerms),
+          ArrayUtil.copyOfSubArray(terms, 0, numTerms),
+          ArrayUtil.copyOfSubArray(boosts, 0, numTerms),
+          ArrayUtil.copyOfSubArray(contexts, 0, numTerms),
           rewriteMethod);
     }
 
@@ -263,7 +263,7 @@ public final class BlendedTermQuery extends Query {
 
   @Override
   public final Query rewrite(IndexReader reader) throws IOException {
-    final TermStates[] contexts = Arrays.copyOf(this.contexts, this.contexts.length);
+    final TermStates[] contexts = ArrayUtil.copyOfSubArray(this.contexts, 0, this.contexts.length);
     for (int i = 0; i < contexts.length; ++i) {
       if (contexts[i] == null || contexts[i].wasBuiltFor(reader.getContext()) == false) {
         contexts[i] = TermStates.build(reader.getContext(), terms[i], true);
@@ -292,6 +292,15 @@ public final class BlendedTermQuery extends Query {
       }
     }
     return rewriteMethod.rewrite(termQueries);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    Term[] termsToVisit = Arrays.stream(terms).filter(t -> visitor.acceptField(t.field())).toArray(Term[]::new);
+    if (termsToVisit.length > 0) {
+      QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
+      v.consumeTerms(this, termsToVisit);
+    }
   }
 
   private static TermStates adjustFrequencies(IndexReaderContext readerContext,

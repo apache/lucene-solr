@@ -55,7 +55,7 @@ import static org.apache.solr.common.params.CommonParams.ID;
 
 public class ExecutorStream extends TupleStream implements Expressible {
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private TupleStream stream;
 
@@ -148,7 +148,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
     try {
       executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
     } catch(InterruptedException e) {
-      logger.error("Interrupted while waiting for termination", e);
+      log.error("Interrupted while waiting for termination", e);
     }
   }
 
@@ -214,12 +214,12 @@ public class ExecutorStream extends TupleStream implements Expressible {
           }
         }
       } catch (Exception e) {
-        logger.error("Executor Error: id="+id+" expr_s="+expr, e);
+        log.error("Executor Error: id="+id+" expr_s="+expr, e);
       } finally {
         try {
           stream.close();
         } catch (Exception e1) {
-          logger.error("Executor Error", e1);
+          log.error("Executor Error", e1);
         }
       }
     }

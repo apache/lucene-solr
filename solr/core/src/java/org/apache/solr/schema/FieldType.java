@@ -62,6 +62,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Base64;
@@ -80,7 +81,7 @@ import static org.apache.lucene.analysis.util.AbstractAnalysisFactory.LUCENE_MAT
 /**
  * Base class for all field types used by an index schema.
  *
- *
+ * @since 3.1
  */
 public abstract class FieldType extends FieldProperties {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -133,6 +134,8 @@ public abstract class FieldType extends FieldProperties {
     return false;
   }
 
+  public boolean isUtf8Field(){return false;}
+
   /**
    * Returns true if the fields' docValues should be used for obtaining stored value
    */
@@ -157,7 +160,14 @@ public abstract class FieldType extends FieldProperties {
 
   }
 
-  // Handle additional arguments...
+  public boolean write(IteratorWriter.ItemWriter itemWriter) {
+    return false;
+  }
+
+  /**
+   * Initializes the field type.  Subclasses should usually override {@link #init(IndexSchema, Map)}
+   * which is called by this method.
+   */
   protected void setArgs(IndexSchema schema, Map<String,String> args) {
     // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
     properties = (STORED | INDEXED);
@@ -168,7 +178,9 @@ public abstract class FieldType extends FieldProperties {
       args.remove("compressThreshold");
     }
     if (schemaVersion >= 1.6f) properties |= USE_DOCVALUES_AS_STORED;
-
+    
+    properties |= UNINVERTIBLE;
+    
     this.args = Collections.unmodifiableMap(args);
     Map<String,String> initArgs = new HashMap<>(args);
     initArgs.remove(CLASS_NAME); // consume the class arg 
@@ -456,12 +468,18 @@ public abstract class FieldType extends FieldProperties {
   }
   
   /**
+   * <p>
    * If DocValues is not enabled for a field, but it's indexed, docvalues can be constructed 
    * on the fly (uninverted, aka fieldcache) on the first request to sort, facet, etc. 
    * This specifies the structure to use.
+   * </p>
+   * <p>
+   * This method will not be used if the field is (effectively) <code>uninvertible="false"</code>
+   * </p>
    * 
    * @param sf field instance
    * @return type to uninvert, or {@code null} (to disallow uninversion for the field)
+   * @see SchemaField#isUninvertible()
    */
   public abstract UninvertingReader.Type getUninversionType(SchemaField sf);
 
@@ -986,9 +1004,10 @@ public abstract class FieldType extends FieldProperties {
     if (showDefaults) {
       Map<String,String> fieldTypeArgs = getNonFieldPropertyArgs();
       if (null != fieldTypeArgs) {
-        for (String key : fieldTypeArgs.keySet()) {
-        if ( ! CLASS_NAME.equals(key) && ! TYPE_NAME.equals(key)) {
-            namedPropertyValues.add(key, fieldTypeArgs.get(key));
+        for (Map.Entry<String, String> entry : fieldTypeArgs.entrySet()) {
+          String key = entry.getKey();
+          if ( ! CLASS_NAME.equals(key) && ! TYPE_NAME.equals(key)) {
+            namedPropertyValues.add(key, entry.getValue());
           }
         }
       }
@@ -1009,6 +1028,7 @@ public abstract class FieldType extends FieldProperties {
       namedPropertyValues.add(getPropertyName(STORE_OFFSETS), hasProperty(STORE_OFFSETS));
       namedPropertyValues.add(getPropertyName(MULTIVALUED), hasProperty(MULTIVALUED));
       namedPropertyValues.add(getPropertyName(LARGE_FIELD), hasProperty(LARGE_FIELD));
+      namedPropertyValues.add(getPropertyName(UNINVERTIBLE), hasProperty(UNINVERTIBLE));
       if (hasProperty(SORT_MISSING_FIRST)) {
         namedPropertyValues.add(getPropertyName(SORT_MISSING_FIRST), true);
       } else if (hasProperty(SORT_MISSING_LAST)) {
@@ -1029,11 +1049,12 @@ public abstract class FieldType extends FieldProperties {
         fieldProperties.add(propertyName);
       }
 
-      for (String key : args.keySet()) {
+      for (Map.Entry<String, String> entry : args.entrySet()) {
+        String key = entry.getKey();
         if (fieldProperties.contains(key)) {
-          namedPropertyValues.add(key, StrUtils.parseBool(args.get(key)));
+          namedPropertyValues.add(key, StrUtils.parseBool(entry.getValue()));
         } else if (!CLASS_NAME.equals(key) && !TYPE_NAME.equals(key)) {
-          namedPropertyValues.add(key, args.get(key));
+          namedPropertyValues.add(key, entry.getValue());
         }
       }
     }
@@ -1090,17 +1111,20 @@ public abstract class FieldType extends FieldProperties {
         List<SimpleOrderedMap<Object>> charFilterProps = new ArrayList<>();
         for (CharFilterFactory charFilterFactory : charFilterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
-          props.add(CLASS_NAME, charFilterFactory.getClassArg());
           factoryArgs = charFilterFactory.getOriginalArgs();
+          if (!factoryArgs.containsKey(TYPE_NAME)) {
+            props.add(CLASS_NAME, charFilterFactory.getClassArg());
+          }
           if (null != factoryArgs) {
-            for (String key : factoryArgs.keySet()) {
+            for (Map.Entry<String, String> entry : factoryArgs.entrySet()) {
+              String key = entry.getKey();
               if ( ! CLASS_NAME.equals(key)) {
                 if (LUCENE_MATCH_VERSION_PARAM.equals(key)) {
                   if (charFilterFactory.isExplicitLuceneMatchVersion()) {
-                    props.add(key, factoryArgs.get(key));
+                    props.add(key, entry.getValue());
                   }
                 } else {
-                   props.add(key, factoryArgs.get(key));
+                   props.add(key, entry.getValue());
                 }
               }
             }
@@ -1112,17 +1136,20 @@ public abstract class FieldType extends FieldProperties {
 
       SimpleOrderedMap<Object> tokenizerProps = new SimpleOrderedMap<>();
       TokenizerFactory tokenizerFactory = tokenizerChain.getTokenizerFactory();
-      tokenizerProps.add(CLASS_NAME, tokenizerFactory.getClassArg());
       factoryArgs = tokenizerFactory.getOriginalArgs();
+      if (!factoryArgs.containsKey(TYPE_NAME)) {
+        tokenizerProps.add(CLASS_NAME, tokenizerFactory.getClassArg());
+      }
       if (null != factoryArgs) {
-        for (String key : factoryArgs.keySet()) {
+        for (Map.Entry<String, String> entry : factoryArgs.entrySet()) {
+          String key = entry.getKey();
           if ( ! CLASS_NAME.equals(key)) {
             if (LUCENE_MATCH_VERSION_PARAM.equals(key)) {
               if (tokenizerFactory.isExplicitLuceneMatchVersion()) {
-                tokenizerProps.add(key, factoryArgs.get(key));
+                tokenizerProps.add(key, entry.getValue());
               }
             } else {
-              tokenizerProps.add(key, factoryArgs.get(key));
+              tokenizerProps.add(key, entry.getValue());
             }
           }
         }
@@ -1134,17 +1161,20 @@ public abstract class FieldType extends FieldProperties {
         List<SimpleOrderedMap<Object>> filterProps = new ArrayList<>();
         for (TokenFilterFactory filterFactory : filterFactories) {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
-          props.add(CLASS_NAME, filterFactory.getClassArg());
           factoryArgs = filterFactory.getOriginalArgs();
+          if (!factoryArgs.containsKey(TYPE_NAME)) {
+            props.add(CLASS_NAME, filterFactory.getClassArg());
+          }
           if (null != factoryArgs) {
-            for (String key : factoryArgs.keySet()) {
+            for (Map.Entry<String, String> entry : factoryArgs.entrySet()) {
+              String key = entry.getKey();
               if ( ! CLASS_NAME.equals(key)) {
                 if (LUCENE_MATCH_VERSION_PARAM.equals(key)) {
                   if (filterFactory.isExplicitLuceneMatchVersion()) {
-                    props.add(key, factoryArgs.get(key));
+                    props.add(key, entry.getValue());
                   }
                 } else {
-                  props.add(key, factoryArgs.get(key));
+                  props.add(key, entry.getValue());
                 }
               }
             }
@@ -1165,6 +1195,9 @@ public abstract class FieldType extends FieldProperties {
   /**Converts any Object to a java Object native to this field type
    */
   public Object toNativeType(Object val) {
+    if (val instanceof CharSequence) {
+      return ((CharSequence) val).toString();
+    }
     return val;
   }
   
@@ -1250,7 +1283,7 @@ public abstract class FieldType extends FieldProperties {
     
     /** 
      * The appropriate <code>SortedSetSelector.Type</code> option for this <code>MultiValueSelector</code>,
-     * may be null if there is no equivilent
+     * may be null if there is no equivalent
      */
     public SortedSetSelector.Type getSortedSetSelectorType() {
       return sType;
@@ -1258,7 +1291,7 @@ public abstract class FieldType extends FieldProperties {
 
     /** 
      * The appropriate <code>SortedNumericSelector.Type</code> option for this <code>MultiValueSelector</code>,
-     * may be null if there is no equivilent
+     * may be null if there is no equivalent
      */
     public SortedNumericSelector.Type getSortedNumericSelectorType() {
       return nType;

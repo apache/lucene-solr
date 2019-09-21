@@ -49,34 +49,23 @@ The selection of the node that will host the new replica is made according to th
 
 == Cluster Preferences
 
-Cluster preferences, as the name suggests, apply to all cluster management operations regardless of which collection they affect.
+Cluster preferences allow you to tell Solr how to assess system load on each node.  This information is used to guide selection of the node(s) on which cluster management operations will be performed.
 
-A preference is a set of conditions that help Solr select nodes that either maximize or minimize given metrics. For example, a preference such as `{minimize:cores}` will help Solr select nodes such that the number of cores on each node is minimized. We write cluster preferences in a way that reduces the overall load on the system. You can add more than one preferences to break ties.
+In general, when an operation increases replica counts, the *least loaded* <<solrcloud-autoscaling-policy-preferences.adoc#node-selector,qualified node>> will be chosen, and when the operation reduces replica counts, the *most loaded* qualified node will be chosen.
 
-The default cluster preferences consist of the above example (`{minimize:cores}`) which is to minimize the number of cores on all nodes.
+The default cluster preferences are `[{minimize:cores},{maximize:freedisk}]`, which tells Solr to minimize the number of cores on all nodes and if number of cores are equal, maximize the free disk space available.  In this case, the least loaded node is the one with the fewest cores or if two nodes have an equal number of cores, the node with the most free disk space.
 
-You can learn more about preferences in the <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Cluster Preferences>> section.
+You can learn more about preferences in the section on <<solrcloud-autoscaling-policy-preferences.adoc#cluster-preferences-specification,Cluster Preferences Specification>>.
 
 == Cluster Policy
 
-A cluster policy is a set of conditions that a node, shard, or collection must satisfy before it can be chosen as the target of a cluster management operation. These conditions are applied across the cluster regardless of the collection being managed. For example, the condition `{"cores":"<10", "node":"#ANY"}` means that any node must have less than 10 Solr cores in total, regardless of which collection they belong to.
+A cluster policy is a set of rules that a node, shard, or collection must satisfy before it can be chosen as the target of a cluster management operation. These rules are applied across the cluster regardless of the collection being managed. For example, the rule `{"cores":"<10", "node":"#ANY"}` means that any node must have less than 10 Solr cores in total, regardless of which collection they belong to.
 
-There are many metrics on which the condition can be based, e.g., system load average, heap usage, free disk space, etc. The full list of supported metrics can be found in the section describing <<solrcloud-autoscaling-policy-preferences.adoc#policy-attributes,Autoscaling Policy Attributes>>.
+There are many metrics on which the rule can be based, e.g., system load average, heap usage, free disk space, etc. The full list of supported metrics can be found in the section describing <<solrcloud-autoscaling-policy-preferences.adoc#policy-rule-attributes,Autoscaling Policy Rule Attributes>>.
 
-When a node, shard, or collection does not satisfy the policy, we call it a *violation*. Solr ensures that cluster management operations minimize the number of violations. Cluster management operations are currently invoked manually. In the future, these cluster management operations may be invoked automatically in response to cluster events such as a node being added or lost.
+When a node, shard, or collection does not satisfy a policy rule, we call it a *violation*.   By default, cluster management operations will fail if there is even one violation.  You can allow operations to succeed in the face of a violation by marking the corresponding rule with <<solrcloud-autoscaling-policy-preferences.adoc#rule-strictness,`"strict":false`>>.  When you do this, Solr ensures that cluster management operations minimize the number of violations.
 
-== Collection-Specific Policies
-
-A collection may need conditions in addition to those specified in the cluster policy. In such cases, we can create named policies that can be used for specific collections. Firstly, we can use the `set-policy` API to create a new policy and then specify the `policy=<policy_name>` parameter to the CREATE command of the Collection API:
-
-[source,text]
-/admin/collections?action=CREATE&name=coll1&numShards=1&replicationFactor=2&policy=policy1
-
-The above CREATE collection command will associate a policy named `policy1` with the collection named `coll1`. Only a single policy may be associated with a collection.
-
-Note that the collection-specific policy is applied *in addition to* the cluster policy, i.e., it is not an override but an augmentation. Therefore the collection will follow all conditions laid out in the cluster preferences, cluster policy, and the policy named `policy1`.
-
-You can learn more about collection-specific policies in the section  <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy,Defining Collection-Specific Policies>>.
+Solr also supports <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy,collection-specific policies>>, which operate in tandem with the cluster policy.
 
 == Triggers
 

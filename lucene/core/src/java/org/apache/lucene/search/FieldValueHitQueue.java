@@ -38,8 +38,8 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
   public static class Entry extends ScoreDoc {
     public int slot;
 
-    public Entry(int slot, int doc, float score) {
-      super(doc, score);
+    public Entry(int slot, int doc) {
+      super(doc, Float.NaN);
       this.slot = slot;
     }
     

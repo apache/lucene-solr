@@ -25,13 +25,16 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Lists;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
+import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -40,6 +43,8 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -92,9 +97,176 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     clusterStatusZNodeVersion();
     testClusterStateMigration();
     testCollectionCreationCollectionNameValidation();
+    testReplicationFactorValidaton();
     testCollectionCreationShardNameValidation();
     testAliasCreationNameValidation();
     testShardCreationNameValidation();
+    testNoConfigset();
+    testModifyCollection(); // deletes replicationFactor property from collections, be careful adding new tests after this one!
+  }
+
+  private void testModifyCollection() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
+      params.set("collection", COLLECTION_NAME);
+      params.set("replicationFactor", 25);
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      client.request(request);
+      NamedList<Object> rsp = CollectionAdminRequest.getClusterStatus().setCollectionName(COLLECTION_NAME)
+          .process(client).getResponse();
+      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      assertNotNull("Collections should not be null in cluster state", collections);
+      assertEquals(1, collections.size());
+      Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
+      int replicationFactor = Integer.parseInt(collection.get("replicationFactor").toString());
+      assertEquals(25, replicationFactor);
+
+      params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
+      params.set("collection", COLLECTION_NAME);
+      params.set("replicationFactor", "");
+      request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      client.request(request);
+
+      rsp = CollectionAdminRequest.getClusterStatus().setCollectionName(COLLECTION_NAME)
+          .process(client).getResponse();
+      System.out.println(rsp);
+      cluster = (NamedList<Object>) rsp.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      collections = (NamedList<Object>) cluster.get("collections");
+      assertNotNull("Collections should not be null in cluster state", collections);
+      assertEquals(1, collections.size());
+      collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
+      assertNull(collection.get("replicationFactor"));
+
+      params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
+      params.set("collection", COLLECTION_NAME);
+      params.set("non_existent_property", "");
+      request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      try {
+        client.request(request);
+        fail("Trying to unset an unknown property should have failed");
+      } catch (RemoteSolrException e) {
+        // expected
+        assertTrue(e.getMessage().contains("no supported values provided"));
+      }
+    }
+  }
+
+  private void testReplicationFactorValidaton() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      //Test that you can't specify both replicationFactor and nrtReplicas
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+      params.set("name", "test_repFactorColl");
+      params.set("numShards", "1");
+      params.set("replicationFactor", "1");
+      params.set("nrtReplicas", "2");
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      try {
+        client.request(request);
+        fail();
+      } catch (RemoteSolrException e) {
+        final String errorMessage = e.getMessage();
+        assertTrue(errorMessage.contains("Cannot specify both replicationFactor and nrtReplicas as they mean the same thing"));
+      }
+
+      //Create it again correctly
+      CollectionAdminRequest.Create req = CollectionAdminRequest.createCollection("test_repFactorColl", "conf1", 1, 3, 0, 0);
+      client.request(req);
+
+      waitForCollection(cloudClient.getZkStateReader(), "test_repFactorColl", 1);
+      waitForRecoveriesToFinish("test_repFactorColl", false);
+
+      //Assert that replicationFactor has also been set to 3
+      assertCountsForRepFactorAndNrtReplicas(client, "test_repFactorColl");
+
+      params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.MODIFYCOLLECTION.toString());
+      params.set("collection", "test_repFactorColl");
+      params.set("replicationFactor", "4");
+      request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+      client.request(request);
+
+      assertCountsForRepFactorAndNrtReplicas(client, "test_repFactorColl");
+    }
+  }
+
+  // See  SOLR-12013. We should report something back if the configset has mysteriously disappeared.
+  private void testNoConfigset() throws Exception {
+    String configSet = "delete_config";
+
+    final String collection = "deleted_collection";
+    try (CloudSolrClient client = createCloudClient(null)) {
+      copyConfigUp(TEST_PATH().resolve("configsets"), "cloud-minimal", configSet, client.getZkHost());
+
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+      params.set("name", collection);
+      params.set("numShards", "1");
+      params.set("replicationFactor", "1");
+      params.set("collection.configName", configSet);
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      client.request(request);
+
+      waitForCollection(cloudClient.getZkStateReader(), collection, 1);
+      waitForRecoveriesToFinish(collection, false);
+
+      // Now try deleting the configset and doing a clusterstatus.
+      String parent = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
+      deleteThemAll(client.getZkStateReader().getZkClient(), parent);
+      client.getZkStateReader().forciblyRefreshAllClusterStateSlow();
+
+      final CollectionAdminRequest.ClusterStatus req = CollectionAdminRequest.getClusterStatus();
+      NamedList<Object> rsp = client.request(req);
+      NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+      assertNotNull("Collections should not be null in cluster state", collections);
+      assertNotNull("Testing to insure collections are returned", collections.get(COLLECTION_NAME1));
+      assertNull("Should have failed to find: " + collection + " because the configset was delted. ", collections.get(collection));
+    }
+  }
+
+  private void deleteThemAll(SolrZkClient zkClient, String node) throws KeeperException, InterruptedException {
+    List<String> kids = zkClient.getChildren(node, null, true);
+    for (String kid : kids) {
+      deleteThemAll(zkClient, node + "/" + kid);
+    }
+    zkClient.delete(node, -1, true);
+  }
+
+  private void assertCountsForRepFactorAndNrtReplicas(CloudSolrClient client, String collectionName) throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
+    params.set("collection", collectionName);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+
+    NamedList<Object> rsp = client.request(request);
+    NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
+    assertNotNull("Cluster state should not be null", cluster);
+    NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
+    assertNotNull("Collections should not be null in cluster state", collections);
+    assertEquals(1, collections.size());
+    Map<String, Object> collection = (Map<String, Object>) collections.get(collectionName);
+    assertNotNull(collection);
+    assertEquals(collection.get("replicationFactor"), collection.get("nrtReplicas"));
   }
 
   private void clusterStatusWithCollectionAndShard() throws IOException, SolrServerException {
@@ -298,13 +470,17 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void clusterStatusAliasTest() throws Exception  {
     try (CloudSolrClient client = createCloudClient(null)) {
+      // create an alias named myalias
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATEALIAS.toString());
       params.set("name", "myalias");
       params.set("collections", DEFAULT_COLLECTION + "," + COLLECTION_NAME);
       SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
+
       client.request(request);
+
+      // request a collection that's part of an alias
       params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
       params.set("collection", DEFAULT_COLLECTION);
@@ -312,7 +488,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       request.setPath("/admin/collections");
 
       NamedList<Object> rsp = client.request(request);
-
 
       NamedList<Object> cluster = (NamedList<Object>) rsp.get("cluster");
       assertNotNull("Cluster state should not be null", cluster);
@@ -328,6 +503,38 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertEquals("conf1", collection.get("configName"));
       List<String> collAlias = (List<String>) collection.get("aliases");
       assertEquals("Aliases not found", Lists.newArrayList("myalias"), collAlias);
+
+      // status request on the alias itself
+      params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
+      params.set("collection", "myalias");
+      request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      // SOLR-12938 - this should NOT cause an exception
+      rsp = client.request(request);
+
+      cluster = (NamedList<Object>) rsp.get("cluster");
+      assertNotNull("Cluster state should not be null", cluster);
+      collections = (NamedList<Object>) cluster.get("collections");
+      assertNotNull("Collections should not be null in cluster state", collections);
+      assertNotNull(collections.get(DEFAULT_COLLECTION));
+      assertNotNull(collections.get(COLLECTION_NAME));
+
+      // status request on something neither an alias nor a collection itself
+      params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
+      params.set("collection", "notAnAliasOrCollection");
+      request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      // SOLR-12938 - this should still cause an exception
+      try {
+        client.request(request);
+        fail("requesting status for 'notAnAliasOrCollection' should cause an exception from CLUSTERSTATUS" );
+      } catch (RuntimeException e) {
+        // success
+      }
     }
   }
 
@@ -814,6 +1021,36 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     } catch (SolrException se) {
       assertTrue("Should have gotten a specific message back mentioning 'missing required parameter'. Got: " + se.getMessage(),
           se.getMessage().toLowerCase(Locale.ROOT).contains("missing required parameter:"));
+    }
+  }
+
+  /**
+   * After a failed attempt to create a collection (due to bad configs), assert that
+   * the collection can be created with a good collection.
+   */
+  @Test
+  @ShardsFixed(num = 2)
+  public void testRecreateCollectionAfterFailure() throws Exception {
+    // Upload a bad configset
+    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), ZkTestServer.TIMEOUT,
+        ZkTestServer.TIMEOUT, null);
+    ZkTestServer.putConfig("badconf", zkClient, "/solr", ZkTestServer.SOLRHOME, "bad-error-solrconfig.xml", "solrconfig.xml");
+    ZkTestServer.putConfig("badconf", zkClient, "/solr", ZkTestServer.SOLRHOME, "schema-minimal.xml", "schema.xml");
+    zkClient.close();
+
+    try (CloudSolrClient client = createCloudClient(null)) {
+      // first, try creating a collection with badconf
+      HttpSolrClient.RemoteSolrException rse = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+          CollectionAdminResponse rsp = CollectionAdminRequest.createCollection
+              ("testcollection", "badconf", 1, 2).process(client);
+      });
+      assertNotNull(rse.getMessage());
+      assertNotSame(0, rse.code());
+
+      CollectionAdminResponse rsp = CollectionAdminRequest.createCollection
+          ("testcollection", "conf1", 1, 2).process(client);
+      assertNull(rsp.getErrorMessages());
+      assertSame(0, rsp.getStatus());
     }
   }
 }

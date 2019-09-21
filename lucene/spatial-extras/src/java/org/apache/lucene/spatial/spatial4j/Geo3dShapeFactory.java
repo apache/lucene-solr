@@ -311,7 +311,7 @@ public class Geo3dShapeFactory implements S2ShapeFactory {
    */
   private class Geo3dPolygonBuilder extends Geo3dPointBuilder<PolygonBuilder> implements PolygonBuilder {
 
-    List<GeoPolygon> polyHoles;
+    List<GeoPolygonFactory.PolygonDescription> polyHoles = new ArrayList<>();
 
     @Override
     public HoleBuilder hole() {
@@ -321,10 +321,7 @@ public class Geo3dShapeFactory implements S2ShapeFactory {
     class Geo3dHoleBuilder extends Geo3dPointBuilder<PolygonBuilder.HoleBuilder> implements PolygonBuilder.HoleBuilder {
       @Override
       public PolygonBuilder endHole() {
-        if (polyHoles == null) {
-          polyHoles = new ArrayList<>();
-        }
-        polyHoles.add(GeoPolygonFactory.makeGeoPolygon(planetModel, points));
+        polyHoles.add(new GeoPolygonFactory.PolygonDescription(points));
         return Geo3dPolygonBuilder.this;
       }
     }
@@ -332,7 +329,11 @@ public class Geo3dShapeFactory implements S2ShapeFactory {
     @SuppressWarnings("unchecked")
     @Override
     public Shape build() {
-      GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(planetModel, points, polyHoles);
+      GeoPolygonFactory.PolygonDescription description = new GeoPolygonFactory.PolygonDescription(points, polyHoles);
+      GeoPolygon polygon = GeoPolygonFactory.makeGeoPolygon(planetModel, description);
+      if (polygon == null) {
+        throw new InvalidShapeException("Invalid polygon, all points are coplanar");
+      }
       return new Geo3dShape<>(polygon, context);
     }
 

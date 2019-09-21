@@ -102,7 +102,7 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
         final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(hits.context);
         final IndexSearcher searcher = new IndexSearcher(topLevelContext);
         searcher.setQueryCache(null);
-        final Weight fastMatchWeight = searcher.createNormalizedWeight(fastMatchQuery, ScoreMode.COMPLETE_NO_SCORES);
+        final Weight fastMatchWeight = searcher.createWeight(searcher.rewrite(fastMatchQuery), ScoreMode.COMPLETE_NO_SCORES, 1);
         Scorer s = fastMatchWeight.scorer(hits.context);
         if (s == null) {
           continue;

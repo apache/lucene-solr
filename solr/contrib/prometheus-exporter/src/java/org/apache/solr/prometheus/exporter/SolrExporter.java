@@ -16,194 +16,146 @@
  */
 package org.apache.solr.prometheus.exporter;
 
-import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.InetSocketAddress;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
 
 import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.Counter;
 import io.prometheus.client.exporter.HTTPServer;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
-import org.apache.solr.core.Config;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.prometheus.collector.SolrCollector;
+import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.prometheus.collector.MetricsCollectorFactory;
+import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
+import org.apache.solr.prometheus.scraper.SolrCloudScraper;
+import org.apache.solr.prometheus.scraper.SolrScraper;
+import org.apache.solr.prometheus.scraper.SolrStandaloneScraper;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
-import java.lang.invoke.MethodHandles;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-/**
- * SolrExporter
- */
 public class SolrExporter {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String[] ARG_PORT_FLAGS = { "-p", "--port" };
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final String[] ARG_PORT_FLAGS = {"-p", "--port"};
   private static final String ARG_PORT_METAVAR = "PORT";
   private static final String ARG_PORT_DEST = "port";
-  private static final Integer ARG_PORT_DEFAULT = 9983;
-  private static final String ARG_PORT_HELP = "Specify the solr-exporter HTTP listen port; default is " + String.valueOf(ARG_PORT_DEFAULT) + ".";
+  private static final int ARG_PORT_DEFAULT = 9983;
+  private static final String ARG_PORT_HELP = "Specify the solr-exporter HTTP listen port; default is " + ARG_PORT_DEFAULT + ".";
 
-  private static final String[] ARG_BASE_URL_FLAGS = { "-b", "--baseurl" };
+  private static final String[] ARG_BASE_URL_FLAGS = {"-b", "--baseurl"};
   private static final String ARG_BASE_URL_METAVAR = "BASE_URL";
   private static final String ARG_BASE_URL_DEST = "baseUrl";
-  private static final String ARG_BASE_URL_DEFAULT = "";
+  private static final String ARG_BASE_URL_DEFAULT = "http://localhost:8983/solr";
   private static final String ARG_BASE_URL_HELP = "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'http://localhost:8983/solr'.";
 
-  private static final String[] ARG_ZK_HOST_FLAGS = { "-z", "--zkhost" };
+  private static final String[] ARG_ZK_HOST_FLAGS = {"-z", "--zkhost"};
   private static final String ARG_ZK_HOST_METAVAR = "ZK_HOST";
   private static final String ARG_ZK_HOST_DEST = "zkHost";
   private static final String ARG_ZK_HOST_DEFAULT = "";
   private static final String ARG_ZK_HOST_HELP = "Specify the ZooKeeper connection string when connecting to Solr in SolrCloud mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'localhost:2181/solr'.";
 
-  private static final String[] ARG_CONFIG_FLAGS = { "-f", "--config-file" };
+  private static final String[] ARG_CONFIG_FLAGS = {"-f", "--config-file"};
   private static final String ARG_CONFIG_METAVAR = "CONFIG";
   private static final String ARG_CONFIG_DEST = "configFile";
   private static final String ARG_CONFIG_DEFAULT = "./conf/solr-exporter-config.xml";
-  private static final String ARG_CONFIG_HELP = "Specify the configuration file; default is " + ARG_CONFIG_DEFAULT + ".";
+  private static final String ARG_CONFIG_HELP = "Specify the configuration file; the default is " + ARG_CONFIG_DEFAULT + ".";
 
-  private static final String[] ARG_NUM_THREADS_FLAGS = { "-n", "--num-threads" };
+  private static final String[] ARG_SCRAPE_INTERVAL_FLAGS = {"-s", "--scrape-interval"};
+  private static final String ARG_SCRAPE_INTERVAL_METAVAR = "SCRAPE_INTERVAL";
+  private static final String ARG_SCRAPE_INTERVAL_DEST = "scrapeInterval";
+  private static final int ARG_SCRAPE_INTERVAL_DEFAULT = 60;
+  private static final String ARG_SCRAPE_INTERVAL_HELP = "Specify the delay between scraping Solr metrics; the default is " + ARG_SCRAPE_INTERVAL_DEFAULT + " seconds.";
+
+  private static final String[] ARG_NUM_THREADS_FLAGS = {"-n", "--num-threads"};
   private static final String ARG_NUM_THREADS_METAVAR = "NUM_THREADS";
   private static final String ARG_NUM_THREADS_DEST = "numThreads";
   private static final Integer ARG_NUM_THREADS_DEFAULT = 1;
-  private static final String ARG_NUM_THREADS_HELP = "Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; default is " + String.valueOf(ARG_NUM_THREADS_DEFAULT) + ".";
+  private static final String ARG_NUM_THREADS_HELP = "Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; the default is " + ARG_NUM_THREADS_DEFAULT + ".";
 
-  private int port;
-  private SolrClient solrClient;
-  private Config config;
-  private int numThreads;
+  public static final CollectorRegistry defaultRegistry = new CollectorRegistry();
 
-  CollectorRegistry registry = new CollectorRegistry();
+  private final int port;
+  private final CachedPrometheusCollector prometheusCollector;
+  private final SchedulerMetricsCollector metricsCollector;
+  private final SolrScraper solrScraper;
+
+  private final ExecutorService metricCollectorExecutor;
+  private final ExecutorService requestExecutor;
 
   private HTTPServer httpServer;
-  private SolrCollector collector;
 
-  private SolrResourceLoader loader;
-
-  public static final Counter scrapeErrorTotal = Counter.build()
-      .name("solr_exporter_scrape_error_total")
-      .help("Number of scrape error.").register();
-
-  /**
-   * Constructor.
-   */
-  public SolrExporter(int port, String connStr, Path configPath, int numThreads) throws ParserConfigurationException, SAXException, IOException {
-    this(port, createClient(connStr), configPath, numThreads);
-  }
-
-  /**
-   * Constructor.
-   */
-  public SolrExporter(int port, SolrClient solrClient, Path configPath, int numThreads) throws ParserConfigurationException, SAXException, IOException {
-    super();
-
-    this.loader = new SolrResourceLoader(configPath.getParent());
-
+  public SolrExporter(
+      int port,
+      int numberThreads,
+      int scrapeInterval,
+      SolrScrapeConfiguration scrapeConfiguration,
+      MetricsConfiguration metricsConfiguration) {
     this.port = port;
-    this.solrClient = solrClient;
-    this.config = new Config(this.loader, configPath.getFileName().toString());
-    this.numThreads = numThreads;
+
+    this.metricCollectorExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
+        numberThreads,
+        new DefaultSolrThreadFactory("solr-exporter-collectors"));
+
+    this.requestExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
+        numberThreads,
+        new DefaultSolrThreadFactory("solr-exporter-requests"));
+
+    this.solrScraper = createScraper(scrapeConfiguration, metricsConfiguration.getSettings());
+    this.metricsCollector = new MetricsCollectorFactory(metricCollectorExecutor, scrapeInterval, solrScraper, metricsConfiguration).create();
+    this.prometheusCollector = new CachedPrometheusCollector();
   }
 
-  /**
-   * Start HTTP server for exporting Solr metrics.
-   */
-  public void start() throws IOException {
-    this.collector = new SolrCollector(solrClient, config, numThreads);
-    this.registry.register(this.collector);
-    this.registry.register(scrapeErrorTotal);
-    this.httpServer = new HTTPServer(new InetSocketAddress(port), this.registry);
+  void start() throws IOException {
+    defaultRegistry.register(prometheusCollector);
+
+    metricsCollector.addObserver(prometheusCollector);
+    metricsCollector.start();
+
+    httpServer = new HTTPServer(new InetSocketAddress(port), defaultRegistry);
   }
 
-  /**
-   * Stop HTTP server for exporting Solr metrics.
-   */
-  public void stop() {
-    this.httpServer.stop();
-    this.registry.unregister(this.collector);
+  void stop() {
+    httpServer.stop();
+
+    metricsCollector.removeObserver(prometheusCollector);
+
+    requestExecutor.shutdownNow();
+    metricCollectorExecutor.shutdownNow();
+
+    IOUtils.closeQuietly(metricsCollector);
+    IOUtils.closeQuietly(solrScraper);
+
+    defaultRegistry.unregister(this.prometheusCollector);
   }
 
-  /**
-   * Create Solr client
-   */
-  private static SolrClient createClient(String connStr) {
-    SolrClient solrClient;
+  private SolrScraper createScraper(SolrScrapeConfiguration configuration, PrometheusExporterSettings settings) {
+    SolrClientFactory factory = new SolrClientFactory(settings);
 
-    Pattern baseUrlPattern = Pattern.compile("^https?:\\/\\/[\\w\\/:%#\\$&\\?\\(\\)~\\.=\\+\\-]+$");
-    Pattern zkHostPattern = Pattern.compile("^(?<host>[^\\/]+)(?<chroot>|(?:\\/.*))$");
-    Matcher matcher;
-
-    matcher = baseUrlPattern.matcher(connStr);
-    if (matcher.matches()) {
-      NoOpResponseParser responseParser = new NoOpResponseParser();
-      responseParser.setWriterType("json");
-
-      HttpSolrClient.Builder builder = new HttpSolrClient.Builder();
-      builder.withBaseSolrUrl(connStr);
-
-      HttpSolrClient httpSolrClient = builder.build();
-      httpSolrClient.setParser(responseParser);
-
-      solrClient = httpSolrClient;
-    } else {
-      String host = "";
-      String chroot = "";
-
-      matcher = zkHostPattern.matcher(connStr);
-      if (matcher.matches()) {
-        host = matcher.group("host") != null ? matcher.group("host") : "";
-        chroot = matcher.group("chroot") != null ? matcher.group("chroot") : "";
-      }
-
-      NoOpResponseParser responseParser = new NoOpResponseParser();
-      responseParser.setWriterType("json");
-
-      CloudSolrClient.Builder builder = new CloudSolrClient.Builder();
-      if (host.contains(",")) {
-        List<String> hosts = new ArrayList<>();
-        for (String h : host.split(",")) {
-          if (h != null && !h.equals("")) {
-            hosts.add(h.trim());
-          }
-        }
-        builder.withZkHost(hosts);
-      } else {
-        builder.withZkHost(host);
-      }
-      if (chroot.equals("")) {
-        builder.withZkChroot("/");
-      } else {
-        builder.withZkChroot(chroot);
-      }
-
-      CloudSolrClient cloudSolrClient = builder.build();
-      cloudSolrClient.setParser(responseParser);
-
-      solrClient = cloudSolrClient;
+    switch (configuration.getType()) {
+      case STANDALONE:
+        return new SolrStandaloneScraper(
+            factory.createStandaloneSolrClient(configuration.getSolrHost().get()), requestExecutor);
+      case CLOUD:
+        return new SolrCloudScraper(
+            factory.createCloudSolrClient(configuration.getZookeeperConnectionString().get()), requestExecutor, factory);
+      default:
+        throw new RuntimeException(String.format(Locale.ROOT, "Invalid type: %s", configuration.getType()));
     }
-
-    return solrClient;
   }
 
-  /**
-   * Entry point of SolrExporter.
-   */
-  public static void main( String[] args ) {
-    ArgumentParser parser = ArgumentParsers.newArgumentParser(SolrCollector.class.getSimpleName())
+  public static void main(String[] args) {
+    ArgumentParser parser = ArgumentParsers.newFor(SolrExporter.class.getSimpleName()).build()
         .description("Prometheus exporter for Apache Solr.");
 
     parser.addArgument(ARG_PORT_FLAGS)
@@ -222,6 +174,10 @@ public class SolrExporter {
         .metavar(ARG_CONFIG_METAVAR).dest(ARG_CONFIG_DEST).type(String.class)
         .setDefault(ARG_CONFIG_DEFAULT).help(ARG_CONFIG_HELP);
 
+    parser.addArgument(ARG_SCRAPE_INTERVAL_FLAGS)
+        .metavar(ARG_SCRAPE_INTERVAL_METAVAR).dest(ARG_SCRAPE_INTERVAL_DEST).type(Integer.class)
+        .setDefault(ARG_SCRAPE_INTERVAL_DEFAULT).help(ARG_SCRAPE_INTERVAL_HELP);
+
     parser.addArgument(ARG_NUM_THREADS_FLAGS)
         .metavar(ARG_NUM_THREADS_METAVAR).dest(ARG_NUM_THREADS_DEST).type(Integer.class)
         .setDefault(ARG_NUM_THREADS_DEFAULT).help(ARG_NUM_THREADS_HELP);
@@ -229,25 +185,43 @@ public class SolrExporter {
     try {
       Namespace res = parser.parseArgs(args);
 
-      int port = res.getInt(ARG_PORT_DEST);
+      SolrScrapeConfiguration scrapeConfiguration = null;
 
-      String connStr = "http://localhost:8983/solr";
-      if (!res.getString(ARG_BASE_URL_DEST).equals("")) {
-        connStr = res.getString(ARG_BASE_URL_DEST);
-      } else if (!res.getString(ARG_ZK_HOST_DEST).equals("")) {
-        connStr = res.getString(ARG_ZK_HOST_DEST);
+      if (!res.getString(ARG_ZK_HOST_DEST).equals("")) {
+        scrapeConfiguration = SolrScrapeConfiguration.solrCloud(res.getString(ARG_ZK_HOST_DEST));
+      } else if (!res.getString(ARG_BASE_URL_DEST).equals("")) {
+        scrapeConfiguration = SolrScrapeConfiguration.standalone(res.getString(ARG_BASE_URL_DEST));
       }
 
-      Path configPath = Paths.get(res.getString(ARG_CONFIG_DEST));
-      int numThreads = res.getInt(ARG_NUM_THREADS_DEST);
+      if (scrapeConfiguration == null) {
+        log.error("Must provide either %s or %s", ARG_BASE_URL_FLAGS, ARG_ZK_HOST_FLAGS);
+      }
 
-      SolrExporter solrExporter = new SolrExporter(port, connStr, configPath, numThreads);
+      SolrExporter solrExporter = new SolrExporter(
+          res.getInt(ARG_PORT_DEST),
+          res.getInt(ARG_NUM_THREADS_DEST),
+          res.getInt(ARG_SCRAPE_INTERVAL_DEST),
+          scrapeConfiguration,
+          loadMetricsConfiguration(Paths.get(res.getString(ARG_CONFIG_DEST))));
+
+      log.info("Starting Solr Prometheus Exporting");
       solrExporter.start();
-      logger.info("Start server");
-    } catch (ParserConfigurationException | SAXException | IOException e) {
-      logger.error("Start server failed: " + e.toString());
+      log.info("Solr Prometheus Exporter is running");
+    } catch (IOException e) {
+      log.error("Failed to start Solr Prometheus Exporter: " + e.toString());
     } catch (ArgumentParserException e) {
       parser.handleError(e);
     }
   }
+
+  private static MetricsConfiguration loadMetricsConfiguration(Path configPath) {
+    try (SolrResourceLoader loader = new SolrResourceLoader(configPath.getParent())) {
+      XmlConfigFile config = new XmlConfigFile(loader, configPath.getFileName().toString());
+      return MetricsConfiguration.from(config);
+    } catch (Exception e) {
+      log.error("Could not load scrape configuration from %s", configPath.toAbsolutePath());
+      throw new RuntimeException(e);
+    }
+  }
+
 }

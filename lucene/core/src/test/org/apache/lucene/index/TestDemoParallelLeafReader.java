@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -415,7 +416,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
             SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
             assert infos.size() == 1;
-            final LeafReader parLeafReader = new SegmentReader(infos.info(0), Version.LATEST.major, IOContext.DEFAULT);
+            final LeafReader parLeafReader = new SegmentReader(infos.info(0), Version.LATEST.major, false, IOContext.DEFAULT, Collections.emptyMap());
 
             //checkParallelReader(leaf, parLeafReader, schemaGen);
 
@@ -508,7 +509,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     }
 
     /** Just replaces the sub-readers with parallel readers, so reindexed fields are merged into new segments. */
-    private class ReindexingMergePolicy extends MergePolicyWrapper {
+    private class ReindexingMergePolicy extends FilterMergePolicy {
 
       class ReindexingOneMerge extends OneMerge {
 
@@ -557,7 +558,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         @Override
         public void setMergeInfo(SegmentCommitInfo info) {
           // Record that this merged segment is current as of this schemaGen:
-          info.info.getDiagnostics().put(SCHEMA_GEN_KEY, Long.toString(schemaGen));
+          Map<String, String> copy = new HashMap<>(info.info.getDiagnostics());
+          copy.put(SCHEMA_GEN_KEY, Long.toString(schemaGen));
+          info.info.setDiagnostics(copy);
           super.setMergeInfo(info);
         }
 
@@ -593,28 +596,28 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
       @Override
       public MergeSpecification findMerges(MergeTrigger mergeTrigger,
-                                           SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
-        return wrap(in.findMerges(mergeTrigger, segmentInfos, writer));
+                                           SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+        return wrap(in.findMerges(mergeTrigger, segmentInfos, mergeContext));
       }
 
       @Override
       public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-                                                 int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer)
+                                                 int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext)
         throws IOException {
         // TODO: do we need to force-force this?  Ie, wrapped MP may think index is already optimized, yet maybe its schemaGen is old?  need test!
-        return wrap(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, writer));
+        return wrap(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, mergeContext));
       }
 
       @Override
-      public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer)
+      public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext)
         throws IOException {
-        return wrap(in.findForcedDeletesMerges(segmentInfos, writer));
+        return wrap(in.findForcedDeletesMerges(segmentInfos, mergeContext));
       }
 
       @Override
       public boolean useCompoundFile(SegmentInfos segments,
-                                     SegmentCommitInfo newSegment, IndexWriter writer) throws IOException {
-        return in.useCompoundFile(segments, newSegment, writer);
+                                     SegmentCommitInfo newSegment, MergeContext mergeContext) throws IOException {
+        return in.useCompoundFile(segments, newSegment, mergeContext);
       }
 
       @Override

@@ -44,7 +44,7 @@ public class TestFieldsReader extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     testDoc = new Document();
-    fieldInfos = new FieldInfos.Builder();
+    fieldInfos = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
     DocHelper.setupDoc(testDoc);
     for (IndexableField field : testDoc.getFields()) {
       FieldInfo fieldInfo = fieldInfos.getOrAdd(field.name());

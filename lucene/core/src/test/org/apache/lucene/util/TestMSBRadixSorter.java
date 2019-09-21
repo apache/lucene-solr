@@ -23,7 +23,7 @@ import java.util.Set;
 public class TestMSBRadixSorter extends LuceneTestCase {
 
   private void test(BytesRef[] refs, int len) {
-    BytesRef[] expected = Arrays.copyOf(refs, len);
+    BytesRef[] expected = ArrayUtil.copyOfSubArray(refs, 0, len);
     Arrays.sort(expected);
 
     int maxLength = 0;
@@ -63,7 +63,7 @@ public class TestMSBRadixSorter extends LuceneTestCase {
         refs[j] = tmp;
       }
     }.sort(0, len);
-    BytesRef[] actual = Arrays.copyOf(refs, len);
+    BytesRef[] actual = ArrayUtil.copyOfSubArray(refs, 0, len);
     assertArrayEquals(expected, actual);
   }
 

@@ -1,6 +1,6 @@
 {
   "documentation": "https://lucene.apache.org/solr/guide/configsets-api.html#configsets-list",
-  "description": "List all ConfigSets in the cluster.",
+  "description": "List all configsets in the cluster.",
   "methods": [
     "GET"
   ],

@@ -50,7 +50,7 @@ public class PerfTaskTest extends BenchmarkTestCase {
     if (setTaskLogStep) {
       props.setProperty("log.step.MyPerf", Integer.toString(taskLogStepVal));
     }
-    props.setProperty("directory", "RAMDirectory"); // no accidental FS dir.
+    props.setProperty("directory", "ByteBuffersDirectory"); // no accidental FS dir.
     Config config = new Config(props);
     return new PerfRunData(config);
   }

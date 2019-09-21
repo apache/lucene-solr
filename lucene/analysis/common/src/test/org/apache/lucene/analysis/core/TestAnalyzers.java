@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -79,7 +80,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   }
 
   public void testStop() throws Exception {
-    Analyzer a = new StopAnalyzer();
+    Analyzer a = new StopAnalyzer(EnglishAnalyzer.ENGLISH_STOP_WORDS_SET);
     assertAnalyzesTo(a, "foo bar FOO BAR", 
                      new String[] { "foo", "bar", "foo", "bar" });
     assertAnalyzesTo(a, "foo a bar such FOO THESE BAR", 
@@ -215,14 +216,6 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     int length = highSurEndingLower.length();
     assertEquals('\ud801', termBuffer[length - 1]);
   }
-  
-  public void testLowerCaseTokenizer() throws IOException {
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer();
-    tokenizer.setReader(reader);
-    assertTokenStreamContents(tokenizer, new String[] { "tokenizer",
-        "\ud801\udc44test" });
-  }
 
   public void testWhitespaceTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
@@ -234,7 +227,8 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    Analyzer analyzers[] = new Analyzer[] { new WhitespaceAnalyzer(), new SimpleAnalyzer(), new StopAnalyzer(), new UnicodeWhitespaceAnalyzer() };
+    Analyzer analyzers[] = new Analyzer[] { new WhitespaceAnalyzer(), new SimpleAnalyzer(),
+        new StopAnalyzer(EnglishAnalyzer.ENGLISH_STOP_WORDS_SET), new UnicodeWhitespaceAnalyzer() };
     for (Analyzer analyzer : analyzers) {
       checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
     }
@@ -243,7 +237,8 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
-    Analyzer analyzers[] = new Analyzer[] { new WhitespaceAnalyzer(), new SimpleAnalyzer(), new StopAnalyzer(), new UnicodeWhitespaceAnalyzer() };
+    Analyzer analyzers[] = new Analyzer[] { new WhitespaceAnalyzer(), new SimpleAnalyzer(),
+        new StopAnalyzer(EnglishAnalyzer.ENGLISH_STOP_WORDS_SET), new UnicodeWhitespaceAnalyzer() };
     for (Analyzer analyzer : analyzers) {
       checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER, 8192);
     }

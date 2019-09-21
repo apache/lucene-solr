@@ -56,30 +56,30 @@
     -->
   <target name="train-test-models" description="Train all small test models for unit tests" depends="resolve">
     <mkdir dir="${test.model.dir}"/>
-    <!-- https://opennlp.apache.org/docs/1.8.3/manual/opennlp.html#tools.sentdetect.training -->
+    <!-- https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.sentdetect.training -->
     <trainModel command="SentenceDetectorTrainer" lang="en" data="sentences.txt" model="en-test-sent.bin"/>
     <copy file="${test.model.dir}/en-test-sent.bin" todir="${analysis-extras.conf.dir}"/>
 
-    <!-- https://opennlp.apache.org/docs/1.8.3/manual/opennlp.html#tools.tokenizer.training -->
+    <!-- https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.tokenizer.training -->
     <trainModel command="TokenizerTrainer" lang="en" data="tokenizer.txt" model="en-test-tokenizer.bin"/>
     <copy file="${test.model.dir}/en-test-tokenizer.bin" todir="${analysis-extras.conf.dir}"/>
 
-    <!-- https://opennlp.apache.org/docs/1.8.3/manual/opennlp.html#tools.postagger.training -->
+    <!-- https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.postagger.training -->
     <trainModel command="POSTaggerTrainer" lang="en" data="pos.txt" model="en-test-pos-maxent.bin"/>
 
-    <!-- https://opennlp.apache.org/docs/1.8.3/manual/opennlp.html#tools.chunker.training -->
+    <!-- https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.chunker.training -->
     <trainModel command="ChunkerTrainerME" lang="en" data="chunks.txt" model="en-test-chunker.bin"/>
 
-    <!-- https://opennlp.apache.org/docs/1.8.3/manual/opennlp.html#tools.namefind.training -->
-    <trainModel command="TokenNameFinderTrainer" lang="en" data="ner_flashman.txt" model="en-test-ner-person.bin">
+    <!-- https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.namefind.training -->
+    <trainModel command="TokenNameFinderTrainer" lang="en" data="ner.txt" model="en-test-ner.bin">
       <extra-args>
         <arg value="-params"/>
         <arg value="ner_TrainerParams.txt"/>
       </extra-args>
     </trainModel>
-    <copy file="${test.model.dir}/en-test-ner-person.bin" todir="${analysis-extras.conf.dir}"/>
+    <copy file="${test.model.dir}/en-test-ner.bin" todir="${analysis-extras.conf.dir}"/>
 
-    <!-- https://opennlp.apache.org/docs/1.8.3/manual/opennlp.html#tools.lemmatizer.training -->
+    <!-- https://opennlp.apache.org/docs/1.9.0/manual/opennlp.html#tools.lemmatizer.training -->
     <trainModel command="LemmatizerTrainerME" lang="en" data="lemmas.txt" model="en-test-lemmatizer.bin"/>
   </target>
 

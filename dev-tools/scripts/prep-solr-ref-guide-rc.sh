@@ -20,7 +20,7 @@
 # Prepares an RC of the Solr Ref Guide by doing local file operations to:
 #  - create a directory for the RC files
 #  - move the PDF files into the RC directory with the appropriate name
-#  - generate SHA1 and SHA512 of the PDF file
+#  - generate SHA512 of the PDF file
 #  - GPG sign the PDF files
 #
 # See: https://cwiki.apache.org/confluence/display/solr/Internal+-+How+To+Publish+This+Documentation
@@ -63,7 +63,6 @@ fi
 PREFIX="apache-solr-ref-guide"
 DIR="$PREFIX-$VER_RC"
 PDF="$PREFIX-$VER.pdf"
-SHA="$PDF.sha1"
 SHA512="$PDF.sha512"
 GPG="$PDF.asc"
 
@@ -85,7 +84,6 @@ set -x
 mkdir $DIR || exit 1
 mv $SRC_FILE $DIR/$PDF || exit 1
 cd $DIR || exit 1
-shasum $PDF > $SHA || exit 1
 shasum -a 512 $PDF > $SHA512 || exit 1
 gpg $GPG_ID_ARG --armor --output $GPG --detach-sig $PDF|| exit 1
 

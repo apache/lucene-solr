@@ -28,13 +28,19 @@ public class TestHighFrequencyDictionaryFactory extends SolrTestCaseJ4  {
   public static void beforeClass() throws Exception {
     initCore("solrconfig-phrasesuggest.xml","schema-phrasesuggest.xml");
     // Suggestions text include : change, charge, chance
+    assertU(adoc("id", "9999990",
+        "text", "true",
+        "stext", "foobar"));
     assertU(adoc("id", "9999991",
         "text", "true",
-        "stext", "change"));
+        "stext", "foobar"));
     assertU(adoc("id", "9999992",
         "text", "true",
+        "stext", "change"));
+    assertU(adoc("id", "9999993",
+        "text", "true",
         "stext", "charge"));    
-    assertU(adoc("id", "9999992",
+    assertU(adoc("id", "9999993",
             "text", "true",
             "stext", "chance"));
 

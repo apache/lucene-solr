@@ -897,7 +897,7 @@ public class RandomGeo3dShapeGenerator extends LuceneTestCase {
    * @param points The points to order.
    * @return The list of ordered points anti-clockwise.
    */
-  private List<GeoPoint> orderPoints(List<GeoPoint> points) {
+  protected List<GeoPoint> orderPoints(List<GeoPoint> points) {
     double x = 0;
     double y = 0;
     double z = 0;

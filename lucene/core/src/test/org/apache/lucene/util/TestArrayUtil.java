@@ -21,6 +21,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Random;
 
+import static org.apache.lucene.util.ArrayUtil.copyOfSubArray;
+import static org.apache.lucene.util.ArrayUtil.growExact;
+
 public class TestArrayUtil extends LuceneTestCase {
 
   // Ensure ArrayUtil.getNextSize gives linear amortized cost of realloc/copy
@@ -293,5 +296,89 @@ public class TestArrayUtil extends LuceneTestCase {
         assertTrue(actual[i].intValue() >= actual[k].intValue());
       }
     }
+  }
+
+  public void testGrowExact() {
+    assertArrayEquals(new short[]{1, 2, 3, 0}, growExact(new short[]{1, 2, 3}, 4));
+    assertArrayEquals(new short[]{1, 2, 3, 0, 0}, growExact(new short[]{1, 2, 3}, 5));
+    expectThrows(IndexOutOfBoundsException.class, () -> growExact(new short[]{1, 2, 3}, random().nextInt(3)));
+
+    assertArrayEquals(new int[]{1, 2, 3, 0}, growExact(new int[]{1, 2, 3}, 4));
+    assertArrayEquals(new int[]{1, 2, 3, 0, 0}, growExact(new int[]{1, 2, 3}, 5));
+    expectThrows(IndexOutOfBoundsException.class, () -> growExact(new int[]{1, 2, 3}, random().nextInt(3)));
+
+    assertArrayEquals(new long[]{1, 2, 3, 0}, growExact(new long[]{1, 2, 3}, 4));
+    assertArrayEquals(new long[]{1, 2, 3, 0, 0}, growExact(new long[]{1, 2, 3}, 5));
+    expectThrows(IndexOutOfBoundsException.class, () -> growExact(new long[]{1, 2, 3}, random().nextInt(3)));
+
+    assertArrayEquals(new float[]{0.1f, 0.2f, 0.3f, 0}, growExact(new float[]{0.1f, 0.2f, 0.3f}, 4), 0.001f);
+    assertArrayEquals(new float[]{0.1f, 0.2f, 0.3f, 0, 0}, growExact(new float[]{0.1f, 0.2f, 0.3f}, 5), 0.001f);
+    expectThrows(IndexOutOfBoundsException.class, () -> growExact(new float[]{1, 2, 3}, random().nextInt(3)));
+
+    assertArrayEquals(new double[]{0.1, 0.2, 0.3, 0.0}, growExact(new double[]{0.1, 0.2, 0.3}, 4), 0.001);
+    assertArrayEquals(new double[]{0.1, 0.2, 0.3, 0.0, 0.0}, growExact(new double[]{0.1, 0.2, 0.3}, 5), 0.001);
+    expectThrows(IndexOutOfBoundsException.class, () -> growExact(new double[]{0.1, 0.2, 0.3}, random().nextInt(3)));
+
+    assertArrayEquals(new byte[]{1, 2, 3, 0}, growExact(new byte[]{1, 2, 3}, 4));
+    assertArrayEquals(new byte[]{1, 2, 3, 0, 0}, growExact(new byte[]{1, 2, 3}, 5));
+    expectThrows(IndexOutOfBoundsException.class, () -> growExact(new byte[]{1, 2, 3}, random().nextInt(3)));
+
+    assertArrayEquals(new char[]{'a', 'b', 'c', '\0'}, growExact(new char[]{'a', 'b', 'c'}, 4));
+    assertArrayEquals(new char[]{'a', 'b', 'c', '\0', '\0'}, growExact(new char[]{'a', 'b', 'c'}, 5));
+    expectThrows(IndexOutOfBoundsException.class, () -> growExact(new byte[]{'a', 'b', 'c'}, random().nextInt(3)));
+
+    assertArrayEquals(new String[]{"a1", "b2", "c3", null}, growExact(new String[]{"a1", "b2", "c3"}, 4));
+    assertArrayEquals(new String[]{"a1", "b2", "c3", null, null}, growExact(new String[]{"a1", "b2", "c3"}, 5));
+    expectThrows(IndexOutOfBoundsException.class, () -> growExact(new String[]{"a", "b", "c"}, random().nextInt(3)));
+  }
+
+  public void testCopyOfSubArray() {
+    short[] shortArray = {1, 2, 3};
+    assertArrayEquals(new short[]{1}, copyOfSubArray(shortArray, 0, 1));
+    assertArrayEquals(new short[]{1, 2, 3}, copyOfSubArray(shortArray, 0, 3));
+    assertEquals(0, copyOfSubArray(shortArray, 0, 0).length);
+    expectThrows(IndexOutOfBoundsException.class, () -> copyOfSubArray(shortArray, 0, 4 + random().nextInt(10)));
+
+    int[] intArray = {1, 2, 3};
+    assertArrayEquals(new int[]{1, 2}, copyOfSubArray(intArray, 0, 2));
+    assertArrayEquals(new int[]{1, 2, 3}, copyOfSubArray(intArray, 0, 3));
+    assertEquals(0, copyOfSubArray(intArray, 1, 1).length);
+    expectThrows(IndexOutOfBoundsException.class, () -> copyOfSubArray(intArray, 1, 4 + random().nextInt(10)));
+
+    long[] longArray = {1, 2, 3};
+    assertArrayEquals(new long[]{2}, copyOfSubArray(longArray, 1, 2));
+    assertArrayEquals(new long[]{1, 2, 3}, copyOfSubArray(longArray, 0, 3));
+    assertEquals(0, copyOfSubArray(longArray, 2, 2).length);
+    expectThrows(IndexOutOfBoundsException.class, () -> copyOfSubArray(longArray, 2, 4 + random().nextInt(10)));
+
+    float[] floatArray = {0.1f, 0.2f, 0.3f};
+    assertArrayEquals(new float[]{0.2f, 0.3f}, copyOfSubArray(floatArray, 1, 3), 0.001f);
+    assertArrayEquals(new float[]{0.1f, 0.2f, 0.3f}, copyOfSubArray(floatArray, 0, 3), 0.001f);
+    assertEquals(0, copyOfSubArray(floatArray, 0, 0).length);
+    expectThrows(IndexOutOfBoundsException.class, () -> copyOfSubArray(floatArray, 3, 4 + random().nextInt(10)));
+
+    double[] doubleArray = {0.1, 0.2, 0.3};
+    assertArrayEquals(new double[]{0.3}, copyOfSubArray(doubleArray, 2, 3), 0.001);
+    assertArrayEquals(new double[]{0.1, 0.2, 0.3}, copyOfSubArray(doubleArray, 0, 3), 0.001);
+    assertEquals(0, copyOfSubArray(doubleArray, 1, 1).length);
+    expectThrows(IndexOutOfBoundsException.class, () -> copyOfSubArray(doubleArray, 0, 4 + random().nextInt(10)));
+
+    byte[] byteArray = {1, 2, 3};
+    assertArrayEquals(new byte[]{1}, copyOfSubArray(byteArray, 0, 1));
+    assertArrayEquals(new byte[]{1, 2, 3}, copyOfSubArray(byteArray, 0, 3));
+    assertEquals(0, copyOfSubArray(byteArray, 1, 1).length);
+    expectThrows(IndexOutOfBoundsException.class, () -> copyOfSubArray(byteArray, 1, 4 + random().nextInt(10)));
+
+    char[] charArray = {'a', 'b', 'c'};
+    assertArrayEquals(new char[]{'a', 'b'}, copyOfSubArray(charArray, 0, 2));
+    assertArrayEquals(new char[]{'a', 'b', 'c'}, copyOfSubArray(charArray, 0, 3));
+    assertEquals(0, copyOfSubArray(charArray, 1, 1).length);
+    expectThrows(IndexOutOfBoundsException.class, () -> copyOfSubArray(charArray, 3, 4));
+
+    String[] objectArray = {"a1", "b2", "c3"};
+    assertArrayEquals(new String[]{"a1"}, copyOfSubArray(objectArray, 0, 1));
+    assertArrayEquals(new String[]{"a1", "b2", "c3"}, copyOfSubArray(objectArray, 0, 3));
+    assertEquals(0, copyOfSubArray(objectArray, 1, 1).length);
+    expectThrows(IndexOutOfBoundsException.class, () -> copyOfSubArray(objectArray, 2, 5));
   }
 }

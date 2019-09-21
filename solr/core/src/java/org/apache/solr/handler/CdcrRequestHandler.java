@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
@@ -33,6 +34,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -41,9 +43,11 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -134,19 +138,19 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       // Configuration of the Update Log Synchronizer
       Object updateLogSynchonizerParam = args.get(CdcrParams.UPDATE_LOG_SYNCHRONIZER_PARAM);
       if (updateLogSynchonizerParam != null && updateLogSynchonizerParam instanceof NamedList) {
-        updateLogSynchronizerConfiguration = SolrParams.toSolrParams((NamedList) updateLogSynchonizerParam);
+        updateLogSynchronizerConfiguration = ((NamedList) updateLogSynchonizerParam).toSolrParams();
       }
 
       // Configuration of the Replicator
       Object replicatorParam = args.get(CdcrParams.REPLICATOR_PARAM);
       if (replicatorParam != null && replicatorParam instanceof NamedList) {
-        replicatorConfiguration = SolrParams.toSolrParams((NamedList) replicatorParam);
+        replicatorConfiguration = ((NamedList) replicatorParam).toSolrParams();
       }
 
       // Configuration of the Buffer
       Object bufferParam = args.get(CdcrParams.BUFFER_PARAM);
       if (bufferParam != null && bufferParam instanceof NamedList) {
-        bufferConfiguration = SolrParams.toSolrParams((NamedList) bufferParam);
+        bufferConfiguration = ((NamedList) bufferParam).toSolrParams();
       }
 
       // Configuration of the Replicas
@@ -154,7 +158,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
       List replicas = args.getAll(CdcrParams.REPLICA_PARAM);
       for (Object replica : replicas) {
         if (replica != null && replica instanceof NamedList) {
-          SolrParams params = SolrParams.toSolrParams((NamedList) replica);
+          SolrParams params = ((NamedList) replica).toSolrParams();
           if (!replicasConfiguration.containsKey(params.get(CdcrParams.SOURCE_COLLECTION_PARAM))) {
             replicasConfiguration.put(params.get(CdcrParams.SOURCE_COLLECTION_PARAM), new ArrayList<>());
           }
@@ -785,6 +789,17 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
             SolrException.log(log, "Replay failed");
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Replay failed");
           }
+        }
+        if (success)  {
+          ZkController zkController = core.getCoreContainer().getZkController();
+          String collectionName = core.getCoreDescriptor().getCollectionName();
+          ClusterState clusterState = zkController.getZkStateReader().getClusterState();
+          DocCollection collection = clusterState.getCollection(collectionName);
+          Slice slice = collection.getSlice(core.getCoreDescriptor().getCloudDescriptor().getShardId());
+          ZkShardTerms terms = zkController.getShardTerms(collectionName, slice.getName());
+          String coreNodeName = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
+          Set<String> allExceptLeader = slice.getReplicas().stream().filter(replica -> !replica.getName().equals(coreNodeName)).map(Replica::getName).collect(Collectors.toSet());
+          terms.ensureTermsIsHigher(coreNodeName, allExceptLeader);
         }
         return success;
       } finally {

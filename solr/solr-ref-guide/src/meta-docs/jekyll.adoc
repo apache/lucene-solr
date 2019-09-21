@@ -199,9 +199,7 @@ My content...
 
 An Ant target `build-site` will build the full HTML site. This target builds the navigation for the left-hand menu, and converts all `.adoc` files to `.html`, including navigation and inter-document links.
 
-Building the HTML has several dependencies that will need to be installed on your local machine. Review the `README.txt` file in the `solr/solr-ref-guide` directory for specific details.
-
-See <<how-to-contribute.adoc#publishing-html-version,Publishing the HTML Version>> for more information about building.
+Building the HTML has several dependencies that will need to be installed on your local machine. Review the `README.adoc` file in the `solr/solr-ref-guide` directory for specific details.
 
 === Build Validation
 

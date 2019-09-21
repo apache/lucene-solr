@@ -59,7 +59,6 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
   @BeforeClass
   public static void setupClass() throws Exception {
     assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
-    assumeFalse("FIXME: SOLR-8182: This test fails under Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
 
     System.setProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
         VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());

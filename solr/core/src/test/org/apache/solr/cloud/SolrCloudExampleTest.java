@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -35,7 +34,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -44,12 +43,11 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrCLI;
 import org.junit.Test;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
+import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 /**
@@ -68,6 +66,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testLoadDocsIntoGettingStartedCollection() throws Exception {
     waitForThingsToLevelOut(30000);
 
@@ -140,10 +139,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
                  expectedXmlFileCount, xmlFiles.size());
     
     for (File xml : xmlFiles) {
-      ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
-      req.addFile(xml, "application/xml");
       log.info("POSTing "+xml.getAbsolutePath());
-      cloudClient.request(req);
+      cloudClient.request(new StreamingUpdateRequest("/update",xml,"application/xml"));
     }
     cloudClient.commit();
 
@@ -205,10 +202,10 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     Map<String, Object> configJson = SolrCLI.getJson(configUrl);
     Object maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
     assertNotNull(maxTimeFromConfig);
-    assertEquals(new Long(-1L), maxTimeFromConfig);
+    assertEquals(-1L, maxTimeFromConfig);
 
     String prop = "updateHandler.autoSoftCommit.maxTime";
-    Long maxTime = new Long(3000L);
+    Long maxTime = 3000L;
     String[] args = new String[]{
         "-collection", testCollectionName,
         "-property", prop,
@@ -280,7 +277,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     try {
       entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
       String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      return (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+      return (Map) fromJSONString(response);
     } finally {
       EntityUtils.consumeQuietly(entity);
     }

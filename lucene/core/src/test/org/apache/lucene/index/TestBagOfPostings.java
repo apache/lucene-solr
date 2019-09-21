@@ -38,7 +38,7 @@ import org.apache.lucene.util.TestUtil;
  * Simple test that adds numeric terms, where each term has the 
  * docFreq of its integer value, and checks that the docFreq is correct. 
  */
-@SuppressCodecs({"Direct", "Memory"}) // at night this makes like 200k/300k docs and will make Direct's heart beat!
+@SuppressCodecs({"Direct"}) // at night this makes like 200k/300k docs and will make Direct's heart beat!
 public class TestBagOfPostings extends LuceneTestCase {
   public void test() throws Exception {
     List<String> postingsList = new ArrayList<>();

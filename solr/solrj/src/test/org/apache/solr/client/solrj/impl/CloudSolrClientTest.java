@@ -70,9 +70,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -86,6 +85,8 @@ import org.slf4j.LoggerFactory;
 @Slow
 public class CloudSolrClientTest extends SolrCloudTestCase {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   private static final String COLLECTION = "collection1";
   private static final String COLLECTION2 = "2nd_collection";
 
@@ -96,23 +97,20 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private static CloudSolrClient httpBasedCloudSolrClient = null;
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
+  @Before
+  public void setupCluster() throws Exception {
     configureCluster(NODE_COUNT)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
 
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
-    
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
     httpBasedCloudSolrClient = new CloudSolrClient.Builder(solrUrls).build();
   }
 
-  @AfterClass
-  public static void afterClass() {
+  
+  @After 
+  public void tearDown() throws Exception {
     if (httpBasedCloudSolrClient != null) {
       try {
         httpBasedCloudSolrClient.close();
@@ -120,14 +118,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         throw new RuntimeException(e);
       }
     }
-  }
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @Before
-  public void cleanIndex() throws Exception {
-    new UpdateRequest()
-        .deleteByQuery("*:*")
-        .commit(cluster.getSolrClient(), COLLECTION);
+    
+    shutdownCluster();
+    super.tearDown();
   }
 
   /**
@@ -139,6 +132,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testParallelUpdateQTime() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
     UpdateRequest req = new UpdateRequest();
     for (int i=0; i<10; i++)  {
       SolrInputDocument doc = new SolrInputDocument();
@@ -155,8 +150,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("overwrite", "conf", 1, 1)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish("overwrite", cluster.getSolrClient().getZkStateReader(), false, true, TIMEOUT);
-
+    cluster.waitForActiveCollection("overwrite", 1, 1);
+    
     new UpdateRequest()
         .add("id", "0", "a_t", "hello1")
         .add("id", "0", "a_t", "hello2")
@@ -177,10 +172,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testAliasHandling() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
     CollectionAdminRequest.createCollection(COLLECTION2, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION2, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+    cluster.waitForActiveCollection(COLLECTION2, 2, 2);
 
     CloudSolrClient client = getRandomClient();
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
@@ -224,6 +220,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testRouting() throws Exception {
+    CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection("routing_collection", 2, 2);
     
     AbstractUpdateRequest request = new UpdateRequest()
         .add(id, "0", "a_t", "hello1")
@@ -231,7 +229,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     
     // Test single threaded routed updates for UpdateRequest
-    NamedList<Object> response = getRandomClient().request(request, COLLECTION);
+    NamedList<Object> response = getRandomClient().request(request, "routing_collection");
     if (getRandomClient().isDirectUpdatesToLeadersOnly()) {
       checkSingleServer(response);
     }
@@ -262,12 +260,12 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     final UpdateResponse uResponse = new UpdateRequest()
         .deleteById("0")
         .deleteById("2")
-        .commit(cluster.getSolrClient(), COLLECTION);
+        .commit(cluster.getSolrClient(), "routing_collection");
     if (getRandomClient().isDirectUpdatesToLeadersOnly()) {
       checkSingleServer(uResponse.getResponse());
     }
 
-    QueryResponse qResponse = getRandomClient().query(COLLECTION, new SolrQuery("*:*"));
+    QueryResponse qResponse = getRandomClient().query("routing_collection", new SolrQuery("*:*"));
     SolrDocumentList docs = qResponse.getResults();
     assertEquals(0, docs.getNumFound());
     
@@ -276,7 +274,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         (Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
         .withParallelUpdates(true)
         .build()) {
-      threadedClient.setDefaultCollection(COLLECTION);
+      threadedClient.setDefaultCollection("routing_collection");
       response = threadedClient.request(request);
       if (threadedClient.isDirectUpdatesToLeadersOnly()) {
         checkSingleServer(response);
@@ -308,12 +306,12 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // Track request counts on each node before query calls
     ClusterState clusterState = cluster.getSolrClient().getZkStateReader().getClusterState();
-    DocCollection col = clusterState.getCollection(COLLECTION);
+    DocCollection col = clusterState.getCollection("routing_collection");
     Map<String, Long> requestCountsMap = Maps.newHashMap();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
-        requestCountsMap.put(baseURL, getNumRequests(baseURL, COLLECTION));
+        requestCountsMap.put(baseURL, getNumRequests(baseURL, "routing_collection"));
       }
     }
 
@@ -358,7 +356,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.set(CommonParams.Q, "*:*");
       solrParams.set(ShardParams._ROUTE_, sameShardRoutes.get(random().nextInt(sameShardRoutes.size())));
-      log.info("output: {}", getRandomClient().query(COLLECTION, solrParams));
+      log.info("output: {}", getRandomClient().query("routing_collection", solrParams));
     }
 
     // Request counts increase from expected nodes should aggregate to 1000, while there should be
@@ -371,7 +369,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
 
         Long prevNumRequests = requestCountsMap.get(baseURL);
-        Long curNumRequests = getNumRequests(baseURL, COLLECTION);
+        Long curNumRequests = getNumRequests(baseURL, "routing_collection");
 
         long delta = curNumRequests - prevNumRequests;
         if (expectedBaseURLs.contains(baseURL)) {
@@ -394,6 +392,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
    * limits the distributed query to locally hosted shards only
    */
   @Test
+  // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void preferLocalShardsTest() throws Exception {
 
     String collectionName = "localShardsTestColl";
@@ -404,10 +403,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // all its cores on the same node.
     // Hence the below configuration for our collection
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
-        .setMaxShardsPerNode(liveNodes)
+        .setMaxShardsPerNode(liveNodes * liveNodes)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, cluster.getSolrClient().getZkStateReader(), false, true, TIMEOUT);
-
+    cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * liveNodes);
     // Add some new documents
     new UpdateRequest()
         .add(id, "0", "a_t", "hello1")
@@ -416,18 +414,24 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .commit(getRandomClient(), collectionName);
 
     // Run the actual test for 'preferLocalShards'
-    queryWithPreferLocalShards(getRandomClient(), true, collectionName);
+    queryWithShardsPreferenceRules(getRandomClient(), false, collectionName);
+    queryWithShardsPreferenceRules(getRandomClient(), true, collectionName);
   }
 
-  private void queryWithPreferLocalShards(CloudSolrClient cloudClient,
-                                          boolean preferLocalShards,
+  @SuppressWarnings("deprecation")
+  private void queryWithShardsPreferenceRules(CloudSolrClient cloudClient,
+                                          boolean useShardsPreference,
                                           String collectionName)
       throws Exception
   {
     SolrQuery qRequest = new SolrQuery("*:*");
 
     ModifiableSolrParams qParams = new ModifiableSolrParams();
-    qParams.add(CommonParams.PREFER_LOCAL_SHARDS, Boolean.toString(preferLocalShards));
+    if (useShardsPreference) {
+      qParams.add(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":" + ShardParams.REPLICA_LOCAL);
+    } else {
+      qParams.add(CommonParams.PREFER_LOCAL_SHARDS, "true");
+    }
     qParams.add(ShardParams.SHARDS_INFO, "true");
     qRequest.add(qParams);
 
@@ -454,17 +458,15 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     log.info("Shards giving the response: " + Arrays.toString(shardAddresses.toArray()));
 
     // Make sure the distributed queries were directed to a single node only
-    if (preferLocalShards) {
-      Set<Integer> ports = new HashSet<Integer>();
-      for (String shardAddr: shardAddresses) {
-        URL url = new URL (shardAddr);
-        ports.add(url.getPort());
-      }
-
-      // This assertion would hold true as long as every shard has a core on each node
-      assertTrue ("Response was not received from shards on a single node",
-          shardAddresses.size() > 1 && ports.size()==1);
+    Set<Integer> ports = new HashSet<Integer>();
+    for (String shardAddr: shardAddresses) {
+      URL url = new URL (shardAddr);
+      ports.add(url.getPort());
     }
+
+    // This assertion would hold true as long as every shard has a core on each node
+    assertTrue ("Response was not received from shards on a single node",
+        shardAddresses.size() > 1 && ports.size()==1);
   }
 
   private Long getNumRequests(String baseUrl, String collectionName) throws
@@ -509,7 +511,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       // important to have one replica on each node
       RequestStatusState state = CollectionAdminRequest.createCollection("foo", "conf", 1, NODE_COUNT).processAndWait(client, 60);
       if (state == RequestStatusState.COMPLETED) {
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish("foo", client.getZkStateReader(), true, true, TIMEOUT);
+        cluster.waitForActiveCollection("foo", 1, NODE_COUNT);
         client.setDefaultCollection("foo");
 
         Map<String, String> adminPathToMbean = new HashMap<>(CommonParams.ADMIN_PATHS.size());
@@ -562,9 +564,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
       CollectionAdminRequest.waitForAsyncRequest(async1, client, TIMEOUT);
       CollectionAdminRequest.waitForAsyncRequest(async2, client, TIMEOUT);
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish("multicollection1", client.getZkStateReader(), false, true, TIMEOUT);
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish("multicollection2", client.getZkStateReader(), false, true, TIMEOUT);
-
+      cluster.waitForActiveCollection("multicollection1", 2, 2);
+      cluster.waitForActiveCollection("multicollection2", 2, 2);
       client.setDefaultCollection("multicollection1");
 
       List<SolrInputDocument> docs = new ArrayList<>(3);
@@ -598,6 +599,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void stateVersionParamTest() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
     DocCollection coll = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION);
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
@@ -663,10 +666,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testShutdown() throws IOException {
     try (CloudSolrClient client = getCloudSolrClient("[ff01::114]:33332")) {
       client.setZkConnectTimeout(100);
-      client.connect();
-      fail("Expected exception");
-    } catch (SolrException e) {
-      assertTrue(e.getCause() instanceof TimeoutException);
+      SolrException ex = expectThrows(SolrException.class, client::connect);
+      assertTrue(ex.getCause() instanceof TimeoutException);
     }
   }
 
@@ -675,14 +676,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testWrongZkChrootTest() throws IOException {
-
-    exception.expect(SolrException.class);
-    exception.expectMessage("cluster not found/not ready");
-
     try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
       client.setZkClientTimeout(1000 * 60);
-      client.connect();
-      fail("Expected exception");
+      SolrException ex = expectThrows(SolrException.class, client::connect);
+      assertTrue(ex.getMessage().contains("cluster not found/not ready"));
     }
   }
 
@@ -700,6 +697,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testVersionsAreReturned() throws Exception {
+    CollectionAdminRequest.createCollection("versions_collection", "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection("versions_collection", 2, 2);
     
     // assert that "adds" are returned
     UpdateRequest updateRequest = new UpdateRequest()
@@ -707,7 +706,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .add("id", "2", "a_t", "hello2");
     updateRequest.setParam(UpdateParams.VERSIONS, Boolean.TRUE.toString());
 
-    NamedList<Object> response = updateRequest.commit(getRandomClient(), COLLECTION).getResponse();
+    NamedList<Object> response = updateRequest.commit(getRandomClient(), "versions_collection").getResponse();
     Object addsObject = response.get("adds");
     
     assertNotNull("There must be a adds parameter", addsObject);
@@ -726,7 +725,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertTrue("Version for id 2 must be a long", object instanceof Long);
     versions.put("2", (Long) object);
 
-    QueryResponse resp = getRandomClient().query(COLLECTION, new SolrQuery("*:*"));
+    QueryResponse resp = getRandomClient().query("versions_collection", new SolrQuery("*:*"));
     assertEquals("There should be one document because overwrite=true", 2, resp.getResults().getNumFound());
 
     for (SolrDocument doc : resp.getResults()) {
@@ -737,7 +736,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // assert that "deletes" are returned
     UpdateRequest deleteRequest = new UpdateRequest().deleteById("1");
     deleteRequest.setParam(UpdateParams.VERSIONS, Boolean.TRUE.toString());
-    response = deleteRequest.commit(getRandomClient(), COLLECTION).getResponse();
+    response = deleteRequest.commit(getRandomClient(), "versions_collection").getResponse();
     Object deletesObject = response.get("deletes");
     assertNotNull("There must be a deletes parameter", deletesObject);
     NamedList deletes = (NamedList) deletesObject;
@@ -746,6 +745,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   
   @Test
   public void testInitializationWithSolrUrls() throws Exception {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
     CloudSolrClient client = httpBasedCloudSolrClient;
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
     client.add(COLLECTION, doc);
@@ -757,16 +758,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testCollectionDoesntExist() throws Exception {
     CloudSolrClient client = getRandomClient();
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
-    try {
-      client.add("boguscollectionname", doc);
-      fail();
-    } catch (SolrException ex) {
-      if (ex.getMessage().equals("Collection not found: boguscollectionname")) {
-        // pass
-      } else {
-        throw ex;
-      }
-    }
+    SolrException ex = expectThrows(SolrException.class, () -> client.add("boguscollectionname", doc));
+    assertEquals("Collection not found: boguscollectionname", ex.getMessage());
   }
 
   public void testRetryUpdatesWhenClusterStateIsStale() throws Exception {
@@ -781,8 +774,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
                  CollectionAdminRequest.createCollection(COL, "conf", 1, 1)
                  .setCreateNodeSet(old_leader_node.getNodeName())
                  .process(cluster.getSolrClient()).getStatus());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish
-      (COL, cluster.getSolrClient().getZkStateReader(), true, true, 330);
+    cluster.waitForActiveCollection(COL, 1, 1);
 
     // determine the coreNodeName of only current replica
     Collection<Slice> slices = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COL).getSlices();
@@ -842,6 +834,121 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         assertEquals("wrong number of servers: "+entry.getValue().getServers(),
             1, entry.getValue().getServers().size());
     }
+  }
+
+  /**
+   * Tests if the specification of 'preferReplicaTypes` in the query-params
+   * limits the distributed query to locally hosted shards only
+   */
+  @Test
+  // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  public void preferReplicaTypesTest() throws Exception {
+
+    String collectionName = "replicaTypesTestColl";
+
+    int liveNodes = cluster.getJettySolrRunners().size();
+
+    // For these tests we need to have multiple replica types.
+    // Hence the below configuration for our collection
+    int pullReplicas = Math.max(1, liveNodes - 2);
+    CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, 1, 1, pullReplicas)
+        .setMaxShardsPerNode(liveNodes)
+        .processAndWait(cluster.getSolrClient(), TIMEOUT);
+    cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * (2 + pullReplicas));
+    
+    // Add some new documents
+    new UpdateRequest()
+        .add(id, "0", "a_t", "hello1")
+        .add(id, "2", "a_t", "hello2")
+        .add(id, "3", "a_t", "hello2")
+        .commit(getRandomClient(), collectionName);
+
+    // Run the actual tests for 'shards.preference=replica.type:*'
+    queryWithPreferReplicaTypes(getRandomClient(), "PULL", false, collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "PULL|TLOG", false, collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "TLOG", false, collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "TLOG|PULL", false, collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "NRT", false, collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "NRT|PULL", false, collectionName);
+    // Test to verify that preferLocalShards=true doesn't break this
+    queryWithPreferReplicaTypes(getRandomClient(), "PULL", true, collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "PULL|TLOG", true, collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "TLOG", true, collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "TLOG|PULL", true, collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "NRT", false, collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "NRT|PULL", true, collectionName);
+    CollectionAdminRequest.deleteCollection(collectionName)
+        .processAndWait(cluster.getSolrClient(), TIMEOUT);
+  }
+
+  private void queryWithPreferReplicaTypes(CloudSolrClient cloudClient,
+                                           String preferReplicaTypes,
+                                           boolean preferLocalShards,
+                                           String collectionName)
+      throws Exception
+  {
+    SolrQuery qRequest = new SolrQuery("*:*");
+    ModifiableSolrParams qParams = new ModifiableSolrParams();
+
+    final List<String> preferredTypes = Arrays.asList(preferReplicaTypes.split("\\|"));
+    StringBuilder rule = new StringBuilder();
+    preferredTypes.forEach(type -> {
+      if (rule.length() != 0) {
+        rule.append(',');
+      }
+      rule.append(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE);
+      rule.append(':');
+      rule.append(type);
+    });
+    if (preferLocalShards) {
+      if (rule.length() != 0) {
+        rule.append(',');
+      }
+      rule.append(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION);
+      rule.append(":local");
+    }
+    qParams.add(ShardParams.SHARDS_PREFERENCE, rule.toString());  
+    qParams.add(ShardParams.SHARDS_INFO, "true");
+    qRequest.add(qParams);
+
+    // CloudSolrClient sends the request to some node.
+    // And since all the nodes are hosting cores from all shards, the
+    // distributed query formed by this node will select cores from the
+    // local shards only
+    QueryResponse qResponse = cloudClient.query(collectionName, qRequest);
+
+    Object shardsInfo = qResponse.getResponse().get(ShardParams.SHARDS_INFO);
+    assertNotNull("Unable to obtain "+ShardParams.SHARDS_INFO, shardsInfo);
+
+    Map<String, String> replicaTypeMap = new HashMap<String, String>();
+    DocCollection collection = getCollectionState(collectionName);
+    for (Slice slice : collection.getSlices()) {
+      for (Replica replica : slice.getReplicas()) {
+        String coreUrl = replica.getCoreUrl();
+        // It seems replica reports its core URL with a trailing slash while shard
+        // info returned from the query doesn't. Oh well.
+        if (coreUrl.endsWith("/")) {
+          coreUrl = coreUrl.substring(0, coreUrl.length() - 1);
+        }
+        replicaTypeMap.put(coreUrl, replica.getType().toString());
+      }
+    }
+
+    // Iterate over shards-info and check that replicas of correct type responded
+    SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>)shardsInfo;
+    Iterator<Map.Entry<String, ?>> itr = shardsInfoMap.asMap(100).entrySet().iterator();
+    List<String> shardAddresses = new ArrayList<String>();
+    while (itr.hasNext()) {
+      Map.Entry<String, ?> e = itr.next();
+      assertTrue("Did not find map-type value in "+ShardParams.SHARDS_INFO, e.getValue() instanceof Map);
+      String shardAddress = (String)((Map)e.getValue()).get("shardAddress");
+      assertNotNull(ShardParams.SHARDS_INFO+" did not return 'shardAddress' parameter", shardAddress);
+      assertTrue(replicaTypeMap.containsKey(shardAddress));
+      assertTrue(preferredTypes.indexOf(replicaTypeMap.get(shardAddress)) == 0);
+      shardAddresses.add(shardAddress);
+    }
+    assertTrue("No responses", shardAddresses.size() > 0);
+    log.info("Shards giving the response: " + Arrays.toString(shardAddresses.toArray()));
   }
 
 }

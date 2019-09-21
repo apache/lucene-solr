@@ -16,6 +16,16 @@
  */
 package org.apache.solr.request;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
@@ -33,16 +43,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-
 /**
  * See SOLR-2854.
  */
@@ -55,7 +55,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     //this one has handleSelect=true which a test here needs
     solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
-    createJetty(solrHomeDirectory.getAbsolutePath());
+    createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
 
   @AfterClass
@@ -112,12 +112,8 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     SolrQuery query = new SolrQuery();
     query.setQuery( "*:*" );//for anything
     query.add("stream.url",makeDeleteAllUrl());
-    try {
-      getSolrClient().query(query);
-      fail();
-    } catch (SolrException se) {
-      assertSame(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
-    }
+    SolrException se = expectThrows(SolrException.class, () -> getSolrClient().query(query));
+    assertSame(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
   }
   
   /** Compose a url that if you get it, it will delete all the data. */

@@ -32,14 +32,15 @@ import java.util.Collections;
  * several places, however all they have in hand is a {@link Scorer} object, and
  * might end up computing the score of a document more than once.
  */
-public final class ScoreCachingWrappingScorer extends FilterScorer {
+public final class ScoreCachingWrappingScorer extends Scorable {
 
   private int curDoc = -1;
   private float curScore;
+  private final Scorable in;
 
   /** Creates a new instance by wrapping the given scorer. */
-  public ScoreCachingWrappingScorer(Scorer scorer) {
-    super(scorer);
+  public ScoreCachingWrappingScorer(Scorable scorer) {
+    this.in = scorer;
   }
 
   @Override
@@ -54,22 +55,17 @@ public final class ScoreCachingWrappingScorer extends FilterScorer {
   }
 
   @Override
-  public float getMaxScore(int upTo) throws IOException {
-    return in.getMaxScore(upTo);
-  }
-
-  @Override
-  public int advanceShallow(int target) throws IOException {
-    return in.advanceShallow(target);
-  }
-
-  @Override
-  public void setMinCompetitiveScore(float minScore) {
+  public void setMinCompetitiveScore(float minScore) throws IOException {
     in.setMinCompetitiveScore(minScore);
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
-    return Collections.singleton(new ChildScorer(in, "CACHED"));
+  public int docID() {
+    return in.docID();
+  }
+
+  @Override
+  public Collection<ChildScorable> getChildren() {
+    return Collections.singleton(new ChildScorable(in, "CACHED"));
   }
 }

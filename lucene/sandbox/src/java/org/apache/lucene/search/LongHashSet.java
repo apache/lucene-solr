@@ -21,9 +21,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 
-final class LongHashSet extends AbstractSet<Long> {
+final class LongHashSet extends AbstractSet<Long> implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(LongHashSet.class);
 
   private static final long MISSING = Long.MIN_VALUE;
 
@@ -112,6 +115,12 @@ final class LongHashSet extends AbstractSet<Long> {
       return true;
     }
     return super.equals(obj);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(table);
   }
 
   @Override

@@ -23,8 +23,8 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -42,86 +42,88 @@ public abstract class BaseCompressingDocValuesFormatTestCase extends BaseDocValu
   }
 
   public void testUniqueValuesCompression() throws IOException {
-    final Directory dir = new RAMDirectory();
-    final IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    final IndexWriter iwriter = new IndexWriter(dir, iwc);
+    try (final Directory dir = new ByteBuffersDirectory()) {
+      final IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+      final IndexWriter iwriter = new IndexWriter(dir, iwc);
 
-    final int uniqueValueCount = TestUtil.nextInt(random(), 1, 256);
-    final List<Long> values = new ArrayList<>();
+      final int uniqueValueCount = TestUtil.nextInt(random(), 1, 256);
+      final List<Long> values = new ArrayList<>();
 
-    final Document doc = new Document();
-    final NumericDocValuesField dvf = new NumericDocValuesField("dv", 0);
-    doc.add(dvf);
-    for (int i = 0; i < 300; ++i) {
-      final long value;
-      if (values.size() < uniqueValueCount) {
-        value = random().nextLong();
-        values.add(value);
-      } else {
-        value = RandomPicks.randomFrom(random(), values);
+      final Document doc = new Document();
+      final NumericDocValuesField dvf = new NumericDocValuesField("dv", 0);
+      doc.add(dvf);
+      for (int i = 0; i < 300; ++i) {
+        final long value;
+        if (values.size() < uniqueValueCount) {
+          value = random().nextLong();
+          values.add(value);
+        } else {
+          value = RandomPicks.randomFrom(random(), values);
+        }
+        dvf.setLongValue(value);
+        iwriter.addDocument(doc);
       }
-      dvf.setLongValue(value);
-      iwriter.addDocument(doc);
+      iwriter.forceMerge(1);
+      final long size1 = dirSize(dir);
+      for (int i = 0; i < 20; ++i) {
+        dvf.setLongValue(RandomPicks.randomFrom(random(), values));
+        iwriter.addDocument(doc);
+      }
+      iwriter.forceMerge(1);
+      final long size2 = dirSize(dir);
+      // make sure the new longs did not cost 8 bytes each
+      assertTrue(size2 < size1 + 8 * 20);
     }
-    iwriter.forceMerge(1);
-    final long size1 = dirSize(dir);
-    for (int i = 0; i < 20; ++i) {
-      dvf.setLongValue(RandomPicks.randomFrom(random(), values));
-      iwriter.addDocument(doc);
-    }
-    iwriter.forceMerge(1);
-    final long size2 = dirSize(dir);
-    // make sure the new longs did not cost 8 bytes each
-    assertTrue(size2 < size1 + 8 * 20);
   }
 
   public void testDateCompression() throws IOException {
-    final Directory dir = new RAMDirectory();
-    final IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    final IndexWriter iwriter = new IndexWriter(dir, iwc);
+    try (final Directory dir = new ByteBuffersDirectory()) {
+      final IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+      final IndexWriter iwriter = new IndexWriter(dir, iwc);
 
-    final long base = 13; // prime
-    final long day = 1000L * 60 * 60 * 24;
+      final long base = 13; // prime
+      final long day = 1000L * 60 * 60 * 24;
 
-    final Document doc = new Document();
-    final NumericDocValuesField dvf = new NumericDocValuesField("dv", 0);
-    doc.add(dvf);
-    for (int i = 0; i < 300; ++i) {
-      dvf.setLongValue(base + random().nextInt(1000) * day);
-      iwriter.addDocument(doc);
+      final Document doc = new Document();
+      final NumericDocValuesField dvf = new NumericDocValuesField("dv", 0);
+      doc.add(dvf);
+      for (int i = 0; i < 300; ++i) {
+        dvf.setLongValue(base + random().nextInt(1000) * day);
+        iwriter.addDocument(doc);
+      }
+      iwriter.forceMerge(1);
+      final long size1 = dirSize(dir);
+      for (int i = 0; i < 50; ++i) {
+        dvf.setLongValue(base + random().nextInt(1000) * day);
+        iwriter.addDocument(doc);
+      }
+      iwriter.forceMerge(1);
+      final long size2 = dirSize(dir);
+      // make sure the new longs costed less than if they had only been packed
+      assertTrue(size2 < size1 + (PackedInts.bitsRequired(day) * 50) / 8);
     }
-    iwriter.forceMerge(1);
-    final long size1 = dirSize(dir);
-    for (int i = 0; i < 50; ++i) {
-      dvf.setLongValue(base + random().nextInt(1000) * day);
-      iwriter.addDocument(doc);
-    }
-    iwriter.forceMerge(1);
-    final long size2 = dirSize(dir);
-    // make sure the new longs costed less than if they had only been packed
-    assertTrue(size2 < size1 + (PackedInts.bitsRequired(day) * 50) / 8);
   }
 
   public void testSingleBigValueCompression() throws IOException {
-    final Directory dir = new RAMDirectory();
-    final IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    final IndexWriter iwriter = new IndexWriter(dir, iwc);
+    try (final Directory dir = new ByteBuffersDirectory()) {
+      final IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+      final IndexWriter iwriter = new IndexWriter(dir, iwc);
 
-    final Document doc = new Document();
-    final NumericDocValuesField dvf = new NumericDocValuesField("dv", 0);
-    doc.add(dvf);
-    for (int i = 0; i < 20000; ++i) {
-      dvf.setLongValue(i & 1023);
+      final Document doc = new Document();
+      final NumericDocValuesField dvf = new NumericDocValuesField("dv", 0);
+      doc.add(dvf);
+      for (int i = 0; i < 20000; ++i) {
+        dvf.setLongValue(i & 1023);
+        iwriter.addDocument(doc);
+      }
+      iwriter.forceMerge(1);
+      final long size1 = dirSize(dir);
+      dvf.setLongValue(Long.MAX_VALUE);
       iwriter.addDocument(doc);
+      iwriter.forceMerge(1);
+      final long size2 = dirSize(dir);
+      // make sure the new value did not grow the bpv for every other value
+      assertTrue(size2 < size1 + (20000 * (63 - 10)) / 8);
     }
-    iwriter.forceMerge(1);
-    final long size1 = dirSize(dir);
-    dvf.setLongValue(Long.MAX_VALUE);
-    iwriter.addDocument(doc);
-    iwriter.forceMerge(1);
-    final long size2 = dirSize(dir);
-    // make sure the new value did not grow the bpv for every other value
-    assertTrue(size2 < size1 + (20000 * (63 - 10)) / 8);
   }
-
 }

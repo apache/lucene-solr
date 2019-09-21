@@ -181,7 +181,7 @@ If using Kerberos, you will need to add the three Kerberos related properties to
 
 == Automatically Add Replicas in SolrCloud
 
-The ability to automatically add new replicas when the Overseer notices that a shard has gone down was previously only available to users running Solr in HDFS, but it is now available to all users via Solr's autoscaling framework. See the section <<solrcloud-autoscaling-triggers.adoc#auto-add-replicas-trigger,Auto Add Replicas Trigger>> for details on how to enable and disable this feature.
+The ability to automatically add new replicas when the Overseer notices that a shard has gone down was previously only available to users running Solr in HDFS, but it is now available to all users via Solr's autoscaling framework. See the section <<solrcloud-autoscaling-auto-add-replicas.adoc#the-autoaddreplicas-parameter,SolrCloud Autoscaling Automatically Adding Replicas>> for details on how to enable and disable this feature.
 
 [WARNING]
 ====

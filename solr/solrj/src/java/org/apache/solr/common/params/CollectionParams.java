@@ -79,14 +79,14 @@ public interface CollectionParams {
     DELETEALIAS(true, LockLevel.COLLECTION),
     ALIASPROP(true, LockLevel.COLLECTION),
     LISTALIASES(false, LockLevel.NONE),
-    MAINTAINROUTEDALIAS(true, LockLevel.COLLECTION),
+    MAINTAINROUTEDALIAS(true, LockLevel.COLLECTION), // internal use only
     DELETEROUTEDALIASCOLLECTIONS(true, LockLevel.COLLECTION),
     SPLITSHARD(true, LockLevel.SHARD),
     DELETESHARD(true, LockLevel.SHARD),
     CREATESHARD(true, LockLevel.COLLECTION),
     DELETEREPLICA(true, LockLevel.SHARD),
     FORCELEADER(true, LockLevel.SHARD),
-    MIGRATE(true, LockLevel.SHARD),
+    MIGRATE(true, LockLevel.COLLECTION),
     ADDROLE(true, LockLevel.NONE),
     REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),
@@ -119,7 +119,13 @@ public interface CollectionParams {
     REPLACENODE(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
     MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
-    NONE(false, LockLevel.NONE)
+    NONE(false, LockLevel.NONE),
+    // TODO: not implemented yet
+    MERGESHARDS(true, LockLevel.SHARD),
+    COLSTATUS(true, LockLevel.NONE),
+    // this command implements its own locking
+    REINDEXCOLLECTION(true, LockLevel.NONE),
+    RENAME(true, LockLevel.COLLECTION)
     ;
     public final boolean isWrite;
 

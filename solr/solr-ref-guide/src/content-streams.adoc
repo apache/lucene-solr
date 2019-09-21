@@ -78,6 +78,10 @@ curl -X POST -H 'Content-type: application/json' -d '{"set-property": {"requestD
 If `enableRemoteStreaming="true"` is used, be aware that this allows _anyone_ to send a request to any URL or local file. If the <<Debugging Requests,DumpRequestHandler>> is enabled, it will allow anyone to view any file on your system.
 ====
 
+The source of the data can be compressed using gzip, and Solr will generally detect this.
+The detection is based on either the presence of a `Content-Encoding: gzip` HTTP header or the file ending with .gz or .gzip.
+Gzip doesn't apply to `stream.body`.
+
 == Debugging Requests
 
 The implicit "dump" RequestHandler (see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>) simply outputs the contents of the Solr QueryRequest using the specified writer type `wt`. This is a useful tool to help understand what streams are available to the RequestHandlers.

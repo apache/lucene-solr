@@ -65,7 +65,7 @@ public class AssertingSimilarity extends Similarity {
     final float boost;
     
     AssertingSimScorer(SimScorer delegate, float boost) {
-      super(delegate.getField());
+      super();
       this.delegate = delegate;
       this.boost = boost;
     }

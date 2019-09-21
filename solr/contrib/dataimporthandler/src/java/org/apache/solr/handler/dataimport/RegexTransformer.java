@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
  * @see Pattern
  */
 public class RegexTransformer extends Transformer {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   @SuppressWarnings("unchecked")
@@ -166,7 +166,7 @@ public class RegexTransformer extends Transformer {
               }
             }
           } catch (Exception e) {
-            LOG.warn("Parsing failed for field : " + columnName, e);
+            log.warn("Parsing failed for field : " + columnName, e);
           }
         }
         return l == null ? map: l;

@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -34,13 +34,15 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  */
 public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
-  private static final BytesRef[] ZERO_LEN_BYTES_REF_ARRAY = new BytesRef[0];
+  private final CharacterRunAutomaton[] combinedAutomata;
 
-  public TokenStreamOffsetStrategy(String field, BytesRef[] terms, PhraseHelper phraseHelper, CharacterRunAutomaton[] automata, Analyzer indexAnalyzer) {
-    super(field, ZERO_LEN_BYTES_REF_ARRAY, phraseHelper, convertTermsToAutomata(terms, automata), indexAnalyzer);
-    assert phraseHelper.hasPositionSensitivity() == false;
+  public TokenStreamOffsetStrategy(UHComponents components, Analyzer indexAnalyzer) {
+    super(components, indexAnalyzer);
+    assert components.getPhraseHelper().hasPositionSensitivity() == false;
+    combinedAutomata = convertTermsToAutomata(components.getTerms(), components.getAutomata());
   }
 
+  //TODO this is inefficient; instead build a union automata just for terms part.
   private static CharacterRunAutomaton[] convertTermsToAutomata(BytesRef[] terms, CharacterRunAutomaton[] automata) {
     CharacterRunAutomaton[] newAutomata = new CharacterRunAutomaton[terms.length + automata.length];
     for (int i = 0; i < terms.length; i++) {
@@ -58,8 +60,8 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
   }
 
   @Override
-  public OffsetsEnum getOffsetsEnum(IndexReader reader, int docId, String content) throws IOException {
-    return new TokenStreamOffsetsEnum(tokenStream(content), automata);
+  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
+    return new TokenStreamOffsetsEnum(tokenStream(content), combinedAutomata);
   }
 
   private static class TokenStreamOffsetsEnum extends OffsetsEnum {

@@ -21,7 +21,7 @@ import java.util.Map;
 import junit.framework.Assert;
 
 import org.apache.commons.collections.map.HashedMap;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.ops.StreamOperation;
@@ -32,7 +32,7 @@ import org.junit.Test;
 /**
  **/
 
-public class OperationsTest extends LuceneTestCase {
+public class OperationsTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;

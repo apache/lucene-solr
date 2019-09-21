@@ -17,23 +17,45 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * {@link ImpactsEnum} that doesn't index impacts but implements the API in a
- * legal way. This should typically be used for short postings that do not need
+ * legal way. This is typically used for short postings that do not need
  * skipping.
  */
 public final class SlowImpactsEnum extends ImpactsEnum {
 
+  private static final Impacts DUMMY_IMPACTS = new Impacts() {
+
+    private final List<Impact> impacts = Collections.singletonList(new Impact(Integer.MAX_VALUE, 1L));
+
+    @Override
+    public int numLevels() {
+      return 1;
+    }
+
+    @Override
+    public int getDocIdUpTo(int level) {
+      return DocIdSetIterator.NO_MORE_DOCS;
+    }
+
+    @Override
+    public List<Impact> getImpacts(int level) {
+      return impacts;
+    }
+
+  };
+
   private final PostingsEnum delegate;
-  private final float maxScore;
 
   /** Wrap the given {@link PostingsEnum}. */
-  public SlowImpactsEnum(PostingsEnum delegate, float maxScore) {
+  public SlowImpactsEnum(PostingsEnum delegate) {
     this.delegate = delegate;
-    this.maxScore = maxScore;
   }
 
   @Override
@@ -82,13 +104,10 @@ public final class SlowImpactsEnum extends ImpactsEnum {
   }
 
   @Override
-  public int advanceShallow(int target) {
-    return NO_MORE_DOCS;
-  }
+  public void advanceShallow(int target) {}
 
   @Override
-  public float getMaxScore(int maxDoc) {
-    return maxScore;
+  public Impacts getImpacts() {
+    return DUMMY_IMPACTS;
   }
-
 }

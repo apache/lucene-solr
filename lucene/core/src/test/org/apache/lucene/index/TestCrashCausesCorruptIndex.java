@@ -112,7 +112,7 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
     IndexSearcher indexSearcher = newSearcher(indexReader);
     TopDocs topDocs = indexSearcher.search(new TermQuery(new Term(TEXT_FIELD, "fleas")), 10);
     assertNotNull(topDocs);
-    assertEquals(expectedTotalHits, topDocs.totalHits);
+    assertEquals(expectedTotalHits, topDocs.totalHits.value);
     indexReader.close();
     realDirectory.close();
   }

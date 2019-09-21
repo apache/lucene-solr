@@ -63,15 +63,15 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
     for( Class clazz : classes ) {
       if( SolrInfoBean.class.isAssignableFrom( clazz ) ) {
         try {
-          SolrInfoBean info = (SolrInfoBean)clazz.newInstance();
+          SolrInfoBean info = (SolrInfoBean)clazz.getConstructor().newInstance();
           if (info instanceof SolrMetricProducer) {
-            ((SolrMetricProducer)info).initializeMetrics(metricManager, registry, scope);
+            ((SolrMetricProducer)info).initializeMetrics(metricManager, registry, "foo", scope);
           }
           
           //System.out.println( info.getClass() );
-          assertNotNull( info.getName() );
-          assertNotNull( info.getDescription() );
-          assertNotNull( info.getCategory() );
+          assertNotNull( info.getClass().getCanonicalName(), info.getName() );
+          assertNotNull( info.getClass().getCanonicalName(), info.getDescription() );
+          assertNotNull( info.getClass().getCanonicalName(), info.getCategory() );
           
           if( info instanceof LRUCache ) {
             continue;
@@ -80,7 +80,7 @@ public class SolrInfoBeanTest extends SolrTestCaseJ4
           assertNotNull( info.toString() );
           checked++;
         }
-        catch( InstantiationException ex ) {
+        catch( ReflectiveOperationException ex ) {
           // expected...
           //System.out.println( "unable to initialize: "+clazz );
         }

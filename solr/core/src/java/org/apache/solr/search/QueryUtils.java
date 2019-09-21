@@ -20,6 +20,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -132,7 +133,7 @@ public class QueryUtils {
 
   /** @lucene.experimental throw exception if max boolean clauses are exceeded */
   public static BooleanQuery build(BooleanQuery.Builder builder, QParser parser) {
-    int configuredMax = parser != null ? parser.getReq().getCore().getSolrConfig().booleanQueryMaxClauseCount : BooleanQuery.getMaxClauseCount();
+    int configuredMax = parser != null ? parser.getReq().getCore().getSolrConfig().booleanQueryMaxClauseCount : IndexSearcher.getMaxClauseCount();
     BooleanQuery bq = builder.build();
     if (bq.clauses().size() > configuredMax) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,

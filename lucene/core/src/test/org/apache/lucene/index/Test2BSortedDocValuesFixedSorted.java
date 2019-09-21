@@ -32,7 +32,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
-@SuppressCodecs({"SimpleText", "Memory", "Direct"})
+@SuppressCodecs({"SimpleText", "Direct"})
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR) // effectively no limit
 // The six hour time was achieved on a Linux 3.13 system with these specs:
 // 3-core AMD at 2.5Ghz, 12 GB RAM, 5GB test heap, 2 test JVMs, 2TB SATA.

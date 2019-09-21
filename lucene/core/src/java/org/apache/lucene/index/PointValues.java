@@ -19,15 +19,16 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetAddress;
+import java.util.Arrays;
 
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 /** 
@@ -70,7 +71,7 @@ import org.apache.lucene.util.bkd.BKDWriter;
  * support special operations such as <i>distance</i> and <i>polygon</i> queries. There are currently two implementations:
  * <br>
  * <ol>
- *   <li><a href="{@docRoot}/../sandbox/org/apache/lucene/document/LatLonPoint.html">LatLonPoint</a> in <i>lucene-sandbox</i>: indexes {@code (latitude,longitude)} as {@code (x,y)} in two-dimensional space.
+ *   <li>{@link LatLonPoint}: indexes {@code (latitude,longitude)} as {@code (x,y)} in two-dimensional space.
  *   <li><a href="{@docRoot}/../spatial3d/org/apache/lucene/spatial3d/Geo3DPoint.html">Geo3DPoint</a>* in <i>lucene-spatial3d</i>: indexes {@code (latitude,longitude)} as {@code (x,y,z)} in three-dimensional space.
  * </ol>
  * * does <b>not</b> support altitude, 3D here means "uses three dimensions under-the-hood"<br>
@@ -135,11 +136,11 @@ public abstract class PointValues {
       if (minValue == null) {
         minValue = leafMinValue.clone();
       } else {
-        final int numDimensions = values.getNumDimensions();
+        final int numDimensions = values.getNumIndexDimensions();
         final int numBytesPerDimension = values.getBytesPerDimension();
         for (int i = 0; i < numDimensions; ++i) {
           int offset = i * numBytesPerDimension;
-          if (StringHelper.compare(numBytesPerDimension, leafMinValue, offset, minValue, offset) < 0) {
+          if (Arrays.compareUnsigned(leafMinValue, offset, offset + numBytesPerDimension, minValue, offset, offset + numBytesPerDimension) < 0) {
             System.arraycopy(leafMinValue, offset, minValue, offset, numBytesPerDimension);
           }
         }
@@ -166,11 +167,11 @@ public abstract class PointValues {
       if (maxValue == null) {
         maxValue = leafMaxValue.clone();
       } else {
-        final int numDimensions = values.getNumDimensions();
+        final int numDimensions = values.getNumIndexDimensions();
         final int numBytesPerDimension = values.getBytesPerDimension();
         for (int i = 0; i < numDimensions; ++i) {
           int offset = i * numBytesPerDimension;
-          if (StringHelper.compare(numBytesPerDimension, leafMaxValue, offset, maxValue, offset) > 0) {
+          if (Arrays.compareUnsigned(leafMaxValue, offset, offset + numBytesPerDimension, maxValue, offset, offset + numBytesPerDimension) > 0) {
             System.arraycopy(leafMaxValue, offset, maxValue, offset, numBytesPerDimension);
           }
         }
@@ -207,6 +208,16 @@ public abstract class PointValues {
      *  docID order. */
     void visit(int docID, byte[] packedValue) throws IOException;
 
+    /** Similar to {@link IntersectVisitor#visit(int, byte[])} but in this case the packedValue
+     * can have more than one docID associated to it. The provided iterator should not escape the
+     * scope of this method so that implementations of PointValues are free to reuse it,*/
+    default void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+      int docID;
+      while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        visit(docID, packedValue);
+      }
+    }
+
     /** Called for non-leaf cells to test how the cell relates to the query, to
      *  determine how to further recurse down the tree. */
     Relation compare(byte[] minPackedValue, byte[] maxPackedValue);
@@ -232,8 +243,11 @@ public abstract class PointValues {
   /** Returns maximum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
   public abstract byte[] getMaxPackedValue() throws IOException;
 
-  /** Returns how many dimensions were indexed */
-  public abstract int getNumDimensions() throws IOException;
+  /** Returns how many data dimensions are represented in the values */
+  public abstract int getNumDataDimensions() throws IOException;
+
+  /** Returns how many dimensions are used for the index */
+  public abstract int getNumIndexDimensions() throws IOException;
 
   /** Returns the number of bytes per dimension */
   public abstract int getBytesPerDimension() throws IOException;

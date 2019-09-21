@@ -48,6 +48,8 @@ class GeoSouthRectangle extends GeoBaseBBox {
   protected final SidedPlane leftPlane;
   /** The right plane */
   protected final SidedPlane rightPlane;
+  /** Backing plane (for narrow angles) */
+  protected final SidedPlane backingPlane;
 
   /** Notable points for the top plane */
   protected final GeoPoint[] topPlanePoints;
@@ -117,6 +119,15 @@ class GeoSouthRectangle extends GeoBaseBBox {
     this.leftPlane = new SidedPlane(centerPoint, cosLeftLon, sinLeftLon);
     this.rightPlane = new SidedPlane(centerPoint, cosRightLon, sinRightLon);
 
+    assert(topPlane.isWithin(centerPoint));
+    assert(leftPlane.isWithin(centerPoint));
+    assert(rightPlane.isWithin(centerPoint));
+
+    // Compute the backing plane
+    // The normal for this plane is a unit vector through the origin that goes through the middle lon.  The plane's D is 0,
+    // because it goes through the origin.
+    this.backingPlane = new SidedPlane(this.centerPoint, cosMiddleLon, sinMiddleLon, 0.0, 0.0);
+
     this.topPlanePoints = new GeoPoint[]{ULHC, URHC};
     this.leftPlanePoints = new GeoPoint[]{ULHC, planetModel.SOUTH_POLE};
     this.rightPlanePoints = new GeoPoint[]{URHC, planetModel.SOUTH_POLE};
@@ -160,7 +171,8 @@ class GeoSouthRectangle extends GeoBaseBBox {
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
-    return topPlane.isWithin(x, y, z) &&
+    return backingPlane.isWithin(x, y, z) &&
+        topPlane.isWithin(x, y, z) &&
         leftPlane.isWithin(x, y, z) &&
         rightPlane.isWithin(x, y, z);
   }
@@ -206,7 +218,7 @@ class GeoSouthRectangle extends GeoBaseBBox {
       .addHorizontalPlane(planetModel, topLat, topPlane, leftPlane, rightPlane)
       .addVerticalPlane(planetModel, leftLon, leftPlane, topPlane, rightPlane)
       .addVerticalPlane(planetModel, rightLon, rightPlane, topPlane, leftPlane)
-      .addIntersection(planetModel, rightPlane, leftPlane, topPlane)
+      //.addIntersection(planetModel, rightPlane, leftPlane, topPlane)
       .addPoint(URHC).addPoint(ULHC).addPoint(planetModel.SOUTH_POLE);
   }
 

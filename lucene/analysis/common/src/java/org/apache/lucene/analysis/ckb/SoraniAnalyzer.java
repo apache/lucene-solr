@@ -31,12 +31,13 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.core.DecimalDigitFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.IOUtils;
 
 /**
  * {@link Analyzer} for Sorani Kurdish.
+ *
+ * @since 4.10.0
  */
 public final class SoraniAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
@@ -108,7 +109,7 @@ public final class SoraniAnalyzer extends StopwordAnalyzerBase {
    * @return A
    *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link SoraniNormalizationFilter}, 
+   *         {@link SoraniNormalizationFilter},
    *         {@link LowerCaseFilter}, {@link DecimalDigitFilter}, {@link StopFilter}
    *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link SoraniStemFilter}.
@@ -116,8 +117,7 @@ public final class SoraniAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
-    result = new SoraniNormalizationFilter(result);
+    TokenStream result = new SoraniNormalizationFilter(source);
     result = new LowerCaseFilter(result);
     result = new DecimalDigitFilter(result);
     result = new StopFilter(result, stopwords);
@@ -129,8 +129,7 @@ public final class SoraniAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
-    TokenStream result = new StandardFilter(in);
-    result = new SoraniNormalizationFilter(result);
+    TokenStream result = new SoraniNormalizationFilter(in);
     result = new LowerCaseFilter(result);
     result = new DecimalDigitFilter(result);
     return result;

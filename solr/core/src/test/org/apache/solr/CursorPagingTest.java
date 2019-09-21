@@ -16,38 +16,37 @@
  */
 package org.apache.solr;
 
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.SentinelIntSet;
-import org.apache.lucene.util.mutable.MutableValueInt;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.CursorMarkParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.GroupParams;
-
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.CursorMark; //jdoc
-import org.noggit.ObjectBuilder;
-
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.BeforeClass;
+import org.apache.lucene.util.SentinelIntSet;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.mutable.MutableValueInt;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
+import org.apache.solr.common.params.GroupParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.CursorMark;
 import org.junit.After;
+import org.junit.BeforeClass;
+
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /**
  * Tests of deep paging using {@link CursorMark} and {@link CursorMarkParams#CURSOR_MARK_PARAM}.
@@ -524,10 +523,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
     final MetricsMap filterCacheStats =
-        (MetricsMap)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
+        (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache")).getGauge();
     assertNotNull(filterCacheStats);
     final MetricsMap queryCacheStats =
-        (MetricsMap)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+        (MetricsMap)((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache")).getGauge();
     assertNotNull(queryCacheStats);
 
     final long preQcIn = (Long) queryCacheStats.getValue().get("inserts");
@@ -669,7 +668,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     while (0 < docsOnThisPage) {
       String json = assertJQ(req(params,
                                  CURSOR_MARK_PARAM, cursorMark));
-      Map rsp = (Map) ObjectBuilder.fromJSON(json);
+      Map rsp = (Map) fromJSONString(json);
       assertTrue("response doesn't contain " + CURSOR_MARK_NEXT + ": " + json,
                  rsp.containsKey(CURSOR_MARK_NEXT));
       String nextCursorMark = (String)rsp.get(CURSOR_MARK_NEXT);
@@ -758,7 +757,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     List previousFacets = null;
     while (0 < docsOnThisPage) {
       String json = assertJQ(req(params, CURSOR_MARK_PARAM, cursorMark));
-      Map rsp = (Map) ObjectBuilder.fromJSON(json);
+      Map rsp = (Map) fromJSONString(json);
       assertTrue("response doesn't contain " + CURSOR_MARK_NEXT + ": " + json,
                  rsp.containsKey(CURSOR_MARK_NEXT));
       String nextCursorMark = (String)rsp.get(CURSOR_MARK_NEXT);
@@ -826,7 +825,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    */
   public String assertCursor(SolrQueryRequest req, String... tests) throws Exception {
     String json = assertJQ(req, tests);
-    Map rsp = (Map) ObjectBuilder.fromJSON(json);
+    Map rsp = (Map) fromJSONString(json);
     assertTrue("response doesn't contain "+CURSOR_MARK_NEXT + ": " + json,
                rsp.containsKey(CURSOR_MARK_NEXT));
     String next = (String)rsp.get(CURSOR_MARK_NEXT);
@@ -841,13 +840,13 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     throws Exception {
 
     try {
-      ignoreException(expSubstr);
-      assertJQ(req(p));
-      fail("no exception matching expected: " + expCode.code + ": " + expSubstr);
-    } catch (SolrException e) {
+      SolrException e = expectThrows(SolrException.class, () -> {
+        ignoreException(expSubstr);
+        assertJQ(req(p));
+      });
       assertEquals(expCode.code, e.code());
       assertTrue("Expected substr not found: " + expSubstr + " <!< " + e.getMessage(),
-                 e.getMessage().contains(expSubstr));
+          e.getMessage().contains(expSubstr));
     } finally {
       unIgnoreException(expSubstr);
     }

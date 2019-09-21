@@ -144,6 +144,7 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     assertNotNull(key1);
     assertNotNull(key2);
     assertEquals(key1.hashCode(), key2.hashCode());
+    assertEquals(key1.ramBytesUsed(), key2.ramBytesUsed());
     assertEquals(key1, key2);
     assertEquals(key2, key1);
   }

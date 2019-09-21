@@ -1,4 +1,6 @@
 = Using ZooKeeper to Manage Configuration Files
+:solr-root-path: ../../
+:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -51,13 +53,19 @@ IMPORTANT: It's a good idea to keep these files under version control.
 
 == Uploading Configuration Files using bin/solr or SolrJ
 
-In production situations, <<config-sets.adoc#config-sets,Config Sets>> can also be uploaded to ZooKeeper independent of collection creation using either Solr's <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>> or the {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[CloudSolrClient.uploadConfig] java method.
+In production situations, <<config-sets.adoc#config-sets,Config Sets>> can also be uploaded to ZooKeeper independent of collection creation using either Solr's <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>> or SolrJ.
 
 The below command can be used to upload a new configset using the bin/solr script.
 
 [source,bash]
 ----
 bin/solr zk upconfig -n <name for configset> -d <path to directory with configset>
+----
+
+The following code shows how this can also be achieved using SolrJ:
+[source,java,indent=0]
+----
+include::{example-source-dir}ZkConfigFilesTest.java[tag=zk-configset-upload]
 ----
 
 It is strongly recommended that the configurations be kept in a version control system, Git, SVN or similar.
@@ -84,3 +92,5 @@ If you for example would like to keep your `solr.xml` in ZooKeeper to avoid havi
 ----
 bin/solr zk cp file:local/file/path/to/solr.xml zk:/solr.xml -z localhost:2181
 ----
+
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.

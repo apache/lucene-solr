@@ -84,17 +84,14 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
       try {
         dirFactory.fail = true;
         ignoreException(WRAPPED_FAILING_MSG);
-
-        SolrQueryResponse resp = new SolrQueryResponse();
-        admin.handleRequestBody
-            (req(CoreAdminParams.ACTION,
-                CoreAdminParams.CoreAdminAction.MERGEINDEXES.toString(),
-                CoreAdminParams.CORE, "collection1",
-                CoreAdminParams.INDEX_DIR, workDir.getAbsolutePath()),
-                resp);
-        fail("exception expected");
-      } catch (SolrException e) {
-        // expected if error handling properly
+        SolrException e = expectThrows(SolrException.class, () -> {
+          admin.handleRequestBody
+              (req(CoreAdminParams.ACTION,
+                  CoreAdminParams.CoreAdminAction.MERGEINDEXES.toString(),
+                  CoreAdminParams.CORE, "collection1",
+                  CoreAdminParams.INDEX_DIR, workDir.getAbsolutePath()),
+                  new SolrQueryResponse());
+        });
         assertEquals(FailingDirectoryFactory.FailingDirectoryFactoryException.class, e.getCause().getClass());
       } finally {
         unIgnoreException(WRAPPED_FAILING_MSG);

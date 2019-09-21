@@ -26,13 +26,15 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PrefixCodedTerms;
+import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * A {@link Query} that only accepts documents whose
@@ -91,7 +93,8 @@ import org.apache.lucene.util.LongBitSet;
  *
  * @lucene.experimental
  */
-public class DocValuesTermsQuery extends Query {
+public class DocValuesTermsQuery extends Query implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(DocValuesTermsQuery.class);
 
   private final String field;
   private final PrefixCodedTerms termData;
@@ -165,6 +168,20 @@ public class DocValuesTermsQuery extends Query {
   }
 
   @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(field) +
+        RamUsageEstimator.sizeOfObject(termData);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
@@ -184,7 +201,7 @@ public class DocValuesTermsQuery extends Query {
         if (matchesAtLeastOneTerm == false) {
           return null;
         }
-        return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(values) {
+        return new ConstantScoreScorer(this, score(), scoreMode, new TwoPhaseIterator(values) {
 
           @Override
           public boolean matches() throws IOException {

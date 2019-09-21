@@ -523,7 +523,7 @@ public class TestSimilarityBase extends LuceneTestCase {
     for (SimilarityBase sim : sims) {
       searcher.setSimilarity(sim);
       TopDocs topDocs = searcher.search(q, 1000);
-      assertEquals("Failed: " + sim.toString(), 3, topDocs.totalHits);
+      assertEquals("Failed: " + sim.toString(), 3, topDocs.totalHits.value);
     }
   }
   

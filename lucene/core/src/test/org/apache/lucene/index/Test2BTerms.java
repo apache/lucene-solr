@@ -55,7 +55,7 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 //
 //   ant test -Dtests.monster=true -Dtests.heapsize=8g -Dtests.codec=Lucene62 -Dtestcase=Test2BTerms
 //
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 @Monster("very slow, use 5g minimum heap")
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR) // effectively no limit
 @SuppressSysoutChecks(bugUrl = "Stuff gets printed")
@@ -237,7 +237,7 @@ public class Test2BTerms extends LuceneTestCase {
 
   private List<BytesRef> findTerms(IndexReader r) throws IOException {
     System.out.println("TEST: findTerms");
-    final TermsEnum termsEnum = MultiFields.getTerms(r, "field").iterator();
+    final TermsEnum termsEnum = MultiTerms.getTerms(r, "field").iterator();
     final List<BytesRef> savedTerms = new ArrayList<>();
     int nextSave = TestUtil.nextInt(random(), 500000, 1000000);
     BytesRef term;
@@ -255,13 +255,13 @@ public class Test2BTerms extends LuceneTestCase {
     System.out.println("TEST: run " + terms.size() + " terms on reader=" + r);
     IndexSearcher s = newSearcher(r);
     Collections.shuffle(terms, random());
-    TermsEnum termsEnum = MultiFields.getTerms(r, "field").iterator();
+    TermsEnum termsEnum = MultiTerms.getTerms(r, "field").iterator();
     boolean failed = false;
     for(int iter=0;iter<10*terms.size();iter++) {
       final BytesRef term = terms.get(random().nextInt(terms.size()));
       System.out.println("TEST: search " + term);
       final long t0 = System.currentTimeMillis();
-      final long count = s.search(new TermQuery(new Term("field", term)), 1).totalHits;
+      final long count = s.count(new TermQuery(new Term("field", term)));
       if (count <= 0) {
         System.out.println("  FAILED: count=" + count);
         failed = true;

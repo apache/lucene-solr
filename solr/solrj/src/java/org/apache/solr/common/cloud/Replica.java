@@ -20,7 +20,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.noggit.JSONUtil;
+import org.apache.solr.common.util.Utils;
 
 public class Replica extends ZkNodeProps {
   
@@ -135,6 +135,7 @@ public class Replica extends ZkNodeProps {
     return name.equals(replica.name);
   }
 
+  /** Also known as coreNodeName. */
   public String getName() {
     return name;
   }
@@ -146,6 +147,7 @@ public class Replica extends ZkNodeProps {
     return getStr(ZkStateReader.BASE_URL_PROP);
   }
 
+  /** SolrCore name. */
   public String getCoreName() {
     return getStr(ZkStateReader.CORE_NAME_PROP);
   }
@@ -161,7 +163,7 @@ public class Replica extends ZkNodeProps {
   }
 
   public boolean isActive(Set<String> liveNodes) {
-    return liveNodes.contains(this.nodeName) && this.state == State.ACTIVE;
+    return this.nodeName != null && liveNodes.contains(this.nodeName) && this.state == State.ACTIVE;
   }
   
   public Type getType() {
@@ -181,6 +183,6 @@ public class Replica extends ZkNodeProps {
 
   @Override
   public String toString() {
-    return name + ':' + JSONUtil.toJSON(propMap, -1); // small enough, keep it on one line (i.e. no indent)
+    return name + ':' + Utils.toJSONString(propMap); // small enough, keep it on one line (i.e. no indent)
   }
 }

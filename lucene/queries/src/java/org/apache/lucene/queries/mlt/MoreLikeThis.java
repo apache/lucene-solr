@@ -28,17 +28,19 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermFrequencyAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
@@ -219,7 +221,7 @@ public final class MoreLikeThis {
   /**
    * Return a Query with no more than this many terms.
    *
-   * @see BooleanQuery#getMaxClauseCount
+   * @see IndexSearcher#getMaxClauseCount
    * @see #getMaxQueryTerms
    * @see #setMaxQueryTerms
    */
@@ -418,13 +420,15 @@ public final class MoreLikeThis {
    * Set the maximum percentage in which words may still appear. Words that appear
    * in more than this many percent of all docs will be ignored.
    *
+   * This method calls {@link #setMaxDocFreq(int)} internally (both conditions cannot
+   * be used at the same time).
+   *
    * @param maxPercentage the maximum percentage of documents (0-100) that a term may appear
-   * in to be still considered relevant
+   * in to be still considered relevant.
    */
   public void setMaxDocFreqPct(int maxPercentage) {
-    this.maxDocFreq = maxPercentage * ir.numDocs() / 100;
+    setMaxDocFreq(Math.toIntExact((long) maxPercentage * ir.maxDoc() / 100));
   }
-
 
   /**
    * Returns whether to boost terms in query based on "score" or not. The default is
@@ -575,7 +579,7 @@ public final class MoreLikeThis {
   public Query like(int docNum) throws IOException {
     if (fieldNames == null) {
       // gather list of valid fields from lucene
-      Collection<String> fields = MultiFields.getIndexedFields(ir);
+      Collection<String> fields = FieldInfos.getIndexedFields(ir);
       fieldNames = fields.toArray(new String[fields.size()]);
     }
 
@@ -590,7 +594,7 @@ public final class MoreLikeThis {
   public Query like(Map<String, Collection<Object>> filteredDocument) throws IOException {
     if (fieldNames == null) {
       // gather list of valid fields from lucene
-      Collection<String> fields = MultiFields.getIndexedFields(ir);
+      Collection<String> fields = FieldInfos.getIndexedFields(ir);
       fieldNames = fields.toArray(new String[fields.size()]);
     }
     return createQuery(retrieveTerms(filteredDocument));
@@ -632,7 +636,7 @@ public final class MoreLikeThis {
       try {
         query.add(tq, BooleanClause.Occur.SHOULD);
       }
-      catch (BooleanQuery.TooManyClauses ignore) {
+      catch (IndexSearcher.TooManyClauses ignore) {
         break;
       }
     }
@@ -761,15 +765,13 @@ public final class MoreLikeThis {
       IOException {
     Map<String, Map<String, Int>> field2termFreqMap = new HashMap<>();
     for (String fieldName : fieldNames) {
-      for (String field : field2fieldValues.keySet()) {
-        Collection<Object> fieldValues = field2fieldValues.get(field);
-        if(fieldValues == null)
-          continue;
-        for(Object fieldValue:fieldValues) {
-          if (fieldValue != null) {
-            addTermFrequencies(new StringReader(String.valueOf(fieldValue)), field2termFreqMap,
-                fieldName);
-          }
+      Collection<Object> fieldValues = field2fieldValues.get(fieldName);
+      if (fieldValues == null)
+        continue;
+      for (Object fieldValue : fieldValues) {
+        if (fieldValue != null) {
+          addTermFrequencies(new StringReader(String.valueOf(fieldValue)), field2termFreqMap,
+              fieldName);
         }
       }
     }
@@ -824,6 +826,7 @@ public final class MoreLikeThis {
       int tokenCount = 0;
       // for every token
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+      TermFrequencyAttribute tfAtt = ts.addAttribute(TermFrequencyAttribute.class);
       ts.reset();
       while (ts.incrementToken()) {
         String word = termAtt.toString();
@@ -838,9 +841,9 @@ public final class MoreLikeThis {
         // increment frequency
         Int cnt = termFreqMap.get(word);
         if (cnt == null) {
-          termFreqMap.put(word, new Int());
+          termFreqMap.put(word, new Int(tfAtt.getTermFrequency()));
         } else {
-          cnt.x++;
+          cnt.x += tfAtt.getTermFrequency();
         }
       }
       ts.end();
@@ -982,7 +985,11 @@ public final class MoreLikeThis {
     int x;
 
     Int() {
-      x = 1;
+      this(1);
+    }
+
+    Int(int initialValue) {
+      x = initialValue;
     }
   }
 }

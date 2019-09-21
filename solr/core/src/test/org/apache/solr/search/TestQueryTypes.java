@@ -44,6 +44,11 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
     assertU(adoc("id","9", "v_s","internal\"quote"));
     assertU(adoc("id","10","text_no_analyzer","should just work"));
 
+
+    assertU(adoc("id", "200", "subject_t", "Sony Netzteil"));
+    assertU(adoc("id", "201", "subject_t", "Other Netzteil"));
+    assertU(adoc("id", "202", "subject_t", "Other Product"));
+
     Object[] arr = new Object[] {
     "id",999
     ,"v_s","wow dude"
@@ -109,7 +114,7 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
     );
 
     String termsMethod = new String[]{"termsFilter", "booleanQuery", "automaton", "docValuesTermsFilter"}[random().nextInt(4)];
-    assertQ(req( "q", "{!terms f=v_s method=" + termsMethod + " }other stuff,wow dude")
+    assertQ(req( "q", "{!terms f=v_s method=" + termsMethod + " }wow dude,other stuff")//terms reverse sorted to show this works
         ,"//result[@numFound='2']"
     );
 
@@ -347,6 +352,17 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
             ,"//doc[./float[@name='v_f']='1.5' and ./float[@name='score']='2.25']"
     );
 
+    // multiplicative boosts combine correctly
+    assertQ(
+        req("q", "{!boost b=$ymb}(+{!lucene v=$yq})",
+            "ymb", "product(query({!v=subject_t:Netzteil^=2.0},1),query({!v=subject_t:Sony^=3.0},1))",
+            "yq", "subject_t:*",
+            "fl", "*,score", "indent", "on"),
+        "//doc[str[@name='id'][.='200'] and float[@name='score'][.=6.0]]",
+        "//doc[str[@name='id'][.='202'] and float[@name='score'][.=1.0]]",
+        "//doc[str[@name='id'][.='201'] and float[@name='score'][.=2.0]]"
+    );
+
     // switch queries
     assertQ("test matching switch query",
             req("df", "v_t",
@@ -389,17 +405,17 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
 
     try {
       ignoreException("No\\ default\\, and no switch case");
-      assertQ("no match and no default",
+      RuntimeException exp = expectThrows(RuntimeException.class, "Should have gotten an error w/o default",
+          () -> assertQ("no match and no default",
               req("q", "{!switch case.x=Dude case.z=Yonik}asdf")
-              ,"//result[@numFound='BOGUS']");
-      fail("Should have gotten an error w/o default");
-    } catch (RuntimeException exp) {
-      assertTrue("exp cause is wrong", 
-                 exp.getCause() instanceof SolrException);
+              , "//result[@numFound='BOGUS']")
+      );
+      assertTrue("exp cause is wrong",
+          exp.getCause() instanceof SolrException);
       SolrException e = (SolrException) exp.getCause();
       assertEquals("error isn't user error", 400, e.code());
       assertTrue("Error doesn't include bad switch case: " + e.getMessage(),
-                 e.getMessage().contains("asdf"));
+          e.getMessage().contains("asdf"));
     } finally {
       resetExceptionIgnores();
     }
@@ -476,8 +492,8 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
       }
       
       // Skipping: func, boost, raw, nested, frange, spatial*, join, surround, switch, parent, child, collapsing, 
-      // complexphrase, rerank, export, mlt, hash, graph, graphTerms, igain, tlogit, sigificantTerms, payload*
-      // Maybe add: raw, join, parent, child, collapsing, graphTerms, igain, sigificantTerms, simple
+      // complexphrase, rerank, export, mlt, hash, graph, graphTerms, igain, tlogit, significantTerms, payload*
+      // Maybe add: raw, join, parent, child, collapsing, graphTerms, igain, significantTerms, simple
     }
 
   }

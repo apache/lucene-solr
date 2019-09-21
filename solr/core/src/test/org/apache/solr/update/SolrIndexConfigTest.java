@@ -29,6 +29,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.TestMergePolicyConfig;
@@ -48,6 +49,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   private static final String solrConfigFileName = "solrconfig.xml";
   private static final String solrConfigFileNameWarmerRandomMergePolicyFactory = "solrconfig-warmer-randommergepolicyfactory.xml";
   private static final String solrConfigFileNameTieredMergePolicyFactory = "solrconfig-tieredmergepolicyfactory.xml";
+  private static final String solrConfigFileNameConnMSPolicyFactory = "solrconfig-concurrentmergescheduler.xml";
   private static final String solrConfigFileNameSortingMergePolicyFactory = "solrconfig-sortingmergepolicyfactory.xml";
   private static final String schemaFileName = "schema.xml";
 
@@ -59,17 +61,15 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   private final Path instanceDir = TEST_PATH().resolve("collection1");
 
   @Test
-  public void testFailingSolrIndexConfigCreation() {
-    try {
-      SolrConfig solrConfig = new SolrConfig("bad-mpf-solrconfig.xml");
-      SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
-      IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
-      h.getCore().setLatestSchema(indexSchema);
-      solrIndexConfig.toIndexWriterConfig(h.getCore());
-      fail("a mergePolicy should have an empty constructor in order to be instantiated in Solr thus this should fail ");
-    } catch (Exception e) {
-      // it failed as expected
-    }
+  public void testFailingSolrIndexConfigCreation() throws Exception {
+    SolrConfig solrConfig = new SolrConfig(instanceDir,"bad-mpf-solrconfig.xml", null);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+    h.getCore().setLatestSchema(indexSchema);
+
+    // this should fail as mergePolicy doesn't have any public constructor
+    SolrException ex = expectThrows(SolrException.class, () -> solrIndexConfig.toIndexWriterConfig(h.getCore()));
+    assertTrue(ex.getMessage().contains("Error instantiating class: 'org.apache.solr.index.DummyMergePolicyFactory'"));
   }
 
   @Test
@@ -93,6 +93,29 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     ConcurrentMergeScheduler ms = (ConcurrentMergeScheduler)  iwc.getMergeScheduler();
     assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
+    assertEquals("ms.isAutoIOThrottle", true, ms.getAutoIOThrottle());
+
+  }
+
+  @Test
+  public void testConcurrentMergeSchedularSolrIndexConfigCreation() throws Exception {
+    String solrConfigFileName = solrConfigFileNameConnMSPolicyFactory;
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileName, null);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+
+    h.getCore().setLatestSchema(indexSchema);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
+
+    assertNotNull("null mp", iwc.getMergePolicy());
+    assertTrue("mp is not TieredMergePolicy", iwc.getMergePolicy() instanceof TieredMergePolicy);
+
+    assertNotNull("null ms", iwc.getMergeScheduler());
+    assertTrue("ms is not CMS", iwc.getMergeScheduler() instanceof ConcurrentMergeScheduler);
+    ConcurrentMergeScheduler ms = (ConcurrentMergeScheduler)  iwc.getMergeScheduler();
+    assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
+    assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
+    assertEquals("ms.isAutoIOThrottle", false, ms.getAutoIOThrottle());
 
   }
 
@@ -154,6 +177,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     ++mSizeExpected; assertTrue(m.get("maxBufferedDocs") instanceof Integer);
 
     ++mSizeExpected; assertTrue(m.get("ramBufferSizeMB") instanceof Double);
+
+    ++mSizeExpected; assertTrue(m.get("ramPerThreadHardLimitMB") instanceof Integer);
 
     ++mSizeExpected; assertTrue(m.get("writeLockTimeout") instanceof Integer);
 

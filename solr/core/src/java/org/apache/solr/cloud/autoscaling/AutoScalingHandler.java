@@ -29,28 +29,33 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.Preference;
-import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -60,7 +65,6 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +83,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final SolrCloudManager cloudManager;
   protected final SolrResourceLoader loader;
+  protected final AutoScaling.TriggerFactory triggerFactory;
   private final List<Map<String, String>> DEFAULT_ACTIONS = new ArrayList<>(3);
   private static Set<String> singletonCommands = Stream.of("set-cluster-preferences", "set-cluster-policy")
       .collect(collectingAndThen(toSet(), Collections::unmodifiableSet));
@@ -88,6 +93,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   public AutoScalingHandler(SolrCloudManager cloudManager, SolrResourceLoader loader) {
     this.cloudManager = cloudManager;
     this.loader = loader;
+    this.triggerFactory = new AutoScaling.TriggerFactoryImpl(loader, cloudManager);
     this.timeSource = cloudManager.getTimeSource();
     Map<String, String> map = new HashMap<>(2);
     map.put(NAME, "compute_plan");
@@ -99,6 +105,20 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     DEFAULT_ACTIONS.add(map);
   }
 
+  Optional<BiConsumer<SolrQueryResponse, AutoScalingConfig>> getSubpathExecutor(List<String> path, SolrQueryRequest request) {
+    if (path.size() == 3) {
+      if (DIAGNOSTICS.equals(path.get(2))) {
+        return Optional.of((rsp, autoScalingConf) -> handleDiagnostics(rsp, autoScalingConf));
+      } else if (SUGGESTIONS.equals(path.get(2))) {
+        return Optional.of((rsp, autoScalingConf) -> handleSuggestions(rsp, autoScalingConf, request.getParams()));
+      } else {
+        return Optional.empty();
+      }
+
+    }
+    return Optional.empty();
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     try {
@@ -108,8 +128,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       if ("GET".equals(httpMethod)) {
         String path = (String) req.getContext().get("path");
         if (path == null) path = "/cluster/autoscaling";
-        List<String> parts = StrUtils.splitSmart(path, '/');
-        if (parts.get(0).isEmpty()) parts.remove(0);
+        List<String> parts = StrUtils.splitSmart(path, '/', true);
 
         if (parts.size() < 2 || parts.size() > 3) {
           // invalid
@@ -117,25 +136,39 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         }
 
         AutoScalingConfig autoScalingConf = cloudManager.getDistribStateManager().getAutoScalingConfig();
-        if (parts.size() == 2)  {
+        if (parts.size() == 2) {
           autoScalingConf.writeMap(new MapWriter.EntryWriter() {
 
             @Override
-            public MapWriter.EntryWriter put(String k, Object v) throws IOException {
-              rsp.getValues().add(k, v);
+            public MapWriter.EntryWriter put(CharSequence k, Object v) {
+              rsp.getValues().add(k.toString(), v);
               return this;
             }
           });
-        } else if (parts.size() == 3) {
-          if (DIAGNOSTICS.equals(parts.get(2))) {
-            handleDiagnostics(rsp, autoScalingConf);
-          } else if (SUGGESTIONS.equals(parts.get(2))) {
-            handleSuggestions(rsp, autoScalingConf);
-          }
+        } else {
+          getSubpathExecutor(parts, req).ifPresent(it -> it.accept(rsp, autoScalingConf));
         }
       } else {
         if (req.getContentStreams() == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands specified for autoscaling");
+        }
+        String path = (String) req.getContext().get("path");
+        if (path != null) {
+          List<String> parts = StrUtils.splitSmart(path, '/', true);
+          if(parts.size() == 3){
+            getSubpathExecutor(parts, req).ifPresent(it -> {
+              Map map = null;
+              try {
+                map = (Map) Utils.fromJSON(req.getContentStreams().iterator().next().getStream());
+              } catch (IOException e1) {
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error parsing payload", e1);
+              }
+              it.accept(rsp, new AutoScalingConfig(map));
+            });
+
+            return;
+          }
+
         }
         List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp.getValues(), singletonCommands);
         if (ops == null) {
@@ -144,6 +177,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         }
         processOps(req, rsp, ops);
       }
+
     } catch (Exception e) {
       rsp.getValues().add("result", "failure");
       throw e;
@@ -153,9 +187,9 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
   }
 
 
-  private void handleSuggestions(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) throws IOException {
+  private void handleSuggestions(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf, SolrParams params) {
     rsp.getValues().add("suggestions",
-        PolicyHelper.getSuggestions(autoScalingConf, cloudManager));
+        PolicyHelper.getSuggestions(autoScalingConf, cloudManager, params));
   }
 
   public void processOps(SolrQueryRequest req, SolrQueryResponse rsp, List<CommandOperation> ops)
@@ -235,7 +269,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     return currentConfig.withProperties(configProps);
   }
 
-  private void handleDiagnostics(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) throws IOException {
+  private void handleDiagnostics(SolrQueryResponse rsp, AutoScalingConfig autoScalingConf) {
     Policy policy = autoScalingConf.getPolicy();
     rsp.getValues().add("diagnostics", PolicyHelper.getDiagnostics(policy, cloudManager));
   }
@@ -249,7 +283,7 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
     List<Clause> cp = null;
     try {
-      cp = clusterPolicy.stream().map(Clause::new).collect(Collectors.toList());
+      cp = clusterPolicy.stream().map(Clause::create).collect(Collectors.toList());
     } catch (Exception e) {
       op.addError(e.getMessage());
       return currentConfig;
@@ -312,18 +346,17 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
         return currentConfig;
       }
     }
-    List<String> params = new ArrayList<>(currentConfig.getPolicy().getParams());
-    Map<String, List<Clause>> mergedPolicies = new HashMap<>(currentConfig.getPolicy().getPolicies());
-    Map<String, List<Clause>> newPolicies = null;
+    Map<String, List<Clause>> currentClauses = new HashMap<>(currentConfig.getPolicy().getPolicies());
+    Map<String, List<Clause>> newClauses = null;
     try {
-      newPolicies = Policy.policiesFromMap((Map<String, List<Map<String, Object>>>) op.getCommandData(),
-          params);
+      newClauses = Policy.clausesFromMap((Map<String, List<Map<String, Object>>>) op.getCommandData(),
+          new ArrayList<>() );
     } catch (Exception e) {
       op.addError(e.getMessage());
       return currentConfig;
     }
-    mergedPolicies.putAll(newPolicies);
-    Policy p = currentConfig.getPolicy().withPolicies(mergedPolicies).withParams(params);
+    currentClauses.putAll(newClauses);
+    Policy p = currentConfig.getPolicy().withPolicies(currentClauses);
     currentConfig = currentConfig.withPolicy(p);
     return currentConfig;
   }
@@ -455,14 +488,26 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     }
     if (op.hasError()) return currentConfig;
 
+    AutoScalingConfig.TriggerListenerConfig listenerConfig = new AutoScalingConfig.TriggerListenerConfig(listenerName, op.getValuesExcluding("name"));
+
     // validate that we can load the listener class
     // todo allow creation from blobstore
+    TriggerListener listener = null;
     try {
-      loader.findClass(listenerClass, TriggerListener.class);
+      listener = loader.newInstance(listenerClass, TriggerListener.class);
+      listener.configure(loader, cloudManager, listenerConfig);
+    } catch (TriggerValidationException e) {
+      log.warn("invalid listener configuration", e);
+      op.addError("invalid listener configuration: " + e.toString());
+      return currentConfig;
     } catch (Exception e) {
       log.warn("error loading listener class ", e);
       op.addError("Listener not found: " + listenerClass + ". error message:" + e.getMessage());
       return currentConfig;
+    } finally {
+      if (listener != null) {
+        IOUtils.closeQuietly(listener);
+      }
     }
 
     Set<String> actionNames = new HashSet<>();
@@ -475,9 +520,8 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       op.addError("The trigger '" + triggerName + "' does not have actions named: " + actionNames);
       return currentConfig;
     }
-    AutoScalingConfig.TriggerListenerConfig listener = new AutoScalingConfig.TriggerListenerConfig(listenerName, op.getValuesExcluding("name"));
     // todo - handle races between competing set-trigger and set-listener invocations
-    currentConfig = currentConfig.withTriggerListenerConfig(listener);
+    currentConfig = currentConfig.withTriggerListenerConfig(listenerConfig);
     return currentConfig;
   }
 
@@ -531,6 +575,18 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
       }
     }
     AutoScalingConfig.TriggerConfig trigger = new AutoScalingConfig.TriggerConfig(triggerName, opCopy.getValuesExcluding("name"));
+    // validate trigger config
+    AutoScaling.Trigger t = null;
+    try {
+      t = triggerFactory.create(trigger.event, trigger.name, trigger.properties);
+    } catch (Exception e) {
+      op.addError("Error validating trigger config " + trigger.name + ": " + e.toString());
+      return currentConfig;
+    } finally {
+      if (t != null) {
+        IOUtils.closeQuietly(t);
+      }
+    }
     currentConfig = currentConfig.withTriggerConfig(trigger);
     // check that there's a default SystemLogListener, unless user specified another one
     return withSystemLogListener(currentConfig, triggerName);
@@ -648,8 +704,11 @@ public class AutoScalingHandler extends RequestHandlerBase implements Permission
     switch (request.getHttpMethod()) {
       case "GET":
         return Name.AUTOSCALING_READ_PERM;
-      case "POST":
-        return Name.AUTOSCALING_WRITE_PERM;
+      case "POST": {
+        return StrUtils.splitSmart(request.getResource(), '/', true).size() == 3 ?
+            Name.AUTOSCALING_READ_PERM :
+            Name.AUTOSCALING_WRITE_PERM;
+      }
       default:
         return null;
     }

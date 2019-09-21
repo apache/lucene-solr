@@ -43,8 +43,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 2;
   protected static final String USER_1 = "foo";
@@ -172,6 +170,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     else delegationTokenClient = new CloudSolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
         .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
             .withResponseParser(client.getParser())
+            .withSocketTimeout(30000).withConnectionTimeout(15000)
             .withHttpSolrClientBuilder(
                 new HttpSolrClient.Builder()
                     .withKerberosDelegationToken(token)
@@ -314,6 +313,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   }
 
   @Test
+// commented 4-Sep-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testDelegationTokenRenew() throws Exception {
     // test with specifying renewer
     verifyDelegationTokenRenew(USER_1, USER_1);
@@ -379,23 +379,17 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
       ss.close();
     }
 
-    ss = new HttpSolrClient.Builder(primarySolrClient.getBaseURL().toString())
-        .withKerberosDelegationToken(token)
-        .withResponseParser(primarySolrClient.getParser())
-        .build();
-    try {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(primarySolrClient.getBaseURL())
+             .withKerberosDelegationToken(token)
+             .withResponseParser(primarySolrClient.getParser())
+             .build()) {
       // test with token via property
-      doSolrRequest(ss, request, HttpStatus.SC_OK);
+      doSolrRequest(client, request, HttpStatus.SC_OK);
 
       // test with param -- should throw an exception
       ModifiableSolrParams tokenParam = new ModifiableSolrParams();
       tokenParam.set("delegation", "invalidToken");
-      try {
-        doSolrRequest(ss, getAdminRequest(tokenParam), ErrorCode.FORBIDDEN.code);
-        Assert.fail("Expected exception");
-      } catch (IllegalArgumentException ex) {}
-    } finally {
-      ss.close();
+      expectThrows(IllegalArgumentException.class, () -> doSolrRequest(client, getAdminRequest(tokenParam), ErrorCode.FORBIDDEN.code));
     }
   }
 }

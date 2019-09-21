@@ -30,16 +30,19 @@ public class MetricsConfig {
   private final PluginInfo meterSupplier;
   private final PluginInfo timerSupplier;
   private final PluginInfo histogramSupplier;
+  private final PluginInfo historyHandler;
 
   private MetricsConfig(PluginInfo[] metricReporters, Set<String> hiddenSysProps,
                         PluginInfo counterSupplier, PluginInfo meterSupplier,
-                        PluginInfo timerSupplier, PluginInfo histogramSupplier) {
+                        PluginInfo timerSupplier, PluginInfo histogramSupplier,
+                        PluginInfo historyHandler) {
     this.metricReporters = metricReporters;
     this.hiddenSysProps = hiddenSysProps;
     this.counterSupplier = counterSupplier;
     this.meterSupplier = meterSupplier;
     this.timerSupplier = timerSupplier;
     this.histogramSupplier = histogramSupplier;
+    this.historyHandler = historyHandler;
   }
 
   public PluginInfo[] getMetricReporters() {
@@ -66,6 +69,10 @@ public class MetricsConfig {
     return histogramSupplier;
   }
 
+  public PluginInfo getHistoryHandler() {
+    return historyHandler;
+  }
+
   public static class MetricsConfigBuilder {
     private PluginInfo[] metricReporterPlugins = new PluginInfo[0];
     private Set<String> hiddenSysProps = new HashSet<>();
@@ -73,6 +80,7 @@ public class MetricsConfig {
     private PluginInfo meterSupplier;
     private PluginInfo timerSupplier;
     private PluginInfo histogramSupplier;
+    private PluginInfo historyHandler;
 
     public MetricsConfigBuilder() {
 
@@ -111,9 +119,14 @@ public class MetricsConfig {
       return this;
     }
 
+    public MetricsConfigBuilder setHistoryHandler(PluginInfo info) {
+      this.historyHandler = info;
+      return this;
+    }
+
     public MetricsConfig build() {
       return new MetricsConfig(metricReporterPlugins, hiddenSysProps, counterSupplier, meterSupplier,
-          timerSupplier, histogramSupplier);
+          timerSupplier, histogramSupplier, historyHandler);
     }
 
   }

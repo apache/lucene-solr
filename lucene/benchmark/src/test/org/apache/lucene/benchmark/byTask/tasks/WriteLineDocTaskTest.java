@@ -142,7 +142,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     Properties props = new Properties();
     props.setProperty("doc.maker", docMakerName);
     props.setProperty("line.file.out", file.toAbsolutePath().toString());
-    props.setProperty("directory", "RAMDirectory"); // no accidental FS dir.
+    props.setProperty("directory", "ByteBuffersDirectory"); // no accidental FS dir.
     if (allowEmptyDocs) {
       props.setProperty("sufficient.fields", ",");
     }

@@ -23,8 +23,10 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.search.suggest.analyzing.FSTUtil;
+import org.apache.lucene.search.suggest.document.CompletionPostingsFormat.FSTLoadMode;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.ByteBufferIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
@@ -32,6 +34,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.OffHeapFSTStore;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
@@ -156,7 +159,7 @@ public final class NRTSuggester implements Accountable {
           // We are removing dups
           if (path.payload == -1) {
             // This path didn't yet see the complete surface form; let's see if it just did with the arc output we just added:
-            BytesRef arcOutput = path.arc.output.output2;
+            BytesRef arcOutput = path.arc.output().output2;
             BytesRef output = path.output.output2;
             for(int i=0;i<arcOutput.length;i++) {
               if (arcOutput.bytes[arcOutput.offset + i] == payloadSep) {
@@ -298,12 +301,36 @@ public final class NRTSuggester implements Accountable {
     return (numDocs > 0) ? ((double) numDocs / maxDocs) : -1;
   }
 
+  private static boolean shouldLoadFSTOffHeap(IndexInput input, FSTLoadMode fstLoadMode) {
+    switch (fstLoadMode) {
+      case ON_HEAP:
+        return false;
+      case OFF_HEAP:
+        return true;
+      case AUTO:
+        return input instanceof ByteBufferIndexInput;
+      default:
+        throw new IllegalStateException("unknown enum constant: " + fstLoadMode);
+    }
+  }
+
   /**
-   * Loads a {@link NRTSuggester} from {@link org.apache.lucene.store.IndexInput}
+   * Loads a {@link NRTSuggester} from {@link org.apache.lucene.store.IndexInput} on or off-heap
+   * depending on the provided <code>fstLoadMode</code>
    */
-  public static NRTSuggester load(IndexInput input) throws IOException {
-    final FST<Pair<Long, BytesRef>> fst = new FST<>(input, new PairOutputs<>(
-        PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()));
+  public static NRTSuggester load(IndexInput input, FSTLoadMode fstLoadMode) throws IOException {
+    final FST<Pair<Long, BytesRef>> fst;
+    if (shouldLoadFSTOffHeap(input, fstLoadMode)) {
+      OffHeapFSTStore store = new OffHeapFSTStore();
+      IndexInput clone = input.clone();
+      clone.seek(input.getFilePointer());
+      fst = new FST<>(clone, new PairOutputs<>(
+          PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()), store);
+      input.seek(clone.getFilePointer() + store.size());
+    } else {
+      fst = new FST<>(input, new PairOutputs<>(
+          PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()));
+    }
 
     /* read some meta info */
     int maxAnalyzedPathsPerOutput = input.readVInt();
@@ -313,7 +340,6 @@ public final class NRTSuggester implements Accountable {
      */
     int endByte = input.readVInt();
     int payloadSep = input.readVInt();
-
     return new NRTSuggester(fst, maxAnalyzedPathsPerOutput, payloadSep);
   }
 

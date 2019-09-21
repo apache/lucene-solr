@@ -37,53 +37,54 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
   public static final String DEFAULT_QTYPE = LuceneQParserPlugin.NAME;
 
   /**
-   * Internal use - name to class mappings of builtin parsers.
+   * Internal use - name to parser for the builtin parsers.
    * Each query parser plugin extending {@link QParserPlugin} has own instance of standardPlugins.
    * This leads to cyclic dependencies of static fields and to case when NAME field is not yet initialized.
    * This result to NPE during initialization.
    * For every plugin, listed here, NAME field has to be final and static.
    */
-  public static final Map<String, Class<? extends QParserPlugin>> standardPlugins;
+  public static final Map<String, QParserPlugin> standardPlugins;
 
   static {
-    HashMap<String, Class<? extends QParserPlugin>> map = new HashMap<>(30, 1);
-    map.put(LuceneQParserPlugin.NAME, LuceneQParserPlugin.class);
-    map.put(FunctionQParserPlugin.NAME, FunctionQParserPlugin.class);
-    map.put(PrefixQParserPlugin.NAME, PrefixQParserPlugin.class);
-    map.put(BoostQParserPlugin.NAME, BoostQParserPlugin.class);
-    map.put(DisMaxQParserPlugin.NAME, DisMaxQParserPlugin.class);
-    map.put(ExtendedDismaxQParserPlugin.NAME, ExtendedDismaxQParserPlugin.class);
-    map.put(FieldQParserPlugin.NAME, FieldQParserPlugin.class);
-    map.put(RawQParserPlugin.NAME, RawQParserPlugin.class);
-    map.put(TermQParserPlugin.NAME, TermQParserPlugin.class);
-    map.put(TermsQParserPlugin.NAME, TermsQParserPlugin.class);
-    map.put(NestedQParserPlugin.NAME, NestedQParserPlugin.class);
-    map.put(FunctionRangeQParserPlugin.NAME, FunctionRangeQParserPlugin.class);
-    map.put(SpatialFilterQParserPlugin.NAME, SpatialFilterQParserPlugin.class);
-    map.put(SpatialBoxQParserPlugin.NAME, SpatialBoxQParserPlugin.class);
-    map.put(JoinQParserPlugin.NAME, JoinQParserPlugin.class);
-    map.put(SurroundQParserPlugin.NAME, SurroundQParserPlugin.class);
-    map.put(SwitchQParserPlugin.NAME, SwitchQParserPlugin.class);
-    map.put(MaxScoreQParserPlugin.NAME, MaxScoreQParserPlugin.class);
-    map.put(BlockJoinParentQParserPlugin.NAME, BlockJoinParentQParserPlugin.class);
-    map.put(BlockJoinChildQParserPlugin.NAME, BlockJoinChildQParserPlugin.class);
-    map.put(FiltersQParserPlugin.NAME, FiltersQParserPlugin.class);
-    map.put(CollapsingQParserPlugin.NAME, CollapsingQParserPlugin.class);
-    map.put(SimpleQParserPlugin.NAME, SimpleQParserPlugin.class);
-    map.put(ComplexPhraseQParserPlugin.NAME, ComplexPhraseQParserPlugin.class);
-    map.put(ReRankQParserPlugin.NAME, ReRankQParserPlugin.class);
-    map.put(ExportQParserPlugin.NAME, ExportQParserPlugin.class);
-    map.put(MLTQParserPlugin.NAME, MLTQParserPlugin.class);
-    map.put(HashQParserPlugin.NAME, HashQParserPlugin.class);
-    map.put(GraphQParserPlugin.NAME, GraphQParserPlugin.class);
-    map.put(XmlQParserPlugin.NAME, XmlQParserPlugin.class);
-    map.put(GraphTermsQParserPlugin.NAME, GraphTermsQParserPlugin.class);
-    map.put(IGainTermsQParserPlugin.NAME, IGainTermsQParserPlugin.class);
-    map.put(TextLogisticRegressionQParserPlugin.NAME, TextLogisticRegressionQParserPlugin.class);
-    map.put(SignificantTermsQParserPlugin.NAME, SignificantTermsQParserPlugin.class);
-    map.put(PayloadScoreQParserPlugin.NAME, PayloadScoreQParserPlugin.class);
-    map.put(PayloadCheckQParserPlugin.NAME, PayloadCheckQParserPlugin.class);
-    map.put(BoolQParserPlugin.NAME, BoolQParserPlugin.class);
+    HashMap<String, QParserPlugin> map = new HashMap<>(30, 1);
+    map.put(LuceneQParserPlugin.NAME, new LuceneQParserPlugin());
+    map.put(FunctionQParserPlugin.NAME, new FunctionQParserPlugin());
+    map.put(PrefixQParserPlugin.NAME, new PrefixQParserPlugin());
+    map.put(BoostQParserPlugin.NAME, new BoostQParserPlugin());
+    map.put(DisMaxQParserPlugin.NAME, new DisMaxQParserPlugin());
+    map.put(ExtendedDismaxQParserPlugin.NAME, new ExtendedDismaxQParserPlugin());
+    map.put(FieldQParserPlugin.NAME, new FieldQParserPlugin());
+    map.put(RawQParserPlugin.NAME, new RawQParserPlugin());
+    map.put(TermQParserPlugin.NAME, new TermQParserPlugin());
+    map.put(TermsQParserPlugin.NAME, new TermsQParserPlugin());
+    map.put(NestedQParserPlugin.NAME, new NestedQParserPlugin());
+    map.put(FunctionRangeQParserPlugin.NAME, new FunctionRangeQParserPlugin());
+    map.put(SpatialFilterQParserPlugin.NAME, new SpatialFilterQParserPlugin());
+    map.put(SpatialBoxQParserPlugin.NAME, new SpatialBoxQParserPlugin());
+    map.put(JoinQParserPlugin.NAME, new JoinQParserPlugin());
+    map.put(SurroundQParserPlugin.NAME, new SurroundQParserPlugin());
+    map.put(SwitchQParserPlugin.NAME, new SwitchQParserPlugin());
+    map.put(MaxScoreQParserPlugin.NAME, new MaxScoreQParserPlugin());
+    map.put(BlockJoinParentQParserPlugin.NAME, new BlockJoinParentQParserPlugin());
+    map.put(BlockJoinChildQParserPlugin.NAME, new BlockJoinChildQParserPlugin());
+    map.put(FiltersQParserPlugin.NAME, new FiltersQParserPlugin());
+    map.put(CollapsingQParserPlugin.NAME, new CollapsingQParserPlugin());
+    map.put(SimpleQParserPlugin.NAME, new SimpleQParserPlugin());
+    map.put(ComplexPhraseQParserPlugin.NAME, new ComplexPhraseQParserPlugin());
+    map.put(ReRankQParserPlugin.NAME, new ReRankQParserPlugin());
+    map.put(ExportQParserPlugin.NAME, new ExportQParserPlugin());
+    map.put(MLTQParserPlugin.NAME, new MLTQParserPlugin());
+    map.put(HashQParserPlugin.NAME, new HashQParserPlugin());
+    map.put(GraphQParserPlugin.NAME, new GraphQParserPlugin());
+    map.put(XmlQParserPlugin.NAME, new XmlQParserPlugin());
+    map.put(GraphTermsQParserPlugin.NAME, new GraphTermsQParserPlugin());
+    map.put(IGainTermsQParserPlugin.NAME, new IGainTermsQParserPlugin());
+    map.put(TextLogisticRegressionQParserPlugin.NAME, new TextLogisticRegressionQParserPlugin());
+    map.put(SignificantTermsQParserPlugin.NAME, new SignificantTermsQParserPlugin());
+    map.put(PayloadScoreQParserPlugin.NAME, new PayloadScoreQParserPlugin());
+    map.put(PayloadCheckQParserPlugin.NAME, new PayloadCheckQParserPlugin());
+    map.put(BoolQParserPlugin.NAME, new BoolQParserPlugin());
+    map.put(MinHashQParserPlugin.NAME, new MinHashQParserPlugin());
 
     standardPlugins = Collections.unmodifiableMap(map);
   }

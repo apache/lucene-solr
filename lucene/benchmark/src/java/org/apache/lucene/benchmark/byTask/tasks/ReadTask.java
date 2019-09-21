@@ -24,7 +24,7 @@ import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiBits;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -88,7 +88,7 @@ public abstract class ReadTask extends PerfTask {
     // optionally warm and add num docs traversed to count
     if (withWarm()) {
       Document doc = null;
-      Bits liveDocs = MultiFields.getLiveDocs(reader);
+      Bits liveDocs = MultiBits.getLiveDocs(reader);
       for (int m = 0; m < reader.maxDoc(); m++) {
         if (null == liveDocs || liveDocs.get(m)) {
           doc = reader.document(m);
@@ -112,9 +112,7 @@ public abstract class ReadTask extends PerfTask {
             // Weight public again, we can go back to
             // pulling the Weight ourselves:
             TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
-                                                                   true, withScore(),
-                                                                   withMaxScore(),
-                                                                   withTotalHits());
+                                                                   withTotalHits() ? Integer.MAX_VALUE : 1);
             searcher.search(q, collector);
             hits = collector.topDocs();
           } else {
@@ -176,7 +174,7 @@ public abstract class ReadTask extends PerfTask {
   }
 
   protected Collector createCollector() throws Exception {
-    return TopScoreDocCollector.create(numHits());
+    return TopScoreDocCollector.create(numHits(), withTotalHits() ? Integer.MAX_VALUE : 1);
   }
 
 
@@ -208,18 +206,6 @@ public abstract class ReadTask extends PerfTask {
    * Return true if, with search, results should be traversed.
    */
   public abstract boolean withTraverse();
-
-  /** Whether scores should be computed (only useful with
-   *  field sort) */
-  public boolean withScore() {
-    return true;
-  }
-
-  /** Whether maxScores should be computed (only useful with
-   *  field sort) */
-  public boolean withMaxScore() {
-    return true;
-  }
 
   /** Whether totalHits should be computed (only useful with
    *  field sort) */

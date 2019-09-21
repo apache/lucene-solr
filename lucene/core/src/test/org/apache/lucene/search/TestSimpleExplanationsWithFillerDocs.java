@@ -16,12 +16,11 @@
  */
 package org.apache.lucene.search;
 
-import java.util.Arrays;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 
@@ -101,7 +100,7 @@ public class TestSimpleExplanationsWithFillerDocs extends TestSimpleExplanations
   @Override
   public void qtest(Query q, int[] expDocNrs) throws Exception {
 
-    expDocNrs = Arrays.copyOf(expDocNrs, expDocNrs.length);
+    expDocNrs = ArrayUtil.copyOfSubArray(expDocNrs, 0, expDocNrs.length);
     for (int i=0; i < expDocNrs.length; i++) {
       expDocNrs[i] = PRE_FILLER_DOCS + ((NUM_FILLER_DOCS + 1) * expDocNrs[i]);
     }

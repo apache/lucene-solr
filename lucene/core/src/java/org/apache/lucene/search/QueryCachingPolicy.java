@@ -31,19 +31,6 @@ import java.io.IOException;
 // TODO: add APIs for integration with IndexWriter.IndexReaderWarmer
 public interface QueryCachingPolicy {
 
-  /** A simple policy that caches all the provided filters on all segments. */
-  public static final QueryCachingPolicy ALWAYS_CACHE = new QueryCachingPolicy() {
-
-    @Override
-    public void onUse(Query query) {}
-
-    @Override
-    public boolean shouldCache(Query query) throws IOException {
-      return true;
-    }
-
-  };
-
   /** Callback that is called every time that a cached filter is used.
    *  This is typically useful if the policy wants to track usage statistics
    *  in order to make decisions. */

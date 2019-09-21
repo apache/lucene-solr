@@ -52,7 +52,7 @@ public @interface LogLevel {
    */
   public String value();
 
-  @SuppressForbidden(reason="Specific to Log4J")
+  @SuppressForbidden(reason="Specific to Log4J2")
   public static class Configurer {
 
     private static Map<String, Level> parseFrom(String input) {

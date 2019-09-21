@@ -118,7 +118,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     }
     bq.setMinimumNumberShouldMatch(minShouldMatch);
 
-    BooleanWeight weight = (BooleanWeight) searcher.createNormalizedWeight(bq.build(), ScoreMode.COMPLETE);
+    BooleanWeight weight = (BooleanWeight) searcher.createWeight(searcher.rewrite(bq.build()), ScoreMode.COMPLETE, 1);
     
     switch (mode) {
     case DOC_VALUES:
@@ -329,11 +329,11 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
         if (ord >= 0) {
           boolean success = ords.add(ord);
           assert success; // no dups
-          TermStates context = TermStates.build(reader.getContext(), term, true);
+          TermStates ts = TermStates.build(reader.getContext(), term, true);
           SimScorer w = weight.similarity.scorer(1f,
                         searcher.collectionStatistics("field"),
-                        searcher.termStatistics(term, context));
-          sims[(int)ord] = new LeafSimScorer(w, reader, true, 1);
+                        searcher.termStatistics(term, ts.docFreq(), ts.totalTermFreq()));
+          sims[(int)ord] = new LeafSimScorer(w, reader, "field", true);
         }
       }
     }

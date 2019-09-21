@@ -34,14 +34,14 @@ public class TestZkChroot extends SolrTestCaseJ4 {
   private Path home;
   
   protected ZkTestServer zkServer;
-  protected String zkDir;
+  protected Path zkDir;
   
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
 
-    zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    zkDir = createTempDir("zkData");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     home = Paths.get(SolrJettyTestBase.legacyExampleCollection1SolrHome());
@@ -58,9 +58,10 @@ public class TestZkChroot extends SolrTestCaseJ4 {
       cores = null;
     }
     
-    zkServer.shutdown();
-    
-    zkServer = null;
+    if (null != zkServer) {
+      zkServer.shutdown();
+      zkServer = null;
+    }
     zkDir = null;
     
     super.tearDown();
@@ -99,23 +100,20 @@ public class TestZkChroot extends SolrTestCaseJ4 {
     
     System.setProperty("bootstrap_conf", "false");
     System.setProperty("zkHost", zkServer.getZkHost() + chroot);
-    
-    SolrZkClient zkClient = null;
-    
-    try {
-      zkClient = new SolrZkClient(zkServer.getZkHost(),
-          AbstractZkTestCase.TIMEOUT);
-      assertFalse("Path '" + chroot + "' should not exist before the test",
-          zkClient.exists(chroot, true));
-      cores = CoreContainer.createAndLoad(home);
-      fail("There should be a zk exception, as the initial path doesn't exist");
-    } catch (ZooKeeperException e) {
-      // expected
+
+    try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(),
+        AbstractZkTestCase.TIMEOUT)) {
+      expectThrows(ZooKeeperException.class,
+          "did not get a top level exception when more then 4 updates failed",
+          () -> {
+        assertFalse("Path '" + chroot + "' should not exist before the test",
+            zkClient.exists(chroot, true));
+        cores = CoreContainer.createAndLoad(home);
+      });
       assertFalse("Path shouldn't have been created",
           zkClient.exists(chroot, true));// check the path was not created
     } finally {
       if (cores != null) cores.shutdown();
-      if (zkClient != null) zkClient.close();
     }
   }
   

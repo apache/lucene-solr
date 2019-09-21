@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 public class StatsUtil {
   
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /**
    * Make a String representation of {@link CollectionStats}
@@ -54,12 +54,12 @@ public class StatsUtil {
   
   private static CollectionStats colStatsFromString(String data) {
     if (data == null || data.trim().length() == 0) {
-      LOG.warn("Invalid empty collection stats string");
+      log.warn("Invalid empty collection stats string");
       return null;
     }
     String[] vals = data.split(",");
     if (vals.length != 5) {
-      LOG.warn("Invalid collection stats string, num fields " + vals.length
+      log.warn("Invalid collection stats string, num fields " + vals.length
           + " != 5, '" + data + "'");
       return null;
     }
@@ -72,7 +72,7 @@ public class StatsUtil {
       return new CollectionStats(field, maxDoc, docCount, sumTotalTermFreq,
           sumDocFreq);
     } catch (Exception e) {
-      LOG.warn("Invalid collection stats string '" + data + "': "
+      log.warn("Invalid collection stats string '" + data + "': "
           + e.toString());
       return null;
     }
@@ -88,12 +88,12 @@ public class StatsUtil {
   
   private static Term termFromString(String data) {
     if (data == null || data.trim().length() == 0) {
-      LOG.warn("Invalid empty term value");
+      log.warn("Invalid empty term value");
       return null;
     }
     int idx = data.indexOf(':');
     if (idx == -1) {
-      LOG.warn("Invalid term data without ':': '" + data + "'");
+      log.warn("Invalid term data without ':': '" + data + "'");
       return null;
     }
     String field = data.substring(0, idx);
@@ -104,7 +104,7 @@ public class StatsUtil {
       // byte[] bytes = Base64.base64ToByteArray(value);
       // return new Term(field, new BytesRef(bytes));
     } catch (Exception e) {
-      LOG.warn("Invalid term value '" + value + "'");
+      log.warn("Invalid term value '" + value + "'");
       return null;
     }
   }
@@ -123,12 +123,12 @@ public class StatsUtil {
   
   private static TermStats termStatsFromString(String data, Term t) {
     if (data == null || data.trim().length() == 0) {
-      LOG.warn("Invalid empty term stats string");
+      log.warn("Invalid empty term stats string");
       return null;
     }
     String[] vals = data.split(",");
     if (vals.length < 2) {
-      LOG.warn("Invalid term stats string, num fields " + vals.length
+      log.warn("Invalid term stats string, num fields " + vals.length
           + " < 2, '" + data + "'");
       return null;
     }
@@ -150,7 +150,7 @@ public class StatsUtil {
       termToUse = t;
     }
     if (termToUse == null) {
-      LOG.warn("Missing term in termStats '" + data + "'");
+      log.warn("Missing term in termStats '" + data + "'");
       return null;
     }
     try {
@@ -158,7 +158,7 @@ public class StatsUtil {
       long totalTermFreq = Long.parseLong(vals[idx]);
       return new TermStats(termToUse.toString(), docFreq, totalTermFreq);
     } catch (Exception e) {
-      LOG.warn("Invalid termStats string '" + data + "'");
+      log.warn("Invalid termStats string '" + data + "'");
       return null;
     }
   }

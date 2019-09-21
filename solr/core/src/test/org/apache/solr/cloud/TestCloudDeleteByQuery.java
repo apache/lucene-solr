@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -84,12 +83,30 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   
   @AfterClass
   private static void afterClass() throws Exception {
-    CLOUD_CLIENT.close(); CLOUD_CLIENT = null;
-    S_ONE_LEADER_CLIENT.close(); S_ONE_LEADER_CLIENT = null;
-    S_TWO_LEADER_CLIENT.close(); S_TWO_LEADER_CLIENT = null;
-    S_ONE_NON_LEADER_CLIENT.close(); S_ONE_NON_LEADER_CLIENT = null;
-    S_TWO_NON_LEADER_CLIENT.close(); S_TWO_NON_LEADER_CLIENT = null;
-    NO_COLLECTION_CLIENT.close(); NO_COLLECTION_CLIENT = null;
+    if (null != CLOUD_CLIENT) {
+      CLOUD_CLIENT.close();
+      CLOUD_CLIENT = null;
+    }
+    if (null != S_ONE_LEADER_CLIENT) {
+      S_ONE_LEADER_CLIENT.close();
+      S_ONE_LEADER_CLIENT = null;
+    }
+    if (null != S_TWO_LEADER_CLIENT) {
+      S_TWO_LEADER_CLIENT.close();
+      S_TWO_LEADER_CLIENT = null;
+    }
+    if (null != S_ONE_NON_LEADER_CLIENT) {
+      S_ONE_NON_LEADER_CLIENT.close();
+      S_ONE_NON_LEADER_CLIENT = null;
+    }
+    if (null != S_TWO_NON_LEADER_CLIENT) {
+      S_TWO_NON_LEADER_CLIENT.close();
+      S_TWO_NON_LEADER_CLIENT = null;
+    }
+    if (null != NO_COLLECTION_CLIENT) {
+      NO_COLLECTION_CLIENT.close();
+      NO_COLLECTION_CLIENT = null;
+    }
   }
   
   @BeforeClass
@@ -109,13 +126,12 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, NUM_SHARDS, REPLICATION_FACTOR)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION_NAME, NUM_SHARDS, REPLICATION_FACTOR * NUM_SHARDS);
 
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
     
     ZkStateReader zkStateReader = CLOUD_CLIENT.getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION_NAME, zkStateReader, true, true, 330);
-
 
     // really hackish way to get a URL for specific nodes based on shard/replica hosting
     // inspired by TestMiniSolrCloudCluster
@@ -199,12 +215,10 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
 
   public void testMalformedDBQ(SolrClient client) throws Exception {
     assertNotNull("client not initialized", client);
-    try {
-      UpdateResponse rsp = update(params()).deleteByQuery("foo_i:not_a_num").process(client);
-      fail("Expected DBQ failure: " + rsp.toString());
-    } catch (SolrException e) {
-      assertEquals("not the expected DBQ failure: " + e.getMessage(), 400, e.code());
-    }
+    SolrException e = expectThrows(SolrException.class,
+        "Expected DBQ failure",
+        () -> update(params()).deleteByQuery("foo_i:not_a_num").process(client));
+    assertEquals("not the expected DBQ failure: " + e.getMessage(), 400, e.code());
   }
 
   //

@@ -172,11 +172,10 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
     SearcherThread searcher = new SearcherThread(100, dir);
     writer.start();
     searcher.start();
-    
-    while(writer.isAlive() || searcher.isAlive()) {
-      Thread.sleep(1000);
-    }
-    
+
+    writer.join();
+    searcher.join();
+
     assertTrue("IndexWriter hit unexpected exceptions", !writer.hitException);
     assertTrue("IndexSearcher hit unexpected exceptions", !searcher.hitException);
     
@@ -233,13 +232,14 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
         iwc.setOpenMode(OpenMode.APPEND);
         try {
           writer = new IndexWriter(dir, iwc);
+
         } catch (Throwable t) {
           if (Constants.WINDOWS && t instanceof AccessDeniedException) {
             // LUCENE-6684: suppress this: on Windows, a file in the curious "pending delete" state can
             // cause this exc on IW init, where one thread/process deleted an old
             // segments_N, but the delete hasn't finished yet because other threads/processes
             // still have it open
-            printStream.println("TEST: AccessDeniedException on init witer");
+            printStream.println("TEST: AccessDeniedException on init writer");
             t.printStackTrace(printStream);
           } else {
             hitException = true;
@@ -268,7 +268,6 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
             System.out.println(toString(baos));
             break;
           }
-          writer = null;
         }
       }
     }

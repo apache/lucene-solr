@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.LengthEvaluator;
 import org.apache.solr.client.solrj.io.eval.SequenceEvaluator;
@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class LengthEvaluatorTest extends LuceneTestCase {
+public class LengthEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;

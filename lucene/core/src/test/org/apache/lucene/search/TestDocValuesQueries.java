@@ -175,7 +175,7 @@ public class TestDocValuesQueries extends LuceneTestCase {
     final int maxDoc = searcher.getIndexReader().maxDoc();
     final TopDocs td1 = searcher.search(q1, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
     final TopDocs td2 = searcher.search(q2, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
-    assertEquals(td1.totalHits, td2.totalHits);
+    assertEquals(td1.totalHits.value, td2.totalHits.value);
     for (int i = 0; i < td1.scoreDocs.length; ++i) {
       assertEquals(td1.scoreDocs[i].doc, td2.scoreDocs[i].doc);
       if (scores) {
@@ -230,7 +230,7 @@ public class TestDocValuesQueries extends LuceneTestCase {
         SortedNumericDocValuesField.newSlowRangeQuery("foo", 2, 4),
         SortedDocValuesField.newSlowRangeQuery("foo", new BytesRef("abc"), new BytesRef("bcd"), random().nextBoolean(), random().nextBoolean()),
         SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("abc"), new BytesRef("bcd"), random().nextBoolean(), random().nextBoolean()))) {
-      Weight w = searcher.createNormalizedWeight(query, ScoreMode.COMPLETE);
+      Weight w = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
       assertNull(w.scorer(searcher.getIndexReader().leaves().get(0)));
     }
     reader.close();
@@ -267,5 +267,4 @@ public class TestDocValuesQueries extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-   
 }

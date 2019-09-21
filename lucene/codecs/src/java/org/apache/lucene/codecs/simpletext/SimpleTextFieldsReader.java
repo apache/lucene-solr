@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.ImpactsEnum;
@@ -36,7 +37,6 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
@@ -112,7 +112,7 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
   }
 
-  private class SimpleTextTermsEnum extends TermsEnum {
+  private class SimpleTextTermsEnum extends BaseTermsEnum {
     private final IndexOptions indexOptions;
     private int docFreq;
     private long totalTermFreq;
@@ -234,8 +234,8 @@ class SimpleTextFieldsReader extends FieldsProducer {
     }
 
     @Override
-    public ImpactsEnum impacts(SimScorer scorer, int flags) throws IOException {
-      return new SlowImpactsEnum(postings(null, flags), scorer.score(Float.MAX_VALUE, 1));
+    public ImpactsEnum impacts(int flags) throws IOException {
+      return new SlowImpactsEnum(postings(null, flags));
     }
   }
 

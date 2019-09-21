@@ -28,8 +28,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -66,7 +66,7 @@ public class AddIndexesTaskTest extends BenchmarkTestCase {
     Properties props = new Properties();
     props.setProperty("writer.version", Version.LATEST.toString());
     props.setProperty("print.props", "false"); // don't print anything
-    props.setProperty("directory", "RAMDirectory");
+    props.setProperty("directory", "ByteBuffersDirectory");
     props.setProperty(AddIndexesTask.ADDINDEXES_INPUT_DIR, inputDir.toAbsolutePath().toString());
     Config config = new Config(props);
     return new PerfRunData(config);
@@ -74,7 +74,7 @@ public class AddIndexesTaskTest extends BenchmarkTestCase {
 
   private void assertIndex(PerfRunData runData) throws Exception {
     Directory taskDir = runData.getDirectory();
-    assertSame(RAMDirectory.class, taskDir.getClass());
+    assertSame(ByteBuffersDirectory.class, taskDir.getClass());
     IndexReader r = DirectoryReader.open(taskDir);
     try {
       assertEquals(10, r.numDocs());

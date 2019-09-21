@@ -21,7 +21,7 @@ import javax.management.ObjectName;
 
 import java.util.Arrays;
 
-import com.codahale.metrics.ObjectNameFactory;
+import com.codahale.metrics.jmx.ObjectNameFactory;
 import org.apache.solr.metrics.SolrMetricInfo;
 
 /**

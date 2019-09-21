@@ -71,7 +71,7 @@ public class NormValueSource extends ValueSource {
     final SimScorer simScorer = similarity.scorer(1f,
         new CollectionStatistics(field, 1, 1, 1, 1),
         new TermStatistics(new BytesRef("bogus"), 1, 1));
-    final LeafSimScorer leafSimScorer = new LeafSimScorer(simScorer, readerContext.reader(), true, Float.MAX_VALUE);
+    final LeafSimScorer leafSimScorer = new LeafSimScorer(simScorer, readerContext.reader(), field, true);
     
     return new FloatDocValues(this) {
       int lastDocID = -1;

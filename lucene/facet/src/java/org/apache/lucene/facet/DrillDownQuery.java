@@ -30,6 +30,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
 
 /**
@@ -93,7 +94,7 @@ public final class DrillDownQuery extends Query {
 
   /** Adds one dimension of drill downs; if you pass the same
    *  dimension more than once it is OR'd with the previous
-   *  cofnstraints on that dimension, and all dimensions are
+   *  constraints on that dimension, and all dimensions are
    *  AND'd against each other and the base query. */
   public void add(String dim, String... path) {
     String indexedField = config.getDimConfig(dim).indexFieldName;
@@ -147,6 +148,11 @@ public final class DrillDownQuery extends Query {
   @Override
   public String toString(String field) {
     return getBooleanQuery().toString(field);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
   private BooleanQuery getBooleanQuery() {

@@ -33,6 +33,14 @@ import org.apache.lucene.util.TestUtil;
  */
 public class AssertingCodec extends FilterCodec {
 
+  static void assertThread(String object, Thread creationThread) {
+    if (creationThread != Thread.currentThread()) {
+      throw new AssertionError(object + " are only supposed to be consumed in "
+          + "the thread in which they have been acquired. But was acquired in "
+          + creationThread + " and consumed in " + Thread.currentThread() + ".");
+    }
+  }
+
   private final PostingsFormat postings = new PerFieldPostingsFormat() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {

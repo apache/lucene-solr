@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class SnapShooter {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private SolrCore solrCore;
   private String snapshotName = null;
   private String directoryName = null;
@@ -168,11 +168,10 @@ public class SnapShooter {
   private IndexCommit getIndexCommit() throws IOException {
     IndexDeletionPolicyWrapper delPolicy = solrCore.getDeletionPolicy();
     IndexCommit indexCommit = delPolicy.getLatestCommit();
-
-    if (indexCommit == null) {
-      indexCommit = solrCore.getSearcher().get().getIndexReader().getIndexCommit();
+    if (indexCommit != null) {
+      return indexCommit;
     }
-    return indexCommit;
+    return solrCore.withSearcher(searcher -> searcher.getIndexReader().getIndexCommit());
   }
 
   private IndexCommit getIndexCommitFromName() throws IOException {
@@ -205,7 +204,7 @@ public class SnapShooter {
       try {
         result.accept(createSnapshot(indexCommit));
       } catch (Exception e) {
-        LOG.error("Exception while creating snapshot", e);
+        log.error("Exception while creating snapshot", e);
         NamedList snapShootDetails = new NamedList<>();
         snapShootDetails.add("exception", e.getMessage());
         result.accept(snapShootDetails);
@@ -216,7 +215,7 @@ public class SnapShooter {
         try {
           deleteOldBackups(numberToKeep);
         } catch (IOException e) {
-          LOG.warn("Unable to delete old snapshots ", e);
+          log.warn("Unable to delete old snapshots ", e);
         }
       }
     }).start();
@@ -226,7 +225,7 @@ public class SnapShooter {
   // note: remember to reserve the indexCommit first so it won't get deleted concurrently
   protected NamedList createSnapshot(final IndexCommit indexCommit) throws Exception {
     assert indexCommit != null;
-    LOG.info("Creating backup snapshot " + (snapshotName == null ? "<not named>" : snapshotName) + " at " + baseSnapDirPath);
+    log.info("Creating backup snapshot " + (snapshotName == null ? "<not named>" : snapshotName) + " at " + baseSnapDirPath);
     boolean success = false;
     try {
       NamedList<Object> details = new NamedList<>();
@@ -246,7 +245,7 @@ public class SnapShooter {
       details.add("status", "success");
       details.add("snapshotCompletedAt", new Date().toString());//bad; should be Instant.now().toString()
       details.add("snapshotName", snapshotName);
-      LOG.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName) +
+      log.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName) +
           " at " + baseSnapDirPath);
       success = true;
       return details;
@@ -255,7 +254,7 @@ public class SnapShooter {
         try {
           backupRepo.deleteDirectory(snapshotDirPath);
         } catch (Exception excDuringDelete) {
-          LOG.warn("Failed to delete "+snapshotDirPath+" after snapshot creation failed due to: "+excDuringDelete);
+          log.warn("Failed to delete "+snapshotDirPath+" after snapshot creation failed due to: "+excDuringDelete);
         }
       }
     }
@@ -285,7 +284,7 @@ public class SnapShooter {
   }
 
   protected void deleteNamedSnapshot(ReplicationHandler replicationHandler) {
-    LOG.info("Deleting snapshot: " + snapshotName);
+    log.info("Deleting snapshot: " + snapshotName);
 
     NamedList<Object> details = new NamedList<>();
 
@@ -298,7 +297,7 @@ public class SnapShooter {
 
     } catch (IOException e) {
       details.add("status", "Unable to delete snapshot: " + snapshotName);
-      LOG.warn("Unable to delete snapshot: " + snapshotName, e);
+      log.warn("Unable to delete snapshot: " + snapshotName, e);
     }
 
     replicationHandler.snapShootDetails = details;

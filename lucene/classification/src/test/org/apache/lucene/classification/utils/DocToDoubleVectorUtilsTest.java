@@ -21,7 +21,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
@@ -89,7 +89,7 @@ public class DocToDoubleVectorUtilsTest extends LuceneTestCase {
 
   @Test
   public void testSparseFreqDoubleArrayConversion() throws Exception {
-    Terms fieldTerms = MultiFields.getTerms(index, "text");
+    Terms fieldTerms = MultiTerms.getTerms(index, "text");
     if (fieldTerms != null && fieldTerms.size() != -1) {
       IndexSearcher indexSearcher = new IndexSearcher(index);
       for (ScoreDoc scoreDoc : indexSearcher.search(new MatchAllDocsQuery(), Integer.MAX_VALUE).scoreDocs) {

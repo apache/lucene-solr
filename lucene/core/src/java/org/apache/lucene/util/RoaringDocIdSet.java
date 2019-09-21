@@ -18,7 +18,6 @@ package org.apache.lucene.util;
 
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -73,7 +72,7 @@ public class RoaringDocIdSet extends DocIdSet {
         // Use sparse encoding
         assert denseBuffer == null;
         if (currentBlockCardinality > 0) {
-          sets[currentBlock] = new ShortArrayDocIdSet(Arrays.copyOf(buffer, currentBlockCardinality));
+          sets[currentBlock] = new ShortArrayDocIdSet(ArrayUtil.copyOfSubArray(buffer, 0, currentBlockCardinality));
         }
       } else {
         assert denseBuffer != null;

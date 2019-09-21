@@ -35,10 +35,19 @@ import org.apache.solr.update.*;
  */
 public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 {
+
+  public static final String PRE_RUN_CHAIN_NAME = "_preRun_";
+
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) 
   {
-    return new RunUpdateProcessor(req, next);
+    RunUpdateProcessor runUpdateProcessor = new RunUpdateProcessor(req, next);
+    UpdateRequestProcessorChain preRun = req.getCore().getUpdateProcessingChain(PRE_RUN_CHAIN_NAME);
+    if (preRun != null) {
+      return preRun.createProcessor(req, rsp, false, runUpdateProcessor);
+    } else {
+      return runUpdateProcessor;
+    }
   }
 }
 

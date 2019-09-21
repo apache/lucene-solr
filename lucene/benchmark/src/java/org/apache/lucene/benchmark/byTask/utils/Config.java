@@ -371,7 +371,7 @@ public class Config {
     StringTokenizer st = new StringTokenizer(s, ":");
     while (st.hasMoreTokens()) {
       String t = st.nextToken();
-      a.add(new Boolean(t));
+      a.add(Boolean.valueOf(t));
     }
     boolean res[] = new boolean[a.size()];
     for (int i = 0; i < a.size(); i++) {

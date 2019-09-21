@@ -34,7 +34,7 @@ public class TestIndexWriterDeleteByQuery extends LuceneTestCase {
     doc.add(newStringField("field", "foo", Field.Store.NO));
     w.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(w);
-    FieldInfo fi = MultiFields.getMergedFieldInfos(r).fieldInfo("field");
+    FieldInfo fi = FieldInfos.getMergedFieldInfos(r).fieldInfo("field");
     assertNotNull(fi);
     assertFalse(fi.hasNorms());
     assertEquals(1, r.numDocs());
@@ -61,7 +61,7 @@ public class TestIndexWriterDeleteByQuery extends LuceneTestCase {
     assertEquals(1, r3.maxDoc());
 
     // Make sure norms can come back to life for a field after deleting by MatchAllDocsQuery:
-    fi = MultiFields.getMergedFieldInfos(r3).fieldInfo("field");    
+    fi = FieldInfos.getMergedFieldInfos(r3).fieldInfo("field");
     assertNotNull(fi);
     assertTrue(fi.hasNorms());
     r3.close();

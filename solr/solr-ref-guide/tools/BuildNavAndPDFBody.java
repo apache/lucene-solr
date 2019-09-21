@@ -67,7 +67,7 @@ public class BuildNavAndPDFBody {
     if (null == mainPage) {
       throw new RuntimeException("no main-page found with shortname: " + mainPageShortname);
     }
-    // NOTE: mainPage claims to be it's own parent to prevent anyone decendent from introducing a loop
+    // NOTE: mainPage claims to be its own parent to prevent anyone decendent from introducing a loop
     mainPage.buildPageTreeRecursive(mainPage, allPages);
 
     { // validate that there are no orphan pages

@@ -42,6 +42,8 @@ import org.apache.lucene.util.AttributeFactory;
  * as superclass!
  *
  * @see DelegatingAnalyzerWrapper
+ *
+ * @since 4.0.0
  */
 public abstract class AnalyzerWrapper extends Analyzer {
 

@@ -19,31 +19,32 @@ package org.apache.solr.cloud.autoscaling.sim;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
+import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 
 /**
  * Base class for simulated test cases. Tests that use this class should configure the simulated cluster
@@ -67,118 +68,54 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
     clusterNodeCount = nodeCount;
   }
 
+  @After
+  private void checkBackgroundTaskFailureCount() {
+    if (cluster != null) {
+      assertBackgroundTaskFailureCount(cluster);
+    }
+  }
+  
+  protected static void assertBackgroundTaskFailureCount(SimCloudManager c) {
+    assert null != c;
+    assertEquals("Cluster had background tasks submitted which failed",
+                 0, c.getBackgroundTaskFailureCount());
+  }
+  
   @AfterClass
   public static void shutdownCluster() throws Exception {
     if (cluster != null) {
-      cluster.close();
+      try {
+        cluster.close();
+        assertBackgroundTaskFailureCount(cluster);
+      } finally {
+        cluster = null;
+      }
     }
-    cluster = null;
+  }
+
+  protected static void assertAutoscalingUpdateComplete() throws Exception {
+    (new TimeOut(30, TimeUnit.SECONDS, cluster.getTimeSource()))
+        .waitFor("OverseerTriggerThread never caught up to the latest znodeVersion", () -> {
+          try {
+            AutoScalingConfig autoscalingConfig = cluster.getDistribStateManager().getAutoScalingConfig();
+            return autoscalingConfig.getZkVersion() == cluster.getOverseerTriggerThread().getProcessedZnodeVersion();
+          } catch (Exception e) {
+            throw new RuntimeException("FAILED", e);
+          }
+        });
   }
 
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
     if (cluster != null) {
-      log.info("\n");
-      log.info("#############################################");
-      log.info("############ FINAL CLUSTER STATS ############");
-      log.info("#############################################\n");
-      log.info("## Live nodes:\t\t" + cluster.getLiveNodesSet().size());
-      int emptyNodes = 0;
-      int maxReplicas = 0;
-      int minReplicas = Integer.MAX_VALUE;
-      Map<String, Map<Replica.State, AtomicInteger>> replicaStates = new TreeMap<>();
-      int numReplicas = 0;
-      for (String node : cluster.getLiveNodesSet().get()) {
-        List<ReplicaInfo> replicas = cluster.getSimClusterStateProvider().simGetReplicaInfos(node);
-        numReplicas += replicas.size();
-        if (replicas.size() > maxReplicas) {
-          maxReplicas = replicas.size();
-        }
-        if (minReplicas > replicas.size()) {
-          minReplicas = replicas.size();
-        }
-        for (ReplicaInfo ri : replicas) {
-          replicaStates.computeIfAbsent(ri.getCollection(), c -> new TreeMap<>())
-              .computeIfAbsent(ri.getState(), s -> new AtomicInteger())
-              .incrementAndGet();
-        }
-        if (replicas.isEmpty()) {
-          emptyNodes++;
-        }
-      }
-      if (minReplicas == Integer.MAX_VALUE) {
-        minReplicas = 0;
-      }
-      log.info("## Empty nodes:\t" + emptyNodes);
-      Set<String> deadNodes = cluster.getSimNodeStateProvider().simGetDeadNodes();
-      log.info("## Dead nodes:\t\t" + deadNodes.size());
-      deadNodes.forEach(n -> log.info("##\t\t" + n));
-      log.info("## Collections:\t" + cluster.getSimClusterStateProvider().simListCollections());
-      log.info("## Max replicas per node:\t" + maxReplicas);
-      log.info("## Min replicas per node:\t" + minReplicas);
-      log.info("## Total replicas:\t\t" + numReplicas);
-      replicaStates.forEach((c, map) -> {
-        AtomicInteger repCnt = new AtomicInteger();
-        map.forEach((s, cnt) -> repCnt.addAndGet(cnt.get()));
-        log.info("## * " + c + "\t\t" + repCnt.get());
-        map.forEach((s, cnt) -> log.info("##\t\t- " + String.format(Locale.ROOT, "%-12s  %4d", s, cnt.get())));
-      });
-      log.info("######### Final Solr op counts ##########");
-      cluster.simGetOpCounts().forEach((k, cnt) -> log.info("##\t\t- " + String.format(Locale.ROOT, "%-14s  %4d", k, cnt.get())));
-      log.info("######### Autoscaling event counts ###########");
-      Map<String, Map<String, AtomicInteger>> counts = cluster.simGetEventCounts();
-      counts.forEach((trigger, map) -> {
-        log.info("## * Trigger: " + trigger);
-        map.forEach((s, cnt) -> log.info("##\t\t- " + String.format(Locale.ROOT, "%-11s  %4d", s, cnt.get())));
-      });
+      log.info(cluster.dumpClusterState(false));
     }
   }
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    if (cluster != null) {
-      // clear any persisted configuration
-      cluster.getDistribStateManager().setData(SOLR_AUTOSCALING_CONF_PATH, Utils.toJSON(new ZkNodeProps()), -1);
-      cluster.getDistribStateManager().setData(ZkStateReader.ROLES, Utils.toJSON(new HashMap<>()), -1);
-      // restore the expected number of nodes
-      int currentSize = cluster.getLiveNodesSet().size();
-      if (currentSize < clusterNodeCount) {
-        int addCnt = clusterNodeCount - currentSize;
-        while (addCnt-- > 0) {
-          cluster.simAddNode();
-        }
-      } else if (currentSize > clusterNodeCount) {
-        cluster.simRemoveRandomNodes(currentSize - clusterNodeCount, true, random());
-      }
-      // clean any persisted trigger state or events
-      removeChildren(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH);
-      removeChildren(ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH);
-      removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
-      removeChildren(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
-      cluster.getSimClusterStateProvider().simDeleteAllCollections();
-      cluster.simClearSystemCollection();
-      // clear any dead nodes
-      cluster.getSimNodeStateProvider().simRemoveDeadNodes();
-      cluster.getSimClusterStateProvider().simResetLeaderThrottles();
-      cluster.simRestartOverseer(null);
-      cluster.getTimeSource().sleep(5000);
-      cluster.simResetOpCounts();
-    }
-  }
-
-  @Before
-  public void checkClusterConfiguration() {
-    if (cluster == null)
-      throw new RuntimeException("SimCloudManager not configured - have you called configureCluster()?");
-  }
-
-  protected void removeChildren(String path) throws Exception {
-    if (!cluster.getDistribStateManager().hasData(path)) {
-      return;
-    }
-    cluster.getDistribStateManager().removeRecursively(path, true, false);
   }
 
   /* Cluster helper methods ************************************/
@@ -226,5 +163,91 @@ public class SimSolrCloudTestCase extends SolrTestCaseJ4 {
     }
     fail("Couldn't get random replica that matched conditions\n" + slice.toString());
     return null;  // just to keep the compiler happy - fail will always throw an Exception
+  }
+
+  /**
+   * Creates &amp; executes an autoscaling request against the current cluster, asserting that 
+   * the result is a success
+   * 
+   * @param json The request to send
+   * @see CloudTestUtils#assertAutoScalingRequest
+   */
+  public void assertAutoScalingRequest(final String json) throws IOException {
+    CloudTestUtils.assertAutoScalingRequest(cluster, json);
+  }
+
+  /**
+   * Compare two ClusterState-s, filtering out simulation framework artifacts.
+   */
+  public static void assertClusterStateEquals(ClusterState one, ClusterState two) {
+    assertEquals(one.getLiveNodes(), two.getLiveNodes());
+    assertEquals(one.getCollectionsMap().keySet(), two.getCollectionsMap().keySet());
+    one.forEachCollection(oneColl -> {
+      DocCollection twoColl = two.getCollection(oneColl.getName());
+      Map<String, Slice> oneSlices = oneColl.getSlicesMap();
+      Map<String, Slice> twoSlices = twoColl.getSlicesMap();
+      assertEquals(oneSlices.keySet(), twoSlices.keySet());
+      oneSlices.forEach((s, slice) -> {
+        Slice sTwo = twoSlices.get(s);
+        for (Replica oneReplica : slice.getReplicas()) {
+          Replica twoReplica = sTwo.getReplica(oneReplica.getName());
+          assertNotNull(twoReplica);
+          assertReplicaEquals(oneReplica, twoReplica);
+        }
+      });
+    });
+  }
+
+  // ignore these because SimCloudManager always modifies them
+  private static final Set<Pattern> IGNORE_REPLICA_PATTERNS = new HashSet<>(Arrays.asList(
+      Pattern.compile("QUERY\\..*"),
+      Pattern.compile("INDEX\\..*"),
+      Pattern.compile("UPDATE\\..*"),
+      Pattern.compile("SEARCHER\\..*")
+  ));
+
+  private static final Predicate<Map.Entry<String, Object>> REPLICA_FILTER_FUN = p -> {
+    for (Pattern pattern : IGNORE_REPLICA_PATTERNS) {
+      if (pattern.matcher(p.getKey()).matches()) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  public static void assertReplicaEquals(Replica one, Replica two) {
+    assertEquals(one.getName(), two.getName());
+    assertEquals(one.getNodeName(), two.getNodeName());
+    assertEquals(one.getState(), two.getState());
+    assertEquals(one.getType(), two.getType());
+    assertReplicaPropsEquals(one.getProperties(), two.getProperties());
+  }
+
+  public static void assertReplicaInfoEquals(ReplicaInfo one, ReplicaInfo two) {
+    assertEquals(one.getName(), two.getName());
+    assertEquals(one.getNode(), two.getNode());
+    assertEquals(one.getState(), two.getState());
+    assertEquals(one.getType(), two.getType());
+    assertEquals(one.getCore(), two.getCore());
+    assertEquals(one.getCollection(), two.getCollection());
+    assertEquals(one.getShard(), two.getShard());
+    assertEquals(one.isLeader, two.isLeader);
+    Map<String, Object> oneMap = new HashMap<>();
+    Map<String, Object> twoMap = new HashMap<>();
+    one.toMap(oneMap);
+    two.toMap(twoMap);
+    assertReplicaPropsEquals(
+        (Map<String, Object>)oneMap.get(one.getName()),
+        (Map<String, Object>)twoMap.get(two.getName()));
+  }
+
+  public static void assertReplicaPropsEquals(Map<String, Object> propsOne, Map<String, Object> propsTwo) {
+    Map<String, Object> filteredPropsOne = propsOne.entrySet().stream()
+        .filter(REPLICA_FILTER_FUN)
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    Map<String, Object> filteredPropsTwo = propsTwo.entrySet().stream()
+        .filter(REPLICA_FILTER_FUN)
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    assertEquals(filteredPropsOne, filteredPropsTwo);
   }
 }

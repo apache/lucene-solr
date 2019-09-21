@@ -33,8 +33,10 @@
 
   <path id="test.classpath"/>
 
-  <!-- redefine the test compilation, so it's just a no-op -->
+  <!-- redefine the test compilation, -test and -check-totals, so these are just no-ops -->
   <target name="compile-test"/>
+  <target name="-test"/>
+  <target name="-check-totals"/>
   
   <!-- redefine the forbidden apis to be no-ops -->
   <target name="-check-forbidden-tests"/>

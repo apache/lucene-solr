@@ -24,11 +24,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.LeafReaderContext;
 
 /**
  * A query that generates the union of documents produced by its subqueries, and that scores each document with the maximum
@@ -112,10 +110,15 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      List<Matches> mis = new ArrayList<>();
       for (Weight weight : weights) {
-        weight.extractTerms(terms);
+        Matches mi = weight.matches(context, doc);
+        if (mi != null) {
+          mis.add(mi);
+        }
       }
+      return MatchesUtils.fromSubMatches(mis);
     }
 
     /** Create the scorer used to score our associated DisjunctionMaxQuery */
@@ -136,7 +139,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
         // only one sub-scorer in this segment
         return scorers.get(0);
       } else {
-        return new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers, scoreMode.needsScores());
+        return new DisjunctionMaxScorer(this, tieBreakerMultiplier, scorers, scoreMode);
       }
     }
 
@@ -223,6 +226,14 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     }
 
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
+    for (Query q : disjuncts) {
+      q.visit(v);
+    }
   }
 
   /** Prettyprint us.

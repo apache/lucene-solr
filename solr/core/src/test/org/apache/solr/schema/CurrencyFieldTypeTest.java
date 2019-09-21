@@ -468,13 +468,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
     assertEquals("3.14,GBP", new CurrencyValue(314, "GBP").strValue());
 
     CurrencyValue currencyValue = new CurrencyValue(314, "XYZ");
-    try {
-      String string = currencyValue.strValue();
-      fail("Expected SolrException");
-    } catch (SolrException exception) {
-    } catch (Throwable throwable) {
-      fail("Expected SolrException");
-    }
+    expectThrows(SolrException.class,  currencyValue::strValue);
   }
 
   @Test
@@ -486,7 +480,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
     clearIndex();
     
     // NOTE: in our test conversions EUR uses an asynetric echange rate
-    // these are the equivilent values when converting to:     USD        EUR        GBP
+    // these are the equivalent values when converting to:     USD        EUR        GBP
     assertU(adoc("id", "" + 1, fieldName, "10.00,USD"));   // 10.00,USD  25.00,EUR   5.00,GBP
     assertU(adoc("id", "" + 2, fieldName, "15.00,EUR"));   //  7.50,USD  15.00,EUR   7.50,GBP
     assertU(adoc("id", "" + 3, fieldName, "6.00,GBP"));    // 12.00,USD  12.00,EUR   6.00,GBP

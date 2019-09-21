@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.SortedSet;
 
 import org.apache.lucene.index.IndexReader;
@@ -33,8 +32,8 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -49,7 +48,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * Specialization for a disjunction over many terms that behaves like a
  * {@link ConstantScoreQuery} over a {@link BooleanQuery} containing only
  * {@link org.apache.lucene.search.BooleanClause.Occur#SHOULD} clauses.
- * <p>For instance in the following example, both @{code q1} and {@code q2}
+ * <p>For instance in the following example, both {@code q1} and {@code q2}
  * would yield the same scores:
  * <pre class="prettyprint">
  * Query q1 = new TermInSetQuery(new Term("field", "foo"), new Term("field", "bar"));
@@ -110,7 +109,7 @@ public class TermInSetQuery extends Query implements Accountable {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, BooleanQuery.getMaxClauseCount());
+    final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
     if (termData.size() <= threshold) {
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
       TermIterator iterator = termData.iterator();
@@ -120,6 +119,20 @@ public class TermInSetQuery extends Query implements Accountable {
       return new ConstantScoreQuery(bq.build());
     }
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
+    List<Term> terms = new ArrayList<>();
+    TermIterator iterator = termData.iterator();
+    for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
+      terms.add(new Term(field, BytesRef.deepCopyOf(term)));
+    }
+    v.consumeTerms(this, terms.toArray(new Term[0]));
   }
 
   @Override
@@ -213,11 +226,12 @@ public class TermInSetQuery extends Query implements Accountable {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
-      public void extractTerms(Set<Term> terms) {
-        // no-op
-        // This query is for abuse cases when the number of terms is too high to
-        // run efficiently as a BooleanQuery. So likewise we hide its terms in
-        // order to protect highlighters
+      public Matches matches(LeafReaderContext context, int doc) throws IOException {
+        Terms terms = context.reader().terms(field);
+        if (terms == null || terms.hasPositions() == false) {
+          return super.matches(context, doc);
+        }
+        return MatchesUtils.forField(field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, getQuery(), field, termData.iterator()));
       }
 
       /**
@@ -237,7 +251,7 @@ public class TermInSetQuery extends Query implements Accountable {
 
         // We will first try to collect up to 'threshold' terms into 'matchingTerms'
         // if there are two many terms, we will fall back to building the 'builder'
-        final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, BooleanQuery.getMaxClauseCount());
+        final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
         assert termData.size() > threshold : "Query should have been rewritten";
         List<TermAndState> matchingTerms = new ArrayList<>(threshold);
         DocIdSetBuilder builder = null;
@@ -289,7 +303,7 @@ public class TermInSetQuery extends Query implements Accountable {
         if (disi == null) {
           return null;
         }
-        return new ConstantScoreScorer(this, score(), disi);
+        return new ConstantScoreScorer(this, score(), scoreMode, disi);
       }
 
       @Override
@@ -324,7 +338,7 @@ public class TermInSetQuery extends Query implements Accountable {
       public boolean isCacheable(LeafReaderContext ctx) {
         // Only cache instances that have a reasonable size. Otherwise it might cause memory issues
         // with the query cache if most memory ends up being spent on queries rather than doc id sets.
-        return ramBytesUsed() <= LRUQueryCache.QUERY_DEFAULT_RAM_BYTES_USED;
+        return ramBytesUsed() <= RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
       }
 
     };

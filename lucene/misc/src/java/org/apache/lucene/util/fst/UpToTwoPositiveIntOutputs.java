@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.SuppressForbidden;
 
 /**
  * An FST {@link Outputs} implementation where each output
@@ -46,6 +47,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @lucene.experimental
  */
 
+@SuppressForbidden(reason = "Uses a Long instance as a marker")
 public final class UpToTwoPositiveIntOutputs extends Outputs<Object> {
 
   /** Holds two long outputs. */

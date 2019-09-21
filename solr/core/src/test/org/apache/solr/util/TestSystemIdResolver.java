@@ -17,22 +17,18 @@
 package org.apache.solr.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 import org.xml.sax.InputSource;
 
-public class TestSystemIdResolver extends LuceneTestCase {
+public class TestSystemIdResolver extends SolrTestCaseJ4 {
   
-  public void setUp() throws Exception {
-    super.setUp();
-    System.setProperty("solr.allow.unsafe.resourceloading", "true");
-  }
-
   public void tearDown() throws Exception {
     System.clearProperty("solr.allow.unsafe.resourceloading");
     super.tearDown();
@@ -73,11 +69,37 @@ public class TestSystemIdResolver extends LuceneTestCase {
       "solrres:/org/apache/solr/util/RTimer.class", "TestSystemIdResolver.class");
     assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/collection1/conf/schema.xml"),
       SystemIdResolver.createSystemIdFromResourceName(testHome+"/collection1/conf/solrconfig.xml"), "schema.xml");
-    assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-schema.xml"),
-      SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-config.xml"), "crazy-path-to-schema.xml");
     
-    // test, that resolving works if somebody uses an absolute file:-URI in a href attribute, the resolver should return null (default fallback)
-    assertNull(resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", fileUri));
+    // if somebody uses an absolute uri (e.g., file://) we should fail resolving:
+    IOException ioe = expectThrows(IOException.class, () -> {
+      resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", fileUri);
+    });
+    assertTrue(ioe.getMessage().startsWith("Cannot resolve absolute"));
+    
+    ioe = expectThrows(IOException.class, () -> {
+      resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", "http://lucene.apache.org/test.xml");
+    });
+    assertTrue(ioe.getMessage().startsWith("Cannot resolve absolute"));
+    
+    // check that we can't escape with absolute file paths:
+    for (String path : Arrays.asList("/etc/passwd", "/windows/notepad.exe")) {
+      ioe = expectThrows(IOException.class, () -> {
+        resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", path);
+      });
+      assertTrue(ioe.getMessage().startsWith("Can't find resource")
+          || ioe.getMessage().contains("is outside resource loader dir"));
+    }
+  }
+
+  public void testUnsafeResolving() throws Exception {
+    System.setProperty("solr.allow.unsafe.resourceloading", "true");
+    
+    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath();
+    final ResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
+    final SystemIdResolver resolver = new SystemIdResolver(loader);
+    
+    assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-schema.xml"),
+      SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-config.xml"), "crazy-path-to-schema.xml");    
   }
 
 }

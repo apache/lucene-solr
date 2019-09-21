@@ -23,7 +23,6 @@
   </configurations>
   <dependencies>
     <dependency org="org.apache.opennlp" name="opennlp-tools" rev="${/org.apache.opennlp/opennlp-tools}" transitive="false" conf="compile" />
-    <dependency org="org.apache.opennlp" name="opennlp-maxent" rev="${/org.apache.opennlp/opennlp-maxent}" transitive="false" conf="compile" />
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}" />
   </dependencies>
 </ivy-module>

@@ -21,7 +21,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 
@@ -51,15 +50,12 @@ public class TestSimpleTextCodec extends SolrTestCaseJ4 {
     assertU(add(doc("id","1", "text","textual content goes here")));
     assertU(commit());
 
-    RefCounted<SolrIndexSearcher> searcherRef = h.getCore().getSearcher();
-    try {
-      SolrIndexSearcher searcher = searcherRef.get();
+    h.getCore().withSearcher(searcher -> {
       SegmentInfos infos = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
       SegmentInfo info = infos.info(infos.size() - 1).info;
       assertEquals("Unexpected segment codec", "SimpleText", info.getCodec().getName());
-    } finally {
-      searcherRef.decref();
-    }
+      return null;
+    });
 
     assertQ(req("q", "id:1"),
         "*[count(//doc)=1]");

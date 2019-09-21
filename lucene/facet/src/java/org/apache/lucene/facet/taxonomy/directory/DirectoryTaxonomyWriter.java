@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.TokenStream;
@@ -61,7 +62,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FutureObjects;
 
 /**
  * {@link TaxonomyWriter} which uses a {@link Directory} to store the taxonomy
@@ -195,7 +195,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     parentStreamField = new Field(Consts.FIELD_PAYLOADS, parentStream, ft);
     fullPathField = new StringField(Consts.FULL, "", Field.Store.YES);
 
-    nextID = indexWriter.maxDoc();
+    nextID = indexWriter.getDocStats().maxDoc;
 
     if (cache == null) {
       cache = defaultTaxonomyWriterCache();
@@ -216,6 +216,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       // notice a few cache misses.
       cacheIsComplete = false;
     }
+  }
+
+  /** Returns the {@link TaxonomyWriterCache} in use by this writer. */
+  public TaxonomyWriterCache getCache() {
+    return cache;
   }
 
   /**
@@ -764,7 +769,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // Note: the following if() just enforces that a user can never ask
     // for the parent of a nonexistant category - even if the parent array
     // was allocated bigger than it really needs to be.
-    FutureObjects.checkIndex(ordinal, nextID);
+    Objects.checkIndex(ordinal, nextID);
     
     int[] parents = getTaxoArrays().parents();
     assert ordinal < parents.length : "requested ordinal (" + ordinal + "); parents.length (" + parents.length + ") !";
@@ -963,7 +968,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     shouldRefreshReaderManager = true;
     initReaderManager(); // ensure that it's initialized
     refreshReaderManager();
-    nextID = indexWriter.maxDoc();
+    nextID = indexWriter.getDocStats().maxDoc;
     taxoArrays = null; // must nullify so that it's re-computed next time it's needed
     
     // need to clear the cache, so that addCategory won't accidentally return

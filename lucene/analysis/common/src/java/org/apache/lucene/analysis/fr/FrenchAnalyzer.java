@@ -32,8 +32,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
-import org.apache.lucene.analysis.standard.StandardFilter;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.ElisionFilter;
 import org.apache.lucene.util.IOUtils;
@@ -50,6 +49,8 @@ import org.apache.lucene.util.IOUtils;
  *
  * <p><b>NOTE</b>: This class uses the same {@link org.apache.lucene.util.Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
+ *
+ * @since 3.1
  */
 public final class FrenchAnalyzer extends StopwordAnalyzerBase {
 
@@ -127,7 +128,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    * 
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link ElisionFilter},
+   *         {@link ElisionFilter},
    *         {@link LowerCaseFilter}, {@link StopFilter},
    *         {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided, and {@link FrenchLightStemFilter}
@@ -135,8 +136,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
-    result = new ElisionFilter(result, DEFAULT_ARTICLES);
+    TokenStream result = new ElisionFilter(source, DEFAULT_ARTICLES);
     result = new LowerCaseFilter(result);
     result = new StopFilter(result, stopwords);
     if(!excltable.isEmpty())
@@ -147,8 +147,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
-    TokenStream result = new StandardFilter(in);
-    result = new ElisionFilter(result, DEFAULT_ARTICLES);
+    TokenStream result = new ElisionFilter(in, DEFAULT_ARTICLES);
     result = new LowerCaseFilter(result);
     return result;
   }

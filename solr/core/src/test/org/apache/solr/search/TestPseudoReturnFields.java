@@ -28,8 +28,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
-import org.apache.commons.lang.StringUtils;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -126,7 +124,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
               ,"//result/doc/str[@name='ssto']"
               ,"//result/doc/str[@name='subject']"
               
-              ,"//result/doc[count(*)=4]"
+              ,"//result/doc[count(*)=5]"
               );
     }
   }
@@ -142,7 +140,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
                 ,"//doc/int[@name='val_i']"
                 ,"//doc/str[@name='ssto']"
                 ,"//doc/str[@name='subject']"
-                ,"//doc[count(*)=4]"
+                ,"//doc[count(*)=5]"
                 );
       }
     }
@@ -172,8 +170,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
               ,"//result/doc/str[@name='ssto']"
               ,"//result/doc/str[@name='subject']"
               ,"//result/doc/float[@name='score']"
-              
-              ,"//result/doc[count(*)=5]"
+              ,"//result/doc[count(*)=6]"
               );
     }
   }
@@ -190,7 +187,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
                 ,"//doc/int[@name='val_i']"
                 ,"//doc/str[@name='ssto']"
                 ,"//doc/str[@name='subject']"
-                ,"//doc[count(*)=4]"
+                ,"//doc[count(*)=5]"
                 );
       }
     }
@@ -692,7 +689,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
       
       Collections.shuffle(fl, random);
 
-      final SolrParams singleFl = params("q","*:*", "rows", "1","fl",StringUtils.join(fl.toArray(),','));
+      final SolrParams singleFl = params("q","*:*", "rows", "1","fl",String.join(",", fl));
       final ModifiableSolrParams multiFl = params("q","*:*", "rows", "1");
       for (String item : fl) {
         multiFl.add("fl",item);
@@ -726,7 +723,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
       
       Collections.shuffle(fl, random);
 
-      final SolrParams singleFl = params("fl",StringUtils.join(fl.toArray(),','));
+      final SolrParams singleFl = params("fl",String.join(",", fl));
       final ModifiableSolrParams multiFl = params();
       for (String item : fl) {
         multiFl.add("fl",item);

@@ -150,8 +150,7 @@ public class ProximityQueryNode extends BooleanQueryNode {
           + "' type='" + this.proximityType.toString() + "'" + distanceSTR
           + "/>";
     StringBuilder sb = new StringBuilder();
-    sb.append("<proximity field='" + this.field + "' inorder='" + this.inorder
-        + "' type='" + this.proximityType.toString() + "'" + distanceSTR + ">");
+    sb.append("<proximity field='").append(this.field).append("' inorder='").append(this.inorder).append("' type='").append(this.proximityType.toString()).append("'").append(distanceSTR).append(">");
     for (QueryNode child : getChildren()) {
       sb.append("\n");
       sb.append(child.toString());

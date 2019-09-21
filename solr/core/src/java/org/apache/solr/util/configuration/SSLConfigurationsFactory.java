@@ -39,7 +39,7 @@ public class SSLConfigurationsFactory {
   }
 
   private static SSLConfigurations getInstance() {
-    return new SSLConfigurations(System.getenv());
+    return new SSLConfigurations(new SSLCredentialProviderFactory());
   }
 
   @VisibleForTesting

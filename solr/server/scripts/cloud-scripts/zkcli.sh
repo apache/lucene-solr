@@ -12,7 +12,7 @@ sdir="`dirname \"$0\"`"
 if [ -n "$LOG4J_PROPS" ]; then
   log4j_config="file:$LOG4J_PROPS"
 else
-  log4j_config="file:$sdir/log4j2.xml"
+  log4j_config="file:$sdir/../../resources/log4j2-console.xml"
 fi
 
 # Settings for ZK ACL

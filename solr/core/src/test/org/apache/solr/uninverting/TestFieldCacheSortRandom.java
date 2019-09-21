@@ -44,6 +44,7 @@ import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
@@ -54,12 +55,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /** random sorting tests with uninversion */
-public class TestFieldCacheSortRandom extends LuceneTestCase {
+public class TestFieldCacheSortRandom extends SolrTestCase {
 
   public void testRandomStringSort() throws Exception {
     testRandomStringSort(SortField.Type.STRING);
@@ -168,13 +169,13 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
       int queryType = random.nextInt(2);
       if (queryType == 0) {
         hits = s.search(new ConstantScoreQuery(f),
-                        hitCount, sort, random.nextBoolean(), random.nextBoolean());
+                        hitCount, sort, false);
       } else {
-        hits = s.search(f, hitCount, sort, random.nextBoolean(), random.nextBoolean());
+        hits = s.search(f, hitCount, sort, false);
       }
 
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " hits; topN=" + hitCount + "; reverse=" + reverse + "; sortMissingLast=" + sortMissingLast + " sort=" + sort);
+        System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " ; topN=" + hitCount + "; reverse=" + reverse + "; sortMissingLast=" + sortMissingLast + " sort=" + sort);
       }
 
       // Compute expected results:
@@ -287,7 +288,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
             }
           }
 
-          return new ConstantScoreScorer(this, score(), new BitSetIterator(bits, bits.approximateCardinality()));
+          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
         }
 
         @Override
@@ -295,6 +296,11 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
           return true;
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override

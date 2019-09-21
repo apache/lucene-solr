@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.response;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -32,9 +33,10 @@ import org.junit.Test;
  * Test for SuggesterComponent's response in Solrj
  *
  */
-public class TestSuggesterResponse extends SolrJettyTestBase {
+public class TestSuggesterResponse extends EmbeddedSolrServerTestBase {
+
   @BeforeClass
-  public static void beforeTest() throws Exception {
+  public static void beforeClass() throws Exception {
     initCore();
   }
 

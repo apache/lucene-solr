@@ -21,11 +21,11 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.apache.lucene.document.BinaryDocValuesField; // javadocs
-import org.apache.lucene.document.NumericDocValuesField; // javadocs
-import org.apache.lucene.document.SortedDocValuesField; // javadocs
-import org.apache.lucene.document.SortedSetDocValuesField; // javadocs
-import org.apache.lucene.document.StringField; // javadocs
+import org.apache.lucene.document.BinaryDocValuesField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
@@ -53,7 +53,7 @@ import org.apache.solr.uninverting.FieldCache.CacheEntry;
  * based on the core cache key of the wrapped LeafReader.
  */
 public class UninvertingReader extends FilterLeafReader {
-  
+
   /**
    * Specifies the type of uninversion to apply for the field. 
    */
@@ -173,33 +173,33 @@ public class UninvertingReader extends FilterLeafReader {
     SORTED_SET_DOUBLE
 
   }
-  
+
+  /** @see #wrap(DirectoryReader, Function) */
+  public static DirectoryReader wrap(DirectoryReader reader, Map<String, Type> mapping) throws IOException {
+    return wrap(reader, mapping::get);
+  }
+
   /**
-   * 
-   * Wraps a provided DirectoryReader. Note that for convenience, the returned reader
+   * Wraps a provided {@link DirectoryReader}. Note that for convenience, the returned reader
    * can be used normally (e.g. passed to {@link DirectoryReader#openIfChanged(DirectoryReader)})
    * and so on. 
    * 
    * @param in input directory reader
-   * @param perSegmentMapper function to map a segment reader to a mapping of fields to their uninversion type
+   * @param mapper function to map a field name to an uninversion type.  A Null result means to not uninvert.
    * @return a wrapped directory reader
    */
-  public static DirectoryReader wrap(DirectoryReader in, final Function<LeafReader, Map<String,Type>> perSegmentMapper) throws IOException {
-    return new UninvertingDirectoryReader(in, perSegmentMapper);
+  public static DirectoryReader wrap(DirectoryReader in, Function<String, Type> mapper) throws IOException {
+    return new UninvertingDirectoryReader(in, mapper);
   }
-  
-  public static DirectoryReader wrap(DirectoryReader in, final Map<String,Type> mapping) throws IOException {
-    return UninvertingReader.wrap(in, (r) -> mapping);
-  }
-  
+
   static class UninvertingDirectoryReader extends FilterDirectoryReader {
-    final Function<LeafReader, Map<String,Type>> mapper;
+    final Function<String, Type> mapper;
     
-    public UninvertingDirectoryReader(DirectoryReader in, final Function<LeafReader, Map<String,Type>> mapper) throws IOException {
+    public UninvertingDirectoryReader(DirectoryReader in, final Function<String, Type> mapper) throws IOException {
       super(in, new FilterDirectoryReader.SubReaderWrapper() {
         @Override
         public LeafReader wrap(LeafReader reader) {
-          return new UninvertingReader(reader, mapper.apply(reader));
+          return UninvertingReader.wrap(reader, mapper);
         }
       });
       this.mapper = mapper;
@@ -219,30 +219,30 @@ public class UninvertingReader extends FilterLeafReader {
       return in.getReaderCacheHelper();
     }
   }
-  
-  final Map<String,Type> mapping;
-  final FieldInfos fieldInfos;
-  
-  /** 
-   * Create a new UninvertingReader with the specified mapping 
+
+  /**
+   * Create a new UninvertingReader with the specified mapping, wrapped around the input.  It may be deemed that there
+   * is no mapping to do, in which case the input is returned.
    * <p>
-   * Expert: This should almost never be used. Use {@link #wrap(DirectoryReader, Function)}
-   * instead.
-   *  
+   * Expert: This should almost never be used. Use {@link #wrap(DirectoryReader, Function)} instead.
+   *
    * @lucene.internal
    */
-  public UninvertingReader(LeafReader in, Map<String,Type> mapping) {
-    super(in);
-    this.mapping = mapping;
-    ArrayList<FieldInfo> filteredInfos = new ArrayList<>();
+  public static LeafReader wrap(LeafReader in, Function<String, Type> mapping) {
+    boolean wrap = false;
+
+    // Calculate a new FieldInfos that has DocValuesType where we didn't before
+    ArrayList<FieldInfo> newFieldInfos = new ArrayList<>(in.getFieldInfos().size());
     for (FieldInfo fi : in.getFieldInfos()) {
       DocValuesType type = fi.getDocValuesType();
-      if (type == DocValuesType.NONE) {        
-        Type t = mapping.get(fi.name);
+      // fields which currently don't have docValues, but are uninvertable (indexed or points data present)
+      if (type == DocValuesType.NONE &&
+          (fi.getIndexOptions() != IndexOptions.NONE || (fi.getPointNumBytes() > 0 && fi.getPointDataDimensionCount() == 1))) {
+        Type t = mapping.apply(fi.name); // could definitely return null, thus still can't uninvert it
         if (t != null) {
           if (t == Type.INTEGER_POINT || t == Type.LONG_POINT || t == Type.FLOAT_POINT || t == Type.DOUBLE_POINT) {
             // type uses points
-            if (fi.getPointDimensionCount() == 0) {
+            if (fi.getPointDataDimensionCount() == 0) {
               continue;
             }
           } else {
@@ -280,11 +280,30 @@ public class UninvertingReader extends FilterLeafReader {
           }
         }
       }
-      filteredInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
-          fi.hasPayloads(), fi.getIndexOptions(), type, fi.getDocValuesGen(), fi.attributes(),
-          fi.getPointDimensionCount(), fi.getPointNumBytes()));
+      if (type != fi.getDocValuesType()) { // we changed it
+        wrap = true;
+        newFieldInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
+            fi.hasPayloads(), fi.getIndexOptions(), type, fi.getDocValuesGen(), fi.attributes(),
+            fi.getPointDataDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(), fi.isSoftDeletesField()));
+      } else {
+        newFieldInfos.add(fi);
+      }
     }
-    fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
+    if (!wrap) {
+      return in;
+    } else {
+      FieldInfos fieldInfos = new FieldInfos(newFieldInfos.toArray(new FieldInfo[newFieldInfos.size()]));
+      return new UninvertingReader(in, mapping, fieldInfos);
+    }
+  }
+
+  final Function<String, Type> mapping;
+  final FieldInfos fieldInfos;
+
+  private UninvertingReader(LeafReader in, Function<String, Type> mapping, FieldInfos fieldInfos) {
+    super(in);
+    this.mapping = mapping;
+    this.fieldInfos = fieldInfos;
   }
 
   @Override
@@ -388,11 +407,7 @@ public class UninvertingReader extends FilterLeafReader {
    * if the field doesn't exist or doesn't have a mapping.
    */
   private Type getType(String field) {
-    FieldInfo info = fieldInfos.fieldInfo(field);
-    if (info == null || info.getDocValuesType() == DocValuesType.NONE) {
-      return null;
-    }
-    return mapping.get(field);
+    return mapping.apply(field);
   }
 
   // NOTE: delegating the cache helpers is wrong since this wrapper alters the

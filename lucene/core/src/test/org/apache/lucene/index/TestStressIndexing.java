@@ -159,10 +159,7 @@ public class TestStressIndexing extends LuceneTestCase {
     //System.out.println("Searcher 2: " + searcherThread2.count + " searchers created");
   }
 
-  /*
-    Run above stress test against RAMDirectory and then
-    FSDirectory.
-  */
+  /* */
   public void testStressIndexAndSearching() throws Exception {
     Directory directory = newMaybeVirusCheckingDirectory();
     if (directory instanceof MockDirectoryWrapper) {

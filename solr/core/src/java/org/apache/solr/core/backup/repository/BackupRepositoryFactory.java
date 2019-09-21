@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BackupRepositoryFactory {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String,PluginInfo> backupRepoPluginByName = new HashMap<>();
   private PluginInfo defaultBackupRepoPlugin = null;
@@ -52,14 +52,14 @@ public class BackupRepositoryFactory {
           this.defaultBackupRepoPlugin = backupRepoPlugins[i];
         }
         backupRepoPluginByName.put(name, backupRepoPlugins[i]);
-        LOG.info("Added backup repository with configuration params {}", backupRepoPlugins[i]);
+        log.info("Added backup repository with configuration params {}", backupRepoPlugins[i]);
       }
       if (backupRepoPlugins.length == 1) {
         this.defaultBackupRepoPlugin = backupRepoPlugins[0];
       }
 
       if (this.defaultBackupRepoPlugin != null) {
-        LOG.info("Default configuration for backup repository is with configuration params {}",
+        log.info("Default configuration for backup repository is with configuration params {}",
             defaultBackupRepoPlugin);
       }
     }

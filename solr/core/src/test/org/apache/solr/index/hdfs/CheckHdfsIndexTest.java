@@ -19,6 +19,7 @@ package org.apache.solr.index.hdfs;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.BaseTestCheckIndex;
@@ -42,6 +43,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
   private static MiniDFSCluster dfsCluster;
   private static Path path;
@@ -65,8 +67,11 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
 
   @AfterClass
   public static void teardownClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+    }
   }
 
   @Override
@@ -75,17 +80,23 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
     super.setUp();
 
     Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
-
     directory = new HdfsDirectory(path, conf);
   }
 
   @Override
   @After
   public void tearDown() throws Exception {
-    directory.close();
-    dfsCluster.getFileSystem().delete(path, true);
-    super.tearDown();
+    try {
+      if (null != directory) {
+        directory.close();
+      }
+    } finally {
+      try(FileSystem fs = FileSystem.get(HdfsTestUtil.getClientConfiguration(dfsCluster))) {
+        fs.delete(path, true);
+      } finally {
+        super.tearDown();
+      }
+    }
   }
 
   @Override
@@ -107,7 +118,7 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
       SolrClient client = clients.get(0);
       NamedList<Object> response = client.query(new SolrQuery().setRequestHandler("/admin/system")).getResponse();
       NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
-      String indexDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("data") + "/index";
+      String indexDir = ((NamedList<Object>) coreInfo.get("directory")).get("data") + "/index";
 
       args = new String[] {indexDir};
     }

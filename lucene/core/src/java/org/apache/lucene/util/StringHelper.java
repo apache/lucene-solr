@@ -41,7 +41,7 @@ public abstract class StringHelper {
    * @return The number of common elements (from the start of each).
    */
   public static int bytesDifference(BytesRef priorTerm, BytesRef currentTerm) {
-    int mismatch = FutureArrays.mismatch(priorTerm.bytes, priorTerm.offset, priorTerm.offset + priorTerm.length, 
+    int mismatch = Arrays.mismatch(priorTerm.bytes, priorTerm.offset, priorTerm.offset + priorTerm.length, 
                                          currentTerm.bytes, currentTerm.offset, currentTerm.offset + currentTerm.length);
     if (mismatch < 0) {
       throw new IllegalArgumentException("terms out of order: priorTerm=" + priorTerm + ",currentTerm=" + currentTerm);
@@ -77,7 +77,7 @@ public abstract class StringHelper {
     if (ref.length < prefix.length) {
       return false;
     }
-    return FutureArrays.equals(ref, 0, prefix.length,
+    return Arrays.equals(ref, 0, prefix.length,
                                prefix.bytes, prefix.offset, prefix.offset + prefix.length);
   }
 
@@ -97,7 +97,7 @@ public abstract class StringHelper {
     if (ref.length < prefix.length) {
       return false;
     }
-    return FutureArrays.equals(ref.bytes, ref.offset, ref.offset + prefix.length, 
+    return Arrays.equals(ref.bytes, ref.offset, ref.offset + prefix.length, 
                                prefix.bytes, prefix.offset, prefix.offset + prefix.length);
   }
 
@@ -118,7 +118,7 @@ public abstract class StringHelper {
     if (startAt < 0) {
       return false;
     }
-    return FutureArrays.equals(ref.bytes, ref.offset + startAt, ref.offset + startAt + suffix.length,
+    return Arrays.equals(ref.bytes, ref.offset + startAt, ref.offset + startAt + suffix.length,
                                suffix.bytes, suffix.offset, suffix.offset + suffix.length);
   }
 
@@ -307,7 +307,7 @@ public abstract class StringHelper {
     if (bits.length > ID_LENGTH) {
       assert bits.length == ID_LENGTH + 1;
       assert bits[0] == 0;
-      return Arrays.copyOfRange(bits, 1, bits.length);
+      return ArrayUtil.copyOfSubArray(bits, 1, bits.length);
     } else {
       byte[] result = new byte[ID_LENGTH];
       System.arraycopy(bits, 0, result, result.length - bits.length, bits.length);
@@ -350,16 +350,5 @@ public abstract class StringHelper {
     }
 
     return new BytesRef(bytes);
-  }
-
-  /** Compares a fixed length slice of two byte arrays interpreted as
-   *  big-endian unsigned values.  Returns positive int if a &gt; b,
-   *  negative int if a &lt; b and 0 if a == b 
-   *  
-   * @deprecated Use FutureArrays.compareUnsigned instead.
-   */
-  @Deprecated
-  public static int compare(int count, byte[] a, int aOffset, byte[] b, int bOffset) {
-    return FutureArrays.compareUnsigned(a, aOffset, aOffset + count, b, bOffset, bOffset + count);
   }
 }

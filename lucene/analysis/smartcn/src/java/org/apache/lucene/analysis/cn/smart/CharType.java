@@ -62,4 +62,9 @@ public class CharType {
    */
   public final static int OTHER = 7;
 
+  /**
+   * Surrogate character
+   */
+  public final static int SURROGATE = 8;
+
 }

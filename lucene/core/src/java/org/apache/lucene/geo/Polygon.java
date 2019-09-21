@@ -19,6 +19,8 @@ package org.apache.lucene.geo;
 import java.text.ParseException;
 import java.util.Arrays;
 
+import org.apache.lucene.geo.GeoUtils.WindingOrder;
+
 /**
  * Represents a closed polygon on the earth's surface.  You can either construct the Polygon directly yourself with {@code double[]}
  * coordinates, or use {@link Polygon#fromGeoJSON} if you have a polygon already encoded as a
@@ -48,6 +50,8 @@ public final class Polygon {
   public final double minLon;
   /** maximum longitude of this polygon's bounding box area */
   public final double maxLon;
+  /** winding order of the vertices */
+  private final WindingOrder windingOrder;
 
   /**
    * Creates a new Polygon from the supplied latitude/longitude array, and optionally any holes.
@@ -92,21 +96,32 @@ public final class Polygon {
     this.holes = holes.clone();
 
     // compute bounding box
-    double minLat = Double.POSITIVE_INFINITY;
-    double maxLat = Double.NEGATIVE_INFINITY;
-    double minLon = Double.POSITIVE_INFINITY;
-    double maxLon = Double.NEGATIVE_INFINITY;
+    double minLat = polyLats[0];
+    double maxLat = polyLats[0];
+    double minLon = polyLons[0];
+    double maxLon = polyLons[0];
 
-    for (int i = 0;i < polyLats.length; i++) {
+    double windingSum = 0d;
+    final int numPts = polyLats.length - 1;
+    for (int i = 1, j = 0; i < numPts; j = i++) {
       minLat = Math.min(polyLats[i], minLat);
       maxLat = Math.max(polyLats[i], maxLat);
       minLon = Math.min(polyLons[i], minLon);
       maxLon = Math.max(polyLons[i], maxLon);
+      // compute signed area
+      windingSum += (polyLons[j] - polyLons[numPts])*(polyLats[i] - polyLats[numPts])
+          - (polyLats[j] - polyLats[numPts])*(polyLons[i] - polyLons[numPts]);
     }
     this.minLat = minLat;
     this.maxLat = maxLat;
     this.minLon = minLon;
     this.maxLon = maxLon;
+    this.windingOrder = (windingSum < 0) ? GeoUtils.WindingOrder.CCW : GeoUtils.WindingOrder.CW;
+  }
+
+  /** returns the number of vertex points */
+  public int numPoints() {
+    return polyLats.length;
   }
 
   /** Returns a copy of the internal latitude array */
@@ -114,14 +129,38 @@ public final class Polygon {
     return polyLats.clone();
   }
 
+  /** Returns latitude value at given index */
+  public double getPolyLat(int vertex) {
+    return polyLats[vertex];
+  }
+
   /** Returns a copy of the internal longitude array */
   public double[] getPolyLons() {
     return polyLons.clone();
   }
 
+  /** Returns longitude value at given index */
+  public double getPolyLon(int vertex) {
+    return polyLons[vertex];
+  }
+
   /** Returns a copy of the internal holes array */
   public Polygon[] getHoles() {
     return holes.clone();
+  }
+
+  Polygon getHole(int i) {
+    return holes[i];
+  }
+
+  /** Returns the winding order (CW, COLINEAR, CCW) for the polygon shell */
+  public WindingOrder getWindingOrder() {
+    return this.windingOrder;
+  }
+
+  /** returns the number of holes for the polygon */
+  public int numHoles() {
+    return holes.length;
   }
 
   @Override
@@ -160,6 +199,36 @@ public final class Polygon {
       sb.append(", holes=");
       sb.append(Arrays.toString(holes));
     }
+    return sb.toString();
+  }
+
+  public static String verticesToGeoJSON(final double[] lats, final double[] lons) {
+    StringBuilder sb = new StringBuilder();
+    sb.append('[');
+    for (int i = 0; i < lats.length; i++) {
+      sb.append("[")
+          .append(lons[i])
+          .append(", ")
+          .append(lats[i])
+          .append("]");
+      if (i != lats.length - 1) {
+        sb.append(", ");
+      }
+    }
+    sb.append(']');
+    return sb.toString();
+  }
+
+  /** prints polygons as geojson */
+  public String toGeoJSON() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    sb.append(verticesToGeoJSON(polyLats, polyLons));
+    for (Polygon hole : holes) {
+      sb.append(",");
+      sb.append(verticesToGeoJSON(hole.polyLats, hole.polyLons));
+    }
+    sb.append("]");
     return sb.toString();
   }
 

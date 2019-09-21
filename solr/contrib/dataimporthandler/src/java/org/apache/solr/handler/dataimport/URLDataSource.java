@@ -41,7 +41,7 @@ import java.util.regex.Pattern;
  * @since solr 1.4
  */
 public class URLDataSource extends DataSource<Reader> {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String baseUrl;
 
@@ -72,14 +72,14 @@ public class URLDataSource extends DataSource<Reader> {
       try {
         connectionTimeout = Integer.parseInt(cTimeout);
       } catch (NumberFormatException e) {
-        LOG.warn("Invalid connection timeout: " + cTimeout);
+        log.warn("Invalid connection timeout: " + cTimeout);
       }
     }
     if (rTimeout != null) {
       try {
         readTimeout = Integer.parseInt(rTimeout);
       } catch (NumberFormatException e) {
-        LOG.warn("Invalid read timeout: " + rTimeout);
+        log.warn("Invalid read timeout: " + rTimeout);
       }
     }
   }
@@ -91,7 +91,7 @@ public class URLDataSource extends DataSource<Reader> {
       if (URIMETHOD.matcher(query).find()) url = new URL(query);
       else url = new URL(baseUrl + query);
 
-      LOG.debug("Accessing URL: " + url.toString());
+      log.debug("Accessing URL: " + url.toString());
 
       URLConnection conn = url.openConnection();
       conn.setConnectTimeout(connectionTimeout);
@@ -112,7 +112,7 @@ public class URLDataSource extends DataSource<Reader> {
       DataImporter.QUERY_COUNT.get().incrementAndGet();
       return new InputStreamReader(in, enc);
     } catch (Exception e) {
-      LOG.error("Exception thrown while getting data", e);
+      log.error("Exception thrown while getting data", e);
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "Exception in invoking url " + url, e);
     }

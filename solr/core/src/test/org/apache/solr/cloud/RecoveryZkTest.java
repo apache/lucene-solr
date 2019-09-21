@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -47,18 +48,21 @@ public class RecoveryZkTest extends SolrCloudTestCase {
         .configure();
   }
 
-  private StoppableIndexingThread indexThread;
-  private StoppableIndexingThread indexThread2;
+  private final List<StoppableIndexingThread> threads = new ArrayList<>();
 
   @After
   public void stopThreads() throws InterruptedException {
-    indexThread.safeStop();
-    indexThread2.safeStop();
-    indexThread.join();
-    indexThread2.join();
+    for (StoppableIndexingThread t : threads) {
+      t.safeStop();
+    }
+    for (StoppableIndexingThread t : threads) {
+      t.join();
+    }
+    threads.clear();
   }
 
   @Test
+  //commented 2-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void test() throws Exception {
 
     final String collection = "recoverytest";
@@ -82,10 +86,14 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     }
     log.info("Indexing {} documents", maxDoc);
     
-    indexThread = new StoppableIndexingThread(null, cluster.getSolrClient(), "1", true, maxDoc, 1, true);
+    final StoppableIndexingThread indexThread
+      = new StoppableIndexingThread(null, cluster.getSolrClient(), "1", true, maxDoc, 1, true);
+    threads.add(indexThread);
     indexThread.start();
     
-    indexThread2 = new StoppableIndexingThread(null, cluster.getSolrClient(), "2", true, maxDoc, 1, true);
+    final StoppableIndexingThread indexThread2
+      = new StoppableIndexingThread(null, cluster.getSolrClient(), "2", true, maxDoc, 1, true);
+    threads.add(indexThread2);
     indexThread2.start();
 
     // give some time to index...

@@ -33,6 +33,7 @@ import org.apache.solr.common.params.FacetParams.FacetRangeInclude;
 import org.apache.solr.common.params.FacetParams.FacetRangeMethod;
 import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.NumberType;
@@ -40,9 +41,10 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.TimeZoneUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 
 public class SimpleFacetsTest extends SolrTestCaseJ4 {
@@ -488,22 +490,20 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         "*[count(//lst[@name='airport_s1']/int)=1]",
         "//lst[@name='airport_s1']/int[@name='ams'][.='2']"
     );
-    
-    try {
+
+    SolrException e = expectThrows(SolrException.class, () -> {
       h.query(
-           req(
-               "q", "*:*",
-               "fq", "id_i1:[2000 TO 2004]",
-               "group.facet", "true",
-               "facet", "true",
-               "facet.field", "airport_s1",
-               "facet.prefix", "a"
-           )
+          req(
+              "q", "*:*",
+              "fq", "id_i1:[2000 TO 2004]",
+              "group.facet", "true",
+              "facet", "true",
+              "facet.field", "airport_s1",
+              "facet.prefix", "a"
+          )
       );
-      fail("Exception should have been thrown");
-    } catch (SolrException e) {
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    }
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
   }
 
   @Test
@@ -524,7 +524,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     SchemaField sf = h.getCore().getLatestSchema().getField(field);
 
     String response = JQ(req("q", "*:*"));
-    Map rsp = (Map) ObjectBuilder.fromJSON(response);
+    Map rsp = (Map) fromJSONString(response);
     Long numFound  = (Long)(((Map)rsp.get("response")).get("numFound"));
 
     ModifiableSolrParams params = params("q","*:*", "facet.mincount","1","rows","0", "facet","true", "facet.field","{!key=myalias}"+field);
@@ -595,6 +595,75 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         );
       }
     }
+  }
+
+  @Test
+  public void testFacetMissing() {
+    SolrParams commonParams = params("q", "foo_s:A", "rows", "0", "facet", "true", "facet.missing", "true");
+
+    // with facet.limit!=0 and facet.missing=true
+    assertQ(
+        req(commonParams, "facet.field", "trait_s", "facet.limit", "1"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='trait_s']",
+        "*[count(//lst[@name='trait_s']/int)=2]",
+        "//lst[@name='trait_s']/int[@name='Obnoxious'][.='2']",
+        "//lst[@name='trait_s']/int[.='1']"
+    );
+
+    // with facet.limit=0 and facet.missing=true
+    assertQ(
+        req(commonParams, "facet.field", "trait_s", "facet.limit", "0"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='trait_s']",
+        "*[count(//lst[@name='trait_s']/int)=1]",
+        "//lst[@name='trait_s']/int[.='1']"
+    );
+
+    // facet.method=enum
+    assertQ(
+        req(commonParams, "facet.field", "trait_s", "facet.limit", "0", "facet.method", "enum"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='trait_s']",
+        "*[count(//lst[@name='trait_s']/int)=1]",
+        "//lst[@name='trait_s']/int[.='1']"
+    );
+
+    assertQ(
+        req(commonParams, "facet.field", "trait_s", "facet.limit", "0", "facet.mincount", "1",
+            "facet.method", "uif"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='trait_s']",
+        "*[count(//lst[@name='trait_s']/int)=1]",
+        "//lst[@name='trait_s']/int[.='1']"
+    );
+
+    // facet.method=fcs
+    assertQ(
+        req(commonParams, "facet.field", "trait_s", "facet.limit", "0", "facet.method", "fcs"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='trait_s']",
+        "*[count(//lst[@name='trait_s']/int)=1]",
+        "//lst[@name='trait_s']/int[.='1']"
+    );
+
+    // facet.missing=true on numeric field
+    assertQ(
+        req(commonParams, "facet.field", "range_facet_f", "facet.limit", "1", "facet.mincount", "1"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='range_facet_f']",
+        "*[count(//lst[@name='range_facet_f']/int)=2]",
+        "//lst[@name='range_facet_f']/int[.='0']"
+    );
+
+    // facet.limit=0
+    assertQ(
+        req(commonParams, "facet.field", "range_facet_f", "facet.limit", "0", "facet.mincount", "1"),
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']",
+        "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='range_facet_f']",
+        "*[count(//lst[@name='range_facet_f']/int)=1]",
+        "//lst[@name='range_facet_f']/int[.='0']"
+    );
   }
 
   @Test
@@ -842,6 +911,89 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     );
   }
 
+  public void testBehaviorEquivilenceOfUninvertibleFalse() throws Exception {
+    // NOTE: mincount=0 affects method detection/coercion, so we include permutations of it
+    
+    { 
+      // an "uninvertible=false" field is not be facetable using the "default" method,
+      // or any explicit method other then "enum".
+      //
+      // it should behave the same as any attempt (using any method) at faceting on
+      // and "indexed=false docValues=false" field -- returning no buckets.
+      
+      final List<SolrParams> paramSets = new ArrayList<>();
+      for (String min : Arrays.asList("0", "1")) {
+        for (String f : Arrays.asList("trait_s_not_uninvert", "trait_s_not_indexed_sS")) {
+          paramSets.add(params("facet.field", "{!key=x}" + f));
+          for (String method : Arrays.asList("fc", "fcs", "uif")) {
+            paramSets.add(params("facet.field", "{!key=x}" + f,
+                                 "facet.mincount", min,
+                                 "facet.method", method));
+            paramSets.add(params("facet.field", "{!key=x}" + f,
+                                 "facet.mincount", min,
+                                 "facet.method", method));
+          }
+        }
+        paramSets.add(params("facet.field", "{!key=x}trait_s_not_indexed_sS",
+                             "facet.mincount", min,
+                             "facet.method", "enum"));
+      }
+      for (SolrParams p : paramSets) {
+        // "empty" results should be the same regardless of mincount
+        assertQ("expect no buckets when field is not-indexed or not-uninvertible",
+                req(p
+                    ,"rows","0"
+                    ,"q", "id_i1:[42 TO 47]"
+                    ,"fq", "id_i1:[42 TO 45]"
+                    ,"facet", "true"
+                    )
+                ,"//*[@numFound='4']"
+                ,"*[count(//lst[@name='x'])=1]"
+                ,"*[count(//lst[@name='x']/int)=0]"
+                );
+      }
+      
+    }
+    
+    { 
+      // the only way to facet on an "uninvertible=false" field is to explicitly request facet.method=enum
+      // in which case it should behave consistently with it's copyField source & equivilent docValues field
+      // (using any method for either of them)
+
+      final List<SolrParams> paramSets = new ArrayList<>();
+      for (String min : Arrays.asList("0", "1")) {
+        paramSets.add(params("facet.field", "{!key=x}trait_s_not_uninvert",
+                             "facet.method", "enum"));
+        for (String okField : Arrays.asList("trait_s", "trait_s_not_uninvert_dv")) {
+          paramSets.add(params("facet.field", "{!key=x}" + okField));
+          for (String method : Arrays.asList("enum","fc", "fcs", "uif")) {
+            paramSets.add(params("facet.field", "{!key=x}" + okField,
+                                 "facet.method", method));
+          }
+        }
+        for (SolrParams p : paramSets) {
+          assertQ("check counts for applied facet queries using filtering (fq)",
+                  req(p
+                      ,"rows","0"
+                      ,"q", "id_i1:[42 TO 47]"
+                      ,"fq", "id_i1:[42 TO 45]"
+                      ,"facet", "true"
+                      ,"facet.mincount", min
+                      )
+                  ,"//*[@numFound='4']"
+                  ,"*[count(//lst[@name='x'])=1]"
+                  ,"*[count(//lst[@name='x']/int)="+("0".equals(min) ? "4]" : "3]")
+                  ,"//lst[@name='x']/int[@name='Tool'][.='2']"
+                  ,"//lst[@name='x']/int[@name='Obnoxious'][.='1']"
+                  ,"//lst[@name='x']/int[@name='Chauvinist'][.='1']"
+                  ,"count(//lst[@name='x']/int[@name='Pig'][.='0'])=" + ("0".equals(min) ? "1" : "0")
+                  );
+        }
+      }
+    }
+  }
+
+  
   public static void indexDateFacets() {
     final String i = "id";
     final String f = "bday";
@@ -1530,9 +1682,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     final String meta = pre + "/../";
 
     String start = "0.0";
-    String gap = (new Double( (double)Float.MAX_VALUE )).toString();
-    String end = (new Double( ((double)Float.MAX_VALUE) * 3D )).toString();
-    String mid = (new Double( ((double)Float.MAX_VALUE) * 2D )).toString();
+    String gap = Double.toString(Float.MAX_VALUE );
+    String end = Double.toString(((double) Float.MAX_VALUE) * 3D);
+    String mid = Double.toString(((double) Float.MAX_VALUE) * 2D);
 
     assertQ(f+": checking counts for lower",
             req( "q", "id_i1:[30 TO 60]"
@@ -1807,9 +1959,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     final String meta = pre + "/../";
 
     String start = "0";
-    String gap = (new Long( (long)Integer.MAX_VALUE )).toString();
-    String end = (new Long( ((long)Integer.MAX_VALUE) * 3L )).toString();
-    String mid = (new Long( ((long)Integer.MAX_VALUE) * 2L )).toString();
+    String gap = Long.toString(Integer.MAX_VALUE );
+    String end = Long.toString( ((long)Integer.MAX_VALUE) * 3L );
+    String mid = Long.toString(((long)Integer.MAX_VALUE) * 2L );
 
     assertQ(f+": checking counts for lower",
             req( "q", "id_i1:[30 TO 60]"
@@ -2191,11 +2343,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         ,"group","true"
         ,"group.field",g
         ,"group.facet","true"
+        ,"facet.missing","true"
     );
 
     assertQ("test facet.exclude for grouped facets",
         groupReq
-        ,"*[count(//lst[@name='facet_fields']/lst/int)=10]"
+        ,"*[count(//lst[@name='facet_fields']/lst/int)=11]"
         ,pre+"/int[1][@name='CCC'][.='3']"
         ,pre+"/int[2][@name='CCC"+termSuffix+"'][.='3']"
         ,pre+"/int[3][@name='BBB'][.='2']"
@@ -2206,6 +2359,17 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         ,pre+"/int[8][@name='BB"+termSuffix+"'][.='1']"
         ,pre+"/int[9][@name='CC'][.='1']"
         ,pre+"/int[10][@name='CC"+termSuffix+"'][.='1']"
+        ,pre+"/int[11][.='1']"
+    );
+
+    ModifiableSolrParams modifiableSolrParams = new ModifiableSolrParams(groupReq.getParams());
+    modifiableSolrParams.set("facet.limit", "0");
+    groupReq.setParams(modifiableSolrParams);
+
+    assertQ("test facet.exclude for grouped facets with facet.limit=0, facet.missing=true",
+        groupReq
+        ,"*[count(//lst[@name='facet_fields']/lst/int)=1]"
+        ,pre+"/int[.='1']"
     );
   }
 
@@ -3040,7 +3204,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         ,"*[count(//lst[@name='facet_ranges']/lst[@name='" + field + "']/lst[@name='between'])=0]"
     );
 
-    // these should have equivilent behavior (multivalued 'other' param: top level vs local)
+    // these should have equivalent behavior (multivalued 'other' param: top level vs local)
     for (SolrQueryRequest req : new SolrQueryRequest[] {
         req("q", "id_i1:[42 TO 47]"
             ,"facet","true"
@@ -3217,6 +3381,39 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         ,"//lst[@name='facet_ranges']/lst[@name='" + field + "']/int[@name='before'][.='1']"
     );
     
+  }
+
+  public void testGroupFacetErrors() {
+    ModifiableSolrParams params = params("q", "*:*", "group", "true", "group.query", "myfield_s:*",
+        "facet", "true", "group.facet", "true");
+
+    // with facet.field
+    SolrException ex = expectThrows(SolrException.class, () -> {
+      h.query(req(params, "facet.field", "myfield_s"));
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
+
+    // with facet.query
+    ex = expectThrows(SolrException.class, () -> {
+      h.query(req(params, "facet.query", "myfield_s:*"));
+    });
+    assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
+
+    // with facet.range
+    ex = expectThrows(SolrException.class, () -> h.query(req(params, "facet.range", "range_facet_l",
+        "facet.range.start", "43", "facet.range.end", "450", "facet.range.gap", "10"))
+    );
+    assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
+
+    // with facet.interval
+    ex = expectThrows(SolrException.class, () -> h.query(req(params, "facet.interval", "range_facet_l",
+        "f.range_facet_l.facet.interval.set", "(43,60]"))
+    );
+    assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Interval Faceting can't be used with group.facet"));
   }
   
   public void testRangeFacetingBadRequest() {

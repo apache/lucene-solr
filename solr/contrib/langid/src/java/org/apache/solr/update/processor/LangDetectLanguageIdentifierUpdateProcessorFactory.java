@@ -82,17 +82,17 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory extends
       Object o;
       o = args.get("defaults");
       if (o != null && o instanceof NamedList) {
-        defaults = SolrParams.toSolrParams((NamedList) o);
+        defaults = ((NamedList) o).toSolrParams();
       } else {
-        defaults = SolrParams.toSolrParams(args);
+        defaults = args.toSolrParams();
       }
       o = args.get("appends");
       if (o != null && o instanceof NamedList) {
-        appends = SolrParams.toSolrParams((NamedList) o);
+        appends = ((NamedList) o).toSolrParams();
       }
       o = args.get("invariants");
       if (o != null && o instanceof NamedList) {
-        invariants = SolrParams.toSolrParams((NamedList) o);
+        invariants = ((NamedList) o).toSolrParams();
       }
     }
   }

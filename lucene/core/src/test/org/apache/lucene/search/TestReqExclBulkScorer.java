@@ -81,7 +81,7 @@ public class TestReqExclBulkScorer extends LuceneTestCase {
     if (random().nextBoolean()) {
       reqExcl.score(new LeafCollector() {
         @Override
-        public void setScorer(Scorer scorer) throws IOException {}
+        public void setScorer(Scorable scorer) throws IOException {}
         
         @Override
         public void collect(int doc) throws IOException {
@@ -95,7 +95,7 @@ public class TestReqExclBulkScorer extends LuceneTestCase {
         final int max = min + random().nextInt(10);
         next = reqExcl.score(new LeafCollector() {
           @Override
-          public void setScorer(Scorer scorer) throws IOException {}
+          public void setScorer(Scorable scorer) throws IOException {}
           
           @Override
           public void collect(int doc) throws IOException {

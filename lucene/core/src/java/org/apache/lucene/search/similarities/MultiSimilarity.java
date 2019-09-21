@@ -52,14 +52,13 @@ public class MultiSimilarity extends Similarity {
     for (int i = 0; i < subScorers.length; i++) {
       subScorers[i] = sims[i].scorer(boost, collectionStats, termStats);
     }
-    return new MultiSimScorer(collectionStats.field(), subScorers);
+    return new MultiSimScorer(subScorers);
   }
   
   static class MultiSimScorer extends SimScorer {
     private final SimScorer subScorers[];
     
-    MultiSimScorer(String field, SimScorer subScorers[]) {
-      super(field);
+    MultiSimScorer(SimScorer subScorers[]) {
       this.subScorers = subScorers;
     }
     

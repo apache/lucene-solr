@@ -43,7 +43,11 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
     Object first = objects[0];
     Object second = objects[1];
 
-    if (!(first instanceof BivariateFunction) && !(first instanceof VectorFunction) && !(first instanceof RegressionEvaluator.RegressionTuple) && !(first instanceof OLSRegressionEvaluator.MultipleRegressionTuple)) {
+    if (!(first instanceof BivariateFunction) &&
+        !(first instanceof VectorFunction) &&
+        !(first instanceof RegressionEvaluator.RegressionTuple) &&
+        !(first instanceof OLSRegressionEvaluator.MultipleRegressionTuple) &&
+        !(first instanceof KnnRegressionEvaluator.KnnRegressionTuple)) {
       throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the first value, expecting a RegressionTuple", toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
 
@@ -83,6 +87,54 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
         return predictions;
       }
 
+    } else if (first instanceof KnnRegressionEvaluator.KnnRegressionTuple) {
+      KnnRegressionEvaluator.KnnRegressionTuple regressedTuple = (KnnRegressionEvaluator.KnnRegressionTuple) first;
+
+      if(regressedTuple.getBivariate()) {
+        //Handle bi-variate regression
+        if(second instanceof Number) {
+          double[] predictors = new double[1];
+          predictors[0] = ((Number)second).doubleValue();
+          return regressedTuple.predict(predictors);
+        } else if(second instanceof List) {
+          List<Number> vec = (List<Number>)second;
+          List<Number> predictions = new ArrayList();
+          for(Number num : vec) {
+            double[] predictors = new double[1];
+            predictors[0] = num.doubleValue();
+            predictions.add(regressedTuple.predict(predictors));
+          }
+          return predictions;
+        }
+      } else {
+        //Handle multi-variate regression
+        if (second instanceof List) {
+          List<Number> list = (List<Number>) second;
+          double[] predictors = new double[list.size()];
+
+          for (int i = 0; i < list.size(); i++) {
+            predictors[i] = list.get(i).doubleValue();
+          }
+
+          if (regressedTuple.getScale()) {
+            predictors = regressedTuple.scale(predictors);
+          }
+
+          return regressedTuple.predict(predictors);
+        } else if (second instanceof Matrix) {
+
+          Matrix m = (Matrix) second;
+          if (regressedTuple.getScale()) {
+            m = regressedTuple.scale(m);
+          }
+          double[][] data = m.getData();
+          List<Number> predictions = new ArrayList();
+          for (double[] predictors : data) {
+            predictions.add(regressedTuple.predict(predictors));
+          }
+          return predictions;
+        }
+      }
     } else if (first instanceof VectorFunction) {
       VectorFunction vectorFunction = (VectorFunction) first;
       UnivariateFunction univariateFunction = (UnivariateFunction)vectorFunction.getFunction();

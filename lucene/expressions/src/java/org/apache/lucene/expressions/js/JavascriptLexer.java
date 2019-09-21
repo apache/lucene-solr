@@ -1,8 +1,10 @@
 // ANTLR GENERATED CODE: DO NOT EDIT
 package org.apache.lucene.expressions.js;
-import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.Lexer;
+import org.antlr.v4.runtime.RuntimeMetaData;
+import org.antlr.v4.runtime.Vocabulary;
+import org.antlr.v4.runtime.VocabularyImpl;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 

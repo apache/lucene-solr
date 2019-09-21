@@ -229,26 +229,36 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       }
     }
 
-    if(isZkAware) {
+    if (isZkAware) {
+      String shardsTolerant = req.getParams().get(ShardParams.SHARDS_TOLERANT);
+      boolean requireZkConnected = shardsTolerant != null && shardsTolerant.equals(ShardParams.REQUIRE_ZK_CONNECTED);
       ZkController zkController = cc.getZkController();
-      NamedList<Object> headers = rb.rsp.getResponseHeader();
-      if(headers != null) {
-        headers.add("zkConnected", 
-            zkController != null 
-          ? !zkController.getZkClient().getConnectionManager().isLikelyExpired() 
-          : false);
+      boolean zkConnected = zkController != null && ! zkController.getZkClient().getConnectionManager().isLikelyExpired();
+      if (requireZkConnected && false == zkConnected) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ZooKeeper is not connected");
+      } else {
+        NamedList<Object> headers = rb.rsp.getResponseHeader();
+        if (headers != null) {
+          headers.add("zkConnected", zkConnected);
+        }
       }
-      
     }
 
     return shardHandler;
   }
   
+  /**
+   * Override this method if you require a custom {@link ResponseBuilder} e.g. for use by a custom {@link SearchComponent}.
+   */
+  protected ResponseBuilder newResponseBuilder(SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
+    return new ResponseBuilder(req, rsp, components);
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     List<SearchComponent> components  = getComponents();
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, components);
+    ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);
     }
@@ -312,17 +322,16 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
         log.warn( "Query: " + req.getParamString() + "; " + ex.getMessage());
-        SolrDocumentList r = (SolrDocumentList) rb.rsp.getResponse();
-        if(r == null)
-          r = new SolrDocumentList();
-        r.setNumFound(0);
-        rb.rsp.addResponse(r);
+        if( rb.rsp.getResponse() == null) {
+          rb.rsp.addResponse(new SolrDocumentList());
+        }
         if(rb.isDebug()) {
           NamedList debug = new NamedList();
           debug.add("explain", new NamedList());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        rb.rsp.getResponseHeader().asShallowMap()
+              .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
       } finally {
         SolrQueryTimeoutImpl.reset();
       }
@@ -368,6 +377,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
               params.set(ShardParams.IS_SHARD, true);  // a sub (shard) request
               params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
               params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
+              params.set(CommonParams.OMIT_HEADER, false);
               if (rb.requestInfo != null) {
                 // we could try and detect when this is needed, but it could be tricky
                 params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));
@@ -392,7 +402,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
           // now wait for replies, but if anyone puts more requests on
           // the outgoing queue, send them out immediately (by exiting
           // this loop)
-          boolean tolerant = rb.req.getParams().getBool(ShardParams.SHARDS_TOLERANT, false);
+          boolean tolerant = ShardParams.getShardsTolerantAsBool(rb.req.getParams());
           while (rb.outgoing.size() == 0) {
             ShardResponse srsp = tolerant ? 
                 shardHandler1.takeCompletedIncludingErrors():
@@ -410,9 +420,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
                   throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
                 }
               } else {
-                if(rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
-                  rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-                }
+                rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
               }
             }
 

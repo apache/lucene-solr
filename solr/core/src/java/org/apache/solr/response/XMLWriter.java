@@ -18,6 +18,7 @@ package org.apache.solr.response;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
@@ -31,6 +32,8 @@ import org.apache.solr.common.util.XML;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrReturnFields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -39,6 +42,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * @lucene.internal
  */
 public class XMLWriter extends TextResponseWriter {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static float CURRENT_VERSION=2.2f;
 
@@ -53,7 +57,7 @@ public class XMLWriter extends TextResponseWriter {
   +" xsi:noNamespaceSchemaLocation=\"http://pi.cnet.com/cnet-search/response.xsd\">\n"
           ).toCharArray();
   ***/
-  
+
   private static final char[] XML_START2_NOSCHEMA=("<response>\n").toCharArray();
 
   final int version;
@@ -162,7 +166,7 @@ public class XMLWriter extends TextResponseWriter {
 
 
   @Override
-  public void writeStartDocumentList(String name, 
+  public void writeStartDocumentList(String name,
       long start, int size, long numFound, Float maxScore) throws IOException
   {
     if (doIndent) indent();
@@ -175,7 +179,7 @@ public class XMLWriter extends TextResponseWriter {
       writeAttr("maxScore",Float.toString(maxScore));
     }
     writer.write(">");
-    
+
     incLevel();
   }
 
@@ -183,7 +187,7 @@ public class XMLWriter extends TextResponseWriter {
   /**
    * The SolrDocument should already have multivalued fields implemented as
    * Collections -- this will not rewrite to &lt;arr&gt;
-   */ 
+   */
   @Override
   public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
     startTag("doc", name, false);
@@ -196,7 +200,7 @@ public class XMLWriter extends TextResponseWriter {
 
       Object val = doc.getFieldValue(fname);
       if( "_explain_".equals( fname ) ) {
-        System.out.println( val );
+        log.debug(String.valueOf(val));
       }
       writeVal(fname, val);
     }
@@ -206,11 +210,11 @@ public class XMLWriter extends TextResponseWriter {
         writeSolrDocument(null, childDoc, new SolrReturnFields(), idx);
       }
     }
-    
+
     decLevel();
     writer.write("</doc>");
   }
-  
+
   @Override
   public void writeEndDocumentList() throws IOException
   {

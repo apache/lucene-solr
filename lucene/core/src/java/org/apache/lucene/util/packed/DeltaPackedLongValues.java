@@ -17,8 +17,7 @@
 package org.apache.lucene.util.packed;
 
 
-import java.util.Arrays;
-
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 
@@ -70,8 +69,8 @@ class DeltaPackedLongValues extends PackedLongValues {
     public DeltaPackedLongValues build() {
       finish();
       pending = null;
-      final PackedInts.Reader[] values = Arrays.copyOf(this.values, valuesOff);
-      final long[] mins = Arrays.copyOf(this.mins, valuesOff);
+      final PackedInts.Reader[] values = ArrayUtil.copyOfSubArray(this.values, 0, valuesOff);
+      final long[] mins = ArrayUtil.copyOfSubArray(this.mins, 0, valuesOff);
       final long ramBytesUsed = DeltaPackedLongValues.BASE_RAM_BYTES_USED
           + RamUsageEstimator.sizeOf(values) + RamUsageEstimator.sizeOf(mins);
       return new DeltaPackedLongValues(pageShift, pageMask, values, mins, size, ramBytesUsed);
@@ -94,7 +93,7 @@ class DeltaPackedLongValues extends PackedLongValues {
     void grow(int newBlockCount) {
       super.grow(newBlockCount);
       ramBytesUsed -= RamUsageEstimator.sizeOf(mins);
-      mins = Arrays.copyOf(mins, newBlockCount);
+      mins = ArrayUtil.growExact(mins, newBlockCount);
       ramBytesUsed += RamUsageEstimator.sizeOf(mins);
     }
 

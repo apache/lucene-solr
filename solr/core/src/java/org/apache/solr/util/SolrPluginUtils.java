@@ -63,7 +63,6 @@ import org.apache.solr.request.json.RequestUtil;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.CacheRegenerator;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSet;
@@ -71,7 +70,6 @@ import org.apache.solr.search.FieldParams;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.ReturnFields;
-import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SortSpecParsing;
@@ -974,28 +972,6 @@ public class SolrPluginUtils {
     return out;
   }
 
-  /**
-   * A CacheRegenerator that can be used whenever the items in the cache
-   * are not dependant on the current searcher.
-   *
-   * <p>
-   * Flat out copies the oldKey=&gt;oldVal pair into the newCache
-   * </p>
-   */
-  public static class IdentityRegenerator implements CacheRegenerator {
-    @Override
-    public boolean regenerateItem(SolrIndexSearcher newSearcher,
-                                  SolrCache newCache,
-                                  SolrCache oldCache,
-                                  Object oldKey,
-                                  Object oldVal)
-      throws IOException {
-
-      newCache.put(oldKey,oldVal);
-      return true;
-    }
-  }
-
   public static void invokeSetters(Object bean, Iterable<Map.Entry<String,Object>> initArgs) {
     invokeSetters(bean, initArgs, false);
   }
@@ -1017,6 +993,10 @@ public class SolrPluginUtils {
           continue;
         }
         throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName(), e1);
+      }
+      catch (AssertionError ae) {
+        throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName()+
+            ". This might be a case of SOLR-12207", ae);
       }
     }
   }
@@ -1060,7 +1040,7 @@ public class SolrPluginUtils {
           StringBuilder builder = new StringBuilder();
           for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
               if ((reqPurpose & entry.getKey()) != 0) {
-                  builder.append(entry.getValue() + ",");
+                  builder.append(entry.getValue()).append(',');
               }
           }
           if (builder.length() == 0) {

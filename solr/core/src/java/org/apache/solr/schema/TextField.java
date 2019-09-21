@@ -209,4 +209,9 @@ public class TextField extends FieldType {
   public Object unmarshalSortValue(Object value) {
     return unmarshalStringSortValue(value);
   }
+
+  @Override
+  public boolean isUtf8Field() {
+    return true;
+  }
 }

@@ -18,6 +18,8 @@ package org.apache.lucene.analysis.en;
 
 
 import java.io.Reader;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
@@ -27,14 +29,31 @@ import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
  * {@link Analyzer} for English.
+ *
+ * @since 3.1
  */
 public final class EnglishAnalyzer extends StopwordAnalyzerBase {
+
+  /** An unmodifiable set containing some common English words that are not usually useful
+   for searching.*/
+  public static final CharArraySet ENGLISH_STOP_WORDS_SET;
+
+  static {
+    final List<String> stopWords = Arrays.asList(
+        "a", "an", "and", "are", "as", "at", "be", "but", "by",
+        "for", "if", "in", "into", "is", "it",
+        "no", "not", "of", "on", "or", "such",
+        "that", "the", "their", "then", "there", "these",
+        "they", "this", "to", "was", "will", "with"
+    );
+    final CharArraySet stopSet = new CharArraySet(stopWords, false);
+    ENGLISH_STOP_WORDS_SET = CharArraySet.unmodifiableSet(stopSet);
+  }
+
   private final CharArraySet stemExclusionSet;
    
   /**
@@ -42,22 +61,14 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
    * @return default stop words set.
    */
   public static CharArraySet getDefaultStopSet(){
-    return DefaultSetHolder.DEFAULT_STOP_SET;
-  }
-  
-  /**
-   * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class 
-   * accesses the static final set the first time.;
-   */
-  private static class DefaultSetHolder {
-    static final CharArraySet DEFAULT_STOP_SET = StandardAnalyzer.STOP_WORDS_SET;
+    return ENGLISH_STOP_WORDS_SET;
   }
 
   /**
    * Builds an analyzer with the default stop words: {@link #getDefaultStopSet}.
    */
   public EnglishAnalyzer() {
-    this(DefaultSetHolder.DEFAULT_STOP_SET);
+    this(ENGLISH_STOP_WORDS_SET);
   }
   
   /**
@@ -90,7 +101,7 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
    * @return A
    *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link EnglishPossessiveFilter}, 
+   *         {@link EnglishPossessiveFilter},
    *         {@link LowerCaseFilter}, {@link StopFilter}
    *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link PorterStemFilter}.
@@ -98,8 +109,7 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
-    result = new EnglishPossessiveFilter(result);
+    TokenStream result = new EnglishPossessiveFilter(source);
     result = new LowerCaseFilter(result);
     result = new StopFilter(result, stopwords);
     if(!stemExclusionSet.isEmpty())
@@ -110,8 +120,6 @@ public final class EnglishAnalyzer extends StopwordAnalyzerBase {
 
   @Override
   protected TokenStream normalize(String fieldName, TokenStream in) {
-    TokenStream result = new StandardFilter(in);
-    result = new LowerCaseFilter(result);
-    return result;
+    return new LowerCaseFilter(in);
   }
 }

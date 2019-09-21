@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -83,23 +84,23 @@ public class StatsStream extends TupleStream implements Expressible  {
     }
   }
 
-  public StatsStream(StreamExpression expression, StreamFactory factory) throws IOException{   
+  public StatsStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     List<StreamExpression> metricExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Metric.class);
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
-    
+
     // Validate there are no unknown parameters - zkHost is namedParameter so we don't need to count it twice
     if(expression.getParameters().size() != 1 + namedParams.size() + metricExpressions.size()){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found",expression));
     }
-    
+
     // Collection Name
     if(null == collectionName){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
     }
-        
+
     // Named parameters - passed directly to solr as solrparams
     if(0 == namedParams.size()){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
@@ -111,7 +112,7 @@ public class StatsStream extends TupleStream implements Expressible  {
         params.set(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
-    
+
     // zkHost, optional - if not provided then will look into factory list to get
     String zkHost = null;
     if(null == zkHostExpression){
@@ -129,65 +130,65 @@ public class StatsStream extends TupleStream implements Expressible  {
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
     }
     */
-    
+
     // metrics, optional - if not provided then why are you using this?
     Metric[] metrics = new Metric[metricExpressions.size()];
     for(int idx = 0; idx < metricExpressions.size(); ++idx){
       metrics[idx] = factory.constructMetric(metricExpressions.get(idx));
     }
-    
+
     // We've got all the required items
     init(zkHost, collectionName, params, metrics);
   }
-  
+
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     // functionName(collectionName, param1, param2, ..., paramN, sort="comp", sum(fieldA), avg(fieldB))
-    
+
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-    
+
     // collection
     expression.addParameter(collection);
-    
+
     // parameters
     ModifiableSolrParams mParams = new ModifiableSolrParams(params);
     for (Entry<String, String[]> param : mParams.getMap().entrySet()) {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), String.join(",", param.getValue())));
     }
-    
+
     // zkHost
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
-    
+
     // metrics
     for(Metric metric : metrics){
       expression.addParameter(metric.toExpression(factory));
     }
-    
-    return expression;   
+
+    return expression;
   }
-  
+
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
     StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
-    
+
     explanation.setFunctionName(factory.getFunctionName(this.getClass()));
     explanation.setImplementingClass(this.getClass().getName());
     explanation.setExpressionType(ExpressionType.STREAM_SOURCE);
     explanation.setExpression(toExpression(factory).toString());
-    
+
     StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
-    child.setFunctionName(String.format(Locale.ROOT, "solr (worker ? of ?)")); 
+    child.setFunctionName(String.format(Locale.ROOT, "solr (worker ? of ?)"));
       // TODO: fix this so we know the # of workers - check with Joel about a Stat's ability to be in a
       // parallel stream.
-    
+
     child.setImplementingClass("Solr/Lucene");
     child.setExpressionType(ExpressionType.DATASTORE);
     ModifiableSolrParams mParams = new ModifiableSolrParams(params);
     child.setExpression(mParams.getMap().entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));
     explanation.addChild(child);
-    
+
     return explanation;
   }
 
@@ -205,10 +206,13 @@ public class StatsStream extends TupleStream implements Expressible  {
     addStats(paramsLoc, metrics);
     paramsLoc.set("stats", "true");
     paramsLoc.set("rows", "0");
+    if (streamContext.isLocal()) {
+      paramsLoc.set("distrib", "false");
+    }
 
     Map<String, List<String>> shardsMap = (Map<String, List<String>>)streamContext.get("shards");
     if(shardsMap == null) {
-      QueryRequest request = new QueryRequest(paramsLoc);
+      QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
       CloudSolrClient cloudSolrClient = cache.getCloudSolrClient(zkHost);
       try {
         NamedList response = cloudSolrClient.request(request, collection);
@@ -226,7 +230,7 @@ public class StatsStream extends TupleStream implements Expressible  {
         paramsLoc.add("distrib", "true");
       }
 
-      QueryRequest request = new QueryRequest(paramsLoc);
+      QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
       try {
         NamedList response = client.request(request);
         this.tuple = getTuple(response);

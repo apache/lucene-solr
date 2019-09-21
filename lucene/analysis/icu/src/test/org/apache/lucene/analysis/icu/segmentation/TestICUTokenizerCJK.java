@@ -21,10 +21,12 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 
 /**
  * test ICUTokenizer with dictionary-based CJ segmentation
  */
+@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8222")
 public class TestICUTokenizerCJK extends BaseTokenStreamTestCase {
   Analyzer a;
   

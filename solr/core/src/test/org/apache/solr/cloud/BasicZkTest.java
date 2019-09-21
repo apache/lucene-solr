@@ -115,7 +115,7 @@ public class BasicZkTest extends AbstractZkTestCase {
     
     // try a reconnect from disconnect
     zkServer = new ZkTestServer(zkDir, zkPort);
-    zkServer.run();
+    zkServer.run(false);
     
     Thread.sleep(300);
     
@@ -150,15 +150,15 @@ public class BasicZkTest extends AbstractZkTestCase {
     zkController.getZkClient().setData("/configs/conf1/solrconfig.xml", new byte[0], true);
  
     // we set the solrconfig to nothing, so this reload should fail
-    try {
+    SolrException e = expectThrows(SolrException.class,
+        "The reloaded SolrCore did not pick up configs from zookeeper",
+        () -> {
       ignoreException("solrconfig.xml");
       h.getCoreContainer().reload(h.getCore().getName());
-      fail("The reloaded SolrCore did not pick up configs from zookeeper");
-    } catch(SolrException e) {
-      resetExceptionIgnores();
-      assertTrue(e.getMessage().contains("Unable to reload core [collection1]"));
-      assertTrue(e.getCause().getMessage().contains("Error loading solr config from solrconfig.xml"));
-    }
+    });
+    resetExceptionIgnores();
+    assertTrue(e.getMessage().contains("Unable to reload core [collection1]"));
+    assertTrue(e.getCause().getMessage().contains("Error loading solr config from solrconfig.xml"));
     
     // test stats call
     Map<String, Metric> metrics = h.getCore().getCoreMetricManager().getRegistry().getMetrics();

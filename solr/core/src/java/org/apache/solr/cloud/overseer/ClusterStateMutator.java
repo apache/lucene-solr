@@ -95,10 +95,10 @@ public class ClusterStateMutator {
 
     Map<String, Object> collectionProps = new HashMap<>();
 
-    for (Map.Entry<String, Object> e : OverseerCollectionMessageHandler.COLL_PROPS.entrySet()) {
+    for (Map.Entry<String, Object> e : OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.entrySet()) {
       Object val = message.get(e.getKey());
       if (val == null) {
-        val = OverseerCollectionMessageHandler.COLL_PROPS.get(e.getKey());
+        val = OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.get(e.getKey());
       }
       if (val != null) collectionProps.put(e.getKey(), val);
     }

@@ -27,13 +27,13 @@ import java.util.function.Consumer;
 public interface StringValueStream extends AnalyticsValueStream {
   /**
    * Stream the String representations of all current values, if any exist.
-   * 
+   *
    * @param cons The consumer to accept the values
    */
   void streamStrings(Consumer<String> cons);
 
   /**
-   * An interface that represents all of the types a {@link StringValueStream} should be able to cast to. 
+   * An interface that represents all of the types a {@link StringValueStream} should be able to cast to.
    */
   public static interface CastingStringValueStream extends StringValueStream {}
 

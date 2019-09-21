@@ -35,7 +35,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
 
-@SuppressCodecs({"SimpleText", "Memory", "Direct"})
+@SuppressCodecs({"SimpleText", "Direct"})
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR) // effectively no limit
 @Monster("Takes ~30min")
 @SuppressSysoutChecks(bugUrl = "Stuff gets printed")

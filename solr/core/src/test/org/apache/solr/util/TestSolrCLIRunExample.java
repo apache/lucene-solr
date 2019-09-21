@@ -46,6 +46,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -56,7 +57,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 
 /**
  * Tests the SolrCLI.RunExampleTool implementation that supports bin/solr -e [example]
@@ -348,7 +348,17 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   
       SolrCLI.RunExampleTool tool = new SolrCLI.RunExampleTool(executor, System.in, stdoutSim);
       try {
-        final int status = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+        int status = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+        
+        if (status == -1) {
+          // maybe it's the port, try again
+          try (ServerSocket socket = new ServerSocket(0)) {
+            bindPort = socket.getLocalPort();
+          }
+          Thread.sleep(100);
+          status = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));  
+        }
+        
         assertEquals("it should be ok "+tool+" "+Arrays.toString(toolArgs),0, status);
       } catch (Exception e) {
         log.error("RunExampleTool failed due to: " + e +
@@ -573,7 +583,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "      {'nodeRole':'overseer', 'replica':0}" +
           "    ]" +
           "}";
-      SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+      SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
       NamedList<Object> response = cloudClient.request(req);
       assertEquals(response.get("result").toString(), "success");
       SolrCLI.CreateCollectionTool createCollectionTool = new SolrCLI.CreateCollectionTool(stdoutSim);

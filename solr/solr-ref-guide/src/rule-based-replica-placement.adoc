@@ -69,7 +69,7 @@ The nodes are sorted first and the rules are used to sort them. This ensures tha
 
 == Rules for New Shards
 
-The rules are persisted along with collection state. So, when a new replica is created, the system will assign replicas satisfying the rules. When a new shard is created as a result of using the Collection API's <<collections-api.adoc#createshard,CREATESHARD command>>, ensure that you have created rules specific for that shard name. Rules can be altered using the <<collections-api.adoc#modifycollection,MODIFYCOLLECTION command>>. However, it is not required to do so if the rules do not specify explicit shard names. For example, a rule such as `shard:shard1,replica:*,ip_3:168:`, will not apply to any new shard created. But, if your rule is `replica:*,ip_3:168`, then it will apply to any new shard created.
+The rules are persisted along with collection state. So, when a new replica is created, the system will assign replicas satisfying the rules. When a new shard is created as a result of using the Collection API's <<shard-management.adoc#createshard,CREATESHARD command>>, ensure that you have created rules specific for that shard name. Rules can be altered using the <<collection-management.adoc#modifycollection,MODIFYCOLLECTION command>>. However, it is not required to do so if the rules do not specify explicit shard names. For example, a rule such as `shard:shard1,replica:*,ip_3:168:`, will not apply to any new shard created. But, if your rule is `replica:*,ip_3:168`, then it will apply to any new shard created.
 
 The same is applicable to shard splitting. Shard splitting is treated exactly the same way as shard creation. Even though `shard1_1` and `shard1_2` may be created from `shard1`, the rules treat them as distinct, unrelated shards.
 
@@ -84,7 +84,7 @@ Tag values come from a plugin called Snitch. If there is a tag named ‘rack’ 
 * *node*: node name
 * *role*: The role of the node. The only supported role is 'overseer'
 * *ip_1, ip_2, ip_3, ip_4*: These are ip fragments for each node. For example, in a host with ip `192.168.1.2`, `ip_1 = 2`, `ip_2 =1`, `ip_3 = 168` and` ip_4 = 192`
-* *sysprop.{PROPERTY_NAME}*: These are values available from system properties. `sysprop.key` means a value that is passed to the node as `-Dkey=keyValue` during the node startup. It is possible to use rules like `sysprop.key:expectedVal,shard:*`
+* *sysprop.\{PROPERTY_NAME}*: These are values available from system properties. `sysprop.key` means a value that is passed to the node as `-Dkey=keyValue` during the node startup. It is possible to use rules like `sysprop.key:expectedVal,shard:*`
 
 === How Snitches are Configured
 
@@ -167,11 +167,11 @@ host:!192.45.67.3
 
 == Defining Rules
 
-Rules are specified per collection during collection creation as request parameters. It is possible to specify multiple ‘rule’ and ‘snitch’ params as in this example:
+Rules are specified per collection during collection creation as request parameters. It is possible to specify multiple ‘rule’ and ‘snitch’ parameters as in this example:
 
 [source,text]
 ----
 snitch=class:EC2Snitch&rule=shard:*,replica:1,dc:dc1&rule=shard:*,replica:<2,dc:dc3
 ----
 
-These rules are persisted in `clusterstate.json` in ZooKeeper and are available throughout the lifetime of the collection. This enables the system to perform any future node allocation without direct user interaction. The rules added during collection creation can be modified later using the <<collections-api.adoc#modifycollection,MODIFYCOLLECTION>> API.
+These rules are persisted in `clusterstate.json` in ZooKeeper and are available throughout the lifetime of the collection. This enables the system to perform any future node allocation without direct user interaction. The rules added during collection creation can be modified later using the <<collection-management.adoc#modifycollection,MODIFYCOLLECTION>> API.

@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.common.util.SuppressForbidden;
 
 import java.util.List;
 import java.util.Arrays;
@@ -86,6 +87,7 @@ public class TestPivotHelperCode extends SolrTestCaseJ4{
   }
 
 
+  @SuppressForbidden(reason = "Checking object equality for Long instance")
   public void testCompareWithNullLast() throws Exception {
     Long a = random().nextLong();
     Long b = random().nextLong();
