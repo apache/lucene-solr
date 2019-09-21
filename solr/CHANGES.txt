@@ -167,6 +167,8 @@ Bug Fixes
 
 * SOLR-13780: Fix ClassCastException in NestableJsonFacet (Tiago Martinho de Barros, Munendra S N)
 
+* SOLR-13725: Allow negative values for limit in TermsFacetMap (Richard Walker, Munendra S N)
+
 Other Changes
 ----------------------
 
