@@ -197,6 +197,8 @@ Other Changes
 
 * SOLR-13767: Upgrade jackson to 2.9.9 (janhoy)
 
+* SOLR-11492: Clean up /solr/cloud-dev scripts and provide a single well documented script (Gus Heck, Robert Bunch)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
