@@ -228,6 +228,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
 
   public interface ApiCommand  {
+
     CommandMeta meta();
 
 

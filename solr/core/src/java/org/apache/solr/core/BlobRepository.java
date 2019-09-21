@@ -16,22 +16,15 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -43,10 +36,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.V2HttpCall;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -54,28 +43,14 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.MapWriter.EMPTY;
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-import static org.apache.solr.core.RuntimeLib.SHA256;
-import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
 
 /**
  * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the Jar in a single node.
@@ -98,20 +73,8 @@ public class BlobRepository {
   }
 
 
-
-  public ByteBuffer getBlob(String sha256) throws IOException {
-    ByteBuffer result = tmpBlobs.get(sha256);
-    if (result != null) return result;
-    result = getFromLocalFs(sha256);
-    if (result == null) {
-      result = fetchFromOtherNodes(sha256);
-    }
-    return result;
-  }
-
   private final CoreContainer coreContainer;
   private Map<String, BlobContent> blobs = createMap();
-  private Map<String, ByteBuffer> tmpBlobs = new ConcurrentHashMap<>();
 
   // for unit tests to override
   ConcurrentHashMap<String, BlobContent> createMap() {
@@ -122,68 +85,6 @@ public class BlobRepository {
     this.coreContainer = coreContainer;
   }
 
-  public MapWriter fileList(SolrParams params) {
-    String sha256 = params.get(SHA256);
-    File dir = getBlobsPath().toFile();
-
-    String fromNode = params.get("fromNode");
-    if (sha256 != null && fromNode != null) {
-      //asking to fetch it from somewhere if it does not exist locally
-      if (!new File(dir, sha256).exists()) {
-        if ("*".equals(fromNode)) {
-          //asking to fetch from a random node
-          fetchFromOtherNodes(sha256);
-          return EMPTY;
-        } else { // asking to fetch from a specific node
-          fetchBlobFromNodeAndPersist(sha256, fromNode);
-          return MapWriter.EMPTY;
-        }
-      }
-    }
-    return ew -> dir.listFiles((f, name) -> {
-      if (sha256 == null || name.equals(sha256)) {
-        ew.putNoEx(name, (MapWriter) ew1 -> {
-          File file = new File(f, name);
-          ew1.put("size", file.length());
-          ew1.put("timestamp", file.lastModified());
-        });
-      }
-      return false;
-    });
-  }
-
-  /**
-   * Fetch a blob from a given node and persist it to local disk
-   * and memory
-   */
-
-  private ByteBuffer fetchBlobFromNodeAndPersist(String sha256, String fromNode) {
-    log.info("fetching a blob {} from {} ", sha256, fromNode);
-    ByteBuffer[] result = new ByteBuffer[1];
-    String url = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(fromNode);
-    if (url == null) throw new SolrException(BAD_REQUEST, "No such node");
-    coreContainer.getUpdateShardHandler().getUpdateExecutor().submit(() -> {
-      String fromUrl = url.replace("/solr", "/api") + "/node/blob/" + sha256;
-      try {
-        HttpClient httpClient = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
-        result[0] = Utils.executeGET(httpClient, fromUrl, Utils.newBytesConsumer((int) MAX_JAR_SIZE));
-        String actualSha256 = sha256Digest(result[0]);
-        if (sha256.equals(actualSha256)) {
-          persistToFile(result[0], sha256);
-        } else {
-          result[0] = null;
-          log.error("expected sha256 : {} actual sha256: {} from blob downloaded from {} ", sha256, actualSha256, fromNode);
-        }
-      } catch (IOException e) {
-        log.error("Unable to fetch jar: {} from node: {}", sha256, fromNode);
-      }
-    });
-    return result[0];
-  }
-
-  public Path getBlobsPath() {
-    return SolrResourceLoader.getBlobsDirPath(this.coreContainer.getResourceLoader().getInstancePath());
-  }
 
   // I wanted to {@link SolrCore#loadDecodeAndCacheBlob(String, Decoder)} below but precommit complains
 
@@ -213,13 +114,6 @@ public class BlobRepository {
     return getBlobIncRef(key.concat(decoder.getName()), () -> addBlob(key, decoder));
   }
 
-  BlobContentRef getBlobIncRef(String key, Decoder decoder, String url, String sha256) {
-    StringBuffer keyBuilder = new StringBuffer(key);
-    if (decoder != null) keyBuilder.append(decoder.getName());
-    keyBuilder.append("/").append(sha256);
-
-    return getBlobIncRef(keyBuilder.toString(), () -> new BlobContent<>(key, fetchBlobAndVerify(key, url, sha256), decoder));
-  }
 
   // do the actual work returning the appropriate type...
   private <T> BlobContentRef<T> getBlobIncRef(String key, Callable<BlobContent<T>> blobCreator) {
@@ -263,104 +157,7 @@ public class BlobRepository {
     return aBlob;
   }
 
-  static String INVALID_JAR_MSG = "Invalid jar from  , expected sha256 hash : {0} , actual : {1}";
 
-  private ByteBuffer fetchBlobAndVerify(String key, String url, String sha256) throws IOException {
-    ByteBuffer byteBuffer = null;
-    if (sha256 != null) {
-      byteBuffer = getFromLocalFs(sha256);
-    }
-    if (byteBuffer == null) byteBuffer = getAndValidate(key, url, sha256);
-    return byteBuffer;
-  }
-
-  private ByteBuffer fetchFromOtherNodes(String sha256) {
-    ByteBuffer[] result = new ByteBuffer[1];
-    ArrayList<String> l = shuffledNodes();
-    ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.add(SHA256, sha256);
-    ZkStateReader stateReader = coreContainer.getZkController().getZkStateReader();
-    for (String liveNode : l) {
-      try {
-        String baseurl = stateReader.getBaseUrlForNodeName(liveNode);
-        String url = baseurl.replace("/solr", "/api");
-        String reqUrl = url + "/node/blob?wt=javabin&omitHeader=true&sha256=" + sha256;
-        boolean nodeHasBlob = false;
-        Object nl = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), reqUrl, Utils.JAVABINCONSUMER);
-        if (Utils.getObjectByPath(nl, false, Arrays.asList("blob", sha256)) != null) {
-          nodeHasBlob = true;
-        }
-
-        if (nodeHasBlob) {
-          result[0] = fetchBlobFromNodeAndPersist(sha256, liveNode);
-          if (result[0] != null) break;
-        }
-      } catch (Exception e) {
-        //it's OK for some nodes to fail
-      }
-    }
-
-    return result[0];
-  }
-
-  /**
-   * get a list of nodes randomly shuffled
-   * * @lucene.internal
-   */
-  public ArrayList<String> shuffledNodes() {
-    Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
-    ArrayList<String> l = new ArrayList(liveNodes);
-    Collections.shuffle(l, RANDOM);
-    return l;
-  }
-
-  private ByteBuffer getAndValidate(String key, String url, String sha256) throws IOException {
-    ByteBuffer byteBuffer = fetchFromUrl(key, url);
-    String computedDigest = sha256Digest(byteBuffer);
-    if (!computedDigest.equals(sha256)) {
-      throw new SolrException(SERVER_ERROR, StrUtils.formatString(INVALID_JAR_MSG, sha256, computedDigest));
-    }
-    File file = new File(getBlobsPath().toFile(), sha256);
-    try (FileOutputStream fos = new FileOutputStream(file)) {
-      fos.write(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.limit());
-      IOUtils.fsync(file.toPath(), false);
-    }
-    return byteBuffer;
-  }
-
-  /**
-   * internal API
-   */
-  public void persistToFile(ByteBuffer b, String sha256) throws IOException {
-    String actual = sha256Digest(b);
-    if(!Objects.equals(actual, sha256)){
-      throw new SolrException(SERVER_ERROR, "invalid sha256 for blob actual: "+ actual+" expected : "+ sha256);
-    }
-    File file = new File(getBlobsPath().toFile(), sha256);
-    try (FileOutputStream fos = new FileOutputStream(file)) {
-      fos.write(b.array(), 0, b.limit());
-    }
-    log.info("persisted a blob {} ", sha256);
-    IOUtils.fsync(file.toPath(), false);
-  }
-
-
-  private ByteBuffer getFromLocalFs(String sha256) throws IOException {
-    Path p = getBlobsPath();
-    File f = new File(p.toFile(), sha256);
-    if (!f.exists()) return null;
-    byte[] b = new byte[(int) f.length()];
-    try (FileInputStream fis = new FileInputStream(f)) {
-      fis.read(b);
-      ByteBuffer byteBuffer = ByteBuffer.wrap(b);
-      if (sha256.equals(sha256Digest(byteBuffer))) {
-        return byteBuffer;
-      } else {
-        return null;
-
-      }
-    }
-  }
 
   public static String sha256Digest(ByteBuffer buf) {
     try {
@@ -456,74 +253,6 @@ public class BlobRepository {
       if (ref.blob.references.isEmpty()) {
         blobs.remove(ref.blob.key);
       }
-    }
-  }
-
-  BlobRead blobRead = new BlobRead();
-
-  public void putTmpBlob(ByteBuffer buf, String sha256) {
-    tmpBlobs.put(sha256, buf);
-  }
-
-  public void removeTmpBlob(String sha256) {
-    tmpBlobs.remove(sha256);
-  }
-
-
-  class BlobRead extends RequestHandlerBase implements PermissionNameProvider {
-
-    @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
-
-    }
-
-    @Override
-    public String getDescription() {
-      return "List fetch blobs";
-    }
-
-    @Override
-    public Name getPermissionName(AuthorizationContext request) {
-      return Name.BLOB_READ;
-    }
-
-    @Override
-    public Collection<Api> getApis() {
-      return Collections.singleton(new Api(Utils.getSpec("node.blob.GET")) {
-        @Override
-        public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-          String sha256 = ((V2HttpCall) req.getHttpSolrCall()).getUrlParts().get("sha256");
-          if (sha256 == null) {
-            rsp.add("blob", fileList(req.getParams()));
-          } else {
-            try {
-              ByteBuffer buf = getBlob(sha256);
-              if (buf == null) {
-                throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such blob");
-              } else {
-                ByteBuffer copyBuf = buf;
-                ModifiableSolrParams solrParams = new ModifiableSolrParams();
-                solrParams.add(CommonParams.WT, FILE_STREAM);
-                req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
-                rsp.add(FILE_STREAM, (SolrCore.RawWriter) os -> os.write(copyBuf.array(), copyBuf.arrayOffset(), copyBuf.limit()));
-              }
-
-            } catch (IOException e) {
-              throw new SolrException(SERVER_ERROR, e);
-            }
-          }
-        }
-      });
-    }
-
-    @Override
-    public Boolean registerV1() {
-      return Boolean.FALSE;
-    }
-
-    @Override
-    public Boolean registerV2() {
-      return Boolean.TRUE;
     }
   }
 

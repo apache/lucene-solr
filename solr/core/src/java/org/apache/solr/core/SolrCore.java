@@ -79,7 +79,6 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -239,16 +238,14 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public volatile boolean searchEnabled = true;
   public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
-  private List<PkgListener> packageListeners = new ArrayList<>();
+
+  private final PackageListeners listenerRegistry = new PackageListeners() ;
 
 
   public Set<String> getMetricNames() {
     return metricNames;
   }
 
-  public List<PkgListener> getPackageListeners(){
-    return Collections.unmodifiableList(packageListeners);
-  }
 
   public Date getStartTimeStamp() {
     return startTime;
@@ -273,6 +270,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
 
   private ExecutorService coreAsyncTaskExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
+
+  public PackageListeners getListenerRegistry(){
+    return listenerRegistry;
+  }
 
   /**
    * The SolrResourceLoader used to load all resources for this core.
@@ -358,26 +359,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       return searcher.getPath() == null ? dataDir + "index/" : searcher
           .getPath();
     }
-  }
-
-  void packageUpdated(RuntimeLib lib) {
-    for (PkgListener listener : packageListeners) {
-      if(lib.getName().equals(listener.packageName())) listener.changed(lib);
-    }
-  }
-  public void addPackageListener(PkgListener listener){
-    packageListeners.add(listener);
-  }
-
-  public interface PkgListener {
-
-    String packageName();
-
-    PluginInfo pluginInfo();
-
-    void changed(RuntimeLib lib);
-
-    MapWriter lib();
   }
 
 

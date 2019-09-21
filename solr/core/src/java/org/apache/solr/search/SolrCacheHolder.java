@@ -22,10 +22,9 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
-import org.apache.solr.common.MapWriter;
+import org.apache.solr.core.PackageListeners;
+import org.apache.solr.core.PackageManager.PackageInfo;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.RuntimeLib;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +43,7 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
     this.delegate = cacheInfo.cache;
 
     if(info.pkg != null) {
-      info.core.addPackageListener(new SolrCore.PkgListener() {
+      info.core.getListenerRegistry().addListener(new PackageListeners.Listener() {
         @Override
         public String packageName() {
           return info.pkg;
@@ -56,26 +55,28 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
         }
 
         @Override
-        public MapWriter lib() {
-          return info.runtimeLib;
+        public PackageInfo packageInfo() {
+          return info.packageInfo;
         }
 
         @Override
-        public void changed(RuntimeLib lib) {
-          reloadCache(lib);
+        public void changed(PackageInfo pkgInfo) {
+          reloadCache(pkgInfo);
         }
       });
     }
   }
 
-  private void reloadCache(RuntimeLib lib) {
-    int znodeVersion = info.runtimeLib == null ? -1 : info.runtimeLib.getZnodeVersion();
-    if (lib.getZnodeVersion() > znodeVersion) {
-      log.info("Cache {} being reloaded, package: {} loaded from: {} ", delegate.getClass().getSimpleName(), info.pkg, lib.getSha256());
+  private void reloadCache(PackageInfo packageInfo) {
+    int znodeVersion = info.packageInfo == null ? -1 : info.packageInfo.znodeVersion;
+    if (packageInfo.znodeVersion > znodeVersion) {
+      log.info("Cache {} being reloaded, package: {} version: {} ", delegate.getClass().getSimpleName(), packageInfo.name, packageInfo.version);
       info = new CacheConfig.CacheInfo(info.cfg, info.core);
+      info.packageInfo = packageInfo;
       delegate.close();
       delegate = info.cache;
       delegate.initializeMetrics(metrics);
+
 
     }
   }

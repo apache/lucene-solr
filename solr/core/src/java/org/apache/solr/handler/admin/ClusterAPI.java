@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -26,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.api.ApiBag;
@@ -41,10 +43,8 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.BlobRepository;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.RuntimeLib;
+import org.apache.solr.core.PackageManager;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.admin.BaseHandlerApiSupport.ApiCommand;
 import org.apache.solr.request.SolrQueryRequest;
@@ -65,8 +65,10 @@ import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_NODES;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_PKG;
 import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_REPO;
+import static org.apache.solr.common.params.CommonParams.PACKAGES;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.StrUtils.formatString;
+import static org.apache.solr.core.BlobRepository.sha256Digest;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.RuntimeLib.SHA256;
 
@@ -171,40 +173,12 @@ class ClusterAPI {
         ContentStream stream = streams.iterator().next();
         try {
           ByteBuffer buf = SimplePostTool.inputStreamToByteArray(stream.getStream());
-          sha256 = BlobRepository.sha256Digest(buf);
-          coreContainer.getBlobRepository().persistToFile(buf, sha256);
-          coreContainer.getBlobRepository().putTmpBlob(buf, sha256);
-          List<String> nodes = coreContainer.getBlobRepository().shuffledNodes();
-          int i = 0;
-          for (String node : nodes) {
-            String baseUrl = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
-            String url = baseUrl.replace("/solr", "/api") + "/node/blob?sha256=" + sha256 + "&fromNode=";
-            if (i < 25) {
-              // the first 25 nodes will be asked to fetch from this node
-              //it's there in  the memory now , so , it must be served fast
-              url += coreContainer.getZkController().getNodeName();
-            } else {
-              // trying to avoid the thundering herd problem when there are a very large no:of nodes
-              // others should try to fetch it from any node where it is available
-              url += "*";
-            }
-            try {
-              //fire and forget
-              Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
-            } catch (Exception e) {
-              log.info("Node: " + node +
-                  " failed to respond for blob notification", e);
-              //ignore the exception
-              // some nodes may be down or not responding
-            }
-            i++;
-          }
+          sha256 = sha256Digest(buf);
+          coreContainer.getBlobStore().distributeBlob(buf, sha256);
           info.rsp.add(SHA256, sha256);
 
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-        } finally {
-          if (sha256 != null) coreContainer.getBlobRepository().removeTmpBlob(sha256);
         }
 
       }
@@ -233,7 +207,7 @@ class ClusterAPI {
       @Override
       void call(ApiInfo info) throws Exception {
         ClusterProperties clusterProperties = new ClusterProperties(info.coreContainer.getZkController().getZkClient());
-        info.rsp.add("package", clusterProperties.getClusterProperty("package", MapWriter.EMPTY));
+        info.rsp.add(PACKAGES, clusterProperties.getClusterProperty(PACKAGES, MapWriter.EMPTY));
       }
     },
     ADD_PACKAGE(CLUSTER_PKG,
@@ -261,14 +235,11 @@ class ClusterAPI {
       }
 
       boolean deletePackage(ApiInfo params) throws Exception {
-        if (!RuntimeLib.isEnabled()) {
-          params.op.addError("node not started with enable.runtime.lib=true");
-          return false;
-        }
+        if (checkEnabled(params)) return false;
         String name = params.op.getStr(CommandOperation.ROOT_OBJ);
         ClusterProperties clusterProperties = new ClusterProperties(params.coreContainer.getZkController().getZkClient());
         Map<String, Object> props = clusterProperties.getClusterProperties();
-        List<String> pathToLib = asList(CommonParams.PACKAGE, name);
+        List<String> pathToLib = asList(PACKAGES, name);
         Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
         if (existing == null) {
           params.op.addError("No such runtimeLib : " + name);
@@ -325,7 +296,7 @@ class ClusterAPI {
         clusterProperties.setClusterProperties(m);
         return true;
       }
-    },
+    }
 
     ;
 
@@ -426,52 +397,64 @@ class ClusterAPI {
   }
 
   static boolean addUpdatePackage(ApiInfo params) throws Exception {
-    if (!RuntimeLib.isEnabled()) {
-      params.op.addError("node not started with enable.runtime.lib=true");
-      return false;
-    }
-
-    CollectionHandlerApi handler = (CollectionHandlerApi) params.apiHandler;
-    RuntimeLib lib = new RuntimeLib(handler.handler.coreContainer);
+    if (checkEnabled(params)) return false;
     CommandOperation op = params.op;
     String name = op.getStr("name");
     ClusterProperties clusterProperties = new ClusterProperties(params.coreContainer.getZkController().getZkClient());
     Map<String, Object> props = clusterProperties.getClusterProperties();
-    List<String> pathToLib = asList(CommonParams.PACKAGE, name);
+    List<String> pathToLib = asList(PACKAGES, name);
     Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
     Map<String, Object> dataMap = Utils.getDeepCopy(op.getDataMap(), 3);
+    PackageManager.PackageInfo packageInfo = new PackageManager.PackageInfo(dataMap, 0);
+
     if (ClusterAPI.Commands.ADD_PACKAGE.meta().getName().equals(op.name)) {
       if (existing != null) {
-        op.addError(StrUtils.formatString("The jar with a name ''{0}'' already exists ", name));
+        op.addError(StrUtils.formatString("The package with a name ''{0}'' already exists ", name));
         return false;
       }
     } else {// this is an update command
       if (existing == null) {
-        op.addError(StrUtils.formatString("The jar with a name ''{0}'' does not exist", name));
+        op.addError(StrUtils.formatString("The package with a name ''{0}'' does not exist", name));
         return false;
       }
-      if (Objects.equals(existing.get(SHA256), dataMap.get(SHA256))) {
-        op.addError("Trying to update a jar with the same sha256");
+      PackageManager.PackageInfo oldInfo = new PackageManager.PackageInfo(existing, 1);
+      if (Objects.equals(oldInfo, packageInfo)) {
+        op.addError("Trying to update a package with the same data");
         return false;
       }
-      String oldSha256 = (String) Utils.getObjectByPath(existing, true, SHA256);
-      if (oldSha256 != null) {
-        dataMap.put("old_sha256", oldSha256);
-      }
+      packageInfo.oldBlob = oldInfo.blobs.stream()
+          .map(it -> it.sha256)
+          .collect(Collectors.toList());
     }
     try {
-      lib.init(new PluginInfo(RuntimeLib.TYPE, dataMap));
+      List<String> errs = packageInfo.validate(params.coreContainer);
+      if(!errs.isEmpty()){
+        for (String err : errs) op.addError(err);
+        return false;
+      }
+    } catch (FileNotFoundException fnfe) {
+      op.addError(fnfe.getMessage());
+      return false;
+
     } catch (SolrException e) {
-      log.error("Error loading runtimelib ", e);
+      log.error("Error loading package ", e);
       op.addError(e.getMessage());
       return false;
     }
 
     Map delta = new LinkedHashMap();
-    Utils.setObjectByPath(delta, pathToLib, dataMap, true);
+    Utils.setObjectByPath(delta, pathToLib, packageInfo, true);
     clusterProperties.setClusterProperties(delta);
     return true;
 
+  }
+
+  private static boolean checkEnabled(ApiInfo params) {
+    if (!PackageManager.enablePackage) {
+      params.op.addError("node not started with enable.package=true");
+      return true;
+    }
+    return false;
   }
 
   static class ApiInfo {

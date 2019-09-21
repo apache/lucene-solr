@@ -5,13 +5,14 @@
       "type": "string",
       "description": "A name for the library"
     },
-    "sha256": {
-      "type": "string",
-      "description": "The sha256 hash of the jar"
+    "blobs": {
+      "type": "array",
+      "items": {
+       "#include" :"cluster.package.Commands.blob.properties"
+      }
     },
-    "sig": {
-      "type": "string",
-      "description": "the signature of the jar"
+    "blob": {
+      "#include" :"cluster.package.Commands.blob.properties"
     },
     "repository": {
       "type": "string",
@@ -22,6 +23,9 @@
       "description": "version of he package"
     }
   },
-  "required" : ["name","sha256"]
-
+  "required": [
+    "name",
+    "version"
+  ],
+  "oneOf" : ["blob","blobs"]
 }
