@@ -136,6 +136,9 @@ New Features
 * SOLR-13734: JWTAuthPlugin now supports multiple IdP issuers through configuring a new 'issuers' configuration key.
   Access tokens issued and signed by any of the configured issuers will be validated (janhoy)
 
+* SOLR-13272: Add support for arbitrary ranges in JSON facet's Range facets.
+  (Apoorv Bhawsar, Munendra S N, Mikhail Khludnev, Ishan Chattopadhyaya, Jan Høydahl)
+
 Improvements
 ----------------------
 
