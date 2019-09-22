@@ -31,9 +31,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
-import org.apache.solr.core.MemClassLoader;
+import org.apache.solr.core.PackageManager;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.DOMUtil;
@@ -121,7 +120,7 @@ public class CacheConfig implements MapWriter {
     SolrCore core;
     SolrCache cache = null;
     String pkg;
-    RuntimeLib runtimeLib;
+    PackageManager.PackageInfo packageInfo;
     CacheRegenerator regen = null;
 
 
@@ -143,9 +142,8 @@ public class CacheConfig implements MapWriter {
       }
       if (regen == null && cfg.defRegen != null) regen = cfg.defRegen;
       cfg.persistence[0] = cache.init(cfg.args.attributes, cfg.persistence[0], regen);
-      if (pkg!=null && loader instanceof MemClassLoader) {
-        MemClassLoader memClassLoader = (MemClassLoader) loader;
-        runtimeLib = core.getCoreContainer().getPackageManager().getLib(pkg);
+      if (pkg != null) {
+        packageInfo = core.getCoreContainer().getPackageManager().getPackageInfo(pkg);
       }
 
     }

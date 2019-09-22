@@ -5,13 +5,14 @@
       "type": "string",
       "description": "A name for the library"
     },
-    "sha256": {
-      "type": "string",
-      "description": "The sha256 hash of the jar"
+    "blobs": {
+      "type": "array",
+      "items": {
+       "#include" :"cluster.package.Commands.blob.properties"
+      }
     },
-    "sig": {
-      "type": "string",
-      "description": "the signature of the jar"
+    "blob": {
+      "#include" :"cluster.package.Commands.blob.properties"
     },
     "repository": {
       "type": "string",
@@ -21,21 +22,14 @@
       "type": "string",
       "description": "version of he package"
     },
-    "setup-commands": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Commands that are passed on to the config API to install this plugin"
-    },
-    "update-commands": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Commands that are passed on to the config API to update this plugin"
+    "metadata": {
+      "type": "string",
+      "description": "SHA256 of the metadata json, stored in the FSBlobStore"
     }
   },
-  "required" : ["name","sha256"]
-
+  "required": [
+    "name",
+    "version"
+  ],
+  "oneOf" : ["blob","blobs"]
 }

@@ -64,6 +64,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
+import org.apache.solr.core.PackageListeners;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.RuntimeLib;
@@ -543,18 +544,18 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       }
 
       if (req.getParams().getBool("meta", false)) {
-        for (SolrCore.PkgListener pkgListener : req.getCore().getPackageListeners()) {
+        for (PackageListeners.Listener pkgListener : req.getCore().getListenerRegistry().getListeners()) {
           PluginInfo meta = pkgListener.pluginInfo();
           if (meta.pathInConfig != null) {
             Object obj = Utils.getObjectByPath(map, false, meta.pathInConfig);
             if (obj instanceof Map) {
               Map m = (Map) obj;
-              m.put("_packageinfo_", pkgListener.lib());
+              m.put("_packageinfo_", pkgListener.packageInfo());
             } else if(obj instanceof MapWriter){
               MapWriter mw = (MapWriter) obj;
               Utils.setObjectByPath(map, meta.pathInConfig, (MapWriter) ew -> {
                 mw.writeMap(ew);
-                ew.put("_packageinfo_", pkgListener.lib());
+                ew.put("_packageinfo_", pkgListener.packageInfo());
               }, false);
             }
           }

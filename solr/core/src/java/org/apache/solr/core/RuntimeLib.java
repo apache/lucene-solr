@@ -94,15 +94,17 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
     name = info.attributes.get(NAME);
     sha256 = info.attributes.get(SHA256);
     sig = info.attributes.get("sig");
+    Object v = info.attributes.get("version");
+    if (name == null || v == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "runtimeLib must have name and version");
+    }
+    version = String.valueOf(v);
 
-    if (sha256 == null) {
-      Object v = info.attributes.get("version");
-      if (name == null || v == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "runtimeLib must have name and version");
-      }
-      version = String.valueOf(v);
+    /*if (sha256 == null) {
+
     } else {
-      try {
+      throw new RuntimeException("must have  a version");
+     try {
         buffer = coreContainer.getBlobRepository().getBlob(sha256);
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -119,7 +121,7 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
 
       log.debug("dynamic library verified , sha256: {}",  sha256);
 
-    }
+    }*/
 
   }
 
@@ -129,18 +131,9 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
     if (buffer != null) return;
     synchronized (this) {
       if (buffer != null) return;
-      if(sha256 == null){
         //legacy type
         blobContentRef = coreContainer.getBlobRepository().getBlobIncRef(name + "/" + version);
         buffer = blobContentRef.blob.get();
-      } else {
-        //loaded from blob repo
-        try {
-          buffer = coreContainer.getBlobRepository().getBlob(sha256);
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        }
-      }
 
     }
   }

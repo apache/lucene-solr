@@ -84,32 +84,6 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
 
 
 
- /* static Command wrap(Command cmd) {
-    return info -> {
-      CoreContainer cc = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
-      boolean modified = false;
-      try {
-        modified = cmd.call(info);
-      } catch (SolrException e) {
-        log.error("error executing command : " + info.op.jsonStr(), e);
-        throw e;
-      } catch (Exception e) {
-        log.error("error executing command : " + info.op.jsonStr(), e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, "error executing command : ", e);
-      }
-      if (modified) {
-        syncClusterProps(info, cc);
-
-      }
-      if (info.op != null && info.op.hasError()) {
-        log.error("Error in running command {} , current clusterprops.json : {}", Utils.toJSONString(info.op), Utils.toJSONString(new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties()));
-      }
-      return modified;
-
-    };
-  }*/
-
-
 
   @Override
   protected List<V2EndPoint> getEndPoints() {

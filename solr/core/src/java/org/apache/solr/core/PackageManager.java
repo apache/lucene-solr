@@ -17,360 +17,311 @@
 
 package org.apache.solr.core;
 
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.plugin.PluginInfoInitialized;
-import org.apache.zookeeper.server.ByteBufferInputStream;
+import org.apache.solr.common.util.Base64;
+import org.apache.solr.util.CryptoKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.PACKAGE;
+import static org.apache.solr.common.params.CommonParams.PACKAGES;
 import static org.apache.solr.common.params.CommonParams.VERSION;
 import static org.apache.solr.core.RuntimeLib.SHA256;
 
+/**
+ * This class listens to changes to packages and it also keeps a
+ * registry of the resource loader instances and the metadata of the package
+ * The resource loader is supposed to be in sync with the data in Zookeeper
+ * and it will always have one and only one instance of the resource loader
+ * per package in a given node. These resource loaders are shared across
+ * all components in a Solr node
+ * <p>
+ * when packages are created/updated new resource loaders are created and if there are
+ * listeners, they are notified. They can in turn choose to discard old instances of plugins
+ * loaded from old resource loaders and create new instances if required.
+ * <p>
+ * All the resource loaders are loaded from blobs that exist in the {@link FsBlobStore}
+ */
 public class PackageManager implements ClusterPropertiesListener {
+  public static final boolean enablePackage = Boolean.parseBoolean(System.getProperty("enable.package", "false"));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CoreContainer coreContainer;
+  final CoreContainer coreContainer;
 
-  private Map<String, Package> pkgs = new HashMap<>();
+  private Map<String, PackageResourceLoader> pkgs = new HashMap<>();
 
-  final ExtHandler extHandler;
-  private int myversion = -1;
+  final PackageListeners listenerRegistry = new PackageListeners();
+
+  int myVersion = -1;
+
 
   public int getZNodeVersion(String pkg) {
-    Package p = pkgs.get(pkg);
-    return p == null ? -1 : p.lib.getZnodeVersion();
-  }
-  public RuntimeLib getLib(String name){
-    Package p = pkgs.get(name);
-    return p == null? null: p.lib;
+    PackageResourceLoader p = pkgs.get(pkg);
+    return p == null ? -1 : p.packageInfo.znodeVersion;
   }
 
-  static class Package implements MapWriter {
-    final RuntimeLib lib;
-    final MemClassLoader loader;
-    final String name;
+
+  public PackageInfo getPackageInfo(String pkg) {
+    PackageResourceLoader p = pkgs.get(pkg);
+    return p == null ? null : p.packageInfo;
+  }
+
+
+  public static class PackageInfo implements MapWriter {
+    public final String name;
+    public final String version;
+    public final List<Blob> blobs;
+    public final int znodeVersion;
+    public List<String> oldBlob;
+    public final String manifest;
+
+    public PackageInfo(Map m, int znodeVersion) {
+      name = (String) m.get(NAME);
+      version = (String) m.get(VERSION);
+      manifest = (String) m.get("manifest");
+      this.znodeVersion = znodeVersion;
+      Object o = m.get("blob");
+      if (o instanceof Map) {
+        Map map = (Map) o;
+        this.blobs = ImmutableList.of(new Blob(map));
+      } else {
+        throw new RuntimeException("Invalid type for attribute blob");
+      }
+    }
+
+    public List<String> validate(CoreContainer coreContainer) throws Exception {
+      List<String> errors = new ArrayList<>();
+      if (!enablePackage) {
+        errors.add("node not started with -Denable.package=true");
+        return errors;
+      }
+      Map<String, byte[]> keys = CloudUtil.getTrustedKeys(
+          coreContainer.getZkController().getZkClient(), "exe");
+      if (keys.isEmpty()) {
+        errors.add("No public keys in ZK : /keys/exe");
+        return errors;
+      }
+      CryptoKeys cryptoKeys = new CryptoKeys(keys);
+      for (Blob blob : blobs) {
+        if (!blob.verifyJar(cryptoKeys, coreContainer)) {
+          errors.add("Invalid signature for blob : " + blob.sha256);
+        }
+      }
+      return errors;
+
+    }
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
-      lib.writeMap(ew);
-    }
-
-    Package(RuntimeLib lib, MemClassLoader loader, int zkVersion, String name) {
-      this.lib = lib;
-      this.loader = loader;
-      this.name = name;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public InputStream getBytes() {
-      return new ByteBufferInputStream(lib.buffer);
+      ew.put("name", name);
+      ew.put("version", version);
+      ew.put("manifest", manifest);
+      ew.putIfNotNull("blobs.old", oldBlob);
+      if (blobs.size() == 1) {
+        ew.put("blob", blobs.get(0));
+      } else {
+        ew.put("blobs", blobs);
+      }
     }
 
 
-    public boolean isModified(Map map) {
-      return (!Objects.equals(lib.getSha256(), (map).get(SHA256)) ||
-          !Objects.equals(lib.getSig(), (map).get(SHA256)));
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof PackageInfo) {
+        PackageInfo that = (PackageInfo) obj;
+        if (!Objects.equals(this.version, that.version)) return false;
+        if (this.blobs.size() == that.blobs.size()) {
+          for (int i = 0; i < blobs.size(); i++) {
+            if (!Objects.equals(blobs.get(i), that.blobs.get(i))) {
+              return false;
+            }
+          }
+        } else {
+          return false;
+        }
+      } else {
+        return false;
+      }
+      return true;
+    }
+
+    PackageResourceLoader createPackage(PackageManager packageManager) {
+      return new PackageResourceLoader(packageManager, this);
+    }
+
+    public static class Blob implements MapWriter {
+      public final String sha256;
+      public final String sig;
+      public final String name;
+
+      public Blob(Object o) {
+        if (o instanceof Map) {
+          Map m = (Map) o;
+          this.sha256 = (String) m.get(SHA256);
+          this.sig = (String) m.get("sig");
+          this.name = (String) m.get(NAME);
+        } else {
+          throw new RuntimeException("blob should be a Object Type");
+        }
+      }
+
+      @Override
+      public void writeMap(EntryWriter ew) throws IOException {
+        ew.put(SHA256, sha256);
+        ew.put("sig", sig);
+        ew.putIfNotNull(NAME, name);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if (obj instanceof Blob) {
+          Blob that = (Blob) obj;
+          return Objects.equals(this.sha256, that.sha256) && Objects.equals(this.sig, that.sig);
+        } else {
+          return false;
+        }
+      }
+
+      public boolean verifyJar(CryptoKeys cryptoKeys, CoreContainer coreContainer) throws IOException {
+        boolean[] result = new boolean[]{false};
+        for (Map.Entry<String, PublicKey> e : cryptoKeys.keys.entrySet()) {
+          coreContainer.getBlobStore().readBlob(sha256, is -> {
+            try {
+              if (CryptoKeys.verify(e.getValue(), Base64.base64ToByteArray(sig), is)) result[0] = true;
+            } catch (Exception ex) {
+              log.error("Unexpected error in verifying jar", ex);
+            }
+          });
+        }
+        return result[0];
+
+      }
+    }
+
+  }
+
+  public static class PackageResourceLoader extends SolrResourceLoader implements MapWriter {
+    final PackageInfo packageInfo;
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      packageInfo.writeMap(ew);
+    }
+
+    PackageResourceLoader(PackageManager packageManager, PackageInfo packageInfo) {
+      super(packageManager.coreContainer.getResourceLoader().getInstancePath(),
+          packageManager.coreContainer.getResourceLoader().classLoader);
+      this.packageInfo = packageInfo;
+      List<URL> blobURLs = new ArrayList<>(packageInfo.blobs.size());
+      for (PackageInfo.Blob blob : packageInfo.blobs) {
+        try {
+          if (!packageManager.coreContainer.getBlobStore().fetchBlobToFS(blob.sha256)) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                "Blob not available " + blob.sha256);
+          }
+          blobURLs.add(new File(packageManager.coreContainer.getBlobStore().getBlobsPath().toFile(), blob.sha256).toURI().toURL());
+        } catch (MalformedURLException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      }
+      addToClassLoader(blobURLs);
     }
   }
 
   PackageManager(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    extHandler = new ExtHandler(this);
   }
 
 
   public <T> T newInstance(String cName, Class<T> expectedType, String pkg) {
-    try {
-      return coreContainer.getResourceLoader().newInstance(cName, expectedType,
-          null, new Class[]{CoreContainer.class}, new Object[]{coreContainer});
-    } catch (SolrException e) {
-      Package p = pkgs.get(pkg);
-
-      if (p != null) {
-        try {
-          Class<? extends T> klas = p.loader.findClass(cName, expectedType);
-          try {
-            return klas.getConstructor(CoreContainer.class).newInstance(coreContainer);
-          } catch (NoSuchMethodException ex) {
-            return klas.getConstructor().newInstance();
-          }
-        } catch (Exception ex) {
-          if (!p.loader.getErrors().isEmpty()) {
-            //some libraries were no loaded due to some errors. May the class was there in those libraries
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "There were errors loading some libraries: " + StrUtils.join(p.loader.getErrors(), ','), ex);
-          }
-          //there were no errors in loading any libraries. The class was probably not suppoed to be there in those libraries
-          // so throw the original exception
-          throw e;
-        }
-      } else {
-        throw e;
-      }
+    PackageResourceLoader p = pkgs.get(pkg);
+    if (p == null) {
+      return coreContainer.getResourceLoader().newInstance(cName, expectedType);
+    } else {
+      return p.newInstance(cName, expectedType);
     }
   }
 
   @Override
   public boolean onChange(Map<String, Object> properties) {
-    log.info("clusterprops.json changed , version {}", coreContainer.getZkController().getZkStateReader().getClusterPropsVersion());
+    log.debug("clusterprops.json changed , version {}", coreContainer.getZkController().getZkStateReader().getClusterPropsVersion());
     int v = coreContainer.getZkController().getZkStateReader().getClusterPropsVersion();
-    boolean modified = updatePackages(properties, v);
-    extHandler.updateReqHandlers(properties, modified);
-    for (SolrCore core : coreContainer.solrCores.getCores()) {
-      pkgs.forEach((s, pkg) -> core.packageUpdated(pkg.lib));
+    List<PackageInfo> touchedPackages = updatePackages(properties, v);
+
+    if (!touchedPackages.isEmpty()) {
+      Collection<SolrCore> cores = coreContainer.getCores();
+
+      log.info(" {} cores being notified of updated packages  : {}",cores.size() ,touchedPackages.stream().map(p -> p.name).collect(Collectors.toList()) );
+      for (SolrCore core : cores) {
+        core.getListenerRegistry().packagesUpdated(touchedPackages);
+      }
+      listenerRegistry.packagesUpdated(touchedPackages);
+
     }
-    myversion = v;
+    coreContainer.getContainerRequestHandlers().updateReqHandlers(properties);
+    myVersion = v;
     return false;
   }
 
 
-  private boolean updatePackages(Map<String, Object> properties, int ver) {
-    Map m = (Map) properties.getOrDefault(PACKAGE, Collections.emptyMap());
-    if (pkgs.isEmpty() && m.isEmpty()) return false;
-    boolean[] needsReload = new boolean[1];
-    if (m.size() == pkgs.size()) {
-      m.forEach((k, v) -> {
-        if (v instanceof Map) {
-          Package pkg = pkgs.get(k);
-          if (pkg == null || pkg.isModified((Map) v)) {
-            needsReload[0] = true;
-          }
-        }
-      });
-    } else {
-      needsReload[0] = true;
-    }
-    if (needsReload[0]) {
-      createNewClassLoaders(m, ver);
-    }
-    return needsReload[0];
-  }
-
-  public ResourceLoader getResourceLoader(String pkg) {
-    Package p = pkgs.get(pkg);
-    return p == null ? coreContainer.getResourceLoader() : p.loader;
-  }
-
-  void createNewClassLoaders(Map m, int ver) {
-    boolean[] loadedAll = new boolean[1];
-    loadedAll[0] = true;
-    Map<String, Package> newPkgs = new LinkedHashMap<>();
+  private List<PackageInfo> updatePackages(Map<String, Object> properties, int ver) {
+    Map m = (Map) properties.getOrDefault(PACKAGES, Collections.emptyMap());
+    if (pkgs.isEmpty() && m.isEmpty()) return Collections.emptyList();
+    Map<String, PackageInfo> reloadPackages = new HashMap<>();
     m.forEach((k, v) -> {
       if (v instanceof Map) {
-        Map map = new HashMap((Map) v);
-        map.put(CoreAdminParams.NAME, String.valueOf(k));
-        String name = (String) k;
-        Package existing = pkgs.get(name);
-        if (existing != null && !existing.isModified(map)) {
-          //this package has not changed
-          newPkgs.put(name, existing);
-        }
-
-        RuntimeLib lib = new RuntimeLib(coreContainer);
-        lib.znodeVersion = ver;
-        try {
-          lib.init(new PluginInfo(RuntimeLib.TYPE, map));
-          if (lib.getSha256() == null) {
-            log.error("Unable to initialize runtimeLib : " + Utils.toJSONString(v));
-            loadedAll[0] = false;
-          }
-          lib.loadJar();
-
-          newPkgs.put(name, new Package(lib,
-              new MemClassLoader(Collections.singletonList(lib), coreContainer.getResourceLoader()),
-              ver, name));
-        } catch (Exception e) {
-          log.error("error loading a runtimeLib " + Utils.toJSONString(v), e);
-          loadedAll[0] = false;
-
+        PackageInfo info = new PackageInfo((Map) v, ver);
+        PackageResourceLoader pkg = pkgs.get(k);
+        if (pkg == null || !pkg.packageInfo.equals(info)) {
+          reloadPackages.put(info.name, info);
         }
       }
     });
+    pkgs.forEach((name, aPackage) -> {
+      if (!m.containsKey(name)) reloadPackages.put(name, null);
+    });
 
-    if (loadedAll[0]) {
-      log.info("Libraries changed. New memclassloader created with jars {}",
-          newPkgs.values().stream().map(it -> it.lib.getSha256()).collect(Collectors.toList()));
-      this.pkgs = newPkgs;
-
-    }
-  }
-
-  static class ExtHandler extends RequestHandlerBase implements PermissionNameProvider {
-    final PackageManager packageManager;
-
-    private Map<String, Handler> customHandlers = new HashMap<>();
-
-    ExtHandler(PackageManager packageManager) {
-      this.packageManager = packageManager;
-    }
-
-
-    @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
-      int v = req.getParams().getInt(ConfigOverlay.ZNODEVER, -1);
-      if (v >= 0) {
-        log.debug("expected version : {} , my version {}", v, packageManager.myversion);
-        ZkStateReader zkStateReader = packageManager.coreContainer.getZkController().getZkStateReader();
-        try {
-          zkStateReader.forceRefreshClusterProps(v);
-        } catch (SolrException e) {
-          log.error("Error refreshing state ", e);
-          throw e;
-        }
-      }
-      rsp.add("metadata", (MapWriter) ew -> ew.putIfNotNull(VERSION,
-          packageManager.coreContainer.getZkController().zkStateReader.getClusterPropsVersion()));
-      rsp.add(RuntimeLib.TYPE, packageManager.pkgs.values());
-      rsp.add(SolrRequestHandler.TYPE, customHandlers.values());
-
-    }
-
-    @Override
-    public Collection<Api> getApis() {
-      return Collections.singleton(new Api(Utils.getSpec("node.ext")) {
-        @Override
-        public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-          String name = ((V2HttpCall) req.getHttpSolrCall()).getUrlParts().get("handlerName");
-          if (name == null) {
-            handleRequestBody(req, rsp);
-            return;
-          }
-          Handler handler = customHandlers.get(name);
-          if (handler == null) {
-            String err = StrUtils.formatString(" No such handler: {0}, available handlers : {1}", name, customHandlers.keySet());
-            log.error(err);
-            throw new SolrException(SolrException.ErrorCode.NOT_FOUND, err);
-          }
-          handler.handler.handleRequest(req, rsp);
+    if (!reloadPackages.isEmpty()) {
+      List<PackageInfo> touchedPackages = new ArrayList<>();
+      Map<String, PackageResourceLoader> newPkgs = new HashMap<>(pkgs);
+      reloadPackages.forEach((s, pkgInfo) -> {
+        if (pkgInfo == null) {
+          newPkgs.remove(s);
+        } else {
+          newPkgs.put(s, pkgInfo.createPackage(PackageManager.this));
+          touchedPackages.add(pkgInfo);
         }
       });
+      this.pkgs = newPkgs;
+      return touchedPackages;
+
     }
+    return Collections.emptyList();
+  }
 
-    private void updateReqHandlers(Map<String, Object> properties, boolean forceReload) {
-      Map m = (Map) properties.getOrDefault(SolrRequestHandler.TYPE, Collections.emptyMap());
-      if (m.isEmpty() && customHandlers.isEmpty()) return;
-      boolean hasChanged = true;
-      if (customHandlers.size() == m.size() && customHandlers.keySet().containsAll(m.keySet())) hasChanged = false;
-      if (forceReload || hasChanged) {
-        log.debug("RequestHandlers being reloaded : {}", m.keySet());
-        Map<String, Handler> newCustomHandlers = new HashMap<>();
-        m.forEach((k, v) -> {
-          if (v instanceof Map) {
-            Map metaData = (Map) v;
-            Handler existing = customHandlers.get(k);
-            String name = (String) k;
-            if (existing == null || existing.shouldReload(metaData, packageManager.pkgs)) {
-              String klas = (String) metaData.get(FieldType.CLASS_NAME);
-              if (klas != null) {
-                String pkg = (String) metaData.get(PACKAGE);
-                SolrRequestHandler inst = packageManager.newInstance(klas, SolrRequestHandler.class, pkg);
-                if (inst instanceof PluginInfoInitialized) {
-                  ((PluginInfoInitialized) inst).init(new PluginInfo(SolrRequestHandler.TYPE, metaData));
-                }
-                Package p = packageManager.pkgs.get(pkg);
-                newCustomHandlers.put(name, new Handler(inst, pkg, p == null ? -1 : p.lib.getZnodeVersion(), metaData, name));
-              } else {
-                log.error("Invalid requestHandler {}", Utils.toJSONString(v));
-              }
-
-            } else {
-              newCustomHandlers.put(name, existing);
-            }
-
-          } else {
-            log.error("Invalid data for requestHandler : {} , {}", k, v);
-          }
-        });
-
-        log.debug("Registering request handlers {} ", newCustomHandlers.keySet());
-        Map<String, Handler> old = customHandlers;
-        customHandlers = newCustomHandlers;
-        old.forEach((s, h) -> PluginBag.closeQuietly(h));
-      }
-    }
-
-    @Override
-    public String getDescription() {
-      return "Custom Handlers";
-    }
-
-
-    @Override
-    public Boolean registerV1() {
-      return Boolean.FALSE;
-    }
-
-    @Override
-    public Boolean registerV2() {
-      return Boolean.TRUE;
-    }
-
-    @Override
-    public Name getPermissionName(AuthorizationContext request) {
-      if (request.getResource().endsWith("/node/ext")) return Name.COLL_READ_PERM;
-      return Name.CUSTOM_PERM;
-    }
-
-    static class Handler implements MapWriter {
-      final SolrRequestHandler handler;
-      final String pkg;
-      final int zkversion;
-      final Map meta;
-      final String name;
-
-      @Override
-      public void writeMap(EntryWriter ew) throws IOException {
-        ew.put(NAME, name);
-        ew.put(ConfigOverlay.ZNODEVER, zkversion);
-        meta.forEach(ew.getBiConsumer());
-      }
-
-      Handler(SolrRequestHandler handler, String pkg, int version, Map meta, String name) {
-        this.handler = handler;
-        this.pkg = pkg;
-        this.zkversion = version;
-        this.meta = Utils.getDeepCopy(meta, 3);
-        this.name = name;
-      }
-
-      public boolean shouldReload(Map metaData, Map<String, Package> pkgs) {
-        Package p = pkgs.get(pkg);
-        //the metadata is same and the package has not changed since we last loaded
-        return !meta.equals(metaData) || p == null || p.lib.getZnodeVersion() > zkversion;
-      }
-    }
+  public ResourceLoader getResourceLoader(String pkg) {
+    PackageResourceLoader loader = pkgs.get(pkg);
+    return loader == null ? coreContainer.getResourceLoader() : loader;
   }
 
 }

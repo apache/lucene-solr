@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.StrUtils;
@@ -348,7 +347,7 @@ public class PluginBag<T> implements AutoCloseable {
           holder;
 
     } else if (info.isRuntimePlugin()) {
-      log.debug(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
+      log.debug(" {} : '{}'  created with packageInfo=true ", meta.getCleanTag(), info.name);
       LazyPluginHolder<T> holder = new LazyPluginHolder<>(meta, info, core, RuntimeLib.isEnabled() ?
           core.getMemClassLoader() :
           core.getResourceLoader(), true);
@@ -491,14 +490,14 @@ public class PluginBag<T> implements AutoCloseable {
     private final SolrConfig.SolrPluginInfo pluginMeta;
     private final PackageManager packageManager;
     private final String pkg;
-    private RuntimeLib runtimeLib;
+    private PackageManager.PackageInfo packageInfo;
 
     public PackagePluginHolder(PluginInfo info, SolrCore core, SolrConfig.SolrPluginInfo pluginMeta) {
       super(info);
       this.core = core;
       this.pluginMeta = pluginMeta;
       this.pkg = info.attributes.get(CommonParams.PACKAGE);
-      this.core.addPackageListener(new SolrCore.PkgListener() {
+      this.core.getListenerRegistry().addListener(new PackageListeners.Listener() {
         @Override
         public String packageName() {
           return pkg;
@@ -510,14 +509,14 @@ public class PluginBag<T> implements AutoCloseable {
         }
 
         @Override
-        public MapWriter lib() {
-          return runtimeLib;
+        public PackageManager.PackageInfo packageInfo() {
+          return packageInfo;
         }
 
         @Override
-        public void changed(RuntimeLib lib) {
-          int myVersion = runtimeLib == null? -1 : runtimeLib.znodeVersion;
-          if(lib.getZnodeVersion() > myVersion) reload();
+        public void changed(PackageManager.PackageInfo lib) {
+          int myVersion = packageInfo == null? -1 : packageInfo.znodeVersion;
+          if(lib.znodeVersion > myVersion) reload();
         }
       });
       this.packageManager = core.getCoreContainer().getPackageManager();
@@ -529,7 +528,7 @@ public class PluginBag<T> implements AutoCloseable {
       if(inst == null) log.info("reloading plugin {} ", pluginInfo.name);
       inst = createInitInstance(pluginInfo, pluginMeta,
           core, packageManager.getResourceLoader(this.pkg), true);
-      this.runtimeLib = packageManager.getLib(pkg);
+      this.packageInfo = packageManager.getPackageInfo(this.pkg);
 
     }
 

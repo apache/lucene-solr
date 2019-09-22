@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.MemClassLoader;
 import org.apache.solr.core.TestDynamicLoading;
@@ -71,6 +72,19 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
     result = cryptoKeys.verify(pk2sig, samplefile);
     assertEquals("pubk2.der", result);
 
+    try (FileInputStream fis = new FileInputStream(getFile("cryptokeys/samplefile.bin"))) {
+      assertTrue(CryptoKeys.verify(cryptoKeys.keys.get("pubk2.der"), Base64.base64ToByteArray(pk2sig) , fis));
+    }
+    try (FileInputStream fis = new FileInputStream(getFile("cryptokeys/samplefile.bin"))) {
+      assertFalse(CryptoKeys.verify(cryptoKeys.keys.get("pubk1.der"), Base64.base64ToByteArray(pk2sig) , fis));
+    }
+
+    try (FileInputStream fis = new FileInputStream(getFile("cryptokeys/samplefile.bin"))) {
+      assertTrue(CryptoKeys.verify(cryptoKeys.keys.get("pubk1.der"), Base64.base64ToByteArray(pk1sig) , fis));
+    }
+    try (FileInputStream fis = new FileInputStream(getFile("cryptokeys/samplefile.bin"))) {
+      assertFalse(CryptoKeys.verify(cryptoKeys.keys.get("pubk2.der"), Base64.base64ToByteArray(pk1sig) , fis));
+    }
 
     result = cryptoKeys.verify(pk1sig, samplefile);
     assertEquals("pubk1.der", result);

@@ -193,6 +193,10 @@ public class CoreContainer {
 
   private final BlobRepository blobRepository = new BlobRepository(this);
 
+  private final FsBlobStore blobStore = new FsBlobStore(this);
+
+  final ContainerRequestHandlers containerRequestHandlers = new ContainerRequestHandlers(this);
+
   private volatile PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
   private volatile boolean asyncSolrCoreLoad;
@@ -641,8 +645,8 @@ public class CoreContainer {
     reloadSecurityProperties();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
-    containerHandlers.put("/ext", clusterPropertiesListener.extHandler);
-    containerHandlers.put("/blob-get", blobRepository.blobRead);
+    containerHandlers.put("/ext", containerRequestHandlers);
+    containerHandlers.put("/blob-get", blobStore.blobRead);
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
@@ -1761,6 +1765,10 @@ public class CoreContainer {
     return blobRepository;
   }
 
+  public FsBlobStore getBlobStore(){
+    return blobStore;
+  }
+
   /**
    * If using asyncSolrCoreLoad=true, calling this after {@link #load()} will
    * not return until all cores have finished loading.
@@ -1907,6 +1915,10 @@ public class CoreContainer {
 
   public AuditLoggerPlugin getAuditLoggerPlugin() {
     return auditloggerPlugin == null ? null : auditloggerPlugin.plugin;
+  }
+
+  public ContainerRequestHandlers getContainerRequestHandlers(){
+    return containerRequestHandlers;
   }
 
   public NodeConfig getNodeConfig() {
