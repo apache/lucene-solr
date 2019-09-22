@@ -20,6 +20,7 @@ import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.solr.packagemanager.SolrPluginInfo.Metadata;
 import org.apache.solr.packagemanager.SolrPluginInfo.SolrPluginRelease;
 import org.pf4j.PluginException;
 import org.pf4j.PluginManager;
@@ -103,7 +104,7 @@ public class SolrUpdateManager extends UpdateManager {
 
     String sha256 = uploadToBlobHandler(downloaded);
 
-    addOrUpdatePackage(op, id, version, sha256, repository, release.setupCommands, release.updateCommands, "some-signature");
+    addOrUpdatePackage(op, id, version, sha256, repository, release.metadata, "some-signature");
     return true;
   }
 
@@ -111,7 +112,7 @@ public class SolrUpdateManager extends UpdateManager {
     INSTALL, UPDATE;
   }
   
-  private boolean addOrUpdatePackage(Operation op, String id, String version, String sha256, String repository, List<String> setupCommands, List<String> updateCommands, String sig) {
+  private boolean addOrUpdatePackage(Operation op, String id, String version, String sha256, String repository, Metadata packageMetadata, String sig) {
 
     String json;
     

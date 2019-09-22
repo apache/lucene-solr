@@ -68,7 +68,11 @@ public class PackageTool extends SolrCLI.ToolBase {
           list(pluginManager, updateManager, cli.getArgList().subList(1, cli.getArgList().size()));
           break;
         case "list-available":
-          available(pluginManager, updateManager, cli.getArgList().subList(1, cli.getArgList().size()));
+          try {
+            available(pluginManager, updateManager, cli.getArgList().subList(1, cli.getArgList().size()));
+          } catch (PluginException ex) {
+            ex.printStackTrace();
+          }
           break;
         case "install":
           install(pluginManager, updateManager, cli.getArgList().subList(1, cli.getArgList().size()));
