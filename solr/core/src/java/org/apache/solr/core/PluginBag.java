@@ -488,9 +488,9 @@ public class PluginBag<T> implements AutoCloseable {
   public class PackagePluginHolder<T> extends PluginHolder<T> {
     private final SolrCore core;
     private final SolrConfig.SolrPluginInfo pluginMeta;
-    private final PackageManager packageManager;
+    private final PackageBag packageBag;
     private final String pkg;
-    private PackageManager.PackageInfo packageInfo;
+    private PackageBag.PackageInfo packageInfo;
 
     public PackagePluginHolder(PluginInfo info, SolrCore core, SolrConfig.SolrPluginInfo pluginMeta) {
       super(info);
@@ -509,17 +509,17 @@ public class PluginBag<T> implements AutoCloseable {
         }
 
         @Override
-        public PackageManager.PackageInfo packageInfo() {
+        public PackageBag.PackageInfo packageInfo() {
           return packageInfo;
         }
 
         @Override
-        public void changed(PackageManager.PackageInfo lib) {
+        public void changed(PackageBag.PackageInfo lib) {
           int myVersion = packageInfo == null? -1 : packageInfo.znodeVersion;
           if(lib.znodeVersion > myVersion) reload();
         }
       });
-      this.packageManager = core.getCoreContainer().getPackageManager();
+      this.packageBag = core.getCoreContainer().getPackageBag();
       reload();
     }
 
@@ -527,8 +527,8 @@ public class PluginBag<T> implements AutoCloseable {
     private void reload() {
       if(inst == null) log.info("reloading plugin {} ", pluginInfo.name);
       inst = createInitInstance(pluginInfo, pluginMeta,
-          core, packageManager.getResourceLoader(this.pkg), true);
-      this.packageInfo = packageManager.getPackageInfo(this.pkg);
+          core, packageBag.getResourceLoader(this.pkg), true);
+      this.packageInfo = packageBag.getPackageInfo(this.pkg);
 
     }
 

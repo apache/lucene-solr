@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.core.PackageBag.PackageInfo;
 import org.apache.solr.core.PackageListeners;
-import org.apache.solr.core.PackageManager.PackageInfo;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.metrics.SolrMetrics;
 import org.slf4j.Logger;

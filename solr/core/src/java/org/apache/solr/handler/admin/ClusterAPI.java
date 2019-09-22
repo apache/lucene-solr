@@ -44,7 +44,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.PackageManager;
+import org.apache.solr.core.PackageBag;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.admin.BaseHandlerApiSupport.ApiCommand;
 import org.apache.solr.request.SolrQueryRequest;
@@ -82,7 +82,7 @@ class ClusterAPI {
     Stat stat = new Stat();
     Map<String, Object> clusterProperties = new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties(stat);
     try {
-      cc.getPackageManager().onChange(clusterProperties);
+      cc.getPackageBag().onChange(clusterProperties);
     } catch (SolrException e) {
       log.error("error executing command : " + info.op.jsonStr(), e);
       throw e;
@@ -405,7 +405,7 @@ class ClusterAPI {
     List<String> pathToLib = asList(PACKAGES, name);
     Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
     Map<String, Object> dataMap = Utils.getDeepCopy(op.getDataMap(), 3);
-    PackageManager.PackageInfo packageInfo = new PackageManager.PackageInfo(dataMap, 0);
+    PackageBag.PackageInfo packageInfo = new PackageBag.PackageInfo(dataMap, 0);
 
     if (ClusterAPI.Commands.ADD_PACKAGE.meta().getName().equals(op.name)) {
       if (existing != null) {
@@ -417,7 +417,7 @@ class ClusterAPI {
         op.addError(StrUtils.formatString("The package with a name ''{0}'' does not exist", name));
         return false;
       }
-      PackageManager.PackageInfo oldInfo = new PackageManager.PackageInfo(existing, 1);
+      PackageBag.PackageInfo oldInfo = new PackageBag.PackageInfo(existing, 1);
       if (Objects.equals(oldInfo, packageInfo)) {
         op.addError("Trying to update a package with the same data");
         return false;
@@ -450,7 +450,7 @@ class ClusterAPI {
   }
 
   private static boolean checkEnabled(ApiInfo params) {
-    if (!PackageManager.enablePackage) {
+    if (!PackageBag.enablePackage) {
       params.op.addError("node not started with enable.package=true");
       return true;
     }

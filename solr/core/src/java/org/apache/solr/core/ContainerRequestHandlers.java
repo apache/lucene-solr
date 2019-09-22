@@ -64,7 +64,7 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
     int v = req.getParams().getInt(ConfigOverlay.ZNODEVER, -1);
     if (v >= 0) {
-      log.debug("expected version : {} , my version {}", v, coreContainer.getPackageManager().myVersion);
+      log.debug("expected version : {} , my version {}", v, coreContainer.getPackageBag().myVersion);
       ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
       try {
         zkStateReader.forceRefreshClusterProps(v);
@@ -148,7 +148,7 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
 
   private SolrRequestHandler createHandler(Map metaData) {
     String pkg = (String) metaData.get(PACKAGE);
-    SolrRequestHandler inst = coreContainer.getPackageManager().newInstance((String) metaData.get(FieldType.CLASS_NAME),
+    SolrRequestHandler inst = coreContainer.getPackageBag().newInstance((String) metaData.get(FieldType.CLASS_NAME),
         SolrRequestHandler.class, pkg);
     if (inst instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) inst).init(new PluginInfo(SolrRequestHandler.TYPE, metaData));
@@ -183,7 +183,7 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
     final String pkg;
     int zkversion;
     PluginInfo meta;
-    PackageManager.PackageInfo packageInfo;
+    PackageBag.PackageInfo packageInfo;
     String name;
 
     @Override
@@ -198,8 +198,8 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
       pkg = (String) meta.get("package");
       this.handler = createHandler(meta);
       if (pkg != null) {
-        this.packageInfo = coreContainer.getPackageManager().getPackageInfo(pkg);
-        coreContainer.getPackageManager().listenerRegistry.addListener(this);
+        this.packageInfo = coreContainer.getPackageBag().getPackageInfo(pkg);
+        coreContainer.getPackageBag().listenerRegistry.addListener(this);
       }
 
 
@@ -216,7 +216,7 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
     }
 
     @Override
-    public void changed(PackageManager.PackageInfo info) {
+    public void changed(PackageBag.PackageInfo info) {
       if(this.packageInfo.znodeVersion < info.znodeVersion){
         this.handler = createHandler(meta.attributes);
         this.packageInfo = info;
@@ -230,7 +230,7 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
     }
 
     @Override
-    public PackageManager.PackageInfo packageInfo() {
+    public PackageBag.PackageInfo packageInfo() {
       return packageInfo;
     }
   }
