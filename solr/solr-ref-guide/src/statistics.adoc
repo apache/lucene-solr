@@ -67,19 +67,20 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Notice that the random sample contains 50000 records and the response
-time is only 430 milli-seconds. Samples of this size can be used to reliably estimate the
-descriptive statistics for very large underlying data sets with sub-second performance.
+Notice that the random sample contains 50,000 records and the response
+time is only 430 milliseconds. Samples of this size can be used to
+reliably estimate the statistics for very large underlying
+data sets with sub-second performance.
 
 
-This describe function can be visualized in a table with Zeppelin-Solr:
+The `describe` function can also be visualized in a table with Zeppelin-Solr:
 
 image::images/math-expressions/describe.png[]
 
 
 == Histograms and Frequency Tables
 
-Histograms and frequency tables are are tools for visualizing the distribution
+Histograms and frequency tables are tools for visualizing the distribution
 of a random variable.
 
 The `hist` function creates a histogram designed for usage with continuous data. The
@@ -87,11 +88,12 @@ The `hist` function creates a histogram designed for usage with continuous data.
 
 === histograms
 
-In the example below a histogram is used to visualize a random sample of response times
-from the logs collection. The example retrieves the random sample with `random` function,
- creates a vector from the *response_d* field in the
-result set and uses the `hist` function to return a histogram with 22 bins.
-The `hist` function returns a list of tuples with summary statistics for each bin.
+In the example below a histogram is used to visualize a random sample of
+response times from the logs collection. The example retrieves the
+random sample with `random` function and creates a vector from the *response_d* field
+in the result set. Then the `hist` function is applied to the vector
+to return a histogram with 22 bins. The `hist` function returns a
+list of tuples with summary statistics for each bin.
 
 [source,text]
 ----
