@@ -155,7 +155,7 @@ public class SimCloudManager implements SolrCloudManager {
   private boolean useSystemCollection = true;
 
   private static int nodeIdPort = 10000;
-  public static int DEFAULT_FREE_DISK = 1024; // 1000 GiB
+  public static int DEFAULT_FREE_DISK = 10240; // 10 TiB
   public static int DEFAULT_TOTAL_DISK = 10240; // 10 TiB
   public static long DEFAULT_IDX_SIZE_BYTES = 10240; // 10 kiB
 
@@ -380,6 +380,10 @@ public class SimCloudManager implements SolrCloudManager {
     values.put("metrics:solr.node:ADMIN./admin/authorization.clientErrors:count", 0);
     values.put("metrics:solr.jvm:buffers.direct.Count", 0);
     return values;
+  }
+
+  public void disableMetricsHistory() {
+    metricsHistoryHandler.close();
   }
 
   public String dumpClusterState(boolean withCollections) throws Exception {

@@ -49,7 +49,7 @@ public class NestableJsonFacet {
       if (getKeysToSkip().contains(key)) {
         continue;
       } else if ("count".equals(key)) {
-        domainCount = (int) entry.getValue();
+        domainCount = ((Number) entry.getValue()).longValue();
       } else if(entry.getValue() instanceof Number) { // Stat/agg facet value
         statFacetsByName.put(key, (Number)entry.getValue());
       } else if(entry.getValue() instanceof NamedList) { // Either heatmap/query/range/terms facet

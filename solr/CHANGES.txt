@@ -95,6 +95,9 @@ Upgrade Notes
   is now deprecated, and users are encouraged to use SolrTestCaseJ4.initAndGetDataDir() in it's place.
   See SOLR-13664 for more details.
 
+* For JWTAuthPlugin, the 'jwkUrl' configuration key is deprecated and may be removed later, please use 'jwksUrl'
+  instead. See SOLR-13734.
+
 New Features
 ----------------------
 
@@ -130,6 +133,12 @@ New Features
 
 * SOLR-13713: JWTAuthPlugin to support multiple JWKS endpoints (janhoy)
 
+* SOLR-13734: JWTAuthPlugin now supports multiple IdP issuers through configuring a new 'issuers' configuration key.
+  Access tokens issued and signed by any of the configured issuers will be validated (janhoy)
+
+* SOLR-13272: Add support for arbitrary ranges in JSON facet's Range facets.
+  (Apoorv Bhawsar, Munendra S N, Mikhail Khludnev, Ishan Chattopadhyaya, Jan Høydahl)
+
 Improvements
 ----------------------
 
@@ -156,6 +165,16 @@ Improvements
   the schema supports it (_root_ stored/docValues) by throwing an exception. (David Smiley)
 
 * SOLR-13742: Allow optional redaction of data saved by 'bin/solr autoscaling -save'. (ab)
+
+* SOLR-13739: Optimized large managed schema modifications; Internal O(n^2) problem.  (Thomas Wöckinger via David Smiley)
+
+* SOLR-9658: Max idle time support for SolrCache implementations. (hoss, ab)
+
+* SOLR-13763: Improve the tracking of "freedisk" in autoscaling simulations. (ab)
+
+* SOLR-13773: Add Prometheus Exporter GC and Heap options. (Houston Putman via Anshum Gupta, David Smiley)
+
+* SOLR-13638: Add debug, trace logging to RuleBasedAuthorizationPlugin (Jason Gerlowski)
 
 Bug Fixes
 ----------------------
@@ -204,8 +223,16 @@ Bug Fixes
 * SOLR-13240: Fixed UTILIZENODE action resulting in IllegalArgumentException.
   (Hendrik Haddorp, Richard Goodman, Tim Owen, shalin, noble, Christine Poerschke)
 
+* SOLR-13238: BlobHandler generates non-padded md5 (Jeff Walraven via janhoy)
+
+* SOLR-13780: Fix ClassCastException in NestableJsonFacet (Tiago Martinho de Barros, Munendra S N)
+
+* SOLR-13725: Allow negative values for limit in TermsFacetMap (Richard Walker, Munendra S N)
+
 Other Changes
 ----------------------
+
+* SOLR-13779: Use the safe fork of simple-xml for clustering contrib. (Dawid Weiss)
 
 * SOLR-13585: Factor out SearchGroupsResultTransformer.[de]serializeOneSearchGroup methods. (Christine Poerschke, Diego Ceccarelli)
 
@@ -224,6 +251,10 @@ Other Changes
 * SOLR-13573: Add SolrRangeQuery getters for upper, lower bound (Brian Rhees via Jason Gerlowski)
 
 * SOLR-13658: Precommit fail Java "var" until 9x. Fail "var...<>" constructs entirely (Erick Erickson)
+
+* SOLR-13767: Upgrade jackson to 2.9.9 (janhoy)
+
+* SOLR-11492: Clean up /solr/cloud-dev scripts and provide a single well documented script (Gus Heck, Robert Bunch)
 
 ==================  8.2.0 ==================
 

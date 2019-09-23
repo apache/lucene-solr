@@ -295,7 +295,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
                );
     }
   }
-  
+
   /**
    * whitebox sanity checks that a shard request range facet that returns "between" or "after"
    * will cause the correct "actual_end" to be returned
@@ -3205,6 +3205,256 @@ public class TestJsonFacets extends SolrTestCaseHS {
         req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,domain:{blockParent:{}}}}"),
         SolrException.ErrorCode.BAD_REQUEST);
 
+  }
+
+  @Test
+  public void testRangeFacetWithRanges() throws Exception {
+    Client client = Client.localClient();
+    client.deleteByQuery("*:*", null);
+    indexSimple(client);
+
+    final SolrParams p = params("q", "*:*", "rows", "0");
+    // with lower and upper include
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i, ranges:[{range:\"  [-5,7] \"}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[-5,7]\",count:5}]}}");
+
+    // with lower include and upper exclude
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{range:\"[-5,7)\"}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[-5,7)\",count:4}]}}");
+
+    // with lower exclude and upper include
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{range:\"(-5,7]\"}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"(-5,7]\",count:3}]}}");
+
+    // with lower and upper exclude
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{range:\"(-5,7)\"}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"(-5,7)\",count:2}]}}");
+
+    // with other and include, they are not supported
+    // but wouldn't throw any error as they are not consumed
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{range:\"(-5,7)\"}],include:\"lower\",other:[\"after\"]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"(-5,7)\",count:2}]}}");
+
+    // with mincount>0
+    client.testJQ(
+        params(p, "json.facet", "{price:{type : range,field : num_i,mincount:3," +
+            "ranges:[{range:\"(-5,7)\"},{range:\"(-5,7]\"}]}}"
+        ),
+        "facets=={count:6, price:{buckets:[{val:\"(-5,7]\",count:3}]}}");
+
+    // with multiple ranges
+    client.testJQ(
+        params(p, "json.facet", "{price:{type : range,field : num_i," +
+            "ranges:[{range:\"(-5,7)\"},{range:\"(-5,7]\"}]}}"
+        ),
+        "facets=={count:6, price:{buckets:[{val:\"(-5,7)\",count:2},{val:\"(-5,7]\",count:3}]}}");
+
+    // with * as one of the values
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{range:\"(*,10]\"}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"(*,10]\",count:5}]}}");
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{range:\"[-5,*)\"}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[-5,*)\",count:5}]}}");
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{range:\"[*,*]\"}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[*,*]\",count:5}]}}");
+  }
+
+  @Test
+  public void testRangeFacetWithRangesInNewFormat() throws Exception {
+    Client client = Client.localClient();
+    client.deleteByQuery("*:*", null);
+    indexSimple(client);
+    SolrParams p = params("q", "*:*", "rows", "0");
+
+    //case without inclusive params
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:-5, to:7}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[-5,7)\",count:4}]}}");
+
+    //case without key param and to included
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:-5, to:7,inclusive_from:true ,inclusive_to:true}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[-5,7]\",count:5}]}}");
+
+    //case with all params
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:-5, to:7,inclusive_from:true ,inclusive_to:true}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[-5,7]\",count:5}]}}");
+
+    // from and to excluded
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:-5, to:7,inclusive_from:false ,inclusive_to:false}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"(-5,7)\",count:2}]}}");
+
+    // from excluded and to included
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:-5, to:7,inclusive_from:false ,inclusive_to:true}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"(-5,7]\",count:3}]}}");
+
+    // multiple ranges
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,include:[\"lower\"], outer:\"before\"," +
+            "ranges:[{from:-5, to:7,inclusive_from:false ,inclusive_to:true},{from:-5, to:7,inclusive_from:false ,inclusive_to:false}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"(-5,7]\",count:3},{val:\"(-5,7)\",count:2}]}}");
+
+    // with mincount>0
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,mincount:3" +
+            "ranges:[{from:-5, to:7,inclusive_from:false ,inclusive_to:true},{from:-5, to:7,inclusive_from:false ,inclusive_to:false}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"(-5,7]\",count:3}]}}");
+
+    // mix of old and new formats
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i," +
+            "ranges:[{from:-5, to:7,inclusive_from:false ,inclusive_to:true},{range:\"(-5,7)\"}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"(-5,7]\",count:3},{val:\"(-5,7)\",count:2}]}}");
+
+    // from==to
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:-5, to:-5,inclusive_from:false ,inclusive_to:true}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"(-5,-5]\",count:0}]}}");
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:-5, to:-5,inclusive_from:false ,inclusive_to:false}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"(-5,-5)\",count:0}]}}");
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:-5, to:-5,inclusive_from:true ,inclusive_to:false}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[-5,-5)\",count:0}]}}");
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:-5, to:-5,inclusive_from:true ,inclusive_to:true}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[-5,-5]\",count:2}]}}");
+
+    // with * as one of the values
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:\"*\", to:10,inclusive_from:false ,inclusive_to:true}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"(*,10]\",count:5}]}}");
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:-5, to:\"*\",inclusive_from:true ,inclusive_to:false}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[-5,*)\",count:5}]}}");
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:-5,inclusive_from:true ,inclusive_to:false}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[-5,*)\",count:5}]}}");
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{from:\"*\", to:\"*\",inclusive_from:true ,inclusive_to:false}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[*,*)\",count:5}]}}");
+    client.testJQ(params(p, "json.facet"
+        , "{price:{type : range,field : num_i,ranges:[{inclusive_from:true ,inclusive_to:false}]}}"),
+        "facets=={count:6, price:{buckets:[{val:\"[*,*)\",count:5}]}}");
+  }
+
+  @Test
+  public void testRangeFacetsErrorCases() throws Exception {
+    Client client = Client.localClient();
+    client.deleteByQuery("*:*", null);
+    indexSimple(client);
+
+    SolrParams params = params("q", "*:*", "rows", "0");
+
+    // invalid format for ranges
+    SolrException ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i,start:-10,end:10,gap:2," +
+            "ranges:[{key:\"0-200\", to:200}]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertEquals("Cannot set gap/start/end and ranges params together", ex.getMessage());
+
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:bleh}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Expected List for ranges but got String"));
+
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:[bleh]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Expected Map for range but got String"));
+
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:[{from:0, to:200, inclusive_to:bleh}]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Expected boolean type for param 'inclusive_to' but got String"));
+
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:[{from:0, to:200, inclusive_from:bleh}]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Expected boolean type for param 'inclusive_from' but got String"));
+
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:[{from:bleh, to:200}]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertEquals("Can't parse value bleh for field: num_i", ex.getMessage());
+
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:[{from:0, to:bleh}]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertEquals("Can't parse value bleh for field: num_i", ex.getMessage());
+
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:[{from:200, to:0}]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertEquals("'from' is higher than 'to' in range for key: [200,0)", ex.getMessage());
+
+    // with old format
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:[{range:\"\"}]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("empty facet range"));
+
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:[{range:\"bl\"}]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Invalid start character b in facet range bl"));
+
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:[{range:\"(bl\"}]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains("Invalid end character l in facet range (bl"));
+
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:[{range:\"(bleh,12)\"}]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertEquals("Can't parse value bleh for field: num_i", ex.getMessage());
+
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:[{range:\"(12,bleh)\"}]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertEquals("Can't parse value bleh for field: num_i", ex.getMessage());
+
+    ex = expectThrows(SolrException.class,
+        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
+            "ranges:[{range:\"(200,12)\"}]}}"))
+    );
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertEquals("'start' is higher than 'end' in range for key: (200,12)", ex.getMessage());
   }
 
   @Test

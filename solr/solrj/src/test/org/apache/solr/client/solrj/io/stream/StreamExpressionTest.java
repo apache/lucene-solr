@@ -3086,6 +3086,46 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testCatStreamEmptyFile() throws Exception {
+    final String catStream = "cat(\"topLevel-empty.txt\")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+
+    assertEquals(0, tuples.size());
+  }
+
+  @Test
+  public void testCatStreamMultipleFilesOneEmpty() throws Exception {
+    final String catStream = "cat(\"topLevel1.txt,topLevel-empty.txt\")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+
+    assertEquals(4, tuples.size());
+
+    for (int i = 0; i < 4; i++) {
+      Tuple t = tuples.get(i);
+      assertEquals("topLevel1.txt line " + String.valueOf(i+1), t.get("line"));
+      assertEquals("topLevel1.txt", t.get("file"));
+    }
+  }
+
+  @Test
   public void testCatStreamMaxLines() throws Exception {
     final String catStream = "cat(\"topLevel1.txt\", maxLines=2)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -3199,6 +3239,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
    * dataDir
    *   |- topLevel1.txt
    *   |- topLevel2.txt
+   *   |- topLevel-empty.txt
    *   |- directory1
    *        |- secondLevel1.txt
    *        |- secondLevel2.txt
@@ -3213,10 +3254,12 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     final File topLevel1 = new File(Paths.get(dataDir, "topLevel1.txt").toString());
     final File topLevel2 = new File(Paths.get(dataDir, "topLevel2.txt").toString());
+    final File topLevelEmpty = new File(Paths.get(dataDir, "topLevel-empty.txt").toString());
     final File secondLevel1 = new File(Paths.get(dataDir, "directory1", "secondLevel1.txt").toString());
     final File secondLevel2 = new File(Paths.get(dataDir, "directory1", "secondLevel2.txt").toString());
     populateFileWithData(topLevel1);
     populateFileWithData(topLevel2);
+    topLevelEmpty.createNewFile();
     populateFileWithData(secondLevel1);
     populateFileWithData(secondLevel2);
   }

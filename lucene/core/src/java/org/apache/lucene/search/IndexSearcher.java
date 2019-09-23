@@ -41,7 +41,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
@@ -868,19 +867,20 @@ public class IndexSearcher {
   }
   
   /**
-   * Returns {@link TermStatistics} for a term, or {@code null} if
-   * the term does not exist.
+   * Returns {@link TermStatistics} for a term.
    * 
    * This can be overridden for example, to return a term's statistics
    * across a distributed collection.
+   *
+   * @param docFreq The document frequency of the term. It must be greater or equal to 1.
+   * @param totalTermFreq The total term frequency.
+   * @return A {@link TermStatistics} (never null).
+   *
    * @lucene.experimental
    */
-  public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
-    if (context.docFreq() == 0) {
-      return null;
-    } else {
-      return new TermStatistics(term.bytes(), context.docFreq(), context.totalTermFreq());
-    }
+  public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
+    // This constructor will throw an exception if docFreq <= 0.
+    return new TermStatistics(term.bytes(), docFreq, totalTermFreq);
   }
   
   /**
