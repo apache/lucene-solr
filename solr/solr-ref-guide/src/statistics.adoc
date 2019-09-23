@@ -87,7 +87,7 @@ The `hist` function creates a histogram designed for usage with continuous data.
 
 === histograms
 
-In the example below a histogram is used to visualize the random sample response times
+In the example below a histogram is used to visualize a random sample of response times
 from the logs collection. The example retrieves the random sample with `random` function,
  creates a vector from the *response_d* field in the
 result set and uses the `hist` function to return a histogram with 22 bins.
