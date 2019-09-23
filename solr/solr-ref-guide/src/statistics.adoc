@@ -236,9 +236,13 @@ With Zeppelin-Solr the frequency table can be first visualized in a table:
 image::images/math-expressions/freqTable.png[]
 
 The frequency table can then be plotted by switching to a scatter chart and selecting
-the *value* column for the *x-axis*.
+the *value* column for the *x-axis* and the *count* column for the *y-axis*
 
 image::images/math-expressions/freqTable1.png[]
+
+Notice that the visualization nicely displays the frequency of daily change in stock prices
+rounded to integers. The most frequently occurring value is 0 with 1494 occurrences followed by
+ -1 and 1 with around 700 occurrences.
 
 
 == Percentiles
