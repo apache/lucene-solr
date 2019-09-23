@@ -248,14 +248,15 @@ rounded to integers. The most frequently occurring value is 0 with 1494 occurren
 == Percentiles
 
 The `percentile` function returns the estimated value for a specific percentile in
-a sample set. The example below returns the estimation for the 95th percentile
-of the *price_f* field.
+a sample set. The example below returns a random sample containing the *response_d* field
+from the logs collection. The *response_d* field is vectorized and the 20th percentile
+is calculated for the vector:
 
 [source,text]
 ----
-let(a=random(collection1, q="*:*", rows="15000", fl="price_f"),
-     b=col(a, price_f),
-     c=percentile(b, 95))
+let(a=random(logs, q="*:*", rows="15000", fl="response_d"),
+    b=col(a, response_d),
+    c=percentile(b, 20))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -266,7 +267,7 @@ When this expression is sent to the `/stream` handler it responds with:
    "result-set": {
      "docs": [
        {
-         "c": 312.94
+         "c": 818.073554
        },
        {
          "EOF": true,
@@ -277,13 +278,13 @@ When this expression is sent to the `/stream` handler it responds with:
  }
 ----
 
-The `percentile` function also operates on an array of percentile values.
+The `percentile` function can also compute an array of percentile values.
 The example below is computing the 20th, 40th, 60th and 80th percentiles for a random sample
 of the *response_d* field:
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="15000", fl="response_d"),
+let(a=random(logs, q="*:*", rows="15000", fl="response_d"),
     b=col(a, response_d),
     c=percentile(b, array(20,40,60,80)))
 ----
@@ -314,12 +315,12 @@ When this expression is sent to the `/stream` handler it responds with:
 
 === Quantile Plots
 
-A quantile plot or QQ Plot plots the percentiles from two distributions on the
+A quantile plot, or QQ Plot, plots the percentiles from two distributions on the
 the same scatter plot for comparision.
 
 The example below uses the probability distribution sampling capability
 described in the link:probability.html[Probability] section of the user guide. The same
-technique can be with random samples taken using the `random` function on empirical data
+technique can be used with random samples drawn with the `random` function on empirical data
 stored in Solr Cloud collections. But its also very useful to be able to
 use the probability distribution framework to sample from different distributions
 to learn how to read QQ plots.
@@ -329,7 +330,7 @@ have a mean of 500 but have different standard deviations. A sequence is then cr
 with 98 integers starting from 1 with a stride 1. This sequence will be used
 to specify which
 percentiles to calculate and also serve as the x-axis in the plot.
-Then the percentile function is then used to calculate the percentiles for
+Then the percentile function is used to calculate the percentiles for
 both distributions.
 
 Finally `zplot` is used to plot the percentiles sequence on the x-axis and the calculated
@@ -342,66 +343,38 @@ Notice there are two scatter plots that intersect at 500 which is the mean
 of both distributions. But the red scatter plot, which has the
 higher standard deviation,
 has a steeper slope. The higher standard deviation creates a steeper slope
-as because the percentile values ar less tighly clustered around the mean.
+because the percentile values are are dispersed farther from the mean.
 
 
 == Covariance and Correlation
 
-Covariance and Correlation measure how random variables move
+Covariance and Correlation measure how random variables fluctuate
 together.
 
 === Covariance and Covariance Matrices
 
 The `cov` function calculates the covariance of two sample sets of data.
 
-In the example below covariance is calculated for two numeric
-arrays.
+In the example below a random sample containing two fields, *filesize_d* and *response_d*, is drawn from
+the logs collection. The fields are vectorized into the variables *x* and *y* and then the covariance for
+the two vectors is calculated using the `cov` function.
 
-The example below uses arrays created by the `array` function. Its important to note that
-vectorized data from Solr Cloud collections can be used with any function that
-operates on arrays.
-
-[source,text]
-----
-let(a=array(1, 2, 3, 4, 5),
-    b=array(100, 200, 300, 400, 500),
-    c=cov(a, b))
-----
-
-When this expression is sent to the `/stream` handler it responds with:
-
-[source,json]
-----
- {
-   "result-set": {
-     "docs": [
-       {
-         "c": 0.9484775349999998
-       },
-       {
-         "EOF": true,
-         "RESPONSE_TIME": 286
-       }
-     ]
-   }
- }
-----
+image::images/math-expressions/covariance.png[]
 
 If a matrix is passed to the `cov` function it will automatically compute a covariance
 matrix for the columns of the matrix.
 
-Notice in the example three numeric arrays are added as rows
-in a matrix. The matrix is then transposed to turn the rows into
-columns, and the covariance matrix is computed for the columns of the
-matrix.
+Notice in the example below that the *x* and *y* vectors are added to a matrix.
+The matrix is then transposed to turn the rows into columns,
+and the covariance matrix is computed for the columns of the matrix.
 
 [source,text]
 ----
-let(a=array(1, 2, 3, 4, 5),
-     b=array(100, 200, 300, 400, 500),
-     c=array(30, 40, 80, 90, 110),
-     d=transpose(matrix(a, b, c)),
-     e=cov(d))
+let(a=random(logs, q="*:*", fl="filesize_d, response_d", rows=50000),
+    x=col(a, filesize_d),
+    y=col(a, response_d),
+    m=transpose(matrix(x, y)),
+    covariance=cov(m))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -412,32 +385,38 @@ When this expression is sent to the `/stream` handler it responds with:
    "result-set": {
      "docs": [
        {
-         "e": [
+         "covariance": [
            [
-             2.5,
-             250,
-             52.5
+             4018404.072532102,
+             80243.3948172242
            ],
            [
-             250,
-             25000,
-             5250
-           ],
-           [
-             52.5,
-             5250,
-             1150
+             80243.3948172242,
+             1948.3216661122592
            ]
          ]
        },
        {
          "EOF": true,
-         "RESPONSE_TIME": 2
+         "RESPONSE_TIME": 534
        }
      ]
    }
  }
 ----
+
+The covariance matrix contains both the variance for the two vectors and the covariance between the vectors
+in the following format:
+
+
+[source,text]
+----
+         x                 y
+ x [4018404.072532102, 80243.3948172242],
+ y [80243.3948172242,  1948.3216661122592]
+----
+
+The covariance matrix is always square. So a covariance matrix created from 3 vectors will produce a 3 x 3 matrix.
 
 === Correlation and Correlation Matrices
 
@@ -451,34 +430,10 @@ Three correlation types are supported:
 * *spearmans*
 
 The type of correlation is specified by adding the *type* named parameter in the
-function call. The example below demonstrates the use of the *type*
+function call. The example below demonstrates the use of the `corr` function with the *type*
 named parameter.
 
-[source,text]
-----
-let(a=array(1, 2, 3, 4, 5),
-    b=array(100, 200, 300, 400, 5000),
-    c=corr(a, b, type=spearmans))
-----
-
-When this expression is sent to the `/stream` handler it responds with:
-
-[source,json]
-----
- {
-   "result-set": {
-     "docs": [
-       {
-         "c": 0.7432941462471664
-       },
-       {
-         "EOF": true,
-         "RESPONSE_TIME": 0
-       }
-     ]
-   }
- }
-----
+image::images/math-expressions/correlation.png[]
 
 Like the `cov` function, the `corr` function automatically builds a correlation matrix
 if a matrix is passed as a parameter. The correlation matrix is built by correlating the columns
