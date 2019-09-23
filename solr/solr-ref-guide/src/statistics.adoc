@@ -315,9 +315,34 @@ When this expression is sent to the `/stream` handler it responds with:
 === Quantile Plots
 
 A quantile plot or QQ Plot plots the percentiles from two distributions on the
-the same scatter plot.
+the same scatter plot for comparision.
 
-image::images/math-expressions/quantiles1.png[]
+The example below uses the probability distribution sampling capability
+described in the link:probability.html[Probability] section of the user guide. The same
+technique can be with random samples taken using the `random` function on empirical data
+stored in Solr Cloud collections. But its also very useful to be able to
+use the probability distribution framework to sample from different distributions
+to learn how to read QQ plots.
+
+In the example 50000 samples from two normal distributions are drawn. Both distributions
+have a mean of 500 but have different standard deviations. A sequence is then created
+with 98 integers starting from 1 with a stride 1. This sequence will be used
+to specify which
+percentiles to calculate and also serve as the x-axis in the plot.
+Then the percentile function is then used to calculate the percentiles for
+both distributions.
+
+Finally `zplot` is used to plot the percentiles sequence on the x-axis and the calculated
+percentile values for both distributions on the y axis. A scatter plot is used
+to visualize the QQ plot.
+
+image::images/math-expressions/quantile-plot.png[]
+
+Notice there are two scatter plots that intersect at 500 which is the mean
+of both distributions. But the red scatter plot, which has the
+higher standard deviation,
+has a steeper slope. The higher standard deviation creates a steeper slope
+as because the percentile values ar less tighly clustered around the mean.
 
 
 == Covariance and Correlation
