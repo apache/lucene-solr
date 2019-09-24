@@ -22,9 +22,9 @@ available in math expressions.
 
 == Descriptive Statistics
 
-The `describe` function returns descriptive statistics about a
+The `describe` function returns descriptive statistics for a
 numeric array. The `describe` function returns a single *tuple* with name/value
-pairs containing descriptive statistics.
+pairs containing the descriptive statistics.
 
 Below is a simple example that selects a random sample of documents from the *logs* collection,
 vectorizes the *response_d* field in the result set and uses the `describe` function to
@@ -90,7 +90,7 @@ The `hist` function creates a histogram designed for usage with continuous data.
 
 In the example below a histogram is used to visualize a random sample of
 response times from the logs collection. The example retrieves the
-random sample with `random` function and creates a vector from the *response_d* field
+random sample with the `random` function and creates a vector from the *response_d* field
 in the result set. Then the `hist` function is applied to the vector
 to return a histogram with 22 bins. The `hist` function returns a
 list of tuples with summary statistics for each bin.
@@ -183,8 +183,8 @@ from each value in the array. This will provide an array of price differences
 for each day which will show daily change in opening price.
 
 Then the `round` function is used to round the price differences to the nearest
-integer to create a vector of discrete values. The `round` function is this
-example is effectively binning on integer boundaries.
+integer to create a vector of discrete values. The `round` function in this
+example is effectively *binning* continuous data at integer boundaries.
 
 Finally the `freqTable` function is run on the discrete values to calculate
 the frequency table.
@@ -233,7 +233,7 @@ When this expression is sent to the `/stream` handler it responds with:
        ...
 ----
 
-With Zeppelin-Solr the frequency table can be first visualized in a table:
+With Zeppelin-Solr the frequency table can be first visualized as a table:
 
 image::images/math-expressions/freqTable.png[]
 
@@ -320,23 +320,23 @@ When this expression is sent to the `/stream` handler it responds with:
 A quantile plot, or QQ Plot, plots the percentiles from two distributions on the
 the same scatter plot for comparision.
 
-The example below uses the probability distribution sampling capability
+The example below uses the sampling capability
 described in the link:probability.html[Probability] section of the user guide. The same
 technique can be used with random samples drawn with the `random` function on empirical data
-stored in Solr Cloud collections. But its also very useful to be able to
+stored in Solr Cloud collections. But its very useful to be able to
 use the probability distribution framework to sample from different distributions
 to learn how to read QQ plots.
 
 In the example 50000 samples from two normal distributions are drawn. Both distributions
 have a mean of 500 but have different standard deviations. A sequence is then created
 with 98 integers starting from 1 with a stride 1. This sequence will be used
-to specify which
-percentiles to calculate and also serve as the x-axis in the plot.
+to specify the
+percentiles to calculate and also serve as the *x-axis* in the plot.
 Then the percentile function is used to calculate the percentiles for
 both distributions.
 
-Finally `zplot` is used to plot the percentiles sequence on the x-axis and the calculated
-percentile values for both distributions on the y axis. A scatter plot is used
+Finally `zplot` is used to plot the percentiles sequence on the *x-axis* and the calculated
+percentile values for both distributions on the *y axis*. A scatter plot is used
 to visualize the QQ plot.
 
 image::images/math-expressions/quantile-plot.png[]
@@ -355,16 +355,17 @@ together.
 
 === Covariance and Covariance Matrices
 
-The `cov` function calculates the covariance of two sample sets of data.
+The `cov` function calculates the covariance of two vectors of data.
 
 In the example below a random sample containing two fields, *filesize_d* and *response_d*, is drawn from
-the logs collection. The fields are vectorized into the variables *x* and *y* and then the covariance for
+the logs collection using the `random` function. The fields are vectorized into the
+variables *x* and *y* and then the covariance for
 the two vectors is calculated using the `cov` function.
 
 image::images/math-expressions/covariance.png[]
 
 If a matrix is passed to the `cov` function it will automatically compute a covariance
-matrix for the columns of the matrix.
+matrix for the *columns* of the matrix.
 
 Notice in the example below that the *x* and *y* vectors are added to a matrix.
 The matrix is then transposed to turn the rows into columns,
@@ -422,7 +423,7 @@ The covariance matrix is always square. So a covariance matrix created from 3 ve
 
 === Correlation and Correlation Matrices
 
-Correlation is measure of covariance that has been scaled between
+Correlation is covariance that has been scaled between
 -1 and 1.
 
 Three correlation types are supported:
@@ -432,8 +433,8 @@ Three correlation types are supported:
 * *spearmans*
 
 The type of correlation is specified by adding the *type* named parameter in the
-function call. The example below demonstrates the use of the `corr` function with the *type*
-named parameter.
+function call. The example below demonstrates the use of the `corr` function with
+the *type* named parameter.
 
 image::images/math-expressions/correlation.png[]
 
