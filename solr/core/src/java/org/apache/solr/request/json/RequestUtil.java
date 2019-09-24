@@ -179,13 +179,14 @@ public class RequestUtil {
       }
       mergeJSON(json, JSON, jsonS, new ObjectUtil.ConflictHandler());
     }
-    for (String key : newMap.keySet()) {
+    for (Map.Entry<String, String[]> entry : newMap.entrySet()) {
+      String key = entry.getKey();
       // json.nl, json.wrf are existing query parameters
       if (key.startsWith("json.") && !("json.nl".equals(key) || "json.wrf".equals(key))) {
         if (json == null) {
           json = new LinkedHashMap<>();
         }
-        mergeJSON(json, key, newMap.get(key), new ObjectUtil.ConflictHandler());
+        mergeJSON(json, key, entry.getValue(), new ObjectUtil.ConflictHandler());
       }
     }
 

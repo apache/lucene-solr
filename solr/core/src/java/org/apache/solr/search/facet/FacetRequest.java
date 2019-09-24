@@ -367,12 +367,12 @@ public abstract class FacetRequest {
   @Override
   public String toString() {
     Map<String, Object> descr = getFacetDescription();
-    String s = "facet request: { ";
-    for (String key : descr.keySet()) {
-      s += key + ":" + descr.get(key) + ",";
+    StringBuilder s = new StringBuilder("facet request: { ");
+    for (Map.Entry<String, Object> entry : descr.entrySet()) {
+      s.append(entry.getKey()).append(':').append(entry.getValue()).append(',');
     }
-    s += "}";
-    return s;
+    s.append('}');
+    return s.toString();
   }
 
   /**
@@ -1057,10 +1057,12 @@ class FacetRangeParser extends FacetParser<FacetRange> {
     Map<String, Object> m = (Map<String, Object>) arg;
 
     facet.field = getString(m, "field", null);
+    facet.ranges = getVal(m, "ranges", false);
 
-    facet.start = getVal(m, "start", true);
-    facet.end = getVal(m, "end", true);
-    facet.gap = getVal(m, "gap", true);
+    boolean required = facet.ranges == null;
+    facet.start = getVal(m, "start", required);
+    facet.end = getVal(m, "end", required);
+    facet.gap = getVal(m, "gap", required);
     facet.hardend = getBoolean(m, "hardend", facet.hardend);
     facet.mincount = getLong(m, "mincount", 0);
 
@@ -1069,7 +1071,7 @@ class FacetRangeParser extends FacetParser<FacetRange> {
     List<String> list = getStringList(m, "include", false);
     String[] includeList = null;
     if (list != null) {
-      includeList = (String[])list.toArray(new String[list.size()]);
+      includeList = list.toArray(new String[list.size()]);
     }
     facet.include = FacetParams.FacetRangeInclude.parseParam( includeList );
     facet.others = EnumSet.noneOf(FacetParams.FacetRangeOther.class);

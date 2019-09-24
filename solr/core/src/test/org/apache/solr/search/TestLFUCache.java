@@ -22,8 +22,10 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.index.Term;
@@ -33,6 +35,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLFUCache;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -492,6 +495,35 @@ public class TestLFUCache extends SolrTestCaseJ4 {
       cache.put("new" + i, "bar " + i);
     }
     assertEquals(10, cache.size());
+  }
+
+  @Test
+  public void testMaxIdleTimeEviction() throws Exception {
+    int IDLE_TIME_SEC = 5;
+    long IDLE_TIME_NS = TimeUnit.NANOSECONDS.convert(IDLE_TIME_SEC, TimeUnit.SECONDS);
+    CountDownLatch sweepFinished = new CountDownLatch(1);
+    final AtomicLong numSweepsStarted = new AtomicLong(0);
+    ConcurrentLFUCache<String, String> cache = new ConcurrentLFUCache<>(6, 5, 5, 6, false, false, null, false, IDLE_TIME_SEC) {
+      @Override
+      public void markAndSweep() {
+        numSweepsStarted.incrementAndGet();
+        super.markAndSweep();
+        sweepFinished.countDown();
+      }
+    };
+    for (int i = 0; i < 4; i++) {
+      cache.put("" + i, "foo " + i);
+    }
+    // no evictions yet
+    assertEquals(4, cache.size());
+    assertEquals("markAndSweep spurious run", 0, numSweepsStarted.get());
+    long currentTime = TimeSource.NANO_TIME.getEpochTimeNs();
+    cache.putCacheEntry(new ConcurrentLFUCache.CacheEntry<>("4", "foo5",
+        currentTime - IDLE_TIME_NS * 2));
+    boolean await = sweepFinished.await(10, TimeUnit.SECONDS);
+    assertTrue("did not evict entries in time", await);
+    assertEquals(4, cache.size());
+    assertNull(cache.get("4"));
   }
 
 // From the original LRU cache tests, they're commented out there too because they take a while.

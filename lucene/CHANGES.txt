@@ -48,9 +48,6 @@ Improvements
   docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
   indices (Atri Sharma, Adrien Grand, Simon Willnauer)
 
-* LUCENE-8939: Introduce shared count based early termination across multiple slices
-  (Atri Sharma)
-
 * LUCENE-8958: Shared count early termination for relevance sorted indices (Atri Sharma)
 
 * LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
@@ -80,11 +77,15 @@ API Changes
 * LUCENE-8956: QueryRescorer now only sorts the first topN hits instead of all
   initial hits. (Paul Sanwald via Adrien Grand)
 
+* LUCENE-8921: IndexSearcher.termStatistics() no longer takes a TermStates; it takes the docFreq and totalTermFreq.
+  And don't call if docFreq <= 0.  The previous implementation survives as deprecated and final.  It's removed in 9.0.
+  (Bruno Roustant, David Smiley, Alan Woodward)
+
 New Features
 
 * LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)
 
-* LUCENE-8764: Add "export all terms" feature to Luke. (Leonardo Menezes via Tomoko Uchida)
+* LUCENE-8764 LUCENE-8945: Add "export all terms and doc freqs" feature to Luke with delimiters. (Leonardo Menezes, Amish Shah via Tomoko Uchida)
 
 * LUCENE-8747: Composite Matches from multiple subqueries now allow access to
   their submatches, and a new NamedMatches API allows marking of subqueries
@@ -154,6 +155,9 @@ the total hits is not requested.
 * LUCENE-8968: Improve performance of WITHIN and DISJOINT queries for Shape queries by
   doing just one pass whenever possible. (Ignacio Vera)
 
+* LUCENE-8939: Introduce shared count based early termination across multiple slices
+  (Atri Sharma)
+
 Bug Fixes
 
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees could throw a
@@ -165,6 +169,8 @@ Other
   (Tomoko Uchida, Uwe Schindler)
 
 * LUCENE-8758: QuadPrefixTree: removed levelS and levelN fields which weren't used. (Amish Shah)
+
+* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible.
 
 ======================= Lucene 8.2.0 =======================
 
