@@ -296,7 +296,7 @@ When this expression is sent to the `/stream` handler it responds with:
 === Sampling
 
 All probability distributions support sampling. The `sample`
-function returns 1 or more random samples from a probability distribution.
+function returns one or more random samples from a probability distribution.
 
 Below is an example drawing a single sample from a normal distribution.
 
@@ -326,7 +326,7 @@ When this expression is sent to the `/stream` handler it responds with:
 ----
 
 The sample function can also return a vector of samples. Vectors of samples
-can be easily visualized as scatter plots to gain an intuitive understanding
+can be visualized as scatter plots to gain an intuitive understanding
 of the underlying distribution.
 
 The first example shows the scatter plot of a normal distribution with
@@ -334,13 +334,13 @@ a mean of 0 and a standard deviation of 5.
 
 image::images/math-expressions/sample-scatter.png[]
 
-The next example shows a scatter plot of a uniform distribution between
-the ranges of -5 and 5.
+The next example shows a scatter plot of the same distribution with
+an ascending sort applied to the sample vector.
 
 image::images/math-expressions/sample-scatter1.png[]
 
-The next example shows the two samples overlaid in the same scatter
-plot.
+The next example shows two different distributions overlaid
+in the same scatter plot.
 
 image::images/math-expressions/sample-overlay.png[]
 
