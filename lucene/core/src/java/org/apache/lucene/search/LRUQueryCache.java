@@ -691,18 +691,22 @@ public class LRUQueryCache implements QueryCache, Accountable {
     // threads when IndexSearcher is created with threads
     private final AtomicBoolean used;
 
-    private Executor executor;
+    private final Executor executor;
 
     CachingWrapperWeight(Weight in, QueryCachingPolicy policy) {
       super(in.getQuery(), 1f);
       this.in = in;
       this.policy = policy;
+      this.executor = null;
       used = new AtomicBoolean(false);
     }
 
     CachingWrapperWeight(Weight in, QueryCachingPolicy policy, Executor executor) {
-      this(in, policy);
+      super(in.getQuery(), 1f);
+      this.in = in;
+      this.policy = policy;
       this.executor = executor;
+      used = new AtomicBoolean(false);
     }
 
     @Override
@@ -903,7 +907,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         DocIdSet localDocIdSet = cache(context);
         putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
 
-        //remove the key from inflight -- the key is loaded now
+        //Remove the key from inflight -- the key is loaded now
         inFlightAsyncLoadQueries.remove(in.getQuery());
         return null;
       });
