@@ -327,7 +327,7 @@ public class TestFSTs extends LuceneTestCase {
     writer.close();
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
 
-    Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15, true);
+    Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
 
     boolean storeOrd = random().nextBoolean();
     if (VERBOSE) {
@@ -468,7 +468,7 @@ public class TestFSTs extends LuceneTestCase {
       this.inputMode = inputMode;
       this.outputs = outputs;
 
-      builder = new Builder<>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, 0, prune, prune == 0, true, Integer.MAX_VALUE, outputs, !noArcArrays, 15, true);
+      builder = new Builder<>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, 0, prune, prune == 0, true, Integer.MAX_VALUE, outputs, !noArcArrays, 15);
     }
 
     protected abstract T getOutput(IntsRef input, int ord) throws IOException;
@@ -1110,7 +1110,7 @@ public class TestFSTs extends LuceneTestCase {
   public void testFinalOutputOnEndState() throws Exception {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
 
-    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE4, 2, 0, true, true, Integer.MAX_VALUE, outputs, true, 15, true);
+    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE4, 2, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
     builder.add(Util.toUTF32("stat", new IntsRefBuilder()), 17L);
     builder.add(Util.toUTF32("station", new IntsRefBuilder()), 10L);
     final FST<Long> fst = builder.finish();
@@ -1124,7 +1124,7 @@ public class TestFSTs extends LuceneTestCase {
 
   public void testInternalFinalState() throws Exception {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15, true);
+    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
     builder.add(Util.toIntsRef(new BytesRef("stat"), new IntsRefBuilder()), outputs.getNoOutput());
     builder.add(Util.toIntsRef(new BytesRef("station"), new IntsRefBuilder()), outputs.getNoOutput());
     final FST<Long> fst = builder.finish();
@@ -1201,19 +1201,19 @@ public class TestFSTs extends LuceneTestCase {
   private void checkStopNodes(FST<Long> fst, PositiveIntOutputs outputs) throws Exception {
     final Long nothing = outputs.getNoOutput();
     FST.Arc<Long> startArc = fst.getFirstArc(new FST.Arc<Long>());
-    assertEquals(nothing, startArc.output);
-    assertEquals(nothing, startArc.nextFinalOutput);
+    assertEquals(nothing, startArc.output());
+    assertEquals(nothing, startArc.nextFinalOutput());
 
     FST.Arc<Long> arc = fst.readFirstTargetArc(startArc, new FST.Arc<Long>(),
                                                fst.getBytesReader());
-    assertEquals('a', arc.label);
-    assertEquals(17, arc.nextFinalOutput.longValue());
+    assertEquals('a', arc.label());
+    assertEquals(17, arc.nextFinalOutput().longValue());
     assertTrue(arc.isFinal());
 
     arc = fst.readNextArc(arc, fst.getBytesReader());
-    assertEquals('b', arc.label);
+    assertEquals('b', arc.label());
     assertFalse(arc.isFinal());
-    assertEquals(42, arc.output.longValue());
+    assertEquals(42, arc.output().longValue());
   }
 
   static final Comparator<Long> minLongComparator = new Comparator<Long> () {
@@ -1404,7 +1404,7 @@ public class TestFSTs extends LuceneTestCase {
         if (fst.findTargetArc((int) prefix.charAt(idx), arc, arc, reader) == null) {
           fail();
         }
-        prefixOutput += arc.output;
+        prefixOutput += arc.output();
       }
 
       final int topN = TestUtil.nextInt(random, 1, 10);
@@ -1526,7 +1526,7 @@ public class TestFSTs extends LuceneTestCase {
         if (fst.findTargetArc((int) prefix.charAt(idx), arc, arc, reader) == null) {
           fail();
         }
-        prefixOutput = outputs.add(prefixOutput, arc.output);
+        prefixOutput = outputs.add(prefixOutput, arc.output());
       }
 
       final int topN = TestUtil.nextInt(random, 1, 10);
@@ -1623,10 +1623,10 @@ public class TestFSTs extends LuceneTestCase {
     FST.BytesReader reader = fst.getBytesReader();
     arc = fst.findTargetArc((int) 'm', arc, arc, reader);
     assertNotNull(arc);
-    assertEquals(new BytesRef("m"), arc.output);
+    assertEquals(new BytesRef("m"), arc.output());
 
     // NOTE: illegal:
-    arc.output.length = 0;
+    arc.output().length = 0;
 
     fst.getFirstArc(arc);
     try {

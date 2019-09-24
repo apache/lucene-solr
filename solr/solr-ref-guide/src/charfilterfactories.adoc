@@ -28,6 +28,23 @@ This filter requires specifying a `mapping` argument, which is the path and name
 
 Example:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-charfilter]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <charFilter name="mapping" mapping="mapping-FoldToASCII.txt"/>
+  <tokenizer ...>
+  [...]
+</analyzer>
+----
+====
+[example.tab-pane#byclass-charfilter]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -36,6 +53,8 @@ Example:
   [...]
 </analyzer>
 ----
+====
+--
 
 Mapping file syntax:
 
@@ -101,6 +120,23 @@ The table below presents examples of HTML stripping.
 
 Example:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-charfilter-htmlstrip]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <charFilter name="htmlStrip"/>
+  <tokenizer ...>
+  [...]
+</analyzer>
+----
+====
+[example.tab-pane#byclass-charfilter-htmlstrip]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -109,6 +145,8 @@ Example:
   [...]
 </analyzer>
 ----
+====
+--
 
 == solr.ICUNormalizer2CharFilterFactory
 
@@ -116,7 +154,7 @@ This filter performs pre-tokenization Unicode normalization using http://site.ic
 
 Arguments:
 
-`name`:: A http://unicode.org/reports/tr15/[Unicode Normalization Form], one of `nfc`, `nfkc`, `nfkc_cf`. Default is `nfkc_cf`.
+`form`:: A http://unicode.org/reports/tr15/[Unicode Normalization Form], one of `nfc`, `nfkc`, `nfkc_cf`. Default is `nfkc_cf`.
 
 `mode`:: Either `compose` or `decompose`. Default is `compose`. Use `decompose` with `name="nfc"` or `name="nfkc"` to get NFD or NFKD, respectively.
 
@@ -124,6 +162,23 @@ Arguments:
 
 Example:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-charfilter-icunormalizer2]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <charFilter name="icuNormalizer2"/>
+  <tokenizer ...>
+  [...]
+</analyzer>
+----
+====
+[example.tab-pane#byclass-charfilter-icunormalizer2]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -132,6 +187,8 @@ Example:
   [...]
 </analyzer>
 ----
+====
+--
 
 == solr.PatternReplaceCharFilterFactory
 
@@ -145,6 +202,24 @@ Arguments:
 
 You can configure this filter in `schema.xml` like this:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-charfilter-patternreplace]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <charFilter name="patternReplace"
+             pattern="([nN][oO]\.)\s*(\d+)" replacement="$1$2"/>
+  <tokenizer ...>
+  [...]
+</analyzer>
+----
+====
+[example.tab-pane#byclass-charfilter-patternreplace]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -154,6 +229,8 @@ You can configure this filter in `schema.xml` like this:
   [...]
 </analyzer>
 ----
+====
+--
 
 The table below presents examples of regex-based pattern replacement:
 

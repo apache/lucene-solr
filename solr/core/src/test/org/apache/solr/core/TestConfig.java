@@ -154,6 +154,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     ++numDefaultsTested; assertEquals("default maxBufferedDocs", -1, sic.maxBufferedDocs);
 
     ++numDefaultsTested; assertEquals("default ramBufferSizeMB", 100.0D, sic.ramBufferSizeMB, 0.0D);
+    ++numDefaultsTested; assertEquals("default ramPerThreadHardLimitMB", -1, sic.ramPerThreadHardLimitMB);
     ++numDefaultsTested; assertEquals("default writeLockTimeout", -1, sic.writeLockTimeout);
     ++numDefaultsTested; assertEquals("default LockType", DirectoryFactory.LOCK_TYPE_NATIVE, sic.lockType);
 
@@ -215,7 +216,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     Assert.assertEquals(-1, solrConfig.getUpdateHandlerInfo().autoCommmitMaxTime);
   }
 
-  // sanity check that sys propertis are working as expected
+  // sanity check that sys properties are working as expected
   public void testSanityCheckTestSysPropsAreUsed() throws Exception {
 
     SolrConfig sc = new SolrConfig(new SolrResourceLoader(TEST_PATH().resolve("collection1")), "solrconfig-basic.xml", null);
@@ -224,10 +225,10 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals("ramBufferSizeMB sysprop", 
                  Double.parseDouble(System.getProperty("solr.tests.ramBufferSizeMB")), 
                                     sic.ramBufferSizeMB, 0.0D);
+    assertEquals("ramPerThreadHardLimitMB sysprop",
+        Integer.parseInt(System.getProperty("solr.tests.ramPerThreadHardLimitMB")), sic.ramPerThreadHardLimitMB);
     assertEquals("useCompoundFile sysprop", 
                  Boolean.parseBoolean(System.getProperty("useCompoundFile")), sic.useCompoundFile);
   }
 
 }
-
-

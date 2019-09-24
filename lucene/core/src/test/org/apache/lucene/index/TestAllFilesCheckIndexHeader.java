@@ -127,21 +127,15 @@ public class TestAllFilesCheckIndexHeader extends LuceneTestCase {
         dirCopy.sync(Collections.singleton(name));
       }
 
-      try {
-        // NOTE: we .close so that if the test fails (truncation not detected) we don't also get all these confusing errors about open files:
-        DirectoryReader.open(dirCopy).close();
-        fail("wrong bytes not detected after randomizing first " + wrongBytes + " bytes out of " + victimLength + " for file " + victim);
-      } catch (CorruptIndexException | EOFException | IndexFormatTooOldException e) {
-        // expected
-      }
+      // NOTE: we .close so that if the test fails (truncation not detected) we don't also get all these confusing errors about open files:
+      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class, IndexFormatTooOldException.class),
+          () -> DirectoryReader.open(dirCopy).close()
+      );
 
       // CheckIndex should also fail:
-      try {
-        TestUtil.checkIndex(dirCopy, true, true, null);
-        fail("wrong bytes not detected after randomizing first " + wrongBytes + " bytes out of " + victimLength + " for file " + victim);
-      } catch (CorruptIndexException | EOFException | IndexFormatTooOldException e) {
-        // expected
-      }
+      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class, IndexFormatTooOldException.class),
+          () -> DirectoryReader.open(dirCopy).close()
+      );
     }
   }
 }

@@ -21,19 +21,19 @@ import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.store.FeatureStore;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestFeatureLogging extends TestRerankBase {
 
-  @BeforeClass
-  public static void setup() throws Exception {
+  @Before
+  public void setup() throws Exception {
     setuptest(true);
   }
 
-  @AfterClass
-  public static void after() throws Exception {
+  @After
+  public void after() throws Exception {
     aftertest();
   }
 

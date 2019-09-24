@@ -41,8 +41,11 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RoaringDocIdSet;
+
+import static org.apache.lucene.util.RamUsageEstimator.HASHTABLE_RAM_BYTES_PER_ENTRY;
+import static org.apache.lucene.util.RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
+import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
 
 /**
  * A {@link QueryCache} that evicts queries using a LRU (least-recently-used)
@@ -85,18 +88,6 @@ import org.apache.lucene.util.RoaringDocIdSet;
  * @lucene.experimental
  */
 public class LRUQueryCache implements QueryCache, Accountable {
-
-  // approximate memory usage that we assign to all queries
-  // this maps roughly to a BooleanQuery with a couple term clauses
-  static final long QUERY_DEFAULT_RAM_BYTES_USED = RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
-
-  static final long HASHTABLE_RAM_BYTES_PER_ENTRY =
-      2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF // key + value
-      * 2; // hash tables need to be oversized to avoid collisions, assume 2x capacity
-
-  static final long LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY =
-      HASHTABLE_RAM_BYTES_PER_ENTRY
-      + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF; // previous & next references
 
   private final int maxSize;
   private final long maxRamBytesUsed;
@@ -267,7 +258,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
   }
 
-  DocIdSet get(Query key, LeafReaderContext context, IndexReader.CacheHelper cacheHelper) {
+  DocIdSet get(Query key, IndexReader.CacheHelper cacheHelper) {
     assert lock.isHeldByCurrentThread();
     assert key instanceof BoostQuery == false;
     assert key instanceof ConstantScoreQuery == false;
@@ -292,7 +283,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     return cached;
   }
 
-  void putIfAbsent(Query query, LeafReaderContext context, DocIdSet set, IndexReader.CacheHelper cacheHelper) {
+  private void putIfAbsent(Query query, DocIdSet set, IndexReader.CacheHelper cacheHelper) {
     assert query instanceof BoostQuery == false;
     assert query instanceof ConstantScoreQuery == false;
     // under a lock to make sure that mostRecentlyUsedQueries and cache remain sync'ed
@@ -321,7 +312,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
   }
 
-  void evictIfNecessary() {
+  private void evictIfNecessary() {
     assert lock.isHeldByCurrentThread();
     // under a lock to make sure that mostRecentlyUsedQueries and cache keep sync'ed
     if (requiresEviction()) {
@@ -734,7 +725,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
       DocIdSet docIdSet;
       try {
-        docIdSet = get(in.getQuery(), context, cacheHelper);
+        docIdSet = get(in.getQuery(), cacheHelper);
       } finally {
         lock.unlock();
       }
@@ -742,7 +733,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
       if (docIdSet == null) {
         if (policy.shouldCache(in.getQuery())) {
           docIdSet = cache(context);
-          putIfAbsent(in.getQuery(), context, docIdSet, cacheHelper);
+          putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
         } else {
           return in.scorerSupplier(context);
         }
@@ -815,7 +806,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
       DocIdSet docIdSet;
       try {
-        docIdSet = get(in.getQuery(), context, cacheHelper);
+        docIdSet = get(in.getQuery(), cacheHelper);
       } finally {
         lock.unlock();
       }
@@ -823,7 +814,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
       if (docIdSet == null) {
         if (policy.shouldCache(in.getQuery())) {
           docIdSet = cache(context);
-          putIfAbsent(in.getQuery(), context, docIdSet, cacheHelper);
+          putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
         } else {
           return in.bulkScorer(context);
         }

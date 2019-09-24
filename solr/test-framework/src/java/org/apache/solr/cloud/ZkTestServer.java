@@ -639,6 +639,7 @@ public class ZkTestServer {
   }
 
   public static boolean waitForServerDown(String hp, long timeoutMs) {
+    log.info("waitForServerDown: {}", hp);
     final TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (true) {
       try {
@@ -660,6 +661,7 @@ public class ZkTestServer {
   }
 
   public static boolean waitForServerUp(String hp, long timeoutMs) {
+    log.info("waitForServerUp: {}", hp);
     final TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (true) {
       try {
@@ -712,9 +714,8 @@ public class ZkTestServer {
       // this replicates NC - close the output stream before reading
       sock.shutdownOutput();
 
-      reader =
-          new BufferedReader(
-              new InputStreamReader(sock.getInputStream(), "US-ASCII"));
+      reader = new BufferedReader(
+          new InputStreamReader(sock.getInputStream(), StandardCharsets.US_ASCII));
       StringBuilder sb = new StringBuilder();
       String line;
       while ((line = reader.readLine()) != null) {

@@ -1387,7 +1387,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     });
   }
 
-  public void close() {
+  public void shutdown() {
     if (executorService != null) executorService.shutdown();
     if (pollingIndexFetcher != null) {
       pollingIndexFetcher.destroy();

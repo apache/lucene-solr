@@ -65,7 +65,7 @@ public class UniqueFunction extends AbstractLongValue implements ReductionFuncti
     }
     return new UniqueFunction(param, collector);
   });
-  
+
   public UniqueFunction(AnalyticsValueStream param, UniqueCollector<?> collector) {
     this.collector = collector;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);

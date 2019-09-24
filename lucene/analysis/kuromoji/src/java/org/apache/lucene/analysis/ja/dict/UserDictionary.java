@@ -104,6 +104,8 @@ public final class UserDictionary implements Dictionary {
     long ord = 0;
     
     for (String[] values : featureEntries) {
+      String surface = values[0].replaceAll("\\s", "");
+      String concatenatedSegment = values[1].replaceAll("\\s", "");
       String[] segmentation = values[1].replaceAll("  *", " ").split(" ");
       String[] readings = values[2].replaceAll("  *", " ").split(" ");
       String pos = values[3];
@@ -112,6 +114,12 @@ public final class UserDictionary implements Dictionary {
         throw new RuntimeException("Illegal user dictionary entry " + values[0] +
                                    " - the number of segmentations (" + segmentation.length + ")" +
                                    " does not the match number of readings (" + readings.length + ")");
+      }
+
+      if (!surface.equals(concatenatedSegment)) {
+        throw new RuntimeException("Illegal user dictionary entry " + values[0] +
+                                   " - the concatenated segmentation (" + concatenatedSegment + ")" +
+                                   " does not match the surface form (" + surface + ")");
       }
       
       int[] wordIdAndLength = new int[segmentation.length + 1]; // wordId offset, length, length....
@@ -162,9 +170,9 @@ public final class UserDictionary implements Dictionary {
         if (fst.findTargetArc(ch, arc, arc, i == 0, fstReader) == null) {
           break; // continue to next position
         }
-        output += arc.output.intValue();
+        output += arc.output().intValue();
         if (arc.isFinal()) {
-          final int finalOutput = output + arc.nextFinalOutput.intValue();
+          final int finalOutput = output + arc.nextFinalOutput().intValue();
           result.put(startOffset-off, segmentations[finalOutput]);
           found = true;
         }
@@ -186,11 +194,11 @@ public final class UserDictionary implements Dictionary {
    */
   private int[][] toIndexArray(Map<Integer, int[]> input) {
     ArrayList<int[]> result = new ArrayList<>();
-    for (int i : input.keySet()) {
-      int[] wordIdAndLength = input.get(i);
+    for (Map.Entry<Integer, int[]> entry : input.entrySet()) {
+      int[] wordIdAndLength = entry.getValue();
       int wordId = wordIdAndLength[0];
       // convert length to index
-      int current = i;
+      int current = entry.getKey();
       for (int j = 1; j < wordIdAndLength.length; j++) { // first entry is wordId offset
         int[] token = { wordId + j - 1, current, wordIdAndLength[j] };
         result.add(token);

@@ -118,9 +118,9 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testDistanceQuery(Circle2D circle2D, Object shape) {
-      Point[] points = (Point[]) shape;
-      for (Point p : points) {
-        boolean b = POINTVALIDATOR.testDistanceQuery(circle2D, p);
+      Line[] lines = (Line[])shape;
+      for (Line l : lines) {
+        boolean b = LINEVALIDATOR.testDistanceQuery(circle2D, l);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {

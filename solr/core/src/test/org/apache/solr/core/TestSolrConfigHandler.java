@@ -41,7 +41,7 @@ import org.apache.solr.handler.DumpRequestHandler;
 import org.apache.solr.handler.TestSolrConfigHandlerConcurrent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.SolrCache;
+import org.apache.solr.search.SolrCacheHolder;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
@@ -543,8 +543,8 @@ public class TestSolrConfigHandler extends RestTestBase {
         HashMap m = new HashMap();
         rsp.add("caches", m);
         for (String c : caches) {
-          SolrCache cache = req.getSearcher().getCache(c);
-          if(cache != null) m.put(c, cache.getClass().getName());
+          SolrCacheHolder cache = (SolrCacheHolder) req.getSearcher().getCache(c);
+          if(cache != null) m.put(c, cache.get().getClass().getName());
         }
       }
     }

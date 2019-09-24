@@ -22,19 +22,19 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 
 /**
- * An analytics wrapper for Solr Fields. 
- * 
+ * An analytics wrapper for Solr Fields.
+ *
  * Currently only fields with Doc Values enabled can be used in Analytics queries.
  */
 public abstract class AnalyticsField implements AnalyticsValueStream {
   protected static final int initialArrayLength = 20;
-  
+
   protected final String fieldName;
-  
+
   protected AnalyticsField(String fieldName) {
     this.fieldName = fieldName;
   }
-  
+
   @Override
   public String getExpressionStr() {
     return fieldName;
@@ -44,28 +44,28 @@ public abstract class AnalyticsField implements AnalyticsValueStream {
   public String getName() {
     return fieldName;
   }
-  
+
   @Override
   public ExpressionType getExpressionType() {
     return ExpressionType.FIELD;
   }
-  
+
   @Override
   public AnalyticsValueStream convertToConstant() {
     return this;
   }
-  
+
   /**
    * Set the segment reader context
-   * 
+   *
    * @param context segment context
    * @throws IOException if an error occurs while loading the leaf reader
    */
   public abstract void doSetNextReader(LeafReaderContext context) throws IOException;
-  
+
   /**
    * Collect the value(s) of the wrapped field for the given document, and store the value.
-   * 
+   *
    * @param doc ID of the document to collect
    * @throws IOException if an error occurs while reading the document.
    */

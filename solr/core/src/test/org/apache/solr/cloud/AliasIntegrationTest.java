@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -96,10 +97,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   public void testProperties() throws Exception {
     CollectionAdminRequest.createCollection("collection1meta", "conf", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2meta", "conf", 1, 1).process(cluster.getSolrClient());
-    
+
     cluster.waitForActiveCollection("collection1meta", 2, 2);
     cluster.waitForActiveCollection("collection2meta", 1, 1);
-    
+
     waitForState("Expected collection1 to be created with 2 shards and 1 replica", "collection1meta", clusterShape(2, 2));
     waitForState("Expected collection2 to be created with 1 shard and 1 replica", "collection2meta", clusterShape(1, 1));
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
@@ -278,50 +279,83 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testClusterStateProviderAPI() throws Exception {
     final String aliasName = getSaferTestName();
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    Aliases aliases = zkStateReader.getAliases();
-    int lastVersion = aliases.getZNodeVersion();
+    
+    // pick an arbitrary node, and use it's cloudManager to assert that (an instance of)
+    // the ClusterStateProvider API reflects alias changes made by remote clients
+    final SolrCloudManager cloudManager = cluster.getRandomJetty(random())
+      .getCoreContainer().getZkController().getSolrCloudManager();
 
+    // allthough the purpose of this test is to verify that the ClusterStateProvider API
+    // works as a "black box" for inspecting alias information, we'll be doing some "grey box"
+    // introspection of the underlying ZKNodeVersion to first verify that alias updates have
+    // propogated to our randomly selected node before making assertions against the
+    // ClusterStateProvider API...
+    //
+    // establish a baseline version for future waitForAliasesUpdate calls
+    int lastVersion = waitForAliasesUpdate(-1, cloudManager.getClusterStateProvider());
+
+    // create the alias and wait for it to propogate
     createColectionsAndAlias(aliasName);
+    lastVersion = waitForAliasesUpdate(-1, cloudManager.getClusterStateProvider());
 
-    lastVersion = waitForAliasesUpdate(lastVersion, zkStateReader);
-
-    CollectionAdminRequest.SetAliasProperty setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
-    setAliasProperty.addProperty("foo","baz");
-    setAliasProperty.addProperty("bar","bam");
-    setAliasProperty.process(cluster.getSolrClient());
-    checkFooAndBarMeta(aliasName, zkStateReader);
-    SolrCloudManager cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
-    // make sure we have the latest version in cache
-    lastVersion = waitForAliasesUpdate(lastVersion, zkStateReader);
+    // assert ClusterStateProvider sees the alias
     ClusterStateProvider stateProvider = cloudManager.getClusterStateProvider();
     List<String> collections = stateProvider.resolveAlias(aliasName);
     assertEquals(collections.toString(), 2, collections.size());
     assertTrue(collections.toString(), collections.contains("collection1meta"));
     assertTrue(collections.toString(), collections.contains("collection2meta"));
+
+    // modify the alias to have some properties
+    CollectionAdminRequest.SetAliasProperty setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
+    setAliasProperty.addProperty("foo","baz");
+    setAliasProperty.addProperty("bar","bam");
+    setAliasProperty.process(cluster.getSolrClient());
+    lastVersion = waitForAliasesUpdate(lastVersion, cloudManager.getClusterStateProvider());
+
+    // assert ClusterStateProvider sees the new props (and still sees correct collections)
+    stateProvider = cloudManager.getClusterStateProvider();
     Map<String, String> props = stateProvider.getAliasProperties(aliasName);
     assertEquals(props.toString(), 2, props.size());
     assertEquals(props.toString(), "baz", props.get("foo"));
     assertEquals(props.toString(), "bam", props.get("bar"));
+    collections = stateProvider.resolveAlias(aliasName);
+    assertEquals(collections.toString(), 2, collections.size());
+    assertTrue(collections.toString(), collections.contains("collection1meta"));
+    assertTrue(collections.toString(), collections.contains("collection2meta"));
 
     assertFalse("should not be a routed alias", stateProvider.isRoutedAlias(aliasName));
+    
     // now make it a routed alias, according to the criteria in the API
     setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
     setAliasProperty.addProperty(CollectionAdminParams.ROUTER_PREFIX + "foo","baz");
     setAliasProperty.process(cluster.getSolrClient());
-    // refresh
-    lastVersion = waitForAliasesUpdate(lastVersion, zkStateReader);
+    lastVersion = waitForAliasesUpdate(lastVersion, cloudManager.getClusterStateProvider());
+    
+    // assert ClusterStateProvider sees it's routed...
     stateProvider = cloudManager.getClusterStateProvider();
     assertTrue("should be a routed alias", stateProvider.isRoutedAlias(aliasName));
 
-    try {
-      String resolved = stateProvider.resolveSimpleAlias(aliasName);
+    expectThrows(SolrException.class, () -> {
+      String resolved = cloudManager.getClusterStateProvider().resolveSimpleAlias(aliasName);
       fail("this is not a simple alias but it resolved to " + resolved);
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+      });
   }
 
+  /** 
+   * Does a "grey box" assertion that the ClusterStateProvider is a ZkClientClusterStateProvider
+   * and then waits for it's underlying ZkStateReader to see the updated aliases, 
+   * returning the current ZNodeVersion for the aliases
+   */
+  private int waitForAliasesUpdate(int lastVersion, ClusterStateProvider stateProvider)
+    throws Exception {
+
+    assertTrue("this method does grey box introspection which requires that " +
+               "the stateProvider be a ZkClientClusterStateProvider",
+               stateProvider instanceof ZkClientClusterStateProvider);
+    return waitForAliasesUpdate(lastVersion,
+                                ((ZkClientClusterStateProvider)stateProvider).getZkStateReader());
+  }
+    
   private int waitForAliasesUpdate(int lastVersion, ZkStateReader zkStateReader) throws Exception {
     TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
@@ -353,10 +387,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   private ZkStateReader createColectionsAndAlias(String aliasName) throws SolrServerException, IOException, KeeperException, InterruptedException {
     CollectionAdminRequest.createCollection("collection1meta", "conf", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2meta", "conf", 1, 1).process(cluster.getSolrClient());
-    
+
     cluster.waitForActiveCollection("collection1meta", 2, 2);
     cluster.waitForActiveCollection("collection2meta", 1, 1);
-    
+
     waitForState("Expected collection1 to be created with 2 shards and 1 replica", "collection1meta", clusterShape(2, 2));
     waitForState("Expected collection2 to be created with 1 shard and 1 replica", "collection2meta", clusterShape(1, 1));
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
@@ -405,10 +439,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   public void testDeleteAliasWithExistingCollectionName() throws Exception {
     CollectionAdminRequest.createCollection("collection_old", "conf", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection_new", "conf", 1, 1).process(cluster.getSolrClient());
-    
+
     cluster.waitForActiveCollection("collection_old", 2, 2);
     cluster.waitForActiveCollection("collection_new", 1, 1);
-    
+
     waitForState("Expected collection_old to be created with 2 shards and 1 replica", "collection_old", clusterShape(2, 2));
     waitForState("Expected collection_new to be created with 1 shard and 1 replica", "collection_new", clusterShape(1, 1));
 
@@ -488,10 +522,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   public void testDeleteOneOfTwoCollectionsAliased() throws Exception {
     CollectionAdminRequest.createCollection("collection_one", "conf", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection_two", "conf", 1, 1).process(cluster.getSolrClient());
-    
+
     cluster.waitForActiveCollection("collection_one", 2, 2);
     cluster.waitForActiveCollection("collection_two", 1, 1);
-    
+
     waitForState("Expected collection_one to be created with 2 shards and 1 replica", "collection_one", clusterShape(2, 2));
     waitForState("Expected collection_two to be created with 1 shard and 1 replica", "collection_two", clusterShape(1, 1));
 
@@ -517,10 +551,37 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     // Now delete one of the collections, should fail since an alias points to it.
     RequestStatusState delResp = CollectionAdminRequest.deleteCollection("collection_one").processAndWait(cluster.getSolrClient(), 60);
-
+    // failed because the collection is a part of a compound alias
     assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
 
-    // Now redefine the alias to only point to colletion two
+    CollectionAdminRequest.Delete delete = CollectionAdminRequest.deleteCollection("collection_alias_pair");
+    delResp = delete.processAndWait(cluster.getSolrClient(), 60);
+    // failed because we tried to delete an alias with followAliases=false
+    assertEquals("Should have failed to delete alias: ", delResp, RequestStatusState.FAILED);
+
+    delete.setFollowAliases(true);
+    delResp = delete.processAndWait(cluster.getSolrClient(), 60);
+    // failed because we tried to delete compound alias
+    assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
+
+    CollectionAdminRequest.createAlias("collection_alias_one", "collection_one").process(cluster.getSolrClient());
+    lastVersion = waitForAliasesUpdate(lastVersion, zkStateReader);
+
+    delete = CollectionAdminRequest.deleteCollection("collection_one");
+    delResp = delete.processAndWait(cluster.getSolrClient(), 60);
+    // failed because we tried to delete collection referenced by multiple aliases
+    assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
+
+    delete = CollectionAdminRequest.deleteCollection("collection_alias_one");
+    delete.setFollowAliases(true);
+    delResp = delete.processAndWait(cluster.getSolrClient(), 60);
+    // failed because we tried to delete collection referenced by multiple aliases
+    assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
+
+    CollectionAdminRequest.deleteAlias("collection_alias_one").process(cluster.getSolrClient());
+    lastVersion = waitForAliasesUpdate(lastVersion, zkStateReader);
+
+    // Now redefine the alias to only point to collection two
     CollectionAdminRequest.createAlias("collection_alias_pair", "collection_two").process(cluster.getSolrClient());
     lastVersion = waitForAliasesUpdate(lastVersion, zkStateReader);
 
@@ -539,7 +600,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       cluster.getSolrClient().query("collection_one", new SolrQuery("*:*"));
       fail("should have failed");
     } catch (SolrServerException | SolrException se) {
- 
+
     }
 
     // Clean up
@@ -564,10 +625,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   public void test() throws Exception {
     CollectionAdminRequest.createCollection("collection1", "conf", 2, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2", "conf", 1, 1).process(cluster.getSolrClient());
-    
+
     cluster.waitForActiveCollection("collection1", 2, 2);
     cluster.waitForActiveCollection("collection2", 1, 1);
-    
+
     waitForState("Expected collection1 to be created with 2 shards and 1 replica", "collection1", clusterShape(2, 2));
     waitForState("Expected collection2 to be created with 1 shard and 1 replica", "collection2", clusterShape(1, 1));
 
@@ -613,7 +674,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     CollectionAdminRequest.createAlias("testalias2", "collection2,collection1").process(cluster.getSolrClient());
 
     lastVersion = waitForAliasesUpdate(lastVersion, zkStateReader);
-    
+
     searchSeveralWays("testalias2", new SolrQuery("*:*"), 5);
 
     ///////////////
@@ -727,12 +788,12 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testErrorChecks() throws Exception {
     CollectionAdminRequest.createCollection("testErrorChecks-collection", "conf", 2, 1).process(cluster.getSolrClient());
-    
+
     cluster.waitForActiveCollection("testErrorChecks-collection", 2, 2);
     waitForState("Expected testErrorChecks-collection to be created with 2 shards and 1 replica", "testErrorChecks-collection", clusterShape(2, 2));
-    
+
     ignoreException(".");
-    
+
     // Invalid Alias name
     SolrException e = expectThrows(SolrException.class, () ->
         CollectionAdminRequest.createAlias("test:alias", "testErrorChecks-collection").process(cluster.getSolrClient()));

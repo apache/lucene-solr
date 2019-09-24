@@ -59,6 +59,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
@@ -283,8 +284,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         new SolrjNamedThreadFactory("testExecutor"),
         true);
 
-    initCoreDataDir = createTempDir("init-core-data").toFile();
-    System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
+    // not strictly needed by this class at this point in the control lifecycle, but for
+    // backcompat create it now in case any third party tests expect initCoreDataDir to be
+    // non-null after calling setupTestCases()
+    initAndGetDataDir();
 
     System.setProperty("solr.zkclienttimeout", "90000"); 
     
@@ -557,6 +560,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("useCompoundFile", String.valueOf(iwc.getUseCompoundFile()));
 
     System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(iwc.getMaxBufferedDocs()));
+    System.setProperty("solr.tests.ramPerThreadHardLimitMB", String.valueOf(iwc.getRAMPerThreadHardLimitMB()));
     System.setProperty("solr.tests.ramBufferSizeMB", String.valueOf(iwc.getRAMBufferSizeMB()));
 
     String mergeSchedulerClass = iwc.getMergeScheduler().getClass().getName();
@@ -587,6 +591,44 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     super.tearDown();
   }
 
+  /**
+   * Subclasses may call this method to access the "dataDir" that will be used by 
+   * {@link #initCore} (either prior to or after the core is created).
+   * <p>
+   * If the dataDir has not yet been initialized when this method is called, this method will do so.
+   * Calling {@link #deleteCore} will "reset" the value, such that subsequent calls will 
+   * re-initialize a new value.  All directories returned by any calls to this method will 
+   * automatically be cleaned up per {@link #createTempDir}
+   * </p>
+   * <p>
+   * NOTE: calling this method is not requried, it will be implicitly called as needed when
+   * initializing cores.  Callers that don't care about using {@link #initCore} and just want
+   * a temporary directory to put data in sould instead be using {@link #createTempDir} directly.
+   * </p>
+   *
+   * @see #initCoreDataDir
+   */
+  protected static File initAndGetDataDir() {
+    File dataDir = initCoreDataDir;
+    if (null == dataDir) {
+      final int id = dataDirCount.incrementAndGet();
+      dataDir = initCoreDataDir = createTempDir("data-dir-"+ id).toFile();
+      assertNotNull(dataDir);
+      log.info("Created dataDir: {}", dataDir.getAbsolutePath());
+    }
+    return dataDir;
+  }
+  /** 
+   * Counter for ensuring we don't ask {@link #createTempDir} to try and 
+   * re-create the same dir prefix over and over.
+   * <p>
+   * (createTempDir has it's own counter for uniqueness, but it tries all numbers in a loop 
+   * until it finds one available.  No reason to force that O(N^2) behavior when we know we've 
+   * already created N previous directories with the same prefix.)
+   * </p>
+   */
+  private static final AtomicInteger dataDirCount = new AtomicInteger(0);
+  
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
   public static void initCore(String config, String schema) throws Exception {
@@ -695,8 +737,17 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * The directory used to story the index managed by the TestHarness
+   * The directory used as the <code>dataDir</code> for the TestHarness unless 
+   * {@link #hdfsDataDir} is non null.  
+   * <p>
+   * Will be set to null by {@link #deleteCore} and re-initialized as needed by {@link #createCore}.  
+   * In the event of a test failure, the contents will be left on disk.
+   * </p>
+   * @see #createTempDir(String)
+   * @see #initAndGetDataDir()
+   * @deprecated use initAndGetDataDir instead of directly accessing this variable
    */
+  @Deprecated
   protected static volatile File initCoreDataDir;
   
   // hack due to File dataDir
@@ -739,7 +790,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static void createCore() {
     assertNotNull(testSolrHome);
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
-    h = new TestHarness( coreName, hdfsDataDir == null ? initCoreDataDir.getAbsolutePath() : hdfsDataDir,
+    h = new TestHarness( coreName, hdfsDataDir == null ? initAndGetDataDir().getAbsolutePath() : hdfsDataDir,
             solrConfig,
             getSchemaFile());
     lrf = h.getRequestFactory
@@ -770,7 +821,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static CoreContainer createDefaultCoreContainer(Path solrHome) {
     testSolrHome = requireNonNull(solrHome);
-    h = new TestHarness("collection1", initCoreDataDir.getAbsolutePath(), "solrconfig.xml", "schema.xml");
+    h = new TestHarness("collection1", initAndGetDataDir().getAbsolutePath(), "solrconfig.xml", "schema.xml");
     lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
   }
@@ -809,9 +860,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * Shuts down the test harness, and makes the best attempt possible
-   * to delete dataDir, unless the system property "solr.test.leavedatadir"
-   * is set.
+   * Shuts down the test harness and nulls out the values setup by {@link #initCore}
    */
   public static void deleteCore() {
     if (h != null) {
@@ -844,6 +893,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     h = null;
     lrf = null;
     configString = schemaString = null;
+    initCoreDataDir = null;
   }
 
   /**

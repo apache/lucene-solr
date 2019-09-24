@@ -20,6 +20,24 @@ Tokenizers are responsible for breaking field data into lexical units, or _token
 
 You configure the tokenizer for a text field type in `schema.xml` with a `<tokenizer>` element, as a child of `<analyzer>`:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<fieldType name="text" class="solr.TextField">
+  <analyzer type="index">
+    <tokenizer name="standard"/>
+    <filter name="lowercase"/>
+  </analyzer>
+</fieldType>
+----
+====
+[example.tab-pane#byclass-tokenizer]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="text" class="solr.TextField">
@@ -29,11 +47,30 @@ You configure the tokenizer for a text field type in `schema.xml` with a `<token
   </analyzer>
 </fieldType>
 ----
+====
+--
 
-The class attribute names a factory class that will instantiate a tokenizer object when needed. Tokenizer factory classes implement the `org.apache.solr.analysis.TokenizerFactory`. A TokenizerFactory's `create()` method accepts a Reader and returns a TokenStream. When Solr creates the tokenizer it passes a Reader object that provides the content of the text field.
+The name/class attribute names a factory class that will instantiate a tokenizer object when needed. Tokenizer factory classes implement the `org.apache.lucene.analysis.util.TokenizerFactory`. A TokenizerFactory's `create()` method accepts a Reader and returns a TokenStream. When Solr creates the tokenizer it passes a Reader object that provides the content of the text field.
 
 Arguments may be passed to tokenizer factories by setting attributes on the `<tokenizer>` element.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-args]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<fieldType name="semicolonDelimited" class="solr.TextField">
+  <analyzer type="query">
+    <tokenizer name="pattern" pattern="; "/>
+  </analyzer>
+</fieldType>
+----
+====
+[example.tab-pane#byclass-tokenizer-args]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="semicolonDelimited" class="solr.TextField">
@@ -42,6 +79,8 @@ Arguments may be passed to tokenizer factories by setting attributes on the `<to
   </analyzer>
 </fieldType>
 ----
+====
+--
 
 The following sections describe the tokenizer factory classes included in this release of Solr.
 
@@ -66,12 +105,29 @@ The Standard Tokenizer supports http://unicode.org/reports/tr29/#Word_Boundaries
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-standard]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-standard]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.StandardTokenizerFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "Please, email john.doe@foo.com by 03-09, re: m37-xq."
 
@@ -95,12 +151,29 @@ The Classic Tokenizer preserves the same behavior as the Standard Tokenizer of S
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-classic]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="classic"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-classic]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.ClassicTokenizerFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "Please, email john.doe@foo.com by 03-09, re: m37-xq."
 
@@ -116,12 +189,29 @@ This tokenizer treats the entire text field as a single token.
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-keyword]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="keyword"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-keyword]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.KeywordTokenizerFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "Please, email john.doe@foo.com by 03-09, re: m37-xq."
 
@@ -137,12 +227,29 @@ This tokenizer creates tokens from strings of contiguous letters, discarding all
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-letter]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="letter"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-letter]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.LetterTokenizerFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "I can't."
 
@@ -158,12 +265,29 @@ Tokenizes the input stream by delimiting at non-letters and then converting all 
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-lowercase]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="lowercase"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-lowercase]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.LowerCaseTokenizerFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "I just \*LOVE* my iPhone!"
 
@@ -185,12 +309,29 @@ Reads the field text and generates n-gram tokens of sizes in the given range.
 
 Default behavior. Note that this tokenizer operates over the whole field. It does not break the field at whitespace. As a result, the space character is included in the encoding.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-ngram]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="nGram"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-ngram]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.NGramTokenizerFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "hey man"
 
@@ -200,12 +341,29 @@ Default behavior. Note that this tokenizer operates over the whole field. It doe
 
 With an n-gram size range of 4 to 5:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-ngram-args]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="nGram" minGramSize="4" maxGramSize="5"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-ngram-args]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.NGramTokenizerFactory" minGramSize="4" maxGramSize="5"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "bicycle"
 
@@ -227,12 +385,29 @@ Reads the field text and generates edge n-gram tokens of sizes in the given rang
 
 Default behavior (min and max default to 1):
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-edgengram]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="edgeNGram"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-edgengram]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.EdgeNGramTokenizerFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "babaloo"
 
@@ -242,12 +417,29 @@ Default behavior (min and max default to 1):
 
 Edge n-gram range of 2 to 5
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-edgengram-args]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="edgeNGram" minGramSize="2" maxGramSize="5"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-edgengram-args]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.EdgeNGramTokenizerFactory" minGramSize="2" maxGramSize="5"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "babaloo"
 
@@ -269,6 +461,22 @@ The default configuration for `solr.ICUTokenizerFactory` provides UAX#29 word br
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-icu]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <!-- no customization -->
+  <tokenizer name="icu"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-icu]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -276,7 +484,25 @@ The default configuration for `solr.ICUTokenizerFactory` provides UAX#29 word br
   <tokenizer class="solr.ICUTokenizerFactory"/>
 </analyzer>
 ----
+====
+--
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-icu-rule]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="icu"
+             rulefiles="Latn:my.Latin.rules.rbbi,Cyrl:my.Cyrillic.rules.rbbi"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-icu-rule]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -284,6 +510,8 @@ The default configuration for `solr.ICUTokenizerFactory` provides UAX#29 word br
              rulefiles="Latn:my.Latin.rules.rbbi,Cyrl:my.Cyrillic.rules.rbbi"/>
 </analyzer>
 ----
+====
+--
 
 [IMPORTANT]
 ====
@@ -306,6 +534,23 @@ This tokenizer creates synonyms from file path hierarchies.
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-pathhierarchy]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<fieldType name="text_path" class="solr.TextField" positionIncrementGap="100">
+  <analyzer>
+    <tokenizer name="pathHierarchy" delimiter="\" replace="/"/>
+  </analyzer>
+</fieldType>
+----
+====
+[example.tab-pane#byclass-tokenizer-pathhierarchy]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="text_path" class="solr.TextField" positionIncrementGap="100">
@@ -314,6 +559,8 @@ This tokenizer creates synonyms from file path hierarchies.
   </analyzer>
 </fieldType>
 ----
+====
+--
 
 *In:* "c:\usr\local\apache"
 
@@ -337,12 +584,29 @@ See {java-javadocs}java/util/regex/Pattern.html[the Javadocs for `java.util.rege
 
 A comma separated list. Tokens are separated by a sequence of zero or more spaces, a comma, and zero or more spaces.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-pattern]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="pattern" pattern="\s*,\s*"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-pattern]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.PatternTokenizerFactory" pattern="\s*,\s*"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "fee,fie, foe , fum, foo"
 
@@ -352,12 +616,29 @@ A comma separated list. Tokens are separated by a sequence of zero or more space
 
 Extract simple, capitalized words. A sequence of at least one capital letter followed by zero or more letters of either case is extracted as a token.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-pattern-words]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="pattern" pattern="[A-Z][A-Za-z]*" group="0"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-pattern-words]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.PatternTokenizerFactory" pattern="[A-Z][A-Za-z]*" group="0"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "Hello. My name is Inigo Montoya. You killed my father. Prepare to die."
 
@@ -367,12 +648,29 @@ Extract simple, capitalized words. A sequence of at least one capital letter fol
 
 Extract part numbers which are preceded by "SKU", "Part" or "Part Number", case sensitive, with an optional semi-colon separator. Part numbers must be all numeric digits, with an optional hyphen. Regex capture groups are numbered by counting left parenthesis from left to right. Group 3 is the subexpression "[0-9-]+", which matches one or more digits or hyphens.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-pattern-sku]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="pattern" pattern="(SKU|Part(\sNumber)?):?\s(\[0-9-\]+)" group="3"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-pattern-sku]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.PatternTokenizerFactory" pattern="(SKU|Part(\sNumber)?):?\s(\[0-9-\]+)" group="3"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "SKU: 1234, Part Number 5678, Part: 126-987"
 
@@ -394,12 +692,29 @@ This tokenizer is similar to the `PatternTokenizerFactory` described above, but 
 
 To match tokens delimited by simple whitespace characters:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-simplepattern]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="simplePattern" pattern="[^ \t\r\n]+"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-simplepattern]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.SimplePatternTokenizerFactory" pattern="[^ \t\r\n]+"/>
 </analyzer>
 ----
+====
+--
 
 == Simplified Regular Expression Pattern Splitting Tokenizer
 
@@ -417,12 +732,29 @@ This tokenizer is similar to the `SimplePatternTokenizerFactory` described above
 
 To match tokens delimited by simple whitespace characters:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-simplepatternsplit]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="simplePatternSplit" pattern="[ \t\r\n]+"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-simplepatternsplit]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.SimplePatternSplitTokenizerFactory" pattern="[ \t\r\n]+"/>
 </analyzer>
 ----
+====
+--
 
 == UAX29 URL Email Tokenizer
 
@@ -448,12 +780,29 @@ The UAX29 URL Email Tokenizer supports http://unicode.org/reports/tr29/#Word_Bou
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-uax29urlemail]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="uax29URLEmail"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-uax29urlemail]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.UAX29URLEmailTokenizerFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "Visit http://accarol.com/contact.htm?from=external&a=10 or e-mail bob.cratchet@accarol.com"
 
@@ -475,12 +824,29 @@ Specifies how to define whitespace for the purpose of tokenization. Valid values
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-whitespace]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="whitespace" rule="java" />
+</analyzer>
+----
+====
+[example.tab-pane#byclass-tokenizer-whitespace]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.WhitespaceTokenizerFactory" rule="java" />
 </analyzer>
 ----
+====
+--
 
 *In:* "To be, or what?"
 

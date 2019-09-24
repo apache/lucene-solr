@@ -1,0 +1,11 @@
+{
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/node/blob",
+      "/node/blob/{sha256}"
+    ]
+  }
+}

@@ -27,6 +27,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -97,9 +98,15 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     log.debug("addReplica() : {}", Utils.toJSONString(message));
 
     String extCollectionName = message.getStr(COLLECTION_PROP);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String shard = message.getStr(SHARD_ID_PROP);
 
-    final String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+    final String collectionName;
+    if (followAliases) {
+      collectionName =  ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+    } else {
+      collectionName = extCollectionName;
+    }
 
     DocCollection coll = clusterState.getCollection(collectionName);
     if (coll == null) {

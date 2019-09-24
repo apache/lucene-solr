@@ -40,7 +40,7 @@ public class BooleanField extends AnalyticsField implements CastingBooleanValue 
   public BooleanField(String fieldName) {
     super(fieldName);
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSorted(context.reader(), fieldName);
@@ -84,7 +84,7 @@ public class BooleanField extends AnalyticsField implements CastingBooleanValue 
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public void streamBooleans(BooleanConsumer cons) {
     if (exists) {

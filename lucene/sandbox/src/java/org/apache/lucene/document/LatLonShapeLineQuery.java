@@ -18,7 +18,7 @@ package org.apache.lucene.document;
 
 import java.util.Arrays;
 
-import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
@@ -26,7 +26,7 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 /**
- * Finds all previously indexed shapes that intersect the specified arbitrary {@code Line}.
+ * Finds all previously indexed geo shapes that intersect the specified arbitrary {@code Line}.
  * <p>
  * Note:
  * <ul>
@@ -43,7 +43,7 @@ import org.apache.lucene.util.NumericUtils;
  *
  *  @lucene.experimental
  **/
-final class LatLonShapeLineQuery extends LatLonShapeQuery {
+final class LatLonShapeLineQuery extends ShapeQuery {
   final Line[] lines;
   final private Line2D line2D;
 
@@ -84,21 +84,22 @@ final class LatLonShapeLineQuery extends LatLonShapeQuery {
   }
 
   @Override
-  protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
-    LatLonShape.decodeTriangle(t, scratchTriangle);
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle[0]);
-    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle[1]);
-    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle[2]);
-    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle[3]);
-    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle[4]);
-    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle[5]);
+    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
+    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
+    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
+    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
 
-    if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
-      return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+    switch (queryRelation) {
+      case INTERSECTS: return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
+      case WITHIN: return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+      case DISJOINT: return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
+      default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
-    // INTERSECTS
-    return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override

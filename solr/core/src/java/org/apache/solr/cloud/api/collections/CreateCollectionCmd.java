@@ -112,7 +112,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
-    if (clusterState.hasCollection(collectionName) || aliases.hasAlias(collectionName)) {
+    if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
     if (aliases.hasAlias(collectionName)) {
@@ -160,9 +160,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       Map<String,String> collectionParams = new HashMap<>();
       Map<String,Object> collectionProps = message.getProperties();
-      for (String propName : collectionProps.keySet()) {
+      for (Map.Entry<String, Object> entry : collectionProps.entrySet()) {
+        String propName = entry.getKey();
         if (propName.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
-          collectionParams.put(propName.substring(ZkController.COLLECTION_PARAM_PREFIX.length()), (String) collectionProps.get(propName));
+          collectionParams.put(propName.substring(ZkController.COLLECTION_PARAM_PREFIX.length()), (String) entry.getValue());
         }
       }
 

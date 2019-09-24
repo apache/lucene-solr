@@ -19,6 +19,7 @@ package org.apache.lucene.replicator;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -141,12 +142,9 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
   public void testObtainMissingFile() throws IOException {
     replicator.publish(createRevision(1));
     SessionToken res = replicator.checkForUpdate(null);
-    try {
+    expectThrowsAnyOf(Arrays.asList(FileNotFoundException.class, NoSuchFileException.class), () -> {
       replicator.obtainFile(res.id, res.sourceFiles.keySet().iterator().next(), "madeUpFile");
-      fail("should have failed obtaining an unrecognized file");
-    } catch (FileNotFoundException | NoSuchFileException e) {
-      // expected
-    }
+    });
   }
   
   @Test

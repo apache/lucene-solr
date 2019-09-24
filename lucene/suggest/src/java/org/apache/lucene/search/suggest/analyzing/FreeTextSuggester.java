@@ -599,7 +599,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
             
             @Override
             protected void addIfCompetitive(Util.FSTPath<Long> path) {
-              if (path.arc.label != separator) {
+              if (path.arc.label() != separator) {
                 //System.out.println("    keep path: " + Util.toBytesRef(path.input, new BytesRef()).utf8ToString() + "; " + path + "; arc=" + path.arc);
                 super.addIfCompetitive(path);
               } else {
@@ -718,7 +718,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
       if (fst.findTargetArc(bytes[pos++] & 0xff, arc, arc, bytesReader) == null) {
         return null;
       } else {
-        output = fst.outputs.add(output, arc.output);
+        output = fst.outputs.add(output, arc.output());
       }
     }
     

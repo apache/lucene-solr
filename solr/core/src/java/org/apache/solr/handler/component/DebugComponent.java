@@ -18,10 +18,8 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -214,7 +212,7 @@ public class DebugComponent extends SearchComponent
     }
   }
 
-  private final static Set<String> EXCLUDE_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("explain")));
+  private final static Set<String> EXCLUDE_SET = Set.of("explain");
 
   @Override
   public void finishStage(ResponseBuilder rb) {

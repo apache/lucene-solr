@@ -16,10 +16,10 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import junit.framework.Assert;
+import java.io.File;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -27,12 +27,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
+import junit.framework.Assert;
 
 /**
  * Test SolrPing in Solrj
  */
-public class SolrPingTest extends SolrJettyTestBase {
+public class SolrPingTest extends EmbeddedSolrServerTestBase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {

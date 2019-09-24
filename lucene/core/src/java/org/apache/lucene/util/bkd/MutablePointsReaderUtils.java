@@ -78,7 +78,8 @@ public final class MutablePointsReaderUtils {
           protected int comparePivot(int j) {
             if (k < packedBytesLength) {
               reader.getValue(j, scratch);
-              int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + k, pivot.offset + k + packedBytesLength - k, scratch.bytes, scratch.offset + k, scratch.offset + k + packedBytesLength - k);
+              int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + k, pivot.offset + k + packedBytesLength - k,
+                  scratch.bytes, scratch.offset + k, scratch.offset + k + packedBytesLength - k);
               if (cmp != 0) {
                 return cmp;
               }
@@ -92,14 +93,16 @@ public final class MutablePointsReaderUtils {
   }
 
   /** Sort points on the given dimension. */
-  public static void sortByDim(int sortedDim, int bytesPerDim, int[] commonPrefixLengths,
+  public static void sortByDim(int numDataDim, int numIndexDim, int sortedDim, int bytesPerDim, int[] commonPrefixLengths,
                                MutablePointValues reader, int from, int to,
                                BytesRef scratch1, BytesRef scratch2) {
 
+    final int start = sortedDim * bytesPerDim + commonPrefixLengths[sortedDim];
+    final int dimEnd =  sortedDim * bytesPerDim + bytesPerDim;
+    final int dataStart = numIndexDim * bytesPerDim;
+    final int dataEnd = dataStart + (numDataDim - numIndexDim) * bytesPerDim;
     // No need for a fancy radix sort here, this is called on the leaves only so
     // there are not many values to sort
-    final int offset = sortedDim * bytesPerDim + commonPrefixLengths[sortedDim];
-    final int numBytesToCompare = bytesPerDim - commonPrefixLengths[sortedDim];
     new IntroSorter() {
 
       final BytesRef pivot = scratch1;
@@ -119,9 +122,14 @@ public final class MutablePointsReaderUtils {
       @Override
       protected int comparePivot(int j) {
         reader.getValue(j, scratch2);
-        int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + offset, pivot.offset + offset + numBytesToCompare, scratch2.bytes, scratch2.offset + offset, scratch2.offset + offset + numBytesToCompare);
+        int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + start, pivot.offset + dimEnd, scratch2.bytes,
+            scratch2.offset + start, scratch2.offset + dimEnd);
         if (cmp == 0) {
-          cmp = pivotDoc - reader.getDocID(j);
+          cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + dataStart, pivot.offset + dataEnd,
+              scratch2.bytes, scratch2.offset + dataStart, scratch2.offset + dataEnd);
+          if (cmp == 0) {
+            cmp = pivotDoc - reader.getDocID(j);
+          }
         }
         return cmp;
       }
@@ -131,16 +139,20 @@ public final class MutablePointsReaderUtils {
   /** Partition points around {@code mid}. All values on the left must be less
    *  than or equal to it and all values on the right must be greater than or
    *  equal to it. */
-  public static void partition(int maxDoc, int splitDim, int bytesPerDim, int commonPrefixLen,
+  public static void partition(int numDataDim, int numIndexDim, int maxDoc, int splitDim, int bytesPerDim, int commonPrefixLen,
                                MutablePointValues reader, int from, int to, int mid,
                                BytesRef scratch1, BytesRef scratch2) {
-    final int offset = splitDim * bytesPerDim + commonPrefixLen;
-    final int cmpBytes = bytesPerDim - commonPrefixLen;
+    final int dimOffset = splitDim * bytesPerDim + commonPrefixLen;
+    final int dimCmpBytes = bytesPerDim - commonPrefixLen;
+    final int dataOffset = numIndexDim * bytesPerDim;
+    final int dataCmpBytes = (numDataDim - numIndexDim) * bytesPerDim + dimCmpBytes;
     final int bitsPerDocId = PackedInts.bitsRequired(maxDoc - 1);
-    new RadixSelector(cmpBytes + (bitsPerDocId + 7) / 8) {
+    new RadixSelector(dataCmpBytes + (bitsPerDocId + 7) / 8) {
 
       @Override
       protected Selector getFallbackSelector(int k) {
+        final int dataStart = (k < dimCmpBytes) ? dataOffset : dataOffset + k - dimCmpBytes;
+        final int dataEnd = numDataDim * bytesPerDim;
         return new IntroSelector() {
 
           final BytesRef pivot = scratch1;
@@ -159,9 +171,18 @@ public final class MutablePointsReaderUtils {
 
           @Override
           protected int comparePivot(int j) {
-            if (k < cmpBytes) {
+            if (k < dimCmpBytes) {
               reader.getValue(j, scratch2);
-              int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + offset + k, pivot.offset + offset + k + cmpBytes - k, scratch2.bytes, scratch2.offset + offset + k, scratch2.offset + offset + k + cmpBytes - k);
+              int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + dimOffset + k, pivot.offset + dimOffset + dimCmpBytes,
+                  scratch2.bytes, scratch2.offset + dimOffset + k, scratch2.offset + dimOffset + dimCmpBytes);
+              if (cmp != 0) {
+                return cmp;
+              }
+            }
+            if (k < dataCmpBytes) {
+              reader.getValue(j, scratch2);
+              int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + dataStart, pivot.offset + dataEnd,
+                  scratch2.bytes, scratch2.offset + dataStart, scratch2.offset + dataEnd);
               if (cmp != 0) {
                 return cmp;
               }
@@ -178,10 +199,12 @@ public final class MutablePointsReaderUtils {
 
       @Override
       protected int byteAt(int i, int k) {
-        if (k < cmpBytes) {
-          return Byte.toUnsignedInt(reader.getByteAt(i, offset + k));
+        if (k < dimCmpBytes) {
+          return Byte.toUnsignedInt(reader.getByteAt(i, dimOffset + k));
+        } else if (k < dataCmpBytes) {
+          return Byte.toUnsignedInt(reader.getByteAt(i, dataOffset + k - dimCmpBytes));
         } else {
-          final int shift = bitsPerDocId - ((k - cmpBytes + 1) << 3);
+          final int shift = bitsPerDocId - ((k - dataCmpBytes + 1) << 3);
           return (reader.getDocID(i) >>> Math.max(0, shift)) & 0xff;
         }
       }

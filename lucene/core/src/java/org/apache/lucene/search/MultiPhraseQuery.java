@@ -31,12 +31,14 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
@@ -231,11 +233,8 @@ public class MultiPhraseQuery extends Query {
               ts = TermStates.build(context, term, scoreMode.needsScores());
               termStates.put(term, ts);
             }
-            if (scoreMode.needsScores()) {
-              TermStatistics termStatistics = searcher.termStatistics(term, ts);
-              if (termStatistics != null) {
-                allTermStats.add(termStatistics);
-              }
+            if (scoreMode.needsScores() && ts.docFreq() > 0) {
+              allTermStats.add(searcher.termStatistics(term, ts.docFreq(), ts.totalTermFreq()));
             }
           }
         }
@@ -250,7 +249,7 @@ public class MultiPhraseQuery extends Query {
       }
 
       @Override
-      protected PhraseMatcher getPhraseMatcher(LeafReaderContext context, boolean exposeOffsets) throws IOException {
+      protected PhraseMatcher getPhraseMatcher(LeafReaderContext context, SimScorer scorer, boolean exposeOffsets) throws IOException {
         assert termArrays.length != 0;
         final LeafReader reader = context.reader();
 
@@ -295,16 +294,16 @@ public class MultiPhraseQuery extends Query {
             postingsEnum = exposeOffsets ? new UnionFullPostingsEnum(postings) : new UnionPostingsEnum(postings);
           }
 
-          postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, positions[pos], terms);
+          postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, new SlowImpactsEnum(postingsEnum), positions[pos], terms);
         }
 
         // sort by increasing docFreq order
         if (slop == 0) {
           ArrayUtil.timSort(postingsFreqs);
-          return new ExactPhraseMatcher(postingsFreqs, totalMatchCost);
+          return new ExactPhraseMatcher(postingsFreqs, scoreMode, scorer, totalMatchCost);
         }
         else {
-          return new SloppyPhraseMatcher(postingsFreqs, slop, totalMatchCost, exposeOffsets);
+          return new SloppyPhraseMatcher(postingsFreqs, slop, scoreMode, scorer, totalMatchCost, exposeOffsets);
         }
 
       }

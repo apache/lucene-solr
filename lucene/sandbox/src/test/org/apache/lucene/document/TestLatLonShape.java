@@ -17,12 +17,11 @@
 package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
-import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.Polygon;
@@ -239,13 +238,14 @@ public class TestLatLonShape extends LuceneTestCase {
 
     Tessellator.Triangle t = Tessellator.tessellate(poly).get(0);
 
-    byte[] encoded = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(encoded, encodeLatitude(t.getLat(0)), encodeLongitude(t.getLon(0)),
-        encodeLatitude(t.getLat(1)), encodeLongitude(t.getLon(1)), encodeLatitude(t.getLat(2)), encodeLongitude(t.getLon(2)));
-    int[] decoded = new int[6];
-    LatLonShape.decodeTriangle(encoded, decoded);
+    byte[] encoded = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(encoded, encodeLatitude(t.getY(0)), encodeLongitude(t.getX(0)), t.isEdgefromPolygon(0),
+        encodeLatitude(t.getY(1)), encodeLongitude(t.getX(1)), t.isEdgefromPolygon(1),
+        encodeLatitude(t.getY(2)), encodeLongitude(t.getX(2)), t.isEdgefromPolygon(2));
+    ShapeField.DecodedTriangle decoded = new ShapeField.DecodedTriangle();
+    ShapeField.decodeTriangle(encoded, decoded);
 
-    int expected =rectangle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) ? 0 : 1;
+    int expected =rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) ? 0 : 1;
 
     Document document = new Document();
     addPolygonsToDoc(FIELDNAME, document, poly);

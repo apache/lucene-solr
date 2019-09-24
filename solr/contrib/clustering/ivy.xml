@@ -27,7 +27,7 @@
     <dependency org="org.carrot2.shaded" name="carrot2-guava" rev="${/org.carrot2.shaded/carrot2-guava}" conf="compile"/>
     <dependency org="org.carrot2.attributes" name="attributes-binder" rev="${/org.carrot2.attributes/attributes-binder}" conf="compile"/>
 
-    <dependency org="org.simpleframework" name="simple-xml" rev="${/org.simpleframework/simple-xml}" conf="compile"/>
+    <dependency org="com.carrotsearch.thirdparty" name="simple-xml-safe" rev="${/com.carrotsearch.thirdparty/simple-xml-safe}" conf="compile"/>
 
     <dependency org="com.fasterxml.jackson.core" name="jackson-annotations"  rev="${/com.fasterxml.jackson.core/jackson-annotations}"   conf="compile"/>
     <dependency org="com.fasterxml.jackson.core" name="jackson-databind"     rev="${/com.fasterxml.jackson.core/jackson-databind}"      conf="compile"/>

@@ -31,28 +31,28 @@ import org.apache.solr.analytics.value.FillableTestValue.TestLongValueStream;
 import org.junit.Test;
 
 public class AddFunctionTest extends SolrTestCaseJ4 {
-  
+
   @Test
   public void twoSingleValueParametersTest() {
     TestIntValue val1 = new TestIntValue();
     TestFloatValue val2 = new TestFloatValue();
-    
+
     AnalyticsValueStream uncasted = AddFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
-    
+
     // Neither exists
     val1.setExists(false);
     val2.setExists(false);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // One exists
     val1.setValue(30).setExists(true);
     val2.setExists(false);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // Both exist
     val1.setValue(30).setExists(true);
     val2.setValue(21.56F).setExists(true);
@@ -63,7 +63,7 @@ public class AddFunctionTest extends SolrTestCaseJ4 {
   @Test
   public void oneMultiValueParameterTest() {
     TestLongValueStream val = new TestLongValueStream();
-    
+
     AnalyticsValueStream uncasted = AddFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
@@ -72,12 +72,12 @@ public class AddFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // One value
     val.setValues(30L);
     assertEquals(30, func.getDouble(), 0.000001);
     assertTrue(func.exists());
-    
+
     // Multiple values
     val.setValues(30L, 20L, 55L, 61L);
     assertEquals(166, func.getDouble(), 0.000001);
@@ -88,7 +88,7 @@ public class AddFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiOneSingleValueParameterTest() {
     TestLongValueStream val1 = new TestLongValueStream();
     TestDoubleValue val2 = new TestDoubleValue();
-    
+
     AnalyticsValueStream uncasted = AddFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
@@ -99,14 +99,14 @@ public class AddFunctionTest extends SolrTestCaseJ4 {
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, no value
     val1.setValues(4L, 10023L);
     val2.setExists(false);
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, one value
     val1.setValues(4L, 10023L, 48L);
     val2.setValue(21.56F).setExists(true);
@@ -124,7 +124,7 @@ public class AddFunctionTest extends SolrTestCaseJ4 {
     TestDoubleValue val2 = new TestDoubleValue();
     TestFloatValue val3 = new TestFloatValue();
     TestIntValue val4 = new TestIntValue();
-    
+
     AnalyticsValueStream uncasted = AddFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
@@ -136,7 +136,7 @@ public class AddFunctionTest extends SolrTestCaseJ4 {
     val4.setExists(false);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // Some exist
     val1.setExists(false);
     val2.setValue(30.56).setExists(true);
@@ -144,7 +144,7 @@ public class AddFunctionTest extends SolrTestCaseJ4 {
     val4.setValue(12).setExists(true);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // All exist values, one value
     val1.setValue(45L).setExists(true);
     val2.setValue(30.56).setExists(true);

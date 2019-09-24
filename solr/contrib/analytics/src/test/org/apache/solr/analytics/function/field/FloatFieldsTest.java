@@ -25,7 +25,7 @@ import org.apache.solr.analytics.ExpressionFactory;
 import org.junit.Test;
 
 public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
-  
+
   @Test
   public void expressionFactoryCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
@@ -40,7 +40,7 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
   public void singleValuedTrieFloatTest() throws IOException {
     FloatField valueField = new FloatField("float_f_t");
     Map<String,Float> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       float value = valueField.getFloat();
       if (valueField.exists()) {
@@ -48,7 +48,7 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return valueField.exists();
     });
-    
+
     checkSingleFieldValues(singleFloats, values, missing);
   }
 
@@ -56,7 +56,7 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
   public void singleValuedPointFloatTest() throws IOException {
     FloatField valueField = new FloatField("float_f_p");
     Map<String,Float> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       float value = valueField.getFloat();
       if (valueField.exists()) {
@@ -64,7 +64,7 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return valueField.exists();
     });
-    
+
     checkSingleFieldValues(singleFloats, values, missing);
   }
 
@@ -72,7 +72,7 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
   public void multiValuedTrieFloatTest() throws IOException {
     FloatMultiTrieField valueField = new FloatMultiTrieField("float_fm_t");
     Map<String,Map<Float,Integer>> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       Map<Float, Integer> doc = new HashMap<>();
       valueField.streamFloats( value -> {
@@ -83,7 +83,7 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return doc.size() > 0;
     });
-    
+
     checkMultiFieldValues(multiFloats, values, missing, true);
   }
 
@@ -91,7 +91,7 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
   public void multiValuedPointFloatTest() throws IOException {
     FloatMultiPointField valueField = new FloatMultiPointField("float_fm_p");
     Map<String,Map<Float,Integer>> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       Map<Float, Integer> doc = new HashMap<>();
       valueField.streamFloats( value -> {
@@ -102,7 +102,7 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return doc.size() > 0;
     });
-    
+
     checkMultiFieldValues(multiFloats, values, missing, false);
   }
 }

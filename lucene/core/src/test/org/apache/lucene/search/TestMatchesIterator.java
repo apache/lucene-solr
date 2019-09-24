@@ -31,25 +31,30 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMatchesIterator extends LuceneTestCase {
 
   protected IndexSearcher searcher;
   protected Directory directory;
-  protected IndexReader reader;
+  protected IndexReader reader = null;
 
   private static final String FIELD_WITH_OFFSETS = "field_offsets";
   private static final String FIELD_NO_OFFSETS = "field_no_offsets";
@@ -187,6 +192,29 @@ public class TestMatchesIterator extends LuceneTestCase {
     }
   }
 
+  private void checkSubMatches(Query q, String[][] expectedNames) throws IOException {
+    Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
+    for (int i = 0; i < expectedNames.length; i++) {
+      LeafReaderContext ctx = searcher.leafContexts.get(ReaderUtil.subIndex(i, searcher.leafContexts));
+      int doc = i - ctx.docBase;
+      Matches matches = w.matches(ctx, doc);
+      if (matches == null) {
+        assertEquals("Expected to get no matches on document " + i, 0, expectedNames[i].length);
+        continue;
+      }
+      Set<String> expectedQueries = new HashSet<>(Arrays.asList(expectedNames[i]));
+      Set<String> actualQueries = NamedMatches.findNamedMatches(matches)
+          .stream().map(NamedMatches::getName).collect(Collectors.toSet());
+
+      Set<String> unexpected = new HashSet<>(actualQueries);
+      unexpected.removeAll(expectedQueries);
+      assertEquals("Unexpected matching leaf queries: " + unexpected, 0, unexpected.size());
+      Set<String> missing = new HashSet<>(expectedQueries);
+      missing.removeAll(actualQueries);
+      assertEquals("Missing matching leaf queries: " + missing, 0, missing.size());
+    }
+  }
+
   private void assertIsLeafMatch(Query q, String field) throws IOException {
     Weight w = searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
     for (int i = 0; i < searcher.reader.maxDoc(); i++) {
@@ -289,7 +317,7 @@ public class TestMatchesIterator extends LuceneTestCase {
 
   public void testTermQuery() throws IOException {
     Term t = new Term(FIELD_WITH_OFFSETS, "w1");
-    Query q = new TermQuery(t);
+    Query q = NamedMatches.wrapQuery("q", new TermQuery(t));
     checkMatches(q, FIELD_WITH_OFFSETS, new int[][]{
         { 0, 0, 0, 0, 2 },
         { 1, 0, 0, 0, 2 },
@@ -299,6 +327,7 @@ public class TestMatchesIterator extends LuceneTestCase {
     });
     checkLabelCount(q, FIELD_WITH_OFFSETS, new int[]{ 1, 1, 1, 1, 0, 0 });
     assertIsLeafMatch(q, FIELD_WITH_OFFSETS);
+    checkSubMatches(q, new String[][]{ {"q"}, {"q"}, {"q"}, {"q"}, {}, {}});
   }
 
   public void testTermQueryNoStoredOffsets() throws IOException {
@@ -320,8 +349,8 @@ public class TestMatchesIterator extends LuceneTestCase {
   }
 
   public void testDisjunction() throws IOException {
-    Query w1 = new TermQuery(new Term(FIELD_WITH_OFFSETS, "w1"));
-    Query w3 = new TermQuery(new Term(FIELD_WITH_OFFSETS, "w3"));
+    Query w1 = NamedMatches.wrapQuery("w1", new TermQuery(new Term(FIELD_WITH_OFFSETS, "w1")));
+    Query w3 = NamedMatches.wrapQuery("w3", new TermQuery(new Term(FIELD_WITH_OFFSETS, "w3")));
     Query q = new BooleanQuery.Builder()
         .add(w1, BooleanClause.Occur.SHOULD)
         .add(w3, BooleanClause.Occur.SHOULD)
@@ -335,6 +364,7 @@ public class TestMatchesIterator extends LuceneTestCase {
     });
     checkLabelCount(q, FIELD_WITH_OFFSETS, new int[]{ 2, 2, 1, 2, 0, 0 });
     assertIsLeafMatch(q, FIELD_WITH_OFFSETS);
+    checkSubMatches(q, new String[][]{ {"w1", "w3"}, {"w1", "w3"}, {"w1"}, {"w1", "w3"}, {}, {}});
   }
 
   public void testDisjunctionNoPositions() throws IOException {
@@ -373,10 +403,10 @@ public class TestMatchesIterator extends LuceneTestCase {
   }
 
   public void testMinShouldMatch() throws IOException {
-    Query w1 = new TermQuery(new Term(FIELD_WITH_OFFSETS, "w1"));
-    Query w3 = new TermQuery(new Term(FIELD_WITH_OFFSETS, "w3"));
+    Query w1 = NamedMatches.wrapQuery("w1", new TermQuery(new Term(FIELD_WITH_OFFSETS, "w1")));
+    Query w3 = NamedMatches.wrapQuery("w3", new TermQuery(new Term(FIELD_WITH_OFFSETS, "w3")));
     Query w4 = new TermQuery(new Term(FIELD_WITH_OFFSETS, "w4"));
-    Query xx = new TermQuery(new Term(FIELD_WITH_OFFSETS, "xx"));
+    Query xx = NamedMatches.wrapQuery("xx", new TermQuery(new Term(FIELD_WITH_OFFSETS, "xx")));
     Query q = new BooleanQuery.Builder()
         .add(w3, BooleanClause.Occur.SHOULD)
         .add(new BooleanQuery.Builder()
@@ -395,6 +425,7 @@ public class TestMatchesIterator extends LuceneTestCase {
     });
     checkLabelCount(q, FIELD_WITH_OFFSETS, new int[]{ 3, 1, 3, 3, 0, 0 });
     assertIsLeafMatch(q, FIELD_WITH_OFFSETS);
+    checkSubMatches(q, new String[][]{ {"w1", "w3"}, {"w3"}, {"w1", "xx"}, {"w1", "w3"}, {}, {}});
   }
 
   public void testMinShouldMatchNoPositions() throws IOException {
@@ -539,6 +570,8 @@ public class TestMatchesIterator extends LuceneTestCase {
     assertEquals(2, fields.size());
     assertTrue(fields.contains(FIELD_WITH_OFFSETS));
     assertTrue(fields.contains("id"));
+
+    assertEquals(2, AssertingMatches.unWrap(m).getSubMatches().size());
   }
 
   //  0         1         2         3         4         5         6         7
@@ -699,6 +732,65 @@ public class TestMatchesIterator extends LuceneTestCase {
         {3, 0, 0, 0, 2, 2, 2, 6, 8},
         {4}
     });
+  }
+
+  public void testMinimalSeekingWithWildcards() throws IOException {
+    SeekCountingLeafReader reader = new SeekCountingLeafReader(getOnlyLeafReader(this.reader));
+    this.searcher = new IndexSearcher(reader);
+    Query query = new PrefixQuery(new Term(FIELD_WITH_OFFSETS, "w"));
+    Weight w = searcher.createWeight(query.rewrite(reader), ScoreMode.COMPLETE, 1);
+
+    // docs 0-3 match several different terms here, but we only seek to the first term and
+    // then short-cut return; other terms are ignored until we try and iterate over matches
+    int[] expectedSeeks = new int[]{ 1, 1, 1, 1, 6, 6 };
+    int i = 0;
+    for (LeafReaderContext ctx : reader.leaves()) {
+      for (int doc = 0; doc < ctx.reader().maxDoc(); doc++) {
+        reader.seeks = 0;
+        w.matches(ctx, doc);
+        assertEquals("Unexpected seek count on doc " + doc, expectedSeeks[i], reader.seeks);
+        i++;
+      }
+    }
+  }
+
+  private static class SeekCountingLeafReader extends FilterLeafReader {
+
+    int seeks = 0;
+
+    public SeekCountingLeafReader(LeafReader in) {
+      super(in);
+    }
+
+    @Override
+    public Terms terms(String field) throws IOException {
+      Terms terms = super.terms(field);
+      if (terms == null) {
+        return null;
+      }
+      return new FilterTerms(terms) {
+        @Override
+        public TermsEnum iterator() throws IOException {
+          return new FilterTermsEnum(super.iterator()) {
+            @Override
+            public boolean seekExact(BytesRef text) throws IOException {
+              seeks++;
+              return super.seekExact(text);
+            }
+          };
+        }
+      };
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return null;
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
+    }
   }
 
 }

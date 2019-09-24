@@ -101,4 +101,12 @@ public class UUIDField extends StrField {
   public UUID toObject(IndexableField f) {
     return UUID.fromString(f.stringValue());
   }
+
+  @Override
+  public Object toNativeType(Object val) {
+    if (val instanceof CharSequence) {
+      return UUID.fromString(val.toString());
+    }
+    return val;
+  }
 }

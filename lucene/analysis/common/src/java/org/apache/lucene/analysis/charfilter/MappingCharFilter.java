@@ -106,17 +106,17 @@ public class MappingCharFilter extends BaseCharFilter {
             // Fast pass for single character match:
             assert arc.isFinal();
             lastMatchLen = 1;
-            lastMatch = arc.output;
+            lastMatch = arc.output();
           } else {
             int lookahead = 0;
-            CharsRef output = arc.output;
+            CharsRef output = arc.output();
             while (true) {
               lookahead++;
 
               if (arc.isFinal()) {
                 // Match! (to node is final)
                 lastMatchLen = lookahead;
-                lastMatch = outputs.add(output, arc.nextFinalOutput);
+                lastMatch = outputs.add(output, arc.nextFinalOutput());
                 // Greedy: keep searching to see if there's a
                 // longer match...
               }
@@ -133,7 +133,7 @@ public class MappingCharFilter extends BaseCharFilter {
                 // Dead end
                 break;
               }
-              output = outputs.add(output, arc.output);
+              output = outputs.add(output, arc.output());
             }
           }
         }

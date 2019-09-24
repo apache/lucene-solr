@@ -76,7 +76,7 @@ public class TangentEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("tan(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void noValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("tan(a)");
     
@@ -85,7 +85,7 @@ public class TangentEvaluatorTest extends SolrTestCase {
     assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void nullValue() throws Exception{
     test(null);
   }

@@ -183,12 +183,12 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       boolean replicaInRecovery = false;
 
       Map<String, Object> shards = (Map<String, Object>) collectionState.get("shards");
-      for (String shardId : shards.keySet()) {
+      for (Object o : shards.values()) {
         boolean hasActive = false;
-        Map<String, Object> shard = (Map<String, Object>) shards.get(shardId);
+        Map<String, Object> shard = (Map<String, Object>) o;
         Map<String, Object> replicas = (Map<String, Object>) shard.get("replicas");
-        for (String replicaId : replicas.keySet()) {
-          Map<String, Object> replicaState = (Map<String, Object>) replicas.get(replicaId);
+        for (Object value : replicas.values()) {
+          Map<String, Object> replicaState = (Map<String, Object>) value;
           Replica.State coreState = Replica.State.getState((String) replicaState.get(ZkStateReader.STATE_PROP));
           String nodeName = (String) replicaState.get("node_name");
 
@@ -371,10 +371,9 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     }
 
     String path = params.get(PATH);
-    String addr = params.get("addr");
 
-    if (addr != null && addr.length() == 0) {
-      addr = null;
+    if (params.get("addr") != null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Illegal parameter \"addr\"");
     }
 
     String detailS = params.get("detail");
@@ -401,7 +400,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         filter = null;
     }
 
-    ZKPrinter printer = new ZKPrinter(cores.getZkController(), addr);
+    ZKPrinter printer = new ZKPrinter(cores.getZkController());
     printer.detail = detail;
     printer.dump = dump;
     boolean isGraphView = "graph".equals(params.get("view"));
@@ -429,61 +428,23 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     boolean detail = false;
     boolean dump = false;
 
-    String addr; // the address passed to us
     String keeperAddr; // the address we're connected to
-
-    boolean doClose;  // close the client after done if we opened it
 
     final BAOS baos = new BAOS();
     final Writer out = new OutputStreamWriter(baos,  StandardCharsets.UTF_8);
     SolrZkClient zkClient;
 
-    int level;
-    int maxData = 95;
-
     PageOfCollections page;
     PagedCollectionSupport pagingSupport;
     ZkController zkController;
 
-    public ZKPrinter(ZkController controller, String addr) throws IOException {
+    public ZKPrinter(ZkController controller) throws IOException {
       this.zkController = controller;
-      this.addr = addr;
-
-      if (addr == null) {
-        if (controller != null) {
-          // this core is zk enabled
-          keeperAddr = controller.getZkServerAddress();
-          zkClient = controller.getZkClient();
-          if (zkClient != null && zkClient.isConnected()) {
-            return;
-          } else {
-            // try a different client with this address
-            addr = keeperAddr;
-          }
-        }
-      }
-
-      keeperAddr = addr;
-      if (addr == null) {
-        writeError(404, "Zookeeper is not configured for this Solr Core. Please try connecting to an alternate zookeeper address.");
-        return;
-      }
-
-      try {
-        zkClient = new SolrZkClient(addr, 10000);
-        doClose = true;
-      } catch (Exception e) {
-        writeError(503, "Could not connect to zookeeper at '" + addr + "'\"");
-        zkClient = null;
-        return;
-      }
-
+      keeperAddr = controller.getZkServerAddress();
+      zkClient = controller.getZkClient();
     }
 
     public void close() {
-      if (doClose) {
-        zkClient.close();
-      }
       try {
         out.flush();
       } catch (Exception e) {

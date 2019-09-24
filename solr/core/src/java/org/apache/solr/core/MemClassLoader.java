@@ -26,6 +26,7 @@ import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,20 +44,28 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean allJarsLoaded = false;
   private final SolrResourceLoader parentLoader;
-  private List<PluginBag.RuntimeLib> libs = new ArrayList<>();
+  private List<RuntimeLib> libs = new ArrayList<>();
   private Map<String, Class> classCache = new HashMap<>();
   private List<String> errors = new ArrayList<>();
 
 
-  public MemClassLoader(List<PluginBag.RuntimeLib> libs, SolrResourceLoader resourceLoader) {
+  public MemClassLoader(List<RuntimeLib> libs, SolrResourceLoader resourceLoader) {
     this.parentLoader = resourceLoader;
     this.libs = libs;
+  }
+
+  public int getZnodeVersion(){
+    int result = -1;
+    for (RuntimeLib lib : libs) {
+      if(lib.znodeVersion > result) result = lib.znodeVersion;
+    }
+    return result;
   }
 
   synchronized void loadRemoteJars() {
     if (allJarsLoaded) return;
     int count = 0;
-    for (PluginBag.RuntimeLib lib : libs) {
+    for (RuntimeLib lib : libs) {
       if (lib.getUrl() != null) {
         try {
           lib.loadJar();
@@ -70,10 +79,13 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     if (count == libs.size()) allJarsLoaded = true;
   }
 
+  public Collection<String> getErrors(){
+    return errors;
+  }
   public synchronized void loadJars() {
     if (allJarsLoaded) return;
 
-    for (PluginBag.RuntimeLib lib : libs) {
+    for (RuntimeLib lib : libs) {
       try {
         lib.loadJar();
         lib.verify();
@@ -133,7 +145,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
 
     String path = name.replace('.', '/').concat(".class");
     ByteBuffer buf = null;
-    for (PluginBag.RuntimeLib lib : libs) {
+    for (RuntimeLib lib : libs) {
       try {
         buf = lib.getFileContent(path);
         if (buf != null) {
@@ -150,7 +162,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
 
   @Override
   public void close() throws Exception {
-    for (PluginBag.RuntimeLib lib : libs) {
+    for (RuntimeLib lib : libs) {
       try {
         lib.close();
       } catch (Exception e) {
@@ -176,6 +188,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     try {
       return findClass(cname).asSubclass(expectedType);
     } catch (Exception e) {
+      log.error("Error loading class from runtime libs ", e);
       if (e instanceof SolrException) {
         throw (SolrException) e;
       } else {

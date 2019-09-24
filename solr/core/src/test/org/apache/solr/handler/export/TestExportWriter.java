@@ -34,6 +34,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.junit.Before;
@@ -44,7 +45,9 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("export.test", "true");
+    // force LogDocMergePolicy so that we get a predictable doc order
+    // when testing index order results
+    systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
     initCore("solrconfig-sortingresponse.xml","schema-sortingresponse.xml");
   }
 
