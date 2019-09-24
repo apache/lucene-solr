@@ -28,7 +28,7 @@ import org.apache.lucene.util.ArrayUtil;
  *
  * @lucene.internal
  */
-class ComponentTree implements Component2D {
+final class ComponentTree implements Component2D {
   /** minimum latitude of this geometry's bounding box area */
   private double minY;
   /** maximum latitude of this geometry's bounding box area */
