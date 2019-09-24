@@ -27,23 +27,22 @@ import org.apache.lucene.index.PointValues.Relation;
  * http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf</a>.
  * @lucene.internal
  */
-// Both Polygon.contains() and Polygon.crossesSlowly() loop all edges, and first check that the edge is within a range.
-// we just organize the edges to do the same computations on the same subset of edges more efficiently.
+
 public class Polygon2D implements Component2D {
-  // each component/hole is a node in an augmented 2d kd-tree: we alternate splitting between latitude/longitude,
-  // and pull up max values for both dimensions to each parent node (regardless of split).
   /** minimum latitude of this geometry's bounding box area */
-  public  double minY;
+  final private double minY;
   /** maximum latitude of this geometry's bounding box area */
-  public  double maxY;
+  final private double maxY;
   /** minimum longitude of this geometry's bounding box area */
-  public  double minX;
+  final private double minX;
   /** maximum longitude of this geometry's bounding box area */
-  public  double maxX;
+  final private double maxX;
   /** tree of holes, or null */
-  protected final Component2D holes;
-  private final AtomicBoolean containsBoundary = new AtomicBoolean(false);
+  final protected Component2D holes;
+  /** Edges of the polygon represented as a 2-d interval tree.*/
   final EdgeTree tree;
+  /** helper boolean for points on boundary */
+  final private AtomicBoolean containsBoundary = new AtomicBoolean(false);
 
   protected Polygon2D(final double minX, final double maxX, final double minY, final double maxY, double[] x, double[] y, Component2D holes) {
     this.minY = minY;

@@ -28,15 +28,15 @@ import org.apache.lucene.index.PointValues.Relation;
 public final class Line2D implements Component2D {
 
   /** minimum latitude of this geometry's bounding box area */
-  public  double minY;
+  final private double minY;
   /** maximum latitude of this geometry's bounding box area */
-  public  double maxY;
+  final private double maxY;
   /** minimum longitude of this geometry's bounding box area */
-  public  double minX;
+  final private double minX;
   /** maximum longitude of this geometry's bounding box area */
-  public  double maxX;
-
-  private EdgeTree tree;
+  final private double maxX;
+  /** lines represented as a 2-d interval tree.*/
+  final private EdgeTree tree;
 
   private Line2D(Line line) {
     this.minY = line.minLat;
