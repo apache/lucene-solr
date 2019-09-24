@@ -36,8 +36,7 @@ class ComponentTree implements Component2D {
   /** minimum longitude of this geometry's bounding box area */
   private double minX;
   /** maximum longitude of this geometry's bounding box area */
-  private  double maxX;
-
+  private double maxX;
   // child components, or null. Note internal nodes might mot have
   // a consistent bounding box. Internal nodes should not be accessed
   // outside if this class.
@@ -45,10 +44,9 @@ class ComponentTree implements Component2D {
   private Component2D right;
   /** which dimension was this node split on */
   // TODO: its implicit based on level, but boolean keeps code simple
-  private final boolean splitX;
-
+  final private boolean splitX;
   /** root node of edge tree */
-  private final Component2D component;
+  final private Component2D component;
 
   protected ComponentTree(Component2D component, boolean splitX) {
     this.minY = component.getMinY();
