@@ -25,7 +25,7 @@ import org.apache.lucene.index.PointValues.Relation;
  * {@link #relate relate()} are {@code O(n)}, but for most practical lines are much faster than brute force.
  * @lucene.internal
  */
-public final class Line2D implements Component2D {
+final class Line2D implements Component2D {
 
   /** minimum latitude of this geometry's bounding box area */
   final private double minY;
