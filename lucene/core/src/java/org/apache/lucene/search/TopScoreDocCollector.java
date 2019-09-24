@@ -279,13 +279,13 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
     if (hitsThresholdChecker.isThresholdReached()
-          && pqTop != null
-          && pqTop.score != Float.NEGATIVE_INFINITY) { // -Infinity is the score of sentinels
+          && ((bottomValueChecker != null && bottomValueChecker.getBottomValue() > 0)
+          || (pqTop != null && pqTop.score != Float.NEGATIVE_INFINITY))) { // -Infinity is the score of sentinels
       // since we tie-break on doc id and collect in doc id order, we can require
       // the next float
       float bottomScore = Math.nextUp(pqTop.score);
 
-      if (bottomValueChecker != null && bottomValueChecker.getBottomValue() > 0) {
+      if (bottomValueChecker != null) {
         bottomValueChecker.updateThreadLocalBottomValue(pqTop.score);
       }
 
