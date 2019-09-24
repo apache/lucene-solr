@@ -28,7 +28,7 @@ import org.apache.lucene.index.PointValues.Relation;
  * @lucene.internal
  */
 
-final class Polygon2D implements Component2D {
+public final class Polygon2D implements Component2D {
   /** minimum latitude of this geometry's bounding box area */
   final private double minY;
   /** maximum latitude of this geometry's bounding box area */
