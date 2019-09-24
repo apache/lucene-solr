@@ -21,12 +21,18 @@ framework included in the math expressions library.
 
 == Probability Distribution Framework
 
-The probability distribution framework includes many commonly used <<Real Distributions,real>>
+The probability distribution framework includes commonly used <<Continuous Distributions,continuous>>
 and <<Discrete,discrete>> probability distributions, including support for <<empiricaldistribution,empirical>>
 and <<enumerateddistribution,enumerated>> distributions that model real world data.
 
-The probability distribution framework also includes a set of functions that use the probability distributions
-to support probability calculations and sampling.
+The probability distribution framework also supports:
+
+* Visualization
+* Probability and cumulative probability calculations
+* Sampling
+
+Other chapters of the user guide use the probability distribution framework to support *outlier detection*, *Monte Carlo* simulations
+and *Kolmogorov Smirnov* tests.
 
 == Visualization
 
@@ -36,19 +42,20 @@ probability density function (PDF) of the distribution.
 
 Example visualizations are shown with each distribution below.
 
-=== Real Distributions
+=== Continuous Distributions
 
-Real probability distributions work with real/continuous numbers (floating points). Below
-are the supported real probability distributions.
+Continuous probability distributions work with continuous numbers (floating points). Below
+are the supported continuous probability distributions.
 
 ==== empiricalDistribution
 
-The `empiricalDistribution` function creates a real probability
+The `empiricalDistribution` function creates a continuous probability
 distribution from actual data.
 
-Empirical distributions can be used to conveniently visualize the probability density of a random sample from a Solr Cloud
-collection. The example below shows the zplot function visualizing the probability density of a random sample
-with a 32 bin histogram.
+Empirical distributions can be used to conveniently visualize the probability density
+function of a random sample from a Solr Cloud
+collection. The example below shows the zplot function visualizing the probability
+density of a random sample with a 32 bin histogram.
 
 image::images/math-expressions/empirical.png[]
 
@@ -76,7 +83,7 @@ image::images/math-expressions/gamma.png[]
 
 ==== betaDistribution
 
-The visualization below shows a gamma distribution with a `shape1` of 2 and `shape2`
+The visualization below shows a beta distribution with a `shape1` of 2 and `shape2`
 of 2.
 
 image::images/math-expressions/beta.png[]
@@ -126,8 +133,8 @@ discrete values and probabilities.
 
 image::images/math-expressions/enum1.png[]
 
-The visualization below shows an enumerated distribution generated from a random
-sample of a field of discrete integers.
+The visualization below shows an enumerated distribution generated from a search
+result that has been transformed into a vector of discrete values.
 
 image::images/math-expressions/enum2.png[]
 
@@ -209,23 +216,22 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Below is an example of a cumulative probability calculation
-using an empirical distribution.
+=== Probability
 
-In the example an empirical distribution is created from a random
-sample taken from the `price_f` field.
+All probability distributions can calculate the probability
+between a range of values.
 
-The cumulative probability of the value `.75` is then calculated.
-The `price_f` field in this example was generated using a
-uniform real distribution between 0 and 1, so the output of the
- `cumulativeProbability` function is very close to .75.
+In the following example an empirical distribution is created
+from a sample of file sizes drawn from the logs collection.
+Then the probability of a file size between the range of 40000
+and 41000 is calculated to be 19%.
 
 [source,text]
 ----
-let(a=random(collection1, q="*:*", rows="30000", fl="price_f"),
-    b=col(a, price_f),
-    c=empiricalDistribution(b),
-    d=cumulativeProbability(c, .75))
+let(a=random(logs, q="*:*", fl="filesize_d", rows="50000"),
+    b=col(a, filesize_d),
+    c=empiricalDistribution(b, 100),
+    d=probability(c, 40000, 41000))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -236,11 +242,11 @@ When this expression is sent to the `/stream` handler it responds with:
   "result-set": {
     "docs": [
       {
-        "b": 0.7554217416103242
+        "d": 0.19006540560734791
       },
       {
         "EOF": true,
-        "RESPONSE_TIME": 0
+        "RESPONSE_TIME": 550
       }
     ]
   }
@@ -286,39 +292,6 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Below is an example of a probability calculation using an enumerated distribution.
-
-In the example an enumerated distribution is created from a random
-sample taken from the `day_i` field, which was created using a uniform integer distribution between 0 and 30.
-
-The probability of the discrete value 10 is then calculated.
-
-[source,text]
-----
-let(a=random(collection1, q="*:*", rows="30000", fl="day_i"),
-    b=col(a, day_i),
-    c=enumeratedDistribution(b),
-    d=probability(c, 10))
-----
-
-When this expression is sent to the `/stream` handler it responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "d": 0.03356666666666666
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 488
-      }
-    ]
-  }
-}
-----
 
 === Sampling
 
@@ -352,43 +325,28 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Below is an example drawing 10 samples from a normal distribution.
+The sample function can also return a vector of samples. Vectors of samples
+can be easily visualized as scatter plots to gain an intuitive understanding
+of the underlying distribution.
 
-[source,text]
-----
-let(a=normalDistribution(10, 5),
-    b=sample(a, 10))
-----
+The first example shows the scatter plot of a normal distribution with
+a mean of 0 and a standard deviation of 5.
 
-When this expression is sent to the `/stream` handler it responds with:
+image::images/math-expressions/sample-scatter.png[]
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "b": [
-          10.18444709339441,
-          9.466947971749377,
-          1.2420697166234458,
-          11.074501226984806,
-          7.659629052136225,
-          0.4440887839190708,
-          13.710925254778786,
-          2.089566359480239,
-          0.7907293097654424,
-          2.8184587681006734
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 3
-      }
-    ]
-  }
-}
-----
+The next example shows a scatter plot of a uniform distribution between
+the ranges of -5 and 5.
+
+image::images/math-expressions/sample-scatter1.png[]
+
+The next example shows the two samples overlaid in the same scatter
+plot.
+
+image::images/math-expressions/sample-overlay.png[]
+
+
+
+
 
 === Multivariate Normal Distribution
 
@@ -436,7 +394,7 @@ Finally five samples are drawn from the multivariate normal distribution.
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
+let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, response_d"),
     b=col(a, filesize_d),
     c=col(a, response_d),
     d=array(mean(b), mean(c)),
