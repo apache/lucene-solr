@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.util.NumericUtils;
 
 /**
  * Finds all previously indexed shapes that intersect the specified distance query.

@@ -18,13 +18,12 @@ package org.apache.lucene.geo;
 
 
 /**
- * Represents a circle on the earth's surface.
+ * Represents a circle on the XY plane.
  * <p>
  * NOTES:
  * <ol>
- *   <li> Latitude/longitude values must be in decimal degrees.
- *   <li> Radius must be in meters.
- *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
+ *   <li> X/Y precision is float.
+ *   <li> Radius  recision is float.
  * </ol>
  * @lucene.experimental
  */
