@@ -569,7 +569,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
       Object queryCircle = randomQueryCircle();
       Object queryCircle2D = toCircle2D(queryCircle);
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
-      Query query = newDistanceQuery(FIELD_NAME, queryRelation, queryCircle2D);
+      Query query = newDistanceQuery(FIELD_NAME, queryRelation, queryCircle);
 
       if (VERBOSE) {
         System.out.println("  query=" + query + ", relation=" + queryRelation);

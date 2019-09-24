@@ -50,10 +50,20 @@ final class LatLonShapeDistanceQuery extends ShapeQuery {
     // decode indexed triangle
     ShapeField.decodeTriangle(triangle, scratchTriangle);
 
-    if (queryRelation == ShapeField.QueryRelation.WITHIN) {
-      return circle2D.containsTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.cX, scratchTriangle.cY);
+    int aY = scratchTriangle.aY;
+    int aX = scratchTriangle.aX;
+    int bY = scratchTriangle.bY;
+    int bX = scratchTriangle.bX;
+    int cY = scratchTriangle.cY;
+    int cX = scratchTriangle.cX;
+
+
+    switch (queryRelation) {
+      case INTERSECTS: return circle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+      case WITHIN: return circle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+      case DISJOINT: return circle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY) == false;
+      default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
-    return circle2D.intersectsTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.cX, scratchTriangle.cY);
   }
 
   @Override

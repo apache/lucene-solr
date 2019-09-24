@@ -69,7 +69,7 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Query newDistanceQuery(String field, QueryRelation queryRelation, Object circle) {
-    return LatLonShape.newDistanceQuery(field, queryRelation, (Circle)  circle);
+    return LatLonShape.newDistanceQuery(field, queryRelation, (Circle) circle);
   }
 
   @Override
@@ -234,7 +234,7 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Object nextCircle() {
-    return null;
+    return new Circle(nextLatitude(), nextLongitude(), random().nextDouble() * Circle.MAXRADIUS);
   }
 
   @Override
