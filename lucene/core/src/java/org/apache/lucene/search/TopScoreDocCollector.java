@@ -283,10 +283,14 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           || (pqTop != null && pqTop.score != Float.NEGATIVE_INFINITY))) { // -Infinity is the score of sentinels
       // since we tie-break on doc id and collect in doc id order, we can require
       // the next float
-      float bottomScore = Math.nextUp(pqTop.score);
+      float bottomScore = Float.NEGATIVE_INFINITY;
 
-      if (bottomValueChecker != null) {
-        bottomValueChecker.updateThreadLocalBottomValue(pqTop.score);
+      if (pqTop != null && pqTop.score != Float.NEGATIVE_INFINITY) {
+        bottomScore = Math.nextUp(pqTop.score);
+
+        if (bottomValueChecker != null) {
+          bottomValueChecker.updateThreadLocalBottomValue(pqTop.score);
+        }
       }
 
       // Global bottom can only be greater than or equal to the local bottom score
