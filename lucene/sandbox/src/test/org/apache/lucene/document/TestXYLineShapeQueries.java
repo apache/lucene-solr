@@ -18,7 +18,9 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.EdgeTree;
+import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYLine;
@@ -119,6 +121,24 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
         }
       }
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
+    }
+
+    @Override
+    public boolean testDistanceQuery(Object circle2D, Object shape) {
+      Line line = (Line)shape;
+      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
+        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
+        if (queryRelation == QueryRelation.WITHIN) {
+          if (((Circle2D)circle2D).containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
+            return false;
+          }
+        } else {
+          if (((Circle2D)circle2D).intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
+            return queryRelation == QueryRelation.INTERSECTS;
+          }
+        }
+      }
+      return queryRelation != QueryRelation.INTERSECTS;
     }
   }
 }

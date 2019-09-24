@@ -20,6 +20,8 @@ import java.util.Arrays;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Circle;
+import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
@@ -66,6 +68,11 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
   }
 
   @Override
+  protected Query newDistanceQuery(String field, QueryRelation queryRelation, Object circle) {
+    return LatLonShape.newDistanceQuery(field, queryRelation, (Circle)  circle);
+  }
+
+  @Override
   protected Line2D toLine2D(Object... lines) {
     return Line2D.create(Arrays.stream(lines).toArray(Line[]::new));
   }
@@ -73,6 +80,11 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
   @Override
   protected Polygon2D toPolygon2D(Object... polygons) {
     return Polygon2D.create(Arrays.stream(polygons).toArray(Polygon[]::new));
+  }
+
+  @Override
+  protected Object toCircle2D(Object circle) {
+    return Circle2D.create((Circle) circle);
   }
 
   @Override
@@ -218,6 +230,11 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
   @Override
   protected Polygon nextPolygon() {
     return GeoTestUtil.nextPolygon();
+  }
+
+  @Override
+  protected Object nextCircle() {
+    return null;
   }
 
   @Override

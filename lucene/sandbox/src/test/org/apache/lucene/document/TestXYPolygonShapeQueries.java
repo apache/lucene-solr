@@ -19,8 +19,10 @@ package org.apache.lucene.document;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYPolygon2D;
@@ -114,6 +116,27 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
         }
       }
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
+    }
+
+    @Override
+    public boolean testDistanceQuery(Object circle2D, Object shape) {
+      Polygon p = (Polygon) shape;
+      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(p);
+      for (Tessellator.Triangle t : tessellation) {
+        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(t.getX(0), t.getY(0), t.isEdgefromPolygon(0),
+            t.getX(1), t.getY(1), t.isEdgefromPolygon(1),
+            t.getX(2), t.getY(2), t.isEdgefromPolygon(2));
+        if (queryRelation == QueryRelation.WITHIN) {
+          if (((Circle2D) circle2D).containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
+            return false;
+          }
+        } else {
+          if (((Circle2D) circle2D).intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
+            return queryRelation == QueryRelation.INTERSECTS;
+          }
+        }
+      }
+      return queryRelation != QueryRelation.INTERSECTS;
     }
   }
 

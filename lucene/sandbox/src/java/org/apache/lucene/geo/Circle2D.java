@@ -52,6 +52,11 @@ public class Circle2D {
     return new Circle2D(circle.getLat(), circle.getLon(), circle.getRadius());
   }
 
+  /** Builds a circle from  a point and a distance in meters */
+  public static Circle2D create(XYCircle circle) {
+    return new Circle2D(circle.getY(), circle.getX(), circle.getRadius());
+  }
+
   /** Checks if the circle contains the provided point **/
   public boolean queryContainsPoint(int x, int y) {
     return distancePredicate.test(y, x);

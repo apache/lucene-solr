@@ -20,8 +20,10 @@ import java.util.Arrays;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.ShapeTestUtil;
+import org.apache.lucene.geo.XYCircle;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYPolygon2D;
@@ -58,6 +60,11 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   }
 
   @Override
+  protected Query newDistanceQuery(String field, QueryRelation queryRelation, Object circle) {
+    return XYShape.newDistanceQuery(field, queryRelation, (XYCircle) circle);
+  }
+
+  @Override
   protected Line2D toLine2D(Object... lines) {
     return Line2D.create(Arrays.stream(lines).toArray(XYLine[]::new));
   }
@@ -65,6 +72,11 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   @Override
   protected XYPolygon2D toPolygon2D(Object... polygons) {
     return XYPolygon2D.create(Arrays.stream(polygons).toArray(XYPolygon[]::new));
+  }
+
+  @Override
+  protected Object toCircle2D(Object circle) {
+    return Circle2D.create((XYCircle) circle);
   }
 
   @Override
@@ -118,6 +130,11 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   @Override
   protected XYPolygon nextPolygon() {
     return ShapeTestUtil.nextPolygon();
+  }
+
+  @Override
+  protected Object nextCircle() {
+    return new XYCircle((float)ShapeTestUtil.nextDouble(), (float)ShapeTestUtil.nextDouble(), (float) Math.abs(ShapeTestUtil.nextDouble()));
   }
 
   @Override

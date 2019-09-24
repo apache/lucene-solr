@@ -28,62 +28,55 @@ package org.apache.lucene.geo;
  * </ol>
  * @lucene.experimental
  */
-public class Circle {
-  /** Center latitude */
-  private final double lat;
-  /** Center longitude */
-  private final double lon;
-  /** radius in meters */
-  private final double distance;
-  /** Max radius allowed, half of the earth mean radius.*/
-  public static double MAXRADIUS = GeoUtils.EARTH_MEAN_RADIUS_METERS / 2.0;
-
+public class XYCircle {
+  /** Center x */
+  private final float x;
+  /** Center y */
+  private final float y;
+  /** radius */
+  private final float distance;
 
   /**
    * Creates a new circle from the supplied latitude/longitude center and distance in meters..
    */
-  public Circle(double lat, double lon, double radiusMeters) {
-    GeoUtils.checkLatitude(lat);
-    GeoUtils.checkLongitude(lon);
-    if (radiusMeters <= 0) {
-       throw new IllegalArgumentException("Radius must be bigger than 0, got " + radiusMeters);
+  public XYCircle(float x, float y, float radius) {
+    if (radius <= 0) {
+       throw new IllegalArgumentException("Radius must be bigger than 0, got " + radius);
     }
-    if (radiusMeters >= MAXRADIUS) {
-      throw new IllegalArgumentException("Radius must be lower than " + MAXRADIUS + ", got " + radiusMeters);
-    }
-    this.lat = lat;
-    this.lon = lon;
-    this.distance = radiusMeters;
+
+    this.x = x;
+    this.y = y;
+    this.distance = radius;
   }
 
-  /** Returns the center's latitude */
-  public double getLat() {
-    return lat;
+  /** Returns the center's x */
+  public float getX() {
+    return x;
   }
 
-  /** Returns the center's longitude */
-  public double getLon() {
-    return lon;
+  /** Returns the center's y */
+  public float getY() {
+    return y;
   }
 
-  /** Returns the radius in meters */
-  public double getRadius() {
+  /** Returns the radius */
+  public float getRadius() {
     return distance;
   }
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof Circle)) return false;
-    Circle circle = (Circle) o;
-    return lat == circle.lat && lon == circle.lon && distance == circle.distance ;
+    if (!(o instanceof XYCircle)) return false;
+    XYCircle circle = (XYCircle) o;
+    return x == circle.x && y == circle.y && distance == circle.distance ;
   }
 
   @Override
   public int hashCode() {
-    int result = Double.hashCode(lat);
-    result = 31 * result + Double.hashCode(lon);
-    result = 31 * result + Double.hashCode(distance);
+    int result = Float.hashCode(x);
+    result = 31 * result + Float.hashCode(y);
+    result = 31 * result + Float.hashCode(distance);
     return result;
   }
 
@@ -91,8 +84,8 @@ public class Circle {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("CIRCLE(");
-    sb.append("[" + lat + "," + lon + "]");
-    sb.append(" radius = " + distance + " meters");
+    sb.append("[" + x + "," + y + "]");
+    sb.append(" radius = " + distance);
     sb.append(')');
     return sb.toString();
   }

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.XYLine;
 
@@ -118,6 +119,22 @@ public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
         }
       }
       return queryRelation != ShapeField.QueryRelation.INTERSECTS;
+    }
+
+    @Override
+    public boolean testDistanceQuery(Object circle2D, Object shape) {
+      Line[] lines = (Line[])shape;
+      for (Line l : lines) {
+        boolean b = LINEVALIDATOR.testDistanceQuery(circle2D, l);
+        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
+          return true;
+        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
+          return false;
+        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
+          return false;
+        }
+      }
+      return queryRelation != QueryRelation.INTERSECTS;
     }
   }
 

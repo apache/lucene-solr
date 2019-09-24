@@ -18,7 +18,9 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.EdgeTree;
+import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYLine;
@@ -111,6 +113,18 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
         return r == Relation.CELL_OUTSIDE_QUERY;
       }
       return r != Relation.CELL_OUTSIDE_QUERY;
+    }
+
+    @Override
+    public boolean testDistanceQuery(Object circle2D, Object shape) {
+      BaseLatLonShapeTestCase.Point p = (BaseLatLonShapeTestCase.Point)shape;
+      int lat = GeoEncodingUtils.encodeLatitude(p.lat);
+      int lon = GeoEncodingUtils.encodeLongitude(p.lon);
+      boolean contains =  ((Circle2D)circle2D).queryContainsPoint(lon, lat);
+      if (queryRelation == QueryRelation.DISJOINT) {
+        return !contains;
+      }
+      return contains;
     }
   }
 }

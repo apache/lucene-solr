@@ -29,11 +29,11 @@ import org.apache.lucene.util.NumericUtils;
  *
  *  @lucene.experimental
  **/
-final class LatLonShapeDistanceQuery extends LatLonShapeQuery {
+final class LatLonShapeDistanceQuery extends ShapeQuery {
   final Circle circle;
   final Circle2D circle2D;
 
-  public LatLonShapeDistanceQuery(String field, LatLonShape.QueryRelation queryRelation, Circle circle) {
+  public LatLonShapeDistanceQuery(String field, ShapeField.QueryRelation queryRelation, Circle circle) {
     super(field, queryRelation);
     this.circle = circle;
     this.circle2D = Circle2D.create(circle);
@@ -46,21 +46,14 @@ final class LatLonShapeDistanceQuery extends LatLonShapeQuery {
   }
 
   @Override
-  protected boolean queryMatches(byte[] triangle, int[] scratchTriangle, LatLonShape.QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] triangle, ShapeField.DecodedTriangle scratchTriangle, ShapeField.QueryRelation queryRelation) {
     // decode indexed triangle
-    LatLonShape.decodeTriangle(triangle, scratchTriangle);
+    ShapeField.decodeTriangle(triangle, scratchTriangle);
 
-    int aY = scratchTriangle[0];
-    int aX = scratchTriangle[1];
-    int bY = scratchTriangle[2];
-    int bX = scratchTriangle[3];
-    int cY = scratchTriangle[4];
-    int cX = scratchTriangle[5];
-
-    if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
-      return circle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+    if (queryRelation == ShapeField.QueryRelation.WITHIN) {
+      return circle2D.containsTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.cX, scratchTriangle.cY);
     }
-    return circle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+    return circle2D.intersectsTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.cX, scratchTriangle.cY);
   }
 
   @Override

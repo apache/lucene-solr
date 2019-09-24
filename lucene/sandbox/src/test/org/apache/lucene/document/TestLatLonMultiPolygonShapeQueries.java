@@ -135,7 +135,7 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
     }
 
     @Override
-    public boolean testDistanceQuery(Circle2D circle2D, Object shape) {
+    public boolean testDistanceQuery(Object circle2D, Object shape) {
       Polygon[] polygons = (Polygon[])shape;
       for (Polygon p : polygons) {
         boolean b = POLYGONVALIDATOR.testDistanceQuery(circle2D, p);

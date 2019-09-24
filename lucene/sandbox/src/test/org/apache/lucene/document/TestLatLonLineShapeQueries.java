@@ -18,7 +18,7 @@ package org.apache.lucene.document;
 
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.geo.GeoTestUtil;
@@ -29,11 +29,9 @@ import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
 
-/** random bounding box and polygon query tests for random generated {@link Line} types */
+/** random bounding box, line, and polygon query tests for random generated {@link Line} types */
 @SuppressWarnings("SimpleText")
 public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
-
-  protected final LineValidator VALIDATOR = new LineValidator();
 
   @Override
   protected ShapeType getShapeType() {
@@ -72,24 +70,27 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  protected Validator getValidator(QueryRelation queryRelation) {
-    VALIDATOR.setRelation(queryRelation);
-    return VALIDATOR;
+  protected Validator getValidator() {
+    return new LineValidator(this.ENCODER);
   }
 
   protected static class LineValidator extends Validator {
+    protected LineValidator(Encoder encoder) {
+      super(encoder);
+    }
+
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Line line = (Line)shape;
       Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(minLat, maxLat, minLon, maxLon));
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        int[] decoded = encodeDecodeTriangle(line.getLon(i), line.getLat(i), line.getLon(j), line.getLat(j), line.getLon(i), line.getLat(i));
+        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
         if (queryRelation == QueryRelation.WITHIN) {
-          if (rectangle2D.containsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == false) {
+          if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
             return false;
           }
         } else {
-          if (rectangle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == true) {
+          if (rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
             return queryRelation == QueryRelation.INTERSECTS;
           }
         }
@@ -103,14 +104,14 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testPolygonQuery(Polygon2D poly2d, Object shape) {
-      return testLine(poly2d, (Line) shape);
+    public boolean testPolygonQuery(Object poly2d, Object shape) {
+      return testLine((Polygon2D)poly2d, (Line) shape);
     }
 
     private boolean testLine(EdgeTree queryPoly, Line line) {
 
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        double[] qTriangle = quantizeTriangle(line.getLon(i), line.getLat(i), line.getLon(j), line.getLat(j), line.getLon(i), line.getLat(i));
+        double[] qTriangle = encoder.quantizeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
         Relation r = queryPoly.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
         if (queryRelation == QueryRelation.DISJOINT) {
           if (r != Relation.CELL_OUTSIDE_QUERY) return false;
@@ -124,21 +125,22 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testDistanceQuery(Circle2D circle2D, Object shape) {
+    public boolean testDistanceQuery(Object circle2D, Object shape) {
       Line line = (Line)shape;
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        int[] decoded = encodeDecodeTriangle(line.getLon(i), line.getLat(i), line.getLon(j), line.getLat(j), line.getLon(i), line.getLat(i));
+        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
         if (queryRelation == QueryRelation.WITHIN) {
-          if (circle2D.containsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == false) {
+          if (((Circle2D)circle2D).containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
             return false;
           }
         } else {
-          if (circle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) == true) {
+          if (((Circle2D)circle2D).intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
             return queryRelation == QueryRelation.INTERSECTS;
           }
         }
       }
       return queryRelation != QueryRelation.INTERSECTS;
     }
+
   }
 }

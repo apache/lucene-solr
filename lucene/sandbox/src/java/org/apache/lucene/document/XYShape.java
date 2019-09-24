@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
 import org.apache.lucene.document.ShapeField.Triangle;
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.geo.XYCircle;
 import org.apache.lucene.index.PointValues; // javadoc
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
@@ -99,5 +100,10 @@ public class XYShape {
   /** create a query to find all cartesian shapes that intersect a provided polygon (or array of polygons) **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, XYPolygon... polygons) {
     return new XYShapePolygonQuery(field, queryRelation, polygons);
+  }
+
+  /** create a query to find all polygons that intersect a provided circle */
+  public static Query newDistanceQuery(String field, QueryRelation queryRelation, XYCircle circle) {
+    return new XYShapeDistanceQuery(field, queryRelation, circle);
   }
 }

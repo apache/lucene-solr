@@ -158,6 +158,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
   protected abstract Object nextPolygon();
 
+  protected abstract Object nextCircle();
+
   protected abstract Object randomQueryBox();
 
   protected abstract double rectMinX(Object rect);
@@ -179,6 +181,10 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     return nextPolygon();
   }
 
+  protected Object randomQueryCircle() {
+    return nextCircle();
+  }
+
   /** factory method to create a new bounding box query */
   protected abstract Query newRectQuery(String field, QueryRelation queryRelation, double minX, double maxX, double minY, double maxY);
 
@@ -188,9 +194,14 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   /** factory method to create a new polygon query */
   protected abstract Query newPolygonQuery(String field, QueryRelation queryRelation, Object... polygons);
 
+  /** factory method to create a new polygon query */
+  protected abstract Query newDistanceQuery(String field, QueryRelation queryRelation, Object circle);
+
   protected abstract Line2D toLine2D(Object... line);
 
   protected abstract Object toPolygon2D(Object... polygon);
+
+  protected abstract Object toCircle2D(Object circle);
 
   private void verify(Object... shapes) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -250,6 +261,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     verifyRandomLineQueries(reader, shapes);
     // test random polygon queries
     verifyRandomPolygonQueries(reader, shapes);
+    // test random distance queries
+    verifyRandomDistanceQueries(reader, shapes);
   }
 
   /** test random generated bounding boxes */
@@ -488,7 +501,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
         @Override
         public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
+          hits.set(docBase + doc);
         }
       });
 
@@ -538,6 +551,97 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     }
   }
 
+  /** test random generated polygons */
+  protected void verifyRandomDistanceQueries(IndexReader reader, Object... shapes) throws Exception {
+    IndexSearcher s = newSearcher(reader);
+
+    final int iters = scaledIterationCount(shapes.length);
+
+    Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
+    int maxDoc = s.getIndexReader().maxDoc();
+
+    for (int iter = 0; iter < iters; ++iter) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + (iter + 1) + " of " + iters + " s=" + s);
+      }
+
+      // Polygon
+      Object queryCircle = randomQueryCircle();
+      Object queryCircle2D = toCircle2D(queryCircle);
+      QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+      Query query = newDistanceQuery(FIELD_NAME, queryRelation, queryCircle2D);
+
+      if (VERBOSE) {
+        System.out.println("  query=" + query + ", relation=" + queryRelation);
+      }
+
+      final FixedBitSet hits = new FixedBitSet(maxDoc);
+      s.search(query, new SimpleCollector() {
+
+        private int docBase;
+
+        @Override
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE_NO_SCORES;
+        }
+
+        @Override
+        protected void doSetNextReader(LeafReaderContext context) throws IOException {
+          docBase = context.docBase;
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+          hits.set(docBase+doc);
+        }
+      });
+
+      boolean fail = false;
+      NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
+      for (int docID = 0; docID < maxDoc; ++docID) {
+        assertEquals(docID, docIDToID.nextDoc());
+        int id = (int) docIDToID.longValue();
+        boolean expected;
+        if (liveDocs != null && liveDocs.get(docID) == false) {
+          // document is deleted
+          expected = false;
+        } else if (shapes[id] == null) {
+          expected = false;
+        } else {
+          expected = VALIDATOR.setRelation(queryRelation).testDistanceQuery(queryCircle2D, shapes[id]);
+        }
+
+        if (hits.get(docID) != expected) {
+          StringBuilder b = new StringBuilder();
+
+          if (expected) {
+            b.append("FAIL: id=" + id + " should match but did not\n");
+          } else {
+            b.append("FAIL: id=" + id + " should not match but did\n");
+          }
+          b.append("  relation=" + queryRelation + "\n");
+          b.append("  query=" + query + " docID=" + docID + "\n");
+          if (shapes[id] instanceof Object[]) {
+            b.append("  shape=" + Arrays.toString((Object[]) shapes[id]) + "\n");
+          } else {
+            b.append("  shape=" + shapes[id] + "\n");
+          }
+          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("  distanceQuery=" + queryCircle.toString());
+          if (true) {
+            fail("wrong hit (first of possibly more):\n\n" + b);
+          } else {
+            System.out.println(b.toString());
+            fail = true;
+          }
+        }
+      }
+      if (fail) {
+        fail("some hits were wrong");
+      }
+    }
+  }
+
   protected abstract Validator getValidator();
 
   protected static abstract class Encoder {
@@ -572,6 +676,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     public abstract boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
     public abstract boolean testLineQuery(Line2D line2d, Object shape);
     public abstract boolean testPolygonQuery(Object poly2d, Object shape);
+    public abstract boolean testDistanceQuery(Object circle2D, Object shape);
 
     public Validator setRelation(QueryRelation relation) {
       this.queryRelation = relation;

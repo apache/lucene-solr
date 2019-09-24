@@ -18,8 +18,8 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.Circle2D;
+import org.apache.lucene.geo.XYCircle;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.util.NumericUtils;
 
 /**
  * Finds all previously indexed shapes that intersect the specified distance query.
@@ -29,11 +29,11 @@ import org.apache.lucene.util.NumericUtils;
  *
  *  @lucene.experimental
  **/
-final class LatLonShapeDistanceQuery extends ShapeQuery {
-  final Circle circle;
+final class XYShapeDistanceQuery extends ShapeQuery {
+  final XYCircle circle;
   final Circle2D circle2D;
 
-  public LatLonShapeDistanceQuery(String field, ShapeField.QueryRelation queryRelation, Circle circle) {
+  public XYShapeDistanceQuery(String field, ShapeField.QueryRelation queryRelation, XYCircle circle) {
     super(field, queryRelation);
     this.circle = circle;
     this.circle2D = Circle2D.create(circle);
@@ -63,7 +63,7 @@ final class LatLonShapeDistanceQuery extends ShapeQuery {
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && circle.equals(((LatLonShapeDistanceQuery)o).circle);
+    return super.equalsTo(o) && circle.equals(((XYShapeDistanceQuery)o).circle);
   }
 
   @Override

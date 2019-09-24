@@ -116,11 +116,11 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testDistanceQuery(Circle2D circle2D, Object shape) {
+    public boolean testDistanceQuery(Object circle2D, Object shape) {
       Point p = (Point)shape;
       int lat = GeoEncodingUtils.encodeLatitude(p.lat);
       int lon = GeoEncodingUtils.encodeLongitude(p.lon);
-      boolean contains =  circle2D.queryContainsPoint(lon, lat);
+      boolean contains =  ((Circle2D)circle2D).queryContainsPoint(lon, lat);
       if (queryRelation == QueryRelation.DISJOINT) {
         return !contains;
       }
