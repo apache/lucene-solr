@@ -19,6 +19,14 @@
 This section of the user guide covers the probability distribution
 framework included in the math expressions library.
 
+<<Visualization, Visualization>> -
+<<Continuous Distributions, Continuous Distributions>> -
+<<Discrete Distributions, Discrete Distributions>> -
+<<Sampling, Sampling>> -
+<<Cumulative Probability, Cumulative Probability>> -
+<<Probability, Probability>> -
+<<Multivariate Normal Distribution, Multivariate Normal Distribution>>
+
 == Probability Distribution Framework
 
 The probability distribution framework includes commonly used <<Continuous Distributions,continuous>>
@@ -116,7 +124,7 @@ image::images/math-expressions/constant.png[]
 
 
 
-=== Discrete
+=== Discrete Distributions
 
 Discrete probability distributions work with discrete numbers (integers). Below are the
 supported discrete probability distributions.
