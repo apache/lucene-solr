@@ -72,14 +72,6 @@
    bundledSignatures -= 'jdk-system-out'
  }
 
-// Copies the files to build/solr-ref-guide
-task refguide-init(type: Copy) {
-  
-}
-
-task refguide-jars(type: JavaCompile){
-
-}
 
 // Define the asciidoctorj version
 asciidoctorj {
