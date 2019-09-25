@@ -860,13 +860,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         }
       }
     }
-    final int checkNumFound = flags(handle, "numFound");
-    if (checkNumFound == 0){
-      cmp = compare(a.getNumFound(), b.getNumFound(), 0, handle);
-      if (cmp != null) return ".numFound" + cmp;
-    } else if (checkNumFound != SKIP) {
-        assert (f & SKIPVAL) != 0;
-    }
+
+    cmp = compare(a.getNumFound(), b.getNumFound(), 0, handle);
+    if (cmp != null) return ".numFound" + cmp;
 
     cmp = compare(a.getStart(), b.getStart(), 0, handle);
     if (cmp != null) return ".start" + cmp;
@@ -993,9 +989,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected void compareSolrResponses(SolrResponse a, SolrResponse b) {
-    System.out.println("specific "+a );
-    System.out.println("control "+a );
-
     // SOLR-3345: Checking QTime value can be skipped as there is no guarantee that the numbers will match.
     handle.put("QTime", SKIPVAL);
     // rf will be different since the control collection doesn't usually have multiple replicas
@@ -1007,7 +1000,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
   }
   protected void compareResponses(QueryResponse a, QueryResponse b) {
-    System.out.println()
     if (System.getProperty("remove.version.field") != null) {
       // we don't care if one has a version and the other doesnt -
       // control vs distrib
