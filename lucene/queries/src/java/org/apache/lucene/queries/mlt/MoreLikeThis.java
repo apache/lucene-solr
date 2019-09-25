@@ -649,12 +649,16 @@ public final class MoreLikeThis {
    */
   private PriorityQueue<ScoreTerm> createQueue(Map<String, Map<String, Int>> perFieldTermFrequencies) throws IOException {
     // have collected all words in doc and their freqs
-    int numDocs = ir.numDocs();
     final int limit = Math.min(maxQueryTerms, this.getTermsCount(perFieldTermFrequencies));
     FreqQ queue = new FreqQ(limit); // will order words by score
     for (Map.Entry<String, Map<String, Int>> entry : perFieldTermFrequencies.entrySet()) {
       Map<String, Int> perWordTermFrequencies = entry.getValue();
       String fieldName = entry.getKey();
+
+      long numDocs = ir.getDocCount(fieldName);
+      if(numDocs == -1) {
+        numDocs = ir.numDocs();
+      }
 
       for (Map.Entry<String, Int> tfEntry : perWordTermFrequencies.entrySet()) { // for every word
         String word = tfEntry.getKey();
