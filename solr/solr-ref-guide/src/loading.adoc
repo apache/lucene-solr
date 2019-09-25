@@ -22,6 +22,14 @@ and loading CSV and TSV formatted data. These functions are designed to cut down
 time spent on data preparation and allow users to begin data exploration before the data is
 loaded into Solr.
 
+<<Reading Files, Reading>> -
+<<Parsing CSV and TSV Files, Parsing>> -
+<<Visualizing, Visualizing>> -
+<<Selecting Fields and Field Types, Selecting Fields and Types>> -
+<<Loading, Loading >> -
+<<Transforming Data, Transforming>>
+
+
 == Reading Files
 
 The `cat` function can be used to read files under the *userfiles* directory in

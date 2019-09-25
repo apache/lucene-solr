@@ -17,6 +17,13 @@
 // under the License.
 
 
+This section of the userguid desc
+
+<<The Let Expression, Let>> -
+<<Echoing Variables, Echo>> -
+<<Visualizing Variables, Visualizing>> -
+<<Caching Variables, Caching>>
+
 == The Let Expression
 
 The `let` expression sets variables and returns
