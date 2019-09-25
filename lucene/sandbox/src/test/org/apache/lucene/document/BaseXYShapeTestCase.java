@@ -24,11 +24,13 @@ import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYCircle;
+import org.apache.lucene.geo.XYCircle2D;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.geo.XYEncodingUtils.decode;
 import static org.apache.lucene.geo.XYEncodingUtils.encode;
@@ -76,7 +78,7 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Object toCircle2D(Object circle) {
-    return Circle2D.create((XYCircle) circle);
+    return XYCircle2D.create((XYCircle) circle);
   }
 
   @Override
@@ -134,7 +136,11 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Object nextCircle() {
-    return new XYCircle((float)ShapeTestUtil.nextDouble(), (float)ShapeTestUtil.nextDouble(), (float) Math.abs(ShapeTestUtil.nextDouble()));
+    float radius = (float) TestUtil.nextInt(random(), 1, 1000);//Math.abs(ShapeTestUtil.nextDouble());
+    while (radius == 0 || radius > 1000) {
+      radius = (float) Math.abs(ShapeTestUtil.nextDouble());
+    }
+    return new XYCircle((float)ShapeTestUtil.nextDouble(), (float)ShapeTestUtil.nextDouble(), radius);
   }
 
   @Override

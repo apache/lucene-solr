@@ -16,10 +16,12 @@
  */
 package org.apache.lucene.document;
 
-import org.apache.lucene.geo.Circle;
-import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.XYCircle;
+import org.apache.lucene.geo.XYCircle2D;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.util.NumericUtils;
+
+import static org.apache.lucene.geo.XYEncodingUtils.decode;
 
 /**
  * Finds all previously indexed shapes that intersect the specified distance query.
@@ -31,18 +33,22 @@ import org.apache.lucene.index.PointValues.Relation;
  **/
 final class XYShapeDistanceQuery extends ShapeQuery {
   final XYCircle circle;
-  final Circle2D circle2D;
+  final XYCircle2D circle2D;
 
   public XYShapeDistanceQuery(String field, ShapeField.QueryRelation queryRelation, XYCircle circle) {
     super(field, queryRelation);
     this.circle = circle;
-    this.circle2D = Circle2D.create(circle);
+    this.circle2D = XYCircle2D.create(circle);
   }
 
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    return circle2D.relateRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    double minY = decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    double minX = decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    double maxY = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    double maxX = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+    return circle2D.relate(minX, maxX, minY, maxY);
   }
 
   @Override
@@ -50,10 +56,19 @@ final class XYShapeDistanceQuery extends ShapeQuery {
     // decode indexed triangle
     ShapeField.decodeTriangle(triangle, scratchTriangle);
 
-    if (queryRelation == ShapeField.QueryRelation.WITHIN) {
-      return circle2D.containsTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.cX, scratchTriangle.cY);
+    double alat = decode(scratchTriangle.aY);
+    double alon = decode(scratchTriangle.aX);
+    double blat = decode(scratchTriangle.bY);
+    double blon = decode(scratchTriangle.bX);
+    double clat = decode(scratchTriangle.cY);
+    double clon = decode(scratchTriangle.cX);
+
+    switch (queryRelation) {
+      case INTERSECTS: return circle2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
+      case WITHIN: return circle2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+      case DISJOINT: return circle2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
+      default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
-    return circle2D.intersectsTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.cX, scratchTriangle.cY);
   }
 
   @Override

@@ -18,11 +18,10 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Circle2D;
 import org.apache.lucene.geo.EdgeTree;
-import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.ShapeTestUtil;
+import org.apache.lucene.geo.XYCircle2D;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.index.PointValues.Relation;
@@ -117,14 +116,16 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testDistanceQuery(Object circle2D, Object shape) {
-      BaseLatLonShapeTestCase.Point p = (BaseLatLonShapeTestCase.Point)shape;
-      int lat = GeoEncodingUtils.encodeLatitude(p.lat);
-      int lon = GeoEncodingUtils.encodeLongitude(p.lon);
-      boolean contains =  ((Circle2D)circle2D).queryContainsPoint(lon, lat);
-      if (queryRelation == QueryRelation.DISJOINT) {
-        return !contains;
+      Point p = (BaseXYShapeTestCase.Point)shape;
+      double lat = encoder.quantizeY(p.y);
+      double lon = encoder.quantizeX(p.x);
+      Relation r = ((XYCircle2D)circle2D).relateTriangle(lon, lat, lon, lat, lon, lat);
+      if (queryRelation == QueryRelation.WITHIN) {
+        return r == Relation.CELL_INSIDE_QUERY;
+      } else if (queryRelation == QueryRelation.DISJOINT) {
+        return r == Relation.CELL_OUTSIDE_QUERY;
       }
-      return contains;
+      return r != Relation.CELL_OUTSIDE_QUERY;
     }
   }
 }

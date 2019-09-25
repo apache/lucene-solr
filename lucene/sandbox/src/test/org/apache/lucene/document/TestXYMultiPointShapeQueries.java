@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 
 /** random cartesian bounding box, line, and polygon query tests for random indexed arrays of {@code x, y} points */
@@ -122,9 +121,9 @@ public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testDistanceQuery(Object circle2D, Object shape) {
-      Line[] lines = (Line[])shape;
-      for (Line l : lines) {
-        boolean b = POINTVALIDATOR.testDistanceQuery(circle2D, l);
+      Point[] points = (Point[]) shape;
+      for (Point p : points) {
+        boolean b = POINTVALIDATOR.testDistanceQuery(circle2D, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {

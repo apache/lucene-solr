@@ -23,6 +23,7 @@ import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.ShapeTestUtil;
+import org.apache.lucene.geo.XYCircle2D;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.geo.XYRectangle;
@@ -125,20 +126,19 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testDistanceQuery(Object circle2D, Object shape) {
-      Line line = (Line)shape;
+      XYLine line = (XYLine)shape;
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
-        if (queryRelation == QueryRelation.WITHIN) {
-          if (((Circle2D)circle2D).containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
-            return false;
-          }
+        double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
+        Relation r = ((XYCircle2D)circle2D).relateTriangle((float)qTriangle[1], (float)qTriangle[0], (float)qTriangle[3], (float)qTriangle[2], (float)qTriangle[5], (float)qTriangle[4]);
+        if (queryRelation == QueryRelation.DISJOINT) {
+          if (r != Relation.CELL_OUTSIDE_QUERY) return false;
+        } else if (queryRelation == QueryRelation.WITHIN) {
+          if (r != Relation.CELL_INSIDE_QUERY) return false;
         } else {
-          if (((Circle2D)circle2D).intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
-            return queryRelation == QueryRelation.INTERSECTS;
-          }
+          if (r != Relation.CELL_OUTSIDE_QUERY) return true;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return queryRelation == QueryRelation.INTERSECTS ? false : true;
     }
   }
 }

@@ -23,7 +23,7 @@ import org.apache.lucene.util.NumericUtils;
 import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
- * 2D circle implementation containing spatial logic.
+ * 2D circle implementation containing geo spatial logic.
  *
  * @lucene.internal
  */
@@ -50,11 +50,6 @@ public class Circle2D {
   /** Builds a circle from  a point and a distance in meters */
   public static Circle2D create(Circle circle) {
     return new Circle2D(circle.getLat(), circle.getLon(), circle.getRadius());
-  }
-
-  /** Builds a circle from  a point and a distance in meters */
-  public static Circle2D create(XYCircle circle) {
-    return new Circle2D(circle.getY(), circle.getX(), circle.getRadius());
   }
 
   /** Checks if the circle contains the provided point **/
