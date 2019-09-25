@@ -28,26 +28,27 @@ import org.apache.lucene.index.PointValues.Relation;
  * @lucene.internal
  */
 public class XYCircle2D {
-  protected final double minX;
-  protected final double maxX;
-  protected final double minY;
-  protected final double maxY;
-  protected final double x;
-  protected final double y;
-  protected final double distanceSquared;
+
+  private final double minX;
+  private final double maxX;
+  private final double minY;
+  private final double maxY;
+  private final double x;
+  private final double y;
+  private final double distanceSquared;
 
 
   protected XYCircle2D(double x, double y, double distance) {
     this.x = x;
     this.y = y;
-    minX = x - distance;
-    maxX = x + distance;
-    minY = y - distance;
-    maxY = y + distance;
+    this.minX = x - distance;
+    this.maxX = x + distance;
+    this.minY = y - distance;
+    this.maxY = y + distance;
     this.distanceSquared = distance * distance;
   }
 
-  /** Builds a Rectangle2D from rectangle */
+  /** Builds a XYCircle2D from XYCircle */
   public static XYCircle2D create(XYCircle circle) {
     return new XYCircle2D(circle.getX(), circle.getY(), circle.getRadius());
   }
@@ -55,8 +56,8 @@ public class XYCircle2D {
 
   /** Checks if the rectangle contains the provided point **/
   public boolean contains(double x, double y) {
-    double diffX = this.x - x;
-    double diffY = this.y - y;
+    final double diffX = this.x - x;
+    final double diffY = this.y - y;
     return diffX * diffX + diffY * diffY <= distanceSquared;
   }
 
@@ -73,15 +74,14 @@ public class XYCircle2D {
 
   /** compare this to a provided triangle **/
   public Relation relateTriangle(double aX, double aY, double bX, double bY, double cX, double cY) {
-    // 1. query contains any triangle points
-    int numCorners = numberOfTriangleCorners(aX, aY, bX, bY, cX, cY);
+    final int numCorners = numberOfTriangleCorners(aX, aY, bX, bY, cX, cY);
     if (numCorners == 3) {
       return Relation.CELL_INSIDE_QUERY;
     } else if (numCorners == 0) {
-      if (Tessellator.pointInTriangle(x, y, aX, aY, bX, bY, cX, cY)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      if (intersectsLine(aX, aY, bX, bY) || intersectsLine(bX, bY, cX, cY) || intersectsLine(cX, cY, aX, aY)) {
+      if (Tessellator.pointInTriangle(x, y, aX, aY, bX, bY, cX, cY) ||
+          intersectsLine(aX, aY, bX, bY) ||
+          intersectsLine(bX, bY, cX, cY) ||
+          intersectsLine(cX, cY, aX, aY)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -108,26 +108,26 @@ public class XYCircle2D {
 
   private boolean intersectsLine(double aX, double aY, double bX, double bY) {
     //Algorithm based on this thread : https://stackoverflow.com/questions/3120357/get-closest-point-to-a-line
-    double[] vectorAP = new double[] {x - aX, y - aY};
-    double[] vectorAB = new double[] {bX - aX, bY - aY};
+    final double[] vectorAP = new double[] {x - aX, y - aY};
+    final double[] vectorAB = new double[] {bX - aX, bY - aY};
 
-    double magnitudeAB = vectorAB[0] * vectorAB[0] + vectorAB[1] * vectorAB[1];
-    double dotProduct = vectorAP[0] * vectorAB[0] + vectorAP[1] * vectorAB[1];
+    final double magnitudeAB = vectorAB[0] * vectorAB[0] + vectorAB[1] * vectorAB[1];
+    final double dotProduct = vectorAP[0] * vectorAB[0] + vectorAP[1] * vectorAB[1];
 
-    double distance = dotProduct / magnitudeAB;
+    final double distance = dotProduct / magnitudeAB;
 
     if (distance < 0 || distance > dotProduct)
     {
       return false;
     }
 
-    double pX = aX + vectorAB[0] * distance;
-    double pY = aY + vectorAB[1] * distance;
+    final double pX = aX + vectorAB[0] * distance;
+    final double pY = aY + vectorAB[1] * distance;
 
-    double minX = StrictMath.min(aX, bX);
-    double minY = StrictMath.min(aY, bY);
-    double maxX = StrictMath.max(aX, bX);
-    double maxY = StrictMath.max(aY, bY);
+    final double minX = StrictMath.min(aX, bX);
+    final double minY = StrictMath.min(aY, bY);
+    final double maxX = StrictMath.max(aX, bX);
+    final double maxY = StrictMath.max(aY, bY);
 
     if (pX >= minX && pX <= maxX && pY >= minY && pY <= maxY) {
       return contains(pX, pY);
