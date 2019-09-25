@@ -90,7 +90,9 @@ public class SkipSecondStepSearchGroupShardResponseProcessor extends SearchGroup
       int groupsIndex = 0;
 
       for (SearchGroup<BytesRef> group : mergedTopGroups) {
-        maxScore = Math.max(maxScore, group.topDocScore);
+        if (! Float.isNaN(group.topDocScore)) {
+          maxScore = Math.max(maxScore, group.topDocScore);
+        }
         final String shard = docIdToShard.get(group.topDocSolrId);
         assert(shard != null);
         final ShardDoc sdoc = new ShardDoc();
