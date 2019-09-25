@@ -183,6 +183,10 @@ public class TestMoreLikeThis extends LuceneTestCase {
     term = ((TermQuery) ((List<BooleanClause>) clauses).get(1).getQuery()).getTerm();
     assertTrue(term.text().equals("tenth"));
 
+    // clean up
+    reader.close();
+    dir.close();
+    analyzer.close();
   }
 
   public void testBoostFactor() throws Throwable {
