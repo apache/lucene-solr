@@ -15,69 +15,124 @@
  * limitations under the License.
  */
 
+// TODO: the separation of sources between tools and refGuide is awkward; it'd be
+// better to separate the refGuideTools as a plain Java module and then depend on
+// it as a project dependency. This would enable this module to *not* be a java module at all
+// and inherit from base, adding just refGuide-related tasks.
+
+import com.github.jrubygradle.JRubyExec
 
 // Using 1.x versions of asciidoctor-gradle since 2.x wouldn't work
- plugins {
-   id 'org.asciidoctor.convert' version '1.6.1'
-   id 'com.github.jruby-gradle.base' version '1.4.0'
- }
+plugins {
+  id 'java'
+  id 'org.asciidoctor.convert' version '1.6.1'
+  id 'com.github.jruby-gradle.base' version '1.4.0'
+}
 
- repositories {
-   maven { url 'http://rubygems-proxy.torquebox.org/releases' }
- }
+repositories {
+  maven { url 'http://rubygems-proxy.torquebox.org/releases' }
+}
 
- dependencies {
-   gems 'rubygems:jekyll:3.5.2'
-   gems 'rubygems:jekyll-asciidoc:2.1.0'
-   gems 'rubygems:slim:3.0.9'
- }
+configurations {
+  tools
+  refGuide
+}
 
- apply plugin: 'java'
- apply plugin: 'com.github.jruby-gradle.base'
- import com.github.jrubygradle.JRubyExec
+dependencies {
+  gems 'rubygems:jekyll:3.5.2'
+  gems 'rubygems:jekyll-asciidoc:2.1.0'
+  gems 'rubygems:slim:3.0.9'
 
- configurations {
-   tools
-   refGuide
- }
+  tools gradleApi()
+  tools localGroovy()
+  tools ('org.asciidoctor:asciidoctor-ant')
+  tools ('com.vaadin.external.google:android-json')
+  tools ('org.jsoup:jsoup')
+  tools ('org.apache.pdfbox:pdfbox')
+  tools ('org.slf4j:jcl-over-slf4j')
+  tools ('org.slf4j:slf4j-api')
+  tools ('org.slf4j:slf4j-simple')
+  tools ('org.apache.logging.log4j:log4j-api')
+  tools ('org.apache.logging.log4j:log4j-core')
+  tools ('com.google.guava:guava')
+  tools ('commons-codec:commons-codec')
+}
 
- dependencies {
-   tools gradleApi()
-   tools localGroovy()
-
-//   tools ('org.asciidoctor:asciidoctor-ant')
-   tools ('com.vaadin.external.google:android-json')
-   tools ('org.jsoup:jsoup')
-   tools ('org.apache.pdfbox:pdfbox')
-   tools ('org.slf4j:jcl-over-slf4j')
-   tools ('org.slf4j:slf4j-api')
-   tools ('org.slf4j:slf4j-simple')
-   tools ('org.apache.logging.log4j:log4j-api')
-   tools ('org.apache.logging.log4j:log4j-core')
-   tools ('com.google.guava:guava')
-   tools ('commons-codec:commons-codec')
- }
-
- sourceSets {
+sourceSets {
    tools {
      compileClasspath += sourceSets.main.runtimeClasspath += configurations.tools
      runtimeClasspath += sourceSets.main.runtimeClasspath
+
+     resources {
+       srcDirs += file('tools')
+     }
    }
 
    tools.java.srcDirs = ['tools']
    refGuide.java.srcDirs = ['src']
- }
+}
 
- forbiddenApisTools {
+forbiddenApisTools {
    bundledSignatures -= 'jdk-system-out'
- }
+}
+
+ext {
+  buildContentDir = file("${buildDir}/content")
+  mainPage = "index"
+}
+
+// Tasks modeled after ant file until we have a working build.
+
+task buildInit(type: Sync) {
+  // TODO: we can do cleaner than going through ant here -- we could use gradle's expand but
+  // it'd require a change in the template that is backwards incompatible.
+  def props = [
+    // TODO: define other props. What should we do with dependency/ ivy versions?
+    "solr-guide-draft-status": "foo"
+  ]
+  def dummyAntProject = new org.apache.tools.ant.Project()
+  props.each { k, v -> dummyAntProject.setProperty(k, v) }
+
+  // If replaceable properties change, we have to rerun.
+  inputs.properties props
+
+  from(file("src"), {
+    exclude '**/*.template'
+  })
+
+  from(file("src"), {
+    include '**/*.template'
+    rename '(.+)\\.template', '$1'
+    filteringCharset = 'UTF-8'
+    filter(org.apache.tools.ant.filters.ExpandProperties, project: dummyAntProject)
+  })
+
+  into buildContentDir
+}
+
+task buildToolsJar(type: Jar) {
+  dependsOn toolsClasses
+  from sourceSets.tools.output
+  archivesBaseName = 'solr-ref-guide-tools'
+}
+
+task buildNavDataFiles(type: JavaExec) {
+  dependsOn buildInit, buildToolsJar
+  classpath = sourceSets.tools.runtimeClasspath
+  main = 'BuildNavAndPDFBody'
+  workingDir = buildContentDir
+  args([
+    "${buildContentDir}",
+    "${mainPage}"
+  ])
+}
+
 
 
 // Define the asciidoctorj version
 asciidoctorj {
   version = '1.5.0-beta.5'
 }
-
 
 // general Asciidoc params for HTML conversion - barebones if still needed?
 asciidoctor {
@@ -95,15 +150,18 @@ asciidoctor {
   outputDir file('../build/solr-ref-guide/')
   options doctype: 'book'
 
-  attributes \
-    'safemode': 'unsafe',
-    'source-highlighter': 'coderay',
-    'figure-caption!': '',
-    'idprefix': '',
-    'idseparator': '-',
-    'icons': 'font',
-    'icon-set': 'fa',
-    'section-toc': ''
+  attributes [
+          /*
+    safemode: 'unsafe',
+    source-highlighter : 'coderay',
+    'figure-caption!' : '' ,
+    idprefix : '' ,
+    idseparator : '-' ,
+    icons : 'font' ,
+    icon-set : 'fa' ,
+    section-toc : ''
+           */
+  ]
 }
 
 // Jekyll for HTML conversion - doesn't work yet
