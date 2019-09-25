@@ -528,7 +528,15 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "kings", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.format", "simple");
     query("q", "{!func}id_i1", "rows", "3", "group.skip.second.step", "true", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
     query("q", "{!func}id_i1", "rows", "3", "group.skip.second.step", "false", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
+    // score in fl and in sort (by default)
     testMaxScoreWithSkipSecondGroupingStep("q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
+    // no score and different sort (should not return maxScore)
+    testMaxScoreWithSkipSecondGroupingStep("q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1", "group", "true", "group.field", i1, "group.limit", "1","sort", tlong+" desc");
+    // no score in fl, sort in score (by default)
+    testMaxScoreWithSkipSecondGroupingStep("q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1", "group", "true", "group.field", i1, "group.limit", "1");
+    // no score in fl and sort by secondary field
+    testMaxScoreWithSkipSecondGroupingStep("q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1", "group", "true", "group.field", i1, "group.limit", "1", "sort", tlong+" desc, score desc");
+    
     handle.remove("numFound");
   }
 
