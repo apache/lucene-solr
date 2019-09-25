@@ -25,7 +25,7 @@ This section covers vector math and vector manipulation functions.
 <<Sequences, Sequences>> -
 <<Vector Sorting, Sorting>> -
 <<Vector Summarizations and Norms, Summarization>> -
-<<Scalar Vector Math, Vector Math>> -
+<<Scalar Vector Math, Vector Math>>
 
 == Arrays
 
