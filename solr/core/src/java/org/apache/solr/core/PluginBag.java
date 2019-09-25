@@ -199,6 +199,9 @@ public class PluginBag<T> implements AutoCloseable {
     if(old != null)  closeQuietly(old);
     return old == null ? null : old.get();
   }
+  public void put(Api api){
+    apiBag.register(api,Collections.emptyMap());
+  }
 
   public PluginHolder<T> put(String name, PluginHolder<T> plugin) {
     Boolean registerApi = null;

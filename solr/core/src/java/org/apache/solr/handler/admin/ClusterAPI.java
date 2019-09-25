@@ -30,13 +30,14 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.http.client.HttpClient;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.CollectionApiMapping;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.CallInfo;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -46,56 +47,54 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PackageBag;
 import org.apache.solr.handler.SolrConfigHandler;
-import org.apache.solr.handler.admin.BaseHandlerApiSupport.ApiCommand;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SimplePostTool;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_CMD;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_NODES;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_PKG;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_REPO;
 import static org.apache.solr.common.params.CommonParams.PACKAGES;
-import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.core.BlobRepository.sha256Digest;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.RuntimeLib.SHA256;
+import static org.apache.solr.security.PermissionNameProvider.Name.BLOB_WRITE;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.PKG_EDIT;
+import static org.apache.solr.security.PermissionNameProvider.Name.PKG_READ;
 
 //implements  v2 only APIs at /cluster/* end point
 class ClusterAPI {
+  private final CoreContainer coreContainer;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  ClusterAPI(CoreContainer coreContainer) {
+    this.coreContainer = coreContainer;
+  }
+
+
   //sync the cluster props in every node
-  static void syncClusterProps(ApiInfo info) throws IOException {
-    CoreContainer cc = info.coreContainer;
+  void syncClusterProps(CallInfo info) throws IOException {
     Stat stat = new Stat();
-    Map<String, Object> clusterProperties = new ClusterProperties(cc.getZkController().getZkClient()).getClusterProperties(stat);
+    Map<String, Object> clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient()).getClusterProperties(stat);
     try {
-      cc.getPackageBag().onChange(clusterProperties);
+      coreContainer.getPackageBag().onChange(clusterProperties);
     } catch (SolrException e) {
-      log.error("error executing command : " + info.op.jsonStr(), e);
+      log.error("error executing command : " + info.command.jsonStr(), e);
       throw e;
     } catch (Exception e) {
-      log.error("error executing command : " + info.op.jsonStr(), e);
+      log.error("error executing command : " + info.command.jsonStr(), e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "error executing command : ", e);
     }
     log.info("current version of clusterprops.json is {} , trying to get every node to update ", stat.getVersion());
     log.debug("The current clusterprops.json:  {}", clusterProperties);
-    waitForStateSync(stat.getVersion(), cc);
+    waitForStateSync(stat.getVersion(), coreContainer);
   }
 
-  private static void waitForStateSync(int expectedVersion, CoreContainer coreContainer) {
+  void waitForStateSync(int expectedVersion, CoreContainer coreContainer) {
     final RTimer timer = new RTimer();
     int waitTimeSecs = 30;
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
@@ -133,346 +132,226 @@ class ClusterAPI {
 
   }
 
-
-  enum Commands implements ApiCommand {
-
-    ADD_REPO(CLUSTER_REPO, POST, "add") {
-      @Override
-      void call(ApiInfo info) throws Exception {
-        repositoryCRUD(info);
-      }
-    },
-    UPDATE_REPO(CLUSTER_REPO, POST, "update") {
-      @Override
-      void call(ApiInfo info) throws Exception {
-        repositoryCRUD(info);
-      }
-    },
-    DELETE_REPO(CLUSTER_REPO, POST, "delete") {
-      @Override
-      void call(ApiInfo info) throws Exception {
-        repositoryCRUD(info);
-
-      }
-    },
-
-    GET_NODES(CLUSTER_NODES, GET, null) {
-      @Override
-      void call(ApiInfo info) throws Exception {
-        info.rsp.add("nodes", info.coreContainer.getZkController().getClusterState().getLiveNodes());
-      }
-
-    },
-    POST_BLOB(CollectionApiMapping.EndPoint.CLUSTER_BLOB, POST, null) {
-      @Override
-      void call(ApiInfo info) throws Exception {
-        CoreContainer coreContainer = ((CollectionHandlerApi) info.apiHandler).handler.coreContainer;
-        Iterable<ContentStream> streams = info.req.getContentStreams();
-        if (streams == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no payload");
-        String sha256 = null;
-        ContentStream stream = streams.iterator().next();
-        try {
-          ByteBuffer buf = SimplePostTool.inputStreamToByteArray(stream.getStream());
-          sha256 = sha256Digest(buf);
-          coreContainer.getBlobStore().distributeBlob(buf, sha256);
-          info.rsp.add(SHA256, sha256);
-
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-        }
-
-      }
-
-      @Override
-      public boolean isRaw() {
-        return true;
-      }
-    },
-
-    SET_CLUSTER_PROPERTY_OBJ(CLUSTER_CMD,
-        POST,
-        "set-obj-property") {
-      @Override
-      void call(ApiInfo info) throws Exception {
-        ClusterProperties clusterProperties = new ClusterProperties(info.coreContainer.getZkController().getZkClient());
-        try {
-          clusterProperties.setClusterProperties(info.op.getDataMap());
-        } catch (Exception e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
-        }
-      }
-
-    },
-    LIST_PKG(CLUSTER_PKG, GET, null){
-      @Override
-      void call(ApiInfo info) throws Exception {
-        ClusterProperties clusterProperties = new ClusterProperties(info.coreContainer.getZkController().getZkClient());
-        info.rsp.add(PACKAGES, clusterProperties.getClusterProperty(PACKAGES, MapWriter.EMPTY));
-      }
-    },
-    ADD_PACKAGE(CLUSTER_PKG,
-        POST,
-        "add") {
-      @Override
-      void call(ApiInfo info) throws Exception {
-        if (addUpdatePackage(info)) syncClusterProps(info);
-      }
-    },
-    UPDATE_PACKAGE(CLUSTER_PKG,
-        POST,
-        "update") {
-      @Override
-      void call(ApiInfo info) throws Exception {
-        if (addUpdatePackage(info)) syncClusterProps(info);
-      }
-    },
-    DELETE_PKG(CLUSTER_PKG,
-        POST,
-        "delete") {
-      @Override
-      void call(ApiInfo info) throws Exception {
-        if (deletePackage(info)) syncClusterProps(info);
-      }
-
-      boolean deletePackage(ApiInfo params) throws Exception {
-        if (checkEnabled(params)) return false;
-        String name = params.op.getStr(CommandOperation.ROOT_OBJ);
-        ClusterProperties clusterProperties = new ClusterProperties(params.coreContainer.getZkController().getZkClient());
-        Map<String, Object> props = clusterProperties.getClusterProperties();
-        List<String> pathToLib = asList(PACKAGES, name);
-        Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
-        if (existing == null) {
-          params.op.addError("No such runtimeLib : " + name);
-          return false;
-        }
-        Map delta = new LinkedHashMap();
-        Utils.setObjectByPath(delta, pathToLib, null, true);
-        clusterProperties.setClusterProperties(delta);
-        return true;
-      }
-    },
-    ADD_REQ_HANDLER(CLUSTER_CMD,
-        POST,
-        "add-requesthandler") {
-      @Override
-      void call(ApiInfo info) throws Exception {
-        if (addRequestHandler(info)) syncClusterProps(info);
-      }
-
-      boolean addRequestHandler(ApiInfo info) throws Exception {
-        Map data = info.op.getDataMap();
-        String name = (String) data.get("name");
-        CoreContainer coreContainer = info.coreContainer;
-        ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
-        Map<String, Object> map = clusterProperties.getClusterProperties();
-        if (Utils.getObjectByPath(map, false, asList(SolrRequestHandler.TYPE, name)) != null) {
-          info.op.addError("A requestHandler already exists with the said name");
-          return false;
-        }
-        Map m = new LinkedHashMap();
-        Utils.setObjectByPath(m, asList(SolrRequestHandler.TYPE, name), data, true);
-        clusterProperties.setClusterProperties(m);
-        return true;
-      }
-    },
-    DELETE_REQ_HANDLER(CLUSTER_CMD,
-        POST,
-        "delete-requesthandler") {
-      @Override
-      void call(ApiInfo info) throws Exception {
-        if (deleteReqHandler(info)) syncClusterProps(info);
-      }
-
-      boolean deleteReqHandler(ApiInfo params) throws Exception {
-        String name = params.op.getStr("");
-        ClusterProperties clusterProperties = new ClusterProperties(params.coreContainer.getZkController().getZkClient());
-        Map<String, Object> map = clusterProperties.getClusterProperties();
-        if (Utils.getObjectByPath(map, false, asList(SolrRequestHandler.TYPE, name)) == null) {
-          params.op.addError("NO such requestHandler with name :");
-          return false;
-        }
-        Map m = new LinkedHashMap();
-        Utils.setObjectByPath(m, asList(SolrRequestHandler.TYPE, name), null, true);
-        clusterProperties.setClusterProperties(m);
-        return true;
-      }
-    }
-
-    ;
-
-    private CollectionApiMapping.CommandMeta meta;
-
-    Commands(CollectionApiMapping.V2EndPoint endPoint, SolrRequest.METHOD method, String cmdName) {
-      meta = new CollectionApiMapping.CommandMeta() {
-        @Override
-        public String getName() {
-          return cmdName;
-        }
-
-        @Override
-        public SolrRequest.METHOD getHttpMethod() {
-          return method;
-        }
-
-        @Override
-        public CollectionApiMapping.V2EndPoint getEndPoint() {
-          return endPoint;
-        }
-      };
-
-    }
-
-    @Override
-    public CollectionApiMapping.CommandMeta meta() {
-      return meta;
-
-    }
-
-    @Override
-    public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
-      CommandOperation op = null;
-      if (meta().getHttpMethod() == SolrRequest.METHOD.POST) {
-        if (meta.getName() != null) {
-          List<CommandOperation> commands = req.getCommands(true);
-          if (commands == null || commands.size() != 1)
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "should have exactly one command");
-          op = commands.get(0);
-        }
-      }
-
-      call(new ApiInfo(req, rsp, apiHandler, op,
-          ((CollectionHandlerApi) apiHandler).handler.coreContainer));
-      if (op != null && op.hasError()) {
-        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing commands", captureErrors(singletonList(op)));
-      }
-    }
-
-    abstract void call(ApiInfo info) throws Exception;
-
-
+  public List<Api> getAllApis() {
+    List<Api> result = new ArrayList<>();
+    result.add(new AnnotatedApi( new ClusterAPI.ListNodes()));
+    result.add(new AnnotatedApi(new ClusterAPI.BlobWrite()));
+    result.add(new AnnotatedApi(new ClusterAPI.PkgRead()));
+    result.add(new AnnotatedApi(new ClusterAPI.PkgEdit()));
+    result.add(new AnnotatedApi(new ClusterAPI.ClusterCommands()));
+    return result;
   }
 
-  private static void repositoryCRUD(ApiInfo info) {
-    try {
-      SolrZkClient zkClient = info.coreContainer.getZkController().getZkClient();
-      Map data = Utils.getDeepCopy(Utils.getJson(zkClient, ZkStateReader.PACKAGE_REPO, true),3);
-      Map<String, Object> dataMap = null;
-      String name = null;
-      name = info.op.getCommandData() instanceof String ?
-          (String) info.op.getCommandData() :
-          info.op.getStr("name");
+  @EndPoint(
+      spec = "cluster.packages.Commands",
+      permission = PKG_EDIT
+  )
+  public class PkgEdit {
 
-      List<String> path = asList("repository", name);
-      boolean contains = Utils.getObjectByPath(data, false, path) != null;
+    @Command(name = "add")
+    public void add(CallInfo callInfo) throws Exception {
+      if (addUpdatePackage(callInfo)) {
+        syncClusterProps(callInfo);
+      }
 
-      if(info.op.name.equals(Commands.ADD_REPO.meta.getName())){
-        if(contains){
-          info.op.addError("repository "+ name + " already exists");
-          return;
+    }
+
+    @Command(name = "update")
+    public void update(CallInfo callInfo) throws Exception {
+      if (addUpdatePackage(callInfo)) {
+        syncClusterProps(callInfo);
+      }
+    }
+
+    @Command(name = "delete")
+    public void delPkg(CallInfo info) throws Exception {
+      if (deletePackage(info)) {
+        syncClusterProps(info);
+      }
+    }
+
+
+    boolean deletePackage(CallInfo params) throws Exception {
+      if (checkEnabled(params)) return false;
+      String name = params.command.getStr(CommandOperation.ROOT_OBJ);
+      ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
+      Map<String, Object> props = clusterProperties.getClusterProperties();
+      List<String> pathToLib = asList(PACKAGES, name);
+      Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
+      if (existing == null) {
+        params.command.addError("No such package : " + name);
+        return false;
+      }
+      Map delta = new LinkedHashMap();
+      Utils.setObjectByPath(delta, pathToLib, null, true);
+      clusterProperties.setClusterProperties(delta);
+      return true;
+    }
+
+
+    boolean checkEnabled(CallInfo info) {
+      if (!PackageBag.enablePackage) {
+        info.command.addError("node not started with enable.package=true");
+        return true;
+      }
+      return false;
+    }
+
+    boolean addUpdatePackage(CallInfo params) throws Exception {
+      if (checkEnabled(params)) return false;
+      CommandOperation op = params.command;
+      String name = op.getStr("name");
+      ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
+      Map<String, Object> props = clusterProperties.getClusterProperties();
+      List<String> pathToLib = asList(PACKAGES, name);
+      Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
+      Map<String, Object> dataMap = Utils.getDeepCopy(op.getDataMap(), 3);
+      PackageBag.PackageInfo packageInfo = new PackageBag.PackageInfo(dataMap, 0);
+
+      if ("add".equals(op.name)) {
+        if (existing != null) {
+          op.addError(StrUtils.formatString("The package with a name ''{0}'' already exists ", name));
+          return false;
         }
-       dataMap = info.op.getDataMap();
-
-      } else if(info.op.name.equals(Commands.UPDATE_REPO.meta.getName())) {
-        if(!contains){
-          info.op.addError("repository "+ name + " does not exist");
-          return;
+      } else {// this is an update command
+        if (existing == null) {
+          op.addError(StrUtils.formatString("The package with a name ''{0}'' does not exist", name));
+          return false;
         }
-        dataMap = info.op.getDataMap();
-
-      } else if(info.op.name.equals(Commands.DELETE_REPO.meta.getName())){
-        if(!contains){
-          info.op.addError("repository "+ name + " does not exist");
-          return;
+        PackageBag.PackageInfo oldInfo = new PackageBag.PackageInfo(existing, 1);
+        if (Objects.equals(oldInfo, packageInfo)) {
+          op.addError("Trying to update a package with the same data");
+          return false;
         }
+        packageInfo.oldBlob = oldInfo.blobs.stream()
+            .map(it -> it.sha256)
+            .collect(Collectors.toList());
+      }
+      try {
+        List<String> errs = packageInfo.validate(coreContainer);
+        if (!errs.isEmpty()) {
+          for (String err : errs) op.addError(err);
+          return false;
+        }
+      } catch (FileNotFoundException fnfe) {
+        op.addError(fnfe.getMessage());
+        return false;
+
+      } catch (SolrException e) {
+        log.error("Error loading package ", e);
+        op.addError(e.getMessage());
+        return false;
       }
 
       Map delta = new LinkedHashMap();
-      Utils.setObjectByPath(delta, path, dataMap, true);
-      updateRepository(zkClient, delta);
-    } catch (SolrException se){
-      throw se;
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      Utils.setObjectByPath(delta, pathToLib, packageInfo, true);
+      clusterProperties.setClusterProperties(delta);
+      return true;
+
     }
-  }
-
-  static boolean addUpdatePackage(ApiInfo params) throws Exception {
-    if (checkEnabled(params)) return false;
-    CommandOperation op = params.op;
-    String name = op.getStr("name");
-    ClusterProperties clusterProperties = new ClusterProperties(params.coreContainer.getZkController().getZkClient());
-    Map<String, Object> props = clusterProperties.getClusterProperties();
-    List<String> pathToLib = asList(PACKAGES, name);
-    Map existing = (Map) Utils.getObjectByPath(props, false, pathToLib);
-    Map<String, Object> dataMap = Utils.getDeepCopy(op.getDataMap(), 3);
-    PackageBag.PackageInfo packageInfo = new PackageBag.PackageInfo(dataMap, 0);
-
-    if (ClusterAPI.Commands.ADD_PACKAGE.meta().getName().equals(op.name)) {
-      if (existing != null) {
-        op.addError(StrUtils.formatString("The package with a name ''{0}'' already exists ", name));
-        return false;
-      }
-    } else {// this is an update command
-      if (existing == null) {
-        op.addError(StrUtils.formatString("The package with a name ''{0}'' does not exist", name));
-        return false;
-      }
-      PackageBag.PackageInfo oldInfo = new PackageBag.PackageInfo(existing, 1);
-      if (Objects.equals(oldInfo, packageInfo)) {
-        op.addError("Trying to update a package with the same data");
-        return false;
-      }
-      packageInfo.oldBlob = oldInfo.blobs.stream()
-          .map(it -> it.sha256)
-          .collect(Collectors.toList());
-    }
-    try {
-      List<String> errs = packageInfo.validate(params.coreContainer);
-      if(!errs.isEmpty()){
-        for (String err : errs) op.addError(err);
-        return false;
-      }
-    } catch (FileNotFoundException fnfe) {
-      op.addError(fnfe.getMessage());
-      return false;
-
-    } catch (SolrException e) {
-      log.error("Error loading package ", e);
-      op.addError(e.getMessage());
-      return false;
-    }
-
-    Map delta = new LinkedHashMap();
-    Utils.setObjectByPath(delta, pathToLib, packageInfo, true);
-    clusterProperties.setClusterProperties(delta);
-    return true;
 
   }
 
-  private static boolean checkEnabled(ApiInfo params) {
-    if (!PackageBag.enablePackage) {
-      params.op.addError("node not started with enable.package=true");
+  @EndPoint(
+      spec = "cluster.packages.GET",
+      permission = PKG_READ
+  )
+  public class PkgRead {
+    @Command
+    public void list(CallInfo info) throws IOException {
+      ClusterProperties clusterProperties = new ClusterProperties(coreContainer. getZkController().getZkClient());
+      info.rsp.add(PACKAGES, clusterProperties.getClusterProperty(PACKAGES, MapWriter.EMPTY));
+    }
+  }
+
+  @EndPoint(spec = "cluster.blob",
+      permission = BLOB_WRITE)
+  public class BlobWrite {
+    @Command
+    public void add(CallInfo info) {
+      Iterable<ContentStream> streams = info.req.getContentStreams();
+      if (streams == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no payload");
+      String sha256 = null;
+      ContentStream stream = streams.iterator().next();
+      try {
+        ByteBuffer buf = SimplePostTool.inputStreamToByteArray(stream.getStream());
+        sha256 = sha256Digest(buf);
+        coreContainer.getBlobStore().distributeBlob(buf, sha256);
+        info.rsp.add(SHA256, sha256);
+
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
+
+    }
+
+  }
+
+  @EndPoint(spec = "cluster.nodes",
+      permission = COLL_READ_PERM)
+
+  public class ListNodes {
+    @Command
+    public void list(CallInfo info) {
+      info.rsp.add("nodes", coreContainer.getZkController().getClusterState().getLiveNodes());
+    }
+  }
+
+  @EndPoint(spec = "cluster.Commands",
+      permission = COLL_EDIT_PERM)
+  public class ClusterCommands {
+    @Command(name = "add-requesthandler")
+    public void addHandler(CallInfo info) throws Exception {
+      if (addRequestHandler(info)) syncClusterProps(info);
+    }
+
+    @Command(name = "delete-requesthandler")
+    public void delHandler(CallInfo info) throws Exception {
+      if (deleteReqHandler(info)) syncClusterProps(info);
+    }
+
+    @Command(name = "set-obj-property")
+    public void setObj(CallInfo info) {
+      ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
+      try {
+        clusterProperties.setClusterProperties(info.command.getDataMap());
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
+      }
+
+    }
+
+
+    boolean addRequestHandler(CallInfo info) throws Exception {
+      Map data = info.command.getDataMap();
+      String name = (String) data.get("name");
+      ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
+      Map<String, Object> map = clusterProperties.getClusterProperties();
+      if (Utils.getObjectByPath(map, false, asList(SolrRequestHandler.TYPE, name)) != null) {
+        info.command.addError("A requestHandler already exists with the said name");
+        return false;
+      }
+      Map m = new LinkedHashMap();
+      Utils.setObjectByPath(m, asList(SolrRequestHandler.TYPE, name), data, true);
+      clusterProperties.setClusterProperties(m);
       return true;
     }
-    return false;
-  }
 
-  static class ApiInfo {
-    final SolrQueryRequest req;
-    final SolrQueryResponse rsp;
-    final BaseHandlerApiSupport apiHandler;
-    final CommandOperation op;
-    final CoreContainer coreContainer;
-
-    ApiInfo(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler, CommandOperation op, CoreContainer coreContainer) {
-      this.req = req;
-      this.rsp = rsp;
-      this.apiHandler = apiHandler;
-      this.op = op;
-      this.coreContainer = coreContainer;
+    boolean deleteReqHandler(CallInfo info) throws Exception {
+      String name = info.command.getStr("");
+      ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
+      Map<String, Object> map = clusterProperties.getClusterProperties();
+      if (Utils.getObjectByPath(map, false, asList(SolrRequestHandler.TYPE, name)) == null) {
+        info.command.addError("NO such requestHandler with name :");
+        return false;
+      }
+      Map m = new LinkedHashMap();
+      Utils.setObjectByPath(m, asList(SolrRequestHandler.TYPE, name), null, true);
+      clusterProperties.setClusterProperties(m);
+      return true;
     }
-  }
 
+  }
 
   static class PerNodeCallable extends SolrConfigHandler.PerReplicaCallable {
     private final HttpClient httpClient;
@@ -529,13 +408,4 @@ class ClusterAPI {
 
   }
 
-  static void updateRepository(SolrZkClient client, Map delta) throws KeeperException, InterruptedException {
-    client.atomicUpdate(ZkStateReader.PACKAGE_REPO, zkData -> {
-      if (zkData == null) return Utils.toJSON(delta);
-      Map<String, Object> zkJson = (Map<String, Object>) Utils.fromJSON(zkData);
-      boolean modified = Utils.mergeJson(zkJson, delta);
-      return modified ? Utils.toJSON(zkJson) : null;
-    });
-
-  }
 }

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.Meta;
@@ -39,13 +40,13 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final CollectionsHandler handler;
-  static Collection<ApiCommand> apiCommands = createApiMapping();
-
+  final Collection<ApiCommand> apiCommands;
   public CollectionHandlerApi(CollectionsHandler handler) {
     this.handler = handler;
+    apiCommands = createApiMapping();
   }
 
-  private static Collection<ApiCommand> createApiMapping() {
+  private Collection<ApiCommand> createApiMapping() {
 
     //there
     Map<CommandMeta, ApiCommand> apiMapping = new HashMap<>();
@@ -67,17 +68,6 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
         }
       }
     }
-    //The following APIs have only V2 implementations
-
-    for (ClusterAPI.Commands api : ClusterAPI.Commands.values()) {
-      apiMapping.put(api.meta(), api );
-    }
-
-    for (Meta meta : Meta.values()) {
-      if (apiMapping.get(meta) == null) {
-        log.error("ERROR_INIT. No corresponding API implementation for : " + meta.commandName);
-      }
-    }
 
     return apiMapping.values();
   }
@@ -95,5 +85,9 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     return apiCommands;
   }
 
+  @Override
+  protected Collection<Api> getV2OnlyApis() {
+    return new ClusterAPI(handler.getCoreContainer()).getAllApis();
+  }
 
 }
