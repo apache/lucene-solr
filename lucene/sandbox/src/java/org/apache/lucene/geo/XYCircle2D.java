@@ -23,7 +23,7 @@ import java.util.Objects;
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
- * 2D rectangle implementation containing XY spatial logic. This is WIP!!
+ * 2D rectangle implementation containing XY spatial logic.
  *
  * @lucene.internal
  */
@@ -71,8 +71,7 @@ public class XYCircle2D {
     return Relation.CELL_CROSSES_QUERY;
   }
 
-
-  /** Checks if the rectangle intersects the provided triangle **/
+  /** compare this to a provided triangle **/
   public Relation relateTriangle(double aX, double aY, double bX, double bY, double cX, double cY) {
     // 1. query contains any triangle points
     int numCorners = numberOfTriangleCorners(aX, aY, bX, bY, cX, cY);
