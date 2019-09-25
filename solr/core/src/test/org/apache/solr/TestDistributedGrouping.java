@@ -528,6 +528,11 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "kings", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.format", "simple");
     query("q", "{!func}id_i1", "rows", "3", "group.skip.second.step", "true", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
     query("q", "{!func}id_i1", "rows", "3", "group.skip.second.step", "false", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
+
+    assertNumFoundWithSkipSecondGroupingStep("q", "kings", "group.skip.second.step", "true", "fl", "id," + i1, "group", "true", "group.field", i1);
+    assertNumFoundWithSkipSecondGroupingStep( "q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1", "group", "true", "group.field", i1, "group.limit", "1","sort", tlong+" desc");
+    assertNumFoundWithSkipSecondGroupingStep("q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
+
     // score in fl and in sort (by default)
     testMaxScoreWithSkipSecondGroupingStep("q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
     // no score and different sort (should not return maxScore)
@@ -540,15 +545,26 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     handle.remove("numFound");
   }
 
+  private void assertNumFoundWithSkipSecondGroupingStep(String ... params) throws IOException, SolrServerException {
+    ModifiableSolrParams solrParams = params(params);
+    solrParams.set("group.skip.second.step", "true");
+    setDistributedParams(solrParams);
+    QueryResponse skipSecondStep = queryServer(solrParams);
+    for (GroupCommand gc : skipSecondStep.getGroupResponse().getValues()){
+      for (Group group : gc.getValues()){
+        if (! group.getResult().isEmpty()){
+          Assert.assertEquals(1, group.getResult().getNumFound());
+        }
+      }
+    }
+  }
+
   // will check that maxScore is the same in a distribute query regardless of group.skip.second.step enabled or not.
   private void testMaxScoreWithSkipSecondGroupingStep(String ... params) throws IOException, SolrServerException {
     Integer maxScoreConf = handle.get("maxScore");
     handle.remove("maxScore");
-    ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    for (int i = 0; i < params.length; i+=2){
-      solrParams.add(params[i], params[i+1]);
-    }
-    solrParams.set("shards", shards);
+    ModifiableSolrParams solrParams = params(params);
+    setDistributedParams(solrParams);
 
     solrParams.set("group.skip.second.step", "true");
 
