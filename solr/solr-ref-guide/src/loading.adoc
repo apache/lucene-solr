@@ -16,18 +16,18 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
-Streaming Expressions has support for reading, parsing, transforming, visualizing
-and loading CSV and TSV formatted data. These functions are designed to cut down the
-time spent on data preparation and allow users to begin data exploration before the data is
-loaded into Solr.
-
 <<Reading Files, Reading>> -
 <<Parsing CSV and TSV Files, Parsing>> -
 <<Visualizing, Visualizing>> -
 <<Selecting Fields and Field Types, Selecting Fields and Types>> -
 <<Loading, Loading >> -
 <<Transforming Data, Transforming>>
+
+
+Streaming Expressions has support for reading, parsing, transforming, visualizing
+and loading CSV and TSV formatted data. These functions are designed to cut down the
+time spent on data preparation and allow users to begin data exploration before the data is
+loaded into Solr.
 
 
 == Reading Files
