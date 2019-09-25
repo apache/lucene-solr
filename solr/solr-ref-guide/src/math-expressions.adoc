@@ -28,7 +28,7 @@ image::images/math-expressions/searchiris.png[]
 
 *<<math-start.adoc#math-start,Getting Started>>*: Getting started with Streaming Expressions, Math Expressions and visualization.
 
-*<<loading.adoc#loading,Data Loading>>*: Visualizing, transforming and loading CSV files.
+*<<loading.adoc#data-loading,Data Loading>>*: Visualizing, transforming and loading CSV files.
 
 *<<search-sample.adoc#search-sample,Searching, Sampling and Aggregation>>*: Searching, sampling, aggregation and visualization of result sets.
 
