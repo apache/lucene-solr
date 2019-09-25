@@ -135,12 +135,12 @@ public class TopGroups<T> {
     } else {
       shardTopDocs = new TopFieldDocs[shardGroups.length];
     }
-    float totalMaxScore = Float.MIN_VALUE;
+    float totalMaxScore = Float.NaN;
 
     for(int groupIDX=0;groupIDX<numGroups;groupIDX++) {
       final T groupValue = shardGroups[0].groups[groupIDX].groupValue;
       //System.out.println("  merge groupValue=" + groupValue + " sortValues=" + Arrays.toString(shardGroups[0].groups[groupIDX].groupSortValues));
-      float maxScore = Float.MIN_VALUE;
+      float maxScore = Float.NaN;
       int totalHits = 0;
       double scoreSum = 0.0;
       for(int shardIDX=0;shardIDX<shardGroups.length;shardIDX++) {
@@ -173,8 +173,12 @@ public class TopGroups<T> {
         for (int i = 0; i < shardTopDocs[shardIDX].scoreDocs.length; i++) {
           shardTopDocs[shardIDX].scoreDocs[i].shardIndex = shardIDX;
         }
-
-        maxScore = Math.max(maxScore, shardGroupDocs.maxScore);
+        if (Float.isNaN(maxScore)) {
+          maxScore = shardGroupDocs.maxScore;
+        }
+        else if (! Float.isNaN(shardGroupDocs.maxScore)) {
+          maxScore = Math.max(maxScore, shardGroupDocs.maxScore);
+        }
         assert shardGroupDocs.totalHits.relation == Relation.EQUAL_TO;
         totalHits += shardGroupDocs.totalHits.value;
         scoreSum += shardGroupDocs.score;

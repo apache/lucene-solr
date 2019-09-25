@@ -559,7 +559,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
       Assert.assertEquals(expectedValues.size(), skipSecondStepValues.size());
       for (int j = 0; j < expectedValues.size(); j++){
         Float expectedMaxScore = expectedValues.get(j).getResult().getMaxScore();
-        if ( expectedMaxScore.isNaN()){
+
+        if ( expectedMaxScore != null && expectedMaxScore.isNaN()){
           Assert.assertTrue(skipSecondStepValues.get(j).getResult().getMaxScore().isNaN());
         } else {
           Assert.assertEquals(expectedMaxScore, skipSecondStepValues.get(j).getResult().getMaxScore());
