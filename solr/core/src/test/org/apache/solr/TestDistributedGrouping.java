@@ -545,6 +545,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     handle.remove("numFound");
   }
 
+  // When group.skip.second.step is enabled numFound in each group will be 1. 
   private void assertNumFoundWithSkipSecondGroupingStep(String ... params) throws IOException, SolrServerException {
     ModifiableSolrParams solrParams = params(params);
     solrParams.set("group.skip.second.step", "true");
