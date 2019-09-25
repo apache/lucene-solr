@@ -148,8 +148,7 @@ When this expression is sent to the `/stream` handler it responds with:
         "sum": 41635.61488605971,
         "stdev": 4.549020172412098,
         "N": 58
-      },
-      ...
+      }]}}
 ----
 
 With Zeppelin-Solr the histogram can be first visualized as a table:
@@ -236,8 +235,7 @@ When this expression is sent to the `/stream` handler it responds with:
          "cumFreq": 3,
          "cumPct": 0.0005822981366459627,
          "value": -49
-       },
-       ...
+       }]}}
 ----
 
 With Zeppelin-Solr the frequency table can be first visualized as a table:
@@ -328,7 +326,7 @@ A quantile plot, or QQ Plot, plots the percentiles from two distributions on the
 the same scatter plot for comparision.
 
 The example below uses the sampling capability
-described in the link:probability.html[Probability] section of the user guide. The same
+described in the <<probability-distributions.adoc#probability-distributions,Probability>> section of the user guide. The same
 technique can be used with random samples drawn with the `random` function on empirical data
 stored in Solr Cloud collections. But its very useful to be able to
 use the probability distribution framework to sample from different distributions
