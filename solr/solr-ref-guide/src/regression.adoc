@@ -18,6 +18,10 @@
 
 The math expressions library supports simple and multivariate linear regression.
 
+<<Simple Linear Regression, Simple Linear Regression>> -
+<<Regression Plot, Regression Plot>> -
+<<Multivariate Linear Regression, Multivariate Linear Regression>>
+
 == Simple Linear Regression
 
 The `regress` function is used to build a linear regression model

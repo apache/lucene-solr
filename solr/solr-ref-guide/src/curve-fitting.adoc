@@ -18,6 +18,11 @@
 
 These functions support constructing a curve through bivariate non-linear data.
 
+<<Polynomial Curve Fitting, Polynomial>> -
+<<Gaussian Curve Fitting, Gaussian>> -
+<<Harmonic Curve Fitting, Harmonic>>
+
+
 == Polynomial Curve Fitting
 
 The `polyfit` function is a general purpose curve fitter used to model
@@ -27,7 +32,7 @@ The `polyfit` function is passed x- and y-axes and fits a smooth curve to the da
 If only a single array is provided it is treated as the y-axis and a sequence is generated
 for the x-axis.
 
-The `polyfit` function also has a parameter the specifies the degree of the polynomial. The higher
+The `polyfit` function also has a parameter that specifies the degree of the polynomial. The higher
 the degree the more curves that can be modeled.
 
 The `polyfit` function can be visualized in a similar manner to linear regression with the
