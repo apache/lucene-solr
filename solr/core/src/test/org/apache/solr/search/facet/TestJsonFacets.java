@@ -3523,6 +3523,39 @@ public class TestJsonFacets extends SolrTestCaseHS {
         "Expected boolean type for param 'perSeg' but got Long = 2 , path=facet/cat_s",
         req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,perSeg:2}}"),
         SolrException.ErrorCode.BAD_REQUEST);
+
+    assertQEx("Should fail as sort is invalid",
+        "Invalid sort option 'bleh' for field 'cat_s'",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,sort:bleh}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    assertQEx("Should fail as sort order is invalid",
+        "Unknown Sort direction 'bleh'",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,sort:{count: bleh}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    // test for prelim_sort
+    assertQEx("Should fail as prelim_sort is invalid",
+        "Invalid prelim_sort option 'bleh' for field 'cat_s'",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,prelim_sort:bleh}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    assertQEx("Should fail as prelim_sort map is invalid",
+        "Invalid prelim_sort option '{bleh=desc}' for field 'cat_s'",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,prelim_sort:{bleh:desc}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    // with nested facet
+    assertQEx("Should fail as prelim_sort is invalid",
+        "Invalid sort option 'bleh' for field 'id'",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,sort:bleh,facet:" +
+            "{bleh:\"unique(cat_s)\",id:{type:terms,field:id,sort:bleh}}}}"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    assertQ("Should pass as sort is proper",
+        req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,sort:bleh,facet:" +
+            "{bleh:\"unique(cat_s)\",id:{type:terms,field:id,sort:{bleh:desc},facet:{bleh:\"unique(id)\"}}}}}")
+    );
   }
 
 

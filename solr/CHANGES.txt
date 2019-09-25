@@ -234,6 +234,8 @@ Bug Fixes
 
 * SOLR-13725: Allow negative values for limit in TermsFacetMap (Richard Walker, Munendra S N)
 
+* SOLR-13022: Fix NPE when sorting by non-existent aggregate function in JSON Facet (hossman, Munendra S N)
+
 Other Changes
 ----------------------
 
