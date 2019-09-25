@@ -22,14 +22,15 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.core.PackageBag.PackageInfo;
 import org.apache.solr.core.PackageListeners;
-import org.apache.solr.core.PackageManager.PackageInfo;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.metrics.SolrMetrics;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
+public class SolrCacheHolder<K, V> implements SolrCache<K, V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
@@ -37,12 +38,11 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   protected volatile SolrCache<K, V> delegate;
 
 
-
   public SolrCacheHolder(CacheConfig.CacheInfo cacheInfo) {
     this.info = cacheInfo;
     this.delegate = cacheInfo.cache;
 
-    if(info.pkg != null) {
+    if (info.pkg != null) {
       info.core.getListenerRegistry().addListener(new PackageListeners.Listener() {
         @Override
         public String packageName() {
@@ -75,7 +75,7 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
       info.packageInfo = packageInfo;
       delegate.close();
       delegate = info.cache;
-      delegate.initializeMetrics(metrics);
+      delegate.initializeMetrics(metricsInfo.manager, metricsInfo.registry, metricsInfo.tag, metricsInfo.scope);
 
 
     }
@@ -183,11 +183,32 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
     return delegate.getCategory();
   }
 
-  private SolrMetrics metrics;
+
+  private MetricsInfo metricsInfo;
+
+  public static class MetricsInfo {
+    final SolrMetricManager manager;
+    final String registry;
+    final String tag;
+    final String scope;
+
+    MetricsInfo(SolrMetricManager manager, String registry, String tag, String scope) {
+      this.manager = manager;
+      this.registry = registry;
+      this.tag = tag;
+      this.scope = scope;
+    }
+
+    public void init(SolrMetricProducer metricProducer) {
+      metricProducer.initializeMetrics(manager, registry, tag, scope);
+    }
+  }
+
   @Override
-  public void initializeMetrics(SolrMetrics info) {
-    this.metrics = info;
-    delegate.initializeMetrics(info);
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    this.metricsInfo = new MetricsInfo(manager, registry, tag, scope);
+    delegate.initializeMetrics(manager, registry, tag, scope);
+
   }
 
 }

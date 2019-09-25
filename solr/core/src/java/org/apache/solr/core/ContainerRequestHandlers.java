@@ -20,25 +20,24 @@ package org.apache.solr.core;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.api.Api;
+import org.apache.solr.api.CallInfo;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
@@ -49,7 +48,8 @@ import static org.apache.solr.common.params.CommonParams.PACKAGE;
 import static org.apache.solr.common.params.CommonParams.VERSION;
 import static org.apache.solr.core.PluginBag.closeQuietly;
 
-class ContainerRequestHandlers extends RequestHandlerBase implements PermissionNameProvider {
+@EndPoint(spec = "node.ext", permission = PermissionNameProvider.Name.CUSTOM_PERM)
+public class ContainerRequestHandlers {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final CoreContainer coreContainer;
@@ -60,11 +60,10 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
     this.coreContainer = coreContainer;
   }
 
-  @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
     int v = req.getParams().getInt(ConfigOverlay.ZNODEVER, -1);
     if (v >= 0) {
-      log.debug("expected version : {} , my version {}", v, coreContainer.getPackageManager().myVersion);
+      log.debug("expected version : {} , my version {}", v, coreContainer.getPackageBag().myVersion);
       ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
       try {
         zkStateReader.forceRefreshClusterProps(v);
@@ -79,26 +78,23 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
 
   }
 
-  @Override
-  public Collection<Api> getApis() {
-    return Collections.singleton(new Api(Utils.getSpec("node.ext")) {
-      @Override
-      public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-        String name = ((V2HttpCall) req.getHttpSolrCall()).getUrlParts().get("handlerName");
-        if (name == null) {
-          handleRequestBody(req, rsp);
-          return;
-        }
-        Handler wrapper = customHandlers.get(name);
-        if (wrapper == null) {
-          String err = StrUtils.formatString(" No such handler: {0}, available handlers : {1}", name, customHandlers.keySet());
-          log.error(err);
-          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, err);
-        }
-        wrapper.handler.handleRequest(req, rsp);
-      }
-    });
+  @Command
+  public void call(CallInfo info) {
+    String name = ((V2HttpCall) info.req.getHttpSolrCall()).getUrlParts().get("handlerName");
+    if (name == null) {
+      handleRequestBody(info.req, info.rsp);
+      return;
+    }
+    Handler wrapper = customHandlers.get(name);
+    if (wrapper == null) {
+      String err = StrUtils.formatString(" No such handler: {0}, available handlers : {1}", name, customHandlers.keySet());
+      log.error(err);
+      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, err);
+    }
+    wrapper.handler.handleRequest(info.req, info.rsp);
+
   }
+
 
   void updateReqHandlers(Map<String, Object> properties) {
     Map m = (Map) properties.getOrDefault(SolrRequestHandler.TYPE, Collections.emptyMap());
@@ -109,18 +105,18 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
     List<Handler> toBeClosed = new ArrayList<>();
     for (Object o : m.entrySet()) {
       Object v = ((Map.Entry) o).getValue();
-      String  name = (String) ((Map.Entry) o).getKey();
+      String name = (String) ((Map.Entry) o).getKey();
       if (v instanceof Map) {
         Map metaData = (Map) v;
         Handler existing = customHandlers.get(name);
         if (existing == null || !existing.meta.equals(metaData)) {
           String klas = (String) metaData.get(FieldType.CLASS_NAME);
           if (klas != null) {
-            newCustomHandlers.put(name,  new Handler(metaData));
+            newCustomHandlers.put(name, new Handler(metaData));
           } else {
             log.error("Invalid requestHandler {}", Utils.toJSONString(v));
           }
-          if(existing != null){
+          if (existing != null) {
             toBeClosed.add(existing);
           }
 
@@ -148,7 +144,7 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
 
   private SolrRequestHandler createHandler(Map metaData) {
     String pkg = (String) metaData.get(PACKAGE);
-    SolrRequestHandler inst = coreContainer.getPackageManager().newInstance((String) metaData.get(FieldType.CLASS_NAME),
+    SolrRequestHandler inst = coreContainer.getPackageBag().newInstance((String) metaData.get(FieldType.CLASS_NAME),
         SolrRequestHandler.class, pkg);
     if (inst instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) inst).init(new PluginInfo(SolrRequestHandler.TYPE, metaData));
@@ -156,34 +152,13 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
     return inst;
   }
 
-  @Override
-  public String getDescription() {
-    return "Custom Handlers";
-  }
-
-
-  @Override
-  public Boolean registerV1() {
-    return Boolean.FALSE;
-  }
-
-  @Override
-  public Boolean registerV2() {
-    return Boolean.TRUE;
-  }
-
-  @Override
-  public Name getPermissionName(AuthorizationContext request) {
-    if (request.getResource().endsWith("/node/ext")) return Name.COLL_READ_PERM;
-    return Name.CUSTOM_PERM;
-  }
 
   class Handler implements MapWriter, PackageListeners.Listener, AutoCloseable {
     SolrRequestHandler handler;
     final String pkg;
     int zkversion;
     PluginInfo meta;
-    PackageManager.PackageInfo packageInfo;
+    PackageBag.PackageInfo packageInfo;
     String name;
 
     @Override
@@ -198,8 +173,8 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
       pkg = (String) meta.get("package");
       this.handler = createHandler(meta);
       if (pkg != null) {
-        this.packageInfo = coreContainer.getPackageManager().getPackageInfo(pkg);
-        coreContainer.getPackageManager().listenerRegistry.addListener(this);
+        this.packageInfo = coreContainer.getPackageBag().getPackageInfo(pkg);
+        coreContainer.getPackageBag().listenerRegistry.addListener(this);
       }
 
 
@@ -216,8 +191,8 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
     }
 
     @Override
-    public void changed(PackageManager.PackageInfo info) {
-      if(this.packageInfo.znodeVersion < info.znodeVersion){
+    public void changed(PackageBag.PackageInfo info) {
+      if (this.packageInfo.znodeVersion < info.znodeVersion) {
         this.handler = createHandler(meta.attributes);
         this.packageInfo = info;
       }
@@ -230,7 +205,7 @@ class ContainerRequestHandlers extends RequestHandlerBase implements PermissionN
     }
 
     @Override
-    public PackageManager.PackageInfo packageInfo() {
+    public PackageBag.PackageInfo packageInfo() {
       return packageInfo;
     }
   }

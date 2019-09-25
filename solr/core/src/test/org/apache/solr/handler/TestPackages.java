@@ -52,7 +52,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -61,7 +60,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.MemClassLoader;
-import org.apache.solr.core.PackageManager;
+import org.apache.solr.core.PackageBag;
 import org.apache.solr.core.RuntimeLib;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.LogLevel;
@@ -85,8 +84,8 @@ import static org.apache.solr.core.BlobRepository.sha256Digest;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 
 @SolrTestCaseJ4.SuppressSSL
-@LogLevel("org.apache.solr.common.cloud.ZkStateReader=DEBUG;org.apache.solr.handler.admin.CollectionHandlerApi=DEBUG;org.apache.solr.core.PackageManager=DEBUG;org.apache.solr.common.cloud.ClusterProperties=DEBUG")
-public class TestPackageLoader extends SolrCloudTestCase {
+@LogLevel("org.apache.solr.common.cloud.ZkStateReader=DEBUG;org.apache.solr.handler.admin.CollectionHandlerApi=DEBUG;org.apache.solr.core.PackageBag=DEBUG;org.apache.solr.common.cloud.ClusterProperties=DEBUG")
+public class TestPackages extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
@@ -172,7 +171,7 @@ public class TestPackageLoader extends SolrCloudTestCase {
             .withPayload(payload)
             .withMethod(SolrRequest.METHOD.POST)
             .build().process(cluster.getSolrClient());
-        fail("Expected error");
+        fail("Error expected");
       } catch (BaseHttpSolrClient.RemoteExecutionException e) {
         assertTrue("actual output : " + Utils.toJSONString(e.getMetaData()), e.getMetaData()._getStr("error/details[0]/errorMessages[0]", "").contains("No such blob: "));
       }
@@ -201,7 +200,7 @@ public class TestPackageLoader extends SolrCloudTestCase {
           .build();
       assertResponseValues(10, cluster.getSolrClient(), request, Utils.makeMap(
           "class", "org.apache.solr.core.RuntimeLibReqHandler",
-          "loader", PackageManager.PackageResourceLoader.class.getName(),
+          "loader", PackageBag.PackageResourceLoader.class.getName(),
           "version", null));
 
 
@@ -412,6 +411,7 @@ public class TestPackageLoader extends SolrCloudTestCase {
 
   }
 
+  @Test
   public void testPluginFrompackage() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
 
@@ -512,13 +512,13 @@ public class TestPackageLoader extends SolrCloudTestCase {
           cluster.getSolrClient(),
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/runtime", params),
           Utils.makeMap("class", "org.apache.solr.core.RuntimeLibReqHandler",
-              "loader", PackageManager.PackageResourceLoader.class.getName()));
+              "loader", PackageBag.PackageResourceLoader.class.getName()));
 
       assertResponseValues(10,
           cluster.getSolrClient(),
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/get?abc=xyz", params),
           Utils.makeMap("get", "org.apache.solr.core.RuntimeLibSearchComponent",
-              "loader", PackageManager.PackageResourceLoader.class.getName()));
+              "loader", PackageBag.PackageResourceLoader.class.getName()));
 
       GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/runtime",
           new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME, WT, "json1")));
@@ -544,7 +544,7 @@ public class TestPackageLoader extends SolrCloudTestCase {
           cluster.getSolrClient(),
           req,
           Utils.makeMap("wt", "org.apache.solr.core.RuntimeLibResponseWriter",
-              "loader", PackageManager.PackageResourceLoader.class.getName()));
+              "loader", PackageBag.PackageResourceLoader.class.getName()));
 
 
       payload = "{update:{name : 'global', version : '2'" +
@@ -780,47 +780,6 @@ public class TestPackageLoader extends SolrCloudTestCase {
       cluster.shutdown();
     }
 
-
-  }
-
-  public void testRepoCRUD() throws Exception{
-    MiniSolrCloudCluster cluster = configureCluster(4)
-        .withJettyConfig(jetty -> jetty.enableV2(true))
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
-    try {
-      String payload = "{add : {name : myrepo, url: 'http://localhost/abc' , version : '1.1'}}";
-      new V2Request.Builder("/cluster/repository")
-          .withPayload(payload)
-          .withMethod(SolrRequest.METHOD.POST)
-          .build().process(cluster.getSolrClient());
-      Map repojson = Utils.getJson(cluster.getZkClient(), ZkStateReader.PACKAGE_REPO, true);
-
-      assertEquals("http://localhost/abc", Utils.getObjectByPath(repojson, true, "/repository/myrepo/url"));
-      assertEquals("1.1", Utils.getObjectByPath(repojson, true, "/repository/myrepo/version"));
-      payload = "{update : {name : myrepo, url: 'http://localhost/abc' , version : '1.2'}}";
-    new V2Request.Builder("/cluster/repository")
-          .withPayload(payload)
-          .withMethod(SolrRequest.METHOD.POST)
-          .build().process(cluster.getSolrClient());
-      repojson = Utils.getJson(cluster.getZkClient(), ZkStateReader.PACKAGE_REPO, true);
-
-      assertEquals("http://localhost/abc", Utils.getObjectByPath(repojson, true, "/repository/myrepo/url"));
-      assertEquals("1.2", Utils.getObjectByPath(repojson, true, "/repository/myrepo/version"));
-
-      payload = "{delete :  myrepo}";
-    new V2Request.Builder("/cluster/repository")
-          .withPayload(payload)
-          .withMethod(SolrRequest.METHOD.POST)
-          .build().process(cluster.getSolrClient());
-      repojson = Utils.getJson(cluster.getZkClient(), ZkStateReader.PACKAGE_REPO, true);
-
-      assertNull( Utils.getObjectByPath(repojson, true, "/repository/myrepo"));
-
-
-    }finally {
-      cluster.shutdown();
-    }
 
   }
 

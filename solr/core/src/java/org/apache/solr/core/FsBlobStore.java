@@ -28,7 +28,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -40,7 +39,9 @@ import java.util.function.Consumer;
 
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.api.Api;
+import org.apache.solr.api.CallInfo;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -49,10 +50,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -284,64 +283,38 @@ public class FsBlobStore {
   }
 
 
-  class BlobRead extends RequestHandlerBase implements PermissionNameProvider {
+  @EndPoint(spec = "node.blob.GET",
+  permission = PermissionNameProvider.Name.BLOB_READ)
+  public class BlobRead {
 
-    @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
-
-    }
-
-    @Override
-    public String getDescription() {
-      return "List fetch blobs";
-    }
-
-    @Override
-    public Name getPermissionName(AuthorizationContext request) {
-      return Name.BLOB_READ;
-    }
-
-    @Override
-    public Collection<Api> getApis() {
-      return Collections.singleton(new Api(Utils.getSpec("node.blob.GET")) {
-        @Override
-        public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-          String sha256 = ((V2HttpCall) req.getHttpSolrCall()).getUrlParts().get("sha256");
-          if (sha256 == null) {
-            rsp.add("blob", fileList(req.getParams()));
-          } else {
-            if (!fetchBlobToFS(sha256)) {
-              throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such blob");
-            }
-
-            ModifiableSolrParams solrParams = new ModifiableSolrParams();
-            solrParams.add(CommonParams.WT, FILE_STREAM);
-            req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
-            rsp.add(FILE_STREAM, (SolrCore.RawWriter) os -> {
-              ByteBuffer b = tmpBlobs.get(sha256);
-              if (b != null) {
-                os.write(b.array(), b.arrayOffset(), b.limit());
-              } else {
-                File file = new File(getBlobsPath().toFile(), sha256);
-                try (FileInputStream is = new FileInputStream(file)) {
-                  org.apache.commons.io.IOUtils.copy(is, os);
-                }
-              }
-            });
-          }
+    @Command
+    public void get(CallInfo info){
+      SolrQueryRequest req = info.req;
+      SolrQueryResponse rsp = info.rsp;
+      String sha256 = ((V2HttpCall) req.getHttpSolrCall()).getUrlParts().get("sha256");
+      if (sha256 == null) {
+        rsp.add("blob", fileList(req.getParams()));
+      } else {
+        if (!fetchBlobToFS(sha256)) {
+          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such blob");
         }
-      });
+
+        ModifiableSolrParams solrParams = new ModifiableSolrParams();
+        solrParams.add(CommonParams.WT, FILE_STREAM);
+        req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
+        rsp.add(FILE_STREAM, (SolrCore.RawWriter) os -> {
+          ByteBuffer b = tmpBlobs.get(sha256);
+          if (b != null) {
+            os.write(b.array(), b.arrayOffset(), b.limit());
+          } else {
+            File file = new File(getBlobsPath().toFile(), sha256);
+            try (FileInputStream is = new FileInputStream(file)) {
+              org.apache.commons.io.IOUtils.copy(is, os);
+            }
+          }
+        });
+      }
     }
 
-
-    @Override
-    public Boolean registerV1() {
-      return Boolean.FALSE;
-    }
-
-    @Override
-    public Boolean registerV2() {
-      return Boolean.TRUE;
-    }
   }
 }

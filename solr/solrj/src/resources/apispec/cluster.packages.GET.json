@@ -1,0 +1,10 @@
+{
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/cluster/package"
+    ]
+  }
+}

@@ -50,13 +50,13 @@ public class PackageListeners {
 
   }
 
-  public synchronized void packagesUpdated(List<PackageManager.PackageInfo> pkgs){
-    for (PackageManager.PackageInfo pkgInfo : pkgs) {
+  public synchronized void packagesUpdated(List<PackageBag.PackageInfo> pkgs){
+    for (PackageBag.PackageInfo pkgInfo : pkgs) {
       invokeListeners(pkgInfo);
     }
   }
 
-  private synchronized void invokeListeners(PackageManager.PackageInfo pkgInfo) {
+  private synchronized void invokeListeners(PackageBag.PackageInfo pkgInfo) {
     for (WeakReference<Listener> ref : listeners) {
       Listener listener = ref.get();
       if (listener != null && listener.packageName().equals(pkgInfo.name)) {
@@ -84,8 +84,8 @@ public class PackageListeners {
 
     PluginInfo pluginInfo();
 
-    void changed(PackageManager.PackageInfo lib);
+    void changed(PackageBag.PackageInfo lib);
 
-    PackageManager.PackageInfo packageInfo();
+    PackageBag.PackageInfo packageInfo();
   }
 }

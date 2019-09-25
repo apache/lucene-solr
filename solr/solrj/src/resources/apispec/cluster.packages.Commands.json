@@ -1,6 +1,6 @@
 {
   "methods": [
-    "GET", "POST"
+     "POST"
   ],
   "url": {
     "paths": [

@@ -868,7 +868,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     if (info == null) return null;
     String pkg = info.attributes.get(CommonParams.PACKAGE);
     ResourceLoader resourceLoader = pkg != null?
-        coreContainer.getPackageManager().getResourceLoader(pkg):
+        coreContainer.getPackageBag().getResourceLoader(pkg):
         getResourceLoader();
 
     T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, resourceLoader);

@@ -54,28 +54,34 @@ import static org.apache.solr.common.util.StrUtils.splitSmart;
 public abstract class BaseHandlerApiSupport implements ApiSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected final Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping;
-
-  protected BaseHandlerApiSupport() {
-    commandsMapping = new HashMap<>();
-    for (ApiCommand cmd : getCommands()) {
-      Map<V2EndPoint, List<ApiCommand>> m = commandsMapping.get(cmd.meta().getHttpMethod());
-      if (m == null) commandsMapping.put(cmd.meta().getHttpMethod(), m = new HashMap<>());
-      List<ApiCommand> list = m.get(cmd.meta().getEndPoint());
-      if (list == null) m.put(cmd.meta().getEndPoint(), list = new ArrayList<>());
-      list.add(cmd);
-    }
-  }
+  List<Api> apis;
 
   @Override
   public synchronized Collection<Api> getApis() {
-    ImmutableList.Builder<Api> l = ImmutableList.builder();
-    for (V2EndPoint op : getEndPoints()) l.add(getApi(op));
-    return l.build();
+    if (apis == null) {
+      Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping = new HashMap<>();
+      for (ApiCommand cmd : getCommands()) {
+        Map<V2EndPoint, List<ApiCommand>> m = commandsMapping.get(cmd.meta().getHttpMethod());
+        if (m == null) commandsMapping.put(cmd.meta().getHttpMethod(), m = new HashMap<>());
+        List<ApiCommand> list = m.get(cmd.meta().getEndPoint());
+        if (list == null) m.put(cmd.meta().getEndPoint(), list = new ArrayList<>());
+        list.add(cmd);
+      }
+      ImmutableList.Builder<Api> l = ImmutableList.builder();
+      for (V2EndPoint op : getEndPoints()) l.add(getApi(commandsMapping, op));
+      l.addAll(getV2OnlyApis());
+      apis = l.build();
+    }
+    return apis;
+
+  }
+
+  protected Collection<Api> getV2OnlyApis() {
+    return Collections.EMPTY_LIST;
   }
 
 
-  private Api getApi(final V2EndPoint op) {
+  private Api getApi(Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping, final V2EndPoint op) {
     final BaseHandlerApiSupport apiHandler = this;
     return new Api(Utils.getSpec(op.getSpecName())) {
       @Override
@@ -84,8 +90,8 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
         SolrRequest.METHOD method = SolrRequest.METHOD.valueOf(req.getHttpMethod());
         List<ApiCommand> commands = commandsMapping.get(method).get(op);
         try {
-          if(commands!=null &&  commands.size() == 1 && commands.get(0).isRaw()){
-            commands.get(0).invoke(req,rsp, apiHandler);
+          if (commands != null && commands.size() == 1 && commands.get(0).isRaw()) {
+            commands.get(0).invoke(req, rsp, apiHandler);
             return;
           }
           if (method == POST) {
@@ -191,7 +197,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
           @Override
           public Map toMap(Map<String, Object> suppliedMap) {
-            for(Iterator<String> it=getParameterNamesIterator(); it.hasNext(); ) {
+            for (Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
               final String param = it.next();
               String key = cmd.meta().getParamSubstitute(param);
               Object o = key.indexOf('.') > 0 ?
@@ -206,10 +212,10 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
                   Number.class.isAssignableFrom(oClass) ||
                   Character.class.isAssignableFrom(oClass) ||
                   Boolean.class.isAssignableFrom(oClass)) {
-                suppliedMap.put(param,String.valueOf(o));
-              } else if (List.class.isAssignableFrom(oClass) && ((List)o).get(0) instanceof String ) {
+                suppliedMap.put(param, String.valueOf(o));
+              } else if (List.class.isAssignableFrom(oClass) && ((List) o).get(0) instanceof String) {
                 List<String> l = (List<String>) o;
-                suppliedMap.put( param, l.toArray(new String[0]));
+                suppliedMap.put(param, l.toArray(new String[0]));
               } else {
                 // Lists pass through but will require special handling downstream
                 // if they contain non-string elements.
@@ -227,15 +233,16 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
   protected abstract Collection<V2EndPoint> getEndPoints();
 
 
-  public interface ApiCommand  {
+  public interface ApiCommand {
 
     CommandMeta meta();
 
 
-    /** If true, do not do anything with the payload. The command implementation will do everything
+    /**
+     * If true, do not do anything with the payload. The command implementation will do everything
      */
 
-    default boolean isRaw(){
+    default boolean isRaw() {
       return false;
     }
 

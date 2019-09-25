@@ -62,7 +62,7 @@ import static org.apache.solr.core.RuntimeLib.SHA256;
  * <p>
  * All the resource loaders are loaded from blobs that exist in the {@link FsBlobStore}
  */
-public class PackageManager implements ClusterPropertiesListener {
+public class PackageBag implements ClusterPropertiesListener {
   public static final boolean enablePackage = Boolean.parseBoolean(System.getProperty("enable.package", "false"));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -165,8 +165,8 @@ public class PackageManager implements ClusterPropertiesListener {
       return true;
     }
 
-    PackageResourceLoader createPackage(PackageManager packageManager) {
-      return new PackageResourceLoader(packageManager, this);
+    PackageResourceLoader createPackage(PackageBag packageBag) {
+      return new PackageResourceLoader(packageBag, this);
     }
 
     public static class Blob implements MapWriter {
@@ -228,18 +228,18 @@ public class PackageManager implements ClusterPropertiesListener {
       packageInfo.writeMap(ew);
     }
 
-    PackageResourceLoader(PackageManager packageManager, PackageInfo packageInfo) {
-      super(packageManager.coreContainer.getResourceLoader().getInstancePath(),
-          packageManager.coreContainer.getResourceLoader().classLoader);
+    PackageResourceLoader(PackageBag packageBag, PackageInfo packageInfo) {
+      super(packageBag.coreContainer.getResourceLoader().getInstancePath(),
+          packageBag.coreContainer.getResourceLoader().classLoader);
       this.packageInfo = packageInfo;
       List<URL> blobURLs = new ArrayList<>(packageInfo.blobs.size());
       for (PackageInfo.Blob blob : packageInfo.blobs) {
         try {
-          if (!packageManager.coreContainer.getBlobStore().fetchBlobToFS(blob.sha256)) {
+          if (!packageBag.coreContainer.getBlobStore().fetchBlobToFS(blob.sha256)) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                 "Blob not available " + blob.sha256);
           }
-          blobURLs.add(new File(packageManager.coreContainer.getBlobStore().getBlobsPath().toFile(), blob.sha256).toURI().toURL());
+          blobURLs.add(new File(packageBag.coreContainer.getBlobStore().getBlobsPath().toFile(), blob.sha256).toURI().toURL());
         } catch (MalformedURLException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
@@ -248,7 +248,7 @@ public class PackageManager implements ClusterPropertiesListener {
     }
   }
 
-  PackageManager(CoreContainer coreContainer) {
+  PackageBag(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
 
@@ -308,7 +308,7 @@ public class PackageManager implements ClusterPropertiesListener {
         if (pkgInfo == null) {
           newPkgs.remove(s);
         } else {
-          newPkgs.put(s, pkgInfo.createPackage(PackageManager.this));
+          newPkgs.put(s, pkgInfo.createPackage(PackageBag.this));
           touchedPackages.add(pkgInfo);
         }
       });

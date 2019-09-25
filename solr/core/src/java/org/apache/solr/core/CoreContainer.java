@@ -47,6 +47,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -223,7 +224,7 @@ public class CoreContainer {
 
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
 
-  private final PackageManager clusterPropertiesListener = new PackageManager(this);
+  private final PackageBag packageBag = new PackageBag(this);
 
 
   // Bits for the state variable.
@@ -632,7 +633,7 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
-      getZkController().getZkStateReader().registerClusterPropertiesListener(clusterPropertiesListener);
+      getZkController().getZkStateReader().registerClusterPropertiesListener(packageBag);
       pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       pkiAuthenticationPlugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication/pki");
@@ -645,8 +646,8 @@ public class CoreContainer {
     reloadSecurityProperties();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
-    containerHandlers.put("/ext", containerRequestHandlers);
-    containerHandlers.put("/blob-get", blobStore.blobRead);
+    containerHandlers.put(new AnnotatedApi(containerRequestHandlers));
+    containerHandlers.put(new AnnotatedApi(blobStore.blobRead));
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
@@ -1800,8 +1801,8 @@ public class CoreContainer {
     return containerHandlers;
   }
 
-  public PackageManager getPackageManager(){
-    return clusterPropertiesListener;
+  public PackageBag getPackageBag(){
+    return packageBag;
   }
 
   public CoreAdminHandler getMultiCoreHandler() {
