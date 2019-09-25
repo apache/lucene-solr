@@ -119,6 +119,8 @@ Improvements
 
 * SOLR-13638: Add debug, trace logging to RuleBasedAuthorizationPlugin (Jason Gerlowski)
 
+* SOLR-13784: EmbeddedSolrServer's defaultCore constructor argument is now optional (David Smiley)
+
 Bug Fixes
 ----------------------
 

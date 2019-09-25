@@ -69,7 +69,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
@@ -844,7 +843,7 @@ public class CoreContainer {
         name = "localhost";
       }
       cloudManager = null;
-      client = new EmbeddedSolrServer(this, CollectionAdminParams.SYSTEM_COLL) {
+      client = new EmbeddedSolrServer(this, null) {
         @Override
         public void close() throws IOException {
           // do nothing - we close the container ourselves
