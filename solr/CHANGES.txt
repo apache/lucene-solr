@@ -121,6 +121,8 @@ Improvements
 
 * SOLR-13784: EmbeddedSolrServer's defaultCore constructor argument is now optional (David Smiley)
 
+* LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
+
 Bug Fixes
 ----------------------
 

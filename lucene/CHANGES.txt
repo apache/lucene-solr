@@ -81,6 +81,8 @@ Improvements
 
 * LUCENE-8966: The Korean analyzer now splits tokens on boundaries between digits and alphabetic characters. (Jim Ferenczi)
 
+* LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
+
 Optimizations
 
 * LUCENE-8922: DisjunctionMaxQuery more efficiently leverages impacts to skip
