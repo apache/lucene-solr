@@ -18,13 +18,13 @@
 
 
 Streaming Expressions has support for reading, parsing, transforming, visualizing
-and loading CSV and TSV formatted data. These functions are designed to cut down on the
+and loading CSV and TSV formatted data. These functions are designed to cut down the
 time spent on data preparation and allow users to begin data exploration before the data is
 loaded into Solr.
 
 == Reading Files
 
-The `cat` function can be used to read files under the "userfiles" directory in
+The `cat` function can be used to read files under the *userfiles* directory in
 $SOLR_HOME. The `cat` function takes two parameters. The first parameter is a comma
 delimited list of paths. If the path list contains directories, `cat` will crawl
 all the files in the directory and sub-directories. If the path list contains only
