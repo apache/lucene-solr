@@ -26,7 +26,6 @@ This section covers vector math and vector manipulation functions.
 <<Vector Sorting, Sorting>> -
 <<Vector Summarizations and Norms, Summarization>> -
 <<Scalar Vector Math, Vector Math>> -
-<<Dot Product and Cosine Similarity, Dot Product and Cosine Similarity>>
 
 == Arrays
 
