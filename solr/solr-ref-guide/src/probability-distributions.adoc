@@ -27,21 +27,6 @@ framework included in the math expressions library.
 <<Probability, Probability>> -
 <<Multivariate Normal Distribution, Multivariate Normal Distribution>>
 
-== Probability Distribution Framework
-
-The probability distribution framework includes commonly used <<Continuous Distributions,continuous>>
-and <<Discrete,discrete>> probability distributions, including support for <<empiricaldistribution,empirical>>
-and <<enumerateddistribution,enumerated>> distributions that model real world data.
-
-The probability distribution framework also supports:
-
-* Visualization
-* Probability and cumulative probability calculations
-* Sampling
-
-Other chapters of the user guide use the probability distribution framework to support *outlier detection*, *Monte Carlo* simulations
-and *Kolmogorov Smirnov* tests.
-
 == Visualization
 
 Probability distributions can be visualized with Zeppelin-Solr using the
