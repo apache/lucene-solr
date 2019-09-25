@@ -19,13 +19,13 @@
 This section of the user guide covers the probability distribution
 framework included in the math expressions library.
 
-<<Visualization, Visualization>> -
-<<Continuous Distributions, Continuous Distributions>> -
-<<Discrete Distributions, Discrete Distributions>> -
-<<Sampling, Sampling>> -
-<<Cumulative Probability, Cumulative Probability>> -
-<<Probability, Probability>> -
-<<Multivariate Normal Distribution, Multivariate Normal Distribution>>
+<<Visualization, *Visualization*>> -
+<<Continuous Distributions, *Continuous Distributions*>> -
+<<Discrete Distributions, *Discrete Distributions*>> -
+<<Sampling, *Sampling*>> -
+<<Cumulative Probability, *Cumulative Probability*>> -
+<<Probability, *Probability*>> -
+<<Multivariate Normal Distribution, *Multivariate Normal Distribution*>>
 
 == Probability Distribution Framework
 
