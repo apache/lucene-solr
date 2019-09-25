@@ -16,8 +16,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This section of the user guide provides an overview of time series *aggregation*,
-*visualization*, *smoothing*, *differencing*, *anomaly detection*, *modeling* and *forecasting*.
+This section of the user guide provides an overview of some of the time series capabilities available
+in Streaming Expressions and Math Expressions.
+
+<<Time Series Aggregation, Aggregation>> -
+<<Vectorizing the Time Series, Vectorization>> -
+<<Smoothing, Smoothing>> -
+<<Differencing, Differencing>> -
+<<Anomaly Detection, Anomaly Detection>> -
+<<Modeling, Modeling>> -
+<<Forecasting, Forecasting>>
 
 == Time Series Aggregation
 
