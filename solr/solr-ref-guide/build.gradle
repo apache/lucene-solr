@@ -79,6 +79,24 @@ forbiddenApisTools {
 ext {
   buildContentDir = file("${buildDir}/content")
   mainPage = "index"
+
+  solrDocsVersion = "${version}".replaceAll(/^(\d+\.\d+)(|\..*)$/, "\$1")
+  solrDocsVersionPath = "${solrDocsVersion}".replaceAll(/^(\d+)\.(\d+)$/, "\$1_\$2_0")
+
+  if (!project.hasProperty("solrGuideVersion")) {
+    solrGuideVersion = "${solrDocsVersion}-DRAFT"
+  }
+
+  solrGuideDraftStatus = "${!solrGuideVersion.matches(/^\d+\.\d+(|\.\d+)$/)}"
+  solrGuideVersionPath = solrGuideVersion.replaceAll(/^(\d+)\.(\d+)(-DRAFT)?.*/, "\$1_\$2\$3")
+
+  if (project.hasProperty("local.javadocs")) {
+    htmlSolrJavadocs = "link:../../docs/"
+    htmlLuceneJavadocs = "link:../../../../lucene/build/docs/"
+  } else {
+    htmlSolrJavadocs = "https://lucene.apache.org/solr/${solrDocsVersionPath}/"
+    htmlLuceneJavadocs = "https://lucene.apache.org/core/${solrDocsVersionPath}/"
+  }
 }
 
 // Tasks modeled after ant file until we have a working build.
@@ -86,12 +104,31 @@ ext {
 task buildInit(type: Sync) {
   // TODO: we can do cleaner than going through ant here -- we could use gradle's expand but
   // it'd require a change in the template that is backwards incompatible.
+
+  // TODO: Compute remaining property values as they are in ant. What should we do with dependency/ ivy versions?
   def props = [
-    // TODO: define other props. What should we do with dependency/ ivy versions?
-    "solr-guide-draft-status": "foo"
+    "solr-guide-draft-status": solrGuideDraftStatus,
+    "solr-guide-version": solrGuideVersion,
+    "solr-guide-version-path": solrGuideVersionPath,
+    "solr-docs-version": solrDocsVersion,
+    "java-javadocs": "(javadoc.link)",
+    "solr-javadocs": htmlSolrJavadocs,
+    "lucene-javadocs": htmlLuceneJavadocs,
+    "build-date": "(DSTAMP)",
+    "build-year": "(current.year)",
+    "ivy-commons-codec-version": "(ivyversions./commons-codec/commons-codec)",
+    "ivy-dropwizard-version": "(ivyversions.io.dropwizard.metrics.version)",
+    "ivy-log4j-version": "(ivyversions.org.apache.logging.log4j.version)",
+    "ivy-opennlp-version": "(ivyversions./org.apache.opennlp/opennlp-tools)",
+    "ivy-tika-version": "(ivyversions.org.apache.tika.version)",
+    "ivy-velocity-tools-version": "(ivyversions.org.apache.velocity.tools.version)",
+    "ivy-zookeeper-version": "(ivyversions./org.apache.zookeeper/zookeeper)"
   ]
   def dummyAntProject = new org.apache.tools.ant.Project()
   props.each { k, v -> dummyAntProject.setProperty(k, v) }
+
+  // Emit info about properties for clarity.
+  logger.warn("Building ref guide with:\n" + props.collect({k, v -> "  ${k} -> ${v}"}).join('\n'))
 
   // If replaceable properties change, we have to rerun.
   inputs.properties props
@@ -125,9 +162,45 @@ task buildNavDataFiles(type: JavaExec) {
     "${buildContentDir}",
     "${mainPage}"
   ])
+
+  doFirst {
+    // Remove previously generated files first.
+    [
+            "pdf-main-body.adoc",
+            "scrollnav.json",
+            "sidebar.json"
+    ].each { name ->
+      project.delete(file("${buildContentDir}/_data/${name}"))
+    }
+  }
 }
 
+def bareBonesDir = file("${buildDir}/bare-bones-html")
 
+task bareBonesAsciiDoctor(type: org.asciidoctor.gradle.AsciidoctorTask) {
+  dependsOn buildNavDataFiles
+
+  sourceDir buildContentDir
+  outputDir bareBonesDir
+  backend "html5"
+
+  logDocuments true
+
+  attributes([
+    "solr-javadocs": htmlSolrJavadocs,
+    "lucene-javadocs": htmlLuceneJavadocs
+  ])
+
+  doFirst {
+    project.delete(bareBonesDir)
+    bareBonesDir.mkdirs()
+  }
+}
+
+task bareBonesHtmlValidation() {
+  dependsOn bareBonesAsciiDoctor
+  description("Builds (w/o Jekyll) a very simple html version of the guide and runs link/anchor validation on it")
+}
 
 // Define the asciidoctorj version
 asciidoctorj {
