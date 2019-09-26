@@ -78,6 +78,8 @@ Other Changes
 
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
 
+* SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
