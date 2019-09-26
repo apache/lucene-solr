@@ -517,6 +517,10 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     assertSimpleQueryThrows("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
             "group.func", i1);
 
+    // check that the requests fails if group.query is used with group.skip.second.step instead of group.field
+    assertSimpleQueryThrows("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
+            "group.query", "{!func}id_1");
+
     /// check that group.skip.second.step works properly with group.main == true (using a different
     //  EndResultTransformer but still sharing the skipping logic)
     query("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
@@ -532,6 +536,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "kings", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.format", "simple");
     query("q", "{!func}id_i1", "rows", "3", "group.skip.second.step", "true", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
     query("q", "{!func}id_i1", "rows", "3", "group.skip.second.step", "false", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
+
 
     assertNumFoundWithSkipSecondGroupingStep("q", "kings", "group.skip.second.step", "true", "fl", "id," + i1, "group", "true", "group.field", i1);
     assertNumFoundWithSkipSecondGroupingStep( "q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1", "group", "true", "group.field", i1, "group.limit", "1","sort", tlong+" desc");
