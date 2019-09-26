@@ -75,6 +75,12 @@ public class GroupingSpecification {
           GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND + " does not support " +
           GroupParams.GROUP_LIMIT + " != 1 ("+GroupParams.GROUP_LIMIT+" is "+limit+")");
     }
+
+    if (functions.length > 0){
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND + " does not support "+ GroupParams.GROUP_FUNC);
+    }
+
     if (offset != 0) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND + " does not support " + GroupParams.GROUP_OFFSET + " != 0 (" +

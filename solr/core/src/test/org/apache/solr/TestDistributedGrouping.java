@@ -513,6 +513,10 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     assertSimpleQueryThrows("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
         "group.field", i1, "sort", tlong+" desc,"+i1+" asc", "group.sort",i1+" asc,"+tlong+" desc");
 
+    // check that the requests fails if group.func is used with group.skip.second.step instead of group.field
+    assertSimpleQueryThrows("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
+            "group.func", i1);
+
     /// check that group.skip.second.step works properly with group.main == true (using a different
     //  EndResultTransformer but still sharing the skipping logic)
     query("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
@@ -545,7 +549,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     handle.remove("numFound");
   }
 
-  // When group.skip.second.step is enabled numFound in each group will be 1. 
+  // When group.skip.second.step is enabled numFound in each group will be 1.
   private void assertNumFoundWithSkipSecondGroupingStep(String ... params) throws IOException, SolrServerException {
     ModifiableSolrParams solrParams = params(params);
     solrParams.set("group.skip.second.step", "true");
