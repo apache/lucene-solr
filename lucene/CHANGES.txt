@@ -160,6 +160,9 @@ the total hits is not requested.
 * LUCENE-8939: Introduce shared count based early termination across multiple slices
   (Atri Sharma)
 
+* LUCENE-8980: Blocktree's seekExact now short-circuits false if the term isn't in the min-max range of the segment.
+  Large perf gain for ID/time like data when populated sequentially.  (Guoqiang Jiang)
+
 Bug Fixes
 
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees could throw a
