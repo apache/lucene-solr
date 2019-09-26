@@ -17,6 +17,8 @@
 package org.apache.solr.store.blob.process;
 
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.Set;
 
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
@@ -25,6 +27,9 @@ import org.apache.solr.store.blob.metadata.PushPullData;
 import org.apache.solr.store.blob.util.DeduplicatingList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 /**
  * A pull version of {@link CoreSyncFeeder} then will continually ({@link #feedTheMonsters()}) to load up a work queue (
@@ -35,17 +40,52 @@ import org.slf4j.LoggerFactory;
 public class CorePullerFeeder extends CoreSyncFeeder {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final CorePullTask.PullCoreCallback callback;
 
-  protected final DeduplicatingList<String, CorePullTask> pullTaskQueue;
   protected static final String PULLER_THREAD_PREFIX = "puller";
 
   private static final int numPullerThreads = 5; // TODO : make configurable
+
+  private final CorePullTask.PullCoreCallback callback;
+
+  protected final DeduplicatingList<String, CorePullTask> pullTaskQueue;
+
+  /**
+   * Cores currently being pulled and timestamp of pull start (to identify stuck ones in logs)
+   *
+   * Note, it is the client's responsibility to synchronize accesses
+   */
+  private final HashMap<String, Long> pullsInFlight = Maps.newHashMap();
+
+  /** Cores unknown locally that got created as part of the pull process but for which no data has been pulled yet
+   * from Blob store. If we ignore this transitory state, these cores can be accessed locally and simply look empty.
+   * We'd rather treat threads attempting to access such cores like threads attempting to access an unknown core and
+   * do a pull (or more likely wait for an ongoing pull to finish).<p>
+   *
+   * When this lock has to be taken as well as {@link #pullsInFlight}, then {@link #pullsInFlight} has to be taken first.
+   * Reading this set implies acquiring the monitor of the set (as if @GuardedBy("itself")), but writing to the set
+   * additionally implies holding the {@link #pullsInFlight}. This guarantees that while {@link #pullsInFlight}
+   * is held, no element in the set is changing.
+   *
+   * Note, it is the client's responsibility to synchronize accesses
+   */
+  private final Set<String> coresCreatedNotPulledYet = Sets.newHashSet();
 
   protected CorePullerFeeder(CoreContainer cores) {
     super(cores, numPullerThreads);
     this.pullTaskQueue = new DeduplicatingList<>(ALMOST_MAX_WORKER_QUEUE_SIZE, new CorePullTask.PullTaskMerger());
     this.callback = new CorePullResult();
+  }
+
+  /**
+   * Returns a _hint_ that the given core might be locally empty because it is awaiting pull from Blob store.
+   * This is just a hint because as soon as the lock is released when the method returns, the status of the core could change.
+   */
+  public static boolean isEmptyCoreAwaitingPull(CoreContainer cores, String corename) {
+    CorePullerFeeder cpf = cores.getSharedStoreManager().getBlobProcessManager().getCorePullerFeeder();
+    Set<String> coresCreatedNotPulledYet = cpf.getCoresCreatedNotPulledYet();
+    synchronized (coresCreatedNotPulledYet) {
+      return coresCreatedNotPulledYet.contains(corename);
+    }
   }
 
   @Override
@@ -62,6 +102,14 @@ public class CorePullerFeeder extends CoreSyncFeeder {
     return callback;
   }
 
+  protected HashMap<String, Long> getPullsInFlight() {
+    return pullsInFlight;
+  }
+
+  protected Set<String> getCoresCreatedNotPulledYet() {
+    return coresCreatedNotPulledYet;
+  }
+
   @Override
   void feedTheMonsters() throws InterruptedException {
     CorePullTracker tracker = cores.getSharedStoreManager().getCorePullTracker();
@@ -73,7 +121,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
       PullCoreInfo pci = tracker.getCoreToPull();
 
       // Add the core to the list consumed by the thread doing the actual work
-      CorePullTask pt = new CorePullTask(cores, pci, getCorePullTaskCallback());
+      CorePullTask pt = new CorePullTask(cores, pci, getCorePullTaskCallback(), pullsInFlight, coresCreatedNotPulledYet);
       pullTaskQueue.addDeduplicated(pt, /* isReenqueue */ false);
       syncsEnqueuedSinceLastLog++;
 
@@ -95,7 +143,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
    * deduplicated on core name (the same core requiring two pulls from Blob will only be recorded one if the first
    * pull has not been processed yet).
    */
-  static class PullCoreInfo extends PushPullData implements DeduplicatingList.Deduplicatable<String> {
+  public static class PullCoreInfo extends PushPullData implements DeduplicatingList.Deduplicatable<String> {
 
     private final boolean waitForSearcher;
     private final boolean createCoreIfAbsent;
@@ -182,7 +230,8 @@ public class CorePullerFeeder extends CoreSyncFeeder {
           log.warn(String.format("Pulling core %s failed. Giving up. Last status=%s attempts=%s . %s",
               pullCoreInfo.getSharedStoreName(), status, pullTask.getAttempts(), message == null ? "" : message));
         }
-        BlobCoreSyncer.finishedPull(pullCoreInfo.getSharedStoreName(), status, blobMetadata, message);
+        BlobCoreSyncer syncer = cores.getSharedStoreManager().getBlobCoreSyncer();
+        syncer.finishedPull(pullCoreInfo.getSharedStoreName(), status, blobMetadata, message);
       } catch (InterruptedException ie) {
         close();
         throw ie;

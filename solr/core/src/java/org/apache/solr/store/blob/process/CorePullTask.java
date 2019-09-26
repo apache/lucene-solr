@@ -43,8 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 /**
  * Code for pulling updates on a specific core to the Blob store. see {@CorePushTask} for the push version of this.
@@ -60,52 +58,42 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
    */
   private static final long MIN_RETRY_DELAY_MS = 20000;
 
-  /** Cores currently being pulled and timestamp of pull start (to identify stuck ones in logs) */
-  private static final HashMap<String, Long> pullsInFlight = Maps.newHashMap();
-
-  /** Cores unknown locally that got created as part of the pull process but for which no data has been pulled yet
-   * from Blob store. If we ignore this transitory state, these cores can be accessed locally and simply look empty.
-   * We'd rather treat threads attempting to access such cores like threads attempting to access an unknown core and
-   * do a pull (or more likely wait for an ongoing pull to finish).<p>
-   *
-   * When this lock has to be taken as well as {@link #pullsInFlight}, then {@link #pullsInFlight} has to be taken first.
-   * Reading this set implies acquiring the monitor of the set (as if @GuardedBy("itself")), but writing to the set
-   * additionally implies holding the {@link #pullsInFlight}. This guarantees that while {@link #pullsInFlight}
-   * is held, no element in the set is changing.
-   */
-  private static final Set<String> coresCreatedNotPulledYet = Sets.newHashSet();
-
   private final CoreContainer coreContainer;
   private final PullCoreInfo pullCoreInfo;
+  
+  /**
+   * Data structures injected as dependencies that track the core pulls occurring
+   * in flight and the cores that have been created and not pulled. These should
+   * be passed in via a constructor from CorePullerFeeder where they are defined
+   * and are unique per CorePullerFeeder (itself a singleton).
+   */
+  private final HashMap<String, Long> pullsInFlight;
+  private final Set<String> coresCreatedNotPulledYet;
+  
   private final long queuedTimeMs;
   private int attempts;
   private long lastAttemptTimestamp;
   private final PullCoreCallback callback;
 
-  CorePullTask(CoreContainer coreContainer, PullCoreInfo pullCoreInfo, PullCoreCallback callback) {
-    this(coreContainer, pullCoreInfo, System.currentTimeMillis(), 0, 0L, callback);
+  CorePullTask(CoreContainer coreContainer, PullCoreInfo pullCoreInfo, PullCoreCallback callback,
+      HashMap<String, Long> pullsInFlight, Set<String> coresCreatedNotPulledYet) {
+    this(coreContainer, pullCoreInfo, System.currentTimeMillis(), 0, 0L, 
+        callback, pullsInFlight, coresCreatedNotPulledYet);
   }
 
   private CorePullTask(CoreContainer coreContainer, PullCoreInfo pullCoreInfo, long queuedTimeMs, int attempts,
-      long lastAttemptTimestamp, PullCoreCallback callback) {
+      long lastAttemptTimestamp, PullCoreCallback callback, HashMap<String, Long> pullsInFlight, 
+      Set<String> coresCreatedNotPulledYet) {
     this.coreContainer = coreContainer;
     this.pullCoreInfo = pullCoreInfo;
     this.queuedTimeMs = queuedTimeMs;
     this.attempts = attempts;
     this.lastAttemptTimestamp = lastAttemptTimestamp;
     this.callback = callback;
+    this.pullsInFlight = pullsInFlight;
+    this.coresCreatedNotPulledYet = coresCreatedNotPulledYet;
   }
-
-  /**
-   * Returns a _hint_ that the given core might be locally empty because it is awaiting pull from Blob store.
-   * This is just a hint because as soon as the lock is released when the method returns, the status of the core could change.
-   */
-  public static boolean isEmptyCoreAwaitingPull(String corename) {
-    synchronized (coresCreatedNotPulledYet) {
-      return coresCreatedNotPulledYet.contains(corename);
-    }
-  }
-
+  
   /**
    * Needed for the {@link CorePullTask} to be used in a {@link DeduplicatingList}.
    */
@@ -164,7 +152,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       // We merge the tasks.
       return new CorePullTask(task1.coreContainer, mergedPullCoreInfo,
           Math.min(task1.queuedTimeMs, task2.queuedTimeMs), mergedAttempts, mergedLatAttemptsTimestamp,
-          task1.callback);
+          task1.callback, task1.pullsInFlight, task1.coresCreatedNotPulledYet);
     }
   }
 
@@ -303,7 +291,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
 
       // The following call can fail if blob is corrupt (in non trivial ways, trivial ways are identified by other cases)
       // pull was successful
-      if(isEmptyCoreAwaitingPull(pullCoreInfo.getCoreName())){
+      if (CorePullerFeeder.isEmptyCoreAwaitingPull(coreContainer, pullCoreInfo.getCoreName())) {
         // the javadoc for pulledBlob suggests that it is only meant to be called if we pulled from scratch
         // therefore only limiting this call when we created the local core for this pull ourselves
         // BlobTransientLog.get().getCorruptCoreTracker().pulledBlob(pullCoreInfo.coreName, blobMetadata);

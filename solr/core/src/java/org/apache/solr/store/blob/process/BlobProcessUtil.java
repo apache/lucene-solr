@@ -44,6 +44,10 @@ public class BlobProcessUtil {
     runningFeeder = initializeCorePullerFeeder(cpf);
   }
   
+  public CorePullerFeeder getCorePullerFeeder() {
+    return runningFeeder;
+  }
+  
   /**
    * Shutdown background blob puller process
    */
@@ -71,10 +75,10 @@ public class BlobProcessUtil {
    */
   private void shutdownCorePullerFeeder() {
     final CoreSyncFeeder rf = runningFeeder;
-    runningFeeder = null;
     if (rf != null) {
       log.info("Shutting down CorePullerFeeder");
       rf.close();
     }
+    runningFeeder = null;
   }
 }

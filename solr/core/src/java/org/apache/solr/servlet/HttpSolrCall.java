@@ -305,7 +305,8 @@ public class HttpSolrCall {
               if (replica != null) {
                 String coreName = replica.getCoreName();
                 String shardName = getShardName(collectionName, coreName);
-                BlobCoreSyncer.pull(coreName, shardName, collectionName, cores, true, false);
+                BlobCoreSyncer syncer = cores.getSharedStoreManager().getBlobCoreSyncer();
+                syncer.pull(coreName, shardName, collectionName, cores, true, false);
                 core = cores.getCore(coreName);
                 if (!retry) {
                   action = RETRY;

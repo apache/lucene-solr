@@ -17,17 +17,16 @@
 package org.apache.solr.store.blob.process;
 
 import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.solr.core.CoreContainer;
-
 //import com.force.commons.util.concurrent.NamedThreadFactory; difference?
 import org.apache.lucene.util.NamedThreadFactory;
+import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.lang.invoke.MethodHandles;
 
 /**
  * A {@link Runnable} that will start a set of threads {@link CorePullerThread} to process tasks
@@ -131,6 +130,7 @@ public abstract class CoreSyncFeeder implements Runnable, Closeable {
             this.executionThread = null; // race to set to null but ok to try to interrupt twice
             log.info(String.format("Closing CoreSyncFeeder; interrupting execution thread %s.", thread.getName()));
             thread.interrupt();
+            
         } else {
             log.warn("Closing CoreSyncFeeder before any syncer thread was started. Weird.");
         }

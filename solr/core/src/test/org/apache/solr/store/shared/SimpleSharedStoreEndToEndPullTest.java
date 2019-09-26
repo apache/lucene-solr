@@ -75,23 +75,21 @@ public class SimpleSharedStoreEndToEndPullTest extends SolrCloudSharedStoreTestC
     setupCluster(2);
     CloudSolrClient cloudClient = cluster.getSolrClient();
     
-    // setup the test harnesses
-    Map<String, CountDownLatch> cdlMap = new HashMap<>();
+    // this map tracks the async pull queues per solr process
+    Map<String, Map<String, CountDownLatch>> solrProcessesTaskTracker = new HashMap<>();
     
-    CountDownLatch latch1 = new CountDownLatch(1);
     JettySolrRunner solrProcess1 = cluster.getJettySolrRunner(0);
     CoreStorageClient storageClient1 = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
     setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient1), solrProcess1);
-    configureTestBlobProcessForNode(solrProcess1, setupCallback(latch1));
+    Map<String, CountDownLatch> asyncPullLatches1 = configureTestBlobProcessForNode(solrProcess1);
     
-    CountDownLatch latch2 = new CountDownLatch(1);
     JettySolrRunner solrProcess2 = cluster.getJettySolrRunner(1);
     CoreStorageClient storageClient2 = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
     setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient2), solrProcess2);
-    configureTestBlobProcessForNode(solrProcess2, setupCallback(latch2));
+    Map<String, CountDownLatch> asyncPullLatches2 = configureTestBlobProcessForNode(solrProcess2);
     
-    cdlMap.put(solrProcess1.getNodeName(), latch1);
-    cdlMap.put(solrProcess2.getNodeName(), latch2);
+    solrProcessesTaskTracker.put(solrProcess1.getNodeName(), asyncPullLatches1);
+    solrProcessesTaskTracker.put(solrProcess2.getNodeName(), asyncPullLatches2);
     
     String collectionName = "sharedCollection";
     int maxShardsPerNode = 1;
@@ -138,14 +136,20 @@ public class SimpleSharedStoreEndToEndPullTest extends SolrCloudSharedStoreTestC
       assertEquals(1, resp.getResults().getNumFound());
       assertEquals("1", (String) resp.getResults().get(0).getFieldValue("id"));
       
+      // we want to wait until the pull completes so set up a count down latch for the follower's
+      // core that we'll wait until pull finishes for
+      CountDownLatch latch = new CountDownLatch(1);
+      Map<String, CountDownLatch> asyncPullTasks = solrProcessesTaskTracker.get(followerReplica.getNodeName());
+      asyncPullTasks.put(followerReplica.getCoreName(), latch);
+      
       // query the follower directly to trigger the pull, this query should yield no results
-      // as we don't wait
+      // as it returns immediately 
       followerDirectClient = getHttpSolrClient(followerReplica.getBaseUrl() + "/" + followerReplica.getCoreName());
       resp = followerDirectClient.query(params);
       assertEquals(0, resp.getResults().getNumFound());
       
       // wait until pull is finished
-      CountDownLatch latch = cdlMap.get(followerReplica.getNodeName());
+      //CountDownLatch latch = asyncPullTasks.get(followerReplica.getCoreName());
       assertTrue(latch.await(120, TimeUnit.SECONDS));
       
       // do another query to verify we've pulled everything
@@ -164,26 +168,26 @@ public class SimpleSharedStoreEndToEndPullTest extends SolrCloudSharedStoreTestC
     }
   }
   
-  private BlobProcessUtil configureTestBlobProcessForNode(JettySolrRunner runner, PullCoreCallback callback) {
-    CorePullerFeeder cpf = new CorePullerFeeder(runner.getCoreContainer()) {
+  private Map<String, CountDownLatch> configureTestBlobProcessForNode(JettySolrRunner runner) {
+    Map<String, CountDownLatch> asyncPullTracker = new HashMap<>();
+    
+    CorePullerFeeder cpf = new CorePullerFeeder(runner.getCoreContainer()) {  
       @Override
       protected CorePullTask.PullCoreCallback getCorePullTaskCallback() {
-        return callback;
+        return new PullCoreCallback() {
+          @Override
+          public void finishedPull(CorePullTask pullTask, BlobCoreMetadata blobMetadata, CoreSyncStatus status,
+              String message) throws InterruptedException {
+            CountDownLatch latch = asyncPullTracker.get(pullTask.getPullCoreInfo().getCoreName());
+            latch.countDown();
+          }
+        };
       }
     };
+    
     BlobProcessUtil testUtil = new BlobProcessUtil(runner.getCoreContainer(), cpf);
     setupTestBlobProcessUtilForNode(testUtil, runner);
-    return testUtil;
+    return asyncPullTracker;
   }
   
-  private PullCoreCallback setupCallback(CountDownLatch latch) {
-    return new PullCoreCallback() {
-      @Override
-      public void finishedPull(CorePullTask pullTask, BlobCoreMetadata blobMetadata, CoreSyncStatus status,
-          String message) throws InterruptedException {
-        assertTrue(status.isSuccess());
-        latch.countDown();
-      }
-    };
-  }
 }

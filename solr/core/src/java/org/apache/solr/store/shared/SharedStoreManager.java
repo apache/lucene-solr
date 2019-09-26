@@ -17,6 +17,7 @@
 package org.apache.solr.store.shared;
 
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.store.blob.metadata.BlobCoreSyncer;
 import org.apache.solr.store.blob.process.BlobDeleteManager;
 import org.apache.solr.store.blob.process.BlobProcessUtil;
 import org.apache.solr.store.blob.process.CorePullTracker;
@@ -38,11 +39,13 @@ public class SharedStoreManager {
   private BlobDeleteManager blobDeleteManager;
   private BlobProcessUtil blobProcessUtil;
   private CorePullTracker corePullTracker;
+  private BlobCoreSyncer blobCoreSyncer;
   
   public SharedStoreManager(ZkController controller) {
     zkController = controller;
     // initialize BlobProcessUtil with the SharedStoreManager for background processes to be ready
     blobProcessUtil = new BlobProcessUtil(zkController.getCoreContainer());
+    blobCoreSyncer = new BlobCoreSyncer();
   }
   
   @VisibleForTesting
@@ -105,5 +108,9 @@ public class SharedStoreManager {
     }
     corePullTracker = new CorePullTracker();
     return corePullTracker ;
+  }
+  
+  public BlobCoreSyncer getBlobCoreSyncer() {
+    return blobCoreSyncer;
   }
 }
