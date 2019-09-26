@@ -14,5 +14,5 @@
       "description": "A human readable name of the jar"
     }
   },
-  "required": ["sha256", "sig"]
+  "required": ["sha256"]
 }

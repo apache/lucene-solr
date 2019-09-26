@@ -17,6 +17,11 @@
 
 package org.apache.solr.core;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.PACKAGES;
+import static org.apache.solr.common.params.CommonParams.VERSION;
+import static org.apache.solr.core.RuntimeLib.SHA256;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -32,9 +37,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
@@ -43,10 +46,7 @@ import org.apache.solr.util.CryptoKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.PACKAGES;
-import static org.apache.solr.common.params.CommonParams.VERSION;
-import static org.apache.solr.core.RuntimeLib.SHA256;
+import com.google.common.collect.ImmutableList;
 
 /**
  * This class listens to changes to packages and it also keeps a
@@ -93,12 +93,12 @@ public class PackageBag implements ClusterPropertiesListener {
     public final List<Blob> blobs;
     public final int znodeVersion;
     public List<String> oldBlob;
-    public final String manifest;
+    public final String metadata;
 
     public PackageInfo(Map m, int znodeVersion) {
       name = (String) m.get(NAME);
       version = (String) m.get(VERSION);
-      manifest = (String) m.get("manifest");
+      metadata = (String) m.get("metadata");
       this.znodeVersion = znodeVersion;
       Object o = m.get("blob");
       if (o instanceof Map) {
@@ -115,7 +115,8 @@ public class PackageBag implements ClusterPropertiesListener {
         errors.add("node not started with -Denable.package=true");
         return errors;
       }
-      Map<String, byte[]> keys = CloudUtil.getTrustedKeys(
+      // nocommit bring back verification
+      /*Map<String, byte[]> keys = CloudUtil.getTrustedKeys(
           coreContainer.getZkController().getZkClient(), "exe");
       if (keys.isEmpty()) {
         errors.add("No public keys in ZK : /keys/exe");
@@ -126,7 +127,7 @@ public class PackageBag implements ClusterPropertiesListener {
         if (!blob.verifyJar(cryptoKeys, coreContainer)) {
           errors.add("Invalid signature for blob : " + blob.sha256);
         }
-      }
+      }*/
       return errors;
 
     }
@@ -135,8 +136,9 @@ public class PackageBag implements ClusterPropertiesListener {
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put("name", name);
       ew.put("version", version);
-      ew.put("manifest", manifest);
+      ew.put("metadata", metadata);
       ew.putIfNotNull("blobs.old", oldBlob);
+      // nocommit do we need old metadata as well?
       if (blobs.size() == 1) {
         ew.put("blob", blobs.get(0));
       } else {

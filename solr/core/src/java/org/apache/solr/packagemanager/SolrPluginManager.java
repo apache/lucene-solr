@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,6 +21,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.solr.packagemanager.SolrPluginInfo.Metadata;
+import org.apache.solr.packagemanager.SolrPluginInfo.Plugin;
 import org.pf4j.AbstractPluginManager;
 import org.pf4j.DefaultVersionManager;
 import org.pf4j.ExtensionFactory;
@@ -46,51 +49,69 @@ public 	class SolrPluginManager extends AbstractPluginManager {
 		versionManager = new DefaultVersionManager();
 	}
 
-	Map<String, PluginWrapper> plugins = null;
+	Map<String, PluginWrapper> packages = null;
 
+	Metadata fetchMetadata(String blobSha256) throws MalformedURLException, IOException {
+    String metadataJson = 
+        IOUtils.toString(new URL("http://localhost:8983/api/node/blob"+"/"+blobSha256).openStream(), "UTF-8");
+    System.out.println("Fetched metadata blob: "+metadataJson);
+    Metadata metadata = new Gson().fromJson(metadataJson, Metadata.class);
+    System.out.println("Now metadata: "+metadata);
+    return metadata;
+	}
+	
 	@Override
 	public List<PluginWrapper> getPlugins() {
+	  System.out.println("Getting packages from clusterprops...");
 		List<PluginWrapper> ret = new ArrayList<PluginWrapper>();
-		plugins = new HashMap<String, PluginWrapper>();
+		packages = new HashMap<String, PluginWrapper>();
 		try {
 			String clusterPropsZnode = IOUtils.toString(new URL("http://localhost:8983/solr/admin/zookeeper?detail=true&path=/clusterprops.json&wt=json").openStream(), "UTF-8");
 			String clusterPropsJson = ((Map)new Gson().fromJson(clusterPropsZnode, Map.class).get("znode")).get("data").toString();
-			Map packages = (Map)new Gson().fromJson(clusterPropsJson, Map.class).get("package");
+			Map packagesJson = (Map)new Gson().fromJson(clusterPropsJson, Map.class).get("packages");
 
-			for (Object packageName: packages.keySet()) {
-				Map pkg = (Map)packages.get(packageName);
+			System.out.println("clusterprops are: "+clusterPropsJson);
+			for (Object packageName: packagesJson.keySet()) {
+				Map pkg = (Map)packagesJson.get(packageName);
+				List<Plugin> solrplugins = fetchMetadata(pkg.get("metadata").toString()).plugins;
 				PluginDescriptor descriptor = new SolrPluginDescriptor(pkg.get("name").toString(), null, 
-				    pkg.get("version").toString(), (List)pkg.get("setup-commands"), (List)pkg.get("update-commands"));
+				    pkg.get("version").toString(), solrplugins);
 				PluginWrapper wrapper = new PluginWrapper(this, descriptor, null, null);
-				plugins.put(packageName.toString(), wrapper);
+				packages.put(packageName.toString(), wrapper);
 				ret.add(wrapper);
 			}
 		} catch (IOException e) {
-			if (plugins == null) plugins = Collections.emptyMap();
+		  e.printStackTrace();
+			if (packages == null) packages = Collections.emptyMap(); // nocommit can't happen
 		}
 		return ret;
 	}
 
 	public boolean deployInstallPlugin(String pluginId, List<String> collections) {
-		PluginWrapper plugin = getPlugin(pluginId);
-		System.out.println(((SolrPluginDescriptor)plugin.getDescriptor()).getSetupCommands());
-		for (String collection: collections) {
-			for (String cmd: ((SolrPluginDescriptor)plugin.getDescriptor()).getSetupCommands()) {
-				System.out.println("Executing " + cmd + " for collection:" + collection);
-				postJson("http://localhost:8983/solr/"+collection+"/config", cmd);
-			}
-		}
-		return true;
+	  PluginWrapper plugin = getPlugin(pluginId);
+	  
+	  System.out.println("1: "+plugin);
+    System.out.println("2: "+plugin.getDescriptor());
+    System.out.println("3: "+((SolrPluginDescriptor)plugin.getDescriptor()).getPlugins());
+	  for (Plugin p: ((SolrPluginDescriptor)plugin.getDescriptor()).getPlugins()) {
+	    System.out.println(p.setupCommand);
+	    for (String collection: collections) {
+	      System.out.println("Executing " + p.setupCommand + " for collection:" + collection);
+	      postJson("http://localhost:8983/solr/"+collection+"/config", p.setupCommand);
+	    }
+	  }
+	  return true;
 	}
 
 	 public boolean deployUpdatePlugin(String pluginId, List<String> collections) {
 	    PluginWrapper plugin = getPlugin(pluginId);
-	    System.out.println(((SolrPluginDescriptor)plugin.getDescriptor()).getSetupCommands());
+	    for (Plugin p: ((SolrPluginDescriptor)plugin.getDescriptor()).getPlugins()) {
+
+	    System.out.println(p.updateCommand);
 	    for (String collection: collections) {
-	      for (String cmd: ((SolrPluginDescriptor)plugin.getDescriptor()).getUpdateCommands()) {
-	        System.out.println("Executing " + cmd + " for collection:" + collection);
-	        postJson("http://localhost:8983/solr/"+collection+"/config", cmd);
-	      }
+	        System.out.println("Executing " + p.updateCommand + " for collection:" + collection);
+	        postJson("http://localhost:8983/solr/"+collection+"/config", p.updateCommand);
+	    }
 	    }
 	    return true;
 	  }
@@ -148,8 +169,8 @@ public 	class SolrPluginManager extends AbstractPluginManager {
 
 	@Override
 	public PluginWrapper getPlugin(String pluginId) {
-		if (plugins == null) getPlugins();
-		return plugins.get(pluginId);
+		/*if (packages == null)*/ getPlugins();
+		return packages.get(pluginId);
 	}
 
 	@Override

@@ -2,22 +2,21 @@ package org.apache.solr.packagemanager;
 
 import java.util.List;
 
+import org.apache.solr.packagemanager.SolrPluginInfo.Plugin;
 import org.pf4j.DefaultPluginDescriptor;
 
 public class SolrPluginDescriptor extends DefaultPluginDescriptor {
 	final private String id;
 	final private String description;
 	final private String version;
-	final private List<String> setupCommands;
-  final private List<String> updateCommands;
+	final private List<Plugin> plugins;
 	
 	public SolrPluginDescriptor(String id, String description, String version,
-	    List<String> setupCommands, List<String> updateCommands) {
+	    List<Plugin> plugins) {
 		this.id = id;
 		this.description = description;
 		this.version = version;
-		this.setupCommands = setupCommands;
-    this.updateCommands = updateCommands;
+		this.plugins = plugins;
 	}
 
 	@Override
@@ -35,11 +34,8 @@ public class SolrPluginDescriptor extends DefaultPluginDescriptor {
 		return version;
 	}
 
-	public List<String> getSetupCommands() {
-		return setupCommands;
-	}
-  public List<String> getUpdateCommands() {
-    return updateCommands;
+	public List<Plugin> getPlugins() {
+    return plugins;
   }
 
 }

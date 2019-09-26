@@ -7,9 +7,9 @@ import java.io.StringWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -103,8 +103,14 @@ public class SolrUpdateManager extends UpdateManager {
     }
 
     String sha256 = uploadToBlobHandler(downloaded);
+    String metadataSha256;
+    try {
+      metadataSha256 = uploadToBlobHandler(new Gson().toJson(release.metadata));
+    } catch (IOException e) {
+      throw new PluginException(e);
+    }
 
-    addOrUpdatePackage(op, id, version, sha256, repository, release.metadata, "some-signature");
+    addOrUpdatePackage(op, id, version, sha256, repository, metadataSha256, release.metadata);
     return true;
   }
 
@@ -112,8 +118,9 @@ public class SolrUpdateManager extends UpdateManager {
     INSTALL, UPDATE;
   }
   
-  private boolean addOrUpdatePackage(Operation op, String id, String version, String sha256, String repository, Metadata packageMetadata, String sig) {
-
+  private boolean addOrUpdatePackage(Operation op, String id, String version, String sha256, String repository,
+      String metadataSha256, Metadata packageMetadata) {
+    
     String json;
     
     if (op.equals(Operation.INSTALL)) {
@@ -125,11 +132,12 @@ public class SolrUpdateManager extends UpdateManager {
         + "{name: '"+id+"', "
         + "version: '"+version+"', "
         + "repository: '"+repository+"', "
-        + "sha256: '"+sha256+"', "
-        + "setup-commands: "+new Gson().toJson(setupCommands)+","
-        + "update-commands: "+new Gson().toJson(updateCommands)
+        //+ "blob: {sha256: '"+sha256+"', sig: 'abc'}, "
+        + "blob: {sha256: '"+sha256+"'}, "
+        + "metadata: '"+metadataSha256+"'"
         + "}}";
 
+    System.out.println("Posting package: "+json);
     try (CloseableHttpClient client = HttpClients.createDefault();) {
       HttpPost httpPost = new HttpPost("http://localhost:8983/api/cluster/package");
       StringEntity entity = new StringEntity(json);
@@ -192,6 +200,13 @@ public class SolrUpdateManager extends UpdateManager {
       e1.printStackTrace();
     }
     return null;
+  }
+  
+  private String uploadToBlobHandler(String json) throws IOException {
+    
+    System.out.println("Trying to upload the blob: "+json);
+    FileUtils.writeStringToFile(new File("tmp-metadata"), json);
+    return uploadToBlobHandler(new File("tmp-metadata").toPath());
   }
 
 }
