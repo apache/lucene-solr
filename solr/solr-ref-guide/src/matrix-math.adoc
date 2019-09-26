@@ -16,12 +16,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This section of the user guide covers the
-basics of matrix creation, manipulation and matrix math. Other sections
-of the user guide demonstrate how matrices are used by the statistics,
-probability and machine learning functions.
+Matrices are used
+as both inputs and outputs of many mathematical functions.
+This section of the user guide covers the basics of matrix creation,
+manipulation and matrix math.
 
-== Matrix Creation
+<<Matrix Function, Matrix Function >> -
+<<Accessing Rows and Columns, Rows and Columns>> -
+<<Row and Column Labels, Labels>> -
+<<Pair Sorting, Pair Sorting>> -
+<<Attributes, Attributes>> -
+<<Dimensions, Dimensions>> -
+<<Transposition, Transposition>> -
+<<Summations, Summations>> -
+<<Scalar Matrix Math, Matrix Math>>
+
+== Matrix Function
 
 A matrix can be created with the `matrix` function.
 The matrix function is passed a list of `arrays` with
@@ -103,6 +113,60 @@ responds with:
 }
 ----
 
+== Row and Column Labels
+
+A matrix can have column and rows and labels. The functions
+`setRowLabels`, `setColumnLabels`, `getRowLabels` and `getColumnLabels`
+can be used to set and get the labels. The label values
+are set using string arrays.
+
+The example below sets the row and column labels. In other sections of the
+user guide examples are shown where functions return matrices
+with the labels already set.
+
+Below is a simple example of setting and
+getting row and column labels
+on a matrix.
+
+[source,text]
+----
+let(echo="d, e",
+    a=matrix(array(1, 2),
+             array(4, 5)),
+    b=setRowLabels(a, array("row0", "row1")),
+    c=setColumnLabels(b, array("col0", "col1")),
+    d=getRowLabels(c),
+    e=getColumnLabels(c))
+----
+
+When this expression is sent to the `/stream` handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "d": [
+          "row0",
+          "row1"
+        ],
+        "e": [
+          "col0",
+          "col1"
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+
 == Pair Sorting Vectors
 
 The `pairSort` function can be used to sort two vectors based on the values in
@@ -156,58 +220,7 @@ responds with:
 ----
 
 
-== Row and Column Labels
 
-A matrix can have column and rows and labels. The functions
-`setRowLabels`, `setColumnLabels`, `getRowLabels` and `getColumnLabels`
-can be used to set and get the labels. The label values
-are set using string arrays.
-
-The example below sets the row and column labels. In other sections of the
-user guide examples are shown where functions return matrices
-with the labels already set.
-
-Below is a simple example of setting and
-getting row and column labels
-on a matrix.
-
-[source,text]
-----
-let(echo="d, e",
-    a=matrix(array(1, 2),
-             array(4, 5)),
-    b=setRowLabels(a, array("row0", "row1")),
-    c=setColumnLabels(b, array("col0", "col1")),
-    d=getRowLabels(c),
-    e=getColumnLabels(c))
-----
-
-When this expression is sent to the `/stream` handler it
-responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "d": [
-          "row0",
-          "row1"
-        ],
-        "e": [
-          "col0",
-          "col1"
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
 
 == Matrix Attributes
 
