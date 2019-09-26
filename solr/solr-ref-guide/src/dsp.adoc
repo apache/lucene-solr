@@ -85,9 +85,9 @@ example all values in the filter have the same weight (.2). The weights in the f
 produce different smoothing effects. This is demonstrated in the example below.
 
 In this example the filter increases in weight from .1 to .3. This places more weight towards the front
-of the filter. Notice that the filter is reversed with `rev` function inside the `conv` function.
-This is done because convolution reverses
-the filter. In this case we reverse it ahead of time and convolution reverses it back, so it is the same
+of the filter. Notice that the filter is reversed with the `rev` function before the `conv` function applies it.
+This is done because convolution will reverse
+the filter. In this case we reverse it ahead of time and when convolution reverses it back, it is the same
 as the original filter.
 
 The plot shows the effect of the different weights in the filter. The dark blue line is the initial array.
