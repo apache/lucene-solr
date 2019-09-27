@@ -25,7 +25,7 @@ functions.
 Before performing machine learning operations its often necessary to
 scale the feature vectors so they can be compared at the same scale.
 
-All the scaling function operate on vectors and matrices.
+All the scaling functions below operate on vectors and matrices.
 When operating on a matrix the rows of the matrix are scaled.
 
 === Min/Max Scaling
@@ -33,7 +33,13 @@ When operating on a matrix the rows of the matrix are scaled.
 The `minMaxScale` function scales a vector or matrix between a minimum and maximum value.
 By default it will scale between 0 and 1 if min/max values are not provided.
 
-Below is a simple example of min/max scaling between 0 and 1.
+Below is a plot of a sine wave, with an amplitude of 1, before and
+after it has been scaled between -5 and 5.
+
+image::images/math-expressions/minmaxscale.png[]
+
+
+Below is a simple example of min/max scaling of a matrix between 0 and 1.
 Notice that once brought into the same scale the vectors are the same.
 
 [source,text]
@@ -44,7 +50,7 @@ let(a=array(20, 30, 40, 50),
     d=minMaxScale(c))
 ----
 
-This expression returns the following response:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -78,10 +84,16 @@ This expression returns the following response:
 
 === Standardization
 
-The `standardize` function scales a vector so that it has a mean of 0 and a standard deviation of 1.
-Standardization can be used with machine learning algorithms, such as
-https://en.wikipedia.org/wiki/Support_vector_machine[Support Vector Machine (SVM)], that perform better
-when the data has a normal distribution.
+The `standardize` function scales a vector so that it has a
+mean of 0 and a standard deviation of 1.
+
+Below is a plot of a sine wave, with an amplitude of 1, before and
+after it has been standardized.
+
+image::images/math-expressions/standardize.png[]
+
+Below is a simple example of of a standardized matrix.
+Notice that once brought into the same scale the vectors are the same.
 
 [source,text]
 ----
@@ -91,7 +103,7 @@ let(a=array(20, 30, 40, 50),
     d=standardize(c))
 ----
 
-This expression returns the following response:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -126,8 +138,16 @@ This expression returns the following response:
 === Unit Vectors
 
 The `unitize` function scales vectors to a magnitude of 1. A vector with a
-magnitude of 1 is known as a unit vector. Unit vectors are preferred when the vector math deals
-with vector direction rather than magnitude.
+magnitude of 1 is known as a unit vector. Unit vectors are preferred
+when the vector math deals with vector direction rather than magnitude.
+
+Below is a plot of a sine wave, with an amplitude of 1, before and
+after it has been unitized.
+
+image::images/math-expressions/unitize.png[]
+
+Below is a simple example of a unitized matrix.
+Notice that once brought into the same scale the vectors are the same.
 
 [source,text]
 ----
@@ -137,7 +157,7 @@ let(a=array(20, 30, 40, 50),
     d=unitize(c))
 ----
 
-This expression returns the following response:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -193,7 +213,7 @@ let(a=array(20, 30, 40, 50),
     c=distance(a, b))
 ----
 
-This expression returns the following response:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -221,7 +241,7 @@ let(a=array(20, 30, 40, 50),
     c=distance(a, b, manhattan()))
 ----
 
-This expression returns the following response:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -253,7 +273,7 @@ let(a=array(20, 30, 40),
     c=distance(d))
 ----
 
-This expression returns the following response:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
