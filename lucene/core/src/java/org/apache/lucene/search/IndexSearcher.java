@@ -668,14 +668,20 @@ public class IndexSearcher {
           search(Arrays.asList(leaves), weight, collector);
           return collector;
         });
+        boolean executedOnCallerThread = false;
         try {
           executor.execute(task);
         } catch (RejectedExecutionException e) {
           // Execute on caller thread
           search(Arrays.asList(leaves), weight, collector);
+          topDocsFutures.add(CompletableFuture.completedFuture(collector));
+          executedOnCallerThread = true;
         }
 
-        topDocsFutures.add(task);
+        // Do not add the task's future if it was not used
+        if (executedOnCallerThread == false) {
+          topDocsFutures.add(task);
+        }
       }
       final LeafReaderContext[] leaves = leafSlices[leafSlices.length - 1].leaves;
       final C collector = collectors.get(leafSlices.length - 1);
