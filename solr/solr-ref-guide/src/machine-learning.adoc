@@ -20,6 +20,12 @@
 This section of the math expressions user guide covers machine learning
 functions.
 
+<<Feature Scaling, Feature Scaling>> -
+<<Distance and Distance Measures, Distance>> -
+<<K-Means Clustering, Clustering>> -
+<<K-Nearest Neighbor (KNN), KNN>> -
+<<K-Nearest Neighbor Regression, KNN Regression>>
+
 == Feature Scaling
 
 Before performing machine learning operations its often necessary to
