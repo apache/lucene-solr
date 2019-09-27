@@ -28,6 +28,9 @@ Optimizations
   documents, since computing the number of live documents is an expensive
   operation. (Adrien Grand)
 
+* LUCENE-8992: TopFieldCollector and TopScoreDocCollector can now share minimum scores across leaves
+  concurrently. (Adrien Grand, Atri Sharma, Jim Ferenczi)
+
 Bug Fixes
 
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
