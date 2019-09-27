@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -667,7 +668,13 @@ public class IndexSearcher {
           search(Arrays.asList(leaves), weight, collector);
           return collector;
         });
-        executor.execute(task);
+        try {
+          executor.execute(task);
+        } catch (RejectedExecutionException e) {
+          // Execute on caller thread
+          search(Arrays.asList(leaves), weight, collector);
+        }
+
         topDocsFutures.add(task);
       }
       final LeafReaderContext[] leaves = leafSlices[leafSlices.length - 1].leaves;
