@@ -101,8 +101,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     final FieldValueHitQueue<Entry> queue;
 
     public SimpleFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits,
-                                HitsThresholdChecker hitsThresholdChecker) {
-      super(queue, numHits, hitsThresholdChecker, sort.needsScores());
+                                HitsThresholdChecker hitsThresholdChecker,
+                                BottomValueChecker bottomValueChecker) {
+      super(queue, numHits, hitsThresholdChecker, sort.needsScores(), bottomValueChecker);
       this.sort = sort;
       this.queue = queue;
     }
@@ -185,8 +186,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     final FieldDoc after;
 
     public PagingFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, FieldDoc after, int numHits,
-                                HitsThresholdChecker hitsThresholdChecker) {
-      super(queue, numHits, hitsThresholdChecker, sort.needsScores());
+                                HitsThresholdChecker hitsThresholdChecker, BottomValueChecker bottomValueChecker) {
+      super(queue, numHits, hitsThresholdChecker, sort.needsScores(), bottomValueChecker);
       this.sort = sort;
       this.queue = queue;
       this.after = after;
@@ -237,7 +238,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 } else {
                   collectedAllCompetitiveHits = true;
                 }
-              } else if (totalHitsRelation == Relation.GREATER_THAN_OR_EQUAL_TO) {
+              } else if (totalHitsRelation == Relation.EQUAL_TO) {
+                // we just reached totalHitsThreshold, we can start setting the min
+                // competitive score now
                   updateMinCompetitiveScore(scorer);
               }
               return;
@@ -284,6 +287,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   final int numHits;
   final HitsThresholdChecker hitsThresholdChecker;
+  final BottomValueChecker bottomValueChecker;
   final FieldComparator.RelevanceComparator firstComparator;
   final boolean canSetMinScore;
   final int numComparators;
@@ -299,7 +303,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   // visibility, then anyone will be able to extend the class, which is not what
   // we want.
   private TopFieldCollector(FieldValueHitQueue<Entry> pq, int numHits,
-                            HitsThresholdChecker hitsThresholdChecker, boolean needsScores) {
+                            HitsThresholdChecker hitsThresholdChecker, boolean needsScores,
+                            BottomValueChecker bottomValueChecker) {
     super(pq);
     this.needsScores = needsScores;
     this.numHits = numHits;
@@ -318,6 +323,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       scoreMode = needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
       canSetMinScore = false;
     }
+    this.bottomValueChecker = bottomValueChecker;
   }
 
   @Override
@@ -326,10 +332,21 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
-    if (canSetMinScore && hitsThresholdChecker.isThresholdReached() && queueFull) {
-      assert bottom != null && firstComparator != null;
-      float minScore = firstComparator.value(bottom.slot);
-      scorer.setMinCompetitiveScore(minScore);
+    if (canSetMinScore && hitsThresholdChecker.isThresholdReached()
+          && (queueFull || (bottomValueChecker != null && bottomValueChecker.getBottomValue() > 0f))) {
+      float maxMinScore = Float.NEGATIVE_INFINITY;
+      if (queueFull) {
+        assert bottom != null && firstComparator != null;
+        maxMinScore = firstComparator.value(bottom.slot);
+        if (bottomValueChecker != null) {
+          bottomValueChecker.updateThreadLocalBottomValue(maxMinScore);
+        }
+      }
+      if (bottomValueChecker != null) {
+        maxMinScore = Math.max(maxMinScore, bottomValueChecker.getBottomValue());
+      }
+      assert maxMinScore > 0f;
+      scorer.setMinCompetitiveScore(maxMinScore);
       totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
     }
   }
@@ -389,14 +406,14 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
     }
 
-    return create(sort, numHits, after, HitsThresholdChecker.create(totalHitsThreshold));
+    return create(sort, numHits, after, HitsThresholdChecker.create(totalHitsThreshold), null);
   }
 
   /**
-   * Same as above with an additional parameter to allow passing in the threshold checker
+   * Same as above with additional parameters to allow passing in the threshold checker and the bottom value checker.
    */
   static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
-                                         HitsThresholdChecker hitsThresholdChecker) {
+                                         HitsThresholdChecker hitsThresholdChecker, BottomValueChecker bottomValueChecker) {
 
     if (sort.fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
@@ -413,7 +430,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits);
 
     if (after == null) {
-      return new SimpleFieldCollector(sort, queue, numHits, hitsThresholdChecker);
+      return new SimpleFieldCollector(sort, queue, numHits, hitsThresholdChecker, bottomValueChecker);
     } else {
       if (after.fields == null) {
         throw new IllegalArgumentException("after.fields wasn't set; you must pass fillFields=true for the previous search");
@@ -423,22 +440,24 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         throw new IllegalArgumentException("after.fields has " + after.fields.length + " values but sort has " + sort.getSort().length);
       }
 
-      return new PagingFieldCollector(sort, queue, after, numHits, hitsThresholdChecker);
+      return new PagingFieldCollector(sort, queue, after, numHits, hitsThresholdChecker, bottomValueChecker);
     }
   }
 
   /**
    * Create a CollectorManager which uses a shared hit counter to maintain number of hits
+   * and a shared bottom value checker to propagate the minimum score accross segments if
+   * the primary sort is by relevancy.
    */
-  public static CollectorManager<TopFieldCollector, TopFieldDocs> createSharedManager(Sort sort, int numHits, FieldDoc after,
-                                                                                 int totalHitsThreshold) {
+  public static CollectorManager<TopFieldCollector, TopFieldDocs> createSharedManager(Sort sort, int numHits, FieldDoc after, int totalHitsThreshold) {
     return new CollectorManager<>() {
 
       private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(totalHitsThreshold);
+      private final BottomValueChecker bottomValueChecker = BottomValueChecker.createMaxBottomScoreChecker();
 
       @Override
       public TopFieldCollector newCollector() throws IOException {
-        return create(sort, numHits, after, hitsThresholdChecker);
+        return create(sort, numHits, after, hitsThresholdChecker, bottomValueChecker);
       }
 
       @Override
