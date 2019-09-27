@@ -28,6 +28,7 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
@@ -53,6 +54,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
@@ -720,6 +724,69 @@ public class Utils {
       logger.error(e.getMessage(), e);
     }
     return def;
+  }
+
+  public interface InputStreamConsumer<T> {
+
+    T accept(InputStream is) throws IOException;
+
+  }
+  public static final InputStreamConsumer<?> JAVABINCONSUMER = is -> new JavaBinCodec().unmarshal(is);
+  public static final InputStreamConsumer<?> JSONCONSUMER = is -> Utils.fromJSON(is);
+  public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize){
+    return is -> {
+      try (BinaryRequestWriter.BAOS bos = new BinaryRequestWriter.BAOS()) {
+        long sz = 0;
+        int next = is.read();
+        while (next > -1) {
+          if (++sz > maxSize) throw new BufferOverflowException();
+          bos.write(next);
+          next = is.read();
+        }
+        bos.flush();
+        return ByteBuffer.wrap( bos.getbuf(), 0, bos.size());
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    };
+
+  }
+
+
+
+
+  public static <T> T executeGET(HttpClient client, String url, InputStreamConsumer<T> consumer) throws SolrException {
+    T result = null;
+    HttpGet httpGet = new HttpGet(url);
+    HttpResponse rsp = null;
+    try {
+      rsp = client.execute(httpGet);
+    } catch (IOException e) {
+      log.error("Error in request to url : "+ url, e);
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "error sending request");
+    }
+    int statusCode = rsp.getStatusLine().getStatusCode();
+    if(statusCode != 200) {
+      try {
+        log.error("Failed a request to : {} ,  status :{}  body {}",url, rsp.getStatusLine(),  EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8));
+      } catch (IOException e) {
+        log.error("could not print error", e);
+      }
+      throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), "Unknown error");
+    }
+    HttpEntity entity = rsp.getEntity();
+    try{
+      InputStream is = entity.getContent();
+      if(consumer != null) {
+
+        result = consumer.accept(is);
+      }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
+    } finally {
+      Utils.consumeFully(entity);
+    }
+    return result;
   }
 
 }

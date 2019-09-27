@@ -110,6 +110,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String ALIASES = "/aliases.json";
   public static final String CLUSTER_STATE = "/clusterstate.json";
   public static final String CLUSTER_PROPS = "/clusterprops.json";
+  public static final String PACKAGE_REPO = "/package_repo.json";
   public static final String COLLECTION_PROPS_ZKNODE = "collectionprops.json";
   public static final String REJOIN_AT_HEAD_PROP = "rejoinAtHead";
   public static final String SOLR_SECURITY_CONF_PATH = "/security.json";
@@ -156,7 +157,6 @@ public class ZkStateReader implements SolrCloseable {
 
   private static final int GET_LEADER_RETRY_INTERVAL_MS = 50;
   private static final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "4000"));
-  ;
 
   public static final String LEADER_ELECT_ZKNODE = "leader_elect";
 
@@ -1572,7 +1572,7 @@ public class ZkStateReader implements SolrCloseable {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
         ClusterState state = ClusterState.load(stat.getVersion(), data,
-            Collections.<String>emptySet(), collectionPath);
+            Collections.emptySet(), collectionPath);
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();
       } catch (KeeperException.NoNodeException e) {

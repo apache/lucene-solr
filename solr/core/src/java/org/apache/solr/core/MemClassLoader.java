@@ -66,7 +66,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
     if (allJarsLoaded) return;
     int count = 0;
     for (RuntimeLib lib : libs) {
-      if (lib.getUrl() != null) {
+      if (lib.getSha256() != null) {
         try {
           lib.loadJar();
           lib.verify();

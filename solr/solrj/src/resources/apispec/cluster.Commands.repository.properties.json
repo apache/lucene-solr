@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "name" : {
+      "type" : "string",
+      "description" : "A unique name for the repository"
+    },
+    "url" : {
+      "type": "string",
+      "description": "The location of the repo"
+    },
+    "version" : {
+      "type" : "string"
+    }
+  },
+  "required" : ["name", "url"]
+}

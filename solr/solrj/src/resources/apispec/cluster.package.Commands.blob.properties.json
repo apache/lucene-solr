@@ -1,14 +1,6 @@
 {
   "type": "object",
   "properties": {
-    "name": {
-      "type": "string",
-      "description": "A name for the library"
-    },
-    "url": {
-      "type": "string",
-      "description": "The remote url"
-    },
     "sha256": {
       "type": "string",
       "description": "The sha256 hash of the jar"
@@ -16,8 +8,11 @@
     "sig": {
       "type": "string",
       "description": "the signature of the jar"
+    },
+    "name": {
+      "type": "string",
+      "description": "A human readable name of the jar"
     }
   },
-  "required" : ["name","url","sha256"]
-
+  "required": ["sha256", "sig"]
 }

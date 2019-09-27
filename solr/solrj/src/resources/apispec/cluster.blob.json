@@ -1,0 +1,10 @@
+{
+  "methods": [
+    "POST"
+  ],
+  "url": {
+    "paths": [
+      "/cluster/blob"
+    ]
+  }
+}
