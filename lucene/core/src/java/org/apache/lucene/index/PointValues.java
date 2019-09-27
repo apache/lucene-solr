@@ -233,9 +233,16 @@ public abstract class PointValues {
 
   /** Estimate the number of points that would be visited by {@link #intersect}
    * with the given {@link IntersectVisitor}. This should run many times faster
+   * than {@link #intersect(IntersectVisitor)}. */
+  public abstract long estimatePointCount(IntersectVisitor visitor);
+
+  /** Estimate the number of documents that would be matched by {@link #intersect}
+   * with the given {@link IntersectVisitor}. This should run many times faster
    * than {@link #intersect(IntersectVisitor)}.
    * @see DocIdSetIterator#cost */
-  public abstract long estimatePointCount(IntersectVisitor visitor);
+  public long estimateDocCount(IntersectVisitor visitor) {
+    return (long) Math.ceil(estimatePointCount(visitor) / ((double) size() / getDocCount()));
+  }
 
   /** Returns minimum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
   public abstract byte[] getMinPackedValue() throws IOException;

@@ -109,15 +109,19 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     byte[] uniquePointValue = new byte[3];
     random().nextBytes(uniquePointValue);
     final int numDocs = atLeast(10000); // make sure we have several leaves
+    final boolean multiValues = random().nextBoolean();
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
       if (i == numDocs / 2) {
         doc.add(new BinaryPoint("f", uniquePointValue));
       } else {
-        do {
-          random().nextBytes(pointValue);
-        } while (Arrays.equals(pointValue, uniquePointValue));
-        doc.add(new BinaryPoint("f", pointValue));
+        final int numValues = (multiValues) ? TestUtil.nextInt(random(), 2, 100) : 1;
+        for (int j = 0; j < numValues; j ++) {
+          do {
+            random().nextBytes(pointValue);
+          } while (Arrays.equals(pointValue, uniquePointValue));
+          doc.add(new BinaryPoint("f", pointValue));
+        }
       }
       w.addDocument(doc);
     }
@@ -128,7 +132,8 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     PointValues points = lr.getPointValues("f");
 
     // If all points match, then the point count is numLeaves * maxPointsInLeafNode
-    final int numLeaves = (int) Math.ceil((double) numDocs / maxPointsInLeafNode);
+    final int numLeaves = (int) Math.ceil((double) points.size() / maxPointsInLeafNode);
+    final double pointsPerDocument = (double) points.size() / points.getDocCount();
     assertEquals(numLeaves * maxPointsInLeafNode,
         points.estimatePointCount(new IntersectVisitor() {
           @Override
@@ -137,6 +142,22 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
           @Override
           public void visit(int docID) throws IOException {}
           
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            return Relation.CELL_INSIDE_QUERY;
+          }
+        }));
+
+    assertEquals((long)Math.ceil(numLeaves * maxPointsInLeafNode / pointsPerDocument),
+        points.estimateDocCount(new IntersectVisitor() {
+          @Override
+          public void visit(int docID, byte[] packedValue) throws IOException {
+          }
+
+          @Override
+          public void visit(int docID) throws IOException {
+          }
+
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
             return Relation.CELL_INSIDE_QUERY;
@@ -152,6 +173,20 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
           @Override
           public void visit(int docID) throws IOException {}
           
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            return Relation.CELL_OUTSIDE_QUERY;
+          }
+        }));
+
+    assertEquals(0,
+        points.estimateDocCount(new IntersectVisitor() {
+          @Override
+          public void visit(int docID, byte[] packedValue) throws IOException {}
+
+          @Override
+          public void visit(int docID) throws IOException {}
+
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
             return Relation.CELL_OUTSIDE_QUERY;
@@ -180,6 +215,28 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
         pointCount == (maxPointsInLeafNode + 1) / 2 || // common case
         pointCount == 2*((maxPointsInLeafNode + 1) / 2)); // if the point is a split value
 
+    final long docCount = points.estimateDocCount(new IntersectVisitor() {
+      @Override
+      public void visit(int docID, byte[] packedValue) throws IOException {}
+
+      @Override
+      public void visit(int docID) throws IOException {}
+
+      @Override
+      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+        if (Arrays.compareUnsigned(uniquePointValue, 0, 3, maxPackedValue, 0, 3) > 0 ||
+            Arrays.compareUnsigned(uniquePointValue, 0, 3, minPackedValue, 0, 3) < 0) {
+          return Relation.CELL_OUTSIDE_QUERY;
+        }
+        return Relation.CELL_CROSSES_QUERY;
+      }
+    });
+    assertTrue(pointCount == 0 || (pointCount > 0 && docCount > 0));
+    assertTrue(""+docCount,
+        docCount == Math.ceil(((maxPointsInLeafNode + 1) / 2) / pointsPerDocument) || // common case
+            docCount == Math.ceil(2*((maxPointsInLeafNode + 1) / 2)) / pointsPerDocument); // if the point is a split value
+
+
     r.close();
     dir.close();
   }
@@ -198,16 +255,20 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     random().nextBytes(uniquePointValue[0]);
     random().nextBytes(uniquePointValue[1]);
     final int numDocs = atLeast(10000); // make sure we have several leaves
+    final boolean multiValues = random().nextBoolean();
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
       if (i == numDocs / 2) {
         doc.add(new BinaryPoint("f", uniquePointValue));
       } else {
-        do {
-          random().nextBytes(pointValue[0]);
-          random().nextBytes(pointValue[1]);
-        } while (Arrays.equals(pointValue[0], uniquePointValue[0]) || Arrays.equals(pointValue[1], uniquePointValue[1]));
-        doc.add(new BinaryPoint("f", pointValue));
+        final int numValues = (multiValues) ? TestUtil.nextInt(random(), 2, 100) : 1;
+        for (int j = 0; j < numValues; j ++) {
+          do {
+            random().nextBytes(pointValue[0]);
+            random().nextBytes(pointValue[1]);
+          } while (Arrays.equals(pointValue[0], uniquePointValue[0]) || Arrays.equals(pointValue[1], uniquePointValue[1]));
+          doc.add(new BinaryPoint("f", pointValue));
+        }
       }
       w.addDocument(doc);
     }
@@ -218,13 +279,14 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     PointValues points = lr.getPointValues("f");
 
     // With >1 dims, the tree is balanced
-    int actualMaxPointsInLeafNode = numDocs;
+    long actualMaxPointsInLeafNode = points.size();
     while (actualMaxPointsInLeafNode > maxPointsInLeafNode) {
       actualMaxPointsInLeafNode = (actualMaxPointsInLeafNode + 1) / 2;
     }
 
     // If all points match, then the point count is numLeaves * maxPointsInLeafNode
-    final int numLeaves = Integer.highestOneBit((numDocs - 1) / actualMaxPointsInLeafNode) << 1;
+    final int numLeaves = (int) Long.highestOneBit( ((points.size() - 1) / actualMaxPointsInLeafNode)) << 1;
+    final double pointsPerDocument = (double) points.size() / points.getDocCount();
     assertEquals(numLeaves * actualMaxPointsInLeafNode,
         points.estimatePointCount(new IntersectVisitor() {
           @Override
@@ -233,6 +295,20 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
           @Override
           public void visit(int docID) throws IOException {}
           
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            return Relation.CELL_INSIDE_QUERY;
+          }
+        }));
+
+    assertEquals((long)Math.ceil(numLeaves * actualMaxPointsInLeafNode / pointsPerDocument),
+        points.estimateDocCount(new IntersectVisitor() {
+          @Override
+          public void visit(int docID, byte[] packedValue) throws IOException {}
+
+          @Override
+          public void visit(int docID) throws IOException {}
+
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
             return Relation.CELL_INSIDE_QUERY;
@@ -248,6 +324,20 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
           @Override
           public void visit(int docID) throws IOException {}
           
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            return Relation.CELL_OUTSIDE_QUERY;
+          }
+        }));
+
+    assertEquals(0,
+        points.estimateDocCount(new IntersectVisitor() {
+          @Override
+          public void visit(int docID, byte[] packedValue) throws IOException {}
+
+          @Override
+          public void visit(int docID) throws IOException {}
+
           @Override
           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
             return Relation.CELL_OUTSIDE_QUERY;
@@ -278,6 +368,27 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
         pointCount == (actualMaxPointsInLeafNode + 1) / 2 || // common case
         pointCount == 2*((actualMaxPointsInLeafNode + 1) / 2)); // if the point is a split value
 
+    final long docCount = points.estimateDocCount(new IntersectVisitor() {
+      @Override
+      public void visit(int docID, byte[] packedValue) throws IOException {}
+
+      @Override
+      public void visit(int docID) throws IOException {}
+
+      @Override
+      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+        for (int dim = 0; dim < 2; ++dim) {
+          if (Arrays.compareUnsigned(uniquePointValue[dim], 0, 3, maxPackedValue, dim * 3, dim * 3 + 3) > 0 ||
+              Arrays.compareUnsigned(uniquePointValue[dim], 0, 3, minPackedValue, dim * 3, dim * 3 + 3) < 0) {
+            return Relation.CELL_OUTSIDE_QUERY;
+          }
+        }
+        return Relation.CELL_CROSSES_QUERY;
+      }
+    });
+    assertTrue(""+docCount,
+        docCount == Math.ceil(((actualMaxPointsInLeafNode + 1) / 2) / pointsPerDocument) || // common case
+            docCount == Math.ceil(2*((actualMaxPointsInLeafNode + 1) / 2)) / pointsPerDocument); // if the point is a split value
     r.close();
     dir.close();
   }

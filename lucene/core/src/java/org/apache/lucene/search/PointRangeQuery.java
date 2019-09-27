@@ -30,6 +30,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.NumericUtils;
 
 /** 
  * Abstract class for range queries against single or multidimensional points such as
@@ -316,7 +317,7 @@ public abstract class PointRangeQuery extends Query {
             public long cost() {
               if (cost == -1) {
                 // Computing the cost may be expensive, so only do it if necessary
-                cost = values.estimatePointCount(visitor);
+                cost = values.estimateDocCount(visitor);
                 assert cost >= 0;
               }
               return cost;
