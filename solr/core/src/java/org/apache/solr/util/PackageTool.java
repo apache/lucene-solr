@@ -17,13 +17,17 @@
 package org.apache.solr.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -96,7 +100,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     }
   }
 
-  protected void addRepo(SolrPluginManager pluginManager, SolrUpdateManager updateManager, String zkHost, String name, String uri) throws UnsupportedEncodingException, KeeperException, InterruptedException {
+  protected void addRepo(SolrPluginManager pluginManager, SolrUpdateManager updateManager, String zkHost, String name, String uri) throws KeeperException, InterruptedException, MalformedURLException, IOException {
     SolrZkClient zkClient = new SolrZkClient(zkHost, 30000);
 
     String existingRepositoriesJson = getRepositoriesJson(zkClient);
@@ -109,6 +113,12 @@ public class PackageTool extends SolrCLI.ToolBase {
     } else {
       zkClient.setData("/repositories.json", new Gson().toJson(repos).getBytes(), true);
     }
+    
+    if (zkClient.exists("/keys", true)==false) zkClient.create("/keys", new byte[0], CreateMode.PERSISTENT, true);
+    if (zkClient.exists("/keys/exe", true)==false) zkClient.create("/keys/exe", new byte[0], CreateMode.PERSISTENT, true);
+    if (zkClient.exists("/keys/exe/"+"pub_key.der", true)==false) zkClient.create("/keys/exe/"+"pub_key.der", new byte[0], CreateMode.PERSISTENT, true);
+    zkClient.setData("/keys/exe/"+"pub_key.der", IOUtils.toByteArray(new URL(uri+"/publickey.der").openStream()), true);
+    
     System.out.println("Added repository: "+name);
     System.out.println(getRepositoriesJson(zkClient));
   }

@@ -110,7 +110,7 @@ public class SolrUpdateManager extends UpdateManager {
       throw new PluginException(e);
     }
 
-    addOrUpdatePackage(op, id, version, sha256, repository, metadataSha256, release.metadata);
+    addOrUpdatePackage(op, id, version, sha256, repository, release.sig, metadataSha256, release.metadata);
     return true;
   }
 
@@ -118,7 +118,7 @@ public class SolrUpdateManager extends UpdateManager {
     INSTALL, UPDATE;
   }
   
-  private boolean addOrUpdatePackage(Operation op, String id, String version, String sha256, String repository,
+  private boolean addOrUpdatePackage(Operation op, String id, String version, String sha256, String repository, String sig,
       String metadataSha256, Metadata packageMetadata) {
     
     String json;
@@ -132,8 +132,8 @@ public class SolrUpdateManager extends UpdateManager {
         + "{name: '"+id+"', "
         + "version: '"+version+"', "
         + "repository: '"+repository+"', "
-        //+ "blob: {sha256: '"+sha256+"', sig: 'abc'}, "
-        + "blob: {sha256: '"+sha256+"'}, "
+        + "blob: {sha256: '"+sha256+"', sig: '"+sig+"'}, "
+        //+ "blob: {sha256: '"+sha256+"'}, "
         + "metadata: '"+metadataSha256+"'"
         + "}}";
 

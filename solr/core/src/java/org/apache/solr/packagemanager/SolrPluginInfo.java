@@ -16,11 +16,7 @@ public class SolrPluginInfo extends PluginInfo {
 
   public static class SolrPluginRelease extends PluginRelease {
 
-    //    @SerializedName("setup-commands")
-    //    public List<String> setupCommands;
-    //
-    //    @SerializedName("update-commands")
-    //    public List<String> updateCommands;
+    public String sig;
 
     Metadata metadata;
     @Override
@@ -30,6 +26,7 @@ public class SolrPluginInfo extends PluginInfo {
           ", date=" + date +
           ", requires='" + requires + '\'' +
           ", url='" + url + '\'' +
+          ", sig='" + sig + '\'' +
           ", min='" + metadata.minSolrVersion + '\'' +
           ", max='" + metadata.maxSolrVersion + '\'' +
           ", dependencies='" + metadata.dependencies + '\'' +

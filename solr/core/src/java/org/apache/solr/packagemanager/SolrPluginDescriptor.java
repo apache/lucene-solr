@@ -37,5 +37,4 @@ public class SolrPluginDescriptor extends DefaultPluginDescriptor {
 	public List<Plugin> getPlugins() {
     return plugins;
   }
-
 }

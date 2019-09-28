@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
@@ -116,7 +117,7 @@ public class PackageBag implements ClusterPropertiesListener {
         return errors;
       }
       // nocommit bring back verification
-      /*Map<String, byte[]> keys = CloudUtil.getTrustedKeys(
+      Map<String, byte[]> keys = CloudUtil.getTrustedKeys(
           coreContainer.getZkController().getZkClient(), "exe");
       if (keys.isEmpty()) {
         errors.add("No public keys in ZK : /keys/exe");
@@ -127,7 +128,7 @@ public class PackageBag implements ClusterPropertiesListener {
         if (!blob.verifyJar(cryptoKeys, coreContainer)) {
           errors.add("Invalid signature for blob : " + blob.sha256);
         }
-      }*/
+      }
       return errors;
 
     }
