@@ -231,10 +231,10 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
         return Relation.CELL_CROSSES_QUERY;
       }
     });
-    assertTrue(pointCount == 0 || (pointCount > 0 && docCount > 0));
+
     assertTrue(""+docCount,
         docCount == Math.ceil(((maxPointsInLeafNode + 1) / 2) / pointsPerDocument) || // common case
-            docCount == Math.ceil(2*((maxPointsInLeafNode + 1) / 2)) / pointsPerDocument); // if the point is a split value
+            docCount == Math.ceil((2*((maxPointsInLeafNode + 1) / 2)) / pointsPerDocument)); // if the point is a split value
 
 
     r.close();
@@ -386,9 +386,10 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
         return Relation.CELL_CROSSES_QUERY;
       }
     });
+
     assertTrue(""+docCount,
         docCount == Math.ceil(((actualMaxPointsInLeafNode + 1) / 2) / pointsPerDocument) || // common case
-            docCount == Math.ceil(2*((actualMaxPointsInLeafNode + 1) / 2)) / pointsPerDocument); // if the point is a split value
+            docCount == Math.ceil((2*((actualMaxPointsInLeafNode + 1) / 2)) / pointsPerDocument)); // if the point is a split value
     r.close();
     dir.close();
   }
