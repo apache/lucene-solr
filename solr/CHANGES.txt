@@ -181,6 +181,8 @@ Bug Fixes
 * SOLR-13727: Fixed V2Requests - HttpSolrClient replaced first instance of "/solr" with "/api" which
   caused a change in host names starting with "solr".  (Megan Carey via yonik)
 
+* SOLR-13180: Fix ClassCastException in Json Request API (Johannes Kloos, Jan Høydahl, Munendra S N)
+
 Other Changes
 ----------------------
 
