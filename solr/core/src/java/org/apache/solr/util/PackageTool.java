@@ -38,9 +38,9 @@ import org.apache.solr.packagemanager.SolrUpdateManager;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.pf4j.PluginException;
-import org.pf4j.PluginWrapper;
-import org.pf4j.update.PluginInfo;
+import org.apache.solr.packagemanager.pf4j.PluginException;
+import org.apache.solr.packagemanager.pf4j.PluginWrapper;
+import org.apache.solr.packagemanager.pf4j.PluginInfo;
 
 import com.google.gson.Gson;
 

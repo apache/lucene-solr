@@ -3,7 +3,7 @@ package org.apache.solr.packagemanager;
 import java.util.List;
 
 import org.apache.solr.packagemanager.SolrPluginInfo.Plugin;
-import org.pf4j.DefaultPluginDescriptor;
+import org.apache.solr.packagemanager.pf4j.DefaultPluginDescriptor;
 
 public class SolrPluginDescriptor extends DefaultPluginDescriptor {
 	final private String id;

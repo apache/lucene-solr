@@ -3,7 +3,7 @@ package org.apache.solr.packagemanager;
 
 import java.util.List;
 
-import org.pf4j.update.PluginInfo;
+import org.apache.solr.packagemanager.pf4j.PluginInfo;
 
 import com.google.gson.annotations.SerializedName;
 

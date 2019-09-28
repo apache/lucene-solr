@@ -11,10 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.packagemanager.SolrPluginInfo.SolrPluginRelease;
-import org.pf4j.update.DefaultUpdateRepository;
-import org.pf4j.update.PluginInfo;
-import org.pf4j.update.PluginInfo.PluginRelease;
-import org.pf4j.update.util.LenientDateTypeAdapter;
+import org.apache.solr.packagemanager.pf4j.*;
+import org.apache.solr.packagemanager.pf4j.PluginInfo.PluginRelease;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

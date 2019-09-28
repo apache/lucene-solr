@@ -4,9 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
@@ -22,37 +26,46 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.packagemanager.SolrPluginInfo.Metadata;
 import org.apache.solr.packagemanager.SolrPluginInfo.SolrPluginRelease;
-import org.pf4j.PluginException;
-import org.pf4j.PluginManager;
-import org.pf4j.PluginWrapper;
-import org.pf4j.update.PluginInfo;
-import org.pf4j.update.UpdateManager;
-import org.pf4j.update.UpdateRepository;
+import org.apache.solr.packagemanager.pf4j.CompoundVerifier;
+import org.apache.solr.packagemanager.pf4j.FileDownloader;
+import org.apache.solr.packagemanager.pf4j.FileVerifier;
+import org.apache.solr.packagemanager.pf4j.PluginException;
+import org.apache.solr.packagemanager.pf4j.PluginInfo;
+import org.apache.solr.packagemanager.pf4j.PluginInfo.PluginRelease;
+import org.apache.solr.packagemanager.pf4j.PluginManager;
+import org.apache.solr.packagemanager.pf4j.PluginWrapper;
+import org.apache.solr.packagemanager.pf4j.SimpleFileDownloader;
+import org.apache.solr.packagemanager.pf4j.UpdateRepository;
+import org.apache.solr.packagemanager.pf4j.VersionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
-public class SolrUpdateManager extends UpdateManager {
+public class SolrUpdateManager {
 
   final private PluginManager pluginManager;
   final private String repositoriesJsonStr;
+  protected List<UpdateRepository> repositories;
+  
+  private VersionManager versionManager;
+  private String systemVersion;
+  private Map<String, PluginRelease> lastPluginRelease = new HashMap<>();
+
 
   private static final Logger log = LoggerFactory.getLogger(SolrUpdateManager.class);
 
   public SolrUpdateManager(PluginManager pluginManager, String repositoriesJsonStr) {
-    super(pluginManager, (Path)Paths.get("."));
+    //super(pluginManager, (Path)Paths.get("."));
     this.pluginManager = pluginManager;
     this.repositoriesJsonStr = repositoriesJsonStr;
   }
 
-  @Override
   protected synchronized void initRepositoriesFromJson() {
     UpdateRepository items[] = new Gson().fromJson(this.repositoriesJsonStr, SolrUpdateRepository[].class);
     this.repositories = Arrays.asList(items);
   }
 
-  @Override
   public synchronized void refresh() {
     initRepositoriesFromJson();
     for (UpdateRepository updateRepository : repositories) {
@@ -61,17 +74,38 @@ public class SolrUpdateManager extends UpdateManager {
   }
 
 
-  @Override
   public synchronized boolean installPlugin(String id, String version) throws PluginException {
     return updateOrInstallPackage(Operation.INSTALL, id, version);
   }
 
-  @Override
   public synchronized boolean updatePlugin(String id, String version) throws PluginException {
     return updateOrInstallPackage(Operation.UPDATE, id, version);
   }
   
   
+  public List<PluginInfo> getPlugins() {
+    List<PluginInfo> list = new ArrayList<>(getPluginsMap().values());
+    Collections.sort(list);
+
+    return list;
+  }
+  
+  public Map<String, PluginInfo> getPluginsMap() {
+    Map<String, PluginInfo> pluginsMap = new HashMap<>();
+    for (UpdateRepository repository : getRepositories()) {
+      pluginsMap.putAll(repository.getPlugins());
+    }
+
+    return pluginsMap;
+  }
+  
+  public List<UpdateRepository> getRepositories() {
+    refresh();
+    return repositories;
+  }
+
+
+
   private boolean updateOrInstallPackage(Operation op, String id, String version) throws PluginException {
     //System.out.println("ENTERS HERE");
     // Download to temporary location
@@ -209,4 +243,110 @@ public class SolrUpdateManager extends UpdateManager {
     return uploadToBlobHandler(new File("tmp-metadata").toPath());
   }
 
+  /**
+   * Downloads a plugin with given coordinates, runs all {@link FileVerifier}s
+   * and returns a path to the downloaded file.
+   *
+   * @param id of plugin
+   * @param version of plugin or null to download latest
+   * @return Path to file which will reside in a temporary folder in the system default temp area
+   * @throws PluginException if download failed
+   */
+  protected Path downloadPlugin(String id, String version) throws PluginException {
+      try {
+          PluginRelease release = findReleaseForPlugin(id, version);
+          Path downloaded = getFileDownloader(id).downloadFile(new URL(release.url));
+          getFileVerifier(id).verify(new FileVerifier.Context(id, release), downloaded);
+          return downloaded;
+      } catch (IOException e) {
+          throw new PluginException(e, "Error during download of plugin {}", id);
+      }
+  }
+
+  /**
+   * Finds the {@link FileDownloader} to use for this repository.
+   *
+   * @param pluginId the plugin we wish to download
+   * @return FileDownloader instance
+   */
+  protected FileDownloader getFileDownloader(String pluginId) {
+      for (UpdateRepository ur : repositories) {
+          if (ur.getPlugin(pluginId) != null && ur.getFileDownloader() != null) {
+              return ur.getFileDownloader();
+          }
+      }
+
+      return new SimpleFileDownloader();
+  }
+
+  /**
+   * Gets a file verifier to use for this plugin. First tries to use custom verifier
+   * configured for the repository, then fallback to the default CompoundVerifier
+   *
+   * @param pluginId the plugin we wish to download
+   * @return FileVerifier instance
+   */
+  protected FileVerifier getFileVerifier(String pluginId) {
+      for (UpdateRepository ur : repositories) {
+          if (ur.getPlugin(pluginId) != null && ur.getFileVerfier() != null) {
+              return ur.getFileVerfier();
+          }
+      }
+
+      return new CompoundVerifier();
+  }
+  
+  /**
+   * Resolves Release from id and version.
+   *
+   * @param id of plugin
+   * @param version of plugin or null to locate latest version
+   * @return PluginRelease for downloading
+   * @throws PluginException if id or version does not exist
+   */
+  protected PluginRelease findReleaseForPlugin(String id, String version) throws PluginException {
+      PluginInfo pluginInfo = getPluginsMap().get(id);
+      if (pluginInfo == null) {
+          log.info("Plugin with id {} does not exist in any repository", id);
+          throw new PluginException("Plugin with id {} not found in any repository", id);
+      }
+
+      if (version == null) {
+          return getLastPluginRelease(id);
+      }
+
+      for (PluginRelease release : pluginInfo.releases) {
+          if (versionManager.compareVersions(version, release.version) == 0 && release.url != null) {
+              return release;
+          }
+      }
+
+      throw new PluginException("Plugin {} with version @{} does not exist in the repository", id, version);
+  }
+  
+  /**
+   * Returns the last release version of this plugin for given system version, regardless of release date.
+   *
+   * @return PluginRelease which has the highest version number
+   */
+  public PluginRelease getLastPluginRelease(String id) {
+      PluginInfo pluginInfo = getPluginsMap().get(id);
+      if (pluginInfo == null) {
+          return null;
+      }
+
+      if (!lastPluginRelease.containsKey(id)) {
+          for (PluginRelease release : pluginInfo.releases) {
+              if (systemVersion.equals("0.0.0") || versionManager.checkVersionConstraint(systemVersion, release.requires)) {
+                  if (lastPluginRelease.get(id) == null) {
+                      lastPluginRelease.put(id, release);
+                  } else if (versionManager.compareVersions(release.version, lastPluginRelease.get(id).version) > 0) {
+                      lastPluginRelease.put(id, release);
+                  }
+              }
+          }
+      }
+
+      return lastPluginRelease.get(id);
+  }
 }

@@ -23,21 +23,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.packagemanager.SolrPluginInfo.Metadata;
 import org.apache.solr.packagemanager.SolrPluginInfo.Plugin;
-import org.pf4j.AbstractPluginManager;
-import org.pf4j.DefaultVersionManager;
-import org.pf4j.ExtensionFactory;
-import org.pf4j.ExtensionFinder;
-import org.pf4j.PluginDescriptor;
-import org.pf4j.PluginDescriptorFinder;
-import org.pf4j.PluginFactory;
-import org.pf4j.PluginLoader;
-import org.pf4j.PluginRepository;
-import org.pf4j.PluginState;
-import org.pf4j.PluginStateListener;
-import org.pf4j.PluginStatusProvider;
-import org.pf4j.PluginWrapper;
-import org.pf4j.RuntimeMode;
-import org.pf4j.VersionManager;
+import org.apache.solr.packagemanager.pf4j.*;
 
 import com.google.gson.Gson;
 
