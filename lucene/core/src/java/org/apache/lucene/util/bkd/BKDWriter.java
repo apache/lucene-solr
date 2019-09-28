@@ -380,16 +380,17 @@ public class BKDWriter implements Closeable {
   }
 
   private void computePackedValueBounds(MutablePointValues values, int from, int to, byte[] minPackedValue, byte[] maxPackedValue, BytesRef scratch) {
-    Arrays.fill(minPackedValue, (byte) 0xff);
-    Arrays.fill(maxPackedValue, (byte) 0);
-    for (int i = from; i < to; ++i) {
+    values.getValue(from, scratch);
+    System.arraycopy(scratch.bytes, scratch.offset, minPackedValue, 0, packedIndexBytesLength);
+    System.arraycopy(scratch.bytes, scratch.offset, maxPackedValue, 0, packedIndexBytesLength);
+    for (int i = from + 1 ; i < to; ++i) {
       values.getValue(i, scratch);
-      for(int dim=0;dim<numIndexDims;dim++) {
-        int offset = dim*bytesPerDim;
-        if (Arrays.compareUnsigned(scratch.bytes, scratch.offset + offset, scratch.offset + offset + bytesPerDim, minPackedValue, offset, offset + bytesPerDim) < 0) {
+      for(int dim = 0; dim < numIndexDims; dim++) {
+        final int offset = dim * bytesPerDim;
+        final int nextOffset = offset + bytesPerDim;
+        if (Arrays.compareUnsigned(scratch.bytes, scratch.offset + offset, scratch.offset + nextOffset, minPackedValue, offset, nextOffset) < 0) {
           System.arraycopy(scratch.bytes, scratch.offset + offset, minPackedValue, offset, bytesPerDim);
-        }
-        if (Arrays.compareUnsigned(scratch.bytes, scratch.offset + offset, scratch.offset + offset + bytesPerDim, maxPackedValue, offset, offset + bytesPerDim) > 0) {
+        } else if (Arrays.compareUnsigned(scratch.bytes, scratch.offset + offset, scratch.offset + nextOffset, maxPackedValue, offset, nextOffset) > 0) {
           System.arraycopy(scratch.bytes, scratch.offset + offset, maxPackedValue, offset, bytesPerDim);
         }
       }
@@ -1480,16 +1481,20 @@ public class BKDWriter implements Closeable {
 
   private void computePackedValueBounds(BKDRadixSelector.PathSlice slice, byte[] minPackedValue, byte[] maxPackedValue) throws IOException {
     try (PointReader reader = slice.writer.getReader(slice.start, slice.count)) {
-      Arrays.fill(minPackedValue, (byte) 0xff);
-      Arrays.fill(maxPackedValue, (byte) 0);
+      if (reader.next() == false) {
+        return;
+      }
+      BytesRef value = reader.pointValue().packedValue();
+      System.arraycopy(value.bytes, value.offset, minPackedValue, 0, packedIndexBytesLength);
+      System.arraycopy(value.bytes, value.offset, maxPackedValue, 0, packedIndexBytesLength);
       while (reader.next()) {
-        BytesRef value = reader.pointValue().packedValue();
-        for(int dim=0;dim<numIndexDims;dim++) {
-          int offset = dim*bytesPerDim;
-          if (Arrays.compareUnsigned(value.bytes, value.offset + offset, value.offset + offset + bytesPerDim, minPackedValue, offset, offset + bytesPerDim) < 0) {
+        value = reader.pointValue().packedValue();
+        for(int dim = 0; dim < numIndexDims; dim++) {
+          final int offset = dim * bytesPerDim;
+          final int nextOffset = offset + bytesPerDim;
+          if (Arrays.compareUnsigned(value.bytes, value.offset + offset, value.offset + nextOffset, minPackedValue, offset, nextOffset) < 0) {
             System.arraycopy(value.bytes, value.offset + offset, minPackedValue, offset, bytesPerDim);
-          }
-          if (Arrays.compareUnsigned(value.bytes, value.offset + offset, value.offset + offset + bytesPerDim, maxPackedValue, offset, offset + bytesPerDim) > 0) {
+          } else if (Arrays.compareUnsigned(value.bytes, value.offset + offset, value.offset + nextOffset, maxPackedValue, offset, nextOffset) > 0) {
             System.arraycopy(value.bytes, value.offset + offset, maxPackedValue, offset, bytesPerDim);
           }
         }
