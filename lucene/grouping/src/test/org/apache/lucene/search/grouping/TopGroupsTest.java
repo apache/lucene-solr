@@ -87,8 +87,8 @@ public class TopGroupsTest extends LuceneTestCase {
         // retrieve the top groups
         TopGroups<String> mergedTopGroups = TopGroups.<String>merge(shardGroups, Sort.RELEVANCE, Sort.RELEVANCE, docOffset, topDocN, TopGroups.ScoreMergeMode.Total);
         assertEquals(5.0f, mergedTopGroups.maxScore, 0.0f);
-        assertEquals(5.0f, mergedTopGroups.groups[0].maxScore, 0.0f); // max score for group1 will be docid 1 score 5
-        assertEquals(2.0f, mergedTopGroups.groups[1].maxScore, 0.0f); // max score for group2 will be docid 4 score 2
+        assertEquals(5.0f, mergedTopGroups.groups[0].maxScore, 0.0f); // max score for group1 will be docid 1 score 5.0
+        assertEquals(2.0f, mergedTopGroups.groups[1].maxScore, 0.0f); // max score for group2 will be docid 4 score 2.0
     }
 
     public void testMaxScoreAfterhMergeWithNaN() {
@@ -98,7 +98,7 @@ public class TopGroupsTest extends LuceneTestCase {
 
         // create results for the the first shard
         // docId 1 group1 score 5.0 max score 5.0
-        // docId 2 group2 score 1.0 max score 5.0
+        // docId 2 group2 score 1.0 max score 1.0
         GroupDocs<String>[] groupDocs1 = mockGroups(/* doc ids */ new int[]{1, 2},
                 /* scores */ new float[]{5.0f, 1.0f},
                 /* max scores */ new float[]{5.0f, 1.0f},
@@ -117,16 +117,16 @@ public class TopGroupsTest extends LuceneTestCase {
         TopGroups<String> mergedTopGroups = TopGroups.<String>merge(shardGroups, Sort.RELEVANCE, Sort.RELEVANCE, docOffset, topDocN, TopGroups.ScoreMergeMode.Total);
         assertTrue(Float.isNaN(emptyTopGroups.maxScore));
         assertFalse(Float.isNaN(topGroups.maxScore));
-        assertEquals(topGroups.maxScore, mergedTopGroups.maxScore, 0.0005f);
-        assertEquals(5.0f, mergedTopGroups.groups[0].maxScore, 0.0f); // max score for group1 will be docid 1 score 5
-        assertEquals(1.0f, mergedTopGroups.groups[1].maxScore, 0.0f); // max score for group1 will be docid 1 score 5
+        assertEquals(topGroups.maxScore, mergedTopGroups.maxScore, 0.0);
+        assertEquals(5.0f, mergedTopGroups.groups[0].maxScore, 0.0f); // max score for group1 will be docid 1 score 5.0
+        assertEquals(1.0f, mergedTopGroups.groups[1].maxScore, 0.0f); // max score for group2 will be docid 2 score 1.0
 
         // same if the groups come in different order
         TopGroups<String>[] reverseOrderTopGroups = new TopGroups[]{emptyTopGroups, topGroups};
         mergedTopGroups = TopGroups.<String>merge(reverseOrderTopGroups, Sort.RELEVANCE, Sort.RELEVANCE, docOffset, topDocN, TopGroups.ScoreMergeMode.Total);
         assertEquals(5.0f, mergedTopGroups.maxScore, 0.0);
-        assertEquals(5.0f, mergedTopGroups.groups[0].maxScore, 0.0f); // max score for group1 will be docid 1 score 5
-        assertEquals(1.0f, mergedTopGroups.groups[1].maxScore, 0.0f); // max score for group1 will be docid 1 score 5
+        assertEquals(5.0f, mergedTopGroups.groups[0].maxScore, 0.0); // max score for group1 will be docid 1 score 5.0
+        assertEquals(1.0f, mergedTopGroups.groups[1].maxScore, 0.0); // max score for group2 will be docid 2 score 1.0
 
         // if we merge empty groups that we should not have a max Score
         shardGroups = new TopGroups[]{emptyTopGroups, emptyTopGroups};
@@ -134,8 +134,8 @@ public class TopGroupsTest extends LuceneTestCase {
         assertTrue(Float.isNaN(mergedTopGroups.maxScore));
 
         // create results for the second shard
-        // docId 3 group1 score 5.0 max score 5.0
-        // docId 4 group2 score 1.0 max score 5.0
+        // docId 3 group1 score 3.0 max score 3.0
+        // docId 4 group2 score 2.0 max score 2.0
         GroupDocs<String>[] groupDocs2 = mockGroups(/* doc ids */ new int[]{3, 4},
                 /* scores */ new float[]{3.0f, 2.0f},
                 /* max scores */ new float[]{3.0f, 2.0f},
@@ -146,8 +146,8 @@ public class TopGroupsTest extends LuceneTestCase {
         // two groups with valid maxScores (5.0)
         shardGroups = new TopGroups[]{emptyTopGroups, topGroups, topGroups2};
         mergedTopGroups = TopGroups.<String>merge(shardGroups, Sort.RELEVANCE, Sort.RELEVANCE, 0, 2, TopGroups.ScoreMergeMode.Total);
-        assertEquals(5.0f, mergedTopGroups.maxScore, 0.0f);
-        assertEquals(5.0f, mergedTopGroups.groups[0].maxScore, 0.0f); // max score for group1 will be docid 1 score 5
-        assertEquals(2.0f, mergedTopGroups.groups[1].maxScore, 0.0f); // max score for group1 will be docid 4 score 2
+        assertEquals(5.0f, mergedTopGroups.maxScore, 0.0);
+        assertEquals(5.0f, mergedTopGroups.groups[0].maxScore, 0.0); // max score for group1 will be docid 1 score 5.0
+        assertEquals(2.0f, mergedTopGroups.groups[1].maxScore, 0.0); // max score for group1 will be docid 4 score 2.0
     }
 }
