@@ -243,6 +243,9 @@ Bug Fixes
 
 * SOLR-13180: Fix ClassCastException in Json Request API (Johannes Kloos, Jan Høydahl, Munendra S N)
 
+* SOLR-13417: Handle stats aggregation on date and string fields in SolrJ's JSON facet response processing
+  (Jason Gerlowski, Munendra S N)
+
 Other Changes
 ----------------------
 
