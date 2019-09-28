@@ -379,18 +379,21 @@ public class BKDWriter implements Closeable {
   }
 
   private void computePackedValueBounds(MutablePointValues values, int from, int to, byte[] minPackedValue, byte[] maxPackedValue, BytesRef scratch) {
+    if (from == to) {
+      return;
+    }
     values.getValue(from, scratch);
     System.arraycopy(scratch.bytes, scratch.offset, minPackedValue, 0, packedIndexBytesLength);
     System.arraycopy(scratch.bytes, scratch.offset, maxPackedValue, 0, packedIndexBytesLength);
     for (int i = from + 1 ; i < to; ++i) {
       values.getValue(i, scratch);
       for(int dim = 0; dim < numIndexDims; dim++) {
-        final int offset = dim * bytesPerDim;
-        final int nextOffset = offset + bytesPerDim;
-        if (Arrays.compareUnsigned(scratch.bytes, scratch.offset + offset, scratch.offset + nextOffset, minPackedValue, offset, nextOffset) < 0) {
-          System.arraycopy(scratch.bytes, scratch.offset + offset, minPackedValue, offset, bytesPerDim);
-        } else if (Arrays.compareUnsigned(scratch.bytes, scratch.offset + offset, scratch.offset + nextOffset, maxPackedValue, offset, nextOffset) > 0) {
-          System.arraycopy(scratch.bytes, scratch.offset + offset, maxPackedValue, offset, bytesPerDim);
+        final int startOffset = dim * bytesPerDim;
+        final int endOffset = startOffset + bytesPerDim;
+        if (Arrays.compareUnsigned(scratch.bytes, scratch.offset + startOffset, scratch.offset + endOffset, minPackedValue, startOffset, endOffset) < 0) {
+          System.arraycopy(scratch.bytes, scratch.offset + startOffset, minPackedValue, startOffset, bytesPerDim);
+        } else if (Arrays.compareUnsigned(scratch.bytes, scratch.offset + startOffset, scratch.offset + endOffset, maxPackedValue, startOffset, endOffset) > 0) {
+          System.arraycopy(scratch.bytes, scratch.offset + startOffset, maxPackedValue, startOffset, bytesPerDim);
         }
       }
     }
@@ -1489,12 +1492,12 @@ public class BKDWriter implements Closeable {
       while (reader.next()) {
         value = reader.pointValue().packedValue();
         for(int dim = 0; dim < numIndexDims; dim++) {
-          final int offset = dim * bytesPerDim;
-          final int nextOffset = offset + bytesPerDim;
-          if (Arrays.compareUnsigned(value.bytes, value.offset + offset, value.offset + nextOffset, minPackedValue, offset, nextOffset) < 0) {
-            System.arraycopy(value.bytes, value.offset + offset, minPackedValue, offset, bytesPerDim);
-          } else if (Arrays.compareUnsigned(value.bytes, value.offset + offset, value.offset + nextOffset, maxPackedValue, offset, nextOffset) > 0) {
-            System.arraycopy(value.bytes, value.offset + offset, maxPackedValue, offset, bytesPerDim);
+          final int startOffset = dim * bytesPerDim;
+          final int endOffset = startOffset + bytesPerDim;
+          if (Arrays.compareUnsigned(value.bytes, value.offset + startOffset, value.offset + endOffset, minPackedValue, startOffset, endOffset) < 0) {
+            System.arraycopy(value.bytes, value.offset + startOffset, minPackedValue, startOffset, bytesPerDim);
+          } else if (Arrays.compareUnsigned(value.bytes, value.offset + startOffset, value.offset + endOffset, maxPackedValue, startOffset, endOffset) > 0) {
+            System.arraycopy(value.bytes, value.offset + startOffset, maxPackedValue, startOffset, bytesPerDim);
           }
         }
       }
