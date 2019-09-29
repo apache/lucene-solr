@@ -229,6 +229,27 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(s2, "c-d-hello");
   }
 
+
+  @Test
+  public void testTrunc() throws Exception {
+    String expr = " select(list(tuple(field1=\"abcde\", field2=\"012345\")), trunc(field1, 2) as field3, trunc(field2, 4) as field4)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  1);
+    String s1 = tuples.get(0).getString("field3");
+    assertEquals(s1, "ab");
+    String s2 = tuples.get(0).getString("field4");
+    assertEquals(s2, "0123");
+  }
+
   @Test
   public void testUpperLowerSingle() throws Exception {
     String expr = " select(list(tuple(field1=\"a\", field2=\"C\")), upper(field1) as field3, lower(field2) as field4)";
@@ -247,6 +268,28 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(s1, "A");
     String s2 = tuples.get(0).getString("field4");
     assertEquals(s2, "c");
+  }
+
+
+  @Test
+  public void testTruncArray() throws Exception {
+    String expr = " select(list(tuple(field1=array(\"aaaa\",\"bbbb\",\"cccc\"))), trunc(field1, 3) as field2)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  1);
+    List<String> l1 = (List<String>)tuples.get(0).get("field2");
+    assertEquals(l1.get(0), "aaa");
+    assertEquals(l1.get(1), "bbb");
+    assertEquals(l1.get(2), "ccc");
+
   }
 
   @Test
@@ -720,6 +763,27 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     assertTrue(tuples.get(0).getDouble("cov").equals(-625.0D));
+  }
+
+  @Test
+  public void testCosineDistance() throws Exception {
+    String cexpr = "let(echo=true, " +
+        "a=array(1,2,3,4)," +
+        "b=array(10, 20, 30, 45), " +
+        "c=distance(a, b, cosine()), " +
+        ")";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number d = (Number) tuples.get(0).get("c");
+    assertEquals(d.doubleValue(), 0.0017046159, 0.0001);
   }
 
   @Test
@@ -3343,7 +3407,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     Number cs = (Number)tuples.get(0).get("return-value");
-    assertTrue(cs.doubleValue() == 0.9838197164968291);
+    assertEquals(cs.doubleValue(),0.9838197164968291, .00000001);
   }
 
   @Test
@@ -4085,9 +4149,10 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String cexpr = "let(echo=true, " +
                        "a=sequence(50, 1, 0), " +
                        "b=spline(a), " +
-                       "c=integrate(b, 0, 49), " +
-                       "d=integrate(b, 0, 20), " +
-                       "e=integrate(b, 20, 49))";
+                       "c=integral(b, 0, 49), " +
+                       "d=integral(b, 0, 20), " +
+                       "e=integral(b, 20, 49)," +
+                       "f=integral(b))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -4103,6 +4168,9 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(integral.doubleValue(), 20, 0.0);
     integral = (Number)tuples.get(0).get("e");
     assertEquals(integral.doubleValue(), 29, 0.0);
+    List<Number> integrals = (List<Number>)tuples.get(0).get("f");
+    assertEquals(integrals.size(), 50);
+    assertEquals(integrals.get(49).intValue(), 49);
   }
 
   @Test
@@ -4313,7 +4381,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
   }
 
-  @Test
+
+    @Test
   public void testLerp() throws Exception {
     String cexpr = "let(echo=true," +
         "    a=array(0,1,2,3,4,5,6,7), " +
