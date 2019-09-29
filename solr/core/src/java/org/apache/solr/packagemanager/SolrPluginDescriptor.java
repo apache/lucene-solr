@@ -3,9 +3,8 @@ package org.apache.solr.packagemanager;
 import java.util.List;
 
 import org.apache.solr.packagemanager.SolrPluginInfo.Plugin;
-import org.apache.solr.packagemanager.pf4j.DefaultPluginDescriptor;
 
-public class SolrPluginDescriptor extends DefaultPluginDescriptor {
+public class SolrPluginDescriptor {
 	final private String id;
 	final private String description;
 	final private String version;
@@ -19,17 +18,17 @@ public class SolrPluginDescriptor extends DefaultPluginDescriptor {
 		this.plugins = plugins;
 	}
 
-	@Override
+	//@Override
 	public String getPluginId() {
 		return id;
 	}
 
-	@Override
+	//@Override
 	public String getPluginDescription() {
 		return description;
 	}
 
-	@Override
+	//@Override
 	public String getVersion() {
 		return version;
 	}

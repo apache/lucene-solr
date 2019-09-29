@@ -1,21 +1,45 @@
 package org.apache.solr.packagemanager;
 
 
+import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
-
-import org.apache.solr.packagemanager.pf4j.PluginInfo;
 
 import com.google.gson.annotations.SerializedName;
 
 /**
  * {@code PluginInfo} describing a plugin from a repository.
  */
-public class SolrPluginInfo extends PluginInfo {
+public class SolrPluginInfo implements Serializable, Comparable<SolrPluginInfo> {
 
+  public String id;
+  public String description;
   public List<SolrPluginRelease> versions;
 
-  public static class SolrPluginRelease extends PluginRelease {
+  private String repositoryId;
+  
+  @Override
+  public int compareTo(SolrPluginInfo o) {
+      return id.compareTo(o.id);
+  }
 
+  public String getRepositoryId() {
+      return repositoryId;
+  }
+
+  public void setRepositoryId(String repositoryId) {
+      this.repositoryId = repositoryId;
+  }
+
+
+  public static class SolrPluginRelease {
+
+    public String version;
+    public Date date;
+    public String requires;
+    public String url;
+
+    public String sha512sum;
     public String sig;
 
     Metadata metadata;

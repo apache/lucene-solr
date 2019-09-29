@@ -34,13 +34,12 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.packagemanager.SolrPluginInfo;
 import org.apache.solr.packagemanager.SolrPluginInfo.SolrPluginRelease;
 import org.apache.solr.packagemanager.SolrPluginManager;
+import org.apache.solr.packagemanager.SolrPluginWrapper;
 import org.apache.solr.packagemanager.SolrUpdateManager;
+import org.apache.solr.packagemanager.pf4j.PluginException;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.solr.packagemanager.pf4j.PluginException;
-import org.apache.solr.packagemanager.pf4j.PluginWrapper;
-import org.apache.solr.packagemanager.pf4j.PluginInfo;
 
 import com.google.gson.Gson;
 
@@ -141,13 +140,13 @@ public class PackageTool extends SolrCLI.ToolBase {
   }
 
   protected void list(SolrPluginManager pluginManager, SolrUpdateManager updateManager, List args) {
-    for (PluginWrapper plugin: pluginManager.getPlugins()) {
+    for (SolrPluginWrapper plugin: pluginManager.getPlugins()) {
       System.out.println(plugin.getPluginId()+" ("+plugin.getDescriptor().getVersion()+")");
     }
   }
   protected void available(SolrPluginManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
     System.out.println("Available packages:\n-----");
-    for (PluginInfo i: updateManager.getPlugins()) {
+    for (SolrPluginInfo i: updateManager.getPlugins()) {
       SolrPluginInfo plugin = (SolrPluginInfo)i;
       System.out.println(plugin.id + " \t\t"+plugin.description);
       for (SolrPluginRelease version: plugin.versions) {
@@ -157,7 +156,6 @@ public class PackageTool extends SolrCLI.ToolBase {
 
   }
   protected void install(SolrPluginManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
-    pluginManager.loadPlugins();
     updateManager.installPlugin(args.get(0).toString(), args.get(1).toString());
     System.out.println(args.get(0).toString() + " installed.");
   }
@@ -173,7 +171,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     if (updateManager.hasUpdates()) {
       System.out.println("Available updates:\n-----");
 
-      for (PluginInfo i: updateManager.getUpdates()) {
+      for (SolrPluginInfo i: updateManager.getUpdates()) {
         SolrPluginInfo plugin = (SolrPluginInfo)i;
         System.out.println(plugin.id + " \t\t"+plugin.description);
         for (SolrPluginRelease version: plugin.versions) {
