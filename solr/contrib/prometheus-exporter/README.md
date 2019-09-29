@@ -15,21 +15,19 @@
     limitations under the License.
  -->
 
-# Apache Solr Learning to Rank!
+# Apache Solr Prometheus Exporter
 
-Apache Solr Learning to Rank (LTR) provides a way for you to extract features
-directly inside Solr for use in training a machine learned model.  You can then
-deploy that model to Solr and use it to rerank your top X search results.
+Apache Solr Prometheus Exporter (solr-exporter) provides a way for you to expose metrics for Solr to Prometheus.
 
-## Getting Started With Solr Learning To Rank
+## Getting Started With Solr Prometheus Exporter
 
-For information on how to get started with solr ltr please see:
- * [Solr Reference Guide's section on Learning To Rank](https://lucene.apache.org/solr/guide/learning-to-rank.html)
+For information on how to get started with solr-exporter please see:
+ * [Solr Reference Guide's section on Monitoring Solr with Prometheus and Grafana](https://lucene.apache.org/solr/guide/monitoring-solr-with-prometheus-and-grafana.html)
 
 ## Getting Started With Solr
 
 For information on how to get started with solr please see:
- * [solr/README.txt](../../README.md)
+ * [solr/README.md](../../README.md)
  * [Solr Tutorial](https://lucene.apache.org/solr/guide/solr-tutorial.html)
 
 ## How To Contribute
