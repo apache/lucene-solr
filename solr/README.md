@@ -1,21 +1,23 @@
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
 
 
-Welcome to the Apache Solr project!
------------------------------------
+#Welcome to the Apache Solr project!
+
 
 Solr is the popular, blazing fast open source enterprise search platform
 from the Apache Lucene project.
@@ -25,53 +27,53 @@ code repositories, and other details, please see the Solr web site at
 http://lucene.apache.org/solr
 
 
-Getting Started
----------------
+##Getting Started
+
 
 To start Solr for the first time after installation, simply do:
 
-  bin/solr start
+    bin/solr start
 
 This will launch a standalone Solr server in the background of your shell,
 listening on port 8983. Alternatively, you can launch Solr in "cloud" mode,
 which allows you to scale out using sharding and replication. To launch Solr
 in cloud mode, do:
 
-  bin/solr start -cloud
+    bin/solr start -cloud
 
 To see all available options for starting Solr, please do:
 
-  bin/solr start -help
+    bin/solr start -help
 
 After starting Solr, create either a core or collection depending on whether
 Solr is running in standalone (core) or SolrCloud mode (collection) by doing:
 
-  bin/solr create -c <name>
+    bin/solr create -c <name>
 
 This will create a collection that uses a data-driven schema which tries to guess
 the correct field type when you add documents to the index. To see all available
 options for creating a new collection, execute:
 
-  bin/solr create -help
+    bin/solr create -help
 
 After starting Solr, direct your Web browser to the Solr Admin Console at:
 
-  http://localhost:8983/solr/
+    http://localhost:8983/solr/
 
 When finished with your Solr installation, shut it down by executing:
 
-  bin/solr stop -all
+    bin/solr stop -all
 
 The `-p PORT` option can also be used to identify the Solr instance to shutdown,
 where more than one Solr is running on the machine.
 
 
-Solr Examples
----------------
+##Solr Examples
+
 
 Solr includes a few examples to help you get started. To run a specific example, do:
 
-  bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
+    bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
 
     cloud        : SolrCloud example
     dih          : Data Import Handler (rdbms, mail, atom, tika)
@@ -80,11 +82,11 @@ Solr includes a few examples to help you get started. To run a specific example,
 
 For instance, if you want to run the Solr Data Import Handler example, do:
 
-  bin/solr -e dih
+    bin/solr -e dih
 
 
-Indexing Documents
----------------
+##Indexing Documents
+
 
 To add documents to the index, use bin/post.  For example:
 
@@ -105,20 +107,20 @@ Also, there are Solr clients for many programming languages, see
    http://wiki.apache.org/solr/IntegratingSolr
 
 
-Files included in an Apache Solr binary distribution
-----------------------------------------------------
+##Files included in an Apache Solr binary distribution
 
-server/
+
+###server/
   A self-contained Solr instance, complete with a sample
   configuration and documents to index. Please see: bin/solr start -help
   for more information about starting a Solr server.
 
-example/
+###example/
   Contains example documents and an alternative Solr home
   directory containing examples of how to use the Data Import Handler,
   see example/example-DIH/README.txt for more information.
 
-dist/solr-<component>-XX.jar
+###dist/solr-component-XX.jar
   The Apache Solr libraries.  To compile Apache Solr Plugins,
   one or more of these will be required.  The core library is
   required at a minimum. (see http://wiki.apache.org/solr/SolrPlugins
@@ -128,8 +130,7 @@ docs/index.html
   A link to the online version of Apache Solr Javadoc API documentation and Tutorial
 
 
-Instructions for Building Apache Solr from Source
--------------------------------------------------
+##Instructions for Building Apache Solr from Source
 
 1. Download the Java SE 8 JDK (Java Development Kit) or later from http://www.oracle.com/java/
    You will need the JDK installed, and the $JAVA_HOME/bin (Windows: %JAVA_HOME%\bin)
@@ -151,7 +152,7 @@ Instructions for Building Apache Solr from Source
    Alternately, you can obtain a copy of the latest Apache Solr source code
    directly from the GIT repository:
 
-     http://lucene.apache.org/solr/versioncontrol.html
+      http://lucene.apache.org/solr/versioncontrol.html
 
 4. Navigate to the "solr" folder and issue an "ant" command to see the available options
    for building, testing, and packaging Solr.
@@ -161,8 +162,7 @@ Instructions for Building Apache Solr from Source
    and package Solr into the server directory. See also server/README.txt.
 
 
-Export control
--------------------------------------------------
+##Export control
 This distribution includes cryptographic software.  The country in
 which you currently reside may have restrictions on the import,
 possession, use, and/or re-export to another country, of
