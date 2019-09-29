@@ -186,6 +186,9 @@ Bug Fixes
 * SOLR-13417: Handle stats aggregation on date and string fields in SolrJ's JSON facet response processing
   (Jason Gerlowski, Munendra S N)
 
+* SOLR-13712: JMX MBeans are not exposed because of race condition between creating platform mbean server and
+  registering mbeans. (shalin)
+
 Other Changes
 ----------------------
 
