@@ -8,31 +8,17 @@ import java.util.List;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * {@code PluginInfo} describing a plugin from a repository.
+ * Describes a package (along with all released versions) as it appears in a repository.
  */
-public class SolrPluginInfo implements Serializable, Comparable<SolrPluginInfo> {
+public class SolrPackage implements Serializable, Comparable<SolrPackage> {
 
   public String id;
   public String description;
-  public List<SolrPluginRelease> versions;
+  public List<SolrPackageRelease> versions;
 
   private String repositoryId;
-  
-  @Override
-  public int compareTo(SolrPluginInfo o) {
-      return id.compareTo(o.id);
-  }
 
-  public String getRepositoryId() {
-      return repositoryId;
-  }
-
-  public void setRepositoryId(String repositoryId) {
-      this.repositoryId = repositoryId;
-  }
-
-
-  public static class SolrPluginRelease {
+  public static class SolrPackageRelease {
 
     public String version;
     public Date date;
@@ -45,7 +31,7 @@ public class SolrPluginInfo implements Serializable, Comparable<SolrPluginInfo> 
     Metadata metadata;
     @Override
     public String toString() {
-      return "SolrPluginRelease{" +
+      return "SolrPackageRelease{" +
           "version='" + version + '\'' +
           ", date=" + date +
           ", requires='" + requires + '\'' +
@@ -58,7 +44,6 @@ public class SolrPluginInfo implements Serializable, Comparable<SolrPluginInfo> 
           ", sha512sum='" + sha512sum + '\'' +
           '}';
     }
-    
   }
 
   public static class Metadata {
@@ -89,6 +74,19 @@ public class SolrPluginInfo implements Serializable, Comparable<SolrPluginInfo> 
     public String toString() {
       return id + ": {setup: "+setupCommand+", update: "+updateCommand+", uninstall: "+uninstallCommands+", verify: "+verifyCommand+"}";
     }
+  }
+
+  @Override
+  public int compareTo(SolrPackage o) {
+    return id.compareTo(o.id);
+  }
+
+  public String getRepositoryId() {
+    return repositoryId;
+  }
+
+  public void setRepositoryId(String repositoryId) {
+    this.repositoryId = repositoryId;
   }
 
 }

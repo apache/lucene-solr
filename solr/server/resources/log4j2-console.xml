@@ -30,12 +30,12 @@
     </Console>
   </Appenders>
   <Loggers>
-    <!--AsyncLogger name="org.apache.zookeeper" level="WARN"/>
+    <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
     <AsyncLogger name="org.apache.hadoop" level="WARN"/>
 
     <AsyncRoot level="INFO">
       <AppenderRef ref="STDERR"/>
-    </AsyncRoot-->
+    </AsyncRoot>
   </Loggers>
 </Configuration>
 

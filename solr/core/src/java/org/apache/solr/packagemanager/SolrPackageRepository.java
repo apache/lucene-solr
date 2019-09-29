@@ -9,7 +9,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.packagemanager.SolrPluginInfo.SolrPluginRelease;
+import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.packagemanager.pf4j.CompoundVerifier;
 import org.apache.solr.packagemanager.pf4j.DefaultUpdateRepository;
 import org.apache.solr.packagemanager.pf4j.FileDownloader;
@@ -23,20 +23,15 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 
-public class SolrUpdateRepository {
+public class SolrPackageRepository {
   private static final Logger log = LoggerFactory.getLogger(DefaultUpdateRepository.class);
 
   private String id;
-  private URL url;
-
-  private String pluginsJsonFileName;
-
-  public String getPluginsJsonFileName() {
-    if (pluginsJsonFileName == null) {
-      pluginsJsonFileName = "plugins.json";
-    }
-
-    return pluginsJsonFileName;
+  private String url;
+  
+  public SolrPackageRepository(String id, String url) {
+    this.id = id;
+    this.url = url;
   }
 
   public void refresh() {
@@ -48,11 +43,6 @@ public class SolrUpdateRepository {
       return new SimpleFileDownloader();
   }
 
-  /**
-   * Gets a file verifier to execute on the downloaded file for it to be claimed valid.
-   * May be a CompoundVerifier in order to chain several verifiers.
-   * @return list of {@link FileVerifier}s
-   */
   public FileVerifier getFileVerfier() {
       return new CompoundVerifier();
   }
@@ -61,34 +51,29 @@ public class SolrUpdateRepository {
       return id;
   }
 
-  public URL getUrl() {
+  public String getUrl() {
       return url;
   }
 
   @Expose(serialize = false, deserialize = true) 
-  private Map<String, SolrPluginInfo> packages;
+  private Map<String, SolrPackage> packages;
 
-  public SolrUpdateRepository(String id, URL url) {
-    //this.id = id;
-    //this.url = url;
-  }
-
-  public Map<String, SolrPluginInfo> getPlugins() {
+  public Map<String, SolrPackage> getPackages() {
     if (packages == null) {
-      initPlugins();
+      initPackages();
     }
 
     return packages;
   }
 
-  public SolrPluginInfo getPlugin(String id) {
-    return getPlugins().get(id);
+  public SolrPackage getPlugin(String id) {
+    return getPackages().get(id);
   }
 
-  private void initPlugins() {
+  private void initPackages() {
     Reader pluginsJsonReader;
     try {
-      URL pluginsUrl = new URL(getUrl(), getPluginsJsonFileName());
+      URL pluginsUrl = new URL(new URL(url), "manifest.json"); //nocommit hardcoded
       log.debug("Read plugins of '{}' repository from '{}'", getId(), pluginsUrl);
       pluginsJsonReader = new InputStreamReader(pluginsUrl.openStream());
     } catch (Exception e) {
@@ -99,12 +84,12 @@ public class SolrUpdateRepository {
 
     Gson gson = new GsonBuilder().
         registerTypeAdapter(Date.class, new LenientDateTypeAdapter()).create();
-    SolrPluginInfo[] items = gson.fromJson(pluginsJsonReader, SolrPluginInfo[].class);
+    SolrPackage[] items = gson.fromJson(pluginsJsonReader, SolrPackage[].class);
     packages = new HashMap<>(items.length);
-    for (SolrPluginInfo p : items) {
-      for (SolrPluginRelease r : p.versions) {
+    for (SolrPackage p : items) {
+      for (SolrPackageRelease r : p.versions) {
         try {
-          r.url = new URL(getUrl(), r.url).toString();
+          r.url = new URL(new URL(url), r.url).toString();
           if (r.date.getTime() == 0) {
             log.warn("Illegal release date when parsing {}@{}, setting to epoch", p.id, r.version);
           }

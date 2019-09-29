@@ -19,22 +19,22 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.solr.packagemanager.SolrPluginInfo.Metadata;
-import org.apache.solr.packagemanager.SolrPluginInfo.Plugin;
+import org.apache.solr.packagemanager.SolrPackage.Metadata;
+import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.packagemanager.pf4j.DefaultVersionManager;
 import org.apache.solr.packagemanager.pf4j.VersionManager;
 
 import com.google.gson.Gson;
 
-public 	class SolrPluginManager {
+public class SolrPackageManager {
 
   final VersionManager versionManager;
 
-  public SolrPluginManager(File repo) {
+  public SolrPackageManager(File repo) {
     versionManager = new DefaultVersionManager();
   }
 
-  Map<String, SolrPluginWrapper> packages = null;
+  Map<String, SolrPackageInstance> packages = null;
 
   Metadata fetchMetadata(String blobSha256) throws MalformedURLException, IOException {
     String metadataJson = 
@@ -45,10 +45,10 @@ public 	class SolrPluginManager {
     return metadata;
   }
 
-  public List<SolrPluginWrapper> getPlugins() {
+  public List<SolrPackageInstance> getPlugins() {
     System.out.println("Getting packages from clusterprops...");
-    List<SolrPluginWrapper> ret = new ArrayList<SolrPluginWrapper>();
-    packages = new HashMap<String, SolrPluginWrapper>();
+    List<SolrPackageInstance> ret = new ArrayList<SolrPackageInstance>();
+    packages = new HashMap<String, SolrPackageInstance>();
     try {
       String clusterPropsZnode = IOUtils.toString(new URL("http://localhost:8983/solr/admin/zookeeper?detail=true&path=/clusterprops.json&wt=json").openStream(), "UTF-8");
       String clusterPropsJson = ((Map)new Gson().fromJson(clusterPropsZnode, Map.class).get("znode")).get("data").toString();
@@ -58,12 +58,10 @@ public 	class SolrPluginManager {
       for (Object packageName: packagesJson.keySet()) {
         Map pkg = (Map)packagesJson.get(packageName);
         List<Plugin> solrplugins = fetchMetadata(pkg.get("metadata").toString()).plugins;
-        SolrPluginDescriptor descriptor = new SolrPluginDescriptor(pkg.get("name").toString(), null, 
+        SolrPackageInstance pkgInstance = new SolrPackageInstance(pkg.get("name").toString(), null, 
             pkg.get("version").toString(), solrplugins);
-        ClassLoader abc;
-        SolrPluginWrapper wrapper = new SolrPluginWrapper(this, descriptor, null, null);
-        packages.put(packageName.toString(), wrapper);
-        ret.add(wrapper);
+        packages.put(packageName.toString(), pkgInstance);
+        ret.add(pkgInstance);
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -72,13 +70,10 @@ public 	class SolrPluginManager {
     return ret;
   }
 
-  public boolean deployInstallPlugin(String pluginId, List<String> collections) {
-    SolrPluginWrapper plugin = getPlugin(pluginId);
+  public boolean deployInstallPackage(String pluginId, List<String> collections) {
+    SolrPackageInstance plugin = getPackage(pluginId);
 
-    System.out.println("1: "+plugin);
-    System.out.println("2: "+plugin.getDescriptor());
-    System.out.println("3: "+((SolrPluginDescriptor)plugin.getDescriptor()).getPlugins());
-    for (Plugin p: ((SolrPluginDescriptor)plugin.getDescriptor()).getPlugins()) {
+    for (Plugin p: plugin.getPlugins()) {
       System.out.println(p.setupCommand);
       for (String collection: collections) {
         System.out.println("Executing " + p.setupCommand + " for collection:" + collection);
@@ -88,9 +83,9 @@ public 	class SolrPluginManager {
     return true;
   }
 
-  public boolean deployUpdatePlugin(String pluginId, List<String> collections) {
-    SolrPluginWrapper plugin = getPlugin(pluginId);
-    for (Plugin p: ((SolrPluginDescriptor)plugin.getDescriptor()).getPlugins()) {
+  public boolean deployUpdatePackage(String pluginId, List<String> collections) {
+    SolrPackageInstance plugin = getPackage(pluginId);
+    for (Plugin p: plugin.getPlugins()) {
 
       System.out.println(p.updateCommand);
       for (String collection: collections) {
@@ -129,7 +124,7 @@ public 	class SolrPluginManager {
     }
   }
 
-  public SolrPluginWrapper getPlugin(String pluginId) {
+  public SolrPackageInstance getPackage(String pluginId) {
     getPlugins();
     return packages.get(pluginId);
   }

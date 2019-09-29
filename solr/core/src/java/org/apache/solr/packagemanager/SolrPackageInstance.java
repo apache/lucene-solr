@@ -2,15 +2,18 @@ package org.apache.solr.packagemanager;
 
 import java.util.List;
 
-import org.apache.solr.packagemanager.SolrPluginInfo.Plugin;
+import org.apache.solr.packagemanager.SolrPackage.Plugin;
 
-public class SolrPluginDescriptor {
+/**
+ * Describes one instance of a package as it exists in Solr when installed.
+ */
+public class SolrPackageInstance {
 	final private String id;
 	final private String description;
 	final private String version;
 	final private List<Plugin> plugins;
 	
-	public SolrPluginDescriptor(String id, String description, String version,
+	public SolrPackageInstance(String id, String description, String version,
 	    List<Plugin> plugins) {
 		this.id = id;
 		this.description = description;
@@ -18,17 +21,14 @@ public class SolrPluginDescriptor {
 		this.plugins = plugins;
 	}
 
-	//@Override
 	public String getPluginId() {
 		return id;
 	}
 
-	//@Override
 	public String getPluginDescription() {
 		return description;
 	}
 
-	//@Override
 	public String getVersion() {
 		return version;
 	}

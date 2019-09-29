@@ -24,8 +24,8 @@ import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.solr.packagemanager.SolrPluginInfo.Metadata;
-import org.apache.solr.packagemanager.SolrPluginInfo.SolrPluginRelease;
+import org.apache.solr.packagemanager.SolrPackage.Metadata;
+import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.packagemanager.pf4j.CompoundVerifier;
 import org.apache.solr.packagemanager.pf4j.DefaultVersionManager;
 import org.apache.solr.packagemanager.pf4j.FileDownloader;
@@ -40,90 +40,83 @@ import com.google.gson.Gson;
 
 public class SolrUpdateManager {
 
-  final private SolrPluginManager pluginManager;
+  final private SolrPackageManager packageManager;
   final private String repositoriesJsonStr;
-  protected List<SolrUpdateRepository> repositories;
+  protected List<SolrPackageRepository> repositories;
   
   private VersionManager versionManager;
   private String systemVersion;
-  private Map<String, SolrPluginRelease> lastPluginRelease = new HashMap<>();
+  private Map<String, SolrPackageRelease> lastPluginRelease = new HashMap<>();
 
 
   private static final Logger log = LoggerFactory.getLogger(SolrUpdateManager.class);
 
-  public SolrUpdateManager(SolrPluginManager pluginManager, String repositoriesJsonStr) {
-    //super(pluginManager, (Path)Paths.get("."));
-    this.pluginManager = pluginManager;
+  public SolrUpdateManager(SolrPackageManager pluginManager, String repositoriesJsonStr) {
+    this.packageManager = pluginManager;
     this.repositoriesJsonStr = repositoriesJsonStr;
     versionManager = new DefaultVersionManager();
     systemVersion = "0.0.0";
   }
 
   protected synchronized void initRepositoriesFromJson() {
-    SolrUpdateRepository items[] = new Gson().fromJson(this.repositoriesJsonStr, SolrUpdateRepository[].class);
+    SolrPackageRepository items[] = new Gson().fromJson(this.repositoriesJsonStr, SolrPackageRepository[].class);
     this.repositories = Arrays.asList(items);
   }
 
   public synchronized void refresh() {
     initRepositoriesFromJson();
-    for (SolrUpdateRepository updateRepository : repositories) {
+    for (SolrPackageRepository updateRepository : repositories) {
       updateRepository.refresh();
     }
   }
 
 
-  public synchronized boolean installPlugin(String id, String version) throws PluginException {
+  public synchronized boolean installPackage(String id, String version) throws PluginException {
     return updateOrInstallPackage(Operation.INSTALL, id, version);
   }
 
-  public synchronized boolean updatePlugin(String id, String version) throws PluginException {
+  public synchronized boolean updatePackage(String id, String version) throws PluginException {
     return updateOrInstallPackage(Operation.UPDATE, id, version);
   }
   
   
-  public List<SolrPluginInfo> getPlugins() {
-    List<SolrPluginInfo> list = new ArrayList<>(getPluginsMap().values());
+  public List<SolrPackage> getPackages() {
+    List<SolrPackage> list = new ArrayList<>(getPackagesMap().values());
     Collections.sort(list);
 
     return list;
   }
   
-  public Map<String, SolrPluginInfo> getPluginsMap() {
-    Map<String, SolrPluginInfo> pluginsMap = new HashMap<>();
-    for (SolrUpdateRepository repository : getRepositories()) {
-      pluginsMap.putAll(repository.getPlugins());
+  public Map<String, SolrPackage> getPackagesMap() {
+    Map<String, SolrPackage> packagesMap = new HashMap<>();
+    for (SolrPackageRepository repository : getRepositories()) {
+      packagesMap.putAll(repository.getPackages());
     }
 
-    return pluginsMap;
+    return packagesMap;
   }
   
-  public List<SolrUpdateRepository> getRepositories() {
+  public List<SolrPackageRepository> getRepositories() {
     refresh();
     return repositories;
   }
 
-
-
   private boolean updateOrInstallPackage(Operation op, String id, String version) throws PluginException {
-    //System.out.println("ENTERS HERE");
-    // Download to temporary location
-    Path downloaded = downloadPlugin(id, version);
-    //System.out.println("Downloaded in "+downloaded);
-    //Path pluginsRoot = pluginManager.getPluginsRoot();
+    Path downloaded = downloadPackage(id, version);
 
-    SolrPluginWrapper existingPlugin = pluginManager.getPlugin(id);
-    if (existingPlugin != null && version.equals(existingPlugin.getDescriptor().getVersion())) {
+    SolrPackageInstance existingPlugin = packageManager.getPackage(id);
+    if (existingPlugin != null && version.equals(existingPlugin.getVersion())) {
       throw new PluginException("Plugin already installed.");
     }
 
-    SolrPluginRelease release = null;
+    SolrPackageRelease release = null;
     String repository = null;
-    for (SolrPluginInfo info: getPlugins()) {
-      if (id.equals(info.id)) {
-        for (SolrPluginRelease r: ((SolrPluginInfo)info).versions) {
+    for (SolrPackage pkg: getPackages()) {
+      if (id.equals(pkg.id)) {
+        for (SolrPackageRelease r: pkg.versions) {
           if (version.equals(r.version) ) {
             release = r;
-            repository = info.getRepositoryId();
+            repository = pkg.getRepositoryId();
             break;
           }
         }
@@ -165,7 +158,6 @@ public class SolrUpdateManager {
         + "version: '"+version+"', "
         + "repository: '"+repository+"', "
         + "blob: {sha256: '"+sha256+"', sig: '"+sig+"'}, "
-        //+ "blob: {sha256: '"+sha256+"'}, "
         + "metadata: '"+metadataSha256+"'"
         + "}}";
 
@@ -250,9 +242,9 @@ public class SolrUpdateManager {
    * @return Path to file which will reside in a temporary folder in the system default temp area
    * @throws PluginException if download failed
    */
-  protected Path downloadPlugin(String id, String version) throws PluginException {
+  protected Path downloadPackage(String id, String version) throws PluginException {
       try {
-          SolrPluginRelease release = findReleaseForPlugin(id, version);
+          SolrPackageRelease release = findReleaseForPlugin(id, version);
           Path downloaded = getFileDownloader(id).downloadFile(new URL(release.url));
           //getFileVerifier(id).verify(new FileVerifier.Context(id, release), downloaded);
           //nocommit verify this download
@@ -269,7 +261,7 @@ public class SolrUpdateManager {
    * @return FileDownloader instance
    */
   protected FileDownloader getFileDownloader(String pluginId) {
-      for (SolrUpdateRepository ur : repositories) {
+      for (SolrPackageRepository ur : repositories) {
           if (ur.getPlugin(pluginId) != null && ur.getFileDownloader() != null) {
               return ur.getFileDownloader();
           }
@@ -286,7 +278,7 @@ public class SolrUpdateManager {
    * @return FileVerifier instance
    */
   protected FileVerifier getFileVerifier(String pluginId) {
-      for (SolrUpdateRepository ur : repositories) {
+      for (SolrPackageRepository ur : repositories) {
           if (ur.getPlugin(pluginId) != null && ur.getFileVerfier() != null) {
               return ur.getFileVerfier();
           }
@@ -303,18 +295,18 @@ public class SolrUpdateManager {
    * @return PluginRelease for downloading
    * @throws PluginException if id or version does not exist
    */
-  protected SolrPluginRelease findReleaseForPlugin(String id, String version) throws PluginException {
-      SolrPluginInfo pluginInfo = getPluginsMap().get(id);
+  protected SolrPackageRelease findReleaseForPlugin(String id, String version) throws PluginException {
+      SolrPackage pluginInfo = getPackagesMap().get(id);
       if (pluginInfo == null) {
           log.info("Plugin with id {} does not exist in any repository", id);
           throw new PluginException("Plugin with id {} not found in any repository", id);
       }
 
       if (version == null) {
-          return getLastPluginRelease(id);
+          return getLastPackageRelease(id);
       }
 
-      for (SolrPluginRelease release : pluginInfo.versions) {
+      for (SolrPackageRelease release : pluginInfo.versions) {
           if (versionManager.compareVersions(version, release.version) == 0 && release.url != null) {
               return release;
           }
@@ -328,14 +320,14 @@ public class SolrUpdateManager {
    *
    * @return PluginRelease which has the highest version number
    */
-  public SolrPluginRelease getLastPluginRelease(String id) {
-      SolrPluginInfo pluginInfo = getPluginsMap().get(id);
+  public SolrPackageRelease getLastPackageRelease(String id) {
+      SolrPackage pluginInfo = getPackagesMap().get(id);
       if (pluginInfo == null) {
           return null;
       }
 
       if (!lastPluginRelease.containsKey(id)) {
-          for (SolrPluginRelease release : pluginInfo.versions) {
+          for (SolrPackageRelease release : pluginInfo.versions) {
               if (systemVersion.equals("0.0.0") || versionManager.checkVersionConstraint(systemVersion, release.requires)) {
                   if (lastPluginRelease.get(id) == null) {
                       lastPluginRelease.put(id, release);
@@ -355,13 +347,13 @@ public class SolrUpdateManager {
    * @return true if there is a newer version available which is compatible with system
    */
   public boolean hasPluginUpdate(String id) {
-      SolrPluginInfo pluginInfo = getPluginsMap().get(id);
+      SolrPackage pluginInfo = getPackagesMap().get(id);
       if (pluginInfo == null) {
           return false;
       }
 
-      String installedVersion = pluginManager.getPlugin(id).getDescriptor().getVersion();
-      SolrPluginRelease last = getLastPluginRelease(id);
+      String installedVersion = packageManager.getPackage(id).getVersion();
+      SolrPackageRelease last = getLastPackageRelease(id);
 
       return last != null && versionManager.compareVersions(last.version, installedVersion) > 0;
   }
@@ -372,12 +364,12 @@ public class SolrUpdateManager {
    *
    * @return list of plugins that have updates
    */
-  public List<SolrPluginInfo> getUpdates() {
-      List<SolrPluginInfo> updates = new ArrayList<>();
-      for (SolrPluginWrapper installed : pluginManager.getPlugins()) {
+  public List<SolrPackage> getUpdates() {
+      List<SolrPackage> updates = new ArrayList<>();
+      for (SolrPackageInstance installed : packageManager.getPlugins()) {
           String pluginId = installed.getPluginId();
           if (hasPluginUpdate(pluginId)) {
-              updates.add(getPluginsMap().get(pluginId));
+              updates.add(getPackagesMap().get(pluginId));
           }
       }
 

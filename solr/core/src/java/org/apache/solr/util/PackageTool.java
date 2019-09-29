@@ -31,10 +31,11 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.packagemanager.SolrPluginInfo;
-import org.apache.solr.packagemanager.SolrPluginInfo.SolrPluginRelease;
-import org.apache.solr.packagemanager.SolrPluginManager;
-import org.apache.solr.packagemanager.SolrPluginWrapper;
+import org.apache.solr.packagemanager.SolrPackageRepository;
+import org.apache.solr.packagemanager.SolrPackageInstance;
+import org.apache.solr.packagemanager.SolrPackage;
+import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
+import org.apache.solr.packagemanager.SolrPackageManager;
 import org.apache.solr.packagemanager.SolrUpdateManager;
 import org.apache.solr.packagemanager.pf4j.PluginException;
 import org.apache.solr.util.SolrCLI.StatusTool;
@@ -58,7 +59,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     String cmd = cli.getArgs()[0];
 
     if (cmd != null) {
-      SolrPluginManager pluginManager = new SolrPluginManager(new File("./plugins"));
+      SolrPackageManager pluginManager = new SolrPackageManager(new File("./plugins"));
       SolrUpdateManager updateManager = new SolrUpdateManager(pluginManager,
           getRepositoriesJson(new SolrZkClient(zkHost, 30000)));
 
@@ -99,14 +100,14 @@ public class PackageTool extends SolrCLI.ToolBase {
     }
   }
 
-  protected void addRepo(SolrPluginManager pluginManager, SolrUpdateManager updateManager, String zkHost, String name, String uri) throws KeeperException, InterruptedException, MalformedURLException, IOException {
+  protected void addRepo(SolrPackageManager pluginManager, SolrUpdateManager updateManager, String zkHost, String name, String uri) throws KeeperException, InterruptedException, MalformedURLException, IOException {
     SolrZkClient zkClient = new SolrZkClient(zkHost, 30000);
 
     String existingRepositoriesJson = getRepositoriesJson(zkClient);
     System.out.println(existingRepositoriesJson);
 
     List repos = new Gson().fromJson(existingRepositoriesJson, List.class);
-    repos.add(new Repository(name, uri));
+    repos.add(new SolrPackageRepository(name, uri));
     if (zkClient.exists("/repositories.json", true) == false) {
       zkClient.create("/repositories.json", new Gson().toJson(repos).getBytes(), CreateMode.PERSISTENT, true);
     } else {
@@ -122,16 +123,6 @@ public class PackageTool extends SolrCLI.ToolBase {
     System.out.println(getRepositoriesJson(zkClient));
   }
 
-  class Repository {
-    String pluginsJsonFileName = "manifest.json";
-    final String id;
-    final String url;
-    public Repository(String id, String url) {
-      this.id = id;
-      this.url = url;
-    }
-  }
-
   protected String getRepositoriesJson(SolrZkClient zkClient) throws UnsupportedEncodingException, KeeperException, InterruptedException {
     if (zkClient.exists("/repositories.json", true)) {
       return new String(zkClient.getData("/repositories.json", null, null, true), "UTF-8");
@@ -139,42 +130,41 @@ public class PackageTool extends SolrCLI.ToolBase {
     return "[]";
   }
 
-  protected void list(SolrPluginManager pluginManager, SolrUpdateManager updateManager, List args) {
-    for (SolrPluginWrapper plugin: pluginManager.getPlugins()) {
-      System.out.println(plugin.getPluginId()+" ("+plugin.getDescriptor().getVersion()+")");
+  protected void list(SolrPackageManager packageManager, SolrUpdateManager updateManager, List args) {
+    for (SolrPackageInstance pkg: packageManager.getPlugins()) {
+      System.out.println(pkg.getPluginId()+" ("+pkg.getVersion()+")");
     }
   }
-  protected void available(SolrPluginManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
+  protected void available(SolrPackageManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
     System.out.println("Available packages:\n-----");
-    for (SolrPluginInfo i: updateManager.getPlugins()) {
-      SolrPluginInfo plugin = (SolrPluginInfo)i;
+    for (SolrPackage i: updateManager.getPackages()) {
+      SolrPackage plugin = (SolrPackage)i;
       System.out.println(plugin.id + " \t\t"+plugin.description);
-      for (SolrPluginRelease version: plugin.versions) {
+      for (SolrPackageRelease version: plugin.versions) {
         System.out.println("\tVersion: "+version.version);
       }
     }
-
   }
-  protected void install(SolrPluginManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
-    updateManager.installPlugin(args.get(0).toString(), args.get(1).toString());
+  protected void install(SolrPackageManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
+    updateManager.installPackage(args.get(0).toString(), args.get(1).toString());
     System.out.println(args.get(0).toString() + " installed.");
   }
-  protected void deploy(SolrPluginManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
-    System.out.println(pluginManager.deployInstallPlugin(args.get(0).toString(), args.subList(1, args.size())));
+  protected void deploy(SolrPackageManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
+    System.out.println(pluginManager.deployInstallPackage(args.get(0).toString(), args.subList(1, args.size())));
   }
 
-  protected void redeploy(SolrPluginManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
-    System.out.println(pluginManager.deployUpdatePlugin(args.get(0).toString(), args.subList(1, args.size())));
+  protected void redeploy(SolrPackageManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
+    System.out.println(pluginManager.deployUpdatePackage(args.get(0).toString(), args.subList(1, args.size())));
   }
 
-  protected void update(SolrPluginManager pluginManager, SolrUpdateManager updateManager) throws PluginException {
+  protected void update(SolrPackageManager pluginManager, SolrUpdateManager updateManager) throws PluginException {
     if (updateManager.hasUpdates()) {
       System.out.println("Available updates:\n-----");
 
-      for (SolrPluginInfo i: updateManager.getUpdates()) {
-        SolrPluginInfo plugin = (SolrPluginInfo)i;
+      for (SolrPackage i: updateManager.getUpdates()) {
+        SolrPackage plugin = (SolrPackage)i;
         System.out.println(plugin.id + " \t\t"+plugin.description);
-        for (SolrPluginRelease version: plugin.versions) {
+        for (SolrPackageRelease version: plugin.versions) {
           System.out.println("\tVersion: "+version.version);
         }
       }
@@ -184,11 +174,11 @@ public class PackageTool extends SolrCLI.ToolBase {
     }
   }
 
-  protected void updatePlugin(SolrPluginManager pluginManager, SolrUpdateManager updateManager, String pluginName, List args) throws PluginException {
+  protected void updatePlugin(SolrPackageManager pluginManager, SolrUpdateManager updateManager, String pluginName, List args) throws PluginException {
     if (updateManager.hasUpdates()) {
-      String latestVersion = updateManager.getLastPluginRelease(pluginName).version;
+      String latestVersion = updateManager.getLastPackageRelease(pluginName).version;
       System.out.println("Updating ["+pluginName+"] to version: "+latestVersion);
-      updateManager.updatePlugin(pluginName, latestVersion);
+      updateManager.updatePackage(pluginName, latestVersion);
     } else {
       System.out.println("Package "+pluginName+" is already up to date.");
     }
