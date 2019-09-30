@@ -21,10 +21,10 @@ This section of the user guide covers the core statistical functions
 available in math expressions.
 
 
-<<descriptive-statistics, Descriptive Statistics>> - <<histograms, Histograms>> -
-<<histograms, Frequency Tables>> - <<histograms, Percentiles>> -
-<<histograms, Covariance and Correlation>> - <<histograms, Inference Tests>> -
-<<histograms, Transformations>> - <<histograms, Back Transformations>> - <<histograms, Zscores>>
+<<descriptive-statistics, Descriptive Statistics>> - <<Histograms and Frequency Tables, Histograms>> -
+<<Frequency Tables, Frequency Tables>> - <<Percentiles, Percentiles>> - <<Quantile Plots, Quantile Plots>> -
+<<Covariance and Correlation, Covariance and Correlation>> - <<Statistical Inference Tests, Inference Tests>> -
+<<Transformations, Transformations>> - <<Z-scores, Z-scores>>
 
 
 == Descriptive Statistics
@@ -111,7 +111,7 @@ let(a=random(logs, q="*:*", fl="response_d", rows="50000"),
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {
@@ -148,7 +148,9 @@ When this expression is sent to the `/stream` handler it responds with:
         "sum": 41635.61488605971,
         "stdev": 4.549020172412098,
         "N": 58
-      }]}}
+      },
+      ...
+      ]}}
 ----
 
 With Zeppelin-Solr the histogram can be first visualized as a table:
@@ -210,7 +212,7 @@ let(a=search(stocks,
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
  {
    "result-set": {
@@ -235,7 +237,9 @@ When this expression is sent to the `/stream` handler it responds with:
          "cumFreq": 3,
          "cumPct": 0.0005822981366459627,
          "value": -49
-       }]}}
+       },
+       ...
+       ]}}
 ----
 
 With Zeppelin-Solr the frequency table can be first visualized as a table:
