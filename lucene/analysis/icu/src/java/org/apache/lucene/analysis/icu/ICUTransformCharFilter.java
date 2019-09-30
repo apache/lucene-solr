@@ -161,7 +161,9 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
         {
           if (preStart < bufferLength) {
             // if last char is a lead surrogate, transform won't handle it properly anyway
-            preLimit = position.contextLimit = position.limit = UTF16.isLeadSurrogate(buffer.charAt(bufferLength - 1)) ? bufferLength - 1 : bufferLength;
+            preLimit = UTF16.isLeadSurrogate(buffer.charAt(bufferLength - 1)) ? bufferLength - 1 : bufferLength;
+            position.contextLimit = preLimit;
+            position.limit = preLimit;
             transform.finishTransliteration(replaceable, position);
           } else if (offsetDiffAdjust == 0) {
             break cursorUpdate;
@@ -180,7 +182,8 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
     buffer.delete(preStart, position.limit); // delete uncommitted chars
     buffer.insert(preStart, rollbackBuffer, 0, rollbackBufferSize);
     position.start = preStart;
-    position.contextLimit = position.limit = preLimit;
+    position.contextLimit = preLimit;
+    position.limit = preLimit;
   }
 
   /**
@@ -243,7 +246,9 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
     int preStart = position.start;
     int preLimit;
     do {
-      preLimit = position.contextLimit = position.limit += nextCharLength;
+      position.limit += nextCharLength;
+      preLimit = position.limit;
+      position.contextLimit = preLimit;
       transform.filteredTransliterate(replaceable, position, true);
       boolean rollbackSizeWithinBounds = true;
       if (rollbackBuffer != null && position.start < position.limit && (rollbackSizeWithinBounds = ensureRollbackBufferCapacity())) {
