@@ -144,6 +144,12 @@ New Features
 * SOLR-13272: Add support for arbitrary ranges in JSON facet's Range facets.
   (Apoorv Bhawsar, Munendra S N, Mikhail Khludnev, Ishan Chattopadhyaya, Jan Høydahl)
 
+* SOLR-13632: Support integral plots, cosine distance and string truncation with math expressions (Joel Bernstein)
+
+* SOLR-13667: Add upper, lower, trim and split Stream Evaluators (Joel Bernstein)
+
+* SOLR-13625: Add CsvStream, TsvStream Streaming Expressions and supporting Stream Evaluators (Joel bernstein)
+
 Improvements
 ----------------------
 
