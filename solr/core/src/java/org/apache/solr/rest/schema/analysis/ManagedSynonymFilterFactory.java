@@ -159,9 +159,8 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
                 "Invalid synonym file format! Expected a list of synonyms for "+key+
                 " but got "+mapping.getClass().getName());
           }
-                    
-          Set<String> sortedVals = new TreeSet<>();
-          sortedVals.addAll((List<String>)storedSyns.get(key));          
+
+          Set<String> sortedVals = new TreeSet<>((List<String>) storedSyns.get(key));
           cpsm.mappings.put(key, sortedVals);        
         }
       }
@@ -194,8 +193,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
         if (cpsm == null)
           cpsm = new CasePreservedSynonymMappings();
 
-        Set<String> treeTerms = new TreeSet<>();
-        treeTerms.addAll(jsonList);
+        Set<String> treeTerms = new TreeSet<>(jsonList);
         cpsm.mappings.put(origTerm, treeTerms);
         madeChanges = true;
         // only add the cpsm to the synonymMappings if it has valid data

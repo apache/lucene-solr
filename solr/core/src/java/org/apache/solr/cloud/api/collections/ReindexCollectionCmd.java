@@ -521,11 +521,10 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   private Map<String, Object> setReindexingState(String collection, State state, Map<String, Object> props) throws Exception {
     String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + REINDEXING_STATE_PATH;
     DistribStateManager stateManager = ocmh.cloudManager.getDistribStateManager();
-    Map<String, Object> copyProps = new HashMap<>();
     if (props == null) { // retrieve existing props, if any
       props = Utils.getJson(stateManager, path);
     }
-    copyProps.putAll(props);
+    Map<String, Object> copyProps = new HashMap<>(props);
     copyProps.put("state", state.toLower());
     if (stateManager.hasData(path)) {
       stateManager.setData(path, Utils.toJSON(copyProps), -1);

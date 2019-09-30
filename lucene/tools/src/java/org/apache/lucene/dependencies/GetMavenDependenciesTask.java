@@ -440,8 +440,7 @@ public class GetMavenDependenciesTask extends Task {
    */
   private void appendAllInternalDependencies(StringBuilder builder) {
     for (String artifactId : internalCompileScopeDependencies.keySet()) {
-      List<String> exclusions = new ArrayList<>();
-      exclusions.addAll(internalCompileScopeDependencies.get(artifactId));
+      List<String> exclusions = new ArrayList<>(internalCompileScopeDependencies.get(artifactId));
       SortedSet<ExternalDependency> extDeps = allExternalDependencies.get(artifactId);
       if (null != extDeps) {
         for (ExternalDependency externalDependency : extDeps) {

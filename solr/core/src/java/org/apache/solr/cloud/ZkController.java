@@ -2012,8 +2012,7 @@ public class ZkController implements Closeable {
     ZkNodeProps props = null;
     if (data != null) {
       props = ZkNodeProps.load(data);
-      Map<String, Object> newProps = new HashMap<>();
-      newProps.putAll(props.getProperties());
+      Map<String, Object> newProps = new HashMap<>(props.getProperties());
       newProps.put(CONFIGNAME_PROP, confSetName);
       props = new ZkNodeProps(newProps);
     } else {
