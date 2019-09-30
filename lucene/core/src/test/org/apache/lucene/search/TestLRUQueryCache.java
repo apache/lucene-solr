@@ -245,22 +245,50 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
     searcher.search(new ConstantScoreQuery(red), 1);
-    assertEquals(Collections.singletonList(red), queryCache.cachedQueries());
+
+    if (!(queryCache.cachedQueries().equals(Collections.emptyList()))) {
+      assertEquals(Arrays.asList(red), queryCache.cachedQueries());
+    } else {
+      // Let the cache load be completed
+      Thread.sleep(200);
+      assertEquals(Arrays.asList(red), queryCache.cachedQueries());
+    }
 
     searcher.search(new ConstantScoreQuery(green), 1);
-    assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
+
+    if (!(queryCache.cachedQueries().equals(Arrays.asList(red)))) {
+      assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
+    } else {
+      // Let the cache load be completed
+      Thread.sleep(200);
+      assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
+    }
 
     searcher.search(new ConstantScoreQuery(red), 1);
     assertEquals(Arrays.asList(green, red), queryCache.cachedQueries());
 
     searcher.search(new ConstantScoreQuery(blue), 1);
-    assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
+
+    if (!(queryCache.cachedQueries().equals(Arrays.asList(green, red)))) {
+      assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
+    } else {
+      // Let the cache load be completed
+      Thread.sleep(200);
+      assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
+    }
 
     searcher.search(new ConstantScoreQuery(blue), 1);
     assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
 
     searcher.search(new ConstantScoreQuery(green), 1);
-    assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
+
+    if (!(queryCache.cachedQueries().equals(Arrays.asList(red, blue)))) {
+      assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
+    } else {
+      // Let the cache load be completed
+      Thread.sleep(200);
+      assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
+    }
 
     searcher.setQueryCachingPolicy(NEVER_CACHE);
     searcher.search(new ConstantScoreQuery(red), 1);
