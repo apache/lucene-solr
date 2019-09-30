@@ -36,7 +36,7 @@ import org.apache.solr.packagemanager.pf4j.VersionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SolrUpdateManager {
 
@@ -59,7 +59,12 @@ public class SolrUpdateManager {
   }
 
   protected synchronized void initRepositoriesFromJson() {
-    SolrPackageRepository items[] = new Gson().fromJson(this.repositoriesJsonStr, SolrPackageRepository[].class);
+    SolrPackageRepository items[];
+    try {
+      items = new ObjectMapper().readValue(this.repositoriesJsonStr, SolrPackageRepository[].class);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     this.repositories = Arrays.asList(items);
   }
 
@@ -130,7 +135,7 @@ public class SolrUpdateManager {
     String sha256 = uploadToBlobHandler(downloaded);
     String metadataSha256;
     try {
-      metadataSha256 = uploadToBlobHandler(new Gson().toJson(release.metadata));
+      metadataSha256 = uploadToBlobHandler(new ObjectMapper().writeValueAsString(release.metadata));
     } catch (IOException e) {
       throw new PluginException(e);
     }
@@ -211,7 +216,7 @@ public class SolrUpdateManager {
           IOUtils.copy(is, writer, "UTF-8");
           String results = writer.toString();
           System.out.println(results);
-          String sha = new Gson().fromJson(results, Map.class).get("sha256").toString();
+          String sha = new ObjectMapper().readValue(results, Map.class).get("sha256").toString();
           //System.out.println("SHA: "+sha);
           return sha;
         }

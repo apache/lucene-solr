@@ -139,9 +139,6 @@
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
     <dependency org="com.jayway.jsonpath" name="json-path" rev="${/com.jayway.jsonpath/json-path}" conf="compile"/>
 
-    <dependency org="org.pf4j" name="pf4j" rev="2.2.0" conf="compile"/>
-    <dependency org="org.pf4j" name="pf4j-update" rev="${/org.pf4j/pf4j-update}" conf="compile"/>
-    <dependency org="com.google.code.gson" name="gson" rev="2.2.4" conf="compile"/>
     <dependency org="com.github.zafarkhaja" name="java-semver" rev="0.9.0" conf="compile"/>
 
     <dependency org="org.rrd4j" name="rrd4j" rev="${/org.rrd4j/rrd4j}" conf="compile"/>

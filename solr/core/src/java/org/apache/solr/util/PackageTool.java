@@ -29,20 +29,22 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.packagemanager.SolrPackageRepository;
-import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.apache.solr.packagemanager.SolrPackage;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
+import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.apache.solr.packagemanager.SolrPackageManager;
+import org.apache.solr.packagemanager.SolrPackageRepository;
 import org.apache.solr.packagemanager.SolrUpdateManager;
 import org.apache.solr.packagemanager.pf4j.PluginException;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 public class PackageTool extends SolrCLI.ToolBase {
@@ -54,6 +56,9 @@ public class PackageTool extends SolrCLI.ToolBase {
 
   @Override
   protected void runImpl(CommandLine cli) throws Exception {
+    // Need a logging free, clean output going through to the user.
+    Configurator.setRootLevel(Level.OFF);
+
     String zkHost = getZkHost(cli);
 
     String cmd = cli.getArgs()[0];
@@ -106,12 +111,12 @@ public class PackageTool extends SolrCLI.ToolBase {
     String existingRepositoriesJson = getRepositoriesJson(zkClient);
     System.out.println(existingRepositoriesJson);
 
-    List repos = new Gson().fromJson(existingRepositoriesJson, List.class);
+    List repos = new ObjectMapper().readValue(existingRepositoriesJson, List.class);
     repos.add(new SolrPackageRepository(name, uri));
     if (zkClient.exists("/repositories.json", true) == false) {
-      zkClient.create("/repositories.json", new Gson().toJson(repos).getBytes(), CreateMode.PERSISTENT, true);
+      zkClient.create("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), CreateMode.PERSISTENT, true);
     } else {
-      zkClient.setData("/repositories.json", new Gson().toJson(repos).getBytes(), true);
+      zkClient.setData("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), true);
     }
     
     if (zkClient.exists("/keys", true)==false) zkClient.create("/keys", new byte[0], CreateMode.PERSISTENT, true);

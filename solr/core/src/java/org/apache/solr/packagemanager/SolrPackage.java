@@ -5,7 +5,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Describes a package (along with all released versions) as it appears in a repository.
@@ -28,7 +28,7 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
     public String sha512sum;
     public String sig;
 
-    Metadata metadata;
+    public Metadata metadata;
     @Override
     public String toString() {
       return "SolrPackageRelease{" +
@@ -47,27 +47,27 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
   }
 
   public static class Metadata {
-    @SerializedName("min-solr-version")
-    String minSolrVersion;
-    @SerializedName("max-solr-version")
-    String maxSolrVersion;
+    @JsonProperty("min-solr-version")
+    public String minSolrVersion;
+    @JsonProperty("max-solr-version")
+    public String maxSolrVersion;
 
-    List<String> dependencies;
-    List<Plugin> plugins;
+    public List<String> dependencies;
+    public List<Plugin> plugins;
   }
 
   public static class Plugin {
-    String id;
-    @SerializedName("setup-command")
+    public String id;
+    @JsonProperty("setup-command")
     public String setupCommand;
 
-    @SerializedName("update-command")
+    @JsonProperty("update-command")
     public String updateCommand;
 
-    @SerializedName("uninstall-command")
+    @JsonProperty("uninstall-command")
     public String uninstallCommands;
 
-    @SerializedName("verify-command")
+    @JsonProperty("verify-command")
     public String verifyCommand;
 
     @Override

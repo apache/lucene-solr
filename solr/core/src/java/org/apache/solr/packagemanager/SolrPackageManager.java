@@ -24,7 +24,7 @@ import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.packagemanager.pf4j.DefaultVersionManager;
 import org.apache.solr.packagemanager.pf4j.VersionManager;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SolrPackageManager {
 
@@ -40,7 +40,7 @@ public class SolrPackageManager {
     String metadataJson = 
         IOUtils.toString(new URL("http://localhost:8983/api/node/blob"+"/"+blobSha256).openStream(), "UTF-8");
     System.out.println("Fetched metadata blob: "+metadataJson);
-    Metadata metadata = new Gson().fromJson(metadataJson, Metadata.class);
+    Metadata metadata = new ObjectMapper().readValue(metadataJson, Metadata.class);
     System.out.println("Now metadata: "+metadata);
     return metadata;
   }
@@ -51,8 +51,8 @@ public class SolrPackageManager {
     packages = new HashMap<String, SolrPackageInstance>();
     try {
       String clusterPropsZnode = IOUtils.toString(new URL("http://localhost:8983/solr/admin/zookeeper?detail=true&path=/clusterprops.json&wt=json").openStream(), "UTF-8");
-      String clusterPropsJson = ((Map)new Gson().fromJson(clusterPropsZnode, Map.class).get("znode")).get("data").toString();
-      Map packagesJson = (Map)new Gson().fromJson(clusterPropsJson, Map.class).get("packages");
+      String clusterPropsJson = ((Map)new ObjectMapper().readValue(clusterPropsZnode, Map.class).get("znode")).get("data").toString();
+      Map packagesJson = (Map)new ObjectMapper().readValue(clusterPropsJson, Map.class).get("packages");
 
       System.out.println("clusterprops are: "+clusterPropsJson);
       for (Object packageName: packagesJson.keySet()) {
