@@ -131,6 +131,8 @@ Improvements
 
 * SOLR-13798: SSL: Adding Enabling/Disabling client's hostname verification config (Cao Manh Dat)
 
+* SOLR-13771: Add -v and -m to ulimit section of reference guide  and bin/solr checks (Erick Erickson)
+
 Bug Fixes
 ----------------------
 
