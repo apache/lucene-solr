@@ -30,6 +30,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -59,6 +64,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
 
@@ -96,6 +102,9 @@ public class TestLRUQueryCache extends LuceneTestCase {
     final LRUQueryCache queryCache = new LRUQueryCache(1 + random().nextInt(20), 1 + random().nextInt(10000), context -> random().nextBoolean());
     Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestLRUQueryCache"));
     final SearcherFactory searcherFactory = new SearcherFactory() {
       @Override
       public IndexSearcher newSearcher(IndexReader reader, IndexReader previous) throws IOException {
@@ -105,87 +114,103 @@ public class TestLRUQueryCache extends LuceneTestCase {
         return searcher;
       }
     };
-    final boolean applyDeletes = random().nextBoolean();
-    final SearcherManager mgr = new SearcherManager(w.w, applyDeletes, false, searcherFactory);
-    final AtomicBoolean indexing = new AtomicBoolean(true);
-    final AtomicReference<Throwable> error = new AtomicReference<>();
-    final int numDocs = atLeast(10000);
-    Thread[] threads = new Thread[3];
-    threads[0] = new Thread() {
-      public void run() {
-        Document doc = new Document();
-        StringField f = new StringField("color", "", Store.NO);
-        doc.add(f);
-        for (int i = 0; indexing.get() && i < numDocs; ++i) {
-          f.setStringValue(RandomPicks.randomFrom(random(), new String[] {"blue", "red", "yellow"}));
-          try {
-            w.addDocument(doc);
-            if ((i & 63) == 0) {
-              mgr.maybeRefresh();
-              if (rarely()) {
-                queryCache.clear();
-              }
-              if (rarely()) {
-                final String color = RandomPicks.randomFrom(random(), new String[] {"blue", "red", "yellow"});
-                w.deleteDocuments(new Term("color", color));
-              }
-            }
-          } catch (Throwable t) {
-            error.compareAndSet(null, t);
-            break;
-          }
-        }
-        indexing.set(false);
+    final SearcherFactory concurrentSearcherFactory = new SearcherFactory() {
+      @Override
+      public IndexSearcher newSearcher(IndexReader reader, IndexReader previous) throws IOException {
+        IndexSearcher searcher = new IndexSearcher(reader, service);
+        searcher.setQueryCachingPolicy(MAYBE_CACHE_POLICY);
+        searcher.setQueryCache(queryCache);
+        return searcher;
       }
     };
-    for (int i = 1; i < threads.length; ++i) {
-      threads[i] = new Thread() {
-        @Override
+
+    final SearcherFactory[] searcherFactories = {searcherFactory, concurrentSearcherFactory};
+
+    for (SearcherFactory currentSearcherFactory : searcherFactories) {
+      final boolean applyDeletes = random().nextBoolean();
+      final SearcherManager mgr = new SearcherManager(w.w, applyDeletes, false, currentSearcherFactory);
+      final AtomicBoolean indexing = new AtomicBoolean(true);
+      final AtomicReference<Throwable> error = new AtomicReference<>();
+      final int numDocs = atLeast(10000);
+      Thread[] threads = new Thread[3];
+      threads[0] = new Thread() {
         public void run() {
-          while (indexing.get()) {
+          Document doc = new Document();
+          StringField f = new StringField("color", "", Store.NO);
+          doc.add(f);
+          for (int i = 0; indexing.get() && i < numDocs; ++i) {
+            f.setStringValue(RandomPicks.randomFrom(random(), new String[]{"blue", "red", "yellow"}));
             try {
-              final IndexSearcher searcher = mgr.acquire();
-              try {
-                final String value = RandomPicks.randomFrom(random(), new String[] {"blue", "red", "yellow", "green"});
-                final Query q = new TermQuery(new Term("color", value));
-                TotalHitCountCollector collector = new TotalHitCountCollector();
-                searcher.search(q, collector); // will use the cache
-                final int totalHits1 = collector.getTotalHits();
-                TotalHitCountCollector collector2 = new TotalHitCountCollector();
-                searcher.search(q, new FilterCollector(collector2) {
-                  public ScoreMode scoreMode() {
-                    return ScoreMode.COMPLETE; // will not use the cache because of scores
-                  }
-                });
-                final long totalHits2 = collector2.getTotalHits();
-                assertEquals(totalHits2, totalHits1);
-              } finally {
-                mgr.release(searcher);
+              w.addDocument(doc);
+              if ((i & 63) == 0) {
+                mgr.maybeRefresh();
+                if (rarely()) {
+                  queryCache.clear();
+                }
+                if (rarely()) {
+                  final String color = RandomPicks.randomFrom(random(), new String[]{"blue", "red", "yellow"});
+                  w.deleteDocuments(new Term("color", color));
+                }
               }
             } catch (Throwable t) {
               error.compareAndSet(null, t);
+              break;
             }
           }
+          indexing.set(false);
         }
       };
+      for (int i = 1; i < threads.length; ++i) {
+        threads[i] = new Thread() {
+          @Override
+          public void run() {
+            while (indexing.get()) {
+              try {
+                final IndexSearcher searcher = mgr.acquire();
+                try {
+                  final String value = RandomPicks.randomFrom(random(), new String[]{"blue", "red", "yellow", "green"});
+                  final Query q = new TermQuery(new Term("color", value));
+                  TotalHitCountCollector collector = new TotalHitCountCollector();
+                  searcher.search(q, collector); // will use the cache
+                  final int totalHits1 = collector.getTotalHits();
+                  TotalHitCountCollector collector2 = new TotalHitCountCollector();
+                  searcher.search(q, new FilterCollector(collector2) {
+                    public ScoreMode scoreMode() {
+                      return ScoreMode.COMPLETE; // will not use the cache because of scores
+                    }
+                  });
+                  final long totalHits2 = collector2.getTotalHits();
+                  assertEquals(totalHits2, totalHits1);
+                } finally {
+                  mgr.release(searcher);
+                }
+              } catch (Throwable t) {
+                error.compareAndSet(null, t);
+              }
+            }
+          }
+        };
+      }
+
+      for (Thread thread : threads) {
+        thread.start();
+      }
+
+      for (Thread thread : threads) {
+        thread.join();
+      }
+
+      if (error.get() != null) {
+        throw error.get();
+      }
+      queryCache.assertConsistent();
+      mgr.close();
     }
 
-    for (Thread thread : threads) {
-      thread.start();
-    }
-
-    for (Thread thread : threads) {
-      thread.join();
-    }
-
-    if (error.get() != null) {
-      throw error.get();
-    }
-    queryCache.assertConsistent();
-    mgr.close();
     w.close();
     dir.close();
     queryCache.assertConsistent();
+    service.shutdown();
   }
 
   public void testLRUEviction() throws Exception {
@@ -201,7 +226,9 @@ public class TestLRUQueryCache extends LuceneTestCase {
     f.setStringValue("green");
     w.addDocument(doc);
     final DirectoryReader reader = w.getReader();
-    final IndexSearcher searcher = newSearcher(reader);
+
+    IndexSearcher searcher = newSearcher(reader);
+
     final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
 
     final Query blue = new TermQuery(new Term("color", "blue"));
@@ -218,22 +245,50 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
     searcher.search(new ConstantScoreQuery(red), 1);
-    assertEquals(Collections.singletonList(red), queryCache.cachedQueries());
+
+    if (!(queryCache.cachedQueries().equals(Collections.emptyList()))) {
+      assertEquals(Arrays.asList(red), queryCache.cachedQueries());
+    } else {
+      // Let the cache load be completed
+      Thread.sleep(200);
+      assertEquals(Arrays.asList(red), queryCache.cachedQueries());
+    }
 
     searcher.search(new ConstantScoreQuery(green), 1);
-    assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
+
+    if (!(queryCache.cachedQueries().equals(Arrays.asList(red)))) {
+      assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
+    } else {
+      // Let the cache load be completed
+      Thread.sleep(200);
+      assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
+    }
 
     searcher.search(new ConstantScoreQuery(red), 1);
     assertEquals(Arrays.asList(green, red), queryCache.cachedQueries());
 
     searcher.search(new ConstantScoreQuery(blue), 1);
-    assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
+
+    if (!(queryCache.cachedQueries().equals(Arrays.asList(green, red)))) {
+      assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
+    } else {
+      // Let the cache load be completed
+      Thread.sleep(200);
+      assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
+    }
 
     searcher.search(new ConstantScoreQuery(blue), 1);
     assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
 
     searcher.search(new ConstantScoreQuery(green), 1);
-    assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
+
+    if (!(queryCache.cachedQueries().equals(Arrays.asList(red, blue)))) {
+      assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
+    } else {
+      // Let the cache load be completed
+      Thread.sleep(200);
+      assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
+    }
 
     searcher.setQueryCachingPolicy(NEVER_CACHE);
     searcher.search(new ConstantScoreQuery(red), 1);
@@ -242,6 +297,150 @@ public class TestLRUQueryCache extends LuceneTestCase {
     reader.close();
     w.close();
     dir.close();
+  }
+
+  public void testLRUConcurrentLoadAndEviction() throws Exception {
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    StringField f = new StringField("color", "blue", Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    f.setStringValue("red");
+    w.addDocument(doc);
+    f.setStringValue("green");
+    w.addDocument(doc);
+    final DirectoryReader reader = w.getReader();
+    ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestLRUQueryCache"));
+
+    IndexSearcher searcher = new IndexSearcher(reader, service);
+
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+
+    final Query blue = new TermQuery(new Term("color", "blue"));
+    final Query red = new TermQuery(new Term("color", "red"));
+    final Query green = new TermQuery(new Term("color", "green"));
+
+    assertEquals(Collections.emptyList(), queryCache.cachedQueries());
+
+    searcher.setQueryCache(queryCache);
+    // the filter is not cached on any segment: no changes
+    searcher.setQueryCachingPolicy(NEVER_CACHE);
+    searcher.search(new ConstantScoreQuery(green), 1);
+    assertEquals(Collections.emptyList(), queryCache.cachedQueries());
+
+    searcher.setQueryCachingPolicy(ALWAYS_CACHE);
+    // First read should miss
+    searcher.search(new ConstantScoreQuery(red), 1);
+
+    if (!(queryCache.cachedQueries().equals(Collections.emptyList()))) {
+      searcher.search(new ConstantScoreQuery(red), 1);
+    } else {
+      // Let the cache load be completed
+      Thread.sleep(200);
+      searcher.search(new ConstantScoreQuery(red), 1);
+    }
+
+    // Second read should hit
+    searcher.search(new ConstantScoreQuery(red), 1);
+    assertEquals(Collections.singletonList(red), queryCache.cachedQueries());
+
+    searcher.search(new ConstantScoreQuery(green), 1);
+    if (!(queryCache.cachedQueries().equals(Arrays.asList(red)))) {
+      assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
+    } else {
+      // Let the cache load be completed
+      Thread.sleep(200);
+      assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
+    }
+
+    searcher.search(new ConstantScoreQuery(red), 1);
+    assertEquals(Arrays.asList(green, red), queryCache.cachedQueries());
+
+    searcher.search(new ConstantScoreQuery(blue), 1);
+    if (!(queryCache.cachedQueries().equals(Arrays.asList(green, red)))) {
+      assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
+    } else {
+      // Let the cache load be completed
+      Thread.sleep(200);
+      assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
+    }
+
+    searcher.search(new ConstantScoreQuery(blue), 1);
+    assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
+
+    searcher.search(new ConstantScoreQuery(green), 1);
+    if (!(queryCache.cachedQueries().equals(Arrays.asList(red, blue)))) {
+      assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
+    } else {
+      // Let the cache load be completed
+      Thread.sleep(200);
+      assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
+    }
+
+    searcher.setQueryCachingPolicy(NEVER_CACHE);
+    searcher.search(new ConstantScoreQuery(red), 1);
+    assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
+
+    reader.close();
+    w.close();
+    dir.close();
+    service.shutdown();
+  }
+
+  public void testLRUConcurrentLoadsOfSameQuery() throws Exception {
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    StringField f = new StringField("color", "blue", Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    f.setStringValue("red");
+    w.addDocument(doc);
+    f.setStringValue("green");
+    w.addDocument(doc);
+    final DirectoryReader reader = w.getReader();
+    ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestLRUQueryCache"));
+
+    ExecutorService stressService = new ThreadPoolExecutor(15, 15, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestLRUQueryCache2"));
+
+    IndexSearcher searcher = new IndexSearcher(reader, service);
+
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+
+    final Query green = new TermQuery(new Term("color", "green"));
+
+    assertEquals(Collections.emptyList(), queryCache.cachedQueries());
+
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(ALWAYS_CACHE);
+
+    FutureTask<Void> task = new FutureTask<>(() -> {
+      searcher.search(new ConstantScoreQuery(green), 1);
+      assertEquals(1, queryCache.inFlightQueries().size());
+      return null;
+    });
+
+    for (int i = 0; i < 5; i++) {
+      stressService.submit(task);
+    }
+
+    Thread.sleep(3000);
+    assertEquals(Arrays.asList(green), queryCache.cachedQueries());
+
+    reader.close();
+    w.close();
+    dir.close();
+    service.shutdown();
+    stressService.shutdown();
   }
 
   public void testClearFilter() throws IOException {

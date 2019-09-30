@@ -144,6 +144,12 @@ New Features
 * SOLR-13272: Add support for arbitrary ranges in JSON facet's Range facets.
   (Apoorv Bhawsar, Munendra S N, Mikhail Khludnev, Ishan Chattopadhyaya, Jan Høydahl)
 
+* SOLR-13632: Support integral plots, cosine distance and string truncation with math expressions (Joel Bernstein)
+
+* SOLR-13667: Add upper, lower, trim and split Stream Evaluators (Joel Bernstein)
+
+* SOLR-13625: Add CsvStream, TsvStream Streaming Expressions and supporting Stream Evaluators (Joel bernstein)
+
 Improvements
 ----------------------
 
@@ -237,6 +243,17 @@ Bug Fixes
 * SOLR-13725: Allow negative values for limit in TermsFacetMap (Richard Walker, Munendra S N)
 
 * SOLR-13022: Fix NPE when sorting by non-existent aggregate function in JSON Facet (hossman, Munendra S N)
+
+* SOLR-13727: Fixed V2Requests - HttpSolrClient replaced first instance of "/solr" with "/api" which
+  caused a change in host names starting with "solr".  (Megan Carey via yonik)
+
+* SOLR-13180: Fix ClassCastException in Json Request API (Johannes Kloos, Jan Høydahl, Munendra S N)
+
+* SOLR-13417: Handle stats aggregation on date and string fields in SolrJ's JSON facet response processing
+  (Jason Gerlowski, Munendra S N)
+
+* SOLR-13712: JMX MBeans are not exposed because of race condition between creating platform mbean server and
+  registering mbeans. (shalin)
 
 Other Changes
 ----------------------
