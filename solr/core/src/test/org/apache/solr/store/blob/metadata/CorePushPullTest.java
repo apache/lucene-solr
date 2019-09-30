@@ -171,7 +171,95 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("*:*"), "//*[@numFound='2']");
   }
-  
+
+  /**
+   * Tests that pull in the presence of higher local generation number is successful 
+   */
+  @Test
+  public void testLocalHigherGenerationConflictingPullSucceeds() throws Exception {
+    SolrCore core = h.getCore();
+
+    // add a doc that would be pushed to blob
+    assertU(adoc("id", "1"));
+    assertU(commit());
+
+    // the doc should be present
+    assertQ(req("*:*"),  xpathMatches("1"));
+
+    // do a push via CorePushPull, the returned BlobCoreMetadata is what we'd expect to find
+    // on the blob store
+    BlobCoreMetadata returnedBcm = doPush(core);
+
+    // add another doc but that would not be pushed to blob
+    assertU(adoc("id", "2"));
+    assertU(commit());
+
+    // the doc should be present
+    assertQ(req("*:*"),  xpathMatches("1", "2"));
+
+    long localGeneration = core.getDeletionPolicy().getLatestCommit().getGeneration();
+    assertTrue("Local generation is incorrectly not greater than blob generation", localGeneration > returnedBcm.getGeneration());
+
+    // now perform a pull, since blob being source of truth this pull should undo the addition of doc 2
+    SharedMetadataResolutionResult resResult = doPull(core, returnedBcm);
+
+    assertTrue("Pull is incorrectly not identified as conflicting", resResult.isLocalConflictingWithBlob());
+
+    // doc 1 should be present but not doc 2
+    assertQ(req("*:*"), xpathMatches("1"));
+    // for sanity index another doc
+    assertU(adoc("id", "3"));
+    assertU(commit());
+    assertQ(req("*:*"), xpathMatches("1", "3"));
+  }
+
+  /**
+   * Tests that pull in the presence of conflicting files is successful 
+   */
+  @Test
+  public void testConflictingFilesPullSucceeds() throws Exception {
+    SolrCore core = h.getCore();
+
+    // add a doc that would be pushed to blob
+    assertU(adoc("id", "1"));
+    assertU(commit());
+
+    // the doc should be present
+    assertQ(req("*:*"), xpathMatches("1"));
+
+    // do a push via CorePushPull, the returned BlobCoreMetadata is what we'd expect to find
+    // on the blob store
+    BlobCoreMetadata returnedBcm = doPush(core);
+
+    // Delete the core to clear the index data and then re-create it 
+    deleteCore();
+    initCore("solrconfig.xml", "schema-minimal.xml");
+    core = h.getCore();
+
+    // add a different doc, we will not push this to blob
+    assertU(adoc("id", "2"));
+    assertU(commit());
+
+    // the doc should be present
+    assertQ(req("*:*"), xpathMatches("2"));
+
+    // now blob and local should be at same generation number but different contents(conflicting files)
+    long localGeneration = core.getDeletionPolicy().getLatestCommit().getGeneration();
+    assertEquals("Local generation is not equal to blob generation", localGeneration, returnedBcm.getGeneration());
+
+    // now perform a pull
+    SharedMetadataResolutionResult resResult = doPull(core, returnedBcm);
+
+    assertTrue("Pull is not identified as conflicting", resResult.isLocalConflictingWithBlob());
+
+    // the doc should be present, and blob should prevail as source of truth i.e. we go back to doc 1
+    assertQ(req("*:*"), xpathMatches("1"));
+    // add another doc for sanity
+    assertU(adoc("id", "3"));
+    assertU(commit());
+    assertQ(req("*:*"), xpathMatches("1", "3"));
+  }
+
   private BlobCoreMetadata doPush(SolrCore core) throws Exception {
     // build the require metadata
     ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer());
@@ -202,7 +290,7 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
     return pushPull.pushToBlobStore();
   }
   
-  private void doPull(SolrCore core, BlobCoreMetadata bcm) throws Exception {
+  private SharedMetadataResolutionResult doPull(SolrCore core, BlobCoreMetadata bcm) throws Exception {
     // build the require metadata
     ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer());
     
@@ -220,5 +308,18 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
     
     CorePushPull pushPull = new CorePushPull(storageClient, deleteManager, ppd, resResult, solrServerMetadata, bcm);
     pushPull.pullUpdateFromBlob(true);
-  }  
+    return resResult;
+  }
+
+  private String[] xpathMatches(String... docIds) {
+    String[] tests = new String[docIds != null ? docIds.length + 1 : 1];
+    tests[0] = "*[count(//doc)=" + (tests.length-1) + "]";
+    if (docIds != null && docIds.length > 0) {
+      int i = 1;
+      for (String docId : docIds) {
+        tests[i++] = "//result/doc/str[@name='id'][.='" + docId + "']";
+      }
+    }
+    return tests;
+  }
 }

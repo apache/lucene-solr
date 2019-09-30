@@ -51,7 +51,7 @@ public class SharedStoreResolutionUtilTest extends SolrCloudSharedStoreTestCase 
    * Test that passing both local and blob as null to {@link SharedStoreResolutionUtil} throws exception.
    */
   @Test
-  public void testResolveMetadata() throws Exception {
+  public void testBothLocalAndBlobNullThrows() throws Exception {
     try {
       SharedStoreResolutionUtil.resolveMetadata(null, null);
       fail("SharedStoreResolutionUtil did not throw IllegalStateException");
@@ -67,12 +67,11 @@ public class SharedStoreResolutionUtilTest extends SolrCloudSharedStoreTestCase 
   @Test
   public void testNoOpWhenBCMEmpty() throws Exception {
     String sharedShardName = "sharedShardName";
-    final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName)
-        .build();
+    final BlobCoreMetadata blobMetadata = BlobCoreMetadataBuilder.buildEmptyCoreMetadata(sharedShardName);
       
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new 
-        SharedMetadataResolutionResult(Collections.emptySet(), Collections.emptySet());
+        SharedMetadataResolutionResult(Collections.emptySet(), Collections.emptySet(), false);
     
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(null, blobMetadata);
@@ -87,14 +86,15 @@ public class SharedStoreResolutionUtilTest extends SolrCloudSharedStoreTestCase 
   public void testPushNeededWhenBlobNull() throws Exception {
     String coreName = "localReplica";
     final long localFileSize = 10;
+    final long localFileChecksum = 100;
     // local core metadata
-    final ServerSideMetadata serverMetadata = new ServerSideCoreMetadataBuilder(coreName)
-      .addFile(new CoreFileData(getSolrSegmentFileName(1), localFileSize))
+    final ServerSideMetadata serverMetadata = new ServerSideCoreMetadataBuilder(coreName, 1L)
+      .addLatestCommitFile(new CoreFileData(getSolrSegmentFileName(1), localFileSize, localFileChecksum))
       .build();
       
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new 
-        SharedMetadataResolutionResult(serverMetadata.getFiles(), Collections.emptySet());
+        SharedMetadataResolutionResult(serverMetadata.getLatestCommitFiles(), Collections.emptySet(), false);
     
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, null);
@@ -109,14 +109,15 @@ public class SharedStoreResolutionUtilTest extends SolrCloudSharedStoreTestCase 
   public void testPullNeededWhenLocalNull() throws Exception {
     String sharedShardName = "sharedShardName";
     final long blobFileSize = 10;
+    final long blobFileChecksum = 100;
     // blob core metadata
-    final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName)
-        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(1), blobFileSize))
+    final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName, 1L)
+        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(1), blobFileSize, blobFileChecksum))
         .build();
 
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new 
-        SharedMetadataResolutionResult(Collections.emptySet(), Arrays.asList(blobMetadata.getBlobFiles()));
+        SharedMetadataResolutionResult(Collections.emptySet(), Arrays.asList(blobMetadata.getBlobFiles()), false);
     
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(null, blobMetadata);
@@ -130,10 +131,11 @@ public class SharedStoreResolutionUtilTest extends SolrCloudSharedStoreTestCase 
   public void testSegmentNCorruptionThrowsError() throws Exception {
     String sharedShardName = "sharedShardName";
     final long blobFileSize = 10;
+    final long blobFileChecksum = 100;
     // blob core metadata with duplicate segment_n files
-    BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName)
-        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(1), blobFileSize))
-        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(2), blobFileSize))
+    BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName, 1L)
+        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(1), blobFileSize, blobFileChecksum))
+        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(2), blobFileSize, blobFileChecksum))
         .build();
     
     // do resolution
@@ -145,8 +147,8 @@ public class SharedStoreResolutionUtilTest extends SolrCloudSharedStoreTestCase 
     }
     
     // blob core metadata with missing segment_n file while we have other segment files
-    blobMetadata = new BlobCoreMetadataBuilder(sharedShardName)
-        .addFile(new BlobFile(getSolrFileName(1), getBlobFileName(1), blobFileSize))
+    blobMetadata = new BlobCoreMetadataBuilder(sharedShardName, 1L)
+        .addFile(new BlobFile(getSolrFileName(1), getBlobFileName(1), blobFileSize, blobFileChecksum))
         .build();
     // do resolution
     try {
@@ -160,25 +162,27 @@ public class SharedStoreResolutionUtilTest extends SolrCloudSharedStoreTestCase 
   /**
    * Test resolve of both {@link BlobCoreMetadata} and {@link ServerSideMetadata} contains files to push only
    */
+  @Test
   public void testFilesToPushResolution() throws Exception {
     String coreName = "coreName";
     String sharedShardName = "sharedShardName";
     final long fileSize = 10;
+    final long checksum = 100;
+
+    CoreFileData expectedFileToPush = new CoreFileData(getSolrFileName(1), fileSize, checksum);
     
-    CoreFileData expectedFileToPush = new CoreFileData(getSolrFileName(1), fileSize);
-    
-    final ServerSideMetadata serverMetadata = new ServerSideCoreMetadataBuilder(coreName)
-        .addFile(new CoreFileData(getSolrSegmentFileName(1), fileSize))
-        .addFile(expectedFileToPush)
+    final ServerSideMetadata serverMetadata = new ServerSideCoreMetadataBuilder(coreName, 1L)
+        .addLatestCommitFile(new CoreFileData(getSolrSegmentFileName(1), fileSize, checksum))
+        .addLatestCommitFile(expectedFileToPush)
         .build();
     
-    final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName)
-        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(1), fileSize))
+    final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName, 1L)
+        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(1), fileSize, checksum))
         .build();
     
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new 
-        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Collections.emptySet());
+        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Collections.emptySet(), false);
     
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobMetadata);
@@ -188,25 +192,27 @@ public class SharedStoreResolutionUtilTest extends SolrCloudSharedStoreTestCase 
   /**
    * Test resolve of both {@link BlobCoreMetadata} and {@link ServerSideMetadata} contains files to pull only
    */
+  @Test
   public void testFilesToPullResolution() throws Exception {
     String coreName = "coreName";
     String sharedShardName = "sharedShardName";
     final long fileSize = 10;
+    final long checksum = 100;
+
+    BlobFile expectedFileToPull = new BlobFile(getSolrFileName(1),  getBlobFileName(1), fileSize, checksum);
     
-    BlobFile expectedFileToPull = new BlobFile(getSolrFileName(1),  getBlobFileName(1), fileSize);
-    
-    final ServerSideMetadata serverMetadata = new ServerSideCoreMetadataBuilder(coreName)
-        .addFile(new CoreFileData(getSolrSegmentFileName(1), fileSize))
+    final ServerSideMetadata serverMetadata = new ServerSideCoreMetadataBuilder(coreName, 1L)
+        .addLatestCommitFile(new CoreFileData(getSolrSegmentFileName(1), fileSize, checksum))
         .build();
     
-    final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName)
-        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(1), fileSize))
+    final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName, 1L)
+        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(1), fileSize, checksum))
         .addFile(expectedFileToPull)
         .build();
     
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new 
-        SharedMetadataResolutionResult(Collections.emptySet(), Arrays.asList(expectedFileToPull));
+        SharedMetadataResolutionResult(Collections.emptySet(), Arrays.asList(expectedFileToPull), false);
     
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobMetadata);
@@ -217,36 +223,129 @@ public class SharedStoreResolutionUtilTest extends SolrCloudSharedStoreTestCase 
    * Test resolve of both {@link BlobCoreMetadata} and {@link ServerSideMetadata} contains both files to 
    * push and pull
    */
+  @Test
   public void testFilesToPushPullResolution() throws Exception {
     String coreName = "coreName";
     String sharedShardName = "sharedShardName";
     final long fileSize = 10;
+    final long checksum = 100;
+
+    CoreFileData expectedFileToPush = new CoreFileData(getSolrFileName(3), fileSize, checksum);
+    BlobFile expectedFileToPull = new BlobFile(getSolrFileName(2),  getBlobFileName(2), fileSize, checksum);
     
-    CoreFileData expectedFileToPush = new CoreFileData(getSolrFileName(1), fileSize);
-    BlobFile expectedFileToPull = new BlobFile(getSolrFileName(1),  getBlobFileName(1), fileSize);
-    
-    final ServerSideMetadata serverMetadata = new ServerSideCoreMetadataBuilder(coreName)
-        .addFile(new CoreFileData(getSolrSegmentFileName(1), fileSize))
-        .addFile(expectedFileToPush)
+    final ServerSideMetadata serverMetadata = new ServerSideCoreMetadataBuilder(coreName, 1L)
+        .addLatestCommitFile(new CoreFileData(getSolrSegmentFileName(1), fileSize, checksum))
+        .addLatestCommitFile(expectedFileToPush)
         .build();
     
-    final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName)
-        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(1), fileSize))
+    final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName, 1L)
+        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(1), fileSize, checksum))
         .addFile(expectedFileToPull)
         .build();
     
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new 
-        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Arrays.asList(expectedFileToPull));
+        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Arrays.asList(expectedFileToPull), false);
     
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobMetadata);
     assertSharedStoreResolutionResult(expectedResult, actual);
   }
-  
+
+  /**
+   * Tests that local generation number being higher than blob resolves into a conflict 
+   */
+  @Test
+  public void testHigherLocalGenerationResolution() throws Exception {
+    String coreName = "coreName";
+    String sharedShardName = "sharedShardName";
+    final long fileSize = 10;
+    final long checksum = 100;
+
+    CoreFileData expectedFileToPush = new CoreFileData(getSolrSegmentFileName(2), fileSize, checksum);
+
+    final ServerSideMetadata serverMetadata = new ServerSideCoreMetadataBuilder(coreName, 2L)
+        .addLatestCommitFile(expectedFileToPush)
+        .addLatestCommitFile(new CoreFileData(getSolrFileName(1), fileSize, checksum))
+        .build();
+
+    final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName, 1L)
+        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(1), fileSize, checksum))
+        .addFile(new BlobFile(getSolrFileName(1), getBlobFileName(1), fileSize, checksum))
+        .build();
+
+    // expected resolution
+    SharedMetadataResolutionResult expectedResult = new
+        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Arrays.asList(blobMetadata.getBlobFiles()), true);
+
+    // do resolution
+    SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobMetadata);
+    assertSharedStoreResolutionResult(expectedResult, actual);
+  }
+
+  /**
+   * Tests that file belonging to latest commit point being present both locally and in blob but with different checksum
+   * resolves into a conflict 
+   */
+  @Test
+  public void testFileFromLatestCommitConflictsResolution() throws Exception {
+    String coreName = "coreName";
+    String sharedShardName = "sharedShardName";
+    final long fileSize = 10;
+
+    final ServerSideMetadata serverMetadata = new ServerSideCoreMetadataBuilder(coreName, 1L)
+        .addLatestCommitFile(new CoreFileData(getSolrSegmentFileName(1), fileSize, 99))
+        .build();
+
+    final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName, 1L)
+        .addFile(new BlobFile(getSolrSegmentFileName(1), getBlobFileName(1), fileSize, 100))
+        .build();
+
+    // expected resolution
+    SharedMetadataResolutionResult expectedResult = new
+        SharedMetadataResolutionResult(Collections.emptySet(), Arrays.asList(blobMetadata.getBlobFiles()), true);
+
+    // do resolution
+    SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobMetadata);
+    assertSharedStoreResolutionResult(expectedResult, actual);
+  }
+
+  /**
+   * Tests that file belonging to previous commit point being present both locally and in blob but with different checksum
+   * resolves into a conflict 
+   */
+  @Test
+  public void testFileFromPreviousCommitConflictsResolution() throws Exception {
+    String coreName = "coreName";
+    String sharedShardName = "sharedShardName";
+    final long fileSize = 10;
+    final long checksum = 100;
+
+    CoreFileData expectedFileToPush = new CoreFileData(getSolrSegmentFileName(2), fileSize, checksum);
+
+    final ServerSideMetadata serverMetadata = new ServerSideCoreMetadataBuilder(coreName, 2L)
+        .addLatestCommitFile(expectedFileToPush)
+        .addAllCommitsFile(new CoreFileData(getSolrFileName(1), fileSize, 99))
+        .build();
+
+    final BlobCoreMetadata blobMetadata = new BlobCoreMetadataBuilder(sharedShardName, 3L)
+        .addFile(new BlobFile(getSolrSegmentFileName(3), getBlobFileName(3), fileSize, checksum))
+        .addFile(new BlobFile(getSolrFileName(1), getBlobFileName(1), fileSize, 100))
+        .build();
+
+    // expected resolution
+    SharedMetadataResolutionResult expectedResult = new
+        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Arrays.asList(blobMetadata.getBlobFiles()), true);
+
+    // do resolution
+    SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobMetadata);
+    assertSharedStoreResolutionResult(expectedResult, actual);
+  }
+
   private static void assertSharedStoreResolutionResult(SharedMetadataResolutionResult expected, SharedMetadataResolutionResult actual) {
     assertCollections("filesToPull", expected.getFilesToPull(), actual.getFilesToPull());
     assertCollections("filesToPush", expected.getFilesToPush(), actual.getFilesToPush());
+    assertEquals("localConflictingWithBlob", expected.isLocalConflictingWithBlob(), actual.isLocalConflictingWithBlob());
   }
   
   /**
@@ -284,22 +383,34 @@ public class SharedStoreResolutionUtilTest extends SolrCloudSharedStoreTestCase 
    */
   private static class ServerSideCoreMetadataBuilder {
     final private String coreName;
-    final private ImmutableSet.Builder<CoreFileData> files;
+    final private long generation;
+    final private ImmutableSet.Builder<CoreFileData> latestCommitFiles;
+    final private ImmutableSet.Builder<CoreFileData> allCommitsFiles;
 
-    ServerSideCoreMetadataBuilder(String coreName) {
+    ServerSideCoreMetadataBuilder(String coreName, Long generation) {
       this.coreName = coreName;
-      files = new ImmutableSet.Builder();
+      this.generation = generation;
+      latestCommitFiles = new ImmutableSet.Builder();
+      allCommitsFiles = new ImmutableSet.Builder();
     }
 
-    ServerSideCoreMetadataBuilder addFile(CoreFileData file) {
-      this.files.add(file);
+    ServerSideCoreMetadataBuilder addLatestCommitFile(CoreFileData file) {
+      this.latestCommitFiles.add(file);
+      addAllCommitsFile(file);
+      return this;
+    }
+
+    ServerSideCoreMetadataBuilder addAllCommitsFile(CoreFileData file) {
+      this.allCommitsFiles.add(file);
       return this;
     }
 
     public ServerSideMetadata build() {
       ServerSideMetadata serverMetadata = mock(ServerSideMetadata.class);
       when(serverMetadata.getCoreName()).thenReturn(coreName);
-      when(serverMetadata.getFiles()).thenReturn(files.build());
+      when(serverMetadata.getGeneration()).thenReturn(generation);
+      when(serverMetadata.getLatestCommitFiles()).thenReturn(latestCommitFiles.build());
+      when(serverMetadata.getAllCommitsFiles()).thenReturn(allCommitsFiles.build());
       return serverMetadata;
     }
   }

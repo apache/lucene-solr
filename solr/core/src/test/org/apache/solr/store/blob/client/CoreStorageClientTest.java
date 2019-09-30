@@ -171,7 +171,7 @@ public class CoreStorageClientTest extends SolrTestCaseJ4 {
   @Test
   public void testPushPullCoreMetadata() throws Exception {
     blobClient.deleteCore(TEST_CORE_NAME_1);
-    BlobCoreMetadata pushedBcm = new BlobCoreMetadataBuilder(TEST_CORE_NAME_1).build();
+    BlobCoreMetadata pushedBcm = new BlobCoreMetadataBuilder(TEST_CORE_NAME_1, 19L).build();
     Assert.assertNull(blobClient.pullCoreMetadata(TEST_CORE_NAME_1, "core.metadata"));
     
     blobClient.pushCoreMetadata(TEST_CORE_NAME_1, "core.metadata", pushedBcm);

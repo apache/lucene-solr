@@ -1,5 +1,7 @@
 package org.apache.solr.store.blob.metadata;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -9,13 +11,18 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.BlobCoreMetadata.BlobFile;
 import org.apache.solr.store.blob.metadata.ServerSideMetadata.CoreFileData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility class used to compare local {@link ServerSideMetadata} and remote 
  * {@link BlobCoreMetadata}, metadata of shard index data on the local solr node
  * and remote shared store (blob).
  */
-public class SharedStoreResolutionUtil {  
+public class SharedStoreResolutionUtil {
+
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static String SEGMENTS_N_PREFIX = "segments_";
 
   public static class SharedMetadataResolutionResult {
@@ -23,25 +30,29 @@ public class SharedStoreResolutionUtil {
     private final Collection<CoreFileData> filesToPush;
     // blob files needed to be pulled
     private final Collection<BlobFile> filesToPull;
+    // Whether the local index contents conflict with contents to be pulled from blob. If they do we will move the
+    // core to new index dir when pulling blob contents
+    // Two cases:
+    //  1. local index is at higher generation number than blob's generation number
+    //  2. same index file exist in both places with different size/checksum
+    private final boolean localConflictingWithBlob;
     
-    public SharedMetadataResolutionResult(Collection<CoreFileData> localFilesMissingOnBlob, 
-        Collection<BlobFile> blobFilesMissingLocally) {
-      if (localFilesMissingOnBlob == null) {
+    
+    public SharedMetadataResolutionResult(Collection<CoreFileData> filesToPush, 
+        Collection<BlobFile> filesToPull, boolean localConflictingWithBlob) {
+      if (filesToPush == null) {
         this.filesToPush = Collections.emptySet();
       } else {
-        this.filesToPush = localFilesMissingOnBlob;
+        this.filesToPush = filesToPush;
       }
       
-      if (blobFilesMissingLocally == null) {
+      if (filesToPull == null) {
         this.filesToPull = Collections.emptySet();
       } else {
-        this.filesToPull = blobFilesMissingLocally;
+        this.filesToPull = filesToPull;
       }
-    }
-    
-    public SharedMetadataResolutionResult(Map<String, CoreFileData> localFilesMissingOnBlob, 
-        Map<String, BlobFile> blobFilesMissingLocally) {
-      this(localFilesMissingOnBlob.values(), blobFilesMissingLocally.values());
+
+      this.localConflictingWithBlob = localConflictingWithBlob;
     }
     
     public Collection<CoreFileData> getFilesToPush() {
@@ -50,6 +61,10 @@ public class SharedStoreResolutionUtil {
     
     public Collection<BlobFile> getFilesToPull() {
       return filesToPull;
+    }
+    
+    public boolean isLocalConflictingWithBlob(){
+      return localConflictingWithBlob;
     }
   }
   
@@ -67,6 +82,7 @@ public class SharedStoreResolutionUtil {
   public static SharedMetadataResolutionResult resolveMetadata(ServerSideMetadata local, BlobCoreMetadata distant) {
     Map<String, CoreFileData> localFilesMissingOnBlob = new HashMap<>();
     Map<String, BlobFile> blobFilesMissingLocally = new HashMap<>();
+    Map<String, CoreFileData> allLocalFiles = new HashMap<>();
     
     if (local == null && distant == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot resolve if both local and remote metadata is null"); 
@@ -74,8 +90,15 @@ public class SharedStoreResolutionUtil {
     
     if (local != null) {
       // Prepare local files for lookup by file name
-      for (CoreFileData cfd : local.getFiles()) {
-          localFilesMissingOnBlob.put(cfd.fileName, cfd);
+      
+      // for files to push only the current commit point matters
+      for (CoreFileData cfd : local.getLatestCommitFiles()) {
+          localFilesMissingOnBlob.put(cfd.getFileName(), cfd);
+      }
+
+      // for files to pull all the index files present locally matters
+      for (CoreFileData cfd : local.getAllCommitsFiles()) {
+        allLocalFiles.put(cfd.getFileName(), cfd);
       }
       // TODO we're not dealing here with local core on Solr server being corrupt. Not part of PoC at this stage but eventually need a solution
       // (fetch from Blob unless Blob corrupt as well...)
@@ -85,7 +108,7 @@ public class SharedStoreResolutionUtil {
         || distant.getBlobFiles().length == 0) {
       // The shard index data does not exist on the shared store. All we can do is push. 
       // We've computed localFilesMissingOnBlob above, and blobFilesMissingLocally is empty as it should be.
-      return new SharedMetadataResolutionResult(localFilesMissingOnBlob, blobFilesMissingLocally);
+      return new SharedMetadataResolutionResult(localFilesMissingOnBlob.values(), blobFilesMissingLocally.values(), false);
     }
     
     // Verify we find one and only one segments_N file to download from Blob.
@@ -111,30 +134,43 @@ public class SharedStoreResolutionUtil {
     }
     
     if (local == null) {
-      // The shard index data does not exist on the shared store. All we can do is pull.  
+      // The shard index data does not exist locally. All we can do is pull.  
       // We've computed blobFilesMissingLocally and localFilesMissingOnBlob is empty as it should be.
-      return new SharedMetadataResolutionResult(localFilesMissingOnBlob, blobFilesMissingLocally);
+      return new SharedMetadataResolutionResult(localFilesMissingOnBlob.values(), blobFilesMissingLocally.values(), false);
     }
-    
+
+    boolean localConflictingWithBlob = false;
     // Verify there are no inconsistencies between local index and blob index files
     for (BlobFile bf : distant.getBlobFiles()) {
       // We remove from map of local files those already present remotely since they don't have to be pushed.
-      CoreFileData cf = localFilesMissingOnBlob.remove(bf.getSolrFileName());
+      localFilesMissingOnBlob.remove(bf.getSolrFileName());
+      CoreFileData cf = allLocalFiles.get(bf.getSolrFileName());
       if (cf != null) {
-        // The blob file is present locally (by virtue of having been in localFilesMissingOnBlob initialized with
-        // all local files). Check if there is a conflict between local and distant (blob) versions of that file.
+        // The blob file is present locally. Check if there is a conflict between local and distant (blob) versions of that file.
         blobFilesMissingLocally.remove(bf.getSolrFileName());
-        // Later we could add checksum verification etc. here
-        if (cf.fileSize != bf.getFileSize()) {
-          // TODO - for now just log and propagate the error up
-          String errorMessage = "Size conflict for shared shard name: " + distant.getSharedBlobName() +". File " + 
-              bf.getSolrFileName() + " (Blob name " + bf.getBlobName() + ") local size " + 
-              cf.fileSize + " blob size " + bf.getFileSize() + " (core " + local.getCoreName() + ")";
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, errorMessage);
+        if (cf.getFileSize() != bf.getFileSize() || cf.getChecksum() != bf.getChecksum()) {
+          String message = String.format("Size/Checksum conflicts sharedShardName=%s coreName=%s fileName=%s blobName=%s" +
+                  " localSize=%s blobSize=%s localChecksum=%s blobCheckSum=%s",
+              distant.getSharedBlobName(), local.getCoreName(), bf.getSolrFileName(), bf.getBlobName(),
+              cf.getFileSize(), bf.getFileSize(), cf.getChecksum(), bf.getChecksum());
+          logger.info(message);
+          localConflictingWithBlob = true;
         }
       }
     }
-    return new SharedMetadataResolutionResult(localFilesMissingOnBlob, blobFilesMissingLocally);
+
+    if(!localConflictingWithBlob) {
+      // If local index generation number is higher than blob even than we will declare a conflict.
+      // Since in the presence of higher generation number locally, blob contents cannot establish their legitimacy.
+      localConflictingWithBlob = local.getGeneration() > distant.getGeneration();
+    }
+    // If there is a conflict we will switch index to a newer directory and pull all blob files.
+    // Later in the pipeline at the actual time of pull(CorePushPull#pullUpdateFromBlob) there is an optimization to make use of local index directory
+    // for already available files instead of downloading from blob. It was possible to design that into the contract of this 
+    // resolver to produce list of files to be pulled from blob and list of files to be pulled(read copied) from local index directory.
+    // But that would have unnecessarily convoluted the design of this resolver.
+    Collection<BlobFile> filesToPull = localConflictingWithBlob ? Arrays.asList(distant.getBlobFiles()) : blobFilesMissingLocally.values();
+    return new SharedMetadataResolutionResult(localFilesMissingOnBlob.values(), filesToPull, localConflictingWithBlob);
   }
   
   /** Identify the segments_N file in Blob files. */

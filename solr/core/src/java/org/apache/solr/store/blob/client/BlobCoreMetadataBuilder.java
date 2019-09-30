@@ -6,22 +6,30 @@ import java.util.*;
  * Builder for {@link BlobCoreMetadata}.
  */
 public class BlobCoreMetadataBuilder {
+    /**
+     * Generation number in metadata of cores not existing on the Blob Store.
+     */
+    public static final long UNDEFINED_VALUE = -1L;
 
     final private String sharedBlobName;
+    final private long generation;
     final private Set<BlobCoreMetadata.BlobFile> blobFiles;
     final private Set<BlobCoreMetadata.BlobFileToDelete> blobFilesToDelete;
 
-    public BlobCoreMetadataBuilder(String sharedBlobName) {
+    public BlobCoreMetadataBuilder(String sharedBlobName, long generation) {
         this.sharedBlobName = sharedBlobName;
+        this.generation= generation;
         this.blobFiles = new HashSet<>();
         this.blobFilesToDelete = new HashSet<>();
     }
 
     /**
      * Builder used for "cloning" then modifying an existing instance of {@link BlobCoreMetadata}.
+     * The new generation has to be passed in because it is final and can't be set later.
      */
-    public BlobCoreMetadataBuilder(BlobCoreMetadata bcm) {
+    public BlobCoreMetadataBuilder(BlobCoreMetadata bcm, long generation) {
         this.sharedBlobName = bcm.getSharedBlobName();
+        this.generation = generation;
         this.blobFiles = new HashSet<>(Arrays.asList(bcm.getBlobFiles()));
         this.blobFilesToDelete = new HashSet<>(Arrays.asList(bcm.getBlobFilesToDelete()));
     }
@@ -34,7 +42,7 @@ public class BlobCoreMetadataBuilder {
      * Builds a {@link BlobCoreMetadata} for a non existing core of a given name.
      */
     static public BlobCoreMetadata buildEmptyCoreMetadata(String sharedBlobName) {
-        return (new BlobCoreMetadataBuilder(sharedBlobName)).build();
+        return (new BlobCoreMetadataBuilder(sharedBlobName, UNDEFINED_VALUE)).build();
     }
 
     /**
@@ -90,6 +98,6 @@ public class BlobCoreMetadataBuilder {
         BlobCoreMetadata.BlobFile[] blobFilesArray = this.blobFiles.toArray(new BlobCoreMetadata.BlobFile[this.blobFiles.size()]);
         BlobCoreMetadata.BlobFileToDelete[] blobFilesToDeleteArray = this.blobFilesToDelete.toArray(new BlobCoreMetadata.BlobFileToDelete[this.blobFilesToDelete.size()]);
 
-        return new BlobCoreMetadata(this.sharedBlobName, blobFilesArray, blobFilesToDeleteArray);
+        return new BlobCoreMetadata(this.sharedBlobName, blobFilesArray, blobFilesToDeleteArray, generation);
     }
 }

@@ -2,6 +2,7 @@ package org.apache.solr.store.blob.client;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -18,6 +19,14 @@ public class BlobCoreMetadata {
      * name is to decouple the core name that Solr manages from the name of the core on blob store. 
      */
     private final String sharedBlobName;
+
+    /**
+     * Generation number of index represented by this metadata.
+     * This generation number is only meant to identify a scenario where local index generation number is higher than
+     * what we have in blob. In that scenario we would switch index to a new directory when pulling contents from blob. 
+     * Because in the presence of higher generation number locally, blob contents cannot establish their legitimacy.
+     */
+    private final long generation;
 
     /**
      * Unique identifier of this metadata, that changes on every update to the metadata (except generating a new corrupt metadata
@@ -57,16 +66,17 @@ public class BlobCoreMetadata {
      * It always builds non "isCorrupt" and non "isDeleted" metadata. 
      * The only way to build an instance of "isCorrupt" metadata is to use {@link #getCorruptOf} and for "isDeleted" use {@link #getDeletedOf()}
      */
-    BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobFileToDelete[] blobFilesToDelete) {
-        this(sharedBlobName, blobFiles, blobFilesToDelete, UUID.randomUUID().toString(), false,
+    BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobFileToDelete[] blobFilesToDelete, long generation) {
+        this(sharedBlobName, blobFiles, blobFilesToDelete, generation, UUID.randomUUID().toString(), false,
                 false);
     }
 
-    private BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobFileToDelete[] blobFilesToDelete, 
+    private BlobCoreMetadata(String sharedBlobName, BlobFile[] blobFiles, BlobFileToDelete[] blobFilesToDelete, long generation,
         String uniqueIdentifier, boolean isCorrupt, boolean isDeleted) {
         this.sharedBlobName = sharedBlobName;
         this.blobFiles = blobFiles;
         this.blobFilesToDelete = blobFilesToDelete;
+        this.generation = generation;
         this.uniqueIdentifier = uniqueIdentifier;
         this.isCorrupt = isCorrupt;
         this.isDeleted = isDeleted;
@@ -78,7 +88,7 @@ public class BlobCoreMetadata {
      */
     public BlobCoreMetadata getCorruptOf() {
         assert !isCorrupt;
-        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobFilesToDelete, uniqueIdentifier, true, isDeleted);
+        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobFilesToDelete, generation, uniqueIdentifier, true, isDeleted);
     }
 
     /**
@@ -88,7 +98,7 @@ public class BlobCoreMetadata {
      */
     public BlobCoreMetadata getDeletedOf() {
         assert !isDeleted;
-        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobFilesToDelete, uniqueIdentifier, isCorrupt, true);
+        return new BlobCoreMetadata(sharedBlobName, blobFiles, blobFilesToDelete, generation, uniqueIdentifier, isCorrupt, true);
     }
 
     /**
@@ -123,6 +133,10 @@ public class BlobCoreMetadata {
         return uniqueIdentifier;
     }
 
+    public long getGeneration() {
+        return this.generation;
+    }
+
     public BlobFile[] getBlobFiles() {
         return blobFiles;
     }
@@ -138,6 +152,7 @@ public class BlobCoreMetadata {
 
         BlobCoreMetadata that = (BlobCoreMetadata) o;
 
+        if (this.generation != that.generation) return false;
         if (this.isCorrupt != that.isCorrupt) return false;
         if (this.isDeleted != that.isDeleted) return false;
         if (!this.uniqueIdentifier.equals(that.uniqueIdentifier)) return false;
@@ -156,19 +171,17 @@ public class BlobCoreMetadata {
 
     @Override
     public int hashCode() {
-        int result = sharedBlobName.hashCode();
-        result = 31 * result + uniqueIdentifier.hashCode();
-        // The array of files is not ordered so need to compare as a set
-        result = 31 * result + new HashSet<>(Arrays.asList(this.blobFiles)).hashCode();
-        result = 31 * result + new HashSet<>(Arrays.asList(this.blobFilesToDelete)).hashCode();
-        result = 31 * result + (isCorrupt ? 1 : 0);
-        result = 31 * result + (isDeleted ? 1 : 0);
-        return result;
+        return Objects.hash(sharedBlobName, uniqueIdentifier, generation,
+            // The array of files is not ordered so need to compare as a set
+            new HashSet<>(Arrays.asList(this.blobFiles)).hashCode(),
+            new HashSet<>(Arrays.asList(this.blobFilesToDelete)).hashCode(),
+            isCorrupt, isDeleted);
     }
 
     @Override
     public String toString() {
-        return "sharedBlobName=" + sharedBlobName + " isCorrupt=" + isCorrupt + " uniqueIdentifier=" + uniqueIdentifier;
+        return "sharedBlobName=" + sharedBlobName +  " generation=" + generation 
+            + " isCorrupt=" + isCorrupt + " uniqueIdentifier=" + uniqueIdentifier;
     }
 
     /**
@@ -187,14 +200,18 @@ public class BlobCoreMetadata {
          */
         private final String blobName;
 
-        // TODO add some checksum here to verify blob files are not corrupt
-
         private final long fileSize;
 
-        public BlobFile(String solrFileName, String blobName, long fileSize) {
+        /**
+         * Lucene generated checksum of the file. It is used in addition to file size to compare local and blob files.
+         */
+        private final long checksum;
+
+        public BlobFile(String solrFileName, String blobName, long fileSize, long checksum) {
             this.solrFileName = solrFileName;
             this.blobName = blobName;
             this.fileSize = fileSize;
+            this.checksum = checksum;
         }
 
         @Override
@@ -202,19 +219,17 @@ public class BlobCoreMetadata {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            BlobFile blobFile = (BlobFile) o;
+            BlobFile other = (BlobFile) o;
 
-            if (fileSize != blobFile.fileSize) return false;
-            if (!solrFileName.equals(blobFile.solrFileName)) return false;
-            return blobName.equals(blobFile.blobName);
+            return Objects.equals(solrFileName, other.solrFileName) &&
+                Objects.equals(blobName, other.blobName) &&
+                Objects.equals(checksum, other.checksum) &&
+                Objects.equals(fileSize, other.fileSize);
         }
 
         @Override
         public int hashCode() {
-            int result = solrFileName.hashCode();
-            result = 31 * result + blobName.hashCode();
-            result = 31 * result + (int) (fileSize ^ (fileSize >>> 32));
-            return result;
+            return Objects.hash(solrFileName, blobName, fileSize, checksum);
         }
 
         public String getSolrFileName() {
@@ -228,7 +243,10 @@ public class BlobCoreMetadata {
         public long getFileSize() {
             return this.fileSize;
         }
-        
+
+        public long getChecksum() {
+            return this.checksum;
+        }
     }
 
     /**
@@ -247,14 +265,14 @@ public class BlobCoreMetadata {
       // likelyhood of a really really slow update by another server causing a race is low).
       private final long deletedAt;
 
-      public BlobFileToDelete(String solrFileName, String blobName, long fileSize, long deletedAt) {
-        super(solrFileName, blobName, fileSize);
+      public BlobFileToDelete(String solrFileName, String blobName, long fileSize, long checksum, long deletedAt) {
+        super(solrFileName, blobName, fileSize, checksum);
 
         this.deletedAt = deletedAt;
       }
 
       public BlobFileToDelete(BlobFile bf, long deletedAt) {
-        super(bf.solrFileName, bf.blobName, bf.fileSize);
+        super(bf.solrFileName, bf.blobName, bf.fileSize, bf.checksum);
 
         this.deletedAt = deletedAt;
       }
@@ -265,16 +283,14 @@ public class BlobCoreMetadata {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        BlobFileToDelete that = (BlobFileToDelete) o;
+        BlobFileToDelete other = (BlobFileToDelete) o;
 
-        return deletedAt == that.deletedAt;
+        return deletedAt == other.deletedAt;
       }
 
       @Override
       public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (int) (deletedAt ^ (deletedAt >>> 32));
-        return result;
+          return Objects.hash(super.hashCode(), deletedAt);
       }
 
       public long getDeletedAt() {
