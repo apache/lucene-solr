@@ -77,6 +77,7 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
   private int charCount = 0;
   private int offsetDiffAdjust = 0;
 
+  private static final int HARD_MAX_ROLLBACK_BUFFER_CAPACITY = Integer.highestOneBit(Integer.MAX_VALUE);
   static final int DEFAULT_MAX_ROLLBACK_BUFFER_CAPACITY = 8192;
   private final int maxRollbackBufferCapacity;
 
@@ -96,10 +97,11 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
    * @param maxRollbackBufferCapacityHint used to control the maximum size to which this
    * {@link ICUTransformCharFilter} will buffer and rollback partial transliteration of input sequences.
    * The provided hint will be converted to an enforced limit of "the greatest power of 2 (excluding '1')
-   * less than or equal to the specified value". Specifying a negative value allows the rollback buffer to
-   * grow indefinitely (equivalent to specifying {@link Integer#MAX_VALUE}). Specifying "0" (or "1", in practice)
-   * disables rollback. Larger values can in some cases yield more accurate transliteration, at the cost of
-   * performance and resolution/accuracy of offset correction.
+   * less than or equal to the specified value". It is illegal to specify a negative value. There is no
+   * power of 2 greater than <code>Integer.highestOneBit(Integer.MAX_VALUE))</code>, so to prevent overflow, values
+   * in this range will resolve to an enforced limit of <code>Integer.highestOneBit(Integer.MAX_VALUE))</code>.
+   * Specifying "0" (or "1", in practice) disables rollback. Larger values can in some cases yield more accurate
+   * transliteration, at the cost of performance and resolution/accuracy of offset correction.
    * This is intended primarily as a failsafe, with a relatively large default value of {@value ICUTransformCharFilter#DEFAULT_MAX_ROLLBACK_BUFFER_CAPACITY}.
    * See comments "To understand the need for rollback" in private method:
    * {@link Transliterator#filteredTransliterate(com.ibm.icu.text.Replaceable, Position, boolean, boolean)}
@@ -108,7 +110,11 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
     super(in);
     this.transform = ICUTransformFilter.optimizeForCommonCase(transform);
     if (maxRollbackBufferCapacityHint < 0) {
-      this.maxRollbackBufferCapacity = Integer.MAX_VALUE;
+      throw new IllegalArgumentException("It is illegal to request negative rollback buffer max capacity");
+    } else if (maxRollbackBufferCapacityHint >= HARD_MAX_ROLLBACK_BUFFER_CAPACITY) {
+      // arg is positive, so user wants the largest possible buffer capacity limit
+      // we know what that is (static), protecting for overflow.
+      this.maxRollbackBufferCapacity = HARD_MAX_ROLLBACK_BUFFER_CAPACITY;
       this.rollbackBuffer = new char[DEFAULT_INITIAL_ROLLBACK_BUFFER_CAPACITY];
     } else {
       // greatest power of 2 (excluding "1") less than or equal to the specified hint

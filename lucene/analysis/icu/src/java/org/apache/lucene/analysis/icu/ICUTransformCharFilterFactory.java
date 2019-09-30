@@ -52,7 +52,8 @@ public class ICUTransformCharFilterFactory extends CharFilterFactory {
     String id = require(args, "id");
     String direction = get(args, "direction", Arrays.asList("forward", "reverse"), "forward", false);
     int dir = "forward".equals(direction) ? Transliterator.FORWARD : Transliterator.REVERSE;
-    this.maxRollbackBufferCapacity = getInt(args, "maxRollbackBufferCapacity", ICUTransformCharFilter.DEFAULT_MAX_ROLLBACK_BUFFER_CAPACITY);
+    int tmpCapacityHint = getInt(args, "maxRollbackBufferCapacity", ICUTransformCharFilter.DEFAULT_MAX_ROLLBACK_BUFFER_CAPACITY);
+    this.maxRollbackBufferCapacity = tmpCapacityHint == -1 ? Integer.MAX_VALUE : tmpCapacityHint;
     transliterator = Transliterator.getInstance(id, dir);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
