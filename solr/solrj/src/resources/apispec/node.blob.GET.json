@@ -5,7 +5,7 @@
   "url": {
     "paths": [
       "/node/blob",
-      "/node/blob/{sha256}"
+      "/node/blob/{id}"
     ]
   }
 }

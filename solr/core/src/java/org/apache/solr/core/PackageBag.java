@@ -38,6 +38,7 @@ import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.util.CryptoKeys;
 import org.slf4j.Logger;
@@ -46,7 +47,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PACKAGES;
 import static org.apache.solr.common.params.CommonParams.VERSION;
-import static org.apache.solr.core.RuntimeLib.SHA256;
 
 /**
  * This class listens to changes to packages and it also keeps a
@@ -92,7 +92,6 @@ public class PackageBag implements ClusterPropertiesListener {
     public final String version;
     public final List<Blob> blobs;
     public final int znodeVersion;
-    public List<String> oldBlob;
     public final String manifest;
 
     public PackageInfo(Map m, int znodeVersion) {
@@ -124,7 +123,7 @@ public class PackageBag implements ClusterPropertiesListener {
       CryptoKeys cryptoKeys = new CryptoKeys(keys);
       for (Blob blob : blobs) {
         if (!blob.verifyJar(cryptoKeys, coreContainer)) {
-          errors.add("Invalid signature for blob : " + blob.sha256);
+          errors.add("Invalid signature for blob : " + blob.blobName);
         }
       }
       return errors;
@@ -136,7 +135,6 @@ public class PackageBag implements ClusterPropertiesListener {
       ew.put("name", name);
       ew.put("version", version);
       ew.put("manifest", manifest);
-      ew.putIfNotNull("blobs.old", oldBlob);
       if (blobs.size() == 1) {
         ew.put("blob", blobs.get(0));
       } else {
@@ -170,16 +168,15 @@ public class PackageBag implements ClusterPropertiesListener {
     }
 
     public static class Blob implements MapWriter {
-      public final String sha256;
+      public final FsBlobStore.BlobName blobName;
       public final String sig;
-      public final String name;
+
 
       public Blob(Object o) {
         if (o instanceof Map) {
           Map m = (Map) o;
-          this.sha256 = (String) m.get(SHA256);
+          this.blobName = new FsBlobStore.BlobName((String) m.get(CommonParams.ID));
           this.sig = (String) m.get("sig");
-          this.name = (String) m.get(NAME);
         } else {
           throw new RuntimeException("blob should be a Object Type");
         }
@@ -187,16 +184,15 @@ public class PackageBag implements ClusterPropertiesListener {
 
       @Override
       public void writeMap(EntryWriter ew) throws IOException {
-        ew.put(SHA256, sha256);
+        ew.put(CommonParams.ID, blobName.name());
         ew.put("sig", sig);
-        ew.putIfNotNull(NAME, name);
       }
 
       @Override
       public boolean equals(Object obj) {
         if (obj instanceof Blob) {
           Blob that = (Blob) obj;
-          return Objects.equals(this.sha256, that.sha256) && Objects.equals(this.sig, that.sig);
+          return Objects.equals(this.blobName, that.blobName) && Objects.equals(this.sig, that.sig);
         } else {
           return false;
         }
@@ -205,7 +201,7 @@ public class PackageBag implements ClusterPropertiesListener {
       public boolean verifyJar(CryptoKeys cryptoKeys, CoreContainer coreContainer) throws IOException {
         boolean[] result = new boolean[]{false};
         for (Map.Entry<String, PublicKey> e : cryptoKeys.keys.entrySet()) {
-          coreContainer.getBlobStore().readBlob(sha256, is -> {
+          coreContainer.getBlobStore().readBlob(blobName.name(), is -> {
             try {
               if (CryptoKeys.verify(e.getValue(), Base64.base64ToByteArray(sig), is)) result[0] = true;
             } catch (Exception ex) {
@@ -235,11 +231,11 @@ public class PackageBag implements ClusterPropertiesListener {
       List<URL> blobURLs = new ArrayList<>(packageInfo.blobs.size());
       for (PackageInfo.Blob blob : packageInfo.blobs) {
         try {
-          if (!packageBag.coreContainer.getBlobStore().fetchBlobToFS(blob.sha256)) {
+          if (!packageBag.coreContainer.getBlobStore().fetchBlobToFS(blob.blobName.name())) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Blob not available " + blob.sha256);
+                "Blob not available " + blob.blobName.name());
           }
-          blobURLs.add(new File(packageBag.coreContainer.getBlobStore().getBlobsPath().toFile(), blob.sha256).toURI().toURL());
+          blobURLs.add(new File(packageBag.coreContainer.getBlobStore().getBlobsPath().toFile(), blob.blobName.name()).toURI().toURL());
         } catch (MalformedURLException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }

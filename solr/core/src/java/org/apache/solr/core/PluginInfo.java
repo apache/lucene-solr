@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.MapSerializable;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.DOMUtil;
 import org.slf4j.Logger;
@@ -206,8 +205,7 @@ public class PluginInfo implements MapSerializable {
   }
 
   public boolean isRuntimePlugin() {
-    return "true".equals(String.valueOf(attributes.get(RuntimeLib.TYPE)))
-        || (attributes.get(CommonParams.PACKAGE) != null);
+    return "true".equals(String.valueOf(attributes.get(RuntimeLib.TYPE)));
   }
 
 }

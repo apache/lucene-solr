@@ -1,18 +1,14 @@
 {
   "type": "object",
   "properties": {
-    "sha256": {
+    "id": {
       "type": "string",
       "description": "The sha256 hash of the jar"
     },
     "sig": {
       "type": "string",
       "description": "the signature of the jar"
-    },
-    "name": {
-      "type": "string",
-      "description": "A human readable name of the jar"
     }
   },
-  "required": ["sha256", "sig"]
+  "required": ["id", "sig"]
 }

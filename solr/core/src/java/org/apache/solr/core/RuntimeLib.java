@@ -30,6 +30,7 @@ import java.util.zip.ZipInputStream;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.SimplePostTool;
@@ -44,7 +45,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWriter {
   public static final String TYPE = "runtimeLib";
-  public static final String SHA256 = "sha256";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
   private String name, version, sig, sha256;
@@ -57,7 +57,6 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
   public void writeMap(EntryWriter ew) throws IOException {
     ew.putIfNotNull(NAME, name);
     ew.putIfNotNull(version, version);
-    ew.putIfNotNull("sha256", sha256);
     ew.putIfNotNull("sig", sig);
     if (znodeVersion > -1) {
       ew.put(ConfigOverlay.ZNODEVER, znodeVersion);
@@ -92,7 +91,7 @@ public class RuntimeLib implements PluginInfoInitialized, AutoCloseable, MapWrit
   @Override
   public void init(PluginInfo info) {
     name = info.attributes.get(NAME);
-    sha256 = info.attributes.get(SHA256);
+    sha256 = info.attributes.get(CommonParams.ID);
     sig = info.attributes.get("sig");
     Object v = info.attributes.get("version");
     if (name == null || v == null) {

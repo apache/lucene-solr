@@ -60,7 +60,6 @@ import static org.apache.solr.common.MapWriter.EMPTY;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import static org.apache.solr.core.BlobRepository.sha256Digest;
-import static org.apache.solr.core.RuntimeLib.SHA256;
 import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
 
 /**
@@ -88,25 +87,25 @@ public class FsBlobStore {
   }
 
   public MapWriter fileList(SolrParams params) {
-    String sha256 = params.get(SHA256);
+    String id = params.get(CommonParams.ID);
     File dir = getBlobsPath().toFile();
 
     String fromNode = params.get("fromNode");
-    if (sha256 != null && fromNode != null) {
+    if (id != null && fromNode != null) {
       //asking to fetch it from somewhere if it does not exist locally
-      if (!new File(dir, sha256).exists()) {
+      if (!new File(dir, id).exists()) {
         if ("*".equals(fromNode)) {
           //asking to fetch from a random node
-          fetchFromOtherNodes(sha256);
+          fetchFromOtherNodes(id);
           return EMPTY;
         } else { // asking to fetch from a specific node
-          fetchBlobFromNodeAndPersist(sha256, fromNode);
+          fetchBlobFromNodeAndPersist(id, fromNode);
           return MapWriter.EMPTY;
         }
       }
     }
     return ew -> dir.listFiles((f, name) -> {
-      if (sha256 == null || name.equals(sha256)) {
+      if (id == null || name.equals(id)) {
         ew.putNoEx(name, (MapWriter) ew1 -> {
           File file = new File(f, name);
           ew1.put("size", file.length());
@@ -121,25 +120,25 @@ public class FsBlobStore {
     return SolrResourceLoader.getBlobsDirPath(this.coreContainer.getResourceLoader().getInstancePath());
   }
 
-  private ByteBuffer fetchFromOtherNodes(String sha256) {
+  private ByteBuffer fetchFromOtherNodes(String id) {
     ByteBuffer[] result = new ByteBuffer[1];
     ArrayList<String> l = shuffledNodes();
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.add(SHA256, sha256);
+    solrParams.add(CommonParams.ID, id);
     ZkStateReader stateReader = coreContainer.getZkController().getZkStateReader();
     for (String liveNode : l) {
       try {
         String baseurl = stateReader.getBaseUrlForNodeName(liveNode);
         String url = baseurl.replace("/solr", "/api");
-        String reqUrl = url + "/node/blob?wt=javabin&omitHeader=true&sha256=" + sha256;
+        String reqUrl = url + "/node/blob?wt=javabin&omitHeader=true&id=" + id;
         boolean nodeHasBlob = false;
         Object nl = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), reqUrl, Utils.JAVABINCONSUMER);
-        if (Utils.getObjectByPath(nl, false, Arrays.asList("blob", sha256)) != null) {
+        if (Utils.getObjectByPath(nl, false, Arrays.asList("blob", id)) != null) {
           nodeHasBlob = true;
         }
 
         if (nodeHasBlob) {
-          result[0] = fetchBlobFromNodeAndPersist(sha256, liveNode);
+          result[0] = fetchBlobFromNodeAndPersist(id, liveNode);
           if (result[0] != null) break;
         }
       } catch (Exception e) {
@@ -161,34 +160,72 @@ public class FsBlobStore {
     return l;
   }
 
+  public static class BlobName {
+    final String sha256;
+    final String fname;
 
-  private void persistToFile(ByteBuffer b, String sha256) throws IOException {
-    String actual = sha256Digest(b);
-    if (!Objects.equals(actual, sha256)) {
-      throw new SolrException(SERVER_ERROR, "invalid sha256 for blob actual: " + actual + " expected : " + sha256);
+    BlobName(String name) {
+      int idx = name.indexOf('-');
+      if (idx == -1) {
+        sha256 = name;
+        fname = null;
+        return;
+      } else {
+        sha256 = name.substring(0, idx);
+        fname = name.substring(idx + 1);
+      }
     }
-    File file = new File(getBlobsPath().toFile(), sha256);
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof BlobName) {
+        BlobName that = (BlobName) obj;
+        return Objects.equals(this.sha256, that.sha256) && Objects.equals(this.fname, that.fname);
+
+
+      }
+      return false;
+    }
+
+    public String name() {
+      return fname == null ? sha256 : sha256 + "-" + fname;
+    }
+
+    @Override
+    public String toString() {
+      return name();
+    }
+  }
+
+
+  private void persistToFile(ByteBuffer b, String id) throws IOException {
+    BlobName blobName = new BlobName(id);
+    String actual = sha256Digest(b);
+    if (!Objects.equals(actual, blobName.sha256)) {
+      throw new SolrException(SERVER_ERROR, "invalid id for blob actual: " + actual + " expected : " + blobName.sha256);
+    }
+    File file = new File(getBlobsPath().toFile(), id);
     try (FileOutputStream fos = new FileOutputStream(file)) {
       fos.write(b.array(), 0, b.limit());
     }
-    log.info("persisted a blob {} ", sha256);
+    log.info("persisted a blob {} ", id);
     IOUtils.fsync(file.toPath(), false);
   }
 
 
-  boolean fetchBlobToFS(String sha256) {
-    File f = new File(getBlobsPath().toFile(), sha256);
+  boolean fetchBlobToFS(String id) {
+    File f = new File(getBlobsPath().toFile(), id);
     if (f.exists()) return true;
-    fetchFromOtherNodes(sha256);
+    fetchFromOtherNodes(id);
     return f.exists();
   }
 
   /**
    * Read a blob from the blobstore file system
    */
-  public void readBlob(String sha256, Consumer<InputStream> consumer) throws IOException {
-    if (!fetchBlobToFS(sha256)) throw new FileNotFoundException("No such blob: "+ sha256);
-    File f = new File(getBlobsPath().toFile(), sha256);
+  public void readBlob(String id, Consumer<InputStream> consumer) throws IOException {
+    if (!fetchBlobToFS(id)) throw new FileNotFoundException("No such blob: " + id);
+    File f = new File(getBlobsPath().toFile(), id);
     try (InputStream is = new FileInputStream(f)) {
       consumer.accept(is);
     }
@@ -198,16 +235,16 @@ public class FsBlobStore {
    * This distributes a blob to all nodes in the cluster
    * *USE CAREFULLY*
    */
-  public void distributeBlob(ByteBuffer buf, String sha256) throws IOException {
-    persistToFile(buf, sha256);
-    tmpBlobs.put(sha256, buf);
+  public void distributeBlob(ByteBuffer buf, String id) throws IOException {
+    persistToFile(buf, id);
+    tmpBlobs.put(id, buf);
     List<String> nodes = coreContainer.getBlobStore().shuffledNodes();
     int i = 0;
     int FETCHFROM_SRC = 50;
     try {
       for (String node : nodes) {
         String baseUrl = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
-        String url = baseUrl.replace("/solr", "/api") + "/node/blob?sha256=" + sha256 + "&fromNode=";
+        String url = baseUrl.replace("/solr", "/api") + "/node/blob?id=" + id + "&fromNode=";
         if (i < FETCHFROM_SRC) {
           // this is to protect very large clusters from overwhelming a single node
           // the first FETCHFROM_SRC nodes will be asked to fetch from this node.
@@ -248,7 +285,7 @@ public class FsBlobStore {
         } catch (Exception e) {
           //don't care
         } finally {
-          coreContainer.getBlobStore().tmpBlobs.remove(sha256);
+          coreContainer.getBlobStore().tmpBlobs.remove(id);
         }
       }).start();
 
@@ -258,25 +295,26 @@ public class FsBlobStore {
   }
 
 
-  private ByteBuffer fetchBlobFromNodeAndPersist(String sha256, String fromNode) {
-    log.info("fetching a blob {} from {} ", sha256, fromNode);
+  private ByteBuffer fetchBlobFromNodeAndPersist(String id, String fromNode) {
+    log.info("fetching a blob {} from {} ", id, fromNode);
     ByteBuffer[] result = new ByteBuffer[1];
     String url = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(fromNode);
     if (url == null) throw new SolrException(BAD_REQUEST, "No such node");
     coreContainer.getUpdateShardHandler().getUpdateExecutor().submit(() -> {
-      String fromUrl = url.replace("/solr", "/api") + "/node/blob/" + sha256;
+      String fromUrl = url.replace("/solr", "/api") + "/node/blob/" + id;
       try {
         HttpClient httpClient = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
         result[0] = Utils.executeGET(httpClient, fromUrl, Utils.newBytesConsumer((int) MAX_PKG_SIZE));
         String actualSha256 = sha256Digest(result[0]);
-        if (sha256.equals(actualSha256)) {
-          persistToFile(result[0], sha256);
+        BlobName blobName = new BlobName(id);
+        if (blobName.sha256.equals(actualSha256)) {
+          persistToFile(result[0], id);
         } else {
           result[0] = null;
-          log.error("expected sha256 : {} actual sha256: {} from blob downloaded from {} ", sha256, actualSha256, fromNode);
+          log.error("expected sha256 : {} actual sha256: {} from blob downloaded from {} ", blobName.sha256, actualSha256, fromNode);
         }
       } catch (IOException e) {
-        log.error("Unable to fetch jar: {} from node: {}", sha256, fromNode);
+        log.error("Unable to fetch jar: {} from node: {}", id, fromNode);
       }
     });
     return result[0];
@@ -284,18 +322,18 @@ public class FsBlobStore {
 
 
   @EndPoint(spec = "node.blob.GET",
-  permission = PermissionNameProvider.Name.BLOB_READ)
+      permission = PermissionNameProvider.Name.BLOB_READ)
   public class BlobRead {
 
     @Command
-    public void get(CallInfo info){
+    public void get(CallInfo info) {
       SolrQueryRequest req = info.req;
       SolrQueryResponse rsp = info.rsp;
-      String sha256 = ((V2HttpCall) req.getHttpSolrCall()).getUrlParts().get("sha256");
-      if (sha256 == null) {
+      String id = ((V2HttpCall) req.getHttpSolrCall()).getUrlParts().get(CommonParams.ID);
+      if (id == null) {
         rsp.add("blob", fileList(req.getParams()));
       } else {
-        if (!fetchBlobToFS(sha256)) {
+        if (!fetchBlobToFS(id)) {
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such blob");
         }
 
@@ -303,11 +341,11 @@ public class FsBlobStore {
         solrParams.add(CommonParams.WT, FILE_STREAM);
         req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
         rsp.add(FILE_STREAM, (SolrCore.RawWriter) os -> {
-          ByteBuffer b = tmpBlobs.get(sha256);
+          ByteBuffer b = tmpBlobs.get(id);
           if (b != null) {
             os.write(b.array(), b.arrayOffset(), b.limit());
           } else {
-            File file = new File(getBlobsPath().toFile(), sha256);
+            File file = new File(getBlobsPath().toFile(), id);
             try (FileInputStream is = new FileInputStream(file)) {
               org.apache.commons.io.IOUtils.copy(is, os);
             }

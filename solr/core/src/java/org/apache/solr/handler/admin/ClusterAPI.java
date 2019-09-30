@@ -27,7 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.api.AnnotatedApi;
@@ -59,7 +58,6 @@ import static org.apache.solr.common.params.CommonParams.PACKAGES;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.core.BlobRepository.sha256Digest;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
-import static org.apache.solr.core.RuntimeLib.SHA256;
 import static org.apache.solr.security.PermissionNameProvider.Name.BLOB_WRITE;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
@@ -67,7 +65,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.PKG_EDIT;
 import static org.apache.solr.security.PermissionNameProvider.Name.PKG_READ;
 
 //implements  v2 only APIs at /cluster/* end point
-class ClusterAPI {
+public class ClusterAPI {
   private final CoreContainer coreContainer;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -134,7 +132,7 @@ class ClusterAPI {
 
   public List<Api> getAllApis() {
     List<Api> result = new ArrayList<>();
-    result.add(new AnnotatedApi( new ClusterAPI.ListNodes()));
+    result.add(new AnnotatedApi(new ClusterAPI.ListNodes()));
     result.add(new AnnotatedApi(new ClusterAPI.BlobWrite()));
     result.add(new AnnotatedApi(new ClusterAPI.PkgRead()));
     result.add(new AnnotatedApi(new ClusterAPI.PkgEdit()));
@@ -223,9 +221,6 @@ class ClusterAPI {
           op.addError("Trying to update a package with the same data");
           return false;
         }
-        packageInfo.oldBlob = oldInfo.blobs.stream()
-            .map(it -> it.sha256)
-            .collect(Collectors.toList());
       }
       try {
         List<String> errs = packageInfo.validate(coreContainer);
@@ -259,7 +254,7 @@ class ClusterAPI {
   public class PkgRead {
     @Command
     public void list(CallInfo info) throws IOException {
-      ClusterProperties clusterProperties = new ClusterProperties(coreContainer. getZkController().getZkClient());
+      ClusterProperties clusterProperties = new ClusterProperties(coreContainer.getZkController().getZkClient());
       info.rsp.add(PACKAGES, clusterProperties.getClusterProperty(PACKAGES, MapWriter.EMPTY));
     }
   }
@@ -274,15 +269,16 @@ class ClusterAPI {
       String sha256 = null;
       ContentStream stream = streams.iterator().next();
       try {
+        String name = info.req.getParams().get(CommonParams.NAME);
+        if (name != null) validateName(name);
         ByteBuffer buf = SimplePostTool.inputStreamToByteArray(stream.getStream());
         sha256 = sha256Digest(buf);
-        coreContainer.getBlobStore().distributeBlob(buf, sha256);
-        info.rsp.add(SHA256, sha256);
-
+        String blobId = name == null ? sha256 : sha256 + "-" + name;
+        coreContainer.getBlobStore().distributeBlob(buf, blobId);
+        info.rsp.add(CommonParams.ID, blobId);
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
-
     }
 
   }
@@ -407,5 +403,17 @@ class ClusterAPI {
     }
 
   }
+
+  static final String INVALIDCHARS = " /\\#&*\n\t%@~`=+^$><?{}[]|:;!";
+
+  public static void validateName(String name) {
+    for (int i = 0; i < name.length(); i++) {
+      for (int j = 0; j < INVALIDCHARS.length(); j++) {
+        if (name.charAt(i) == INVALIDCHARS.charAt(j))
+          throw new IllegalArgumentException("Unsupported char in file name: " + name);
+      }
+    }
+  }
+
 
 }
