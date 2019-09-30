@@ -17,6 +17,7 @@
   <Set name="TrustStorePassword"><Ref refid="trustStorePassword"/></Set>
   <Set name="NeedClientAuth"><Property name="solr.jetty.ssl.needClientAuth" default="false"/></Set>
   <Set name="WantClientAuth"><Property name="solr.jetty.ssl.wantClientAuth" default="false"/></Set>
+  <Set name="EndpointIdentificationAlgorithm"><Property name="solr.jetty.ssl.verifyClientHostName"/></Set>
   <Set name="KeyStoreType"><Property name="solr.jetty.keystore.type" default="JKS"/></Set>
   <Set name="TrustStoreType"><Property name="solr.jetty.truststore.type" default="JKS"/></Set>
 
