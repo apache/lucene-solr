@@ -137,9 +137,10 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
    */
   @Override
   public int read(char[] cbuf, int off, int len) throws IOException {
-    if (off < 0) throw new IllegalArgumentException("off < 0");
-    if (off >= cbuf.length) throw new IllegalArgumentException("off >= cbuf.length");
-    if (len <= 0) throw new IllegalArgumentException("len <= 0");
+    if (off < 0) throw new IndexOutOfBoundsException("specified negative array offset");
+    if (off >= cbuf.length) throw new IndexOutOfBoundsException("specified offset exceeds buffer length");
+    if (len <= 0) throw new IndexOutOfBoundsException("non-positive length specified");
+    if (len > cbuf.length - off) throw new IndexOutOfBoundsException("requested end array index exceeds buffer length");
 
     // !inputFinished || output remains to be flushed
     while (!inputFinished || position.start > outputCursor) {
