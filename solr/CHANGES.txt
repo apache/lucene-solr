@@ -189,6 +189,8 @@ Improvements
 
 * SOLR-13784: EmbeddedSolrServer's defaultCore constructor argument is now optional (David Smiley)
 
+* SOLR-13798: SSL: Adding Enabling/Disabling client's hostname verification config (Cao Manh Dat)
+
 Bug Fixes
 ----------------------
 
