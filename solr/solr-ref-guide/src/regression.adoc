@@ -39,7 +39,7 @@ analysis.
 
 [source,text]
 ----
-let(a=random(testapp, q="*:*", rows="50000", fl="filesize_d, response_d"),
+let(a=random(logs, q="*:*", rows="50000", fl="filesize_d, response_d"),
     x=col(a, filesize_d),
     y=col(a, response_d),
     r=regress(x, y))
@@ -91,7 +91,7 @@ the value of `response_d` for the `filesize_d` value of `40000`.
 
 [source,text]
 ----
-let(a=random(testapp, q="*:*", rows="5000", fl="filesize_d, response_d"),
+let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, response_d"),
     x=col(a, filesize_d),
     y=col(a, response_d),
     r=regress(x, y),
@@ -126,7 +126,7 @@ In this case 5000 predictions are returned.
 
 [source,text]
 ----
-let(a=random(testapp, q="*:*", rows="5000", fl="filesize_d, response_d"),
+let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, response_d"),
     x=col(a, filesize_d),
     y=col(a, response_d),
     r=regress(x, y),
@@ -171,7 +171,7 @@ Using *zplot* and the Zeppelin-Solr interpreter we can visualize both the observ
 the same scatter plot. In the example below zplot is plotting the filesize_d observations on the
 *x* axis, the response_d observations on the *y* access and the predictions on the *y1* access.
 
-image::images/math-expressions/regression-plot.png[]
+image::images/math-expressions/linear.png[]
 
 === Residuals
 
@@ -186,7 +186,7 @@ the array of residuals.
 
 [source,text]
 ----
-let(a=random(testapp, q="*:*", rows="500", fl="filesize_d, response_d"),
+let(a=random(logs, q="*:*", rows="500", fl="filesize_d, response_d"),
     x=col(a, filesize_d),
     y=col(a, response_d),
     r=regress(x, y),
@@ -196,7 +196,7 @@ let(a=random(testapp, q="*:*", rows="500", fl="filesize_d, response_d"),
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {
@@ -338,13 +338,13 @@ the first value represents a `filesize_d` of `40000` and the second value repres
 
 [source,text]
 ----
-let(a=random(testapp, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, load_d),
-    d=col(a, response_d),
-    e=transpose(matrix(b, c)),
-    f=olsRegress(e, d),
-    g=predict(f, array(40000, 4)))
+let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, load_d),
+    z=col(a, response_d),
+    m=transpose(matrix(x, y)),
+    r=olsRegress(m, z),
+    p=predict(r, array(40000, 4)))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -355,7 +355,7 @@ When this expression is sent to the `/stream` handler it responds with:
   "result-set": {
     "docs": [
       {
-        "g": 801.7725344814675
+        "p": 801.7725344814675
       },
       {
         "EOF": true,
@@ -374,24 +374,24 @@ is passed to the `predict` function and it returns an array of predictions.
 
 [source,text]
 ----
-let(a=random(testapp, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, load_d),
-    d=col(a, response_d),
-    e=transpose(matrix(b, c)),
-    f=olsRegress(e, d),
-    g=predict(f, e))
+let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, load_d),
+    z=col(a, response_d),
+    m=transpose(matrix(x, y)),
+    r=olsRegress(m, z),
+    p=predict(r, m))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {
     "docs": [
       {
-        "g": [
+        "p": [
           917.7122088913725,
           900.5418518783401,
           871.7805676516689,
@@ -426,25 +426,25 @@ the predictions stored variable *`g`* are subtracted from observed values stored
 
 [source,text]
 ----
-let(a=random(testapp, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, load_d),
-    d=col(a, response_d),
-    e=transpose(matrix(b, c)),
-    f=olsRegress(e, d),
-    g=predict(f, e),
-    r=ebeSubtract(d, g))
+let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, load_d),
+    z=col(a, response_d),
+    m=transpose(matrix(x, y)),
+    r=olsRegress(m, z),
+    p=predict(r, m),
+    e=ebeSubtract(z, p))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {
     "docs": [
       {
-        "r": [
+        "e": [
           21.452271655340496,
           9.647947283595727,
           -23.02328008866334,
