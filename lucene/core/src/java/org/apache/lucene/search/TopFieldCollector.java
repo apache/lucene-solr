@@ -143,7 +143,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 } else {
                   collectedAllCompetitiveHits = true;
                 }
-              } else if (totalHitsRelation == Relation.EQUAL_TO) {
+              } else if (totalHitsRelation == Relation.EQUAL_TO || shouldUpdateMinScore()) {
                 // we just reached totalHitsThreshold, we can start setting the min
                 // competitive score now
                 updateMinCompetitiveScore(scorer);
@@ -238,7 +238,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 } else {
                   collectedAllCompetitiveHits = true;
                 }
-              } else if (totalHitsRelation == Relation.EQUAL_TO) {
+              } else if (totalHitsRelation == Relation.EQUAL_TO || shouldUpdateMinScore()) {
                 // we just reached totalHitsThreshold, we can start setting the min
                 // competitive score now
                   updateMinCompetitiveScore(scorer);
@@ -290,6 +290,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   final BottomValueChecker bottomValueChecker;
   final FieldComparator.RelevanceComparator firstComparator;
   final boolean canSetMinScore;
+  // the minimum score (if canSetMinScore is true) that is currently used by the scorer,
+  // can be different than pqTop.score if the provided bottomValueChecker reports a minimum
+  // score that is greater than the local one.
+  float minScore;
   final int numComparators;
   FieldValueHitQueue.Entry bottom = null;
   boolean queueFull;
@@ -331,6 +335,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     return scoreMode;
   }
 
+  protected boolean shouldUpdateMinScore() {
+    return bottomValueChecker != null ? bottomValueChecker.getBottomValue() > minScore : false;
+  }
+
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
     if (canSetMinScore && hitsThresholdChecker.isThresholdReached()
           && (queueFull || (bottomValueChecker != null && bottomValueChecker.getBottomValue() > 0f))) {
@@ -347,6 +355,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
       assert maxMinScore > 0f;
       scorer.setMinCompetitiveScore(maxMinScore);
+      minScore = maxMinScore;
       totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
     }
   }
@@ -406,7 +415,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
     }
 
-    return create(sort, numHits, after, HitsThresholdChecker.create(totalHitsThreshold), null);
+    return create(sort, numHits, after, HitsThresholdChecker.create(totalHitsThreshold), null /* bottomValueChecker */);
   }
 
   /**
@@ -449,7 +458,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    * and a shared bottom value checker to propagate the minimum score accross segments if
    * the primary sort is by relevancy.
    */
-  public static CollectorManager<TopFieldCollector, TopFieldDocs> createSharedManager(Sort sort, int numHits, FieldDoc after, int totalHitsThreshold) {
+  public static CollectorManager<TopFieldCollector, TopFieldDocs> createSharedManager(Sort sort, int numHits, FieldDoc after,
+                                                                                 int totalHitsThreshold) {
     return new CollectorManager<>() {
 
       private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(totalHitsThreshold);

@@ -76,7 +76,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           hitsThresholdChecker.incrementHitCount();
 
           if (score <= pqTop.score) {
-            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && hitsThresholdChecker.isThresholdReached()) {
+            if ((totalHitsRelation == TotalHits.Relation.EQUAL_TO || shouldUpdateMinScore())
+                  && hitsThresholdChecker.isThresholdReached()) {
               // we just reached totalHitsThreshold, we can start setting the min
               // competitive score now
               updateMinCompetitiveScore(scorer);
@@ -139,7 +140,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
           if (score > after.score || (score == after.score && doc <= afterDoc)) {
             // hit was collected on a previous page
-            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && hitsThresholdChecker.isThresholdReached()) {
+            if ((totalHitsRelation == TotalHits.Relation.EQUAL_TO || shouldUpdateMinScore())
+                  && hitsThresholdChecker.isThresholdReached()) {
               // we just reached totalHitsThreshold, we can start setting the min
               // competitive score now
               updateMinCompetitiveScore(scorer);
@@ -247,6 +249,10 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
   }
 
   ScoreDoc pqTop;
+  // the minimum score that is currently used by the scorer, can be different than pqTop.score
+  // if the provided bottomValueChecker reports a minimum score that is greater than the local
+  // one.
+  float minScore;
   final HitsThresholdChecker hitsThresholdChecker;
   final BottomValueChecker bottomValueChecker;
 
@@ -277,6 +283,10 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     return hitsThresholdChecker.scoreMode();
   }
 
+  protected boolean shouldUpdateMinScore() {
+    return bottomValueChecker != null ? bottomValueChecker.getBottomValue() > minScore : false;
+  }
+
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
     if (hitsThresholdChecker.isThresholdReached()
           && ((bottomValueChecker != null && bottomValueChecker.getBottomValue() > 0)
@@ -301,6 +311,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       scorer.setMinCompetitiveScore(bottomScore);
+      minScore = bottomScore;
       totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
     }
   }
