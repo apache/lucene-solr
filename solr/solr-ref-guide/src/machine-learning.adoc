@@ -590,19 +590,19 @@ is then used to visualize the clusters as a scatter chart.
 image::images/math-expressions/2Dcluster.png[]
 
 The scatter plot above shows each lat/lon point plotted on a Euclidean plain. Each cluster is shown in
-a different. This plot provides a significant amount of information about size, shape and dispersion
-of the different clusters.
+a different color. This plot provides a significant amount of information about the size, shape and dispersion
+of the clusters.
 
 The centroids of each cluster can then be easily plotted on a *map* to visualize the center of the
 clusters. In the example below the centroids are extracted from the clusters using the `getCentroids`
-function, which returns a matrix of the centroids. In example the matrix contains 2D lan/lon points.
+function, which returns a matrix of the centroids.
 
-The `colAt` function is then used to extract the latitude and longitude columns by index from the matrix, which
-are plotted using `zplot`. A map visualization is used display the centroid clusters.
+In the example the centroids matrix contains 2D lan/lon points. The `colAt` function is then used to extract the latitude and longitude columns by index from the matrix, which
+are plotted using `zplot`. A map visualization is used to display the centroid clusters.
 
 image::images/math-expressions/2Dcentroids.png[]
 
-The map can be zoomed to understand clearly where the center of clusters lie on the map.
+The map can be zoomed to understand clearly where the center of clusters lie.
 
 image::images/math-expressions/centroidzoom.png[]
 
