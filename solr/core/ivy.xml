@@ -149,6 +149,7 @@
     <dependency org="com.amazonaws" name="aws-java-sdk-s3" rev="${/com.amazonaws/aws-java-sdk-s3}" conf="compile"/>
     <dependency org="com.amazonaws" name="aws-java-sdk-kms" rev="${/com.amazonaws/aws-java-sdk-kms}" conf="compile"/>
     <dependency org="com.amazonaws" name="jmespath-java" rev="${/com.amazonaws/jmespath-java}" conf="compile"/>
+    <dependency org="joda-time" name="joda-time" rev="${/joda-time/joda-time}" conf="compile"/>
     <dependency org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-cbor" rev="${/com.fasterxml.jackson.dataformat/jackson-dataformat-cbor}" conf="compile"/>
     <dependency org="software.amazon.ion" name="ion-java" rev="${/software.amazon.ion/ion-java}" conf="compile"/>
     <dependency org="com.google.code.gson" name="gson" rev="${/com.google/gson}" conf="compile"/>
