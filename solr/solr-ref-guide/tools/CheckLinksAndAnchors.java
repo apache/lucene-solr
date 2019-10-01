@@ -151,7 +151,8 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
 
     final File[] pages = htmlDir.listFiles(new HtmlFileFilter());
     if (0 == pages.length) {
-      System.err.println("CheckLinksAndAnchors: No HTML Files found, wrong htmlDir? forgot to built the site?");
+      System.err.println("CheckLinksAndAnchors: No HTML Files found (wrong htmlDir? forgot to built the site?): "
+          + htmlDir.getAbsolutePath());
       System.exit(-1);
     }
 

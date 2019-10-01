@@ -97,16 +97,11 @@ ext {
     htmlSolrJavadocs = "https://lucene.apache.org/solr/${solrDocsVersionPath}/"
     htmlLuceneJavadocs = "https://lucene.apache.org/core/${solrDocsVersionPath}/"
   }
-}
 
-// Tasks modeled after ant file until we have a working build.
-
-task buildInit(type: Sync) {
-  // TODO: we can do cleaner than going through ant here -- we could use gradle's expand but
-  // it'd require a change in the template that is backwards incompatible.
+  bareBonesDir = file("${buildDir}/bare-bones-html")
 
   // TODO: Compute remaining property values as they are in ant. What should we do with dependency/ ivy versions?
-  def props = [
+  props = [
     "solr-guide-draft-status": solrGuideDraftStatus,
     "solr-guide-version": solrGuideVersion,
     "solr-guide-version-path": solrGuideVersionPath,
@@ -124,6 +119,13 @@ task buildInit(type: Sync) {
     "ivy-velocity-tools-version": "(ivyversions.org.apache.velocity.tools.version)",
     "ivy-zookeeper-version": "(ivyversions./org.apache.zookeeper/zookeeper)"
   ]
+}
+
+// Tasks modeled after ant file until we have a working build.
+
+task buildInit(type: Sync) {
+  // TODO: we can do cleaner than going through ant here -- we could use gradle's expand but
+  // it'd require a change in the template that is backwards incompatible.
   def dummyAntProject = new org.apache.tools.ant.Project()
   props.each { k, v -> dummyAntProject.setProperty(k, v) }
 
@@ -175,20 +177,42 @@ task buildNavDataFiles(type: JavaExec) {
   }
 }
 
-def bareBonesDir = file("${buildDir}/bare-bones-html")
+// Define the asciidoctorj version
+asciidoctorj {
+  version = '1.5.0-alpha.16'
+}
 
 task bareBonesAsciiDoctor(type: org.asciidoctor.gradle.AsciidoctorTask) {
   dependsOn buildNavDataFiles
 
   sourceDir buildContentDir
   outputDir bareBonesDir
+
   backend "html5"
-
-  logDocuments true
-
+  logDocuments false
+  separateOutputDirs false
+  
+  options([
+    header_footer: false,
+    doctype: 'book',
+    safe: 'unsafe'
+  ])
   attributes([
-    "solr-javadocs": htmlSolrJavadocs,
-    "lucene-javadocs": htmlLuceneJavadocs
+    'attribute-missing': 'warn',
+    'section-toc': '',
+    'icons': 'font',
+    'icon-set': 'fa',
+    'pdf-stylesDir': './pdf/themes',
+    'pdf-style': 'refguide',
+    'pdf-fontsDir': './fonts',
+    'figure-caption!': '',
+    'idprefix': '',
+    'idseparator': '-',
+    'source-highlighter': 'coderay',
+
+    'solr-root-path': '../../../',
+
+     *: props
   ])
 
   doFirst {
@@ -197,14 +221,22 @@ task bareBonesAsciiDoctor(type: org.asciidoctor.gradle.AsciidoctorTask) {
   }
 }
 
-task bareBonesHtmlValidation() {
+task bareBonesHtmlValidation(type: JavaExec) {
   dependsOn bareBonesAsciiDoctor
   description("Builds (w/o Jekyll) a very simple html version of the guide and runs link/anchor validation on it")
-}
 
-// Define the asciidoctorj version
-asciidoctorj {
-  version = '1.5.0-beta.5'
+  classpath = sourceSets.tools.runtimeClasspath
+  main = 'CheckLinksAndAnchors'
+  workingDir = buildContentDir
+
+  args([
+    "${bareBonesDir}",
+    "-bare-bones"
+  ])
+
+  if (project.hasProperty("local.javadocs")) {
+    args += "-check-all-relative-links"
+  }
 }
 
 // general Asciidoc params for HTML conversion - barebones if still needed?
