@@ -193,7 +193,7 @@ public class CoreContainer {
 
   private final BlobRepository blobRepository = new BlobRepository(this);
 
-  private final FsBlobStore blobStore = new FsBlobStore(this);
+  private final DistribFileStore fileStore = new DistribFileStore(this);
 
   final ContainerRequestHandlers containerRequestHandlers = new ContainerRequestHandlers(this);
 
@@ -646,7 +646,7 @@ public class CoreContainer {
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
     containerHandlers.put(new AnnotatedApi(containerRequestHandlers));
-    containerHandlers.put(new AnnotatedApi(blobStore.blobRead));
+    containerHandlers.put(new AnnotatedApi(fileStore.fileStoreRead));
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
@@ -1765,8 +1765,8 @@ public class CoreContainer {
     return blobRepository;
   }
 
-  public FsBlobStore getBlobStore(){
-    return blobStore;
+  public DistribFileStore getFileStore(){
+    return fileStore;
   }
 
   /**

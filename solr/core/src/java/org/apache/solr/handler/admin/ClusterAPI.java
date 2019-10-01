@@ -58,9 +58,9 @@ import static org.apache.solr.common.params.CommonParams.PACKAGES;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.core.BlobRepository.sha256Digest;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
-import static org.apache.solr.security.PermissionNameProvider.Name.BLOB_WRITE;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.FILESTORE_WRITE;
 import static org.apache.solr.security.PermissionNameProvider.Name.PKG_EDIT;
 import static org.apache.solr.security.PermissionNameProvider.Name.PKG_READ;
 
@@ -133,7 +133,7 @@ public class ClusterAPI {
   public List<Api> getAllApis() {
     List<Api> result = new ArrayList<>();
     result.add(new AnnotatedApi(new ClusterAPI.ListNodes()));
-    result.add(new AnnotatedApi(new ClusterAPI.BlobWrite()));
+    result.add(new AnnotatedApi(new FileStoreWrite()));
     result.add(new AnnotatedApi(new ClusterAPI.PkgRead()));
     result.add(new AnnotatedApi(new ClusterAPI.PkgEdit()));
     result.add(new AnnotatedApi(new ClusterAPI.ClusterCommands()));
@@ -240,6 +240,7 @@ public class ClusterAPI {
 
       Map delta = new LinkedHashMap();
       Utils.setObjectByPath(delta, pathToLib, packageInfo, true);
+      log.debug( "addUpdate package : {}", Utils.toJSONString( delta));
       clusterProperties.setClusterProperties(delta);
       return true;
 
@@ -259,9 +260,9 @@ public class ClusterAPI {
     }
   }
 
-  @EndPoint(spec = "cluster.blob",
-      permission = BLOB_WRITE)
-  public class BlobWrite {
+  @EndPoint(spec = "cluster.filestore",
+      permission = FILESTORE_WRITE)
+  public class FileStoreWrite {
     @Command
     public void add(CallInfo info) {
       Iterable<ContentStream> streams = info.req.getContentStreams();
@@ -273,9 +274,9 @@ public class ClusterAPI {
         if (name != null) validateName(name);
         ByteBuffer buf = SimplePostTool.inputStreamToByteArray(stream.getStream());
         sha256 = sha256Digest(buf);
-        String blobId = name == null ? sha256 : sha256 + "-" + name;
-        coreContainer.getBlobStore().distributeBlob(buf, blobId);
-        info.rsp.add(CommonParams.ID, blobId);
+        String fileId = name == null ? sha256 : sha256 + "-" + name;
+        coreContainer.getFileStore().distributeFile(buf, fileId);
+        info.rsp.add(CommonParams.ID, fileId);
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }

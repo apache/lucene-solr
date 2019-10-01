@@ -4,8 +4,8 @@
   ],
   "url": {
     "paths": [
-      "/node/blob",
-      "/node/blob/{id}"
+      "/node/filestore/package",
+      "/node/filestore/package/{id}"
     ]
   }
 }

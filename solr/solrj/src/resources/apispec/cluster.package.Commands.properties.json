@@ -5,14 +5,14 @@
       "type": "string",
       "description": "A name for the library"
     },
-    "blobs": {
+    "files": {
       "type": "array",
       "items": {
-       "#include" :"cluster.package.Commands.blob.properties"
+       "#include" :"cluster.package.Commands.file.properties"
       }
     },
-    "blob": {
-      "#include" :"cluster.package.Commands.blob.properties"
+    "file": {
+      "#include" :"cluster.package.Commands.file.properties"
     },
     "repository": {
       "type": "string",
@@ -27,5 +27,5 @@
     "name",
     "version"
   ],
-  "oneOf" : ["blob","blobs"]
+  "oneOf" : ["file","files"]
 }

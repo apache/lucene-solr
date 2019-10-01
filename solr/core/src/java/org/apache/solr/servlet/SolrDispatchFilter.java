@@ -180,7 +180,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       final Path solrHomePath = solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome);
       coresInit = createCoreContainer(solrHomePath, extraProperties);
       SolrResourceLoader.ensureUserFilesDataDir(solrHomePath);
-      SolrResourceLoader.ensureBlobsDir(solrHomePath);
+      SolrResourceLoader.ensureFileStoreDir(solrHomePath);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
       log.debug("user.dir=" + System.getProperty("user.dir"));

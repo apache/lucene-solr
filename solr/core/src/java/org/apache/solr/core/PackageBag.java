@@ -60,7 +60,7 @@ import static org.apache.solr.common.params.CommonParams.VERSION;
  * listeners, they are notified. They can in turn choose to discard old instances of plugins
  * loaded from old resource loaders and create new instances if required.
  * <p>
- * All the resource loaders are loaded from blobs that exist in the {@link FsBlobStore}
+ * All the resource loaders are loaded from files that exist in the {@link DistribFileStore}
  */
 public class PackageBag implements ClusterPropertiesListener {
   public static final boolean enablePackage = Boolean.parseBoolean(System.getProperty("enable.package", "false"));
@@ -90,7 +90,7 @@ public class PackageBag implements ClusterPropertiesListener {
   public static class PackageInfo implements MapWriter {
     public final String name;
     public final String version;
-    public final List<Blob> blobs;
+    public final List<FileObj> fileObjs;
     public final int znodeVersion;
     public final String manifest;
 
@@ -99,13 +99,22 @@ public class PackageBag implements ClusterPropertiesListener {
       version = (String) m.get(VERSION);
       manifest = (String) m.get("manifest");
       this.znodeVersion = znodeVersion;
-      Object o = m.get("blob");
+      Object o = m.get("file");
       if (o instanceof Map) {
         Map map = (Map) o;
-        this.blobs = ImmutableList.of(new Blob(map));
-      } else {
-        throw new RuntimeException("Invalid type for attribute blob");
-      }
+        this.fileObjs = ImmutableList.of(new FileObj(map));
+      } else if (o instanceof List) {
+        List list = (List) o;
+        ImmutableList.Builder<FileObj> builder = new ImmutableList.Builder();
+        for (Object o1 : list) {
+          if(o1 instanceof Map) {
+            builder.add(new FileObj(o1));
+          } else {
+            throw new RuntimeException("Invalid type for attribute 'files'");
+          }
+        }
+        fileObjs = builder.build();
+      } else throw new RuntimeException("Invalid type for attribute 'file'");
     }
 
     public List<String> validate(CoreContainer coreContainer) throws Exception {
@@ -121,24 +130,23 @@ public class PackageBag implements ClusterPropertiesListener {
         return errors;
       }
       CryptoKeys cryptoKeys = new CryptoKeys(keys);
-      for (Blob blob : blobs) {
-        if (!blob.verifyJar(cryptoKeys, coreContainer)) {
-          errors.add("Invalid signature for blob : " + blob.blobName);
+      for (FileObj fileObj : fileObjs) {
+        if (!fileObj.verifyJar(cryptoKeys, coreContainer)) {
+          errors.add("Invalid signature for file : " + fileObj.fileObjName);
         }
       }
       return errors;
-
     }
 
     @Override
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put("name", name);
       ew.put("version", version);
-      ew.put("manifest", manifest);
-      if (blobs.size() == 1) {
-        ew.put("blob", blobs.get(0));
+      ew.putIfNotNull("manifest", manifest);
+      if (fileObjs.size() == 1) {
+        ew.put("file", fileObjs.get(0));
       } else {
-        ew.put("blobs", blobs);
+        ew.put("files", fileObjs);
       }
     }
 
@@ -148,9 +156,9 @@ public class PackageBag implements ClusterPropertiesListener {
       if (obj instanceof PackageInfo) {
         PackageInfo that = (PackageInfo) obj;
         if (!Objects.equals(this.version, that.version)) return false;
-        if (this.blobs.size() == that.blobs.size()) {
-          for (int i = 0; i < blobs.size(); i++) {
-            if (!Objects.equals(blobs.get(i), that.blobs.get(i))) {
+        if (this.fileObjs.size() == that.fileObjs.size()) {
+          for (int i = 0; i < fileObjs.size(); i++) {
+            if (!Objects.equals(fileObjs.get(i), that.fileObjs.get(i))) {
               return false;
             }
           }
@@ -167,32 +175,32 @@ public class PackageBag implements ClusterPropertiesListener {
       return new PackageResourceLoader(packageBag, this);
     }
 
-    public static class Blob implements MapWriter {
-      public final FsBlobStore.BlobName blobName;
+    public static class FileObj implements MapWriter {
+      public final DistribFileStore.FileObjName fileObjName;
       public final String sig;
 
 
-      public Blob(Object o) {
+      public FileObj(Object o) {
         if (o instanceof Map) {
           Map m = (Map) o;
-          this.blobName = new FsBlobStore.BlobName((String) m.get(CommonParams.ID));
+          this.fileObjName = new DistribFileStore.FileObjName((String) m.get(CommonParams.ID));
           this.sig = (String) m.get("sig");
         } else {
-          throw new RuntimeException("blob should be a Object Type");
+          throw new RuntimeException("'file' should be a Object Type");
         }
       }
 
       @Override
       public void writeMap(EntryWriter ew) throws IOException {
-        ew.put(CommonParams.ID, blobName.name());
+        ew.put(CommonParams.ID, fileObjName.name());
         ew.put("sig", sig);
       }
 
       @Override
       public boolean equals(Object obj) {
-        if (obj instanceof Blob) {
-          Blob that = (Blob) obj;
-          return Objects.equals(this.blobName, that.blobName) && Objects.equals(this.sig, that.sig);
+        if (obj instanceof FileObj) {
+          FileObj that = (FileObj) obj;
+          return Objects.equals(this.fileObjName, that.fileObjName) && Objects.equals(this.sig, that.sig);
         } else {
           return false;
         }
@@ -201,7 +209,7 @@ public class PackageBag implements ClusterPropertiesListener {
       public boolean verifyJar(CryptoKeys cryptoKeys, CoreContainer coreContainer) throws IOException {
         boolean[] result = new boolean[]{false};
         for (Map.Entry<String, PublicKey> e : cryptoKeys.keys.entrySet()) {
-          coreContainer.getBlobStore().readBlob(blobName.name(), is -> {
+          coreContainer.getFileStore().readFile(fileObjName.name(), is -> {
             try {
               if (CryptoKeys.verify(e.getValue(), Base64.base64ToByteArray(sig), is)) result[0] = true;
             } catch (Exception ex) {
@@ -228,19 +236,19 @@ public class PackageBag implements ClusterPropertiesListener {
       super(packageBag.coreContainer.getResourceLoader().getInstancePath(),
           packageBag.coreContainer.getResourceLoader().classLoader);
       this.packageInfo = packageInfo;
-      List<URL> blobURLs = new ArrayList<>(packageInfo.blobs.size());
-      for (PackageInfo.Blob blob : packageInfo.blobs) {
+      List<URL> fileURLs = new ArrayList<>(packageInfo.fileObjs.size());
+      for (PackageInfo.FileObj fileObj : packageInfo.fileObjs) {
         try {
-          if (!packageBag.coreContainer.getBlobStore().fetchBlobToFS(blob.blobName.name())) {
+          if (!packageBag.coreContainer.getFileStore().fetchFile(fileObj.fileObjName.name())) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Blob not available " + blob.blobName.name());
+                "File not available " + fileObj.fileObjName.name());
           }
-          blobURLs.add(new File(packageBag.coreContainer.getBlobStore().getBlobsPath().toFile(), blob.blobName.name()).toURI().toURL());
+          fileURLs.add(new File(packageBag.coreContainer.getFileStore().getFileStorePath().toFile(), fileObj.fileObjName.name()).toURI().toURL());
         } catch (MalformedURLException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
       }
-      addToClassLoader(blobURLs);
+      addToClassLoader(fileURLs);
     }
   }
 
