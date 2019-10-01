@@ -476,7 +476,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     dir.close();
   }
 
-  public void testConcurrentMinScoreTopScoreDocs() throws Exception {
+  public void testConcurrentMinScore() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc = new Document();
@@ -585,123 +585,6 @@ public class TestTopDocsCollector extends LuceneTestCase {
 
 
     TopDocs topDocs = manager.reduce(Arrays.asList(collector, collector2, collector3));
-    assertEquals(11, topDocs.totalHits.value);
-    assertEquals(new TotalHits(11, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), topDocs.totalHits);
-
-    reader.close();
-    dir.close();
-  }
-
-  public void testConcurrentMinScoreTopFieldDocs() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
-    Document doc = new Document();
-    w.addDocuments(Arrays.asList(doc, doc, doc, doc, doc));
-    w.flush();
-    w.addDocuments(Arrays.asList(doc, doc, doc, doc, doc, doc));
-    w.flush();
-    w.addDocuments(Arrays.asList(doc, doc));
-    w.flush();
-    IndexReader reader = DirectoryReader.open(w);
-    assertEquals(3, reader.leaves().size());
-    w.close();
-
-    Sort sort = new Sort(SortField.FIELD_SCORE, SortField.FIELD_DOC);
-    CollectorManager<TopFieldCollector, TopFieldDocs> manager =
-        TopFieldCollector.createSharedManager(sort, 2, null, 0);
-    TopFieldCollector collector = manager.newCollector();
-    TopFieldCollector collector2 = manager.newCollector();
-    assertTrue(collector.bottomValueChecker == collector2.bottomValueChecker);
-    BottomValueChecker minValueChecker = collector.bottomValueChecker;
-
-    ScoreAndDoc scorer = new ScoreAndDoc();
-    ScoreAndDoc scorer2 = new ScoreAndDoc();
-
-    LeafCollector leafCollector = collector.getLeafCollector(reader.leaves().get(0));
-    leafCollector.setScorer(scorer);
-    LeafCollector leafCollector2 = collector2.getLeafCollector(reader.leaves().get(1));
-    leafCollector2.setScorer(scorer2);
-
-    scorer.doc = 0;
-    scorer.score = 3;
-    leafCollector.collect(0);
-
-    scorer2.doc = 0;
-    scorer2.score = 6;
-    leafCollector2.collect(0);
-
-    scorer.doc = 1;
-    scorer.score = 2;
-    leafCollector.collect(1);
-    assertEquals(minValueChecker.getBottomValue(), 2f, 0f);
-    assertEquals(scorer.minCompetitiveScore, 2f, 0f);
-    assertNull(scorer2.minCompetitiveScore);
-
-    scorer2.doc = 1;
-    scorer2.score = 9;
-    leafCollector2.collect(1);
-    assertEquals(minValueChecker.getBottomValue(), 6f, 0f);
-    assertEquals(scorer.minCompetitiveScore, 2f, 0f);
-    assertEquals(scorer2.minCompetitiveScore, 6f, 0f);
-
-    scorer2.doc = 2;
-    scorer2.score = 7;
-    leafCollector2.collect(2);
-    assertEquals(minValueChecker.getBottomValue(), 7f, 0f);
-    assertEquals(scorer.minCompetitiveScore, 2f, 0f);
-    assertEquals(scorer2.minCompetitiveScore, 7f, 0f);
-
-    scorer2.doc = 3;
-    scorer2.score = 1;
-    leafCollector2.collect(3);
-    assertEquals(minValueChecker.getBottomValue(), 7f, 0f);
-    assertEquals(scorer.minCompetitiveScore, 2f, 0f);
-    assertEquals(scorer2.minCompetitiveScore, 7f, 0f);
-
-    scorer.doc = 2;
-    scorer.score = 10;
-    leafCollector.collect(2);
-    assertEquals(minValueChecker.getBottomValue(), 7f, 0f);
-    assertEquals(scorer.minCompetitiveScore, 7f, 0f);
-    assertEquals(scorer2.minCompetitiveScore, 7f, 0f);
-
-    scorer.doc = 3;
-    scorer.score = 11;
-    leafCollector.collect(3);
-    assertEquals(minValueChecker.getBottomValue(), 10, 0f);
-    assertEquals(scorer.minCompetitiveScore, 10f, 0f);
-    assertEquals(scorer2.minCompetitiveScore, 7f, 0f);
-
-    TopFieldCollector collector3 = manager.newCollector();
-    LeafCollector leafCollector3 = collector3.getLeafCollector(reader.leaves().get(2));
-    ScoreAndDoc scorer3 = new ScoreAndDoc();
-    leafCollector3.setScorer(scorer3);
-    assertEquals(scorer3.minCompetitiveScore, 10f, 0f);
-
-    scorer3.doc = 0;
-    scorer3.score = 1f;
-    leafCollector3.collect(0);
-    assertEquals(minValueChecker.getBottomValue(), 10f, 0f);
-    assertEquals(scorer3.minCompetitiveScore, 10f, 0f);
-
-    scorer.doc = 4;
-    scorer.score = 11;
-    leafCollector.collect(4);
-    assertEquals(minValueChecker.getBottomValue(), 11f, 0f);
-    assertEquals(scorer.minCompetitiveScore, 11f, 0f);
-    assertEquals(scorer2.minCompetitiveScore, 7f, 0f);
-    assertEquals(scorer3.minCompetitiveScore, 10f, 0f);
-
-    scorer3.doc = 1;
-    scorer3.score = 2f;
-    leafCollector3.collect(1);
-    assertEquals(minValueChecker.getBottomValue(), 11f, 0f);
-    assertEquals(scorer.minCompetitiveScore, 11f, 0f);
-    assertEquals(scorer2.minCompetitiveScore, 7f, 0f);
-    assertEquals(scorer3.minCompetitiveScore, 11f, 0f);
-
-
-    TopFieldDocs topDocs = manager.reduce(Arrays.asList(collector, collector2, collector3));
     assertEquals(11, topDocs.totalHits.value);
     assertEquals(new TotalHits(11, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), topDocs.totalHits);
 
